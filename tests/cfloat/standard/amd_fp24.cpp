@@ -1,4 +1,4 @@
-// amd_fp24.cpp: test suite runner for standard AMD fp24 format, which is equivalent to bfloat<24,7>
+// amd_fp24.cpp: test suite runner for standard AMD fp24 format, which is equivalent to cfloat<24,7>
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -17,15 +17,17 @@ try {
 
 	print_cmd_line(argc, argv);
 
+	// map the AMD FP24 onto the classic cfloats
 	constexpr size_t nbits = 24;
 	constexpr size_t ebits = 7;
+	using amd_fp24 = cfloat<nbits, ebits>;
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = " bfloat<24,7>";
+	std::string tag = " cfloat<24,7>";
 
-	cout << "Standard AMD fp24 format, which is equivalent to a bfloat<24,7> configuration tests" << endl;
+	cout << "Standard AMD fp24 format, which is equivalent to a cfloat<24,7> configuration tests" << endl;
 
-	bfloat<nbits, ebits> r;
+	amd_fp24 r;
 	r = 1.2345;
 	cout << r << endl;
 
@@ -35,11 +37,11 @@ catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::bfloat_arithmetic_exception& err) {
+catch (const sw::universal::cfloat_arithmetic_exception& err) {
 	std::cerr << "Uncaught real arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::bfloat_internal_exception& err) {
+catch (const sw::universal::cfloat_internal_exception& err) {
 	std::cerr << "Uncaught real internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

@@ -1,4 +1,4 @@
-// float_subnormals.cpp: test suite runner for conversion tests of float subnormals to bfloats
+// float_subnormals.cpp: test suite runner for conversion tests of float subnormals to classic cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -26,12 +26,12 @@ try {
 
 	// generate individual testcases to hand trace/debug
 
-	subnormals<bfloat<8, 2, uint8_t>>();  // 1 block
-	subnormals<bfloat<16, 5, uint8_t>>(); // 2 blocks
-	subnormals<bfloat<32, 8, uint8_t>>(); // 4 blocks
-	subnormals<bfloat<48, 11, uint16_t>>(); // 3 blocks
-	subnormals<bfloat<64, 11, uint16_t>>(); // 4 blocks
-	subnormals<bfloat<80, 11, uint16_t>>(); // 5 blocks
+	subnormals<cfloat<8, 2, uint8_t>>();  // 1 block
+	subnormals<cfloat<16, 5, uint8_t>>(); // 2 blocks
+	subnormals<cfloat<32, 8, uint8_t>>(); // 4 blocks
+	subnormals<cfloat<48, 11, uint16_t>>(); // 3 blocks
+	subnormals<cfloat<64, 11, uint16_t>>(); // 4 blocks
+	subnormals<cfloat<80, 11, uint16_t>>(); // 5 blocks
 
 	nrOfFailedTestCases = 0;
 
@@ -41,8 +41,8 @@ try {
 	bool bReportIndividualTestCases = false;
 	std::string tag = "float subnormal conversion failed: ";
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "bfloat<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "bfloat<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "cfloat<8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "cfloat<8,4>", "addition");
 
 #if STRESS_TESTING
 
@@ -57,7 +57,7 @@ catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::bfloat_divide_by_zero& err) {
+catch (const sw::universal::cfloat_divide_by_zero& err) {
 	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

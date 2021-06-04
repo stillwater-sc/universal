@@ -1,5 +1,5 @@
 #pragma once
-// manipulators.hpp: definitions of helper functions for bfloat type manipulation
+// manipulators.hpp: definitions of helper functions for classic cfloat type manipulation
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -16,22 +16,21 @@
 
 namespace sw::universal {
 
-
-// Generate a type tag for this bfloat, for example, bfloat<8,1, class uint8_t>
+// Generate a type tag for this cfloat, for example, cfloat<8,1, class uint8_t>
 template<size_t nbits, size_t es, typename bt>
-std::string type_tag(const bfloat<nbits, es, bt>& v) {
+std::string type_tag(const cfloat<nbits, es, bt>& v) {
 	std::stringstream ss;
-	ss << "bfloat<" << nbits << "," << es << "," << typeid(bt).name() << ">";
+	ss << "cfloat<" << nbits << "," << es << "," << typeid(bt).name() << ">";
 	return ss.str();
 }
 
-template<typename BfloatConfiguration>
+template<typename cfloatConfiguration>
 void subnormals() {
-	constexpr size_t nbits = BfloatConfiguration::nbits;
-	constexpr size_t es = BfloatConfiguration::es;
-	constexpr size_t fbits = BfloatConfiguration::fbits;
-	using bt = typename BfloatConfiguration::BlockType;
-	bfloat<nbits, es, bt> a{ 0 };
+	constexpr size_t nbits = cfloatConfiguration::nbits;
+	constexpr size_t es = cfloatConfiguration::es;
+	constexpr size_t fbits = cfloatConfiguration::fbits;
+	using bt = typename cfloatConfiguration::BlockType;
+	cfloat<nbits, es, bt> a{ 0 };
 	std::cout << type_tag(a) << '\n';
 	++a;
 	if constexpr (nbits < 65) {
@@ -55,7 +54,7 @@ void subnormals() {
 
 // report dynamic range of a type, specialized for a posit
 template<size_t nbits, size_t es, typename bt>
-std::string dynamic_range(bfloat<nbits, es, bt>& b) {
+std::string dynamic_range(cfloat<nbits, es, bt>& b) {
 	std::stringstream ss;
 	ss << type_tag(b) << ": ";
 	ss << "minpos scale " << std::setw(10) << minpos(b).scale() << "     ";
@@ -63,16 +62,16 @@ std::string dynamic_range(bfloat<nbits, es, bt>& b) {
 	return ss.str();
 }
 
-// Generate a string representing the bfloat components: sign, exponent, faction and value
+// Generate a string representing the cfloat components: sign, exponent, faction and value
 template<size_t nbits, size_t es, typename bt>
-std::string components(const bfloat<nbits, es, bt>& v) {
+std::string components(const cfloat<nbits, es, bt>& v) {
 	std::stringstream ss;
 	bool s{ false };
 	blockbinary<v.es, bt> e;
 	blockbinary<v.fbits, bt> f;
 	decode(v, s, e, f);
 
-	// TODO: hardcoded field width is governed by pretty printing bfloat tables, which by construction will always be small bfloats
+	// TODO: hardcoded field width is governed by pretty printing cfloat tables, which by construction will always be small cfloats
 	ss << std::setw(14) << to_binary(v) 
 		<< " Sign : " << std::setw(2) << s
 		<< " Exponent : " << std::setw(5) << e
@@ -82,9 +81,9 @@ std::string components(const bfloat<nbits, es, bt>& v) {
 	return ss.str();
 }
 
-// generate a binary string for bfloat
+// generate a binary string for cfloat
 template<size_t nbits, size_t es, typename bt>
-inline std::string to_hex(const bfloat<nbits, es, bt>& v) {
+inline std::string to_hex(const cfloat<nbits, es, bt>& v) {
 	constexpr size_t bitsInByte = 8;
 	constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -102,18 +101,18 @@ inline std::string to_hex(const bfloat<nbits, es, bt>& v) {
 	return ss.str();
 }
 
-// generate a bfloat format ASCII hex format nbits.esxNN...NNa
+// generate a cfloat format ASCII hex format nbits.esxNN...NNa
 template<size_t nbits, size_t es, typename bt>
-inline std::string hex_print(const bfloat<nbits, es, bt>& r) {
+inline std::string hex_print(const cfloat<nbits, es, bt>& r) {
 	std::stringstream ss;
 	ss << nbits << '.' << es << 'x' << to_hex(r) << 'r';
 	return ss.str();
 }
 
 template<size_t nbits, size_t es, typename bt>
-std::string pretty_print(const bfloat<nbits, es, bt>& r) {
+std::string pretty_print(const cfloat<nbits, es, bt>& r) {
 	std::stringstream ss;
-	constexpr size_t fbits = bfloat<nbits, es, bt>::fbits;
+	constexpr size_t fbits = cfloat<nbits, es, bt>::fbits;
 	bool s{ false };
 	blockbinary<es, bt> e;
 	blockbinary<fbits, bt> f;
@@ -138,14 +137,14 @@ std::string pretty_print(const bfloat<nbits, es, bt>& r) {
 }
 
 template<size_t nbits, size_t es, typename bt>
-std::string info_print(const bfloat<nbits, es, bt>& p, int printPrecision = 17) {
+std::string info_print(const cfloat<nbits, es, bt>& p, int printPrecision = 17) {
 	return "TBD";
 }
 
-// generate a binary, color-coded representation of the bfloat
+// generate a binary, color-coded representation of the cfloat
 template<size_t nbits, size_t es, typename bt>
-std::string color_print(const bfloat<nbits, es, bt>& r) {
-	using Real = bfloat<nbits, es, bt>;
+std::string color_print(const cfloat<nbits, es, bt>& r) {
+	using Real = cfloat<nbits, es, bt>;
 	std::stringstream ss;
 	bool s{ false };
 	blockbinary<es,bt> e;

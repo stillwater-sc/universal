@@ -1,5 +1,5 @@
 #pragma once
-//  real_test_helpers.hpp : arbitrary real verification functions
+//  cfloat_test_helpers.hpp : verification functions for classic cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -15,7 +15,7 @@
 namespace sw::universal {
 
 	template<typename SrcType, typename TestType>
-	void BfloatReportConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
+	void CfloatReportConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
 		// constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case
@@ -47,10 +47,10 @@ namespace sw::universal {
 		int fail = 0;
 		if (testValue != reference) {
 			fail++;
-			if (bReportIndividualTestCases)	BfloatReportConversionError("FAIL", "=", input, reference, testValue);
+			if (bReportIndividualTestCases)	CfloatReportConversionError("FAIL", "=", input, reference, testValue);
 		}
 		else {
-			// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, testValue);
+			// if (bReportIndividualTestCases) CfloatReportConversionSuccess("PASS", "=", input, reference, testValue);
 		}
 		return fail;
 	}
@@ -104,7 +104,7 @@ namespace sw::universal {
   15:           b0111-1       0       1              b1            b111                           nan       5.1x0x0Fr
   16:           b1000-0       1      -2              b0            b000                             0       5.1x0x10r  <---- 4.1x0x7r
 
-  VerifyConversion algorithm: enumerate bfloat<nbits+1, es> and create minus and plus deltas that you a priori know which way they round
+  VerifyConversion algorithm: enumerate cfloat<nbits+1, es> and create minus and plus deltas that you a priori know which way they round
 																								 1.00 - delta       round up
    4:           b0010-0       0       0              b0            b100                             1       5.1x0x04r  <---- 4.1x0x2r
                                                                                                  1.00 + delta       round down
@@ -135,7 +135,7 @@ namespace sw::universal {
 	/// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
 	/// <returns>number of failed test cases</returns>
 	template<typename TestType, typename SrcType = double>
-	int VerifyBfloatConversion(bool bReportIndividualTestCases) {
+	int VerifyCfloatConversion(bool bReportIndividualTestCases) {
 		// we are going to generate a test set that consists of all configs and their midpoints
 		// we do this by enumerating a configuration that is 1-bit larger than the test configuration
 		// with the extra bit allocated to the fraction.
@@ -143,7 +143,7 @@ namespace sw::universal {
 		// The sample values of the  larger configuration will be at the mid-point between the smaller 
 		// configuration sample values thus creating a full cover test set for value conversions.
 		// The precondition for this type of test is that the value conversion, that is,
-		// how to go from bfloat bits to IEEE-754 double values, is verified.
+		// how to go from cfloat bits to IEEE-754 double values, is verified.
 		// 
 		// To test the rounding logic of the conversion we are going to 
 		// generate the three test cases per sample:
@@ -154,13 +154,13 @@ namespace sw::universal {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
-		using RefType = bfloat<nbits + 1, es, BlockType>;
+		using RefType = cfloat<nbits + 1, es, BlockType>;
 		constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
 		constexpr size_t HALF = (size_t(1) << nbits);
 
 		// For example: 
 		// TestType: fixpnt<nbits,rbits,Saturating,uint8_t> needs RefType fixpnt<nbits+1, rbits+1, Saturating,uint8_t>
-		// TestType: bfloat<nbits, es, uint8_t> needs RefType bfloat<nbits + 1, es, uint8_t>
+		// TestType: cfloat<nbits, es, uint8_t> needs RefType cfloat<nbits + 1, es, uint8_t>
 		// TestType: posit<nbits, es, uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
 
 		const unsigned max = nbits > 20 ? 20 : nbits + 1;
@@ -374,9 +374,9 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-	// generate random test cases to test conversion from an IEEE-754 float to a bfloat
+	// generate random test cases to test conversion from an IEEE-754 float to a cfloat
 	template<typename TestType>
-	int VerifyFloat2BfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
+	int VerifyFloat2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -384,8 +384,8 @@ namespace sw::universal {
 		std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		int nrOfFailedTests = 0;
-		bfloat<32, 8, uint32_t> ref;
-		bfloat<nbits, es, BlockType> nut;
+		cfloat<32, 8, uint32_t> ref;
+		cfloat<nbits, es, BlockType> nut;
 		float refValue{ 0.0f };
 		float testValue{ 0.0f };
 		// run randoms
@@ -418,9 +418,9 @@ namespace sw::universal {
 	}
 
 #define CUSTOM_FEEDBACK
-	// generate random test cases to test conversion from an IEEE-754 double to a bfloat
+	// generate random test cases to test conversion from an IEEE-754 double to a cfloat
 	template<typename TestType>
-	int VerifyDouble2BfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
+	int VerifyDouble2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -428,8 +428,8 @@ namespace sw::universal {
 		std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		int nrOfFailedTests = 0;
-		bfloat<64, 11, uint64_t> ref;
-		bfloat<nbits, es, BlockType> nut;
+		cfloat<64, 11, uint64_t> ref;
+		cfloat<nbits, es, BlockType> nut;
 		double refValue{ 0.0 };
 		double testValue{ 0.0 };
 		// run randoms
@@ -469,7 +469,7 @@ namespace sw::universal {
 		constexpr size_t nbits = 32;
 		constexpr size_t es = 8;
 		int nrOfFailedTests = 0;
-		bfloat<nbits, es, BlockType> nut, result;
+		cfloat<nbits, es, BlockType> nut, result;
 		float f{ 0.0f };
 		// verify the subnormals
 		nut = 0;
@@ -495,7 +495,7 @@ namespace sw::universal {
 		constexpr size_t nbits = 64;
 		constexpr size_t es = 11;
 		int nrOfFailedTests = 0;
-		bfloat<nbits, es, BlockType> nut, result;
+		cfloat<nbits, es, BlockType> nut, result;
 		double d{ 0.0f };
 		// verify the subnormals
 		nut = 0;
@@ -517,14 +517,14 @@ namespace sw::universal {
 	template<size_t nbits, size_t es>
 	int VerifyIncrement(bool bReportIndividualTestCases)
 	{
-		std::vector< bfloat<nbits, es> > set;
+		std::vector< cfloat<nbits, es> > set;
 		//	GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 		int nrOfFailedTestCases = 0;
 
-		bfloat<nbits, es> p, ref;
+		cfloat<nbits, es> p, ref;
 		// starting from NaR iterating from -maxpos to maxpos through zero
-		for (typename std::vector < bfloat<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
+		for (typename std::vector < cfloat<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 			p = *it;
 			p++;
 			ref = *(it + 1);
@@ -541,14 +541,14 @@ namespace sw::universal {
 	template<size_t nbits, size_t es>
 	int VerifyDecrement(bool bReportIndividualTestCases)
 	{
-		std::vector< bfloat<nbits, es> > set;
+		std::vector< cfloat<nbits, es> > set;
 		//	GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 		int nrOfFailedTestCases = 0;
 
-		bfloat<nbits, es> p, ref;
+		cfloat<nbits, es> p, ref;
 		// starting from maxpos iterating to -maxpos, and finally NaR via zero
-		for (typename std::vector < bfloat<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); --it) {
+		for (typename std::vector < cfloat<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); --it) {
 			p = *it;
 			p--;
 			ref = *(it - 1);

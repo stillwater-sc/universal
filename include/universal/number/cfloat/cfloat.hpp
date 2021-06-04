@@ -1,5 +1,5 @@
 #pragma once
-// bfloat.hpp: definition of an arbitrary configuration linear floating-point representation
+// cfloat.hpp: 'classic' float: definition of an arbitrary configuration linear floating-point representation
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -36,7 +36,7 @@
 // you can't: customers may only pull in one specific number system
 // so it has to be driven by the number system include
 // but therefor you might want to move this conditional compile
-// to the <bfloat> include
+// to the <cfloat> include
 #ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
@@ -62,14 +62,14 @@
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
-// bfloat exception structure
+// cfloat exception structure
 #include <universal/number/cfloat/exceptions.hpp>
 // composition types
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 
-#ifndef BFLOAT_THROW_ARITHMETIC_EXCEPTION
-#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#ifndef CFLOAT_THROW_ARITHMETIC_EXCEPTION
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 #ifndef TRACE_CONVERSION
 #define TRACE_CONVERSION 0
@@ -77,15 +77,15 @@
 
 namespace sw::universal {
 
-constexpr bool _trace_bfloat_add = false;  // TODO consolidate in a trace include file
-constexpr bool BFLOAT_NIBBLE_MARKER = true;
+constexpr bool _trace_cfloat_add = false;  // TODO consolidate in a trace include file
+constexpr bool CFLOAT_NIBBLE_MARKER = true;
 
 // Forward definitions
-template<size_t nbits, size_t es, typename bt> class bfloat;
-template<size_t nbits, size_t es, typename bt> bfloat<nbits, es, bt> abs(const bfloat<nbits, es, bt>&);
+template<size_t nbits, size_t es, typename bt> class cfloat;
+template<size_t nbits, size_t es, typename bt> cfloat<nbits, es, bt> abs(const cfloat<nbits, es, bt>&);
 
 /// <summary>
-/// decode an bfloat value into its constituent parts
+/// decode an cfloat value into its constituent parts
 /// </summary>
 /// <typeparam name="bt"></typeparam>
 /// <param name="v"></param>
@@ -93,7 +93,7 @@ template<size_t nbits, size_t es, typename bt> bfloat<nbits, es, bt> abs(const b
 /// <param name="e"></param>
 /// <param name="f"></param>
 template<size_t nbits, size_t es, size_t fbits, typename bt>
-void decode(const bfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
+void decode(const cfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
 	v.sign(s);
 	v.exponent(e);
 	v.fraction(f);
@@ -103,22 +103,22 @@ void decode(const bfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blo
 /// return the binary scale of the given number
 /// </summary>
 /// <typeparam name="bt">Block type used for storage: derived through ADL</typeparam>
-/// <param name="v">the bfloat number for which we seek to know the binary scale</param>
-/// <returns>binary scale, i.e. 2^scale, of the value of the bfloat</returns>
+/// <param name="v">the cfloat number for which we seek to know the binary scale</param>
+/// <returns>binary scale, i.e. 2^scale, of the value of the cfloat</returns>
 template<size_t nbits, size_t es, typename bt>
-int scale(const bfloat<nbits, es, bt>& v) {
+int scale(const cfloat<nbits, es, bt>& v) {
 	return v.scale();
 }
 
 /// <summary>
-/// parse a text string into a bfloat value
+/// parse a text string into a cfloat value
 /// </summary>
 /// <typeparam name="bt"></typeparam>
 /// <param name="str"></param>
 /// <returns></returns>
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt> parse(const std::string& str) {
-	bfloat<nbits, es, bt> a{ 0 };
+cfloat<nbits, es, bt> parse(const std::string& str) {
+	cfloat<nbits, es, bt> a{ 0 };
 	if (str[0] == 'b') {
 		size_t index = nbits;
 		for (size_t i = 1; i < str.size(); ++i) {
@@ -138,9 +138,9 @@ bfloat<nbits, es, bt> parse(const std::string& str) {
 	}
 	return a;
 }
-// convert a blocktriple to a bfloat
+// convert a blocktriple to a cfloat
 template<size_t srcbits, size_t nbits, size_t es, typename bt>
-inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nbits, es, bt>& tgt) {
+inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nbits, es, bt>& tgt) {
 	// test special cases
 	if (src.isnan()) {
 		tgt.setnan(src.sign());
@@ -154,12 +154,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nb
 	}
 	else {
 		int64_t scale   = src.scale();
-		int64_t expBias = bfloat<nbits, es, bt>::EXP_BIAS;
-		if (scale < bfloat<nbits, es, bt>::MIN_EXP_SUBNORMAL) {
+		int64_t expBias = cfloat<nbits, es, bt>::EXP_BIAS;
+		if (scale < cfloat<nbits, es, bt>::MIN_EXP_SUBNORMAL) {
 			tgt.setzero();
 			return;
 		}
-		if (scale > bfloat<nbits, es, bt>::MAX_EXP) {
+		if (scale > cfloat<nbits, es, bt>::MAX_EXP) {
 			if (src.sign()) {
 				tgt.maxneg();
 			}
@@ -171,22 +171,22 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nb
 
 		// tgt.clear();
 		if constexpr (nbits < 65) {
-			// we can use a uint64_t to construct the bfloat
+			// we can use a uint64_t to construct the cfloat
 			uint64_t raw = (src.sign() ? 1ull : 0ull);
 			raw <<= (es - size_t(1));
 			// construct the exponent
-			if (scale >= bfloat<nbits, es, bt>::MIN_EXP_SUBNORMAL && scale < bfloat<nbits, es, bt>::MIN_EXP_NORMAL) {
+			if (scale >= cfloat<nbits, es, bt>::MIN_EXP_SUBNORMAL && scale < cfloat<nbits, es, bt>::MIN_EXP_NORMAL) {
 				// we are a subnormal number: all exponent bits are 0
-				raw <<= bfloat<nbits, es, bt>::fbits;
-				int rightShift = bfloat<nbits, es, bt>::MIN_EXP_NORMAL - static_cast<int>(scale);
+				raw <<= cfloat<nbits, es, bt>::fbits;
+				int rightShift = cfloat<nbits, es, bt>::MIN_EXP_NORMAL - static_cast<int>(scale);
 				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit back as it will shift into the msb of the denorm
-				fracbits >>= rightShift + (srcbits - bfloat<nbits, es, bt>::fbits);
+				fracbits >>= rightShift + (srcbits - cfloat<nbits, es, bt>::fbits);
 				raw |= fracbits;
 			}
 			else {
 				// we are a normal number
 				raw |= scale + expBias;  // this is guaranteed to be an unsigned string of bits
-				raw <<= bfloat<nbits, es, bt>::fbits;
+				raw <<= cfloat<nbits, es, bt>::fbits;
 				raw |= src.fraction_ull();
 			}
 			tgt.setbits(raw);
@@ -209,7 +209,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nb
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
 /// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
 template<size_t _nbits, size_t _es, typename bt = uint8_t>
-class bfloat {
+class cfloat {
 public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
 	static_assert(_es < 2147483647ull, "my God that is a big number, are you trying to break the Interweb?");
@@ -251,27 +251,27 @@ public:
 	typedef bt BlockType;
 
 	// constructors
-	constexpr bfloat() noexcept : _block{ 0 } {};
+	constexpr cfloat() noexcept : _block{ 0 } {};
 
-	constexpr bfloat(const bfloat&) noexcept = default;
-	constexpr bfloat(bfloat&&) noexcept = default;
+	constexpr cfloat(const cfloat&) noexcept = default;
+	constexpr cfloat(cfloat&&) noexcept = default;
 
-	constexpr bfloat& operator=(const bfloat&) noexcept = default;
-	constexpr bfloat& operator=(bfloat&&) noexcept = default;
+	constexpr cfloat& operator=(const cfloat&) noexcept = default;
+	constexpr cfloat& operator=(cfloat&&) noexcept = default;
 
 	// decorated/converting constructors
 
 	/// <summary>
-	/// construct an bfloat from another, block type bt must be the same
+	/// construct an cfloat from another, block type bt must be the same
 	/// </summary>
 	/// <param name="rhs"></param>
 	template<size_t nnbits, size_t ees>
-	bfloat(const bfloat<nnbits, ees, bt>& rhs) {
+	cfloat(const cfloat<nnbits, ees, bt>& rhs) {
 		// this->assign(rhs);
 	}
 
 	// specific value constructor
-	constexpr bfloat(const SpecificValue code) : _block{ 0 } {
+	constexpr cfloat(const SpecificValue code) : _block{ 0 } {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();
@@ -292,54 +292,54 @@ public:
 	}
 
 	/// <summary>
-	/// construct an bfloat from a native type, specialized for size
+	/// construct an cfloat from a native type, specialized for size
 	/// </summary>
 	/// <param name="iv">initial value to construct</param>
-	constexpr bfloat(signed char iv)        noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(short iv)              noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(int iv)                noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(long iv)               noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(long long iv)          noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(char iv)               noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(unsigned short iv)     noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(unsigned int iv)       noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(unsigned long iv)      noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(unsigned long long iv) noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(float iv)              noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(double iv)             noexcept : _block{ 0 } { *this = iv; }
-	constexpr bfloat(long double iv)        noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(signed char iv)        noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(short iv)              noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(int iv)                noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(long iv)               noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(long long iv)          noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(char iv)               noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned short iv)     noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned int iv)       noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned long iv)      noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned long long iv) noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(float iv)              noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(double iv)             noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(long double iv)        noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
-	constexpr bfloat& operator=(signed char rhs) { return convert_signed_integer(rhs); }
-	constexpr bfloat& operator=(short rhs)       { return convert_signed_integer(rhs); }
-	constexpr bfloat& operator=(int rhs)         { return convert_signed_integer(rhs); }
-	constexpr bfloat& operator=(long rhs)        { return convert_signed_integer(rhs); }
-	constexpr bfloat& operator=(long long rhs)   { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(signed char rhs) { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(short rhs)       { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(int rhs)         { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(long rhs)        { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(long long rhs)   { return convert_signed_integer(rhs); }
 
-	constexpr bfloat& operator=(char rhs)               { return convert_unsigned_integer(rhs); }
-	constexpr bfloat& operator=(unsigned short rhs)     { return convert_unsigned_integer(rhs); }
-	constexpr bfloat& operator=(unsigned int rhs)       { return convert_unsigned_integer(rhs); }
-	constexpr bfloat& operator=(unsigned long rhs)      { return convert_unsigned_integer(rhs); }
-	constexpr bfloat& operator=(unsigned long long rhs) { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(char rhs)               { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(unsigned short rhs)     { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(unsigned int rhs)       { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(unsigned long rhs)      { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(unsigned long long rhs) { return convert_unsigned_integer(rhs); }
 
-	CONSTEXPRESSION bfloat& operator=(float rhs)        { return convert_ieee754(rhs); }
-	CONSTEXPRESSION bfloat& operator=(double rhs)       { return convert_ieee754(rhs); }
-	CONSTEXPRESSION bfloat& operator=(long double rhs)  { return convert_ieee754(rhs); }
+	CONSTEXPRESSION cfloat& operator=(float rhs)        { return convert_ieee754(rhs); }
+	CONSTEXPRESSION cfloat& operator=(double rhs)       { return convert_ieee754(rhs); }
+	CONSTEXPRESSION cfloat& operator=(long double rhs)  { return convert_ieee754(rhs); }
 
 	// arithmetic operators
 	// prefix operator
-	inline bfloat operator-() const {
-		bfloat tmp(*this);
+	inline cfloat operator-() const {
+		cfloat tmp(*this);
 		tmp._block[MSU] ^= SIGN_BIT_MASK;
 		return tmp;
 	}
 
-	bfloat& operator+=(const bfloat& rhs) {
-		if constexpr (_trace_bfloat_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+	cfloat& operator+=(const cfloat& rhs) {
+		if constexpr (_trace_cfloat_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
-#if BFLOAT_THROW_ARITHMETIC_EXCEPTION
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
-			throw bfloat_operand_is_nan{};
+			throw cfloat_operand_is_nan{};
 		}
 #else
 		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
@@ -383,32 +383,32 @@ public:
 
 		return *this;
 	}
-	bfloat& operator+=(double rhs) {
-		return *this += bfloat(rhs);
+	cfloat& operator+=(double rhs) {
+		return *this += cfloat(rhs);
 	}
-	bfloat& operator-=(const bfloat& rhs) {
+	cfloat& operator-=(const cfloat& rhs) {
 		return *this += -rhs;
 	}
-	bfloat& operator-=(double rhs) {
-		return *this -= bfloat(rhs);
+	cfloat& operator-=(double rhs) {
+		return *this -= cfloat(rhs);
 	}
-	bfloat& operator*=(const bfloat& rhs) {
+	cfloat& operator*=(const cfloat& rhs) {
 		return *this;
 	}
-	bfloat& operator*=(double rhs) {
-		return *this *= bfloat(rhs);
+	cfloat& operator*=(double rhs) {
+		return *this *= cfloat(rhs);
 	}
-	bfloat& operator/=(const bfloat& rhs) {
+	cfloat& operator/=(const cfloat& rhs) {
 		return *this;
 	}
-	bfloat& operator/=(double rhs) {
-		return *this /= bfloat(rhs);
+	cfloat& operator/=(double rhs) {
+		return *this /= cfloat(rhs);
 	}
 	/// <summary>
 	/// move to the next bit encoding modulo 2^nbits
 	/// </summary>
 	/// <typeparam name="bt"></typeparam>
-	inline bfloat& operator++() {
+	inline cfloat& operator++() {
 		if constexpr (0 == nrBlocks) {
 			return *this;
 		}
@@ -445,16 +445,16 @@ public:
 		}
 		return *this;
 	}
-	inline bfloat operator++(int) {
-		bfloat tmp(*this);
+	inline cfloat operator++(int) {
+		cfloat tmp(*this);
 		operator++();
 		return tmp;
 	}
-	inline bfloat& operator--() {
+	inline cfloat& operator--() {
 		return *this;
 	}
-	inline bfloat operator--(int) {
-		bfloat tmp(*this);
+	inline cfloat operator--(int) {
+		cfloat tmp(*this);
 		operator--();
 		return tmp;
 	}
@@ -462,7 +462,7 @@ public:
 	// modifiers
 	
 	/// <summary>
-	/// clear the content of this bfloat to zero
+	/// clear the content of this cfloat to zero
 	/// </summary>
 	/// <returns>void</returns>
 	inline constexpr void clear() noexcept {
@@ -552,7 +552,7 @@ public:
 	inline constexpr bool setexponent(int scale) {
 		if (scale < MIN_EXP_SUBNORMAL || scale > MAX_EXP) return false; // this scale cannot be represented
 		if constexpr (nbits < 65) {
-			// we can use a uint64_t to construct the bfloat
+			// we can use a uint64_t to construct the cfloat
 			//uint64_t raw{ 0 };
 			if (scale >= MIN_EXP_SUBNORMAL && scale < MIN_EXP_NORMAL) {
 				// we are a subnormal number: all exponent bits are 1
@@ -588,7 +588,7 @@ public:
 		}
 	}
 	// specific number system values of interest
-	inline constexpr bfloat& maxpos() noexcept {
+	inline constexpr cfloat& maxpos() noexcept {
 		// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
 		clear();
 		flip();
@@ -596,25 +596,25 @@ public:
 		setbit(1ull, false);
 		return *this;
 	}
-	inline constexpr bfloat& minpos() noexcept {
+	inline constexpr cfloat& minpos() noexcept {
 		// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
 		clear();
 		setbit(0);
 		return *this;
 	}
-	inline constexpr bfloat& zero() noexcept {
+	inline constexpr cfloat& zero() noexcept {
 		// the zero value
 		clear();
 		return *this;
 	}
-	inline constexpr bfloat& minneg() noexcept {
+	inline constexpr cfloat& minneg() noexcept {
 		// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
 		clear();
 		setbit(nbits - 1ull);
 		setbit(0);
 		return *this;
 	}
-	inline constexpr bfloat& maxneg() noexcept {
+	inline constexpr cfloat& maxneg() noexcept {
 		// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1.1, f = 111...101, u = 0
 		clear();
 		flip();
@@ -639,14 +639,14 @@ public:
 		}
 	}
 	/// <summary>
-	/// set the raw bits of the bfloat. This is a required API function for number systems in the Universal Numbers Library
+	/// set the raw bits of the cfloat. This is a required API function for number systems in the Universal Numbers Library
 	/// This enables verification test suites to inject specific test bit patterns using a common interface.
 	//  This is a memcpy type operator, but the target number system may not have a linear memory layout and
 	//  thus needs to steer the bits in potentially more complicated ways then memcpy.
 	/// </summary>
-	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the bfloat</param>
-	/// <returns>reference to the bfloat</returns>
-	inline constexpr bfloat& setbits(uint64_t raw_bits) noexcept {
+	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the cfloat</param>
+	/// <returns>reference to the cfloat</returns>
+	inline constexpr cfloat& setbits(uint64_t raw_bits) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return *this;
 		}
@@ -716,8 +716,8 @@ public:
 	/// <summary>
 	/// 1's complement of the encoding
 	/// </summary>
-	/// <returns>reference to this bfloat object</returns>
-	inline constexpr bfloat& flip() noexcept { // in-place one's complement
+	/// <returns>reference to this cfloat object</returns>
+	inline constexpr cfloat& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}
@@ -725,11 +725,11 @@ public:
 		return *this;
 	}
 	/// <summary>
-	/// assign the value of the string representation of a scientific number to the bfloat
+	/// assign the value of the string representation of a scientific number to the cfloat
 	/// </summary>
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
-	/// <returns>reference to this bfloat</returns>
-	inline bfloat& assign(const std::string& stringRep) {
+	/// <returns>reference to this cfloat</returns>
+	inline cfloat& assign(const std::string& stringRep) {
 		std::cout << "assign TBD\n";
 		return *this;
 	}
@@ -1070,7 +1070,7 @@ public:
 	// casts to native types
 	long to_long() const { return long(to_native<double>()); }
 	long long to_long_long() const { return (long long)(to_native<double>()); }
-	// transform an bfloat to a native C++ floating-point. We are using the native
+	// transform an cfloat to a native C++ floating-point. We are using the native
 	// precision to compute, which means that all sub-values need to be representable 
 	// by the native precision.
 	// A more accurate appromation would require an adaptive precision algorithm
@@ -1131,7 +1131,7 @@ public:
 	explicit operator float() const { return to_native<float>(); }
 
 #ifdef NEVER
-	// normalize a non-special bfloat, that is, not a zero, inf, or nan, into a blocktriple
+	// normalize a non-special cfloat, that is, not a zero, inf, or nan, into a blocktriple
 	template<size_t tgtSize>
 	void generate_add_input(blocktriple<tgtSize, bt>& v) const {
 		bool _sign = sign();
@@ -1142,12 +1142,12 @@ public:
 	}
 #endif
 
-	// convert a bfloat to a blocktriple with the fraction format 01.ffffeeee
+	// convert a cfloat to a blocktriple with the fraction format 01.ffffeeee
 	// we are using the same block type so that we can use block copies to move bits around.
 	// Since we tend to have at least two exponent bits, this will lead to
-	// most bfloat<->blocktriple cases being efficient as the block types are aligned.
-	// The relationship between the source bfloat and target blocktriple is not
-	// arbitrary, enforce it: blocktriple fbits = bfloat (nbits - es - 1)
+	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
+	// The relationship between the source cfloat and target blocktriple is not
+	// arbitrary, enforce it: blocktriple fbits = cfloat (nbits - es - 1)
 	constexpr void normalize(blocktriple<fbits, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
@@ -1202,7 +1202,7 @@ public:
 					}
 				}
 			}
-			else { // it is a subnormal encoding in this target bfloat
+			else { // it is a subnormal encoding in this target cfloat
 				if constexpr (fbits < 64) {
 					uint64_t raw = fraction_ull();
 					int shift = MIN_EXP_NORMAL - scale;
@@ -1296,7 +1296,7 @@ public:
 					}
 				}
 			}
-			else { // it is a subnormal encoding in this target bfloat
+			else { // it is a subnormal encoding in this target cfloat
 				if constexpr (abits < 64) {
 					uint64_t raw = fraction_ull();
 					raw <<= (abits - fbits);
@@ -1339,7 +1339,7 @@ protected:
 	// HELPER methods
 
 	template<typename Ty>
-	constexpr bfloat& convert_unsigned_integer(const Ty& rhs) noexcept {
+	constexpr cfloat& convert_unsigned_integer(const Ty& rhs) noexcept {
 		clear();
 		if (0 == rhs) return *this;
 		uint64_t raw = static_cast<uint64_t>(rhs);
@@ -1351,7 +1351,7 @@ protected:
 		return *this;
 	}
 	template<typename Ty>
-	constexpr bfloat& convert_signed_integer(const Ty& rhs) noexcept {
+	constexpr cfloat& convert_signed_integer(const Ty& rhs) noexcept {
 		clear();
 		if (0 == rhs) return *this;
 		bool s = (rhs < 0);
@@ -1362,7 +1362,7 @@ protected:
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
 #ifdef TODO
-		// construct the target bfloat
+		// construct the target cfloat
 		if constexpr (64 >= nbits - es - 1ull) {
 			uint64_t bits = (s ? 1u : 0u);
 			bits <<= es;
@@ -1386,7 +1386,7 @@ protected:
 
 public:
 	template<typename Real>
-	CONSTEXPRESSION bfloat& convert_ieee754(Real rhs) noexcept {
+	CONSTEXPRESSION cfloat& convert_ieee754(Real rhs) noexcept {
 		clear();
 		// extract raw IEEE-754 bits
 		bool s{ false };
@@ -1467,19 +1467,19 @@ public:
 #endif
 
 		// do the following scenarios have different rounding bits?
-		// input is normal, bfloat is normal           <-- rounding can happen with native ieee-754 bits
-		// input is normal, bfloat is subnormal
-		// input is subnormal, bfloat is normal
-		// input is subnormal, bfloat is subnormal
+		// input is normal, cfloat is normal           <-- rounding can happen with native ieee-754 bits
+		// input is normal, cfloat is subnormal
+		// input is subnormal, cfloat is normal
+		// input is subnormal, cfloat is subnormal
 
 		// The first condition is the relationship between the number 
 		// of fraction bits from the source and the number of fraction bits 
-		// in the target bfloat: these are constexpressions and guard the shifts
-		// input fbits >= bfloat fbits                 <-- need to round
-		// input fbits < bfloat fbits                  <-- no need to round
+		// in the target cfloat: these are constexpressions and guard the shifts
+		// input fbits >= cfloat fbits                 <-- need to round
+		// input fbits < cfloat fbits                  <-- no need to round
 
 		if constexpr (ieee754_parameter<Real>::fbits > fbits) {  
-			// this is the common case for bfloats that are smaller than single and double precision IEEE-754
+			// this is the common case for cfloats that are smaller than single and double precision IEEE-754
 			constexpr int shiftRight = ieee754_parameter<Real>::fbits - fbits; // this is the bit shift to get the MSB of the src to the MSB of the tgt
 			uint32_t biasedExponent{ 0 };
 			int adjustment{ 0 };
@@ -1503,7 +1503,7 @@ public:
 					biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // project the exponent into the target 
 					// fraction processing
 					// float structure is: seee'eeee'efff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
-					// target structure is for example bfloat<8,2>: seef'ffff
+					// target structure is for example cfloat<8,2>: seef'ffff
 					// since both are normals, we can shift the incoming fraction to the target structure bits, and round
 					// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
 					adjustment = 0;
@@ -1563,7 +1563,7 @@ public:
 				std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << '\n';
 				std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
 #endif
-				// construct the target bfloat
+				// construct the target cfloat
 				uint64_t bits = (s ? 1ull : 0ull);
 				bits <<= es;
 				bits |= biasedExponent;
@@ -1590,15 +1590,15 @@ public:
 		}
 		else {
 			// no need to round, but we need to shift left to deliver the bits
-			// bfloat<40,  8> = float
-			// bfloat<48,  9> = float
-			// bfloat<56, 10> = float
-			// bfloat<64, 11> = float
-			// bfloat<64, 10> = double 
-			// can we go from an input subnormal to a bfloat normal? 
-			// yes, for example a bfloat<64,11> assigned to a subnormal float
+			// cfloat<40,  8> = float
+			// cfloat<48,  9> = float
+			// cfloat<56, 10> = float
+			// cfloat<64, 11> = float
+			// cfloat<64, 10> = double 
+			// can we go from an input subnormal to a cfloat normal? 
+			// yes, for example a cfloat<64,11> assigned to a subnormal float
 			
-			// map exponent into target bfloat encoding
+			// map exponent into target cfloat encoding
 			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
 			constexpr int upshift = fbits - ieee754_parameter<Real>::fbits;
 			// output processing
@@ -1627,7 +1627,7 @@ public:
 			}
 			else {
 				// we need to write and shift bits into place
-				// use cases are bfloats like bfloat<80, 11, bt>
+				// use cases are cfloats like cfloat<80, 11, bt>
 				// even though the bits that come in are single or double precision
 				// we need to write the fields and then shifting them in place
 				// 
@@ -1894,40 +1894,40 @@ private:
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const bfloat<nnbits,nes,nbt>& r);
+	friend std::ostream& operator<< (std::ostream& ostr, const cfloat<nnbits,nes,nbt>& r);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend std::istream& operator>> (std::istream& istr, bfloat<nnbits,nes,nbt>& r);
+	friend std::istream& operator>> (std::istream& istr, cfloat<nnbits,nes,nbt>& r);
 
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator==(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs);
+	friend bool operator==(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator!=(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs);
+	friend bool operator!=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator< (const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs);
+	friend bool operator< (const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator> (const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs);
+	friend bool operator> (const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator<=(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs);
+	friend bool operator<=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator>=(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs);
+	friend bool operator>=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
 };
 
 ////////////////////// operators
 template<size_t nbits, size_t es, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const bfloat<nbits,es,bt>& v) {
+inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits,es,bt>& v) {
 	// TODO: make it a native conversion
 	ostr << double(v);
 	return ostr;
 }
 
 template<size_t nnbits, size_t nes, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const bfloat<nnbits,nes,nbt>& v) {
+inline std::istream& operator>>(std::istream& istr, const cfloat<nnbits,nes,nbt>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator==(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs) { 
+inline bool operator==(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { 
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -1936,49 +1936,49 @@ inline bool operator==(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,ne
 	return true;
 }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator!=(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
+inline bool operator!=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator< (const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs) { return (lhs - rhs).isneg(); }
+inline bool operator< (const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return (lhs - rhs).isneg(); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator> (const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
+inline bool operator> (const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator<=(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator>=(const bfloat<nnbits,nes,nbt>& lhs, const bfloat<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits, size_t es, typename bt>
-inline bfloat<nbits, es, bt> operator+(const bfloat<nbits, es, bt>& lhs, const bfloat<nbits, es, bt>& rhs) {
-	bfloat<nbits, es, bt> sum(lhs);
+inline cfloat<nbits, es, bt> operator+(const cfloat<nbits, es, bt>& lhs, const cfloat<nbits, es, bt>& rhs) {
+	cfloat<nbits, es, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<size_t nbits, size_t es, typename bt>
-inline bfloat<nbits, es, bt> operator-(const bfloat<nbits, es, bt>& lhs, const bfloat<nbits, es, bt>& rhs) {
-	bfloat<nbits, es, bt> diff(lhs);
+inline cfloat<nbits, es, bt> operator-(const cfloat<nbits, es, bt>& lhs, const cfloat<nbits, es, bt>& rhs) {
+	cfloat<nbits, es, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, size_t es, typename bt>
-inline bfloat<nbits, es, bt> operator*(const bfloat<nbits, es, bt>& lhs, const bfloat<nbits, es, bt>& rhs) {
-	bfloat<nbits, es, bt> mul(lhs);
+inline cfloat<nbits, es, bt> operator*(const cfloat<nbits, es, bt>& lhs, const cfloat<nbits, es, bt>& rhs) {
+	cfloat<nbits, es, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 template<size_t nbits, size_t es, typename bt>
-inline bfloat<nbits, es, bt> operator/(const bfloat<nbits, es, bt>& lhs, const bfloat<nbits, es, bt>& rhs) {
-	bfloat<nbits, es, bt> ratio(lhs);
+inline cfloat<nbits, es, bt> operator/(const cfloat<nbits, es, bt>& lhs, const cfloat<nbits, es, bt>& rhs) {
+	cfloat<nbits, es, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
 // convert to std::string
 template<size_t nbits, size_t es, typename bt>
-inline std::string to_string(const bfloat<nbits,es,bt>& v) {
+inline std::string to_string(const cfloat<nbits,es,bt>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b";
@@ -1992,9 +1992,9 @@ inline std::string to_string(const bfloat<nbits,es,bt>& v) {
 	return s.str();
 }
 
-// transform bfloat to a binary representation
+// transform cfloat to a binary representation
 template<size_t nbits, size_t es, typename bt>
-inline std::string to_binary(const bfloat<nbits, es, bt>& number, bool nibbleMarker = false) {
+inline std::string to_binary(const cfloat<nbits, es, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << 'b';
 	size_t index = nbits;
@@ -2016,11 +2016,11 @@ inline std::string to_binary(const bfloat<nbits, es, bt>& number, bool nibbleMar
 	return s.str();
 }
 
-// transform a bfloat into a triple representation
+// transform a cfloat into a triple representation
 template<size_t nbits, size_t es, typename bt>
-inline std::string to_triple(const bfloat<nbits, es, bt>& number, bool nibbleMarket = true) {
+inline std::string to_triple(const cfloat<nbits, es, bt>& number, bool nibbleMarket = true) {
 	std::stringstream s;
-	blocktriple<bfloat<nbits, es, bt>::fbits, bt> triple;
+	blocktriple<cfloat<nbits, es, bt>::fbits, bt> triple;
 	number.normalize(triple);
 	s << to_triple(triple);
 	return s.str();
@@ -2028,8 +2028,8 @@ inline std::string to_triple(const bfloat<nbits, es, bt>& number, bool nibbleMar
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits,es> abs(const bfloat<nbits,es,bt>& v) {
-	return bfloat<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
+cfloat<nbits,es> abs(const cfloat<nbits,es,bt>& v) {
+	return cfloat<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
 }
 
 
@@ -2038,28 +2038,28 @@ bfloat<nbits,es> abs(const bfloat<nbits,es,bt>& v) {
 
 // posit - long logic operators
 template<size_t nbits, size_t es, typename bt>
-inline bool operator==(const bfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator==(lhs, bfloat<nbits, es, bt>(rhs));
+inline bool operator==(const cfloat<nbits, es, bt>& lhs, long long rhs) {
+	return operator==(lhs, cfloat<nbits, es, bt>(rhs));
 }
 template<size_t nbits, size_t es, typename bt>
-inline bool operator!=(const bfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator!=(lhs, bfloat<nbits, es, bt>(rhs));
+inline bool operator!=(const cfloat<nbits, es, bt>& lhs, long long rhs) {
+	return operator!=(lhs, cfloat<nbits, es, bt>(rhs));
 }
 template<size_t nbits, size_t es, typename bt>
-inline bool operator< (const bfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator<(lhs, bfloat<nbits, es, bt>(rhs));
+inline bool operator< (const cfloat<nbits, es, bt>& lhs, long long rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt>(rhs));
 }
 template<size_t nbits, size_t es, typename bt>
-inline bool operator> (const bfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator<(bfloat<nbits, es, bt>(rhs), lhs);
+inline bool operator> (const cfloat<nbits, es, bt>& lhs, long long rhs) {
+	return operator<(cfloat<nbits, es, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t es, typename bt>
-inline bool operator<=(const bfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator<(lhs, bfloat<nbits, es, bt>(rhs)) || operator==(lhs, bfloat<nbits, es, bt>(rhs));
+inline bool operator<=(const cfloat<nbits, es, bt>& lhs, long long rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt>(rhs)) || operator==(lhs, cfloat<nbits, es, bt>(rhs));
 }
 template<size_t nbits, size_t es, typename bt>
-inline bool operator>=(const bfloat<nbits, es, bt>& lhs, long long rhs) {
-	return !operator<(lhs, bfloat<nbits, es, bt>(rhs));
+inline bool operator>=(const cfloat<nbits, es, bt>& lhs, long long rhs) {
+	return !operator<(lhs, cfloat<nbits, es, bt>(rhs));
 }
 
 }  // namespace sw::universal

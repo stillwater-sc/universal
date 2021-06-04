@@ -1,4 +1,4 @@
-// api.cpp: application programming interface tests for bfloat number system
+// api.cpp: application programming interface tests for cfloat number system
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,11 +6,11 @@
 #include <universal/utility/directives.hpp>
 
 // minimum set of include files to reflect source code dependencies
-// Configure the bfloat template environment
+// Configure the cfloat template environment
 // first: enable general or specialized configurations
-#define BFLOAT_FAST_SPECIALIZATION
+#define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
-#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
@@ -29,13 +29,13 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "bfloat<> Application Programming Interface tests" << std::endl;
+	std::cout << "cfloat<> Application Programming Interface tests" << std::endl;
 
 #if MANUAL_TESTING
 
 	{
 		using bt = uint8_t;
-		using Real = bfloat<8, 3, bt>;
+		using Real = cfloat<8, 3, bt>;
 		Real a(1.0f);
 		Real b(1.0f);
 		Real c{ 0 };
@@ -48,23 +48,23 @@ try {
 	}
 
 	{
-		bfloat<16, 4, uint16_t> a(1.0);
-		bfloat<16, 4, uint16_t> b;
+		cfloat<16, 4, uint16_t> a(1.0);
+		cfloat<16, 4, uint16_t> b;
 		b = 1.5f;
 		blocktriple<12> bt;
 //		b.normalize(bt);
 		std::cout << to_binary(b) << " : " << b << " : " << to_binary(bt) << std::endl;
 		std::cout << color_print(b) << std::endl;
-		bfloat<16, 4, uint16_t> c;
+		cfloat<16, 4, uint16_t> c;
 		c = a * b;
 	}
 
 	{
 		using BlockType = uint32_t;
 		float subnormal = std::nextafter(0.0f, 1.0f);
-		bfloat<32, 8, BlockType> a;
+		cfloat<32, 8, BlockType> a;
 		blockbinary<a.fhbits, BlockType> significant;
-		std::cout << "   bfloat<32,8,uint32_t>         IEEE-754 float\n";
+		std::cout << "   cfloat<32,8,uint32_t>         IEEE-754 float\n";
 		uint32_t pattern = 0x00000001ul;
 		for (unsigned i = 0; i < 24; ++i) {
 			a.setbits(pattern);
@@ -93,7 +93,7 @@ try {
 	// construction
 	{
 		int start = nrOfFailedTestCases;
-		bfloat<8, 2, uint8_t> zero, a(2.0), b(2.0), c(1.0), d(4.0);
+		cfloat<8, 2, uint8_t> zero, a(2.0), b(2.0), c(1.0), d(4.0);
 		if (zero != (a - b)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << endl;
@@ -101,7 +101,7 @@ try {
 	}
 
 	{
-		bfloat<8, 2> a;
+		cfloat<8, 2> a;
 		std::cout << "maxpos : " << maxpos(a) << " : " << scale(a) << '\n';
 		std::cout << "minpos : " << minpos(a) << " : " << scale(a) << '\n';
 		std::cout << "zero   : " << zero(a) << " : " << scale(a) << '\n';
@@ -112,7 +112,7 @@ try {
 
 #endif // MANUAL_TESTING
 
-	std::cout << "\nBFLOAT API test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
+	std::cout << "\nCFLOAT API test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

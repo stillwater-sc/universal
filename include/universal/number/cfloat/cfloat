@@ -3,25 +3,25 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _BFLOAT_STANDARD_HEADER_
-#define _BFLOAT_STANDARD_HEADER_
+#ifndef _CFLOAT_STANDARD_HEADER_
+#define _CFLOAT_STANDARD_HEADER_
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(BFLOAT_ENABLE_LITERALS)
+#if !defined(CFLOAT_ENABLE_LITERALS)
 // default is to enable them
-#define BFLOAT_ENABLE_LITERALS 1
+#define CFLOAT_ENABLE_LITERALS 1
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // enable throwing specific exceptions for integer arithmetic errors
 // left to application to enable
-#if !defined(BFLOAT_THROW_ARITHMETIC_EXCEPTION)
+#if !defined(CFLOAT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
-#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////

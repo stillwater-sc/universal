@@ -1,31 +1,31 @@
-// basic_operators.cpp : examples of the basic arithmetic operators using bfloats
+// basic_operators.cpp : examples of the basic arithmetic operators using classic cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/cfloat/cfloat>
-// quick helper to report on a bfloat's specialness
+// quick helper to report on a cfloat's specialness
 template<size_t nbits, size_t es, typename bt>
-void checkSpecialCases(sw::universal::bfloat<nbits, es, bt> b) {
-	std::cout << "bfloat is " << (b.iszero() ? "zero " : "non-zero ") << (b.ispos() ? "positive " : "negative ") << (b.isnan() ? "Not a Number" : "Its a Real") << std::endl;
+void checkSpecialCases(sw::universal::cfloat<nbits, es, bt> b) {
+	std::cout << "cfloat is " << (b.iszero() ? "zero " : "non-zero ") << (b.ispos() ? "positive " : "negative ") << (b.isnan() ? "Not a Number" : "Its a Real") << std::endl;
 }
 
-// Demonstrate basic arithmetic with bfloat numbers
+// Demonstrate basic arithmetic with cfloat numbers
 int main()
 try {
 	using namespace std;
-	using namespace sw::universal;	// standard namespace for bfloat
+	using namespace sw::universal;	// standard namespace for cfloat
 
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 5;
 	using bt = uint16_t;  // storage block type
-	using Real = bfloat<nbits, es, bt>;   // construct the Real number we want
+	using Real = cfloat<nbits, es, bt>;   // construct the Real number we want
 	Real b1, b2, b3, b4, b5, b6;
 
 	/* constexpr */ Real minpos; // minpos(minpos);
 	/* constexpr */ Real maxpos; // maxpos();
 
-	// the three special cases of a bfloat configuration: 0, +-Inf, and +-NaN
+	// the three special cases of a cfloat configuration: 0, +-Inf, and +-NaN
 	b1 = 0;        checkSpecialCases(b1);
 	b2 = INFINITY; checkSpecialCases(b2);
 	b3 = NAN;      checkSpecialCases(b3);
@@ -53,12 +53,12 @@ try {
 	cout << "maxpos      : " << pretty_print(b2) << '\n';
 
 	/*
-	pretty_print(posit) will print the different segments of bfloat
+	pretty_print(posit) will print the different segments of cfloat
 	        s = sign
 		e = exponent
 		f = fraction
 		q = quadrant of the projective circle in which the real lies
-		v = value of the bfloat
+		v = value of the cfloat
 	minpos : s0 r000000000000001 e f qSE v3.7252902984619141e-09
 	maxpos : s0 r111111111111111 e f qNE v268435456
 	*/

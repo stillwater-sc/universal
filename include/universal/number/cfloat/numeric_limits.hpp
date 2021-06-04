@@ -1,5 +1,5 @@
 #pragma once
-// numeric_limits.hpp: definition of numeric_limits for arbitrary real types
+// numeric_limits.hpp: definition of numeric_limits for classic cfloat types
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -8,37 +8,37 @@
 namespace std {
 
 template <size_t nbits, size_t es, typename bt> 
-class numeric_limits< sw::universal::bfloat<nbits,es,bt> > {
+class numeric_limits< sw::universal::cfloat<nbits,es,bt> > {
 public:
-	using BFLOAT = sw::universal::bfloat<nbits, es, bt>;
+	using cfloat = sw::universal::cfloat<nbits, es, bt>;
 	static constexpr bool is_specialized = true;
-	static constexpr BFLOAT min() { // return minimum value
-		return BFLOAT(sw::universal::SpecificValue::minpos);
+	static constexpr cfloat min() { // return minimum value
+		return cfloat(sw::universal::SpecificValue::minpos);
 	} 
-	static constexpr BFLOAT max() { // return maximum value
-		return BFLOAT(sw::universal::SpecificValue::maxpos);
+	static constexpr cfloat max() { // return maximum value
+		return cfloat(sw::universal::SpecificValue::maxpos);
 	} 
-	static constexpr BFLOAT lowest() { // return most negative value
-		return BFLOAT(sw::universal::SpecificValue::maxneg);
+	static constexpr cfloat lowest() { // return most negative value
+		return cfloat(sw::universal::SpecificValue::maxneg);
 	} 
-	static constexpr BFLOAT epsilon() { // return smallest effective increment from 1.0
-		BFLOAT one{ 1.0f }, incr{ 1.0f };
+	static constexpr cfloat epsilon() { // return smallest effective increment from 1.0
+		cfloat one{ 1.0f }, incr{ 1.0f };
 		return ++incr - one;
 	}
-	static constexpr BFLOAT round_error() { // return largest rounding error
-		return BFLOAT(0.5f);
+	static constexpr cfloat round_error() { // return largest rounding error
+		return cfloat(0.5f);
 	}
-	static constexpr BFLOAT denorm_min() {  // return minimum denormalized value
-		return BFLOAT(1.0f); 
+	static constexpr cfloat denorm_min() {  // return minimum denormalized value
+		return cfloat(1.0f); 
 	}
-	static constexpr BFLOAT infinity() { // return positive infinity
-		return BFLOAT(INFINITY); 
+	static constexpr cfloat infinity() { // return positive infinity
+		return cfloat(INFINITY); 
 	}
-	static constexpr BFLOAT quiet_NaN() { // return non-signaling NaN
-		return BFLOAT(NAN); 
+	static constexpr cfloat quiet_NaN() { // return non-signaling NaN
+		return cfloat(NAN); 
 	}
-	static constexpr BFLOAT signaling_NaN() { // return signaling NaN
-		return BFLOAT(NAN);
+	static constexpr cfloat signaling_NaN() { // return signaling NaN
+		return cfloat(NAN);
 	}
 
 	static constexpr int digits       = nbits - 1 - es + 1;
