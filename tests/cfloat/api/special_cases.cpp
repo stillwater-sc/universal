@@ -12,8 +12,8 @@
 // second: enable/disable arithmetic exceptions
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 
-#include <universal/number/bfloat/bfloat.hpp>
-#include <universal/number/bfloat/manipulators.hpp>  // hex_print and the like
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
 
 // marshall the exception state of bfloat to the test suite
 #if BFLOAT_THROW_ARITHMETIC_EXCEPTION 

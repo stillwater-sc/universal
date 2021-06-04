@@ -14,9 +14,9 @@
 // enabling tracing
 #define TRACE_CONVERSION 0
 
-#include <universal/number/bfloat/bfloat.hpp>
-#include <universal/number/bfloat/manipulators.hpp>
-#include <universal/number/bfloat/math_functions.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/manipulators.hpp>
+#include <universal/number/cfloat/math_functions.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // print the constexpr values of the bfloat class

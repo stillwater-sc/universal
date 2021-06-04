@@ -26,13 +26,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/bfloat/bfloat.hpp>
-#include <universal/number/bfloat/numeric_limits.hpp>
-#include <universal/number/bfloat/exceptions.hpp>
-#include <universal/number/bfloat/manipulators.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/numeric_limits.hpp>
+#include <universal/number/cfloat/exceptions.hpp>
+#include <universal/number/cfloat/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/bfloat/math_functions.hpp>
+#include <universal/number/cfloat/math_functions.hpp>
 
 #endif

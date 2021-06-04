@@ -12,9 +12,9 @@
 // second: enable/disable bfloat arithmetic exceptions
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 
-#include <universal/number/bfloat/bfloat.hpp>
-#include <universal/number/bfloat/manipulators.hpp>
-#include <universal/number/bfloat/math_functions.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/manipulators.hpp>
+#include <universal/number/cfloat/math_functions.hpp>
 
 #if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an bfloat

@@ -15,12 +15,12 @@
 #define TRACE_CONVERSION 0
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/bfloat/bfloat.hpp>
-#include <universal/number/bfloat/manipulators.hpp>
-#include <universal/number/bfloat/math_functions.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/manipulators.hpp>
+#include <universal/number/cfloat/math_functions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
-#include <universal/verification/bfloat_test_suite.hpp>
-#include <universal/number/bfloat/table.hpp> // only used for value table generation
+#include <universal/verification/cfloat_test_suite.hpp>
+#include <universal/number/cfloat/table.hpp> // only used for value table generation
 
 #if BIT_CAST_SUPPORT
 void ToNativeBug() {  // now resolved... exponentiation was incorrect

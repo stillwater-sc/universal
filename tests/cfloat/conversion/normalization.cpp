@@ -14,11 +14,11 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
-#include <universal/number/bfloat/bfloat.hpp>
-#include <universal/number/bfloat/manipulators.hpp>
-#include <universal/number/bfloat/math_functions.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/manipulators.hpp>
+#include <universal/number/cfloat/math_functions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
-#include <universal/verification/bfloat_test_suite.hpp>
+#include <universal/verification/cfloat_test_suite.hpp>
 
 namespace sw::universal {
 

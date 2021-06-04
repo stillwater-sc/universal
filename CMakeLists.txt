@@ -104,7 +104,7 @@ option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests" 
 option(BUILD_INTEGERS                    "Set to ON to build integer tests"                    OFF)
 option(BUILD_DECIMALS                    "Set to ON to build decimal tests"                    OFF)
 option(BUILD_FIXPNTS                     "Set to ON to build fixed-point tests"                OFF)
-option(BUILD_BFLOATS                     "Set to ON to build bfloat tests"                     OFF)
+option(BUILD_CFLOATS                     "Set to ON to build cfloat tests"                     OFF)
 option(BUILD_AREALS                      "Set to ON to build areal tests"                      OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build unum Type 1 tests"                OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build unum Type 2 tests"                OFF)
@@ -354,7 +354,7 @@ endif()
 # universal/integer
 # universal/decimal
 # universal/fixpnt
-# universal/bfloat
+# universal/cfloat
 # universal/areal
 # universal/unum
 # universal/unum2
@@ -525,7 +525,7 @@ if(BUILD_REGRESSION_SUITES)
 	set(BUILD_INTEGERS ON)
 	set(BUILD_DECIMALS ON)
 	set(BUILD_FIXPNTS ON)
-	set(BUILD_BFLOATS ON)
+	set(BUILD_CFLOATS ON)
 	set(BUILD_AREALS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
@@ -606,10 +606,10 @@ if(BUILD_AREALS)
 add_subdirectory("tests/areal")
 endif(BUILD_AREALS)
 
-# bfloats
-if(BUILD_BFLOATS)
-add_subdirectory("tests/bfloat")
-endif(BUILD_BFLOATS)
+# cfloats
+if(BUILD_CFLOATS)
+add_subdirectory("tests/cfloat")
+endif(BUILD_CFLOATS)
 
 # conversion tests suites
 if(BUILD_CONVERSION_TESTS)
@@ -647,7 +647,7 @@ add_subdirectory("benchmark/performance/blas")
 add_subdirectory("benchmark/performance/arithmetic/decimal")
 add_subdirectory("benchmark/performance/arithmetic/integer")
 add_subdirectory("benchmark/performance/arithmetic/fixpnt")
-add_subdirectory("benchmark/performance/arithmetic/bfloat")
+add_subdirectory("benchmark/performance/arithmetic/cfloat")
 add_subdirectory("benchmark/performance/arithmetic/areal")
 add_subdirectory("benchmark/performance/arithmetic/lns")
 add_subdirectory("benchmark/performance/arithmetic/posit")

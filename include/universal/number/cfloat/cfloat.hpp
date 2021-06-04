@@ -63,7 +63,7 @@
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 // bfloat exception structure
-#include <universal/number/bfloat/exceptions.hpp>
+#include <universal/number/cfloat/exceptions.hpp>
 // composition types
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>

@@ -1,4 +1,4 @@
-// pixar_fp24.cpp: test suite runner for standard Pixar PXR24 format, which is equivalent to bfloat<24,8>
+// bfloat16.cpp: test suite runner for standard bfloat16, the original brain float
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 int main(int argc, char** argv)
@@ -17,13 +17,13 @@ try {
 
 	print_cmd_line(argc, argv);
 
-	constexpr size_t nbits = 24;
+	constexpr size_t nbits = 16;
 	constexpr size_t ebits = 8;
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = " bfloat<24,8>";
+	std::string tag = " bfloat<16,8>";
 
-	cout << "Standard Pixar PXR24 format, which is equivalent to a bfloat<24,8> configuration tests" << endl;
+	cout << "Standard bfloat<16,8> configuration tests" << endl;
 
 	bfloat<nbits, ebits> r;
 	r = 1.2345;

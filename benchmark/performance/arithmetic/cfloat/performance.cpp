@@ -7,7 +7,7 @@
 #include <chrono>
 // configure the bfloat arithmetic class
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/bfloat/bfloat>
+#include <universal/number/cfloat/cfloat>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult

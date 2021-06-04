@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
 
 namespace sw::universal {
