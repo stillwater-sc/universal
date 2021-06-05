@@ -1424,6 +1424,8 @@ public:
 		}
 		// when we are a perfect match to single precision IEEE-754
 		if constexpr (nbits == 32 && es == 8) {
+			// use native conversion
+			extractFields(float(rhs), s, rawExponent, rawFraction);
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 31;
 			raw |= (rawExponent << fbits);
@@ -1433,6 +1435,8 @@ public:
 		}
 		// when we are a perfect match to double precision IEEE-754
 		if constexpr (nbits == 64 && es == 11) {
+			// use native conversion
+			extractFields(double(rhs), s, rawExponent, rawFraction);
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 63;
 			raw |= (rawExponent << fbits);

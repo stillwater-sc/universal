@@ -72,6 +72,7 @@ try {
 	double d = 1.06125;
 	test754functions(d);
 
+	// float conversions
 	{
 		float f0 = 0.5f;
 		float f1 = 0.5625f;
@@ -85,20 +86,19 @@ try {
 		float f1 = 0.5625f;
 		float f2 = 0.53125f;
 		cfloat<32, 8> s;
-		s = f1; 
-		std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; 
-		std::cout << to_binary(s) << " : " << s << '\n';
+		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
 	}
 	{
 		float f1 = 0.5625f;
 		float f2 = 0.53125f;
 		cfloat<64, 11> s;
-		s = f1;
-		std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; 
-		std::cout << to_binary(s) << " : " << s << '\n';
+		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
+		std::cout << to_binary(f1) << " : " << f1 << '\n';
 	}
+
+	// double conversions
 	{
 		double f0 = 0.5f;
 		double f1 = 0.5625f;
@@ -112,19 +112,15 @@ try {
 		double f1 = 0.5625f;
 		double f2 = 0.53125f;
 		cfloat<32, 8> s;
-		s = f1;
-		std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; 
-		std::cout << to_binary(s) << " : " << s << '\n';
+		s = f1;	std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2;	std::cout << to_binary(s) << " : " << s << '\n';
 	}
 	{
 		double f1 = 0.5625f;
 		double f2 = 0.53125f;
 		cfloat<64, 11> s;
-		s = f1;
-		std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; 
-		std::cout << to_binary(s) << " : " << s << '\n';
+		s = f1;	std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2;	std::cout << to_binary(s) << " : " << s << '\n';
 	}
 	return 0;
 
