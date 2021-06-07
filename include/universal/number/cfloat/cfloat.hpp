@@ -178,7 +178,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 				// resulting cfloat will be a subnormal number: all exponent bits are 0
 				raw <<= cfloat<nbits, es, bt>::fbits;
 				int rightShift = cfloat<nbits, es, bt>::MIN_EXP_NORMAL - static_cast<int>(scale);
-				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit back as it will shift into the msb of the denorm
+				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit explicitely as it will shift into the msb of the denorm
 				fracbits >>= rightShift + (srcbits - cfloat<nbits, es, bt>::fbits);
 				raw |= fracbits;
 			}
@@ -187,7 +187,29 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 				raw |= scale + expBias;  // this is guaranteed to be an unsigned string of bits
 				raw <<= cfloat<nbits, es, bt>::fbits;
 				uint64_t fracbits = src.fraction_ull();
-				fracbits >>= srcbits - cfloat<nbits, es, bt>::fbits;
+				constexpr size_t shift = srcbits - cfloat<nbits, es, bt>::fbits;
+
+
+				//  ... lsb | guard  round sticky   round
+				//       x     0       x     x       down
+				//       0     1       0     0       down  round to even
+				//       1     1       0     0        up   round to even
+				//       x     1       0     1        up
+				uint64_t mask = (1ull << shift);
+				bool lsb = fracbits & mask;
+				mask >>= 1;
+				bool guard = fracbits & mask;
+				mask >>= 1;
+				bool round = fracbits & mask;
+				mask = 0xFFFF'FFFF'FFFF'FFFF << (shift - 2);
+				mask = ~mask;
+				std::cout << to_binary(fracbits) << std::endl;
+				std::cout << to_binary(mask) << std::endl;
+				bool sticky = fracbits & mask;
+				bool roundup = (guard && (lsb || (round || sticky)));
+				std::cout << (roundup ? "rounding up\n" : "rounding down\n");
+				fracbits >>= shift;
+				fracbits += (roundup ? 1ull : 0ull);
 				raw |= fracbits;
 			}
 			tgt.setbits(raw);

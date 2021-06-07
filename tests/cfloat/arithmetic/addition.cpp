@@ -58,10 +58,11 @@ try {
 
 #if MANUAL_TESTING
 
-#ifdef LATER
+
 	{
-		float fa = 0.0f; // 0.03125f;
-		float fb = std::numeric_limits<float>::signaling_NaN();
+		float fa = 0.03125f;
+//		float fb = std::numeric_limits<float>::signaling_NaN();
+		float fb = -0.03125f;
 		cfloat < 8, 2, uint8_t > a, b, c, cref;
 		a = fa;
 		b = fb;
@@ -71,8 +72,9 @@ try {
 
 		//GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
 	}
+	return 0;
 
-
+#ifdef LATER
 
 	std::cout << "single precision IEEE-754\n";
 	float f = 1.06125f;
