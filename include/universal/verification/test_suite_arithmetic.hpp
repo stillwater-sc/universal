@@ -106,14 +106,14 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 #endif // THROW_ARITHMETIC_EXCEPTION
 			cref = ref;
 			if (result != cref) {
-				if (ref == 0) continue; // ignored as compiler optimizes away negative zero
+				if (ref == 0 and result.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
 			}
 			else {
-				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
+				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
 			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
+			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
 		if (NR_VALUES > 256*256) if (i % (NR_VALUES / 25) == 0) std::cout << '.';
 	}

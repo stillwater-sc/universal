@@ -173,10 +173,9 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 		if constexpr (nbits < 65) {
 			// we can use a uint64_t to construct the cfloat
 			uint64_t raw = (src.sign() ? 1ull : 0ull);
-			raw <<= (es - size_t(1));
-			// construct the exponent
+			raw <<= es; // shift to make room for the exponent bits
 			if (scale >= cfloat<nbits, es, bt>::MIN_EXP_SUBNORMAL && scale < cfloat<nbits, es, bt>::MIN_EXP_NORMAL) {
-				// we are a subnormal number: all exponent bits are 0
+				// resulting cfloat will be a subnormal number: all exponent bits are 0
 				raw <<= cfloat<nbits, es, bt>::fbits;
 				int rightShift = cfloat<nbits, es, bt>::MIN_EXP_NORMAL - static_cast<int>(scale);
 				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit back as it will shift into the msb of the denorm
@@ -184,10 +183,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 				raw |= fracbits;
 			}
 			else {
-				// we are a normal number
+				// resulting cfloat will be a normal number: construct the exponent
 				raw |= scale + expBias;  // this is guaranteed to be an unsigned string of bits
 				raw <<= cfloat<nbits, es, bt>::fbits;
-				raw |= src.fraction_ull();
+				uint64_t fracbits = src.fraction_ull();
+				fracbits >>= srcbits - cfloat<nbits, es, bt>::fbits;
+				raw |= fracbits;
 			}
 			tgt.setbits(raw);
 		}
@@ -342,6 +343,10 @@ public:
 			throw cfloat_operand_is_nan{};
 		}
 #else
+		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
+			setnan(NAN_TYPE_SIGNALLING);
+			return *this;
+		}
 		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
 			setnan(NAN_TYPE_QUIET);
 			return *this;
@@ -1265,7 +1270,7 @@ public:
 				if constexpr (abits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
 					raw <<= (abits - fbits);
-					raw |= (1ull << abits);
+					raw |= (1ull << abits); // add the hidden bit
 					tgt.setbits(raw);
 				}
 				else {
@@ -1301,8 +1306,7 @@ public:
 					uint64_t raw = fraction_ull();
 					raw <<= (abits - fbits);
 					int shift = MIN_EXP_NORMAL - scale;
-					raw <<= shift;
-					raw |= (1ull << fbits);
+					raw <<= shift; // shift and do NOT add a hidden bit as MSB of subnormal is shifted in the hidden bit position
 					tgt.setbits(raw);
 				}
 				else {
@@ -1387,43 +1391,11 @@ protected:
 public:
 	template<typename Real>
 	CONSTEXPRESSION cfloat& convert_ieee754(Real rhs) noexcept {
-		clear();
-		// extract raw IEEE-754 bits
-		bool s{ false };
-		uint64_t rawExponent{ 0 };
-		uint64_t rawFraction{ 0 };
-		extractFields(rhs, s, rawExponent, rawFraction);
-
-		// special case handling
-		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
-			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask)) {
-				// 1.11111111.00000000.......00000001 signalling nan
-				// 0.11111111.00000000000000000000001 signalling nan
-				// MSVC
-				// 1.11111111.10000000.......00000001 signalling nan
-				// 0.11111111.10000000.......00000001 signalling nan
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
-			}
-			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
-				// 1.11111111.10000000.......00000000 quiet nan
-				// 0.11111111.10000000.......00000000 quiet nan
-				setnan(NAN_TYPE_QUIET);
-				return *this;
-			}
-			if (rawFraction == 0ull) {
-				// 1.11111111.0000000.......000000000 -inf
-				// 0.11111111.0000000.......000000000 +inf
-				setinf(s);
-				return *this;
-			}
-		}
-		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
-			setbit(nbits - 1ull, s);
-			return *this;
-		}
 		// when we are a perfect match to single precision IEEE-754
 		if constexpr (nbits == 32 && es == 8) {
+			bool s{ false };
+			uint64_t rawExponent{ 0 };
+			uint64_t rawFraction{ 0 };
 			// use native conversion
 			extractFields(float(rhs), s, rawExponent, rawFraction);
 			uint64_t raw{ s ? 1ull : 0ull };
@@ -1434,7 +1406,10 @@ public:
 			return *this;
 		}
 		// when we are a perfect match to double precision IEEE-754
-		if constexpr (nbits == 64 && es == 11) {
+		else if constexpr (nbits == 64 && es == 11) {
+			bool s{ false };
+			uint64_t rawExponent{ 0 };
+			uint64_t rawFraction{ 0 };
 			// use native conversion
 			extractFields(double(rhs), s, rawExponent, rawFraction);
 			uint64_t raw{ s ? 1ull : 0ull };
@@ -1444,263 +1419,300 @@ public:
 			setbits(raw);
 			return *this;
 		}
-		// normal number consists of fbits fraction bits and one hidden bit
-		// subnormal number has no hidden bit
-		int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
+		else {
+			clear();
+			// extract raw IEEE-754 bits
+			bool s{ false };
+			uint64_t rawExponent{ 0 };
+			uint64_t rawFraction{ 0 };
+			extractFields(rhs, s, rawExponent, rawFraction);
 
-		// check special case of saturating to maxpos/maxneg if out of range
-		if (exponent > MAX_EXP) {
-			if (s) this->maxneg(); else this->maxpos(); // saturate to maxpos or maxneg
-			return *this;
-		}
-		if (exponent < MIN_EXP_SUBNORMAL - 1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			this->setbit(nbits - 1, s);
-			return *this;
-		}
-		/////////////////  
-		/// end of special case processing, move on to value projection and rounding
+			// special case handling
+			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask)) {
+					// 1.11111111.00000000.......00000001 signalling nan
+					// 0.11111111.00000000000000000000001 signalling nan
+					// MSVC
+					// 1.11111111.10000000.......00000001 signalling nan
+					// 0.11111111.10000000.......00000001 signalling nan
+					setnan(NAN_TYPE_SIGNALLING);
+					return *this;
+				}
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
+					// 1.11111111.10000000.......00000000 quiet nan
+					// 0.11111111.10000000.......00000000 quiet nan
+					setnan(NAN_TYPE_QUIET);
+					return *this;
+				}
+				if (rawFraction == 0ull) {
+					// 1.11111111.0000000.......000000000 -inf
+					// 0.11111111.0000000.......000000000 +inf
+					setinf(s);
+					return *this;
+				}
+			}
+			if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
+				setbit(nbits - 1ull, s);
+				return *this;
+			}
+			// normal number consists of fbits fraction bits and one hidden bit
+			// subnormal number has no hidden bit
+			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
+
+			// check special case of saturating to maxpos/maxneg if out of range
+			if (exponent > MAX_EXP) {
+				if (s) this->maxneg(); else this->maxpos(); // saturate to maxpos or maxneg
+				return *this;
+			}
+			if (exponent < MIN_EXP_SUBNORMAL - 1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
+				this->setbit(nbits - 1, s);
+				return *this;
+			}
+			/////////////////  
+			/// end of special case processing, move on to value projection and rounding
 
 #if TRACE_CONVERSION
-		std::cout << '\n';
-		std::cout << "value             : " << rhs << '\n';
-		std::cout << "segments          : " << to_binary(rhs) << '\n';
-		std::cout << "sign     bit      : " << (s ? '1' : '0') << '\n';
-		std::cout << "exponent bits     : " << to_binary(rawExponent, ieee754_parameter<Real>::ebits, true) << '\n';
-		std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::fbits, true) << std::endl;
-		std::cout << "exponent value    : " << exponent << '\n';
+			std::cout << '\n';
+			std::cout << "value             : " << rhs << '\n';
+			std::cout << "segments          : " << to_binary(rhs) << '\n';
+			std::cout << "sign     bit      : " << (s ? '1' : '0') << '\n';
+			std::cout << "exponent bits     : " << to_binary(rawExponent, ieee754_parameter<Real>::ebits, true) << '\n';
+			std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::fbits, true) << std::endl;
+			std::cout << "exponent value    : " << exponent << '\n';
 #endif
 
-		// do the following scenarios have different rounding bits?
-		// input is normal, cfloat is normal           <-- rounding can happen with native ieee-754 bits
-		// input is normal, cfloat is subnormal
-		// input is subnormal, cfloat is normal
-		// input is subnormal, cfloat is subnormal
+			// do the following scenarios have different rounding bits?
+			// input is normal, cfloat is normal           <-- rounding can happen with native ieee-754 bits
+			// input is normal, cfloat is subnormal
+			// input is subnormal, cfloat is normal
+			// input is subnormal, cfloat is subnormal
 
-		// The first condition is the relationship between the number 
-		// of fraction bits from the source and the number of fraction bits 
-		// in the target cfloat: these are constexpressions and guard the shifts
-		// input fbits >= cfloat fbits                 <-- need to round
-		// input fbits < cfloat fbits                  <-- no need to round
+			// The first condition is the relationship between the number 
+			// of fraction bits from the source and the number of fraction bits 
+			// in the target cfloat: these are constexpressions and guard the shifts
+			// input fbits >= cfloat fbits                 <-- need to round
+			// input fbits < cfloat fbits                  <-- no need to round
 
-		if constexpr (ieee754_parameter<Real>::fbits > fbits) {  
-			// this is the common case for cfloats that are smaller than single and double precision IEEE-754
-			constexpr int shiftRight = ieee754_parameter<Real>::fbits - fbits; // this is the bit shift to get the MSB of the src to the MSB of the tgt
-			uint32_t biasedExponent{ 0 };
-			int adjustment{ 0 };
-			uint64_t mask;
-			if (rawExponent != 0) {
-				// the source real is a normal number, 
-				if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
-					// the value is a subnormal number in this representation: biasedExponent = 0
-					// add the hidden bit to the fraction bits so the denormalization has the correct MSB
-					rawFraction |= ieee754_parameter<Real>::hmask;
+			if constexpr (ieee754_parameter<Real>::fbits > fbits) {
+				// this is the common case for cfloats that are smaller than single and double precision IEEE-754
+				constexpr int shiftRight = ieee754_parameter<Real>::fbits - fbits; // this is the bit shift to get the MSB of the src to the MSB of the tgt
+				uint32_t biasedExponent{ 0 };
+				int adjustment{ 0 };
+				uint64_t mask;
+				if (rawExponent != 0) {
+					// the source real is a normal number, 
+					if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
+						// the value is a subnormal number in this representation: biasedExponent = 0
+						// add the hidden bit to the fraction bits so the denormalization has the correct MSB
+						rawFraction |= ieee754_parameter<Real>::hmask;
 
-					// fraction processing: we have 1 hidden + 23 explicit fraction bits 
-					// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
-					// -exponent because we are right shifting and exponent in this range is negative
-					adjustment = -(exponent + subnormal_reciprocal_shift[es]); 
-					// this is the right shift adjustment required for subnormal representation due 
-					// to the scale of the input number, i.e. the exponent of 2^-adjustment
-				}
-				else {
-					// the value is a normal number in this representation: common case
-					biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // project the exponent into the target 
-					// fraction processing
-					// float structure is: seee'eeee'efff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
-					// target structure is for example cfloat<8,2>: seef'ffff
-					// since both are normals, we can shift the incoming fraction to the target structure bits, and round
-					// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
-					adjustment = 0;
-				}
-				if constexpr (shiftRight > 0) {		// if true we need to round
-					// round-to-even logic
-					//  ... lsb | guard  round sticky   round
-					//       x     0       x     x       down
-					//       0     1       0     0       down  round to even
-					//       1     1       0     0        up   round to even
-					//       x     1       0     1        up
-					//       x     1       1     0        up
-					//       x     1       1     1        up
-					// collect lsb, guard, round, and sticky bits
-					mask = (1ull << (shiftRight + adjustment)); // bit mask for the lsb bit
-					bool lsb = (mask & rawFraction);
-					mask >>= 1;
-					bool guard = (mask & rawFraction);
-					mask >>= 1;
-					bool round = (mask & rawFraction);
-					if (shiftRight > 1) {
-						mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
-						mask = ~mask;
+						// fraction processing: we have 1 hidden + 23 explicit fraction bits 
+						// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
+						// -exponent because we are right shifting and exponent in this range is negative
+						adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+						// this is the right shift adjustment required for subnormal representation due 
+						// to the scale of the input number, i.e. the exponent of 2^-adjustment
 					}
 					else {
-						mask = 0;
+						// the value is a normal number in this representation: common case
+						biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // project the exponent into the target 
+						// fraction processing
+						// float structure is: seee'eeee'efff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
+						// target structure is for example cfloat<8,2>: seef'ffff
+						// since both are normals, we can shift the incoming fraction to the target structure bits, and round
+						// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
+						adjustment = 0;
 					}
-					bool sticky = (mask & rawFraction);
-					rawFraction >>= shiftRight + adjustment;
-
-					// execute rounding operation
-					if (guard) {
-						if (lsb && (!round && !sticky)) ++rawFraction; // round to even
-						if (round || sticky) ++rawFraction;
-						if (rawFraction == (1ul << fbits)) { // overflow
-							++biasedExponent;
-							rawFraction = 0;
+					if constexpr (shiftRight > 0) {		// if true we need to round
+						// round-to-even logic
+						//  ... lsb | guard  round sticky   round
+						//       x     0       x     x       down
+						//       0     1       0     0       down  round to even
+						//       1     1       0     0        up   round to even
+						//       x     1       0     1        up
+						//       x     1       1     0        up
+						//       x     1       1     1        up
+						// collect lsb, guard, round, and sticky bits
+						mask = (1ull << (shiftRight + adjustment)); // bit mask for the lsb bit
+						bool lsb = (mask & rawFraction);
+						mask >>= 1;
+						bool guard = (mask & rawFraction);
+						mask >>= 1;
+						bool round = (mask & rawFraction);
+						if (shiftRight > 1) {
+							mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
+							mask = ~mask;
 						}
+						else {
+							mask = 0;
+						}
+						bool sticky = (mask & rawFraction);
+						rawFraction >>= shiftRight + adjustment;
+
+						// execute rounding operation
+						if (guard) {
+							if (lsb && (!round && !sticky)) ++rawFraction; // round to even
+							if (round || sticky) ++rawFraction;
+							if (rawFraction == (1ul << fbits)) { // overflow
+								++biasedExponent;
+								rawFraction = 0;
+							}
+						}
+#if TRACE_CONVERSION
+						std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
+						std::cout << "guard             : " << (guard ? "1\n" : "0\n");
+						std::cout << "round             : " << (round ? "1\n" : "0\n");
+						std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
+						std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
+						std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
+#endif
+					}
+					else { // all bits of the float go into this representation and need to be shifted up
+						int shiftLeft = fbits - ieee754_parameter<Real>::fbits;
+						rawFraction <<= shiftLeft;
 					}
 #if TRACE_CONVERSION
-					std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
-					std::cout << "guard             : " << (guard ? "1\n" : "0\n");
-					std::cout << "round             : " << (round ? "1\n" : "0\n");
-					std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
-					std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
-					std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
+					std::cout << "biased exponent   : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
+					std::cout << "shift             : " << shiftRight << '\n';
+					std::cout << "adjustment shift  : " << adjustment << '\n';
+					std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << '\n';
+					std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
 #endif
-				}
-				else { // all bits of the float go into this representation and need to be shifted up
-					int shiftLeft = fbits - ieee754_parameter<Real>::fbits;
-					rawFraction <<= shiftLeft;
-				}
-#if TRACE_CONVERSION
-				std::cout << "biased exponent   : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
-				std::cout << "shift             : " << shiftRight << '\n';
-				std::cout << "adjustment shift  : " << adjustment << '\n';
-				std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << '\n';
-				std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
-#endif
-				// construct the target cfloat
-				uint64_t bits = (s ? 1ull : 0ull);
-				bits <<= es;
-				bits |= biasedExponent;
-				bits <<= fbits;
-				bits |= rawFraction;
-				setbits(bits);
-			}
-			else {
-				// the source real is a subnormal number				
-				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
-
-				// fraction processing: we have fbits+1 bits = 1 hidden + fbits explicit fraction bits 
-				// f = 1.ffff  2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
-				// -exponent because we are right shifting and exponent in this range is negative
-				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				
-				if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
-					// the value is a subnormal number in this representation
-				}
-				else {
-					// the value is a normal number in this representation
-				}
-			}
-		}
-		else {
-			// no need to round, but we need to shift left to deliver the bits
-			// cfloat<40,  8> = float
-			// cfloat<48,  9> = float
-			// cfloat<56, 10> = float
-			// cfloat<64, 11> = float
-			// cfloat<64, 10> = double 
-			// can we go from an input subnormal to a cfloat normal? 
-			// yes, for example a cfloat<64,11> assigned to a subnormal float
-			
-			// map exponent into target cfloat encoding
-			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
-			constexpr int upshift = fbits - ieee754_parameter<Real>::fbits;
-			// output processing
-			if constexpr (nbits < 65) {
-				// we can compose the bits in a native 64-bit unsigned integer
-				// common case: normal to normal
-				// nbits = 40, es = 8, fbits = 31: rhs = float fbits = 23; shift left by (31 - 23) = 8
-
-				if (rawExponent != 0) {
-					// rhs is a normal encoding
-					uint64_t bits{ s ? 1ull : 0ull };
+					// construct the target cfloat
+					uint64_t bits = (s ? 1ull : 0ull);
 					bits <<= es;
 					bits |= biasedExponent;
 					bits <<= fbits;
-					rawFraction <<= upshift;
 					bits |= rawFraction;
-					setbits(bits);				
+					setbits(bits);
 				}
 				else {
-					// rhs is a subnormal
-//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
-					// we need to calculate the effective scale to see 
-					// if this value becomes a normal, or maps to a subnormal encoding
-					// in this target format
+					// the source real is a subnormal number				
+					mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+
+					// fraction processing: we have fbits+1 bits = 1 hidden + fbits explicit fraction bits 
+					// f = 1.ffff  2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
+					// -exponent because we are right shifting and exponent in this range is negative
+					adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
+
+					if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
+						// the value is a subnormal number in this representation
+					}
+					else {
+						// the value is a normal number in this representation
+					}
 				}
 			}
 			else {
-				// we need to write and shift bits into place
-				// use cases are cfloats like cfloat<80, 11, bt>
-				// even though the bits that come in are single or double precision
-				// we need to write the fields and then shifting them in place
-				// 
-				// common case: normal to normal
-				if (rawExponent != 0) {
-					// nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
-					setbits(biasedExponent);
-					shiftLeft(fbits);
-					bt fractionBlock[nrBlocks]{ 0 };
-					// copy fraction bits
-					size_t blocksRequired = (8 * sizeof(rawFraction) + 1) / bitsInBlock;
-					size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
-					uint64_t mask = static_cast<uint64_t>(ALL_ONES); // set up the block mask
-					size_t shift = 0;
-					for (size_t i = 0; i < maxBlockNr; ++i) {
-						fractionBlock[i] = bt((mask & rawFraction) >> shift);
-						mask <<= bitsInBlock;
-						shift += bitsInBlock;
+				// no need to round, but we need to shift left to deliver the bits
+				// cfloat<40,  8> = float
+				// cfloat<48,  9> = float
+				// cfloat<56, 10> = float
+				// cfloat<64, 11> = float
+				// cfloat<64, 10> = double 
+				// can we go from an input subnormal to a cfloat normal? 
+				// yes, for example a cfloat<64,11> assigned to a subnormal float
+
+				// map exponent into target cfloat encoding
+				uint64_t biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
+				constexpr int upshift = fbits - ieee754_parameter<Real>::fbits;
+				// output processing
+				if constexpr (nbits < 65) {
+					// we can compose the bits in a native 64-bit unsigned integer
+					// common case: normal to normal
+					// nbits = 40, es = 8, fbits = 31: rhs = float fbits = 23; shift left by (31 - 23) = 8
+
+					if (rawExponent != 0) {
+						// rhs is a normal encoding
+						uint64_t bits{ s ? 1ull : 0ull };
+						bits <<= es;
+						bits |= biasedExponent;
+						bits <<= fbits;
+						rawFraction <<= upshift;
+						bits |= rawFraction;
+						setbits(bits);
 					}
-					// shift fraction bits
-					int bitsToShift = upshift;
-					if (bitsToShift >= int(bitsInBlock)) {
-						int blockShift = bitsToShift / bitsInBlock;
-						for (int i = MSU; i >= blockShift; --i) {
-							fractionBlock[i] = fractionBlock[i - blockShift];
-						}
-						for (int i = blockShift - 1; i >= 0; --i) {
-							fractionBlock[i] = bt(0);
-						}
-						// adjust the shift
-						bitsToShift -= blockShift * bitsInBlock;
+					else {
+						// rhs is a subnormal
+	//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
+						// we need to calculate the effective scale to see 
+						// if this value becomes a normal, or maps to a subnormal encoding
+						// in this target format
 					}
-					if (bitsToShift > 0) {
-						// construct the mask for the upper bits in the block that need to move to the higher word
-						bt mask = ALL_ONES << (bitsInBlock - bitsToShift);
-						for (size_t i = MSU; i > 0; --i) {
-							fractionBlock[i] <<= bitsToShift;
-							// mix in the bits from the right
-							bt bits = (mask & fractionBlock[i - 1]);
-							fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
-						}
-						fractionBlock[0] <<= bitsToShift;
-					}
-					// OR the bits in
-					for (size_t i = 0; i < MSU; ++i) {
-						_block[i] |= fractionBlock[i];
-					}
-					// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-					_block[MSU] &= MSU_MASK;
-					// finally, set the sign bit
-					setsign(s);
 				}
-				else { // rhs is a subnormal
-//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
+				else {
+					// we need to write and shift bits into place
+					// use cases are cfloats like cfloat<80, 11, bt>
+					// even though the bits that come in are single or double precision
+					// we need to write the fields and then shifting them in place
+					// 
+					// common case: normal to normal
+					if (rawExponent != 0) {
+						// nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
+						setbits(biasedExponent);
+						shiftLeft(fbits);
+						bt fractionBlock[nrBlocks]{ 0 };
+						// copy fraction bits
+						size_t blocksRequired = (8 * sizeof(rawFraction) + 1) / bitsInBlock;
+						size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
+						uint64_t mask = static_cast<uint64_t>(ALL_ONES); // set up the block mask
+						size_t shift = 0;
+						for (size_t i = 0; i < maxBlockNr; ++i) {
+							fractionBlock[i] = bt((mask & rawFraction) >> shift);
+							mask <<= bitsInBlock;
+							shift += bitsInBlock;
+						}
+						// shift fraction bits
+						int bitsToShift = upshift;
+						if (bitsToShift >= int(bitsInBlock)) {
+							int blockShift = bitsToShift / bitsInBlock;
+							for (int i = MSU; i >= blockShift; --i) {
+								fractionBlock[i] = fractionBlock[i - blockShift];
+							}
+							for (int i = blockShift - 1; i >= 0; --i) {
+								fractionBlock[i] = bt(0);
+							}
+							// adjust the shift
+							bitsToShift -= blockShift * bitsInBlock;
+						}
+						if (bitsToShift > 0) {
+							// construct the mask for the upper bits in the block that need to move to the higher word
+							bt mask = ALL_ONES << (bitsInBlock - bitsToShift);
+							for (size_t i = MSU; i > 0; --i) {
+								fractionBlock[i] <<= bitsToShift;
+								// mix in the bits from the right
+								bt bits = (mask & fractionBlock[i - 1]);
+								fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
+							}
+							fractionBlock[0] <<= bitsToShift;
+						}
+						// OR the bits in
+						for (size_t i = 0; i < MSU; ++i) {
+							_block[i] |= fractionBlock[i];
+						}
+						// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+						_block[MSU] &= MSU_MASK;
+						// finally, set the sign bit
+						setsign(s);
+					}
+					else { // rhs is a subnormal
+	//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
+					}
 				}
 			}
-		}
 
-		// post-processing results to implement saturation
-		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
-			clear();
-			flip();
-			setbit(nbits - 1ull, false);
-			setbit(1ull, false);
-		}
-		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
-			clear();
-			flip();
-			setbit(1ull, false);
+			// post-processing results to implement saturation
+			if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
+				clear();
+				flip();
+				setbit(nbits - 1ull, false);
+				setbit(1ull, false);
+			}
+			else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
+				clear();
+				flip();
+				setbit(1ull, false);
+			}
 		}
 		return *this;
 	}

@@ -11,33 +11,13 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/bitblock/bitblock.hpp>
 // minimum set of include files to reflect source code dependencies
+#define BIT_CAST_SUPPORT 1                         // <----- TODO this is compiler env dependent and drives the algorith selection of ieee-754 decode
 #include <universal/native/ieee754.hpp>
 //#define BLOCKTRIPLE_VERBOSE_OUTPUT
 #define BLOCKTRIPLE_TRACE_ADD 0
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp>
-
-#ifdef DEPRECATED
-#define NUMBER_COLUMN_WIDTH 20
-
-template<typename InputType, typename ResultType, typename RefType>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const InputType& lhs, const InputType& rhs, const ResultType& result, const RefType& ref) {
-	using namespace sw::universal;
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
-		<< " != "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref, true)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-#endif
 
 // enumerate all addition cases for an blocktriple<nbits,BlockType> configuration
 template<typename BlockTripleConfiguration>
@@ -96,7 +76,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
 				}
 				else {
-					// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, refResult);
+					if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, refResult);
 				}
 				if (nrOfFailedTests > 25) return nrOfFailedTests;
 			}
@@ -157,7 +137,7 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 1, uint8_t> >(bReportIndividualTestCases), "blocktriple<1, uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 4, uint8_t> >(bReportIndividualTestCases), "blocktriple<4, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint8_t> >(bReportIndividualTestCases), "blocktriple<12, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint16_t> >(bReportIndividualTestCases), "blocktriple<12, uint16_t>", "addition");
 

@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
+#define BLOCKTRIPLE_VERBOSE_OUTPUT
+#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
@@ -56,14 +58,21 @@ try {
 
 #if MANUAL_TESTING
 
-	cfloat < 8, 2, uint8_t > a, b, c, cref;
-	a = 0.3125f;
-	b = 0.5f;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
-	// FAIL              0.03125 + 0.5 != 0.53125 golden reference is               0.5625 b0.00.10001 vs b0.00.10010
-	GenerateTestCase< cfloat<8, 2, uint8_t>, float>(0.03125f, 0.5f);
+#ifdef LATER
+	{
+		float fa = 0.0f; // 0.03125f;
+		float fb = std::numeric_limits<float>::signaling_NaN();
+		cfloat < 8, 2, uint8_t > a, b, c, cref;
+		a = fa;
+		b = fb;
+		c = a + b;
+		std::cout << a << " + " << b << " = " << c << '\n';
+		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+
+		//GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
+	}
+
+
 
 	std::cout << "single precision IEEE-754\n";
 	float f = 1.06125f;
@@ -72,77 +81,12 @@ try {
 	double d = 1.06125;
 	test754functions(d);
 
-	// float conversions
-	{
-		float f0 = 0.5f;
-		float f1 = 0.5625f;
-		float f2 = 0.53125f;
-		cfloat<8, 2> s;
-		s = f0; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		float f1 = 0.5625f;
-		float f2 = 0.53125f;
-		cfloat<32, 8> s;
-		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		float f1 = 0.5625f;
-		float f2 = 0.53125f;
-		cfloat<64, 11> s;
-		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
-		std::cout << to_binary(f1) << " : " << f1 << '\n';
-	}
-
-	// double conversions
-	{
-		double f0 = 0.5f;
-		double f1 = 0.5625f;
-		double f2 = 0.53125f;
-		cfloat<8, 2> s;
-		s = f0; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		double f1 = 0.5625f;
-		double f2 = 0.53125f;
-		cfloat<32, 8> s;
-		s = f1;	std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2;	std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		double f1 = 0.5625f;
-		double f2 = 0.53125f;
-		cfloat<64, 11> s;
-		s = f1;	std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2;	std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	return 0;
-
-
-	a.setzero();
-//	b.setnan(NAN_TYPE_SIGNALLING);
-	b.setnan(NAN_TYPE_QUIET);
-	b.setbits(0x7f);
-	c = a + b;
-	float _a = float(a);
-	float _b = float(b);
-	float _c = _a + _b;
-	cref = c;
-	std::cout << c << " vs " << _c << " vs " << cref << std::endl;
-	if (cref == c) std::cout << "PASS\n";
-
-//	a.constexprClassParameters();
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase< cfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
 
 	GenerateTestCase< cfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
+#endif
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2,uint8_t>", "addition");
 

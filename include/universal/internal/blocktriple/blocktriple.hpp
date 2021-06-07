@@ -250,11 +250,12 @@ public:
 		_significant.uradd(lhs._significant, rhs._significant);
 
 		if constexpr (_trace_btriple_add) {
-			std::cout << typeid(*this).name() << '\n';
-			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << "blockfraction add\n";
+			std::cout << typeid(lhs._significant).name() << '\n';
+			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
 			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
+			std::cout << "sum significant : " << to_binary(*this) << " : " << *this << '\n';
 		}
 		if (_significant.iszero()) {
 			clear();
@@ -275,6 +276,14 @@ public:
 				// need to normalize
 				_significant <<= 1;
 			}
+		}
+		if constexpr (_trace_btriple_add) {
+			std::cout << "blocktriple add\n";
+			std::cout << typeid(lhs).name() << '\n';
+			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(*this).name() << '\n';
+			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
 		}
 	}
 
