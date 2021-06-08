@@ -102,7 +102,6 @@ try {
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
 	
-	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "blockfraction division: ";
@@ -124,6 +123,7 @@ try {
 #endif
 
 #else
+	bool bReportIndividualTestCases = true;
 
 	cout << "blockfraction division validation" << endl;
 

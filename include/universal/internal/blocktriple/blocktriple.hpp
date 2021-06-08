@@ -21,6 +21,10 @@
 #ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 0
 #define CONSTEXPRESSION
+#else
+#ifndef CONSTEXPRESSION
+#define CONSTEXPRESSION
+#endif
 #endif
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
@@ -33,6 +37,10 @@
 #ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 0
 #define CONSTEXPRESSION 
+#else
+#ifndef CONSTEXPRESSION
+#define CONSTEXPRESSION
+#endif
 #endif
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
