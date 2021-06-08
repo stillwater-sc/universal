@@ -110,6 +110,7 @@ public:
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	static constexpr bt ALL_ONES = bt(~0);
 	static constexpr bt MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt OVERFLOW_BIT = ~(MSU_MASK >> 1) & MSU_MASK;
 
 	// constructors
 	constexpr blockfraction() noexcept : _block{ 0 } {}
@@ -214,6 +215,8 @@ public:
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
+		// nullify the overflow bit
+		_block[MSU] &= ~OVERFLOW_BIT;
 	}
 	void sub(const blockfraction<nbits, bt>& lhs, blockfraction<nbits, bt>& rhs) {
 		add(lhs, rhs.twosComplement());

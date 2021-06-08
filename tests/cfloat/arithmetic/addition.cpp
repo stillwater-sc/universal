@@ -72,7 +72,6 @@ try {
 
 		//GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
 	}
-	return 0;
 
 #ifdef LATER
 
