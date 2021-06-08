@@ -18,8 +18,10 @@
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
+#ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
+#define CONSTEXPRESSION
+#endif
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
@@ -28,8 +30,10 @@
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
 
+#ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 0
 #define CONSTEXPRESSION 
+#endif
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/aC++. ---------------------------------- */
