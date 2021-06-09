@@ -179,6 +179,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 				raw <<= cfloat<nbits, es, bt>::fbits;
 				int rightShift = cfloat<nbits, es, bt>::MIN_EXP_NORMAL - static_cast<int>(scale);
 				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit explicitely as it will shift into the msb of the denorm
+				//uint64_t fracbits = src.fraction_ull();
 				fracbits >>= rightShift + (srcbits - cfloat<nbits, es, bt>::fbits);
 				raw |= fracbits;
 			}
@@ -1268,6 +1269,7 @@ public:
 		}
 	}
 
+	// normalize a cfloat to a blocktriple used in add/sub
 	constexpr void normalizeAddition(blocktriple<abits, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
@@ -1361,6 +1363,8 @@ public:
 			}
 		}
 	}
+
+
 protected:
 	// HELPER methods
 

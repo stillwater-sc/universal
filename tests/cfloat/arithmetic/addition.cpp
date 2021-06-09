@@ -62,7 +62,7 @@ try {
 	{
 		float fa = 0.03125f;
 //		float fb = std::numeric_limits<float>::signaling_NaN();
-		float fb = -0.03125f;
+		float fb = -0.0625f;
 		cfloat < 8, 2, uint8_t > a, b, c, cref;
 		a = fa;
 		b = fb;

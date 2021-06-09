@@ -274,7 +274,7 @@ public:
 		}
 		else {
 			_zero = false;
-			if (isneg()) {
+			if (_significant.test(nbits-1)) {  // is the result negative
 				_significant.twosComplement();
 				_sign = true;
 			}
