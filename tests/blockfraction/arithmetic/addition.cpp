@@ -109,7 +109,7 @@ try {
 
 	{
 		blockfraction<8, uint32_t> a;
-		a.set_raw_bits(0x41);
+		a.setbits(0x41);
 		cout << a << " : " << to_binary(a) << " : " << float(a) << endl;
 	}
 

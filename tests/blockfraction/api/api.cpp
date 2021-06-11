@@ -6,6 +6,7 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 
+#include <universal/native/integers.hpp>
 #include <universal/internal/blockfraction/blockfraction.hpp>
 
 /*
@@ -30,23 +31,29 @@ try {
 	std::string tag = "blockfraction storage class construction/conversion testing";
 
 	{
-		blockfraction<7, uint8_t> a, b;
-		blockfraction<8, uint8_t> c;
-		a.setbits(0x21); // 1.0 in 7-bit blockfraction form
+		// a cfloat<8,2> has 5 fraction bits
+		// a 00h.fffff format is thus 8 bits.
+		blockfraction<8, uint8_t> a, b;
+		blockfraction<9, uint8_t> c;
+		a.setbits(0x21); // 1.0 in 8-bit blockfraction form
 		b.setbits(0x21);
-		cout << ' ' << a << "\n " << b << '\n';
+		cout << ' ' << to_binary(a) << " : " << a << '\n';
+		cout << ' ' << to_binary(b) << " : " << b << '\n';
 		c.uradd(a, b);
-		// this moves the radix from nbits-2 to nbits-3
-		cout << c << endl;
+		// this moves the radix
+		cout << to_binary(c) << " : " << c << endl;
+
+		uint64_t fractionBits = c.fraction_ull();
+		cout << to_binary(fractionBits, 9) << endl;
 	}
 
 	{
 		blockfraction<7, uint8_t> a, b, c;
-		a.setbits(0x21); // 1.0 in 7-bit blockfraction form
-		b.setbits(0x21);
+		a.setbits(0x11); // 1.0 in 7-bit blockfraction form
+		b.setbits(0x11);
 		cout << ' ' << a << "\n " << b << '\n';
 		c.add(a, b);
-		// add() keeps the radix point at nbits-2
+		// add() keeps the radix point at nbits-3
 		cout << ' ' << c << endl;
 	}
 }

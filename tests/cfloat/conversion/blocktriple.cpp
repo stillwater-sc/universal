@@ -86,8 +86,8 @@ namespace sw::universal {
 			convert(b, nut);
 			cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
 			if (a != nut) {
-//				if (a.isnan() && b.isnan()) continue;
-//				if (a.isinf() && b.isinf()) continue;
+				if (a.isnan() && b.isnan()) continue;
+				if (a.isinf() && b.isinf()) continue;
 
 				++nrOfTestFailures;
 				if (bReportIndividualTestCases) cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';

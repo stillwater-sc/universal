@@ -1287,13 +1287,13 @@ public:
 			tgt.setsign(sign());
 			tgt.setscale(scale);
 			// set significant
-			// we are going to unify to the format 01.ffffeeee
+			// we are going to unify to the format 001.ffffeeee
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
 			if (isnormal()) {
 				if constexpr (abits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
-					raw <<= (abits - fbits);
+					raw <<= (abits - fbits - 1);
 					raw |= (1ull << abits); // add the hidden bit
 					tgt.setbits(raw);
 				}
@@ -1328,7 +1328,7 @@ public:
 			else { // it is a subnormal encoding in this target cfloat
 				if constexpr (abits < 64) {
 					uint64_t raw = fraction_ull();
-					raw <<= (abits - fbits);
+					raw <<= (abits - fbits - 1);
 					int shift = MIN_EXP_NORMAL - scale;
 					raw <<= shift; // shift and do NOT add a hidden bit as MSB of subnormal is shifted in the hidden bit position
 					tgt.setbits(raw);

@@ -118,7 +118,7 @@ public:
 
 	constexpr blocktriple() noexcept : 
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
-		_sign{ false }, _scale{ 0 } {} // _significant has default constructor
+		_sign{ false }, _scale{ 0 } {} // _significant use default constructor
 
 	// decorated constructors
 	constexpr blocktriple(signed char iv) noexcept { *this = iv; }
@@ -236,7 +236,7 @@ public:
 
 	// ALU operators
 	/// <summary>
-	/// add two real numbers with abits fraction bits yielding an nbits unrounded sum
+	/// add two real numbers with nbits fraction bits yielding an nbits+1 unrounded sum
 	/// To avoid fraction bit copies, the input requirements are pushed to the
 	/// calling environment to prepare the correct storage
 	/// </summary>
@@ -262,7 +262,7 @@ public:
 		_significant.uradd(lhs._significant, rhs._significant);
 
 		if constexpr (_trace_btriple_add) {
-			std::cout << "blockfraction add\n";
+			std::cout << "blockfraction unrounded add\n";
 			std::cout << typeid(lhs._significant).name() << '\n';
 			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
@@ -274,23 +274,28 @@ public:
 		}
 		else {
 			_zero = false;
-			if (_significant.test(nbits-1)) {  // is the result negative
+			if (_significant.test(bfbits-1)) {  // is the result negative
 				_significant.twosComplement();
+				_significant.setbit(bfbits - 1, false); // reset the overflow bit
 				_sign = true;
 			}
 			_scale = scale_of_result;
 			if (_significant.checkCarry()) {
 				_scale += 1;
-				// no need to shift as the default behavior has all the bits
-				// already at the right place for this case
+				// no need to shift fraction bits as the output of uradd has the radix at bfbits-2, that is, 000.ffff
 			}
 			else {
-				// need to normalize
-				_significant <<= 1;
+				// need to normalize: find MSB
+				int msb = _significant.msb();
+//				std::cout << "sum : " << to_binary(*this) << std::endl;
+	//			std::cout << "msb : " << msb << std::endl;
+				int leftShift = bfbits - 2 - msb;
+				_significant <<= leftShift;
+				_scale -= leftShift - 1;
 			}
 		}
 		if constexpr (_trace_btriple_add) {
-			std::cout << "blocktriple add\n";
+			std::cout << "blocktriple normalized add\n";
 			std::cout << typeid(lhs).name() << '\n';
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
