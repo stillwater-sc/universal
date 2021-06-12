@@ -13,16 +13,39 @@
 #include <universal/native/integers.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 
-template<size_t nbits, typename Ty>
+template<size_t fbits, typename Ty>
 std::string convert(Ty f) {
 	std::stringstream s;
-	sw::universal::blocktriple<nbits> a(f);
+	sw::universal::blocktriple<fbits> a(f);
 	s << std::setw(30) << sw::universal::to_binary(a) << " : " << a;
 	return s.str();
 }
 
+template<size_t fbits, typename ConversionType>
+int VerifyConversion() {
+	using namespace std;
+	using namespace sw::universal;
+
+	cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", uint8_t>    ";
+	int nrOfFailures = 0;
+	blocktriple<fbits, uint8_t> a, nut;
+	constexpr size_t NR_VALUES = (1ull << fbits + 1);
+	for (size_t i = 0; i < NR_VALUES; ++i) {
+		if (i == 0) a.setzero(); else a.setnormal();
+		a.setbits(i);
+		ConversionType v = ConversionType(a);
+		nut = v;
+		if (v != float(nut)) {
+			++nrOfFailures;
+			cout << setw(10) << i << " : " << to_binary(a) << " != " << to_binary(nut) << '\n';
+		}
+	}
+	cout << (nrOfFailures ? "FAIL\n" : "PASS\n");
+	return nrOfFailures;
+}
+
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -35,7 +58,7 @@ try {
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "conversion: ";
+	std::string tag = "blocktriple conversion validation: ";
 
 #if MANUAL_TESTING
 
@@ -55,7 +78,9 @@ try {
 		f *= 2.0f;
 	}
 	cout << "rounding floats\n";
-	cout << convert<3, float>(15.0f) << '\n'; // 16
+	cout << convert<1, float>(15.0f) << '\n'; // 16
+	cout << convert<2, float>(15.0f) << '\n'; // 16
+	cout << convert<3, float>(15.0f) << '\n'; // 15
 	cout << convert<4, float>(15.0f) << '\n'; // 15
 	cout << convert<5, float>(15.0f) << '\n'; // 15
 	
@@ -68,18 +93,37 @@ try {
 		d *= 2.0;
 	}
 	cout << "rounding doubles\n";
-	cout << convert<3, double>(15.f) << '\n'; // 16
+	cout << convert<1, double>(15.0) << '\n'; // 16
+	cout << convert<2, double>(15.0) << '\n'; // 16
+	cout << convert<3, double>(15.0) << '\n'; // 15
 	cout << convert<4, double>(15.0) << '\n'; // 15
 	cout << convert<5, double>(15.0) << '\n'; // 15
 
 	///////////////////////////////////////////////////
 	cout << "convert long long with nbits = 10\n";
-	for (long long i = 1; i < 1025; i *= 2) {
+	for (long long i = 1; i < 257; i *= 2) {
+		cout << convert<10, long long>(-i) << '\n';
+	}
+	for (long long i = 1; i < 257; i *= 2) {
 		cout << convert<10, long long>(i) << '\n';
 	}
+	{
+		constexpr long long maxpos = std::numeric_limits<long long>::max();
+		cout << convert<10, long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, 64, true) << '\n';
+		cout << convert<10, long long>(-maxpos) << " : " << -maxpos << '\n';
+		float fmaxpos = float(maxpos);
+		cout << convert<10, float>(fmaxpos) << " : " << fmaxpos << '\n';
+	}
+
 	cout << "convert unsigned long long with nbits = 32\n";
-	for (unsigned long long i = 1; i < 1025; i *= 2) {
+	for (unsigned long long i = 1; i < 257; i *= 2) {
 		cout << convert<32, unsigned long long>(i) << '\n';
+	}
+	{
+		constexpr unsigned long long maxpos = std::numeric_limits<unsigned long long>::max();
+		cout << convert<10, unsigned long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, 64, true) << '\n';
+		float fmaxpos = float(maxpos);
+		cout << convert<10, float>(fmaxpos) << " : " << fmaxpos << '\n';
 	}
 
 	///////////////////////////////////////////////////
@@ -100,8 +144,26 @@ try {
 
 #else  // !MANUAL_TESTING
 
-	cout << "blocktriple conversion validation" << endl;
+	cout << tag << endl;
 
+	nrOfFailedTestCases += VerifyConversion<5, float>();
+	nrOfFailedTestCases += VerifyConversion<9, float>();
+	nrOfFailedTestCases += VerifyConversion<12, float>();
+
+	nrOfFailedTestCases += VerifyConversion<5, double>();
+	nrOfFailedTestCases += VerifyConversion<9, double>();
+	nrOfFailedTestCases += VerifyConversion<12, double>();
+
+	for (long long i = 1; i < 257; i *= 2) {
+		blocktriple<9, uint8_t> b = i;
+		float f = i;
+		blocktriple<9, uint8_t> nut = f;
+		if (f != float(nut)) {
+			++nrOfFailedTestCases;
+		}
+	}
+
+	cout << tag << ((0 == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 
 #if STRESS_TESTING
 

@@ -398,8 +398,7 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<abits + 1, bt> sum;
-		blocktriple<abits, bt> a, b;
+		blocktriple<abits, bt> a, b, sum;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
@@ -1293,7 +1292,7 @@ public:
 			if (isnormal()) {
 				if constexpr (abits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
-					raw <<= (abits - fbits - 1);
+					raw <<= (abits - fbits);
 					raw |= (1ull << abits); // add the hidden bit
 					tgt.setbits(raw);
 				}
@@ -1328,7 +1327,7 @@ public:
 			else { // it is a subnormal encoding in this target cfloat
 				if constexpr (abits < 64) {
 					uint64_t raw = fraction_ull();
-					raw <<= (abits - fbits - 1);
+					raw <<= (abits - fbits);
 					int shift = MIN_EXP_NORMAL - scale;
 					raw <<= shift; // shift and do NOT add a hidden bit as MSB of subnormal is shifted in the hidden bit position
 					tgt.setbits(raw);

@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <limits>
 
+#include <universal/native/integers.hpp> // to_binary(uint64_t)
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
@@ -86,12 +87,12 @@ blocktriple<fbits, bt>& convert(unsigned long long uint, blocktriple<fbits, bt>&
 /// Generalized blocktriple representing a (sign, scale, significant) with unrounded arithmetic
 /// </summary>
 /// <typeparam name="nbits">number of fraction bits in the significant</typeparam>
-template<size_t _fbits, typename bt = uint32_t> 
+template<size_t fractionbits, typename bt = uint32_t> 
 class blocktriple {
 public:
-	static constexpr size_t nbits = _fbits;  // a convenience and consistency alias
-	static constexpr size_t fbits = _fbits;  
-	static constexpr size_t bfbits = fbits + 2; // bf = 0h.ffff <- nbits of fraction bits plus two bits before radix point
+	static constexpr size_t nbits = fractionbits;  // a convenience and consistency alias
+	static constexpr size_t fbits = fractionbits;
+	static constexpr size_t bfbits = fbits + 3; // bf = 00h.ffff <- nbits of fraction bits plus three bits before radix point
 	typedef bt BlockType;
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
@@ -109,6 +110,7 @@ public:
 	static constexpr size_t mbits = 2ull * fbits;          // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
 	static constexpr bt ALL_ONES = bt(~0);
+	static constexpr size_t overflowPattern = (1ull << (nbits + 1)); // overflow of 1.11111 to 10.0000
 
 	constexpr blocktriple(const blocktriple&) noexcept = default;
 	constexpr blocktriple(blocktriple&&) noexcept = default;
@@ -236,14 +238,14 @@ public:
 
 	// ALU operators
 	/// <summary>
-	/// add two real numbers with nbits fraction bits yielding an nbits+1 unrounded sum
+	/// add two real numbers with nbits fraction bits yielding an nbits unrounded sum
 	/// To avoid fraction bit copies, the input requirements are pushed to the
 	/// calling environment to prepare the correct storage
 	/// </summary>
 	/// <param name="lhs">ephemeral blocktriple<abits> that may get modified</param>
 	/// <param name="rhs">ephemeral blocktriple<abits> that may get modified</param>
 	/// <param name="result">unrounded sum</param>
-	void add(blocktriple<nbits-1, bt>& lhs, blocktriple<nbits-1, bt>& rhs) {
+	void add(blocktriple<nbits, bt>& lhs, blocktriple<nbits, bt>& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
 		int scale_of_result = std::max(lhs_scale, rhs_scale);
@@ -259,7 +261,7 @@ public:
 		if (lhs.isneg()) lhs._significant.twosComplement();
 		if (rhs.isneg()) rhs._significant.twosComplement();
 
-		_significant.uradd(lhs._significant, rhs._significant);
+		_significant.add(lhs._significant, rhs._significant);
 
 		if constexpr (_trace_btriple_add) {
 			std::cout << "blockfraction unrounded add\n";
@@ -276,16 +278,18 @@ public:
 			_zero = false;
 			if (_significant.test(bfbits-1)) {  // is the result negative
 				_significant.twosComplement();
-				_significant.setbit(bfbits - 1, false); // reset the overflow bit
 				_sign = true;
 			}
 			_scale = scale_of_result;
-			if (_significant.checkCarry()) {
+			if (_significant.test(bfbits-2)) { // test for carry
 				_scale += 1;
-				// no need to shift fraction bits as the output of uradd has the radix at bfbits-2, that is, 000.ffff
+				_significant >>= 1;
+			}
+			else if (_significant.test(bfbits - 3)) { // check for the hidden bit
+				// ready to go
 			}
 			else {
-				// need to normalize: find MSB
+				// found a denormalized form, thus need to normalize: find MSB
 				int msb = _significant.msb();
 //				std::cout << "sum : " << to_binary(*this) << std::endl;
 	//			std::cout << "msb : " << msb << std::endl;
@@ -325,8 +329,8 @@ private:
 /// srcbits is the number of bits of significant in the source representation
 /// round<> is intended only for rounding raw IEEE-754 bits
 /// </summary>
-/// <typeparam name="StorageType"></typeparam>
-/// <param name="raw"></param>
+/// <typeparam name="StorageType">type of incoming bits</typeparam>
+/// <param name="raw">the raw unrounded bits</param>
 /// <returns></returns>
 	template<size_t srcbits, typename StorageType>
 	constexpr StorageType round(StorageType raw) noexcept {
@@ -336,24 +340,36 @@ private:
 			// this same logic will work for the case where
 			// we only have a guard bit and no round and/or sticky bits
 			// because the mask logic will make round and sticky both 0
+
+			// example: rounding the bits of a float to our nbits 
+			// float significant: 24bits : 0bhfff'ffff'ffff'ffff'ffff'ffff; h is hidden, f is fraction bit
+			// blocktriple target: 10bits: 0bhfff'ffff'fff    hidden bit is implicit, 10 fraction bits
+			//                                           lg'rs
+			//                             0b0000'0000'0001'0000'0000'0000; guard mask == 1 << srcbits - nbits - 2: 24 - 10 - 2 = 12
 			constexpr uint32_t upper = 8 * sizeof(StorageType) + 2;
-			constexpr uint32_t shift = srcbits - nbits - 1ull;
+			constexpr uint32_t shift = srcbits - nbits - 2ull;  // srcbits includes the hidden bit, nbits does not
 			StorageType mask = (StorageType{ 1ull } << shift);
+//			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType)*8, true) << '\n';
+//			std::cout << "guard : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
 			bool guard = (mask & raw);
 			mask >>= 1;
+//			std::cout << "round : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
 			bool round = (mask & raw);
 			if constexpr (shift > 1 && shift < upper) { // protect against a negative shift
 				StorageType allones(StorageType(~0));
-				mask = StorageType(allones << (shift - 2));
+				mask = StorageType(allones << (shift - 1));
 				mask = ~mask;
 			}
 			else {
 				mask = 0;
 			}
+//			std::cout << "sticky: " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
 			bool lsb = (raw & 0x1);
+//			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType) * 8, true) << '\n';
+
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
 			//       0     1       0     0       down  round to even
@@ -364,7 +380,7 @@ private:
 			if (guard) {
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
-				if (raw == (1ull << nbits)) { // overflow
+				if (raw == overflowPattern) {
 					++_scale;
 					raw >>= 1;
 				}
@@ -381,8 +397,8 @@ private:
 #endif
 			}
 		}
-		StorageType significant = raw;
-		return significant;
+//		std::cout << "final : " << to_binary(raw, sizeof(StorageType) * 8, true) << '\n';
+		return static_cast<StorageType>(raw);
 	}
 
 	template<typename Ty>
@@ -394,11 +410,12 @@ private:
 		_zero = false;
 		_sign = false;
 		uint64_t raw = static_cast<uint64_t>(rhs);
-		_scale = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - _scale - 1;
+		_scale = findMostSignificantBit(raw) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr size_t sizeInBits = 8 * sizeof(Ty);
+		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
 		raw <<= shift;
-//		_significant = round<sizeInBits, uint64_t>(raw);
+		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
+		_significant.setbits(rounded_bits);
 		return *this;
 	}
 	template<typename Ty>
@@ -410,11 +427,12 @@ private:
 		_zero = false;
 		_sign = (rhs < 0);
 		uint64_t raw = static_cast<uint64_t>(_sign ? -rhs : rhs);
-		_scale = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - _scale - 1;
+		_scale = findMostSignificantBit(raw) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr size_t sizeInBits = 8 * sizeof(Ty);
+		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
 		raw <<= shift;
-//		_significant = round<sizeInBits, uint64_t>(raw);
+		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
+		_significant.setbits(rounded_bits);
 		return *this;
 	}
 
@@ -476,7 +494,6 @@ private:
 		_zero = false;
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 127;
-		raw <<= 1;
 		uint32_t rounded_bits = round<24, uint32_t>(raw);
 		_significant.setbits(rounded_bits);
 		return *this;
@@ -538,27 +555,20 @@ private:
 		_zero = false;
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 1023;
-		raw <<= 1;
 		uint64_t rounded_bits = round<53, uint64_t>(raw); // round manipulates _scale if needed
 		_significant.setbits(rounded_bits);
 		return *this;
 	}
 
 	double      to_float() const {
-		return float(to_double());
+		if (_zero) return 0.0;
+		float v = float(_significant);
+		v *= std::pow(2.0, _scale);
+		return (_sign ? -v : v);
 	}
 	double      to_double() const {  // TODO: this needs a native, correctly rounded version
 		if (_zero) return 0.0;
-		// significant is in the form: 0h.ffff
-		double v{ 0.0 };
-		if (_significant.test(bfbits - 1)) v = 2.0;
-		if (_significant.test(bfbits - 2)) v += 1.0;
-		double scale = 0.5;
-		for (int i = static_cast<int>(bfbits - 3); i >= 0; i--) {
-			if (_significant.test(size_t(i))) v += scale;
-			scale *= 0.5;
-			if (scale == 0.0) break;
-		}
+		double v = double(_significant);
 		v *= std::pow(2.0, _scale);
 		return (_sign ? -v : v);
 	}
