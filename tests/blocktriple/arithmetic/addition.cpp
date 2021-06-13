@@ -66,14 +66,12 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	// forall i in NR_VALUES
 	//    setBits(i + shiftLeft + hiddenBit);
 	constexpr size_t NR_VALUES = (size_t(1) << fbits);
-	constexpr size_t hiddenBit = (size_t(1) << fbits);
 
 	using namespace std;
 	using namespace sw::universal;
 	
 	cout << endl;
 	cout << "blocktriple<" <<fbits << ',' << typeid(BlockType).name() << '>' << endl;
-	cout << "blockfraction<" << abits << ',' << typeid(BlockType).name() << '>' << endl;
 	cout << "Fractions bits : " << fbits << endl;
 	cout << "Addition  bits : " << abits << endl;
 
@@ -94,44 +92,91 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 	 */
 
-
 	int nrOfFailedTests = 0;
 
 	// when adding, arguments must be aligned. The rounding decision
 	// of the final result looks at the values of lsb|guard|round|sticky.
 	// During the alignment, we may shift information into these rounding
-	// bit positions. This then forces us to expand the adder inputs by
+	// bit positions. This forces us to expand the adder inputs by
 	// 3 bits, so that we are able to correctly round.
-	blocktriple<fbits> a, b, c, refResult;
+
+	/*
+	 * the structure of a blocktriple is always 00h.ffff, that is, we have an explicit normal bit.
+	 * When we are adding two blocktriples we need to append 3 bits to 
+	 * potentially hold the guard, round, and sticky bits during alignment.
+	 * Thus if we want to verify the addition state space of a blocktriple<4>,
+	 * that is, a real with 4 fraction bits, then we need to enumerate the state
+	 * space between 00h.0000'000 and 00h.1111'000.
+	 */
+
+	blocktriple<abits> a, b, c, refResult;
+	constexpr size_t hiddenBit = (size_t(1) << abits);
 	a.setnormal();
 	b.setnormal();
 	c.setnormal();  // we are only enumerating normal values, special handling is not tested here
 
+	// key problem: the add operator will change the arguments as they need to be aligned
+	// the add operator will shift the fraction and adjust the scale
+	// This implies that we need to set up the values of the blocktriples in the inner loop,
+	// that is, the test input values will not remain invariant as they are manipulated by add();
 	double aref, bref, cref;
-	for (int scale = -3; scale < 4; ++scale) {
+	for (int scale = -6; scale < 7; ++scale) {
 		for (size_t i = 0; i < NR_VALUES; i++) {
-			a.setbits(i + hiddenBit);  // mix in the hidden bit in the blockfraction
-			a.setscale(scale);
-			aref = double(a); // cast to double is reasonable constraint for exhaustive test
 			for (size_t j = 0; j < NR_VALUES; j++) {
-				b.setbits(j + hiddenBit);
-				bref = double(b); // cast to double is reasonable constraint for exhaustive test
-				cref = aref + bref;
+				// set the a input test value
+				a.setbits(i*8 + hiddenBit);  // mix in the hidden bit in the blockfraction
 				a.setscale(scale);
-				c.add(a, b);
-				refResult = cref;
+				// set the b input test value
+				b.setbits(j*8 + hiddenBit);
+				b.setscale(0);
+
+//				cout << to_binary(a) << " + " << to_binary(b) << endl;
+//				cout << a << " + " << b << " = " << c << endl;
+
+				// if you generate the reference double before the alignment
+				// you end up with bits in the double that you don't have
+				// in the blocktriple. The scale of the block triple
+				// will shift bits into the double that get potentially
+				// removed from the blocktriple addition: 
+				//   a catastrophic rounding failure due to the smaller fraction 
+				//   in the blocktriple as compared to a double.
+				// If we move the aref|bref|cref calculation till after
+				// the add, then the aref|bref will be aligned and thus
+				// the bits on which we make a rounding decision will be
+				// closer. However, they can still be different, and I 
+				// don't know yet if this is a solvable problem.
+				// If it is a problem, then we are going to have problems
+				// with cfloats and posits as well.
+
+				// Question: how did we solve it with the bit-level implementation of posits?
+				// There we have a value that is unrounded, and than assigned
+				// at which point the rounding logic is applied to ALL the bits.
+
+				c.add(a, b); // generate the add value under test
+				
+				aref = double(a); // cast to double is reasonable constraint for exhaustive test
+				bref = double(b); // cast to double is reasonable constraint for exhaustive test
+				cref = aref + bref; // calculate the reference test value
+
+				refResult = cref; // sample the reference test value
 
 				if (c != refResult) {
-					cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << endl;
-					cout << aref << " + " << bref << " = " << cref << " vs " << refResult << endl;;
-					
-					nrOfFailedTests++;
+//					cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << endl;
+//					cout << a << " + " << b << " = " << c << endl;
+//					cout << aref << " + " << bref << " = " << cref << " vs " << refResult << endl;
+
+//					cout << to_binary(2.0625) << endl;
+//					cout << to_binary(cref) << endl;
+//					cout << to_binary(2.125) << endl;
+
+					++nrOfFailedTests;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
+//					cout << "---------------------\n";
 				}
 				else {
-					if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, refResult);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, refResult);
 				}
-				if (nrOfFailedTests > 25) return nrOfFailedTests;
+//				if (nrOfFailedTests > 24) return nrOfFailedTests;
 			}
 			//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 		}
@@ -181,16 +226,17 @@ try {
 
 	print_cmd_line(argc, argv);
 	
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular addition failed: ";
 
 #if MANUAL_TESTING
 
+	// 2^4 = 16 * 16 * 13 =  3328 : 568 fails
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 1, uint8_t> >(bReportIndividualTestCases), "blocktriple<1, uint8_t>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 4, uint8_t> >(bReportIndividualTestCases), "blocktriple<4, uint8_t>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 4, uint8_t> >(bReportIndividualTestCases), "blocktriple<4, uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint8_t> >(bReportIndividualTestCases), "blocktriple<12, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint16_t> >(bReportIndividualTestCases), "blocktriple<12, uint16_t>", "addition");
 

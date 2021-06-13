@@ -154,9 +154,9 @@ try {
 	nrOfFailedTestCases += VerifyConversion<9, double>();
 	nrOfFailedTestCases += VerifyConversion<12, double>();
 
-	for (long long i = 1; i < 257; i *= 2) {
+	for (int i = 1; i < 257; i *= 2) {
 		blocktriple<9, uint8_t> b = i;
-		float f = i;
+		float f = float(i);
 		blocktriple<9, uint8_t> nut = f;
 		if (f != float(nut)) {
 			++nrOfFailedTestCases;

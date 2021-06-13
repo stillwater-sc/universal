@@ -115,7 +115,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
-		if (NR_VALUES > 256*256) if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+		if (NR_VALUES > 256*256 && (i % (NR_VALUES / 25) == 0)) std::cout << '.';
 	}
 	std::cout << std::endl;
 	return nrOfFailedTests;

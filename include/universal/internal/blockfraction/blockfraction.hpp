@@ -547,15 +547,14 @@ public:
 		blockfraction<nbits, bt> tmp(*this);
 		if (test(nbits - 1)) tmp.twosComplement();
 		// process the value above the radix
-		constexpr size_t radix = nbits - 3;
-		// bit at nbits - 1 is always going to be zero in this encoding
-		int i = static_cast<int>(nbits - 2);
-		if (tmp.test(i--)) f += 2.0f;
-		if (tmp.test(i--)) f += 1.0f;
+		// after this conditional 2's complement, the bit at nbits - 1 is always going to be zero
+		if (tmp.test(nbits - 2)) f += 2.0f;
+		if (tmp.test(nbits - 3)) f += 1.0f;
 //		in the default pattern of #oh.ffff, the 'o' bit at(nbits - 2) is an overflow bit
 
 		// enumerate from the smallest bit position and add and increment value
 		if constexpr (nbits < 21) { // check if we can represent this value with a native normal float with 23 fraction bits => nbits <= (23 - 3)
+			constexpr size_t radix = nbits - 3;
 			float v = std::pow(2.0f, -float(radix));   // start from the small samples
 			for (size_t fractionBit = 0; fractionBit < radix; ++fractionBit) {
 				if (tmp.test(fractionBit)) f += v;
@@ -572,13 +571,14 @@ public:
 		// nbits in the form 00h.fffff in 2's complement, so check if we are negative and fix that first
 		blockfraction<nbits, bt> tmp(*this);
 		if (test(nbits - 1)) tmp.twosComplement();
-		constexpr size_t radix = nbits - 3;
-		// bit at nbits - 1 is always going to be zero in this encoding
-		int i = static_cast<int>(nbits - 2);
-		if (tmp.test(i--)) d += 2.0f;
-		if (tmp.test(i--)) d += 1.0f;
+		// process the value above the radix
+		// after this conditional 2's complement, the bit at nbits - 1 is always going to be zero
+		if (tmp.test(nbits - 2)) d += 2.0;
+		if (tmp.test(nbits - 3)) d += 1.0;
 		//		in the default config of #oh.ffff, the 'o' bit at(nbits - 2) is an overflow bit
-		if constexpr (nbits < 51) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 3)
+
+		if constexpr (nbits < 50) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 3)
+			constexpr size_t radix = nbits - 3;
 			double v = std::pow(2.0, -double(radix));
 			for (size_t fractionBit = 0; fractionBit < radix; ++fractionBit) {
 				if (tmp.test(fractionBit)) d += v;

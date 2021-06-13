@@ -1564,7 +1564,7 @@ public:
 						bool guard = (mask & rawFraction);
 						mask >>= 1;
 						bool round = (mask & rawFraction);
-						if (shiftRight > 1) {
+						if constexpr (shiftRight > 1) {
 							mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
 							mask = ~mask;
 						}

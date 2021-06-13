@@ -283,7 +283,7 @@ public:
 			_scale = scale_of_result;
 			if (_significant.test(bfbits-2)) { // test for carry
 				_scale += 1;
-				_significant >>= 1;
+				_significant >>= 1; // TODO: do we need to round on bits shifted away?
 			}
 			else if (_significant.test(bfbits - 3)) { // check for the hidden bit
 				// ready to go
@@ -293,7 +293,7 @@ public:
 				int msb = _significant.msb();
 //				std::cout << "sum : " << to_binary(*this) << std::endl;
 	//			std::cout << "msb : " << msb << std::endl;
-				int leftShift = bfbits - 2 - msb;
+				int leftShift = static_cast<int>(bfbits) - 2 - msb;
 				_significant <<= leftShift;
 				_scale -= leftShift - 1;
 			}
@@ -410,7 +410,7 @@ private:
 		_zero = false;
 		_sign = false;
 		uint64_t raw = static_cast<uint64_t>(rhs);
-		_scale = findMostSignificantBit(raw) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		_scale = static_cast<int>(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
 		constexpr size_t sizeInBits = 8 * sizeof(Ty);
 		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
 		raw <<= shift;
@@ -427,7 +427,7 @@ private:
 		_zero = false;
 		_sign = (rhs < 0);
 		uint64_t raw = static_cast<uint64_t>(_sign ? -rhs : rhs);
-		_scale = findMostSignificantBit(raw) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		_scale = static_cast<int>(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
 		constexpr size_t sizeInBits = 8 * sizeof(Ty);
 		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
 		raw <<= shift;
@@ -563,13 +563,13 @@ private:
 	double      to_float() const {
 		if (_zero) return 0.0;
 		float v = float(_significant);
-		v *= std::pow(2.0, _scale);
+		v *= std::pow(2.0f, float(_scale));
 		return (_sign ? -v : v);
 	}
 	double      to_double() const {  // TODO: this needs a native, correctly rounded version
 		if (_zero) return 0.0;
 		double v = double(_significant);
-		v *= std::pow(2.0, _scale);
+		v *= std::pow(2.0, double(_scale));
 		return (_sign ? -v : v);
 	}
 	long double to_long_double() const {
