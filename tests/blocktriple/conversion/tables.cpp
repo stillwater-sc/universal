@@ -24,7 +24,7 @@ namespace sw::universal {
 	/// <param name="csvFormat">if true present as a comma separated value format, text otherwise</param>
 	template<typename TestType>
 	void GenerateTable(std::ostream& ostr, bool csvFormat = false) {
-		constexpr size_t nbits = TestType::nbits;
+		constexpr size_t nbits = TestType::nbits;  // nbits of a blocktriple represent the number of fraction bits of the representation
 		constexpr size_t bfbits = TestType::bfbits;
 		using bt = typename TestType::BlockType;
 		constexpr size_t NR_VALUES = (1 << nbits);
@@ -39,7 +39,7 @@ namespace sw::universal {
 		v.setsign(false);
 		if (csvFormat) {
 			ostr << "\"Generate Lookup table for a " << typeid(v).name() << " in CSV format\"" << std::endl;
-			ostr << "#, Binary, sign, scale, exponent, fraction, value, hex\n";
+			ostr << "#, Binary, sign, scale, exponent, fraction, value\n";
 			for (size_t i = 0; i < NR_VALUES; i++) {
 				v.setbits(i + NR_VALUES);
 				bool s = v.sign();
@@ -59,12 +59,14 @@ namespace sw::universal {
 		else {
 			ostr << "Generate table for a " << typeid(v).name() << " in TXT format" << std::endl;
 
-			const size_t index_column = 5;
-			const size_t bin_column = 16;
-			const size_t sign_column = 8;
-			const size_t scale_column = 8;
-			const size_t fraction_column = 16;
-			const size_t value_column = 30;
+			constexpr size_t index_column = 5;
+			constexpr size_t bin_column = 16;
+			constexpr size_t sign_column = 8;
+			constexpr size_t scale_column = 8;
+			constexpr size_t fraction_column = 16;
+			constexpr size_t value_column = 30;
+
+			constexpr int scaleRange[] = { -3, -2, -1, 0, 1, 2, 3 };
 
 			ostr << std::setw(index_column) << " # "
 				<< std::setw(bin_column) << "Binary"
@@ -73,19 +75,26 @@ namespace sw::universal {
 				<< std::setw(fraction_column) << "fraction"
 				<< std::setw(value_column) << "value"
 				<< std::endl;
-			for (size_t i = 0; i < NR_VALUES; i++) {
-				v.setbits(i + NR_VALUES);
-				bool s = v.sign();
-				int scale = v.scale();
-				blockfraction<bfbits, bt> f = v.significant();
+			size_t cnt{ 0 };
+			for (int sign = 0; sign <= 1; ++sign) {
+				v.setsign(sign == 1);
+				for (int scale : scaleRange) {
+					if (sign) v.setscale(-scale); else v.setscale(scale);  // to have the same progression as posits
+					for (size_t i = 0; i < NR_VALUES; i++) {
+						if (sign) v.setbits(2 * NR_VALUES - 1 - i); else v.setbits(i + NR_VALUES);  // to have the same progression as posits
+						bool s = v.sign();
+						int scale = v.scale();
+						blockfraction<bfbits, bt> f = v.significant();
 
-				ostr << std::setw(4) << i << ": "
-					<< std::setw(bin_column) << to_binary(v)
-					<< std::setw(sign_column) << s
-					<< std::setw(scale_column) << scale
-					<< std::setw(fraction_column) << std::right << to_binary(f, true)
-					<< std::setw(value_column) << v
-					<< std::endl;
+						ostr << std::setw(4) << ++cnt << ": "
+							<< std::setw(bin_column) << to_binary(v)
+							<< std::setw(sign_column) << s
+							<< std::setw(scale_column) << scale
+							<< std::setw(fraction_column) << std::right << to_binary(f, true)
+							<< std::setw(value_column) << v
+							<< std::endl;
+					}
+				}
 			}
 		}
 	}
@@ -115,7 +124,9 @@ try {
 
 #if MANUAL_TESTING
 
+	GenerateTable < blocktriple<3, uint8_t> >(cout, csv);
 	GenerateTable < blocktriple<4, uint8_t> >(cout, csv);
+	GenerateTable < blocktriple<5, uint8_t> >(cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
 
 	blocktriple<8, uint8_t> a;
 	a = 1.5f;

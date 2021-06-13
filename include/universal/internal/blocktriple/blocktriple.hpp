@@ -714,7 +714,7 @@ template<size_t nbits, typename bt>
 std::string to_triple(const blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
 	std::stringstream s;
 	s << (a._sign ? "(-, " : "(+, ");
-	s << a._scale << ", ";
+	s << std::setw(3) << a._scale << ", ";
 	s << to_binary(a._significant, bNibbleMarker) << ')';
 	return s.str();
 }
