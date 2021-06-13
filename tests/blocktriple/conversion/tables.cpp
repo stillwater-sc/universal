@@ -101,66 +101,32 @@ namespace sw::universal {
 
 }  // namespace sw::universal
 
-// conditional compile flags
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
 
-	// Usage: tables_bfloats [-csv]
+	// Usage: tables [-csv]
 	bool csv = false;
 	if (argc == 2) {
 		if (std::string(argv[1]) == std::string("-csv")) csv = true;
 	}
-	cout << "Generate value tables for blocktriple configurations" << endl;
 
-	//bool bReportIndividualTestCases = true;
-	int nrOfFailedTestCases = 0;
-
-	std::string tag = "conversion: ";
-
-#if MANUAL_TESTING
+	std::string tag = "Generate value tables for blocktriple configurations";
+	cout << tag << endl;
 
 	GenerateTable < blocktriple<3, uint8_t> >(cout, csv);
 	GenerateTable < blocktriple<4, uint8_t> >(cout, csv);
 	GenerateTable < blocktriple<5, uint8_t> >(cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
 
-	blocktriple<8, uint8_t> a;
-	a = 1.5f;
-	cout << "float  : " << to_binary(1.5f, true) << endl;
-	cout << "a : " << to_triple(a) << endl;
-	a = 1.5;
-	cout << "double : " << to_binary(1.5, true) << endl;
-	cout << "a : " << to_triple(a) << endl;
-
-#if STRESS_TESTING
-
-	// manual exhaustive test
-
-#endif
-
-#else  // !MANUAL_TESTING
-
-	cout << "blocktriple conversion validation" << endl;
-
-
-#if STRESS_TESTING
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

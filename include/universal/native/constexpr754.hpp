@@ -61,7 +61,7 @@ inline std::string to_binary(Real number, bool bNibbleMarker = false) {
 	uint64_t rawFraction{ 0 };
 	extractFields(number, sign, rawExponent, rawFraction);
 
-	s << 'b';
+	s << "0b";
 	// print sign bit
 	s << (sign ? '1' : '0') << '.';
 
@@ -92,7 +92,7 @@ inline std::string to_binary(Real number, bool bNibbleMarker = false) {
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 >
-inline std::string to_triple(Real number) {
+inline std::string to_triple(Real number, bool bNibbleMarker = false) {
 	std::stringstream s;
 
 	bool sign{ false };
@@ -109,18 +109,22 @@ inline std::string to_triple(Real number) {
 	// (i.e. for 2^(e - 127) to be one, e must be 127). 
 	// Exponents range from -126 to +127 because exponents of -127 (all 0s) and 128 (all 1s) are reserved for special numbers.
 	if (rawExponent == 0) {
-		s << "exp=0,";
+		s << "exp=0, ";
 	}
 	else if (rawExponent == ieee754_parameter<Real>::eallset) {
 		s << "exp=1, ";
 	}
-	int scale = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
-	s << scale << ',';
+	else {
+		int scale = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
+		s << std::setw(4) << scale << ", ";
+	}
 
 	// print fraction bits
 	uint64_t mask = (uint64_t(1) << (ieee754_parameter<Real>::fbits - 1));
+	s << "0b";
 	for (int i = (ieee754_parameter<Real>::fbits - 1); i >= 0; --i) {
 		s << ((rawFraction & mask) ? '1' : '0');
+		if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 		mask >>= 1;
 	}
 

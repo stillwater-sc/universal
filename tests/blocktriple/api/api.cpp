@@ -114,6 +114,19 @@ try {
 
 #if MANUAL_TESTING
 
+	// relationship between native float/double and blocktriple
+	{
+		blocktriple<8, uint8_t> a;
+		a = 1.5f;
+		cout << "IEEE-754 float  : " << to_binary(1.5f, true) << endl;
+		cout << "IEEE-754 float  : " << to_triple(1.5f, true) << endl;
+		cout << "blocktriple<8>  : " << to_triple(a) << endl;
+		a = 1.5;
+		cout << "IEEE-754 double : " << to_binary(1.5, true) << endl;
+		cout << "IEEE-754 double : " << to_triple(1.5, true) << endl;
+		cout << "blocktriple<8>  : " << to_triple(a) << endl;
+	}
+
 	// pick a value that rounds up to even between 6 to 10 bits of fraction
 	TestConversionRounding(511.5f);
 	TestConversionRounding(511.5);
