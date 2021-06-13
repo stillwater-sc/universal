@@ -15,7 +15,14 @@ namespace sw::universal {
 struct cfloat_arithmetic_exception
 	: public std::runtime_error
 {
-	cfloat_arithmetic_exception(const std::string& error) : std::runtime_error(std::string("real arithmetic exception: ") + error) {};
+	cfloat_arithmetic_exception(const std::string& error) : std::runtime_error(std::string("cfloat arithmetic exception: ") + error) {};
+};
+
+
+struct cfloat_quire_exception
+	: public std::runtime_error
+{
+	cfloat_quire_exception(const std::string& error) : std::runtime_error(std::string("cfloat quire exception: ") + error) {}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,21 +42,21 @@ struct cfloat_divide_by_zero
 	cfloat_divide_by_zero(const std::string& error = "real division by zero") : cfloat_arithmetic_exception(error) {}
 };
 
-// divide_by_nar is thrown when the denominator in a division operator is NaN
+// divide_by_nan is thrown when the denominator in a division operator is NaN
 struct cfloat_divide_by_nan
 	: cfloat_arithmetic_exception
 {
 	cfloat_divide_by_nan(const std::string& error = "divide by NaN") : cfloat_arithmetic_exception(error) {}
 };
 
-// numerator_is_nar is thrown when the numerator in a division operator is NaN
+// numerator_is_nan is thrown when the numerator in a division operator is NaN
 struct cfloat_numerator_is_nan
 	: cfloat_arithmetic_exception
 {
 	cfloat_numerator_is_nan(const std::string& error = "numerator is nar") : cfloat_arithmetic_exception(error) {}
 };
 
-// operand_is_nar is thrown when an rvar in a binary operator is NaN
+// operand_is_nan is thrown when an rvar in a binary operator is NaN
 struct cfloat_operand_is_nan
 	: public cfloat_arithmetic_exception
 {

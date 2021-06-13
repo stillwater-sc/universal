@@ -237,7 +237,7 @@ class cfloat {
 public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
 	static_assert(_es < 2147483647ull, "my God that is a big number, are you trying to break the Interweb?");
-	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a floating point number");
+	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a classic floating point number");
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code

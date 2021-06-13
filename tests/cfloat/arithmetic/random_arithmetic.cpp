@@ -1,4 +1,4 @@
-// single_precision.cpp: test suite runner for single precision blocktriples
+// random_arithmetic.cpp: test suite runner for arithmetic operators for classic floats using randoms
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,9 +6,10 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
-// minimum set of include files to reflect source code dependencies
-#include <universal/internal/blocktriple/blocktriple.hpp>
+// use default number system configuration
+#include <universal/number/cfloat/cfloat>
 #include <universal/verification/test_status.hpp>
+#include <universal/verification/test_suite_random.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -21,9 +22,13 @@ try {
 	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = " blocktriple<23>";
+	std::string tag = " classic floating-point operators ";
 
-	cout << "Standard single-precision blocktriple<23> configuration tests" << endl;
+	cout << "Random test generation for large classic floatint-point configurations" << endl;
+
+	bool bReportIndividualTestCases = false;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< cfloat<8, 2> >(bReportIndividualTestCases, OPCODE_ADD, 100), tag, "addition      ");
+
 
 #if MANUAL_TESTING
 
