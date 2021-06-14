@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
-#include <universal/math/math>
+#include <universal/math/math>  // injection of native IEEE-754 math library functions into sw::universal namespace
 #include <universal/number/posit/posit>
 #include <universal/blas/vector.hpp>
 

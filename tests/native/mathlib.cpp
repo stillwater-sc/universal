@@ -6,7 +6,8 @@
 #include <iostream>
 #include <string>
 #include <universal/math/math>
-#include <universal/math/math_functions.hpp>
+
+#include <universal/number/posit/posit>
 
 // conditional compile flags
 #define MANUAL_TESTING 1
