@@ -6,7 +6,7 @@
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
-#define BLOCKTRIPLE_TRACE_ADD
+//#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
@@ -46,12 +46,10 @@ void test754functions(Real value) {
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = "Addition failed: ";
@@ -63,8 +61,9 @@ try {
 	{
 		float fa = 0.03125f;
 //		float fb = std::numeric_limits<float>::signaling_NaN();
-		float fb = 0.0625f;
-//		float fb = -0.0625f;
+//		float fb = 0.0625f;
+//		float fb = 0.125f;
+		float fb = std::numeric_limits<float>::quiet_NaN();
 		cfloat < 8, 2, uint8_t > a, b, c, cref;
 		a = fa;
 		b = fb;
@@ -78,9 +77,8 @@ try {
 		std::cout << a << " + " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		//GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
+		GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, -fb);
 	}
-	return 0;
 
 #ifdef LATER
 
@@ -99,6 +97,7 @@ try {
 #endif
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< cfloat<8, 4, uint8_t> >(true), "cfloat<8,4,uint8_t>", "addition");
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode

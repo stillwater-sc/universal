@@ -135,9 +135,11 @@ cfloat<nbits, es, bt> parse(const std::string& str) {
 	}
 	return a;
 }
+
 // convert a blocktriple to a cfloat
 template<size_t srcbits, size_t nbits, size_t es, typename bt>
 inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nbits, es, bt>& tgt) {
+//	std::cout << "convert: " << to_binary(src) << std::endl;
 	// test special cases
 	if (src.isnan()) {
 		tgt.setnan(src.sign());
@@ -187,7 +189,6 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 				uint64_t fracbits = src.fraction_ull();
 				constexpr size_t shift = srcbits - cfloat<nbits, es, bt>::fbits;
 
-
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
 				//       0     1       0     0       down  round to even
@@ -201,11 +202,11 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 				bool round = fracbits & mask;
 				mask = 0xFFFF'FFFF'FFFF'FFFF << (shift - 2);
 				mask = ~mask;
-				std::cout << to_binary(fracbits) << std::endl;
-				std::cout << to_binary(mask) << std::endl;
+//				std::cout << to_binary(fracbits) << std::endl;
+//				std::cout << to_binary(mask) << std::endl;
 				bool sticky = fracbits & mask;
 				bool roundup = (guard && (lsb || (round || sticky)));
-				std::cout << (roundup ? "rounding up\n" : "rounding down\n");
+//				std::cout << (roundup ? "rounding up\n" : "rounding down\n");
 				fracbits >>= shift;
 				fracbits += (roundup ? 1ull : 0ull);
 				raw |= fracbits;
@@ -373,20 +374,19 @@ public:
 			return *this;
 		}
 #endif
-		if (isinf() || rhs.isinf()) {
-			if (iszero()) {
-				*this = rhs;
-				return *this;
-			}
-			if (rhs.iszero()) {
-				return *this;
-			}
-			if (sign() && rhs.sign()) {
-				setinf(sign());
-			}
-			else {
-				setinf(false); // if different signs set to +inf
-			}
+		// normal + inf  = inf
+		// normal + -inf = -inf
+		// inf + normal = inf
+		// inf + inf    = inf
+		// inf + -inf    = ?
+		// -inf + normal = -inf
+		// -inf + -inf   = -inf
+		// -inf + inf    = ?
+		if (isinf()) {
+			return *this;
+		}
+		if (rhs.isinf()) {
+			*this = rhs;
 			return *this;
 		}
 		if (iszero()) {

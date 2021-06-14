@@ -7,10 +7,11 @@
 
 namespace sw::universal {
 
-	template<typename Scalar,
-		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-		Scalar abs(Scalar v) {
-		return std::abs(v);
-	}
+// return absolute value of a native IEEE-754 type
+template<typename Scalar,
+         typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+Scalar abs(Scalar v) {
+	return std::abs(v);
+}
 
 } // namespace sw::universal

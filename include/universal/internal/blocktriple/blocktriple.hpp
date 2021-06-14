@@ -290,12 +290,12 @@ public:
 			}
 			else {
 				// found a denormalized form, thus need to normalize: find MSB
-				int msb = _significant.msb();
+				int msb = _significant.msb(); // zero case has been taken care off above
 //				std::cout << "sum : " << to_binary(*this) << std::endl;
-	//			std::cout << "msb : " << msb << std::endl;
-				int leftShift = static_cast<int>(bfbits) - 2 - msb;
+//				std::cout << "msb : " << msb << std::endl;
+				int leftShift = static_cast<int>(bfbits) - 3 - msb;
 				_significant <<= leftShift;
-				_scale -= leftShift - 1;
+				_scale -= leftShift;
 			}
 		}
 		if constexpr (_trace_btriple_add) {

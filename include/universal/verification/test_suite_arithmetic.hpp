@@ -113,7 +113,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 			else {
 				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
 			}
-			if (nrOfFailedTests > 24) return nrOfFailedTests;
+			if (nrOfFailedTests > 9) return nrOfFailedTests;
 		}
 		if (NR_VALUES > 256*256 && (i % (NR_VALUES / 25) == 0)) std::cout << '.';
 	}
