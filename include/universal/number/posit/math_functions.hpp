@@ -16,7 +16,7 @@ Elementary functions were introduced by Joseph Liouville in a series of papers f
 An algebraic treatment of elementary functions was started by Joseph Fels Ritt in the 1930s.
 */
 #include <universal/number/posit/math/classify.hpp>
-//#include <universal/number/posit/math/complex.hpp>
+#include <universal/number/posit/math/complex.hpp>
 #include <universal/number/posit/math/error_and_gamma.hpp>
 #include <universal/number/posit/math/exponent.hpp>
 #include <universal/number/posit/math/fractional.hpp>

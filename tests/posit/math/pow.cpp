@@ -12,6 +12,7 @@
 // use default number system library configuration
 #include <universal/number/posit/posit>
 #include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/native/integers.hpp> // for ipow
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
