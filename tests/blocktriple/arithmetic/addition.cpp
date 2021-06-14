@@ -4,44 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <iostream>
 #include <iomanip>
-
-// BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-#define BIT_CAST_SUPPORT 1
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
 
 // temporary
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0

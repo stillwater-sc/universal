@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // use default library configuration
 #include <universal/number/cfloat/cfloat>
 #include <universal/verification/cfloat_math_test_suite.hpp>
@@ -181,7 +181,7 @@ void GenerateTestCase(Ty a) {
 #define STRESS_TESTING 0
 
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;

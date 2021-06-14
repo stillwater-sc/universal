@@ -5,18 +5,18 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "math/classify.hpp"
-#include "math/complex.hpp"
-#include "math/error_and_gamma.hpp"
-#include "math/exponent.hpp"
-#include "math/fractional.hpp"
-#include "math/hyperbolic.hpp"
-#include "math/hypot.hpp"
-#include "math/logarithm.hpp"
-#include "math/minmax.hpp"
-#include "math/next.hpp"
-#include "math/pow.hpp"
-#include "math/sqrt.hpp"
-#include "math/trigonometry.hpp"
-#include "math/truncate.hpp"
+#include <universal/number/cfloat/math/classify.hpp>
+#include <universal/number/cfloat/math/complex.hpp>
+#include <universal/number/cfloat/math/error_and_gamma.hpp>
+#include <universal/number/cfloat/math/exponent.hpp>
+#include <universal/number/cfloat/math/fractional.hpp>
+#include <universal/number/cfloat/math/hyperbolic.hpp>
+#include <universal/number/cfloat/math/hypot.hpp>
+#include <universal/number/cfloat/math/logarithm.hpp>
+#include <universal/number/cfloat/math/minmax.hpp>
+#include <universal/number/cfloat/math/next.hpp>
+#include <universal/number/cfloat/math/pow.hpp>
+#include <universal/number/cfloat/math/sqrt.hpp>
+#include <universal/number/cfloat/math/trigonometry.hpp>
+#include <universal/number/cfloat/math/truncate.hpp>
 

@@ -13,63 +13,10 @@
 
 // mathematical function definitions and implementations
 #include <universal/number/posit/math_functions.hpp>
+#include <universal/verification/test_reporters.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 namespace sw::universal {
-
-static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
-
-template<size_t nbits, size_t es>
-void ReportTwoInputFunctionError(const std::string& test_case, const std::string& op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case << " " << op << "("
-		<< std::setprecision(20)
-		<< std::setw(FLOAT_TABLE_WIDTH) << a
-		<< ","
-		<< std::setw(FLOAT_TABLE_WIDTH) << b << ")"
-		<< " != "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get()
-		<< std::setprecision(5)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportTwoInputFunctionSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case << " " << op << "("
-		<< std::setprecision(20)
-		<< std::setw(FLOAT_TABLE_WIDTH) << a
-		<< ","
-		<< std::setw(FLOAT_TABLE_WIDTH) << b << ")"
-		<< " == "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " ==  "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get()
-		<< std::setprecision(5)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportOneInputFunctionError(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-		<< " != "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get() << std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportOneInputFunctionSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-		<< " == "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref
-		<< " " << components_to_string(presult) << std::endl;
-}
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 

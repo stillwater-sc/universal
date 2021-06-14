@@ -74,7 +74,7 @@ namespace sw::universal {
 	*/
 
 
-#ifdef CFLOAT_NATIVE_SQRT
+#if CFLOAT_NATIVE_SQRT
 	// sqrt for arbitrary cfloat
 	template<size_t nbits, size_t es, typename bt>
 	inline cfloat<nbits, es, bt> sqrt(const cfloat<nbits, es, bt>& a) {

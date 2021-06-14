@@ -3,11 +3,11 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// minimum set of include files to reflect source code dependencies
-// use default library configuration
+#include <universal/utility/directives.hpp>
+// use default number system library configuration
 #include <universal/number/cfloat/cfloat>
 #include <universal/verification/cfloat_math_test_suite.hpp>
+
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -26,7 +26,7 @@ int VerifyFloor(bool bReportIndividualTestCases) {
 		// generate the reference
 		float f = float(a);
 		auto l2 = std::floor(f);
-		if (l1 != l2) {
+		if (l1 != l2) {             // TODO: fix float to int64 comparison
 			++nrOfFailedTestCases;
 			if (bReportIndividualTestCases) ReportOneInputFunctionError("floor", "floor", a, TestType(l1), TestType(l2));
 		}
@@ -34,7 +34,7 @@ int VerifyFloor(bool bReportIndividualTestCases) {
 	return nrOfFailedTestCases;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;

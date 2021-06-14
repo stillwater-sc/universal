@@ -3,9 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include <cmath>  // standard C++ version of pow()
-
+#include <universal/utility/directives.hpp>
 // use default library configuration
 #include <universal/number/cfloat/cfloat>
 #include <universal/verification/cfloat_math_test_suite.hpp>
@@ -31,7 +29,7 @@ void GenerateTestCase(Ty a, Ty b) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
@@ -84,11 +82,11 @@ try {
 
 	std::cout << "Integer power function\n";
 	int a = 2;
-	int b = 32;
+	unsigned b = 32;
 	std::cout << "2 ^ 32   = " << ipow(a, b) << endl;
-	std::cout << "2 ^ 32   = " << fastipow(a, b) << endl;
+	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << endl;
 
-	uint64_t c = 1024;
+	int64_t c = 1024;
 	uint8_t d = 2;
 	std::cout << "1024 ^ 2 = " << ipow(c, d) << endl;
 	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << endl;

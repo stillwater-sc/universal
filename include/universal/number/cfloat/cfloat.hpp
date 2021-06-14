@@ -4,8 +4,6 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <cassert>
-#include <limits>
 
 // compiler specific operators
 #if defined(__clang__)
@@ -58,7 +56,6 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
-#include <universal/native/integers.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -303,6 +300,7 @@ public:
 		case SpecificValue::minpos:
 			minpos();
 			break;
+		case SpecificValue::zero:
 		default:
 			zero();
 			break;
@@ -1135,7 +1133,7 @@ public:
 			}
 			else {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
-				int exponent = unsigned(ebits) - EXP_BIAS;
+				int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 				if (-64 < exponent && exponent < 64) {
 					TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
 					v = exponentiation * (TargetFloat(1.0) + f);
@@ -1739,7 +1737,7 @@ public:
 				setbit(1ull, false);
 			}
 		}
-		return *this;
+		return *this;  // TODO: unreachable in some configurations
 	}
 
 protected:
@@ -2059,11 +2057,11 @@ inline std::string to_binary(const cfloat<nbits, es, bt>& number, bool nibbleMar
 
 // transform a cfloat into a triple representation
 template<size_t nbits, size_t es, typename bt>
-inline std::string to_triple(const cfloat<nbits, es, bt>& number, bool nibbleMarket = true) {
+inline std::string to_triple(const cfloat<nbits, es, bt>& number, bool nibbleMarker = true) {
 	std::stringstream s;
 	blocktriple<cfloat<nbits, es, bt>::fbits, bt> triple;
 	number.normalize(triple);
-	s << to_triple(triple);
+	s << to_triple(triple, nibbleMarker);
 	return s.str();
 }
 

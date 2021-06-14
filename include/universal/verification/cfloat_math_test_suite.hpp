@@ -167,7 +167,7 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 		for (size_t j = 0; j < NR_cfloatS; ++j) {
 			pb.setbits(j);
 			double db = double(pb);
-#if cfloat_THROW_ARITHMETIC_EXCEPTION
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 			try {
 				ppow = pow(a, pb);
 			}

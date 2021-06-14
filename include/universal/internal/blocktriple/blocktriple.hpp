@@ -706,16 +706,16 @@ inline bool operator>=(const blocktriple<nbits, bt>& lhs, const blocktriple<nbit
 ////////////////////////////////// string conversion functions //////////////////////////////
 
 template<size_t nbits, typename bt>
-std::string to_binary(const sw::universal::blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
-	return to_triple(a, bNibbleMarker);
+std::string to_binary(const sw::universal::blocktriple<nbits, bt>& a, bool nibbleMarker = true) {
+	return to_triple(a, nibbleMarker);
 }
 
 template<size_t nbits, typename bt>
-std::string to_triple(const blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
+std::string to_triple(const blocktriple<nbits, bt>& a, bool nibbleMarker = true) {
 	std::stringstream s;
 	s << (a._sign ? "(-, " : "(+, ");
 	s << std::setw(3) << a._scale << ", ";
-	s << to_binary(a._significant, bNibbleMarker) << ')';
+	s << to_binary(a._significant, nibbleMarker) << ')';
 	return s.str();
 }
 

@@ -15,18 +15,18 @@ sin, cos, exp, and their inverse functions (including arcsin, log, x^(1/n)).
 Elementary functions were introduced by Joseph Liouville in a series of papers from 1833 to 1841. 
 An algebraic treatment of elementary functions was started by Joseph Fels Ritt in the 1930s.
 */
-#include "math/classify.hpp"
-#include "math/complex.hpp"
-#include "math/error_and_gamma.hpp"
-#include "math/exponent.hpp"
-#include "math/fractional.hpp"
-#include "math/hyperbolic.hpp"
-#include "math/hypot.hpp"
-#include "math/logarithm.hpp"
-#include "math/minmax.hpp"
-#include "math/next.hpp"
-#include "math/pow.hpp"
-#include "math/sqrt.hpp"
-#include "math/trigonometry.hpp"
-#include "math/truncate.hpp"
+#include <universal/number/posit/math/classify.hpp>
+//#include <universal/number/posit/math/complex.hpp>
+#include <universal/number/posit/math/error_and_gamma.hpp>
+#include <universal/number/posit/math/exponent.hpp>
+#include <universal/number/posit/math/fractional.hpp>
+#include <universal/number/posit/math/hyperbolic.hpp>
+#include <universal/number/posit/math/hypot.hpp>
+#include <universal/number/posit/math/logarithm.hpp>
+#include <universal/number/posit/math/minmax.hpp>
+#include <universal/number/posit/math/next.hpp>
+#include <universal/number/posit/math/pow.hpp>
+#include <universal/number/posit/math/sqrt.hpp>
+#include <universal/number/posit/math/trigonometry.hpp>
+#include <universal/number/posit/math/truncate.hpp>
 

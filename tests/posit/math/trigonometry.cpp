@@ -3,16 +3,14 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_SQRT
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math/trigonometry.hpp>
-#include <universal/number/quire/exceptions.hpp>  // math library might use quire
+// use default number system library configuration
+#include <universal/number/posit/posit>
 #include <universal/verification/posit_math_test_suite.hpp>
 
 /* 
@@ -188,7 +186,7 @@ void GenerateTestCase(Ty a) {
 #define STRESS_TESTING 0
 
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;

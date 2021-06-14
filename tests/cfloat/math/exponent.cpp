@@ -3,12 +3,13 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
 // when you define cfloat_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define cfloat_VERBOSE_OUTPUT
-#define cfloat_TRACE_POW
+//#define CFLOAT_VERBOSE_OUTPUT
+#define CFLOAT_TRACE_POW
 
-// use default library configuration
+// use default number system library configuration
 #include <universal/number/cfloat/cfloat>
 #include <universal/verification/cfloat_math_test_suite.hpp>
 
@@ -53,14 +54,13 @@ void GenerateTestCase(Ty a) {
 #define STRESS_TESTING 0
 
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
 
 	GenerateEulersNumber();
 
-	return 0;
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
