@@ -17,7 +17,6 @@ An algebraic treatment of elementary functions was started by Joseph Fels Ritt i
 */
 #include "math/classify.hpp"
 #include "math/complex.hpp"
-#include "math/constants.hpp"
 #include "math/error_and_gamma.hpp"
 #include "math/exponent.hpp"
 #include "math/fractional.hpp"

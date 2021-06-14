@@ -4,11 +4,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/math/math_constants.hpp>
 
 namespace sw::universal {
-
-// the current shims are NON-COMPLIANT with the cfloat standard, which says that every function must be
-// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // value representing an angle expressed in radians
 // One radian is equivalent to 180/PI degrees

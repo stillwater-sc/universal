@@ -21,81 +21,81 @@ void GenerateTestCaseSinh(Ty v) {
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> sinh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << sw::universal::to_binary(a) << " -> sinh( " << a << ") = " << sw::universal::to_binary(asinh) << " (reference: " << sw::universal::to_binary(aref) << ")   " ;
-	std::cout << (ref == asinh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << (aref == asinh ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
 template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCaseCosh(Ty a) {
+void GenerateTestCaseCosh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, pcosh;
-	pa = a;
-	ref = std::cosh(a);
-	pref = ref;
-	pcosh = sw::universal::cosh(pa);
+	sw::universal::cfloat<nbits, es> a, aref, acosh;
+	a = v;
+	ref = std::cosh(v);
+	aref = ref;
+	acosh = sw::universal::cosh(a);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> cosh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
-	std::cout << sw::universal::to_binary(pa) << " -> cosh( " << pa << ") = " << sw::universal::to_binary(pcosh) << " (reference: " << sw::universal::to_binary(pref) << ")   ";
-	std::cout << (pref == pcosh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << sw::universal::to_binary(a) << " -> cosh( " << a << ") = " << sw::universal::to_binary(acosh) << " (reference: " << sw::universal::to_binary(aref) << ")   ";
+	std::cout << (aref == acosh ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
 template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCaseTanh(Ty a) {
+void GenerateTestCaseTanh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, ptanh;
-	pa = a;
-	ref = std::tanh(a);
-	pref = ref;
-	ptanh = sw::universal::tanh(pa);
+	sw::universal::cfloat<nbits, es> a, aref, atanh;
+	a = v;
+	ref = std::tanh(v);
+	aref = ref;
+	atanh = sw::universal::tanh(a);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> tanh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
-	std::cout << sw::universal::to_binary(pa) << " -> tanh( " << pa << ") = " << sw::universal::to_binary(ptanh) << " (reference: " << sw::universal::to_binary(pref) << ")   ";	std::cout << (pref == ptanh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << sw::universal::to_binary(a) << " -> tanh( " << a << ") = " << sw::universal::to_binary(atanh) << " (reference: " << sw::universal::to_binary(aref) << ")   ";	std::cout << (aref == atanh ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
 template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCaseAsinh(Ty a) {
+void GenerateTestCaseAsinh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, pasinh;
-	pa = a;
-	ref = std::asinh(a);
-	pref = ref;
-	pasinh = sw::universal::asinh(pa);
+	sw::universal::cfloat<nbits, es> a, aref, aasinh;
+	a = v;
+	ref = std::asinh(v);
+	aref = ref;
+	aasinh = sw::universal::asinh(a);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> asinh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
-	std::cout << sw::universal::to_binary(pa) << " -> asinh( " << pa << ") = " << sw::universal::to_binary(pasinh) << " (reference: " << sw::universal::to_binary(pref) << ")   ";	std::cout << (pref == pasinh ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << (pref == pasinh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << sw::universal::to_binary(a) << " -> asinh( " << a << ") = " << sw::universal::to_binary(aasinh) << " (reference: " << sw::universal::to_binary(aref) << ")   ";	std::cout << (aref == aasinh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << (aref == aasinh ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
 template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCaseAcosh(Ty a) {
+void GenerateTestCaseAcosh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, pacosh;
-	pa = a;
-	ref = std::acosh(a);
-	pref = ref;
-	pacosh = sw::universal::acosh(pa);
+	sw::universal::cfloat<nbits, es> a, aref, aacosh;
+	a = v;
+	ref = std::acosh(v);
+	aref = ref;
+	aacosh = sw::universal::acosh(a);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> acosh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
-	std::cout << sw::universal::to_binary(pa) << " -> acosh( " << pa << ") = " << sw::universal::to_binary(pacosh) << " (reference: " << sw::universal::to_binary(pref) << ")   ";	std::cout << (pref == pacosh ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << (pref == pacosh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << sw::universal::to_binary(a) << " -> acosh( " << a << ") = " << sw::universal::to_binary(aacosh) << " (reference: " << sw::universal::to_binary(aref) << ")   ";	std::cout << (aref == aacosh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << (aref == aacosh ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
 template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCaseAtanh(Ty a) {
+void GenerateTestCaseAtanh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, patanh;
-	pa = a;
-	ref = std::atanh(a);
-	pref = ref;
-	patanh = sw::universal::atanh(pa);
+	sw::universal::cfloat<nbits, es> a, aref, aatanh;
+	a = v;
+	ref = std::atanh(v);
+	aref = ref;
+	aatanh = sw::universal::atanh(a);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> atanh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
-	std::cout << sw::universal::to_binary(pa) << " -> atanh( " << pa << ") = " << sw::universal::to_binary(patanh) << " (reference: " << sw::universal::to_binary(pref) << ")   ";	std::cout << (pref == patanh ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << (pref == patanh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << sw::universal::to_binary(a) << " -> atanh( " << a << ") = " << sw::universal::to_binary(aatanh) << " (reference: " << sw::universal::to_binary(aref) << ")   ";	std::cout << (aref == aatanh ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << (aref == aatanh ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 

@@ -13,6 +13,7 @@
 
 namespace sw::universal {
 
+/*
 	// straight Babylonian
 	inline double babylonian(double v) {
 		double x_n = 0.5 * v; // initial guess
@@ -23,6 +24,7 @@ namespace sw::universal {
 
 		return x_n;
 	}
+*/
 
 	template<size_t nbits, size_t es, typename bt>
 	inline cfloat<nbits, es, bt> BabylonianMethod(const cfloat<nbits, es, bt>& v) {
@@ -72,7 +74,7 @@ namespace sw::universal {
 	*/
 
 
-#if cfloat_NATIVE_SQRT
+#ifdef CFLOAT_NATIVE_SQRT
 	// sqrt for arbitrary cfloat
 	template<size_t nbits, size_t es, typename bt>
 	inline cfloat<nbits, es, bt> sqrt(const cfloat<nbits, es, bt>& a) {
