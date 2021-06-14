@@ -59,7 +59,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-//	GenerateEulersNumber();
+//	GenerateEulersNumber();  // 9000 digits of e
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
