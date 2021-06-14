@@ -45,26 +45,26 @@ void GenerateTestCase(Ty a) {
 	pexp = sw::universal::exp(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> exp(" << a << ") = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " -> exp( " << pa << ") = " << pexp.get() << " (reference: " << pref.get() << ")   ";
+	std::cout << to_binary(pa) << " -> exp( " << pa << ") = " << to_binary(pexp) << " (reference: " << to_binary(pref) << ")   ";
 	std::cout << (pref == pexp ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
-
+#define GENERATE_EXPONENT_TABLES 0
 
 int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
 
-	GenerateEulersNumber();
+//	GenerateEulersNumber();
 
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "cfloat exp() failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -84,11 +84,22 @@ try {
 	GenerateExponentTable<7, 0>();
 #endif
 
+	cfloat<8, 2> a, aexp2, aref;
+	a.setbits(0xFF);
+	aexp2 = sw::universal::exp2(a);
+	// generate reference
+	double da = double(a);
+	double dref = std::exp2(da);
+	aref = dref;
+	cout << to_binary(aref) << " : " << aref << " : " << to_binary(dref) << endl;
+	cout << to_binary(ieee754_parameter<double>::fmask) << endl;
+	cout << to_binary(ieee754_parameter<double>::snanmask) << endl;
+
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<8, 2>(bReportIndividualTestCases), "cfloat<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 4>(bReportIndividualTestCases), "cfloat<8,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 4, uint8_t> >(bReportIndividualTestCases), "cfloat<8,4>", "exp2");
 
 #else
 

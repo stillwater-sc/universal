@@ -151,15 +151,15 @@ int VerifyExp2(bool bReportIndividualTestCases) {
 // enumerate all power method cases for a posit configuration
 template<size_t nbits, size_t es>
 int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
-	constexpr size_t NR_POSITS = (unsigned(1) << nbits);
+	constexpr size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, ppow, pref;
 
 	uint32_t testNr = 0;
-	for (size_t i = 0; i < NR_POSITS; ++i) {
+	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
 		double da = double(pa);
-		for (size_t j = 0; j < NR_POSITS; ++j) {
+		for (size_t j = 0; j < NR_TEST_CASES; ++j) {
 			pb.setbits(j);
 			double db = double(pb);
 #if POSIT_THROW_ARITHMETIC_EXCEPTION

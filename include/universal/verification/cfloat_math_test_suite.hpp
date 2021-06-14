@@ -104,22 +104,38 @@ int VerifyExp(bool bReportIndividualTestCases) {
 	constexpr size_t nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, pexp, aref;
+	TestType a, cexp, cref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		pexp = sw::universal::exp(a);
+		cexp = sw::universal::exp(a);
 		// generate reference
 		double da = double(a);
-		aref = std::exp(da);
-		if (pexp != aref) {
-			if (std::exp(da) != 0.0) { // exclude special cfloat rounding rule that projects to minpos
+		double dref = std::exp(da);
+		cref = dref;
+		if (cexp != cref) {
+			// filter out inconsistencies among different math library implementations
+			if (dref == 0.0) {
+				static bool firstRoundingFilterEvent = true;
+				if (firstRoundingFilterEvent && bReportIndividualTestCases) {
+					std::cerr << "filtering cfloat rounding to minpos\n";
+					firstRoundingFilterEvent = false;
+				}
+			}
+			else if (cexp.isnan() && cref.isnan()) { 
+				static bool firstSofteningNanEvent = true;
+				if (firstSofteningNanEvent && bReportIndividualTestCases) {
+					std::cerr << "filtering snan to nan softening\n";
+					firstSofteningNanEvent = false;
+				}
+			}
+			else {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp", a, aref, pexp);
+				if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp", a, cref, cexp);
 			}
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("aSS", "exp", a, aref, pexp);
+			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("aSS", "exp", a, cref, cexp);
 		}
 	}
 	return nrOfFailedTests;
@@ -131,22 +147,38 @@ int VerifyExp2(bool bReportIndividualTestCases) {
 	constexpr size_t nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, pexp2, aref;
+	TestType a, cexp2, cref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		pexp2 = sw::universal::exp2(a);
+		cexp2 = sw::universal::exp2(a);
 		// generate reference
 		double da = double(a);
-		aref = std::exp2(da);
-		if (pexp2 != aref) {
-			if (std::exp2(da) != 0.0) { // exclude special cfloat rounding rule that projects to minpos
+		double dref = std::exp2(da);
+		cref = dref;
+		if (cexp2 != cref) {
+			// filter out inconsistencies among different math library implementations
+			if (dref == 0.0) {
+				static bool firstRoundingFilterEvent = true;
+				if (firstRoundingFilterEvent && bReportIndividualTestCases) {
+					std::cerr << "filtering cfloat rounding to minpos\n";
+					firstRoundingFilterEvent = false;
+				}
+			}
+			else if (cexp2.isnan() && cref.isnan()) {
+				static bool firstSofteningNanEvent = true;
+				if (firstSofteningNanEvent && bReportIndividualTestCases) {
+					std::cerr << "filtering snan to nan softening\n";
+					firstSofteningNanEvent = false;
+				}
+			}
+			else {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp2", a, aref, pexp2);
+				if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp2", a, cref, cexp2);
 			}
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("aSS", "exp2", a, aref, pexp2);
+			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("aSS", "exp2", a, cref, cexp2);
 		}
 	}
 	return nrOfFailedTests;
@@ -156,23 +188,23 @@ int VerifyExp2(bool bReportIndividualTestCases) {
 template<typename TestType>
 int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
 	constexpr size_t nbits = TestType::nbits; 
-	constexpr size_t NR_cfloatS = (unsigned(1) << nbits);
+	constexpr size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, pb, ppow, aref;
+	TestType a, b, cpow, cref;
 
 	uint32_t testNr = 0;
-	for (size_t i = 0; i < NR_cfloatS; ++i) {
+	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		double da = double(a);
-		for (size_t j = 0; j < NR_cfloatS; ++j) {
-			pb.setbits(j);
-			double db = double(pb);
+		for (size_t j = 0; j < NR_TEST_CASES; ++j) {
+			b.setbits(j);
+			double db = double(b);
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 			try {
-				ppow = pow(a, pb);
+				cpow = pow(a, b);
 			}
 			catch (const cfloat_arithmetic_exception& err) {
-				if (a.isnar()) {
+				if (a.isnan()) {
 					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
@@ -180,20 +212,20 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 				}
 			}
 #else
-			ppow = pow(a, pb);
+			cpow = pow(a, b);
 #endif
-			aref = std::pow(da, db);
-			if (ppow != aref) {
+			cref = std::pow(da, db);
+			if (cpow != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, pb, aref, ppow);
+				if (bReportIndividualTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, cref, cpow);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportTwoInputFunctionSuccess("aSS", "pow", a, pb, aref, ppow);
+				//if (bReportIndividualTestCases) ReportTwoInputFunctionSuccess("aSS", "pow", a, b, cref, cpow);
 			}
 			++testNr;
 			if (testNr > maxSamples) {
 				std::cerr << "VerifyPower has been truncated\n";
-				i = j = NR_cfloatS;
+				i = j = NR_TEST_CASES;
 			}
 		}
 	}

@@ -44,7 +44,7 @@ public:
 	static constexpr uint64_t hfmask   = 0x001F'FFFF'FFFF'FFFFull;
 	static constexpr uint64_t fmsb     = 0x0008'0000'0000'0000ull;
 	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0000ull;
-	static constexpr uint64_t snanmask = 0x7FF8'0000'0000'0001ull;
+	static constexpr uint64_t snanmask = 0x7FF0'0000'0000'0001ull;
 };
 
 	// MSVC long double = double precision
@@ -64,7 +64,7 @@ public:
 	static constexpr uint64_t hfmask   = 0x001F'FFFF'FFFF'FFFFull;
 	static constexpr uint64_t fmsb     = 0x0008'0000'0000'0000ull;
 	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0000ull;
-	static constexpr uint64_t snanmask = 0x7FF8'0000'0000'0001ull;
+	static constexpr uint64_t snanmask = 0x7FF0'0000'0000'0001ull;
 };
 
 } // namespace sw::universal
