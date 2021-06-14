@@ -188,7 +188,7 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 			++testNr;
 			if (testNr > maxSamples) {
 				std::cerr << "VerifyPower has been truncated\n";
-				i = j = NR_POSITS;
+				i = j = NR_TEST_CASES;
 			}
 		}
 	}
