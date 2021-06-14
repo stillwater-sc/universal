@@ -5,8 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-
-namespace sw {	namespace universal {
+namespace sw::universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -51,4 +50,4 @@ posit<nbits,es> asinh(posit<nbits,es> x) {
 }
 
 
-}}  // namespace sw::universal
+}  // namespace sw::universal

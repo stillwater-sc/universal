@@ -71,17 +71,12 @@ try {
 	GenerateTestCase<16, 1, float>(4.0f);
 
 #if GENERATE_EXPONENT_TABLES
-	GenerateExponentTable<3, 0>();
-	GenerateExponentTable<4, 0>();
-	GenerateExponentTable<4, 1>();
-	GenerateExponentTable<5, 0>();
+
 	GenerateExponentTable<5, 1>();
 	GenerateExponentTable<5, 2>();
-	GenerateExponentTable<6, 0>();
 	GenerateExponentTable<6, 1>();
 	GenerateExponentTable<6, 2>();
 	GenerateExponentTable<6, 3>();
-	GenerateExponentTable<7, 0>();
 #endif
 
 	cfloat<8, 2> a, aexp2, aref;

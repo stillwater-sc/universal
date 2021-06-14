@@ -7,31 +7,12 @@
 
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_POW
+#define POSIT_TRACE_EXP
 
 // use default number system library configuration
 #include <universal/number/posit/posit>
+#include <universal/number/posit/math_functions.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
-
-// Background: http://numbers.computation.free.fr/Constants/E/e.html
-//
-// generate digits of Euler's number
-void GenerateEulersNumber() {
-	int N = 9009, a[9009], x = 0;
-	for (int n = N - 1; n > 0; --n) {
-		a[n] = 1;
-	}
-	a[1] = 2;
-	while (N > 9) {
-		int n = N--;
-		while (--n) {
-			a[n] = x % n;
-			x = 10 * a[n - 1] + x / n;
-		}
-		std::cout << x;
-	}
-	std::cout << std::endl;
-}
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -52,14 +33,12 @@ void GenerateTestCase(Ty a) {
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
-
+#define GENERATE_EXPONENT_TABLES 0
 
 int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
-
-	GenerateEulersNumber();
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
