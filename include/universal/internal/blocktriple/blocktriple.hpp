@@ -9,68 +9,22 @@
 #include <iomanip>
 #include <limits>
 
+// check on required compilation guards
+#if !defined(BIT_CAST_SUPPORT)
+#pragma message("BIT_CAST_SUPPORT is not defined")
+#endif
+#if !defined(CONSTEXPRESSION)
+#define CONSTEXPRESSION
+#endif
+
+// dependent types for stand-alone use of this class
 #include <universal/native/integers.hpp> // to_binary(uint64_t)
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/blockfraction/blockfraction.hpp>
+// blocktriple operation trace options
 #include <universal/internal/blocktriple/trace_constants.hpp>
-
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION
-#else
-#ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
-#endif
-#endif
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-#else
-#ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
-#endif
-#endif
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-// TODO: does this collide with the definitions in bfloat/areal?
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 1
-#define CONSTEXPRESSION constexpr
-#include <bit>
-#else
-#ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
-#endif
-#endif
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
 
 namespace sw::universal {
 

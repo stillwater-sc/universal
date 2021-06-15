@@ -10,7 +10,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-
+#include <universal/utility/bit_cast.hpp>
 // generate specific test case that you can trace with the trace conditions in cfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename cfloatConfiguration, typename Ty>
@@ -62,8 +62,8 @@ try {
 		float fa = 0.03125f;
 //		float fb = std::numeric_limits<float>::signaling_NaN();
 //		float fb = 0.0625f;
-//		float fb = 0.125f;
-		float fb = std::numeric_limits<float>::quiet_NaN();
+		float fb = 0.125f;
+//		float fb = std::numeric_limits<float>::quiet_NaN();
 		cfloat < 8, 2, uint8_t > a, b, c, cref;
 		a = fa;
 		b = fb;

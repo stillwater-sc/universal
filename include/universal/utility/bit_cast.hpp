@@ -46,10 +46,14 @@
 #ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
+#include <bit>
 #endif
 
+// if you are not controlling BIT_CAST_SUPPORT
+// you have the option to indepdently control CONSTEXPRESSION
+// default is to turn it off
 #ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION constexpr
+#define CONSTEXPRESSION
 #endif
 
 #elif defined(__PGI)

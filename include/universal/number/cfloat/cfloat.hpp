@@ -5,53 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// compiler specific operators
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-//#pragma warning(disable : 4310)  // cast truncates constant value
-
-// TODO: does this collide with the definitions in blocktriple?
-// how would you enforce this across the WHOLE library?
-// you can't: customers may only pull in one specific number system
-// so it has to be driven by the number system include
-// but therefor you might want to move this conditional compile
-// to the <cfloat> include
-#ifndef BIT_CAST_SUPPORT
-#define BIT_CAST_SUPPORT 1
-#define CONSTEXPRESSION constexpr
-#else
-#ifndef CONSTEXPRESSION
-#define CONSTEXPRESSION
-#endif
-#endif
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
+// compiler specific configuration for C++20 bit_cast
+#include <universal/utility/bit_cast.hpp>
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
@@ -61,7 +16,7 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 // cfloat exception structure
 #include <universal/number/cfloat/exceptions.hpp>
-// composition types
+// composition types used by cfloat
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 
@@ -75,11 +30,23 @@
 namespace sw::universal {
 
 constexpr bool _trace_cfloat_add = false;  // TODO consolidate in a trace include file
-constexpr bool CFLOAT_NIBBLE_MARKER = true;
 
+/*
+ * classic floats have denorms, but no gradual overflow, and 
+ * project values outside of their dynamic range to +-inf
+ * 
+ * Behavior flags
+ *   gradual underflow: use all fraction encodings when exponent is all 0's
+ *   gradual overflow: use all fraction encodings when exponent is all 1's
+ *   saturation to maxneg or maxpos when value is out of dynamic range
+ */
 // Forward definitions
-template<size_t nbits, size_t es, typename bt> class cfloat;
-template<size_t nbits, size_t es, typename bt> cfloat<nbits, es, bt> abs(const cfloat<nbits, es, bt>&);
+template<size_t nbits, size_t es, typename bt, 
+	bool hasSubnormals, bool hasSupernormals, bool isSaturating> class cfloat;
+template<size_t nbits, size_t es, typename bt,
+	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
+	abs(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&);
 
 /// <summary>
 /// decode an cfloat value into its constituent parts
@@ -89,8 +56,9 @@ template<size_t nbits, size_t es, typename bt> cfloat<nbits, es, bt> abs(const c
 /// <param name="s"></param>
 /// <param name="e"></param>
 /// <param name="f"></param>
-template<size_t nbits, size_t es, size_t fbits, typename bt>
-void decode(const cfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
+template<size_t nbits, size_t es, size_t fbits, typename bt,
+	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+void decode(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
 	v.sign(s);
 	v.exponent(e);
 	v.fraction(f);
@@ -102,8 +70,9 @@ void decode(const cfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blo
 /// <typeparam name="bt">Block type used for storage: derived through ADL</typeparam>
 /// <param name="v">the cfloat number for which we seek to know the binary scale</param>
 /// <returns>binary scale, i.e. 2^scale, of the value of the cfloat</returns>
-template<size_t nbits, size_t es, typename bt>
-int scale(const cfloat<nbits, es, bt>& v) {
+template<size_t nbits, size_t es, typename bt,
+	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+int scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	return v.scale();
 }
 
@@ -113,8 +82,9 @@ int scale(const cfloat<nbits, es, bt>& v) {
 /// <typeparam name="bt"></typeparam>
 /// <param name="str"></param>
 /// <returns></returns>
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits, es, bt> parse(const std::string& str) {
+template<size_t nbits, size_t es, typename bt,
+	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> parse(const std::string& str) {
 	cfloat<nbits, es, bt> a{ 0 };
 	if (str[0] == 'b') {
 		size_t index = nbits;
@@ -137,8 +107,10 @@ cfloat<nbits, es, bt> parse(const std::string& str) {
 }
 
 // convert a blocktriple to a cfloat
-template<size_t srcbits, size_t nbits, size_t es, typename bt>
-inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nbits, es, bt>& tgt) {
+template<size_t srcbits, size_t nbits, size_t es, typename bt,
+	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, 
+	                              cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& tgt) {
 //	std::cout << "convert: " << to_binary(src) << std::endl;
 	// test special cases
 	if (src.isnan()) {
@@ -218,6 +190,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 			tgt.setsign(src.sign());
 			tgt.setexponent(src.scale());
 			// this api doesn't work: tgt.setfraction(src.significant());
+			std::cerr << "convert nbits > 64 TBD\n";
 		}
 
 	}
@@ -230,7 +203,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, cfloat<nb
 /// <typeparam name="nbits">number of bits in the encoding</typeparam>
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
 /// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
-template<size_t _nbits, size_t _es, typename bt = uint8_t>
+template<size_t _nbits, size_t _es, typename bt = uint8_t,
+	bool _hasSubnormals = true, bool _hasSupernormals = true, bool _isSaturating = false>
 class cfloat {
 public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
@@ -270,6 +244,9 @@ public:
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
 
+	static constexpr bool hasSubnormals   = _hasSubnormals;
+	static constexpr bool hasSupernormals = _hasSupernormals;
+	static constexpr bool isSaturating    = _isSaturating;
 	typedef bt BlockType;
 
 	// constructors
@@ -288,7 +265,7 @@ public:
 	/// </summary>
 	/// <param name="rhs"></param>
 	template<size_t nnbits, size_t ees>
-	cfloat(const cfloat<nnbits, ees, bt>& rhs) {
+	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 		// this->assign(rhs);
 	}
 
@@ -959,6 +936,9 @@ public:
 		std::cout << "type              : " << typeid(*this).name() << '\n';
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
+		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false");
+		std::cout << "hasSupernormals   : " << (hasSupernormals ? "true" : "false");
+		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false");
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
 		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
 		std::cout << "nrBlocks          : " << nrBlocks << '\n';
@@ -1933,41 +1913,41 @@ private:
 	// friend functions
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, size_t nes, typename nbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const cfloat<nnbits,nes,nbt>& r);
-	template<size_t nnbits, size_t nes, typename nbt>
-	friend std::istream& operator>> (std::istream& istr, cfloat<nnbits,nes,nbt>& r);
+	template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+	friend std::ostream& operator<< (std::ostream& ostr, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& r);
+	template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+	friend std::istream& operator>> (std::istream& istr, cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& r);
 
-	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator==(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator!=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator< (const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator> (const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator<=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator>=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs);
+	template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+	friend bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
+	template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+	friend bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
+	template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+	friend bool operator< (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
+	template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+	friend bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
+	template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+	friend bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
+	template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+	friend bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
 };
 
 ////////////////////// operators
-template<size_t nbits, size_t es, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits,es,bt>& v) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
 	// TODO: make it a native conversion
 	ostr << double(v);
 	return ostr;
 }
 
-template<size_t nnbits, size_t nes, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const cfloat<nnbits,nes,nbt>& v) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::istream& operator>>(std::istream& istr, const cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
-template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator==(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { 
+template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+inline bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -1975,50 +1955,50 @@ inline bool operator==(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,ne
 	}
 	return true;
 }
-template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator!=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator< (const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return (lhs - rhs).isneg(); }
-template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator> (const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator<=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator>=(const cfloat<nnbits,nes,nbt>& lhs, const cfloat<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
+template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+inline bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+inline bool operator< (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return (lhs - rhs).isneg(); }
+template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
+inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator< (lhs, rhs); }
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, size_t es, typename bt>
-inline cfloat<nbits, es, bt> operator+(const cfloat<nbits, es, bt>& lhs, const cfloat<nbits, es, bt>& rhs) {
-	cfloat<nbits, es, bt> sum(lhs);
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<size_t nbits, size_t es, typename bt>
-inline cfloat<nbits, es, bt> operator-(const cfloat<nbits, es, bt>& lhs, const cfloat<nbits, es, bt>& rhs) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 	cfloat<nbits, es, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t es, typename bt>
-inline cfloat<nbits, es, bt> operator*(const cfloat<nbits, es, bt>& lhs, const cfloat<nbits, es, bt>& rhs) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 	cfloat<nbits, es, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<size_t nbits, size_t es, typename bt>
-inline cfloat<nbits, es, bt> operator/(const cfloat<nbits, es, bt>& lhs, const cfloat<nbits, es, bt>& rhs) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 	cfloat<nbits, es, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
 // convert to std::string
-template<size_t nbits, size_t es, typename bt>
-inline std::string to_string(const cfloat<nbits,es,bt>& v) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::string to_string(const cfloat<nbits,es,bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b";
@@ -2033,8 +2013,8 @@ inline std::string to_string(const cfloat<nbits,es,bt>& v) {
 }
 
 // transform cfloat to a binary representation
-template<size_t nbits, size_t es, typename bt>
-inline std::string to_binary(const cfloat<nbits, es, bt>& number, bool nibbleMarker = false) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << 'b';
 	size_t index = nbits;
@@ -2057,49 +2037,152 @@ inline std::string to_binary(const cfloat<nbits, es, bt>& number, bool nibbleMar
 }
 
 // transform a cfloat into a triple representation
-template<size_t nbits, size_t es, typename bt>
-inline std::string to_triple(const cfloat<nbits, es, bt>& number, bool nibbleMarker = true) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = true) {
 	std::stringstream s;
-	blocktriple<cfloat<nbits, es, bt>::fbits, bt> triple;
+	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, bt> triple;
 	number.normalize(triple);
 	s << to_triple(triple, nibbleMarker);
 	return s.str();
 }
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es> abs(const cfloat<nbits,es,bt>& v) {
-	return cfloat<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
+abs(const cfloat<nbits,es,bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+	return cfloat<nbits,es,bt, hasSubnormals, hasSupernormals, isSaturating>(false, v.scale(), v.fraction(), v.isZero());
 }
-
 
 ///////////////////////////////////////////////////////////////////////
 ///   binary logic literal comparisons
 
-// posit - long logic operators
-template<size_t nbits, size_t es, typename bt>
-inline bool operator==(const cfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator==(lhs, cfloat<nbits, es, bt>(rhs));
+// cfloat - literal float logic operators
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	return float(lhs) == rhs;
 }
-template<size_t nbits, size_t es, typename bt>
-inline bool operator!=(const cfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator!=(lhs, cfloat<nbits, es, bt>(rhs));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	return float(lhs) != rhs;
 }
-template<size_t nbits, size_t es, typename bt>
-inline bool operator< (const cfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator<(lhs, cfloat<nbits, es, bt>(rhs));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	return float(lhs) < rhs;
 }
-template<size_t nbits, size_t es, typename bt>
-inline bool operator> (const cfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator<(cfloat<nbits, es, bt>(rhs), lhs);
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	return float(lhs) > rhs;
 }
-template<size_t nbits, size_t es, typename bt>
-inline bool operator<=(const cfloat<nbits, es, bt>& lhs, long long rhs) {
-	return operator<(lhs, cfloat<nbits, es, bt>(rhs)) || operator==(lhs, cfloat<nbits, es, bt>(rhs));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	return float(lhs) <= rhs;
 }
-template<size_t nbits, size_t es, typename bt>
-inline bool operator>=(const cfloat<nbits, es, bt>& lhs, long long rhs) {
-	return !operator<(lhs, cfloat<nbits, es, bt>(rhs));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	return float(lhs) >= rhs;
+}
+// cfloat - literal double logic operators
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	return double(lhs) == rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	return double(lhs) != rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	return double(lhs) < rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	return double(lhs) > rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	return double(lhs) <= rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	return double(lhs) >= rhs;
+}
+
+// cfloat - literal long double logic operators
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+	return (long double)(lhs) == rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+	return (long double)(lhs) != rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+	return (long double)(lhs) < rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+	return (long double)(lhs) > rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+	return (long double)(lhs) <= rhs;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
+	return (long double)(lhs) >= rhs;
+}
+
+// cfloat - literal int logic operators
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	return operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	return operator!=(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	return operator<(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs), lhs);
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt>(rhs));
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+}
+
+// cfloat - long long logic operators
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	return operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator!=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	return operator!=(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator< (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	return operator<(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs), lhs);
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt>(rhs));
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
 
 }  // namespace sw::universal

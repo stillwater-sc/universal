@@ -25,16 +25,22 @@
 #if BIT_CAST_SUPPORT
 void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	using namespace sw::universal;
-	cfloat<32, 8, uint32_t> a, b;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 8;
+	using bt = uint32_t;
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = false;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, b;
 	// b1.00111111.00011001011010001001001 != b1.01111111.00011001011010001001001
-	a = parse<32, 8, uint32_t>("b1.00111111.00011001011010001001001");
+	a = parse<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>("b1.00111111.00011001011010001001001");
 	std::cout << "cfloat   : " << to_binary(a) << '\n';
 	float f = float(a);
 	std::cout << "float    : " << to_binary(f) << '\n';
 	b = f;
 	std::cout << "cfloat b : " << to_binary(b) << '\n';
 
-	blockbinary<32, uint32_t> bits;
+	blockbinary<nbits, bt> bits;
 	a.getbits(bits);
 	std::cout << "bits     : " << to_binary(bits, false) << '\n';
 	// bit cast
