@@ -26,7 +26,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/adaptiveposit/adaptiveint_impl.hpp>
+#include <universal/number/adaptiveposit/adaptiveposit_impl.hpp>
 //#include <universal/number/adaptiveposit/numeric_limits.hpp>
 #include <universal/number/adaptiveposit/exceptions.hpp>
 //#include <universal/number/adaptiveposit/manipulators.hpp>
