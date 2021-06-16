@@ -11,17 +11,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(AREAL_ENABLE_LITERALS)
+#if !defined(ADAPTIVEFLOAT_ENABLE_LITERALS)
 // default is to enable them
-#define AREAL_ENABLE_LITERALS 1
+#define ADAPTIVE_ENABLE_LITERALS 1
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // enable throwing specific exceptions for integer arithmetic errors
 // left to application to enable
-#if !defined(AREAL_THROW_ARITHMETIC_EXCEPTION)
+#if !defined(ADAPTIVEFLOAT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
-#define AREAL_THROW_ARITHMETIC_EXCEPTION 0
+#define ADAPTIVEFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
