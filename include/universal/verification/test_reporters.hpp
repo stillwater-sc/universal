@@ -14,17 +14,6 @@
 
 namespace sw::universal {
 
-	// TODO: why is this function in this module?
-// complex<> type adapter for to_binary() operator
-template<typename NumberType>
-std::string to_binary(const std::complex<NumberType>& c) {
-	std::stringstream ss;
-	NumberType r = c.real();
-	NumberType i = c.imag();
-	ss << '(' << to_binary(r) << ", " << to_binary(i) << ')';
-	return ss.str();
-}
-
 #define NUMBER_COLUMN_WIDTH 20
 
 template<typename TestType>

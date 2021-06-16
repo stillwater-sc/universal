@@ -6,6 +6,8 @@
 #include <math.h>
 #include <stdint.h>
 #include <iostream>
+#include <complex>
+
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
@@ -24,10 +26,22 @@
 */
 // Configure the posit template environment
 // first: enable general or specialized posit configurations
-#define POSIT_FAST_SPECIALIZATION
+//#define POSIT_FAST_SPECIALIZATION
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit>
+#include <universal/math/complex_manipulators.hpp>  // to_binary() for complex types
+
+template<typename Scalar>
+void TestComplexConjugate() 
+{
+	std::complex<Scalar> c(0.25, 0.5);
+	std::complex<Scalar> cconj(0.25, -0.5);
+	std::cout << sw::universal::to_binary(c, false) << " : " << c << '\n';
+	std::cout << sw::universal::to_binary(cconj, false) << " : " << cconj << '\n';
+	std::complex<Scalar> product = c * cconj;
+	std::cout << "(0.25+0.5i)*(0.25-0.5i) = " << sw::universal::to_binary(product, false) << " : " << product << '\n';
+}
 
 namespace special {
 	
@@ -163,12 +177,11 @@ try {
 
 #if MANUAL_TESTING
 
-	{
-		using Scalar = fixpnt<4, 3>;
-		Scalar fp{ 1.0f };
-		cout << to_binary(fp) << " : " << fp << endl;
-	}
-	
+	// std::complex<double> c = 0.25 + 0.5i;
+	TestComplexConjugate<float>();
+	TestComplexConjugate<fixpnt<4, 3> >();
+	//TestComplexConjugate<posit<8, 0> >();
+
 #else // MANUAL_TESTING
 
 

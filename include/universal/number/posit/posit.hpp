@@ -1710,7 +1710,7 @@ inline std::string to_string(const posit<nbits, es>& p, std::streamsize precisio
 	return ss.str();
 }
 
-// binary representation of a posit with delimiters: i.e. 0|10|00|000000 => s|r|e|f
+// binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction
 template<size_t nbits, size_t es>
 inline std::string to_binary(const posit<nbits, es>& number) {
 	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
@@ -1722,9 +1722,9 @@ inline std::string to_binary(const posit<nbits, es>& number) {
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
 
-	ss << (s ? "1|" : "0|");
-	ss << to_string(r, false) << "|"
-		<< to_string(e, false) << "|"
+	ss << (s ? "0b1." : "0b0.");
+	ss << to_string(r, false) << "."
+		<< to_string(e, false) << "."
 		<< to_string(f, false);
 
 	return ss.str();
