@@ -11,7 +11,7 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/fixpnt_impl.hpp>
 // fixed-point type manipulators such as pretty printers
 #include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/number/fixpnt/math_functions.hpp>
