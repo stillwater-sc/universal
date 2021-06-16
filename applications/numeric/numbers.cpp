@@ -12,9 +12,9 @@
 // select the number systems we would like to compare
 #include <universal/number/integer/integer>
 #include <universal/number/fixpnt/fixpnt>
-#include <universal/number/areal/areal>
+#include <universal/number/areal/areal.hpp>
 #include <universal/number/posit/posit>
-#include <universal/number/lns/lns>
+#include <universal/number/lns/lns.hpp>
 
 #include <cstddef>
 #include <stdexcept>

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>  // for typeid()
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 #include <universal/number/areal/manipulators.hpp>  // hex_print and the like
 
 namespace sw::universal {

@@ -13,9 +13,9 @@
 #include <universal/number/integer/integer>
 //#include <universal/fixpnt/fixpnt>   // TODO: this causes this warning for an unknown reason:
 // include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
-#include <universal/number/areal/areal>
+#include <universal/number/areal/areal.hpp>
 #include <universal/number/posit/posit>
-#include <universal/number/lns/lns>
+#include <universal/number/lns/lns.hpp>
 #include <universal/number/valid/valid>
 
 //constexpr long double pi     = 3.14159265358979323846;

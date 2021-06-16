@@ -11,10 +11,10 @@
 #include <universal/number/decimal/decimal>
 #include <universal/number/integer/integer>
 #include <universal/number/fixpnt/fixpnt>
-#include <universal/number/areal/areal>
+#include <universal/number/areal/areal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit>
-#include <universal/number/lns/lns>
+#include <universal/number/lns/lns.hpp>
 
 #include <universal/number/posit/numeric_limits.hpp>
 
