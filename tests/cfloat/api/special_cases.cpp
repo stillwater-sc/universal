@@ -12,7 +12,7 @@
 // second: enable/disable arithmetic exceptions
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 
-#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
 
 // marshall the exception state of cfloat to the test suite

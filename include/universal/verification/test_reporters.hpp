@@ -9,6 +9,7 @@
 #include <typeinfo>
 #include <limits>
 #include <complex>
+#include <universal/math/complex_manipulators.hpp>
 
 // NOTE: reporters write to cerr
 
