@@ -1,4 +1,4 @@
-// <universal/number/bfloat/bfloat>: arbitrary real arithmetic bfloat style type standard header
+// arbitrary configuration classic floating-point arithmetic standard header
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
