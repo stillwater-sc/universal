@@ -8,9 +8,9 @@
 #include <numeric>   // nextafter
 
 // select the number systems we would like to compare
-#include <universal/number/decimal/decimal>
-#include <universal/number/integer/integer>
-#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit>

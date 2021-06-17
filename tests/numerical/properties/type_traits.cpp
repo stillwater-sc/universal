@@ -9,9 +9,9 @@
 // pull in the posit number system
 #include <universal/number/posit/posit>
 // pull in the arbitrary integer number system
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 // pull in the fixed-point systems
-#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/fixpnt/fixpnt.hpp>
 
 template<typename Scalar>
 bool TestPosit() {

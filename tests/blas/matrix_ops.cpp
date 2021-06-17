@@ -13,8 +13,8 @@
 #endif
 // pull in the number systems you would like to use
 #include <universal/number/posit/posit>
-#include <universal/number/integer/integer>
-#include <universal/number/decimal/decimal>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/decimal/decimal.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 
