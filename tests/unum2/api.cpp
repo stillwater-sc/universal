@@ -11,7 +11,7 @@
 #define UNUM_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/unum2/unum2.hpp>
+#include <universal/number/unum2/unum2_impl.hpp>
 // type manipulators such as pretty printers
 #include <universal/number/unum2/manipulators.hpp>
 #include <universal/number/unum2/math_functions.hpp>
