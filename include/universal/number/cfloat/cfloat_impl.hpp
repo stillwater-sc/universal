@@ -85,7 +85,7 @@ int scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturati
 template<size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> parse(const std::string& str) {
-	cfloat<nbits, es, bt> a{ 0 };
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
 	if (str[0] == 'b') {
 		size_t index = nbits;
 		for (size_t i = 1; i < str.size(); ++i) {
@@ -125,12 +125,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 	}
 	else {
 		int64_t scale   = src.scale();
-		int64_t expBias = cfloat<nbits, es, bt>::EXP_BIAS;
-		if (scale < cfloat<nbits, es, bt>::MIN_EXP_SUBNORMAL) {
+		int64_t expBias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
+		if (scale < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_SUBNORMAL) {
 			tgt.setzero();
 			return;
 		}
-		if (scale > cfloat<nbits, es, bt>::MAX_EXP) {
+		if (scale > cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MAX_EXP) {
 			if (src.sign()) {
 				tgt.maxneg();
 			}
@@ -145,21 +145,21 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 			// we can use a uint64_t to construct the cfloat
 			uint64_t raw = (src.sign() ? 1ull : 0ull);
 			raw <<= es; // shift to make room for the exponent bits
-			if (scale >= cfloat<nbits, es, bt>::MIN_EXP_SUBNORMAL && scale < cfloat<nbits, es, bt>::MIN_EXP_NORMAL) {
+			if (scale >= cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_SUBNORMAL && scale < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
 				// resulting cfloat will be a subnormal number: all exponent bits are 0
-				raw <<= cfloat<nbits, es, bt>::fbits;
-				int rightShift = cfloat<nbits, es, bt>::MIN_EXP_NORMAL - static_cast<int>(scale);
+				raw <<= cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+				int rightShift = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL - static_cast<int>(scale);
 				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit explicitely as it will shift into the msb of the denorm
 				//uint64_t fracbits = src.fraction_ull();
-				fracbits >>= rightShift + (srcbits - cfloat<nbits, es, bt>::fbits);
+				fracbits >>= rightShift + (srcbits - cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits);
 				raw |= fracbits;
 			}
 			else {
 				// resulting cfloat will be a normal number: construct the exponent
 				raw |= scale + expBias;  // this is guaranteed to be an unsigned string of bits
-				raw <<= cfloat<nbits, es, bt>::fbits;
+				raw <<= cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
 				uint64_t fracbits = src.fraction_ull();
-				constexpr size_t shift = srcbits - cfloat<nbits, es, bt>::fbits;
+				constexpr size_t shift = srcbits - cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
 
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
