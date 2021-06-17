@@ -36,7 +36,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
   set(UNIVERSAL_VERSION_MINOR 30)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 1)
+  set(UNIVERSAL_VERSION_PATCH 3)
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
@@ -519,7 +519,7 @@ endif(BUILD_BENCHMARKS)
 
 if(BUILD_REGRESSION_SUITES)
 	# build the different test/verification suites for each number system
-	set(BUILD_STORAGE_CLASSES ON)
+	set(BUILD_ARITHMETIC_CLASSES ON)
 	set(BUILD_NATIVE_TYPES ON)
 	set(BUILD_REALS ON)
 	set(BUILD_INTEGERS ON)
