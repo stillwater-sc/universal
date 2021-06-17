@@ -56,13 +56,11 @@ try {
 
 #if MANUAL_TESTING
 
-	// FAIL              0.03125 +               0.0625 !=              0.09375 golden reference is             -0.15625 b0.00.00011 vs b1.00.00101
-	// FAIL              0.03125 +              -0.0625 !=             -0.03125 golden reference is              0.21875 b1.00.00001 vs b0.00.00111
 	{
-		float fa = 0.03125f;
+		float fa = 2.5f;
 //		float fb = std::numeric_limits<float>::signaling_NaN();
 //		float fb = 0.0625f;
-		float fb = 0.125f;
+		float fb = 7.5f;
 //		float fb = std::numeric_limits<float>::quiet_NaN();
 		cfloat < 8, 2, uint8_t > a, b, c, cref;
 		a = fa;

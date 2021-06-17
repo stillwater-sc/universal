@@ -20,7 +20,7 @@
 #include <universal/number/cfloat/math_functions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
-#include <universal/number/cfloat/table.hpp> // only used for value table generation
+//#include <universal/number/cfloat/table.hpp> // only used for value table generation
 
 #if BIT_CAST_SUPPORT
 void ToNativeBug() {  // now resolved... exponentiation was incorrect
@@ -187,12 +187,10 @@ void compareSmallcfloats(float f) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = "float conversion: ";
@@ -302,6 +300,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64, 9, uint32_t> >(true), tag, "cfloat<64, 9, uint32_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<64, 9, uint64_t> >(true), tag, "cfloat<64, 9, uint64_t>");
 
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint32_t> >(true), tag, "cfloat<80, 11, uint32_t>");
+
 
 	// es = 1
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<3, 1>, float >(true), tag, "cfloat<3,1>");
@@ -401,14 +401,3 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-
-
-/*
-
-  To generate:
-  	GenerateFixedPointComparisonTable<4, 0>(std::string("-"));
-	GenerateFixedPointComparisonTable<4, 1>(std::string("-"));
-	GenerateFixedPointComparisonTable<4, 2>(std::string("-"));
-	
-
- */

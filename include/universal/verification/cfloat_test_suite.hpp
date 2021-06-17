@@ -380,12 +380,16 @@ namespace sw::universal {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
 
+		std::cerr << typeid(TestType).name() << '\n';
 		std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		int nrOfFailedTests = 0;
-		cfloat<32, 8, uint32_t> ref;
-		cfloat<nbits, es, BlockType> nut;
+		cfloat<32, 8, uint32_t> ref; // this is a superset of IEEE-754 float with supernormals
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
 		float refValue{ 0.0f };
 		float testValue{ 0.0f };
 		// run randoms
@@ -417,7 +421,7 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-#define CUSTOM_FEEDBACK
+// #define CUSTOM_FEEDBACK
 	// generate random test cases to test conversion from an IEEE-754 double to a cfloat
 	template<typename TestType>
 	int VerifyDouble2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
