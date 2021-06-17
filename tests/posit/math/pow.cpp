@@ -10,7 +10,7 @@
 #define POSIT_TRACE_POW
 
 // use default number system library configuration
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 #include <universal/native/integers.hpp> // for ipow
 

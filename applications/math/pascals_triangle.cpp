@@ -6,10 +6,10 @@
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/functions/binomial.hpp>
 
 std::string spacing(unsigned n) {

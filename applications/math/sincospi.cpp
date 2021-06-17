@@ -8,7 +8,7 @@
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <universal/number/areal/areal.hpp>
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 /*
 For simplicity, I will focus on sincospi(), which simultaneously provides both the sine and the cosine results. 

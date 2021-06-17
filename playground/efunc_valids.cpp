@@ -11,7 +11,7 @@
 #define VALID_TRACE_CONVERSION
 // enable valid arithmetic exceptions
 #define VALID_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/valid/valid>
+#include <universal/number/valid/valid.hpp>
 
 int main(int argc, char** argv)
 try {

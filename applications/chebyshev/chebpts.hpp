@@ -7,7 +7,7 @@
 // See Readme for further details
 
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas>
 
 namespace sw::universal {

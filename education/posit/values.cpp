@@ -6,7 +6,7 @@
 
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_CONVERSION
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //

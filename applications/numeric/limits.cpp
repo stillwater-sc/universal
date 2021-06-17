@@ -10,9 +10,9 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/areal/areal.hpp>
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/number/valid/valid>
+#include <universal/number/valid/valid.hpp>
 
 //constexpr long double pi     = 3.14159265358979323846;
 //constexpr long double e      = 2.71828182845904523536;

@@ -7,7 +7,7 @@
 // minimum set of include files to reflect source code dependencies
 #define POSIT_FAST_POSIT_32_2 1
 #define POSIT_ENABLE_LITERALS 1
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 

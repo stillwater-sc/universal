@@ -13,7 +13,7 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 
 #include <universal/number/posit/numeric_limits.hpp>

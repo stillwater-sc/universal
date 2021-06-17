@@ -7,7 +7,7 @@
 #include <string>
 #include <universal/math/math>
 
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 // conditional compile flags
 #define MANUAL_TESTING 1

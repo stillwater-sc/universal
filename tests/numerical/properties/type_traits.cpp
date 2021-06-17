@@ -7,7 +7,7 @@
 // pull in the native tools
 #include <universal/native/native>
 // pull in the posit number system
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 // pull in the arbitrary integer number system
 #include <universal/number/integer/integer.hpp>
 // pull in the fixed-point systems

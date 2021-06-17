@@ -11,7 +11,7 @@
 #define POSIT_ENABLE_LITERALS 1
 // enable fast posits
 #define POSIT_FAST_POSIT_64_3 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 template<size_t nbits, size_t es>

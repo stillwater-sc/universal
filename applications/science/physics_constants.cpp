@@ -4,8 +4,8 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
-#include <universal/number/posit/posit>
-#include <universal/number/integer/integer>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/integer/integer.hpp>
 
 /*
 The 2019 redefinition of the SI base units came into force on 20 May 2019,[1][2] the 144th anniversary 

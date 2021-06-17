@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iomanip>
 // use default number system configuration
-#include <universal/number/cfloat/cfloat>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_random.hpp>
 

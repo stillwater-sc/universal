@@ -10,7 +10,7 @@
 #define POSIT_TRACE_EXP
 
 // use default number system library configuration
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/posit/math_functions.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 

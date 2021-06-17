@@ -7,7 +7,7 @@
 #ifndef _UNIVERSAL_VALID_
 #define _UNIVERSAL_VALID_
 
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/valid/valid_impl.hpp>
 #include <universal/number/valid/manipulators.hpp>
 #include <universal/number/valid/attributes.hpp>

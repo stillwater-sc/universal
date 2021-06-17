@@ -10,7 +10,7 @@
 #define CFLOAT_TRACE_POW
 
 // use default number system library configuration
-#include <universal/number/cfloat/cfloat>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/cfloat_math_test_suite.hpp>
 
 // Background: http://numbers.computation.free.fr/Constants/E/e.html

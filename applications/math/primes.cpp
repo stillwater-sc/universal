@@ -6,7 +6,7 @@
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 #include <universal/number/integer/math_functions.hpp>
 #include <universal/number/integer/primes.hpp>
 

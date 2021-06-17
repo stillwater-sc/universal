@@ -10,7 +10,7 @@
 // enable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 

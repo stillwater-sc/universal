@@ -14,7 +14,7 @@
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/fixpnt/fixpnt.hpp>
 /*
 #include <universal/number/areal/areal.hpp>
 // Configure the cfloat template environment
@@ -29,7 +29,7 @@
 //#define POSIT_FAST_SPECIALIZATION
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/math/complex_manipulators.hpp>  // to_binary() for complex types
 
 template<typename Scalar>
