@@ -29,7 +29,7 @@ int VerifyConversion() {
 	cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", uint8_t>    ";
 	int nrOfFailures = 0;
 	blocktriple<fbits, uint8_t> a, nut;
-	constexpr size_t NR_VALUES = (1ull << fbits + 1);
+	constexpr size_t NR_VALUES = (1ull << (fbits + 1));
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		if (i == 0) a.setzero(); else a.setnormal();
 		a.setbits(i);
@@ -155,7 +155,6 @@ try {
 	nrOfFailedTestCases += VerifyConversion<12, double>();
 
 	for (int i = 1; i < 257; i *= 2) {
-		blocktriple<9, uint8_t> b = i;
 		float f = float(i);
 		blocktriple<9, uint8_t> nut = f;
 		if (f != float(nut)) {
