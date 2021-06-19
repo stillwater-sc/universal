@@ -9,7 +9,8 @@
 //#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/verification/test_status.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
+//#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/utility/bit_cast.hpp>
 // generate specific test case that you can trace with the trace conditions in cfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -57,10 +58,10 @@ try {
 #if MANUAL_TESTING
 
 	{
-		float fa = 2.5f;
+		float fa = 0.03125f;
 //		float fb = std::numeric_limits<float>::signaling_NaN();
 //		float fb = 0.0625f;
-		float fb = 7.5f;
+		float fb = 7.625f;
 //		float fb = std::numeric_limits<float>::quiet_NaN();
 		cfloat < 8, 2, uint8_t > a, b, c, cref;
 		a = fa;
@@ -69,14 +70,45 @@ try {
 		std::cout << a << " + " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		std::cout << '\n';
-		b = -fb;
-		c = a + b;
-		std::cout << a << " + " << b << " = " << c << '\n';
-		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
-
-		GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, -fb);
+		c = 7.65625f;
+		GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
 	}
+	{
+		cfloat<8, 2> c(SpecificValue::maxpos);
+		cfloat<9, 2> d(SpecificValue::maxpos);
+		std::cout << to_binary(c) << " : " << c << '\n';
+		std::cout << to_binary(d) << " : " << d << '\n';
+		d.setbits(0x0fa);
+		std::cout << to_binary(d) << " : " << d << '\n';
+		d.setbits(0x0fb);
+		std::cout << to_binary(d) << " : " << d << '\n';
+
+		std::cout << '\n';
+		d = float(c);
+		++d;
+		std::cout << to_binary(d) << " : " << d << '\n';
+
+		{
+			cfloat<8,2> c(SpecificValue::maxneg);
+			cfloat<9,2> d;
+			d = double(c);
+			std::cout << to_binary(d) << " : " << d << '\n';
+			--d;
+			std::cout << to_binary(d) << " : " << d << '\n';
+
+		}
+
+		{
+			using Cfloat = cfloat<4, 1, uint8_t>;
+			std::vector<Cfloat> set;
+			GenerateOrderedCfloatSet<Cfloat>(set);
+			for (auto v : set) {
+				std::cout << to_binary(v) << " : " << v << '\n';
+			}
+		}
+
+	}
+	return 0;
 
 #ifdef LATER
 
@@ -94,14 +126,19 @@ try {
 	GenerateTestCase< cfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
 #endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< cfloat<8, 4, uint8_t> >(true), "cfloat<8,4,uint8_t>", "addition");
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = true;
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatAddition< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(true), "cfloat<8,2,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(true), "cfloat<8,4,uint8_t,subnormals,supernormals,!saturating>", "addition");
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else
-	cout << "Arbitrary Real addition validation" << endl;
+	cout << "classic floating-point addition validation" << endl;
 
 	bool bReportIndividualTestCases = false;
 

@@ -485,11 +485,11 @@ namespace sw::universal {
 	// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular posit config <nbits, es>
 	template<size_t nbits, size_t es>
 	void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
-		const size_t NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
+		constexpr size_t NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
 		std::vector< posit<nbits, es> > s(NR_OF_REALS);
 		posit<nbits, es> p;
 		// generate raw set, which will sort later
-		for (size_t i = 0; i < NR_OF_REALS; i++) {
+		for (size_t i = 0; i < NR_OF_REALS; ++i) {
 			p.setbits(i);
 			s[i] = p;
 		}

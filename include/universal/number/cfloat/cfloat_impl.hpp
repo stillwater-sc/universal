@@ -417,33 +417,72 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
-			// special cases are: 011...111 and 111...111
-			if ((_block[MSU] & MSU_MASK) == MSU_MASK) { // == all bits are set
-				_block[MSU] = 0;
+			if (ispos()) {
+				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
+					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan 
+				}
+				else {
+					++_block[MSU];
+				}
 			}
 			else {
-				++_block[MSU];
+				if ((_block[MSU] & SIGN_BIT_MASK) == _block[MSU]) { // pattern: 1.00.000 = -0
+					_block[MSU] = 0; // pattern: 0.00.000 = +0 
+				}
+				else {
+					--_block[MSU];
+				}
 			}
 		}
 		else {
-			bool carry = true;
-			for (unsigned i = 0; i < MSU; ++i) {
-				if ((_block[i] & storageMask) == storageMask) { // block will overflow
-					++_block[i];
+			if (ispos()) {
+				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
+				if (isnan()) {
+					setnan(NAN_TYPE_SIGNALLING);
 				}
 				else {
-					++_block[i];
-					carry = false;
-					break;
+					bool carry = true;
+					for (unsigned i = 0; i < MSU; ++i) {
+						if (carry) {
+							if ((_block[i] & storageMask) == storageMask) { // block will overflow
+								_block[i] = 0;
+								carry = true;
+							}
+							else {
+								++_block[i];
+								carry = false;
+							}
+						}
+					}
+					if (carry) {
+						++_block[MSU];
+					}
 				}
 			}
-			if (carry) {
-				// encoding behaves like a 2's complement modulo wise
-				if ((_block[MSU] & MSU_MASK) == MSU_MASK) {
-					_block[MSU] = 0;
+			else {
+				// special case: pattern: 1.00.000 = -0 transitions to pattern: 0.00.000 = +0 
+				if (iszero()) {
+					setzero();
 				}
 				else {
-					++_block[MSU]; // a carry will flip the sign
+					//  1111 0000
+					//  1110 1111
+					bool borrow = true;
+					for (unsigned i = 0; i < MSU; ++i) {
+						if (borrow) {
+							if ((_block[i] & storageMask) == 0) { // block will underflow
+								--_block[i];
+								borrow = true;
+							}
+							else {
+								--_block[i];
+								borrow = false;
+							}
+						}
+					}
+					if (borrow) {
+						--_block[MSU];
+					}
 				}
 			}
 		}
@@ -455,6 +494,78 @@ public:
 		return tmp;
 	}
 	inline cfloat& operator--() {
+		if constexpr (0 == nrBlocks) {
+			return *this;
+		}
+		else if constexpr (1 == nrBlocks) {
+			if (ispos()) {
+				if (_block[MSU] == 0) { // pattern: 0.00.000 = 0
+					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.00.000 = -0 
+				}
+				else {
+					--_block[MSU];
+				}
+			}
+			else {
+				if ((_block[MSU] & MSU_MASK) == MSU_MASK) { // pattern: 1.11.111 = snan
+					_block[MSU] &= ~SIGN_BIT_MASK; // pattern: 0.11.111 = qnan 
+				}
+				else {
+					++_block[MSU];
+				}
+			}
+
+		}
+		else {
+			if (ispos()) {
+				// special case: pattern: 0.00.000 = +0 transitions to pattern: 1.00.000 = -0 
+				if (iszero()) {
+					setsign(true);
+				}
+				else {
+					bool borrow = true;
+					for (unsigned i = 0; i < MSU; ++i) {
+						if (borrow) {
+							if ((_block[i] & storageMask) == 0) { // block will underflow
+								--_block[i];
+								borrow = true;
+							}
+							else {
+								--_block[i];
+								borrow = false;
+							}
+						}
+					}
+					if (borrow) {
+						--_block[MSU];
+					}
+				}
+			}
+			else {
+				// special case: pattern: 1.11.111 = snan transitions to pattern: 0.11.111 = qnan 
+				if (isnan()) {
+					setsign(false);
+				}
+				else {
+					bool carry = true;
+					for (unsigned i = 0; i < MSU; ++i) {
+						if (carry) {
+							if ((_block[i] & storageMask) == storageMask) { // block will overflow
+								_block[i] = 0;
+								carry = true;
+							}
+							else {
+								++_block[i];
+								carry = false;
+							}
+						}
+					}
+					if (carry) {
+						++_block[MSU];
+					}
+				}
+			}
+		}
 		return *this;
 	}
 	inline cfloat operator--(int) {
@@ -903,6 +1014,28 @@ public:
 		blockbinary<es, bt> e;
 		exponent(e);
 		return e.iszero();
+	}
+	template<typename NativeReal>
+	inline constexpr bool inrange(NativeReal v) {
+		// the valid range for this cfloat includes the interval between 
+		// maxpos and the value that would round down to maxpos
+		bool bIsInRange = true;		
+		if (v > 0) {
+			cfloat c(SpecificValue::maxpos);
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d;
+			d = NativeReal(c);
+			++d;
+			if (v >= NativeReal(d)) bIsInRange = false;
+		}
+		else {
+			cfloat c(SpecificValue::maxneg);
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d;
+			d = NativeReal(c);
+			--d;
+			if (v <= NativeReal(d)) bIsInRange = false;
+		}
+
+		return bIsInRange;
 	}
 	inline constexpr bool test(size_t bitIndex) const noexcept {
 		return at(bitIndex);
@@ -1397,6 +1530,7 @@ public:
 	template<typename Real>
 	CONSTEXPRESSION cfloat& convert_ieee754(Real rhs) noexcept {
 		// when we are a perfect match to single precision IEEE-754
+		// take the bits verbatim as a cfloat is a superset of IEEE-754 in all configurations
 		if constexpr (nbits == 32 && es == 8) {
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
