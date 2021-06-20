@@ -81,14 +81,14 @@ std::string dynamic_range(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, 
 template<size_t nbits, size_t es, typename bt>
 std::string components(const cfloat<nbits, es, bt>& v) {
 	std::stringstream s;
-	bool s{ false };
+	bool sign{ false };
 	blockbinary<v.es, bt> e;
 	blockbinary<v.fbits, bt> f;
-	decode(v, s, e, f);
+	decode(v, sign, e, f);
 
 	// TODO: hardcoded field width is governed by pretty printing cfloat tables, which by construction will always be small cfloats
 	s << std::setw(14) << to_binary(v) 
-		<< " Sign : " << std::setw(2) << s
+		<< " Sign : " << std::setw(2) << sign
 		<< " Exponent : " << std::setw(5) << e
 		<< " Fraction : " << std::setw(8) << f
 		<< " Value : " << std::setw(16) << v;
