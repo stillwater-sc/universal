@@ -44,6 +44,15 @@ void test754functions(Real value) {
 	cout << color_print(value) << '\n';
 }
 
+template<typename Cfloat>
+void testCfloatOrderedSet() {
+	std::vector<Cfloat> set;
+	GenerateOrderedCfloatSet<Cfloat>(set);
+	for (auto v : set) {
+		std::cout << to_binary(v) << " : " << v << '\n';
+	}
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -58,11 +67,11 @@ try {
 #if MANUAL_TESTING
 
 	{
-		float fa = 0.03125f;
+		float fa = 0.0f; // .03125f;
 //		float fb = std::numeric_limits<float>::signaling_NaN();
 //		float fb = 0.0625f;
-		float fb = 7.625f;
-//		float fb = std::numeric_limits<float>::quiet_NaN();
+//		float fb = 7.625f;
+		float fb = std::numeric_limits<float>::quiet_NaN();
 		cfloat < 8, 2, uint8_t > a, b, c, cref;
 		a = fa;
 		b = fb;
@@ -73,6 +82,7 @@ try {
 		c = 7.65625f;
 		GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
 	}
+
 	{
 		cfloat<8, 2> c(SpecificValue::maxpos);
 		cfloat<9, 2> d(SpecificValue::maxpos);
@@ -97,18 +107,7 @@ try {
 			std::cout << to_binary(d) << " : " << d << '\n';
 
 		}
-
-		{
-			using Cfloat = cfloat<4, 1, uint8_t>;
-			std::vector<Cfloat> set;
-			GenerateOrderedCfloatSet<Cfloat>(set);
-			for (auto v : set) {
-				std::cout << to_binary(v) << " : " << v << '\n';
-			}
-		}
-
 	}
-	return 0;
 
 #ifdef LATER
 
