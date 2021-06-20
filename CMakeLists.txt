@@ -33,10 +33,10 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 30)
+  set(UNIVERSAL_VERSION_MINOR 31)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 3)
+  set(UNIVERSAL_VERSION_PATCH 1)
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
@@ -134,6 +134,10 @@ option(BUILD_MIXEDPRECISION_INTEGRATE    "Set to ON to build mixed-precision int
 option(BUILD_MIXEDPRECISION_INTERPOLATE  "Set to ON to build mixed-precision interpolation"    OFF)
 option(BUILD_MIXEDPRECISION_OPTIMIZE     "Set to ON to build mixed-precision optimization"     OFF)
 option(BUILD_MIXEDPRECISION_CONJUGATE    "Set to ON to build mixed-precision CG"               OFF)
+
+# validation
+option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
+option(BUILD_VALIDATION_HW               "Set to ON to build hw validation testbenches"        OFF)
 
 # documentation
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
@@ -708,6 +712,10 @@ if(BUILD_NUMERICAL_CHALLENGES)
 add_subdirectory("tests/numerical/properties")
 add_subdirectory("tests/numerical/fpbench")
 endif(BUILD_NUMERICAL_CHALLENGES)
+
+if(BUILD_VALIDATION_HW)
+add_subdirectory("validation/hw")
+endif(BUILD_VALIDATION_HW)
 
 if(BUILD_FUNCTIONS)
 add_subdirectory("tests/functions")
