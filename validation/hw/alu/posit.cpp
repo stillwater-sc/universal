@@ -53,12 +53,52 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	if (argc != 4) {
+		std::cerr << "Usage: hw_alu_posit [add | sub | mul | div | sqrt] a b\n";
+		std::cerr << "Example: hw_alu_posit add 1.5 -1.5\n";
+		return EXIT_FAILURE;
+	}
+	string op = argv[1];
+	float fa = atof(argv[2]);
+	float fb = atof(argv[3]);
+	cout << op << " " << fa << " and " << fb << '\n';
+
 	posit<8, 2> a, b, c;
+	a = fa;
+	b = fb;
 
-	a = 1.0f;
-	b = 2.5f;
-	cout << "Add : " << a << " + " << b << " = " << ArithmeticLogicUnit(ALU_OPS_ADD, a, b) << '\n';
-
+	// decode the operation
+	ALU_OPS alu_op;
+	if (op == "add") {
+		alu_op = ALU_OPS_ADD;
+		c = ArithmeticLogicUnit(alu_op, a, b);
+		cout << a << " + " << b << " = " << c << '\n';
+		cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+	}
+	else if (op == "sub") {
+		alu_op = ALU_OPS_SUB;
+		c = ArithmeticLogicUnit(alu_op, a, b);
+		cout << a << " - " << b << " = " << c << '\n';
+		cout << to_binary(a) << " - " << to_binary(b) << " = " << to_binary(c) << '\n';
+	}
+	else if (op == "mul") {
+		alu_op = ALU_OPS_MUL;
+		c = ArithmeticLogicUnit(alu_op, a, b);
+		cout << a << " * " << b << " = " << c << '\n';
+		cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << '\n';
+	}
+	else if (op == "div") {
+		alu_op = ALU_OPS_DIV;
+		c = ArithmeticLogicUnit(alu_op, a, b);
+		cout << a << " / " << b << " = " << c << '\n';
+		cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << '\n';
+	}
+	else if (op == "sqrt") {
+		alu_op = ALU_OPS_SQRT;
+		c = ArithmeticLogicUnit(alu_op, a, b);
+		cout << "sqrt(" << a << ") = " << c << '\n';
+		cout << "sqrt(" << to_binary(a) << " = " << to_binary(c) << '\n';
+	}
 
 	return EXIT_SUCCESS;
 }
