@@ -3,20 +3,16 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include <cmath>  // standard C++ version of pow()
+#include <universal/utility/directives.hpp>
 
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_POW
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/native/integers.hpp>
+// use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math/pow.hpp>
-#include <universal/number/quire/exceptions.hpp>  // math library might use quire
 #include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/native/integers.hpp> // for ipow
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -39,7 +35,7 @@ void GenerateTestCase(Ty a, Ty b) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
@@ -92,13 +88,13 @@ try {
 
 	cout << "Integer power function\n";
 	int a = 2;
-	int b = 32;
+	unsigned int b = 32;
 	cout << "2 ^ 32   = " << ipow(a, b) << endl;
-	cout << "2 ^ 32   = " << fastipow(a, b) << endl;
+	cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << endl;
 
-	uint64_t c = 1024;
+	int64_t c = 1024;
 	uint8_t d = 2;
-	cout << "1024 ^ 2 = " << ipow(c, d) << endl;
+	cout << "1024 ^ 2 = " << ipow(c, unsigned(d)) << endl;
 	cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << endl;
 
 	cout << "Posit Power function validation\n";

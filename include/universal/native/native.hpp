@@ -7,9 +7,11 @@
 #ifndef _NATIVE_
 #define _NATIVE_
 
-#include <universal/native/bit_functions.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/native/manipulators.hpp>
+#include <universal/native/bit_functions.hpp>
+#include <universal/native/boolean_logic_operators.hpp>
+#include <universal/native/subnormal.hpp>
 
 #endif

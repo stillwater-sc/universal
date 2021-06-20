@@ -8,7 +8,7 @@
 #define POSIT_TRACE_DECODE
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 /*

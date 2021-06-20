@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 template<size_t nbits, size_t es>
 void EnumerateRegimePatterns() {

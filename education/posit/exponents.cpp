@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 // examples of how regime and exponent are related to the scale of a posit
 int main(int argc, char** argv)

@@ -1,0 +1,19 @@
+setting up a new custom number system should proceed in the following order:
+
+0- define the number system encoding
+
+Number system implementation steps
+1- implement constructors, selectors (get and is), and modifiers (clear/reset/set)
+   Universal number systems follow a certain interface to unity the test suites for add/sub/mul/div/rem
+2- implement the value conversion, that is, explicit conversions to float/double/long double
+   and operator<<(ostream&)
+3- implement the input conversion, that is, explicit conversions from float/double/long double
+4- at this point, you have enough to support the math library by 
+   using the conversions to and from native IEEE-754 and use the 
+   standard library.
+   	Is there a generic math library shim that takes a new type
+	and encodes the conversion?
+5- implement addition and subtraction
+6- implement increment and decrement operators
+7- implement multiplication
+8- implement division and reciprocation

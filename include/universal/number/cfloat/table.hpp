@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>  // for typeid()
-#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
 
 namespace sw::universal {

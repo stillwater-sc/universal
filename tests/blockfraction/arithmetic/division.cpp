@@ -84,13 +84,6 @@ void TestMostSignificantBit() {
 	}
 }
 
-// generate specific test case that you can trace with the trace conditions in blockfraction
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename BlockType = uint8_t>
-void GenerateTestCase(int64_t lhs, int64_t rhs) {
-
-}
-
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -102,7 +95,6 @@ try {
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
 	
-	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "blockfraction division: ";
@@ -113,8 +105,6 @@ try {
 //	TestMostSignificantBit<27, uint16_t>();
 //	TestMostSignificantBit<33, uint32_t>();
 
-	GenerateTestCase<4>(0x8,0x1);  // -8 / 1 => -8
-
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockfraction<4>", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockfraction<8>", "division");
 
@@ -124,6 +114,7 @@ try {
 #endif
 
 #else
+	bool bReportIndividualTestCases = true;
 
 	cout << "blockfraction division validation" << endl;
 

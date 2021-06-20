@@ -16,7 +16,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // enable fast posits
 #define POSIT_FAST_SPECIALIZATION
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>

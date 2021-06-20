@@ -13,7 +13,7 @@
 #include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 #include <universal/number/areal/manipulators.hpp>  // hex_print and the like
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/number/areal/table.hpp>

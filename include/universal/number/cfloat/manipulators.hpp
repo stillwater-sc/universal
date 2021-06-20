@@ -11,17 +11,23 @@
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
-// This file contains functions that manipulate a posit type
-// using posit number system knowledge.
+// This file contains functions that manipulate a cfloat type
+// using cfloat number system knowledge.
 
 namespace sw::universal {
 
 // Generate a type tag for this cfloat, for example, cfloat<8,1, class uint8_t>
-template<size_t nbits, size_t es, typename bt>
-std::string type_tag(const cfloat<nbits, es, bt>& v) {
-	std::stringstream ss;
-	ss << "cfloat<" << nbits << "," << es << "," << typeid(bt).name() << ">";
-	return ss.str();
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+	std::stringstream s;
+	s << "cfloat<"
+		<< nbits << ", "
+		<< es << ", "
+		<< typeid(bt).name() << ", "
+		<< (hasSubnormals ? "hasSubnormals, " : "no subnormals, ")
+		<< (hasSupernormals ? "hasSupernormals, " : "no supernormals, ")
+		<< (isSaturating ? "isSaturating>" : "not saturating>");
+	return s.str();
 }
 
 template<typename cfloatConfiguration>
@@ -52,33 +58,42 @@ void subnormals() {
 	}
 }
 
-// report dynamic range of a type, specialized for a posit
-template<size_t nbits, size_t es, typename bt>
-std::string dynamic_range(cfloat<nbits, es, bt>& b) {
-	std::stringstream ss;
-	ss << type_tag(b) << ": ";
-	ss << "minpos scale " << std::setw(10) << minpos(b).scale() << "     ";
-	ss << "maxpos scale " << std::setw(10) << maxpos(b).scale();
-	return ss.str();
+// report dynamic range of a type, specialized for a cfloat
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string dynamic_range(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b) {
+	std::stringstream s;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c;
+	s << type_tag(c) << ": ";
+	s << "minpos scale " << std::setw(10) << c.minpos().scale() << "     ";
+	s << "maxpos scale " << std::setw(10) << c.maxpos().scale() << '\n';
+	s << "[" << c.maxneg() << " ... " << c.minneg() << ", -0, +0, " << c.minpos() << " ... " << c.maxpos() << "]\n";
+	cfloat<nbits + 1, es, bt, hasSubnormals, hasSupernormals, isSaturating> d,e;
+	d = double(c.maxneg());
+	d--;
+	e = double(c.maxpos());
+	e++;
+	s << "inclusive range = (" << to_binary(d) << ", " << to_binary(d) << ")\n";
+	s << "inclusive range = (" << d << ", " << e << ")\n";
+	return s.str();
 }
 
 // Generate a string representing the cfloat components: sign, exponent, faction and value
 template<size_t nbits, size_t es, typename bt>
 std::string components(const cfloat<nbits, es, bt>& v) {
-	std::stringstream ss;
-	bool s{ false };
+	std::stringstream s;
+	bool sign{ false };
 	blockbinary<v.es, bt> e;
 	blockbinary<v.fbits, bt> f;
-	decode(v, s, e, f);
+	decode(v, sign, e, f);
 
 	// TODO: hardcoded field width is governed by pretty printing cfloat tables, which by construction will always be small cfloats
-	ss << std::setw(14) << to_binary(v) 
-		<< " Sign : " << std::setw(2) << s
+	s << std::setw(14) << to_binary(v) 
+		<< " Sign : " << std::setw(2) << sign
 		<< " Exponent : " << std::setw(5) << e
 		<< " Fraction : " << std::setw(8) << f
 		<< " Value : " << std::setw(16) << v;
 
-	return ss.str();
+	return s.str();
 }
 
 // generate a binary string for cfloat
@@ -90,50 +105,50 @@ inline std::string to_hex(const cfloat<nbits, es, bt>& v) {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
-	std::stringstream ss;
-	ss << "0x" << std::hex;
+	std::stringstream s;
+	s << "0x" << std::hex;
 	long nrNibbles = long(1ull + ((nbits - 1ull) >> 2ull));
 	for (long n = nrNibbles - 1; n >= 0; --n) {
 		uint8_t nibble = v.nibble(size_t(n));
-		ss << hexChar[nibble];
-		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+		s << hexChar[nibble];
+		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) s << '\'';
 	}
-	return ss.str();
+	return s.str();
 }
 
 // generate a cfloat format ASCII hex format nbits.esxNN...NNa
 template<size_t nbits, size_t es, typename bt>
 inline std::string hex_print(const cfloat<nbits, es, bt>& r) {
-	std::stringstream ss;
-	ss << nbits << '.' << es << 'x' << to_hex(r) << 'r';
-	return ss.str();
+	std::stringstream s;
+	s << nbits << '.' << es << 'x' << to_hex(r) << 'r';
+	return s.str();
 }
 
 template<size_t nbits, size_t es, typename bt>
 std::string pretty_print(const cfloat<nbits, es, bt>& r) {
-	std::stringstream ss;
+	std::stringstream s;
 	constexpr size_t fbits = cfloat<nbits, es, bt>::fbits;
-	bool s{ false };
+	bool sign{ false };
 	blockbinary<es, bt> e;
 	blockbinary<fbits, bt> f;
-	decode(r, s, e, f);
+	decode(r, sign, e, f);
 
 	// sign bit
-	ss << (r.isneg() ? '1' : '0');
+	s << (sign ? '1' : '0');
 
 	// exponent bits
-	ss << '-';
+	s << '-';
 	for (int i = int(es) - 1; i >= 0; --i) {
-		ss << (e.test(static_cast<size_t>(i)) ? '1' : '0');
+		s << (e.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
 	// fraction bits
-	ss << '-';
+	s << '-';
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
-		ss << (f.test(static_cast<size_t>(i)) ? '1' : '0');
+		s << (f.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
-	return ss.str();
+	return s.str();
 }
 
 template<size_t nbits, size_t es, typename bt>
@@ -145,11 +160,11 @@ std::string info_print(const cfloat<nbits, es, bt>& p, int printPrecision = 17) 
 template<size_t nbits, size_t es, typename bt>
 std::string color_print(const cfloat<nbits, es, bt>& r) {
 	using Real = cfloat<nbits, es, bt>;
-	std::stringstream ss;
-	bool s{ false };
+	std::stringstream s;
+	bool sign{ false };
 	blockbinary<es,bt> e;
 	blockbinary<Real::fbits,bt> f;
-	decode(r, s, e, f);
+	decode(r, sign, e, f);
 
 	Color red(ColorCode::FG_RED);
 	Color yellow(ColorCode::FG_YELLOW);
@@ -160,20 +175,20 @@ std::string color_print(const cfloat<nbits, es, bt>& r) {
 	Color def(ColorCode::FG_DEFAULT);
 
 	// sign bit
-	ss << red << (r.isneg() ? '1' : '0');
+	s << red << (sign ? '1' : '0');
 
 	// exponent bits
 	for (int i = int(es) - 1; i >= 0; --i) {
-		ss << cyan << (e.test(static_cast<size_t>(i)) ? '1' : '0');
+		s << cyan << (e.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
 	// fraction bits
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
-		ss << magenta << (f.test(static_cast<size_t>(i)) ? '1' : '0');
+		s << magenta << (f.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
-	ss << def;
-	return ss.str();
+	s << def;
+	return s.str();
 }
 
 

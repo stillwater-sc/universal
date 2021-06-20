@@ -8,7 +8,7 @@
 #include <chrono>
 // configure the arithmetic class
 #define LNS_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/lns/lns>
+#include <universal/number/lns/lns.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult

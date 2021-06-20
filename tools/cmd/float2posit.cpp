@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<size_t nbits, size_t es, typename Ty>

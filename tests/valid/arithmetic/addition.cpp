@@ -16,8 +16,8 @@
 //#define VALID_VERBOSE_OUTPUT
 #define VALID_TRACE_SUB
 #include <universal/number/posit/exceptions.hpp>
-#include <universal/number/posit/posit.hpp>
-#include <universal/number/valid/valid.hpp>
+#include <universal/number/posit/posit_impl.hpp>
+#include <universal/number/valid/valid_impl.hpp>
 #include <universal/number/valid/manipulators.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 

@@ -104,8 +104,9 @@ inline std::string to_binary(float number, bool bNibbleMarker = false) {
 }
 
 // return in triple form (sign, scale, fraction)
-inline std::string to_triple(float number) {
+inline std::string to_triple(float number, bool nibbleMarker = false) {
 	std::stringstream s;
+
 	float_decoder decoder;
 	decoder.f = number;
 
@@ -130,6 +131,7 @@ inline std::string to_triple(float number) {
 	uint32_t mask = (uint32_t(1) << 22);
 	for (int i = 22; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (nibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 		mask >>= 1;
 	}
 

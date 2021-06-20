@@ -16,7 +16,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/native/integers.hpp>
-#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/number/fixpnt/attributes.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>

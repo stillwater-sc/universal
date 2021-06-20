@@ -16,7 +16,7 @@
 // enabling tracing
 #define TRACE_CONVERSION 0
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 // fixed-point type manipulators such as pretty printers
 #include <universal/number/areal/manipulators.hpp>
 #include <universal/number/areal/math_functions.hpp>

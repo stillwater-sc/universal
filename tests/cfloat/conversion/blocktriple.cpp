@@ -14,7 +14,7 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
-#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
 #include <universal/number/cfloat/math_functions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
@@ -28,15 +28,15 @@ namespace sw::universal {
 	/// <typeparam name="bt">block storage type of representation</typeparam>
 	/// <param name="bReportIndividualTestCases">if true print individual test cases</param>
 	/// <returns></returns>
-	template<typename cfloatConfiguration>
-	int VerifycfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
+	template<typename CfloatConfigurate>
+	int VerifyCfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
-		constexpr size_t nbits = cfloatConfiguration::nbits;
-		constexpr size_t es = cfloatConfiguration::es;
-		using bt = typename cfloatConfiguration::BlockType;
-		constexpr size_t fbits = cfloatConfiguration::fbits;
-		constexpr size_t abits = cfloatConfiguration::abits;
+		constexpr size_t nbits = CfloatConfigurate::nbits;
+		constexpr size_t es = CfloatConfigurate::es;
+		using bt = typename CfloatConfigurate::BlockType;
+		constexpr size_t fbits = CfloatConfigurate::fbits;
+		constexpr size_t abits = CfloatConfigurate::abits;
 
 		int nrOfTestFailures{ 0 };
 		constexpr size_t NR_VALUES = (1u << nbits);
@@ -60,32 +60,37 @@ namespace sw::universal {
 	}
 
 
-	template<typename cfloatConfiguration>
-	int VerifycfloatToBlocktripleAddConversion(bool bReportIndividualTestCases) {
+	template<typename CfloatConfigurate>
+	int VerifyBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
-		constexpr size_t nbits = cfloatConfiguration::nbits;
-		constexpr size_t es = cfloatConfiguration::es;
-		using bt = typename cfloatConfiguration::BlockType;
-		constexpr size_t fbits = cfloatConfiguration::fbits;
-		constexpr size_t abits = cfloatConfiguration::abits;
+		constexpr size_t nbits = CfloatConfigurate::nbits;
+		constexpr size_t es = CfloatConfigurate::es;
+		using bt = typename CfloatConfigurate::BlockType;
+		constexpr size_t fbits = CfloatConfigurate::fbits;
+		constexpr size_t abits = CfloatConfigurate::abits;
 
 		int nrOfTestFailures{ 0 };
 		constexpr size_t NR_VALUES = (1u << nbits);
-		cfloat<nbits, es, bt> a;
-		blocktriple<abits, bt> b; // now we want to create a blocktriple that goes into an add or subtract operation
+		cfloat<nbits, es, bt> a, nut;
+		blocktriple<abits+1, bt> b; // blocktriple that comes out of an addition or subtraction
 
 		if (bReportIndividualTestCases) a.constexprClassParameters();
 
 		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i);
-			a.normalizeAddition(b);           // if normalize had a fraction bit parameter, we could support arbitrary conversions: TODO
-			if (double(a) != double(b)) {
+			// we can't use this to test the output of the ALU conversion use case
+			// as this is the input case:
+			// a.normalizeAddition(b);           // if normalize had a fraction bit parameter, we could support arbitrary conversions: TODO
+			b = float(a); // we use a float as this verification test is only intended to be used for small cfloats
+			convert(b, nut);
+			cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+			if (a != nut) {
 				if (a.isnan() && b.isnan()) continue;
 				if (a.isinf() && b.isinf()) continue;
 
 				++nrOfTestFailures;
-				if (bReportIndividualTestCases) cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+				if (bReportIndividualTestCases) cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
 			}
 		}
 		return nrOfTestFailures;
@@ -115,6 +120,7 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
+#ifdef LATER
 	{
 		constexpr size_t nbits = 64;
 		constexpr size_t es = 11;
@@ -132,14 +138,18 @@ try {
 		cout << "blocktriple: " << to_triple(b) << " : " << b << endl;
 	}
 
-	nrOfFailedTestCases += VerifycfloatToBlocktripleConversion< cfloat< 3, 1, uint8_t> >(false);
-	nrOfFailedTestCases += VerifycfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t> >(false);
-	nrOfFailedTestCases += VerifycfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t> >(false);
-	nrOfFailedTestCases += VerifycfloatToBlocktripleConversion< cfloat< 8, 4, uint8_t> >(false);
 
-	nrOfFailedTestCases += VerifycfloatToBlocktripleConversion< cfloat< 9, 1, uint8_t> >(true);
-	nrOfFailedTestCases += VerifycfloatToBlocktripleConversion< cfloat<10, 2, uint8_t> >(true);
-	nrOfFailedTestCases += VerifycfloatToBlocktripleConversion< cfloat<18, 5, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 3, 1, uint8_t> >(false);
+	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t> >(false);
+	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t> >(false);
+	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 8, 4, uint8_t> >(false);
+
+	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 9, 1, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat<18, 5, uint8_t> >(true);
+#endif
+
+	nrOfFailedTestCases += VerifyBlocktripleToCfloatConversion < cfloat < 8, 2, uint8_t > > (true);
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
@@ -155,86 +165,86 @@ try {
 	std::cout << "cfloat to blocktriple conversion validation" << '\n';
 
 	// es = 1
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 3, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 3,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 4, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 4,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 5, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 6, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 7, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 8, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 9, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<10, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<12, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<16, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<16,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<18, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,1>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 3, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 3,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<16,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,1>");   // 3 blocks
 
 
 	// es = 2
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 4,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 5, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 6, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 7, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 8, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<10, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<12, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<14, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<16, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<16,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<18, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,2>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 4,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<16,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,2>");   // 3 blocks
 
 
 	// es = 3
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 6, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 7, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 8, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<10, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<12, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<14, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<18, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,3>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,3>");   // 3 blocks
 
 
 	// es = 4
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 6, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 7, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 8, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<10, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<12, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<14, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<18, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,4>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,4>");   // 3 blocks
 
 
 	// es = 5
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 7, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 8, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<10, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<12, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<14, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<18, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,5>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,5>");   // 3 blocks
 
 
 	// es = 6
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 8, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 9, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<10, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<12, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<14, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,6>");
 
 
 	// es = 7
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat< 9, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<10, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<12, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<14, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,7>");
 
 	// still failing
 	// es = 8
-//	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<11, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<11,8>");
-//	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<12, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,8>");
-//	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<14, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<11, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<11,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,8>");
 
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases = ReportTestResult(VerifycfloatToBlocktripleConversion< cfloat<25, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<25,2>");   // 4 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<25, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<25,2>");   // 4 blocks
 
 #endif  // STRESS_TESTING
 

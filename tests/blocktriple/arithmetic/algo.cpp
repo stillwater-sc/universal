@@ -69,13 +69,11 @@ try {
 	{
 		constexpr size_t nbits = 8;  // hidden + fraction bits
 
-		blocktriple<nbits, uint32_t> a, b;
+		blocktriple<nbits, uint32_t> a, b, c;
 		a = 1.0f;
 		b = 1.0f;
 		cout << to_triple(a) << " : " << a << '\n';
 		cout << to_triple(b) << " : " << b << '\n';
-
-		blocktriple<nbits+1, uint32_t> c;
 		c.add(a, b);
 		cout << to_triple(c) << " : " << c << '\n';
 	}

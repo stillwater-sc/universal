@@ -7,8 +7,8 @@
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
-#include <universal/blas/blas>
+#include <universal/number/posit/posit.hpp>
+#include <universal/blas/blas.hpp>
 
 constexpr double PI = 3.14159265358979323846;  // best practice for C++
 

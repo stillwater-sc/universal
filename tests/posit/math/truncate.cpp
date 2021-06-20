@@ -3,13 +3,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// minimum set of include files to reflect source code dependencies
-#define POSIT_ENABLE_LITERALS 1
+#include <universal/utility/directives.hpp>
+// use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math/truncate.hpp>
-#include <universal/number/quire/exceptions.hpp>  // math library might use quire
 #include <universal/verification/posit_math_test_suite.hpp>
 
 #define MANUAL_TESTING 1
@@ -38,7 +34,7 @@ int VerifyFloor(bool bReportIndividualTestCases) {
 	return nrOfFailedTestCases;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;

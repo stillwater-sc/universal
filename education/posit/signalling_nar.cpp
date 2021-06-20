@@ -8,7 +8,7 @@
 // you can enable it by setting POSIT_THROW_ARITHMETIC_EXCEPTION to 1
 // disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 int main()
 try {

@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/cfloat/cfloat>
+#include <universal/number/cfloat/cfloat.hpp>
 // quick helper to report on a cfloat's specialness
 template<size_t nbits, size_t es, typename bt>
 void checkSpecialCases(sw::universal::cfloat<nbits, es, bt> b) {

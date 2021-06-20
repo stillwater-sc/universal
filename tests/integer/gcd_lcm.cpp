@@ -6,7 +6,7 @@
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 
 template<size_t nbits, typename BlockType>
 sw::universal::integer<nbits, BlockType> greatest_common_divisor(const sw::universal::integer<nbits, BlockType>& a, const sw::universal::integer<nbits, BlockType>& b) {

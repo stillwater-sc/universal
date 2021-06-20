@@ -9,37 +9,6 @@
 #include <sstream>
 #include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
 
-// compiler specific operators
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
 namespace sw::universal {
 
 // forward references
@@ -85,13 +54,14 @@ What is the required API of blockfraction to support that semantic?
 
 
 /// <summary>
-/// a block-based floating-point fraction of the form  ##.ff---ff
-/// for add/sub, expanded to ##.ff---ffaaa
-/// for mul, expanded to ##.ff--ffff--ff
+/// a block-based floating-point fraction in 2's complement of the form  ###.ff---ff
+/// for add/sub, expanded to ###.ff---ffaaa
+/// for mul, expanded to ###.ff--ffff--ff
 /// 
 /// NOTE: don't set a default blocktype as this makes the integration more brittle
-/// as blocktriple uses the blockfraction as storage class and thus needs to be
-/// in sync.
+/// as blocktriple uses the blockfraction as storage class and needs to interact
+/// with the client number system, which also is blocked. Using the same blocktype
+/// simplifies the copying of exponent and fraction bits from and to the client.
 /// </summary>
 /// <typeparam name="bt"></typeparam>
 template<size_t _nbits, typename bt>
@@ -99,20 +69,47 @@ class blockfraction {
 public:
 	typedef bt BlockType;
 	static constexpr size_t nbits = _nbits;
+	static constexpr size_t rbit = nbits - 3;  // default rbit
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64 - bitsInBlock));
-	static constexpr bt maxBlockValue = bt(-1);
+	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock));
+	static constexpr uint64_t fmask = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - nbits + 3));
 
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	static constexpr bt ALL_ONES = bt(~0);
 	static constexpr bt MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt OVERFLOW_BIT = ~(MSU_MASK >> 1) & MSU_MASK;
 
 	// constructors
 	constexpr blockfraction() noexcept : _block{ 0 } {}
+	constexpr blockfraction(uint64_t raw) noexcept : _block{ 0 } {
+		if constexpr (1 == nrBlocks) {
+			_block[0] = static_cast<bt>(storageMask & raw);;
+		}
+		else if constexpr (2 == nrBlocks) {
+			_block[0] = static_cast<bt>(storageMask & raw);
+			_block[1] = static_cast<bt>(storageMask & (raw >> bitsInBlock));
+		}
+		else if constexpr (3 == nrBlocks) {
+			_block[0] = static_cast<bt>(storageMask & raw);
+			_block[1] = static_cast<bt>(storageMask & (raw >> bitsInBlock));
+			_block[2] = static_cast<bt>(storageMask & (raw >> 2*bitsInBlock));
+		}
+		else if constexpr (4 == nrBlocks) {
+			_block[0] = static_cast<bt>(storageMask & raw);
+			_block[1] = static_cast<bt>(storageMask & (raw >> bitsInBlock));
+			_block[2] = static_cast<bt>(storageMask & (raw >> 2 * bitsInBlock));
+			_block[3] = static_cast<bt>(storageMask & (raw >> 3 * bitsInBlock));
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks; ++i) {
+				_block[i] = static_cast<bt>(storageMask & (raw >> i * bitsInBlock));
+			}
+		}
+	}
 
 	blockfraction(const blockfraction&) noexcept = default;
 	blockfraction(blockfraction&&) noexcept = default;
@@ -179,11 +176,11 @@ public:
 	//
 
 	/// <summary>
-	/// add two fractions of the form 0h.fffff, that is, radix point at nbits-2
-	/// by design, the carry gets lopped off
+	/// add two fractions of the form 00h.fffff, that is, radix point at nbits-3
+	/// In this encoding, all valid values are encapsulated
 	/// </summary>
-	/// <param name="lhs">nbits of fraction in the form 0h.ffff</param>
-	/// <param name="rhs">nbits of fraction in the form 0h.ffff</param>
+	/// <param name="lhs">nbits of fraction in the form 00h.ffff</param>
+	/// <param name="rhs">nbits of fraction in the form 00h.ffff</param>
 	void add(const blockfraction<nbits, bt>& lhs, const blockfraction<nbits, bt>& rhs) {
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
@@ -191,25 +188,7 @@ public:
 			uint64_t l = uint64_t(lhs._block[i]);
 			uint64_t r = uint64_t(rhs._block[i]);
 			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
-			carry = (s > maxBlockValue);
-			_block[i] = bt(s);
-		}
-		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		_block[MSU] &= MSU_MASK;
-	}
-	/// <summary>
-	/// add two fractions of the form 0h.ffff and produce a result of the form 0hf.ffff
-	/// </summary>
-	/// <param name="lhs">nbits-1 of fraction in the form 0h.ffff</param>
-	/// <param name="rhs">nbits-1 of fraction in the form 0h.ffff</param>
-	void uradd(const blockfraction<nbits-1, bt>& lhs, const blockfraction<nbits-1, bt>& rhs) {
-		bool carry = false;
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			// cast up so we can test for overflow
-			uint64_t l = uint64_t(lhs._block[i]);
-			uint64_t r = uint64_t(rhs._block[i]);
-			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
-			carry = (s > maxBlockValue);
+			carry = (s > ALL_ONES);
 			_block[i] = bt(s);
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
@@ -333,8 +312,28 @@ public:
 	// modifiers
 	 // clear a block binary number
 	inline constexpr void clear() noexcept {
-		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = bt(0ull);
+		if constexpr (1 == nrBlocks) {
+			_block[0] = 0;
+		}
+		else if constexpr (2 == nrBlocks) {
+			_block[0] = 0;
+			_block[1] = 0;
+		}
+		else if constexpr (3 == nrBlocks) {
+			_block[0] = 0;
+			_block[1] = 0;
+			_block[2] = 0;
+		}
+		else if constexpr (3 == nrBlocks) {
+			_block[0] = 0;
+			_block[1] = 0;
+			_block[2] = 0;
+			_block[3] = 0;
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks; ++i) {
+				_block[i] = static_cast<bt>(0ull);
+			}
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
@@ -388,17 +387,16 @@ public:
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
 	inline constexpr bool sign() const { return false; } // dummy to unify the API with other number systems in Universal 
-	inline constexpr bool test(size_t bitIndex) const {	return at(bitIndex); }
-	// check carry bit in output of the ALU
-	inline constexpr bool checkCarry() const { return at(nbits - 2); }
-	inline constexpr bool at(size_t bitIndex) const {
-		if (bitIndex < nbits) {
-			bt word = _block[bitIndex / bitsInBlock];
-			bt mask = bt(1ull << (bitIndex % bitsInBlock));
-			return (word & mask);
-		}
-		throw "bit index out of bounds";
+	inline constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
+	inline constexpr bool at(size_t bitIndex) const noexcept {
+		if (bitIndex >= nbits) return false;
+		bt word = _block[bitIndex / bitsInBlock];
+		bt mask = bt(1ull << (bitIndex % bitsInBlock));
+		return (word & mask);
 	}
+	// check carry bit in output of the ALU
+	inline constexpr bool checkCarry() const noexcept { return at(nbits - 2); }
+	// helpers
 	inline constexpr uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
@@ -409,25 +407,25 @@ public:
 		}
 		throw "nibble index out of bounds";
 	}
-	inline constexpr bt block(size_t b) const {
-		if (b >= nrBlocks) throw "block index out of bounds";
+	inline constexpr bt block(size_t b) const noexcept {
+		if (b >= nrBlocks) return bt{ 0 };
 		return _block[b];
 	}
-	inline constexpr uint64_t fraction_ull() const {
+	inline constexpr uint64_t fraction_ull() const noexcept {
 		uint64_t raw{ 0 };
 		if constexpr (1 == nrBlocks) {
 			raw = _block[MSU];
-			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+			raw &= MSU_MASK;
 		}
 		else if constexpr (2 == nrBlocks) {
 			raw = _block[MSU];
-			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+			raw &= MSU_MASK;
 			raw <<= bitsInBlock;
 			raw |= _block[0];
 		}
 		else if constexpr (3 == nrBlocks) {
 			raw = _block[MSU];
-			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+			raw &= MSU_MASK;
 			raw <<= bitsInBlock;
 			raw |= _block[1];
 			raw <<= bitsInBlock;
@@ -435,7 +433,7 @@ public:
 		}
 		else if constexpr (4 == nrBlocks) {
 			raw = _block[MSU];
-			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+			raw &= MSU_MASK;
 			raw <<= bitsInBlock;
 			raw |= _block[2];
 			raw <<= bitsInBlock;
@@ -445,20 +443,24 @@ public:
 		}
 		else {
 			raw = _block[MSU];
-			raw &= (MSU_MASK >> 2);   // remove the hidden bits
-			for (int i = MSU - 1; i >= 0; ++i) {
+			raw &= MSU_MASK;
+			for (int i = MSU - 1; i >= 0; --i) {
 				raw <<= bitsInBlock;
 				raw |= _block[i];
 			}
 		}
+		// remove the non-fraction bits
+		raw &= fmask;
 		return raw;
 	}
+
+#ifdef DEPRECATED
 	// copy a value over from one blockfraction to this blockfraction
 	// blockfraction is a 2's complement encoding, so we sign-extend by default
 	template<size_t srcbits>
 	inline blockfraction<nbits, bt>& assign(const blockfraction<srcbits, bt>& rhs) {
 		clear();
-		// since bt is the same, we can simply copy the blocks in
+		// since bt is the same, we can directly copy the blocks in
 		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
 		for (size_t i = 0; i < minNrBlocks; ++i) {
 			_block[i] = rhs.block(i);
@@ -475,7 +477,6 @@ public:
 		return *this;
 	}
 
-#ifdef DEPRECATED
 	// copy a value over from one blockfraction to this without sign-extending the value
 	// blockfraction is a 2's complement encoding, so we sign-extend by default
 	// for fraction/significent encodings, we need to turn off sign-extending.
@@ -491,7 +492,7 @@ public:
 		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
-
+#endif
 	// return the position of the most significant bit, -1 if v == 0
 	inline int msb() const noexcept {
 		for (int i = int(MSU); i >= 0; --i) {
@@ -507,20 +508,25 @@ public:
 		}
 		return -1; // no significant bit found, all bits are zero
 	}
-#endif
 
 	// conversion to native types
 	inline constexpr float to_float() const noexcept {
 		float f{ 0.0f };
-		// nbits in the form 0h.fffff in 2's complement, so check if we are negative and fix that first
+		// nbits in the form 00h.fffff in 2's complement, so check if we are negative and fix that first
 		blockfraction<nbits, bt> tmp(*this);
 		if (test(nbits - 1)) tmp.twosComplement();
-		if (test(nbits - 2)) f = 1.0f;  // check hidden bit
+		// process the value above the radix
+		// after this conditional 2's complement, the bit at nbits - 1 is always going to be zero
+		if (tmp.test(nbits - 2)) f += 2.0f;
+		if (tmp.test(nbits - 3)) f += 1.0f;
+//		in the default pattern of #oh.ffff, the 'o' bit at(nbits - 2) is an overflow bit
+
 		// enumerate from the smallest bit position and add and increment value
-		if (nbits < 21) { // check if we can represent this value with a native normal float with 23 fraction bits => nbits <= (23 - 2)
-			float v = std::pow(0.5f, float(nbits - 2));
-			for (size_t i = 0; i < nbits - 2u; ++i) {
-				if (test(i)) f += v;
+		if constexpr (nbits < 21) { // check if we can represent this value with a native normal float with 23 fraction bits => nbits <= (23 - 3)
+			constexpr size_t radix = nbits - 3;
+			float v = std::pow(2.0f, -float(radix));   // start from the small samples
+			for (size_t fractionBit = 0; fractionBit < radix; ++fractionBit) {
+				if (tmp.test(fractionBit)) f += v;
 				v *= 2.0;
 			}
 		}
@@ -531,15 +537,20 @@ public:
 	}
 	inline constexpr double to_double() const noexcept {
 		double d{ 0.0 };
-		// nbits in the form 0h.fffff in 2's complement, so check if we are negative and fix that first
+		// nbits in the form 00h.fffff in 2's complement, so check if we are negative and fix that first
 		blockfraction<nbits, bt> tmp(*this);
 		if (test(nbits - 1)) tmp.twosComplement();
-		if (test(nbits - 2)) d = 1.0;  // check hidden bit
-		// enumerate from the smallest bit position and add and increment value
-		if (nbits < 51) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 2)
-			double v = std::pow(0.5, double(nbits - 2));
-			for (size_t i = 0; i < nbits - 2u; ++i) {
-				if (test(i)) d += v;
+		// process the value above the radix
+		// after this conditional 2's complement, the bit at nbits - 1 is always going to be zero
+		if (tmp.test(nbits - 2)) d += 2.0;
+		if (tmp.test(nbits - 3)) d += 1.0;
+		//		in the default config of #oh.ffff, the 'o' bit at(nbits - 2) is an overflow bit
+
+		if constexpr (nbits < 50) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 3)
+			constexpr size_t radix = nbits - 3;
+			double v = std::pow(2.0, -double(radix));
+			for (size_t fractionBit = 0; fractionBit < radix; ++fractionBit) {
+				if (tmp.test(fractionBit)) d += v;
 				v *= 2.0;
 			}
 		}
@@ -578,6 +589,7 @@ protected:
 	// none
 
 public:
+	// fraction bits managed in blocks, radix point is always at nbits - 3
 	bt _block[nrBlocks];
 
 private:
@@ -601,22 +613,24 @@ private:
 // ostream operator
 template<size_t nbits, typename bt>
 std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt>& number) {
-	return ostr << to_binary(number);
+	return ostr << double(number);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // conversions to string representations
 
-// create a binary representation of the blockfraction: 0h.ffff
-// by design, the radix point is at nbits-2
+// create a binary representation of the blockfraction: 00h.ffff
+// by design, the radix point is at nbits-3
 template<size_t nbits, typename bt>
 std::string to_binary(const blockfraction<nbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
-	s << 'b';
-	s << (number.at(size_t(nbits - 1)) ? '1' : '0');
-	s << (number.at(size_t(nbits - 2)) ? '1' : '0');
+	s << "0b";
+	int i = nbits - 1;
+	s << (number.at(size_t(i--)) ? '1' : '0'); // sign indicator of 2's complement
+	s << (number.at(size_t(i--)) ? '1' : '0'); // overflow indicator to trigger right shift
+	s << (number.at(size_t(i--)) ? '1' : '0'); // the hidden bit
 	s << '.';
-	for (int i = int(nbits - 3); i >= 0; --i) {
+	for (; i >= 0; --i) {
 		s << (number.at(size_t(i)) ? '1' : '0');
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}

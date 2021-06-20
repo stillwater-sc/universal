@@ -13,63 +13,10 @@
 
 // mathematical function definitions and implementations
 #include <universal/number/posit/math_functions.hpp>
+#include <universal/verification/test_reporters.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 namespace sw::universal {
-
-static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
-
-template<size_t nbits, size_t es>
-void ReportTwoInputFunctionError(const std::string& test_case, const std::string& op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case << " " << op << "("
-		<< std::setprecision(20)
-		<< std::setw(FLOAT_TABLE_WIDTH) << a
-		<< ","
-		<< std::setw(FLOAT_TABLE_WIDTH) << b << ")"
-		<< " != "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get()
-		<< std::setprecision(5)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportTwoInputFunctionSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case << " " << op << "("
-		<< std::setprecision(20)
-		<< std::setw(FLOAT_TABLE_WIDTH) << a
-		<< ","
-		<< std::setw(FLOAT_TABLE_WIDTH) << b << ")"
-		<< " == "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " ==  "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get()
-		<< std::setprecision(5)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportOneInputFunctionError(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-		<< " != "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get() << std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportOneInputFunctionSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-		<< " == "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref
-		<< " " << components_to_string(presult) << std::endl;
-}
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 
@@ -204,15 +151,15 @@ int VerifyExp2(bool bReportIndividualTestCases) {
 // enumerate all power method cases for a posit configuration
 template<size_t nbits, size_t es>
 int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
-	constexpr size_t NR_POSITS = (unsigned(1) << nbits);
+	constexpr size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, ppow, pref;
 
 	uint32_t testNr = 0;
-	for (size_t i = 0; i < NR_POSITS; ++i) {
+	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
 		double da = double(pa);
-		for (size_t j = 0; j < NR_POSITS; ++j) {
+		for (size_t j = 0; j < NR_TEST_CASES; ++j) {
 			pb.setbits(j);
 			double db = double(pb);
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -241,7 +188,7 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 			++testNr;
 			if (testNr > maxSamples) {
 				std::cerr << "VerifyPower has been truncated\n";
-				i = j = NR_POSITS;
+				i = j = NR_TEST_CASES;
 			}
 		}
 	}

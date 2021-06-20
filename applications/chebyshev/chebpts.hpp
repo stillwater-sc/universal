@@ -7,8 +7,8 @@
 // See Readme for further details
 
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
-#include <universal/blas/blas>
+#include <universal/number/posit/posit.hpp>
+#include <universal/blas/blas.hpp>
 
 namespace sw::universal {
 	template<typename Scalar>

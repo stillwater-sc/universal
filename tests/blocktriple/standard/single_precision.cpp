@@ -8,6 +8,7 @@
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/verification/test_status.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -23,7 +24,6 @@ try {
 	std::string tag = " blocktriple<23>";
 
 	cout << "Standard single-precision blocktriple<23> configuration tests" << endl;
-
 
 #if MANUAL_TESTING
 

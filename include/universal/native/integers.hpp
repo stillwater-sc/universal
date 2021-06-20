@@ -147,7 +147,7 @@ template<typename Integer,
 inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleMarker = true) {
 	std::stringstream s;
 	if (nbits == 0) nbits = 8*sizeof(number);
-	s << 'b';
+	s << "0b";
 	uint64_t mask = (uint64_t(1) << (nbits - 1));
 	for (int i = int(nbits) - 1; i >= 0; --i) {
 		s << ((number & mask) ? '1' : '0');

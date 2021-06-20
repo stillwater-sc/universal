@@ -8,7 +8,7 @@
 // default is double constants
 #undef PI_IN_LONG_DOUBLES
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // best practice for C++11
 // inject mathematical constants in our namespace
@@ -23,12 +23,12 @@ constexpr double m_3pi_4    = 4.71238898038468985769;  // 3*pi/4
 constexpr double m_2pi      = 6.28318530717958647693;  // 2*pi
 #else
 // long double values
-constexpr double m_pi_4     = 0.78539816339744830961566084581988l; // pi/4
-constexpr double m_pi_3     = 1.0471975511965977461542144610932l;  // pi/3
-constexpr double m_pi_2     = 1.5707963267948966192313216916398l;  // pi/2
-constexpr double m_pi       = 3.1415926535897932384626433832795l;  // pi
-constexpr double m_3pi_4    = 4.7123889803846898576939650749193l;  // 3*pi/4
-constexpr double m_2pi      = 6.283185307179586476925286766559l;   // 2*pi
+constexpr long double m_pi_4     = 0.78539816339744830961566084581988l; // pi/4
+constexpr long double m_pi_3     = 1.0471975511965977461542144610932l;  // pi/3
+constexpr long double m_pi_2     = 1.5707963267948966192313216916398l;  // pi/2
+constexpr long double m_pi       = 3.1415926535897932384626433832795l;  // pi
+constexpr long double m_3pi_4    = 4.7123889803846898576939650749193l;  // 3*pi/4
+constexpr long double m_2pi      = 6.283185307179586476925286766559l;   // 2*pi
 #endif
 
 constexpr double m_1_pi     = 0.318309886183790671538; // 1/pi
@@ -42,4 +42,4 @@ constexpr double m_log10e   = 0.434294481903251827651; // log10(e)
 constexpr double m_ln2      = 0.693147180559945309417; // ln(2)
 constexpr double m_ln10     = 2.30258509299404568402;  // ln(10)
 
-}}  // namespace sw::universal
+}  // namespace sw::universal

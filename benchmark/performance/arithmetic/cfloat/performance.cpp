@@ -7,7 +7,7 @@
 #include <chrono>
 // configure the cfloat arithmetic class
 #define cfloat_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/cfloat/cfloat>
+#include <universal/number/cfloat/cfloat.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult

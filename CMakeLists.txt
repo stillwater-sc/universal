@@ -33,10 +33,10 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 20)
+  set(UNIVERSAL_VERSION_MINOR 30)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 1)
+  set(UNIVERSAL_VERSION_PATCH 3)
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
@@ -99,7 +99,7 @@ option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"
 option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 
 # number systems and their verification suites
-option(BUILD_STORAGE_CLASSES             "Set to ON to build storage class tests"              OFF)
+option(BUILD_ARITHMETIC_CLASSES          "Set to ON to build arithmetic class tests"           OFF)
 option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
 option(BUILD_INTEGERS                    "Set to ON to build integer tests"                    OFF)
 option(BUILD_DECIMALS                    "Set to ON to build decimal tests"                    OFF)
@@ -519,7 +519,7 @@ endif(BUILD_BENCHMARKS)
 
 if(BUILD_REGRESSION_SUITES)
 	# build the different test/verification suites for each number system
-	set(BUILD_STORAGE_CLASSES ON)
+	set(BUILD_ARITHMETIC_CLASSES ON)
 	set(BUILD_NATIVE_TYPES ON)
 	set(BUILD_REALS ON)
 	set(BUILD_INTEGERS ON)
@@ -547,12 +547,13 @@ if(BUILD_MIXEDPRECISION_SDK)
 endif(BUILD_MIXEDPRECISION_SDK)
 
 # Build the tests for the underlying storage classes
-if(BUILD_STORAGE_CLASSES)
+if(BUILD_ARITHMETIC_CLASSES)
 add_subdirectory("tests/bitblock")
+add_subdirectory("tests/value")
 add_subdirectory("tests/blockbinary")
 add_subdirectory("tests/blockfraction")
 add_subdirectory("tests/blocktriple")
-endif(BUILD_STORAGE_CLASSES)
+endif(BUILD_ARITHMETIC_CLASSES)
 
 if(BUILD_NATIVE_TYPES)
 add_subdirectory("tests/native")
@@ -576,7 +577,6 @@ endif(BUILD_FIXPNTS)
 # Arbitrary reals tests
 if(BUILD_REALS)
 add_subdirectory("tests/adaptivefloat")
-add_subdirectory("tests/value")
 endif(BUILD_REALS)
 
 if(BUILD_LNS)

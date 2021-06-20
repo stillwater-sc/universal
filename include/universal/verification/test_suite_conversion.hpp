@@ -19,7 +19,6 @@
 
 namespace sw::universal {
 
-
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 template<typename TestType>

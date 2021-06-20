@@ -32,8 +32,8 @@ log_e(10)		M_LN10		2.30258509299404568402
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
-#include <universal/blas/blas>
+#include <universal/number/posit/posit.hpp>
+#include <universal/blas/blas.hpp>
 #include "chebpts.hpp"
 #include "prod.hpp"
 

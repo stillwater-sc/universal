@@ -4,13 +4,13 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/cfloat_impl.hpp>
 namespace std {
 
-template <size_t nbits, size_t es, typename bt> 
-class numeric_limits< sw::universal::cfloat<nbits,es,bt> > {
+template <size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating> 
+class numeric_limits< sw::universal::cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating> > {
 public:
-	using cfloat = sw::universal::cfloat<nbits, es, bt>;
+	using cfloat = sw::universal::cfloat<nbits, es, bt,hasSubnormals,hasSupernormals,isSaturating>;
 	static constexpr bool is_specialized = true;
 	static constexpr cfloat min() { // return minimum value
 		return cfloat(sw::universal::SpecificValue::minpos);

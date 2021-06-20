@@ -22,7 +22,7 @@
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
 // Now include the C++ library
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 
 // marshal takes a positN_t and marshals it into a raw bitblock

@@ -6,28 +6,47 @@
 #include <math.h>
 #include <stdint.h>
 #include <iostream>
+#include <complex>
+
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/fixpnt/fixpnt.hpp>
+/*
 #include <universal/number/areal/areal.hpp>
-// Configure the bfloat template environment
-// first: enable general or specialized bfloat configurations
-#define BFLOAT_FAST_SPECIALIZATION
+// Configure the cfloat template environment
+// first: enable general or specialized cfloat configurations
+#define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/cfloat/cfloat>
-// Configure the fixpnt template environment
+*/
+// Configure the posit template environment
 // first: enable general or specialized posit configurations
-#define POSIT_FAST_SPECIALIZATION
+//#define POSIT_FAST_SPECIALIZATION
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
+#include <universal/math/complex_manipulators.hpp>  // to_binary() for complex types
+
+template<typename Scalar>
+void TestComplexConjugate() 
+{
+	std::complex<Scalar> c(0.25, 0.5);
+	std::complex<Scalar> cconj(0.25, -0.5);
+	std::cout << sw::universal::to_binary(c, false) << " : " << c << '\n';
+	std::cout << sw::universal::to_binary(cconj, false) << " : " << cconj << '\n';
+	std::complex<Scalar> product = c * cconj;
+	std::cout << "(0.25+0.5i)*(0.25-0.5i) = " << sw::universal::to_binary(product, false) << " : " << product << '\n';
+}
 
 namespace special {
+	
+	/////////////////////////////////        NATIVE IEEE-754       ////////////////////////////////////////////////  
+
 	bool isnan(std::complex<float> x) { return (std::isnan(x.real()) || std::isnan(x.imag())); }
 	bool isinf(std::complex<float> x) { return (std::isinf(x.real()) || std::isinf(x.imag())); }
 	std::complex<float> copysign(std::complex<float> x, std::complex<float> y) { return std::complex<float>(std::copysign(x.real(), y.real()), std::copysign(x.real(), y.real())); }
@@ -80,6 +99,27 @@ namespace special {
 	bool isinf(std::complex<fp6463sat> x) { return (isinf(x.real()) || isinf(x.imag())); }
 	std::complex<fp6463sat> copysign(std::complex<fp6463sat> x, std::complex<fp6463sat> y) { return std::complex<fp6463sat>(copysign(x.real(), y.real()), copysign(x.real(), y.real())); }
 */
+
+	/////////////////////////////////            CFLOAT          ////////////////////////////////////////////////   
+	
+	/*
+	template<size_t nbits, size_t es, typename BlockType>
+	bool isnan(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x) {
+		return (isnan(x.real()) || isnan(x.imag()));
+	}
+	template<size_t nbits, size_t es, typename BlockType>
+	bool isinf(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x) {
+		return (isinf(x.real()) || isinf(x.imag()));
+	}
+	template<size_t nbits, size_t es, typename BlockType>
+	std::complex<sw::universal::cfloat<nbits, es, BlockType> >
+	copysign(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x, 
+		 std::complex<sw::universal::cfloat<nbits, es, BlockType> > y) {
+		return std::complex<sw::universal::cfloat<nbits, es, BlockType> >
+			(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
+	}
+	*/
+
 	/////////////////////////////////            POSIT           ////////////////////////////////////////////////   
 	bool isnan(std::complex<sw::universal::posit<2, 0>> x) { return (isnan(x.real()) || isnan(x.imag())); }
 	bool isinf(std::complex<sw::universal::posit<2, 0>> x) { return (isinf(x.real()) || isinf(x.imag())); }
@@ -137,12 +177,11 @@ try {
 
 #if MANUAL_TESTING
 
-	{
-		using Scalar = fixpnt<4, 3>;
-		Scalar fp{ 1.0f };
-		cout << to_binary(fp) << " : " << fp << endl;
-	}
-	
+	// std::complex<double> c = 0.25 + 0.5i;
+	TestComplexConjugate<float>();
+	TestComplexConjugate<fixpnt<4, 3> >();
+	//TestComplexConjugate<posit<8, 0> >();
+
 #else // MANUAL_TESTING
 
 

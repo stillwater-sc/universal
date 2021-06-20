@@ -14,7 +14,7 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
-#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
 #include <universal/verification/test_suite_arithmetic.hpp>
 

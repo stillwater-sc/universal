@@ -8,7 +8,7 @@
 #include <chrono>
 // configure the arithmetic class
 #define VALID_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/valid/valid>
+#include <universal/number/valid/valid.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult

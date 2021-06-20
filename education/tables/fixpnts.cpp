@@ -15,12 +15,11 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/number/fixpnt/math_functions.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/fixpnt_test_suite.hpp>
-
 
 // generate a full binary representation table for a given posit configuration
 template<size_t nbits, size_t rbits>

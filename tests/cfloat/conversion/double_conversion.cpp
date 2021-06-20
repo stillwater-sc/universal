@@ -15,7 +15,7 @@
 #define TRACE_CONVERSION 0
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
 #include <universal/number/cfloat/math_functions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
@@ -206,7 +206,7 @@ void GenerateDoublePrecisionSubnormals()
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -254,7 +254,14 @@ ref : b0.10110101010.0010011001110010111000110101011001101000111101100111
 */
 	
 	{
-		cfloat<64, 11, uint8_t> ref = parse<64,8, uint8_t>("b0.11010111001.0111010010011101001011001010000101110001000011010111");
+		constexpr size_t nbits = 64;
+		constexpr size_t es = 11;
+		using bt = uint8_t;  // exercise the block algorithms
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ref = parse<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>("b0.11010111001.0111010010011101001011001010000101110001000011010111");
 		double testValue = double(ref);
 		std::cout << "ref : " << to_binary(ref) << " : " << ref << '\n';
 		std::cout << "test: " << to_binary(testValue) << " : " << testValue << endl;
@@ -382,6 +389,13 @@ ref : b0.10110101010.0010011001110010111000110101011001101000111101100111
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatConversion< cfloat<14, 8>, double >(bReportIndividualTestCases), tag, "cfloat<14,8>");
 
 #endif // LATER
+
+	if (nrOfFailedTestCases == 0) {
+		std::cout << tag << "PASS\n";
+	}
+	else {
+		std::cout << tag << "FAIL\n";
+	}
 
 #if STRESS_TESTING
 

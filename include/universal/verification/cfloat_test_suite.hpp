@@ -1,5 +1,5 @@
 #pragma once
-//  cfloat_test_helpers.hpp : verification functions for classic cfloats
+//  cfloat_test_suite.hpp : verification functions for classic cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -11,8 +11,11 @@
 #include <limits>
 
 #include <universal/math/stub/classify.hpp>
+#include <universal/verification/test_reporters.hpp>  // error/success reporting
 
 namespace sw::universal {
+
+	static constexpr size_t COLUMN_WIDTH = 20;
 
 	template<typename SrcType, typename TestType>
 	void CfloatReportConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
@@ -20,24 +23,24 @@ namespace sw::universal {
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case
 			<< " " << op << " "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << input
+			<< std::setw(COLUMN_WIDTH) << input
 			<< " did not convert to "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << reference << " instead it yielded  "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << result
+			<< std::setw(COLUMN_WIDTH) << reference << " instead it yielded  "
+			<< std::setw(COLUMN_WIDTH) << result
 			<< "  reference " << to_binary(reference) << " vs result " << to_binary(result)
 			<< std::setprecision(old_precision)
 			<< std::endl;
 	}
 
 	template<typename SrcType, typename TestType>
-	void ReportConversionSuccess(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
+	void CfloatReportConversionSuccess(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		std::cerr << test_case
 			<< " " << op << " "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << input
+			<< std::setw(COLUMN_WIDTH) << input
 			<< " success            "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << reference
+			<< std::setw(COLUMN_WIDTH) << result << " golden reference is "
+			<< std::setw(COLUMN_WIDTH) << reference
 			<< "  raw " << std::setw(nbits) << to_binary(result)
 			<< std::endl;
 	}
@@ -154,7 +157,10 @@ namespace sw::universal {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
-		using RefType = cfloat<nbits + 1, es, BlockType>;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+		using RefType = cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 		constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
 		constexpr size_t HALF = (size_t(1) << nbits);
 
@@ -199,21 +205,31 @@ namespace sw::universal {
 					golden = double(next);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-				else if (i == HALF - 3) { // encoding of maxpos
-					golden.maxpos();
+				else if (i == HALF - 3) { // project to +inf
+					golden.setinf(false);
 
+					// project to inf
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
+					testValue = SrcType(da);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+					// project to inf
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
+
 				}
 				else if (i == HALF - 1) { // encoding of qNaN
 					golden.setnan(NAN_TYPE_QUIET);
 					testValue = SrcType(da);
 					nut = testValue;
+					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
+
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					std::cout << "quiet      NAN : " << to_binary(testValue) << std::endl;
 					std::cout << "quiet NaN mask : " << to_binary(ieee754_parameter<SrcType>::qnanmask, sizeof(testValue)*8) << std::endl;
@@ -225,13 +241,19 @@ namespace sw::universal {
 					golden = 0.0f; golden = -golden;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-				else if (i == NR_TEST_CASES - 3) { // encoding of maxneg
-					golden.maxneg();
+				else if (i == NR_TEST_CASES - 3) { // project to -inf
+					golden.setinf(true);
 
+					// project to -inf
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					
+					testValue = SrcType(da);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
+					// project to -inf
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
@@ -315,8 +337,13 @@ namespace sw::universal {
 						++nrOfFailedTests;
 					}
 				}
-				else if (i == HALF - 4) { // saturation to maxpos
-					golden.maxpos();
+				else if (i == HALF - 4) { // project to inf or saturate to maxpos
+					if constexpr (isSaturating) {
+						golden.maxpos();
+					}
+					else {
+						golden.setinf(false);
+					}
 
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
@@ -332,8 +359,13 @@ namespace sw::universal {
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-				else if (i == NR_TEST_CASES - 4) { // saturation to maxneg
-					golden.maxneg();
+				else if (i == NR_TEST_CASES - 4) { // project to -inf or saturation to maxneg
+					if constexpr (isSaturating) {
+						golden.maxneg();
+					}
+					else {
+						golden.setinf(true);
+					}
 
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
@@ -380,12 +412,17 @@ namespace sw::universal {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
 
-		std::cerr << "                                                     ignoring subnormals for the moment\n";
+		std::cerr << '\n' << typeid(TestType).name() << '\n';
+		// this is too verbose, so I turned it off
+		// std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		int nrOfFailedTests = 0;
-		cfloat<32, 8, uint32_t> ref;
-		cfloat<nbits, es, BlockType> nut;
+		cfloat<32, 8, uint32_t> ref; // this is a superset of IEEE-754 float with supernormals
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
 		float refValue{ 0.0f };
 		float testValue{ 0.0f };
 		// run randoms
@@ -417,7 +454,7 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-#define CUSTOM_FEEDBACK
+// #define CUSTOM_FEEDBACK
 	// generate random test cases to test conversion from an IEEE-754 double to a cfloat
 	template<typename TestType>
 	int VerifyDouble2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
@@ -513,23 +550,73 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
+	// Generate ordered set in ascending order from [-NaN, -inf, -maxpos, ..., +maxpos, +inf, +NaN] for a particular posit config <nbits, es>
+	template<typename TestType>
+	void GenerateOrderedCfloatSet(std::vector<TestType>& set) {
+		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es = TestType::es;
+		using BlockType = TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+		constexpr size_t NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
+
+		// generate a set in the order we want increment and decrement to progress
+		// 1.11.111   snan
+		// 1.11.110   -inf
+		// 1.11.101   -maxpos == maxneg
+		// ...
+		// 1.00.001
+		// 1.00.000   -0
+		// 0.00.000   +0
+		// 0.00.001
+		// ...
+		// 0.11.101   maxpos
+		// 0.11.110   inf
+		// 0.11.111   nan
+
+		std::vector< cfloat<nbits, es> > s(NR_OF_REALS);
+		TestType c;
+		constexpr size_t NEGATIVE_ZERO = (1ull << (nbits - 1)); // pattern 1.00.000
+		constexpr size_t MAX_POS = (~0ull >> (64 - nbits + 1)); // pattern 0.11.111
+		size_t i = 0;
+		for (size_t pattern = NR_OF_REALS - 1; pattern >= NEGATIVE_ZERO ; --pattern) {
+			c.setbits(pattern);
+			s[i++] = c;
+		}
+		for (size_t pattern = 0; pattern <= MAX_POS; ++pattern) {
+			c.setbits(pattern);
+			s[i++] = c;
+		}
+
+		set = s;
+
+	}
+
 	// validate the increment operator++
-	template<size_t nbits, size_t es>
-	int VerifyIncrement(bool bReportIndividualTestCases)
+	template<typename TestType>
+	int VerifyCfloatIncrement(bool bReportIndividualTestCases)
 	{
-		std::vector< cfloat<nbits, es> > set;
-		//	GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
+		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es = TestType::es;
+		using BlockType = TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+
+		std::vector< cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> > set;
+		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, nan]
 
 		int nrOfFailedTestCases = 0;
 
-		cfloat<nbits, es> p, ref;
-		// starting from NaR iterating from -maxpos to maxpos through zero
+		TestType c, ref;
+		// starting from SNaN iterating from -inf, -maxpos to maxpos, +inf, +nan
 		for (typename std::vector < cfloat<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
-			p = *it;
-			p++;
+			c = *it;
+			c++; // this will test both postfix and prefix operators
 			ref = *(it + 1);
-			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
+			if (c != ref) {
+				if (bReportIndividualTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -538,22 +625,30 @@ namespace sw::universal {
 	}
 
 	// validate the decrement operator--
-	template<size_t nbits, size_t es>
-	int VerifyDecrement(bool bReportIndividualTestCases)
+	template<typename TestType>
+	int VerifyCfloatDecrement(bool bReportIndividualTestCases)
 	{
+		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es = TestType::es;
+		using BlockType = TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+
 		std::vector< cfloat<nbits, es> > set;
-		//	GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
+		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, nan]
 
 		int nrOfFailedTestCases = 0;
 
-		cfloat<nbits, es> p, ref;
-		// starting from maxpos iterating to -maxpos, and finally NaR via zero
+		cfloat<nbits, es> c, ref;
+		// starting from +nan, +inf, maxpos, ..., +0, -0, ..., maxneg, -inf, -nan
 		for (typename std::vector < cfloat<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); --it) {
-			p = *it;
-			p--;
+			c = *it;
+			c--;  // this will test both postfix and prefix operators
 			ref = *(it - 1);
-			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
+
+			if (c != ref) {
+				if (bReportIndividualTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -561,5 +656,85 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
+	/// <summary>
+/// Enumerate all addition cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="tag">string representation of the type</param>
+/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
+/// <returns></returns>
+	template<typename TestType>
+	int VerifyCfloatAddition(bool bReportIndividualTestCases) {
+		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es = TestType::es;
+		using BlockType = TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+		constexpr size_t NR_VALUES = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+
+		// set the saturation clamps
+		TestType maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
+
+		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+		TestType a, b, nut, cref;
+		for (size_t i = 0; i < NR_VALUES; i++) {
+			a.setbits(i); // number system concept requires a member function setbits()
+			da = double(a);
+			for (size_t j = 0; j < NR_VALUES; j++) {
+				b.setbits(j);
+				db = double(b);
+				ref = da + db;
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+				// catching overflow
+				try {
+					result = a + b;
+				}
+				catch (...) {
+					if (!nut.inrange(ref)) {
+						// correctly caught the overflow exception
+						continue;
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+
+#else
+				nut = a + b;
+				if (!nut.inrange(ref)) {
+					// the result of the addition is outside of the range
+					// of the NUT (number system under test)
+					if constexpr (isSaturating) {
+						if (ref > 0) cref.maxpos(); else cref.maxneg();
+					}
+					else {
+						cref.setinf(ref < 0);
+					}
+				}
+				else {
+					cref = ref;
+				}
+#endif // THROW_ARITHMETIC_EXCEPTION
+
+				if (nut != cref) {
+					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, nut);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, nut);
+				}
+				if (nrOfFailedTests > 9) return nrOfFailedTests;
+			}
+			if constexpr (NR_VALUES > 256 * 256) {
+				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+			}
+		}
+		std::cout << std::endl;
+		return nrOfFailedTests;
+	}
 } // namespace sw::universal
 

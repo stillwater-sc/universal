@@ -8,13 +8,45 @@
 #include <iomanip>
 #include <fstream>
 #include <typeinfo>
+
+// BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+
+#define BIT_CAST_SUPPORT 0
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+
+#define BIT_CAST_SUPPORT 0
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+
+#define BIT_CAST_SUPPORT 1
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+
+#endif
+
 // minimum set of include files to reflect source code dependencies
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
 #define BLOCKTRIPLE_TRACE_ADD 1
-#define BIT_CAST_SUPPORT 0
 #include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/number/cfloat/manipulators.hpp>
 
 /*
  BlockTriple is the unifying compute engine for any of the
@@ -47,6 +79,25 @@
  representations.
 */
 
+template<typename Real>
+void TestConversionRounding(Real f = 511.5f)
+{
+	using namespace std;
+	using namespace sw::universal;
+	cout << "\n " << typeid(Real).name() << " conversion use case and result\n";
+	cout << to_binary(f, true) << '\n';
+	CONSTEXPRESSION blocktriple<6> a = f;
+	cout << to_triple(a) << " : " << a << '\n';
+	CONSTEXPRESSION blocktriple<7> b = f;
+	cout << to_triple(b) << " : " << b << '\n';
+	CONSTEXPRESSION blocktriple<8> c = f;
+	cout << to_triple(c) << " : " << c << '\n';
+	CONSTEXPRESSION blocktriple<9> d = f;
+	cout << to_triple(d) << " : " << d << '\n';
+	CONSTEXPRESSION blocktriple<10> e = f;
+	cout << to_triple(e) << " : " << e << '\n';
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -63,89 +114,33 @@ try {
 
 #if MANUAL_TESTING
 
+	// relationship between native float/double and blocktriple
 	{
-		cout << "\nFloat conversion use case and result\n";
-		constexpr float f = 511.5f;
-		cout << to_binary(f, true) << '\n';
-		CONSTEXPRESSION blocktriple<8> a = f;
-		cout << to_triple(a) << " : " << a << '\n';
-		CONSTEXPRESSION blocktriple<9> b = f;
-		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
-		CONSTEXPRESSION blocktriple<10> c = f;
-		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
+		blocktriple<8, uint8_t> a;
+		a = 1.5f;
+		cout << "IEEE-754 float  : " << to_binary(1.5f, true) << endl;
+		cout << "IEEE-754 float  : " << to_triple(1.5f, true) << endl;
+		cout << "blocktriple<8>  : " << to_triple(a) << endl;
+		a = 1.5;
+		cout << "IEEE-754 double : " << to_binary(1.5, true) << endl;
+		cout << "IEEE-754 double : " << to_triple(1.5, true) << endl;
+		cout << "blocktriple<8>  : " << to_triple(a) << endl;
 	}
 
-	{
-		cout << "\nDouble conversion use case and result\n";
-		constexpr double d = 511.5;
-		cout << to_binary(d, true) << '\n';
-		CONSTEXPRESSION blocktriple<8> a = d;
-		cout << to_triple(a) << " : " << a << '\n';
-		CONSTEXPRESSION blocktriple<9> b = d;
-		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
-		CONSTEXPRESSION blocktriple<10> c = d;
-		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
-	}
+	// pick a value that rounds up to even between 6 to 10 bits of fraction
+	TestConversionRounding(511.5f);
+	TestConversionRounding(511.5);
 
 	{
 		cout << "\nblocktriple add\n";
 		constexpr size_t abits = 7;
-		blocktriple<abits> a, b;
-		blocktriple<abits + 1> c;
+		blocktriple<abits> a, b, c;
 		a = 1.03125f;
 		b = -1.03125f;
 		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
-		c.add(a, b);   // ALU unrounded add operator
+		c.add(a, b);
 		cout << to_triple(c) << " : " << c << '\n';
 	}
-
-#ifdef BFLOAT
-	// test the bfloat conversion 
-	{
-		cout << "\nbfloat conversion\n";
-		using Real = bfloat<8, 2, uint8_t>;
-		Real a;
-		a = 1.875f;
-		cout << color_print(a) << " : " << a << endl;
-		constexpr size_t abits = Real::abits;
-		blocktriple<abits> aa;
-		a.normalize(aa);  // decode bfloat into a triple form
-		cout << to_triple(aa) << " : " << a << '\n';
-	}
-
-	// test the bfloat addition 
-	{
-		cout << "\nbfloat addition\n";
-		using Real = bfloat<8, 2, uint8_t>;
-		Real a, b, c;
-		a = 1.03125f;
-		b = -1.03125f;
-		constexpr size_t abits = Real::abits;
-		blocktriple<abits> aa, bb;
-		blocktriple<abits + 1> cc;
-		a.normalize(aa);  // decode bfloat into a triple form aa ready for add/sub
-		b.normalize(bb);  // decode bfloat into a triple form bb ready for add/sub
-		cc.add(aa, bb);   // ALU unrounded add operator
-		convert(cc, c);   // round and convert back to bfloat
-		cout << to_triple(cc) << " : " << cc << '\n';
-		cout << color_print(c) << " : " << c << endl;
-	}
-	{
-		bfloat<8, 2, uint8_t> a, b, c;
-		a = 1.0f;
-		b = -1.0f;
-		constexpr size_t mbits = a.fhbits; // a.abits;
-		blocktriple<mbits> aa, bb;
-		blocktriple<2*mbits> product;
-		a.normalize(aa);  // decode of a bits into a triple form aa
-		b.normalize(bb);  // decode of b bits into a triple form bb
-		product.mul(aa, bb);  // ALU mul operator
-		convert(product, c);
-		cout << to_triple(product) << " : " << product << '\n';
-		cout << color_print(c) << " : " << c << endl;
-
-	}
-#endif
 
 #else // !MANUAL_TESTING
 

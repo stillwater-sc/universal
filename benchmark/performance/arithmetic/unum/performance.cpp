@@ -7,7 +7,7 @@
 #include <chrono>
 // configure the arithmetic class
 #define UNUM_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/unum/unum>
+#include <universal/number/unum/unum.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult

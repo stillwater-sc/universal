@@ -480,7 +480,7 @@ void divide_with_fraction(const bitblock<operand_size>& a, const bitblock<operan
 #endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 	}
 	else {
-		int shift = static_cast<int>(operand_size) - msb - 1;  // TODO: why is this signed?
+		int shift = static_cast<int>(operand_size) - msb - 1;
 		// prepare the subtractand
 		copy_into<operand_size, result_size>(b, result_size - operand_size, subtractand);
 		subtractand <<= static_cast<size_t>(shift);

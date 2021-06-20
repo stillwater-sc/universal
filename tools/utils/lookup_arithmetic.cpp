@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <chrono>
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 enum BINARY_ARITHMETIC_OPERATOR {
 	ADD = 0,

@@ -5,10 +5,13 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/cfloat/cfloat.hpp>
+#define BLOCKTRIPLE_VERBOSE_OUTPUT
+//#define BLOCKTRIPLE_TRACE_ADD
+#include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/verification/test_status.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
-
+//#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/cfloat_test_suite.hpp>
+#include <universal/utility/bit_cast.hpp>
 // generate specific test case that you can trace with the trace conditions in cfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename cfloatConfiguration, typename Ty>
@@ -41,29 +44,72 @@ void test754functions(Real value) {
 	cout << color_print(value) << '\n';
 }
 
+template<typename Cfloat>
+void testCfloatOrderedSet() {
+	std::vector<Cfloat> set;
+	GenerateOrderedCfloatSet<Cfloat>(set);
+	for (auto v : set) {
+		std::cout << to_binary(v) << " : " << v << '\n';
+	}
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = "Addition failed: ";
 
 #if MANUAL_TESTING
 
-	cfloat < 8, 2, uint8_t > a, b, c, cref;
-	a = 0.3125f;
-	b = 0.5f;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
-	// FAIL              0.03125 + 0.5 != 0.53125 golden reference is               0.5625 b0.00.10001 vs b0.00.10010
-	GenerateTestCase< cfloat<8, 2, uint8_t>, float>(0.03125f, 0.5f);
+	{
+		float fa = 0.0f; // .03125f;
+//		float fb = std::numeric_limits<float>::signaling_NaN();
+//		float fb = 0.0625f;
+//		float fb = 7.625f;
+		float fb = std::numeric_limits<float>::quiet_NaN();
+		cfloat < 8, 2, uint8_t > a, b, c, cref;
+		a = fa;
+		b = fb;
+		c = a + b;
+		std::cout << a << " + " << b << " = " << c << '\n';
+		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+
+		c = 7.65625f;
+		GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
+	}
+
+	{
+		cfloat<8, 2> c(SpecificValue::maxpos);
+		cfloat<9, 2> d(SpecificValue::maxpos);
+		std::cout << to_binary(c) << " : " << c << '\n';
+		std::cout << to_binary(d) << " : " << d << '\n';
+		d.setbits(0x0fa);
+		std::cout << to_binary(d) << " : " << d << '\n';
+		d.setbits(0x0fb);
+		std::cout << to_binary(d) << " : " << d << '\n';
+
+		std::cout << '\n';
+		d = float(c);
+		++d;
+		std::cout << to_binary(d) << " : " << d << '\n';
+
+		{
+			cfloat<8,2> c(SpecificValue::maxneg);
+			cfloat<9,2> d;
+			d = double(c);
+			std::cout << to_binary(d) << " : " << d << '\n';
+			--d;
+			std::cout << to_binary(d) << " : " << d << '\n';
+
+		}
+	}
+
+#ifdef LATER
 
 	std::cout << "single precision IEEE-754\n";
 	float f = 1.06125f;
@@ -72,89 +118,26 @@ try {
 	double d = 1.06125;
 	test754functions(d);
 
-	{
-		float f0 = 0.5f;
-		float f1 = 0.5625f;
-		float f2 = 0.53125f;
-		cfloat<8, 2> s;
-		s = f0; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		float f1 = 0.5625f;
-		float f2 = 0.53125f;
-		cfloat<32, 8> s;
-		s = f1; 
-		std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; 
-		std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		float f1 = 0.5625f;
-		float f2 = 0.53125f;
-		cfloat<64, 11> s;
-		s = f1;
-		std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; 
-		std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		double f0 = 0.5f;
-		double f1 = 0.5625f;
-		double f2 = 0.53125f;
-		cfloat<8, 2> s;
-		s = f0; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		double f1 = 0.5625f;
-		double f2 = 0.53125f;
-		cfloat<32, 8> s;
-		s = f1;
-		std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; 
-		std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	{
-		double f1 = 0.5625f;
-		double f2 = 0.53125f;
-		cfloat<64, 11> s;
-		s = f1;
-		std::cout << to_binary(s) << " : " << s << '\n';
-		s = f2; 
-		std::cout << to_binary(s) << " : " << s << '\n';
-	}
-	return 0;
-
-
-	a.setzero();
-//	b.setnan(NAN_TYPE_SIGNALLING);
-	b.setnan(NAN_TYPE_QUIET);
-	b.setbits(0x7f);
-	c = a + b;
-	float _a = float(a);
-	float _b = float(b);
-	float _c = _a + _b;
-	cref = c;
-	std::cout << c << " vs " << _c << " vs " << cref << std::endl;
-	if (cref == c) std::cout << "PASS\n";
-
-//	a.constexprClassParameters();
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase< cfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
 
 	GenerateTestCase< cfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2,uint8_t>", "addition");
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = true;
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatAddition< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(true), "cfloat<8,2,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(true), "cfloat<8,4,uint8_t,subnormals,supernormals,!saturating>", "addition");
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else
-	cout << "Arbitrary Real addition validation" << endl;
+	cout << "classic floating-point addition validation" << endl;
 
 	bool bReportIndividualTestCases = false;
 

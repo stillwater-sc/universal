@@ -8,7 +8,7 @@
 #define HARDWARE_QA_OUTPUT 0
 
 // type definitions for the important types, posit<> and quire<>
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/traits/posit_traits.hpp>
 #include <universal/number/posit/quire.hpp>
 #include <universal/number/posit/fdp.hpp>

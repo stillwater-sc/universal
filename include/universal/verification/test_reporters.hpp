@@ -9,20 +9,11 @@
 #include <typeinfo>
 #include <limits>
 #include <complex>
+#include <universal/math/complex_manipulators.hpp>
 
 // NOTE: reporters write to cerr
 
 namespace sw::universal {
-
-// complex<> type adapter for to_binary() operator
-template<typename NumberType>
-std::string to_binary(const std::complex<NumberType>& c) {
-	std::stringstream ss;
-	NumberType r = c.real();
-	NumberType i = c.imag();
-	ss << '(' << to_binary(r) << ", " << to_binary(i) << ')';
-	return ss.str();
-}
 
 #define NUMBER_COLUMN_WIDTH 20
 
@@ -82,40 +73,6 @@ void ReportUnaryArithmeticSucces(const std::string& test_case, const std::string
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
-
-#ifdef DEPRECATED
-template<typename TestType, typename RefType>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const TestType& result, const RefType& ref) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
-		<< " != "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<typename TestType, typename RefType>
-void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const TestType& result, const RefType& ref) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
-		<< " == "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " matches reference "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-#endif
 
 template<typename InputType, typename ResultType, typename RefType>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const InputType& lhs, const InputType& rhs, const ResultType& result, const RefType& ref) {
@@ -193,6 +150,60 @@ void ReportAssignmentSuccess(const std::string& test_case, const std::string& op
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " reference value is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
 		<< "               bit pattern " << to_binary(result) << std::endl;
+}
+
+template<typename TestType>
+void ReportOneInputFunctionError(const std::string& test_case, const std::string& op, const TestType& rhs, const TestType& reference, const TestType& result) {
+	std::cerr << test_case
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
+		<< " != "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << reference << " instead it yielded "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result
+		<< " " << to_binary(reference) << " vs " << to_binary(result) << std::endl;
+}
+
+template<typename TestType>
+void ReportOneInputFunctionSuccess(const std::string& test_case, const std::string& op, const TestType& rhs, const TestType& reference, const TestType& result) {
+	std::cerr << test_case
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
+		<< " == "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " reference value is "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << reference
+		<< " " << components_to_string(result) << std::endl;
+}
+
+template<typename TestType>
+void ReportTwoInputFunctionError(const std::string& test_case, const std::string& op, const TestType& a, const TestType& b, const TestType& reference, const TestType& result) {
+	auto precision = std::cerr.precision();
+	std::cerr << test_case << " " << op << "("
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << a
+		<< ","
+		<< std::setw(NUMBER_COLUMN_WIDTH) << b << ")"
+		<< " != "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << reference << " instead it yielded "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result
+		<< " " << reference << " vs " << result
+		<< std::setprecision(precision)
+		<< std::endl;
+}
+
+template<typename TestType>
+void ReportTwoInputFunctionSuccess(const std::string& test_case, const std::string& op, const TestType& a, const TestType& b, const TestType& reference, const TestType& result) {
+	auto precision = std::cerr.precision();
+	std::cerr << test_case << " " << op << "("
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << a
+		<< ","
+		<< std::setw(NUMBER_COLUMN_WIDTH) << b << ")"
+		<< " == "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << reference << " ==  "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result
+		<< " " << reference << " vs " << result
+		<< std::setprecision(precision)
+		<< std::endl;
 }
 
 } // namespace sw::universal
