@@ -206,7 +206,7 @@ void GenerateDoublePrecisionSubnormals()
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -389,6 +389,13 @@ ref : b0.10110101010.0010011001110010111000110101011001101000111101100111
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatConversion< cfloat<14, 8>, double >(bReportIndividualTestCases), tag, "cfloat<14,8>");
 
 #endif // LATER
+
+	if (nrOfFailedTestCases == 0) {
+		std::cout << tag << "PASS\n";
+	}
+	else {
+		std::cout << tag << "FAIL\n";
+	}
 
 #if STRESS_TESTING
 

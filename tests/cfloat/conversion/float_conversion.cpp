@@ -8,7 +8,7 @@
 #include <iomanip>
 // Configure the cfloat template environment
 // first: enable general or specialized configurations
-#define CFLOAT_FAST_SPECIALIZATION
+#define CFLOAT_FAST_SPECIALIZATION 0
 // second: enable/disable arithmetic exceptions
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
@@ -184,7 +184,7 @@ void compareSmallcfloats(float f) {
 
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -193,7 +193,7 @@ try {
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = "float conversion: ";
+	std::string tag = "float to cfloat conversion: ";
 
 #if MANUAL_TESTING
 
@@ -236,26 +236,6 @@ try {
 		a.convert_ieee754(f);
 		std::cout << to_binary(a, true) << " : " << a << '\n';
 	}
-
-	// for any cfloat with es == 1, you must have subnormals and supernormals
-	// If you don't have subnormals, your first value would have an exponent value of 1
-	// which implies with es == 1 that you need supernormals.
-	std::cout << dynamic_range(cfloat<4, 1, uint8_t, true, true, false>()) << '\n';
-//	std::cout << dynamic_range(cfloat<4, 1, uint8_t, false, true, false>()) << '\n';
-//	std::cout << dynamic_range(cfloat<4, 1, uint8_t, false, false, false>()) << '\n';
-
-	std::cout << dynamic_range(cfloat<5, 1, uint8_t, true, true, false>()) << '\n';
-//	std::cout << dynamic_range(cfloat<5, 1, uint8_t, false, true, false>()) << '\n';
-//	std::cout << dynamic_range(cfloat<5, 1, uint8_t, false, false, false>()) << '\n';
-
-	std::cout << dynamic_range(cfloat<6, 1, uint8_t, true, true, false>()) << '\n';
-	std::cout << dynamic_range(cfloat<7, 1, uint8_t, true, true, false>()) << '\n';
-	std::cout << dynamic_range(cfloat<8, 1, uint8_t, true, true, false>()) << '\n';
-
-	std::cout << dynamic_range(cfloat<8, 2, uint8_t, true, true, false>()) << '\n';
-	std::cout << dynamic_range(cfloat<8, 2, uint8_t, false, true, false>()) << '\n';
-	std::cout << dynamic_range(cfloat<8, 2, uint8_t, false, false, false>()) << '\n';
-
 
 	bool bReportIndividualTestCases = true;
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint8_t>(bReportIndividualTestCases), tag, "cfloat<32, 8, uint8_t>");
@@ -409,6 +389,13 @@ try {
 //	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 8>, float >(bReportIndividualTestCases), tag, "cfloat<12,8>");
 //	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<14, 8>, float >(bReportIndividualTestCases), tag, "cfloat<14,8>");
 #endif
+
+	if (nrOfFailedTestCases == 0) {
+		std::cout << tag << "PASS\n";
+	}
+	else {
+		std::cout << tag << "FAIL\n";
+	}
 
 #if STRESS_TESTING
 

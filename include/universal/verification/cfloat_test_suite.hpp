@@ -157,7 +157,10 @@ namespace sw::universal {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
-		using RefType = cfloat<nbits + 1, es, BlockType>;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+		using RefType = cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 		constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
 		constexpr size_t HALF = (size_t(1) << nbits);
 
@@ -202,21 +205,31 @@ namespace sw::universal {
 					golden = double(next);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-				else if (i == HALF - 3) { // encoding of maxpos
-					golden.maxpos();
+				else if (i == HALF - 3) { // project to +inf
+					golden.setinf(false);
 
+					// project to inf
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
+					testValue = SrcType(da);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+					// project to inf
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
+
 				}
 				else if (i == HALF - 1) { // encoding of qNaN
 					golden.setnan(NAN_TYPE_QUIET);
 					testValue = SrcType(da);
 					nut = testValue;
+					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
+
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					std::cout << "quiet      NAN : " << to_binary(testValue) << std::endl;
 					std::cout << "quiet NaN mask : " << to_binary(ieee754_parameter<SrcType>::qnanmask, sizeof(testValue)*8) << std::endl;
@@ -228,13 +241,19 @@ namespace sw::universal {
 					golden = 0.0f; golden = -golden;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-				else if (i == NR_TEST_CASES - 3) { // encoding of maxneg
-					golden.maxneg();
+				else if (i == NR_TEST_CASES - 3) { // project to -inf
+					golden.setinf(true);
 
+					// project to -inf
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					
+					testValue = SrcType(da);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
+					// project to -inf
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
@@ -318,8 +337,13 @@ namespace sw::universal {
 						++nrOfFailedTests;
 					}
 				}
-				else if (i == HALF - 4) { // saturation to maxpos
-					golden.maxpos();
+				else if (i == HALF - 4) { // project to inf or saturate to maxpos
+					if constexpr (isSaturating) {
+						golden.maxpos();
+					}
+					else {
+						golden.setinf(false);
+					}
 
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
@@ -335,8 +359,13 @@ namespace sw::universal {
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-				else if (i == NR_TEST_CASES - 4) { // saturation to maxneg
-					golden.maxneg();
+				else if (i == NR_TEST_CASES - 4) { // project to -inf or saturation to maxneg
+					if constexpr (isSaturating) {
+						golden.maxneg();
+					}
+					else {
+						golden.setinf(true);
+					}
 
 					testValue = SrcType(da - oneULP);
 					nut = testValue;

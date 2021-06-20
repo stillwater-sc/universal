@@ -1653,7 +1653,30 @@ public:
 			// subnormal number has no hidden bit
 			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
 
-			// check special case of saturating to maxpos/maxneg if out of range
+			// check special case of 
+			//  1- saturating to maxpos/maxneg, or 
+			//  2- projecting to +-inf 
+			// if the value is out of range.
+			// 
+			// One problem here is that at the rounding cusps of maxpos <-> inf <-> nan
+			// you need to go through the rounding logic to know which encoding you end up
+			// with. 
+			// For each specific cfloat configuration, you can work out these rounding cusps
+			// but they need to go through the value transformation to map them back to native
+			// IEEE-754. That is a complex computation to do as a static constexpr as you need
+			// to construct the value, then evaluate it, and store it.
+			// 
+			// The algorithm used here is to check for the obvious out of range values by
+			// comparing their scale to the max scale this cfloat encoding can represent.
+			// For the rounding cusps, we go through the rounding logic, and then clean up
+			// after rounding using the observation that no conversion from a value can ever
+			// yield the NaN encoding.
+			// The rounding logic will correctly sort between maxpos and inf, and we clean
+			// up any NaN encodings by projecting back to the configuration's saturation rule.
+			//
+			// We could improve on this by creating the database of rounding cusps and
+			// referencing them with a direct value comparison with the input. That would be
+			// the most performant implementation.
 			if (exponent > MAX_EXP) {
 				if constexpr (isSaturating) {
 					if (s) this->maxneg(); else this->maxpos(); // saturate to maxpos or maxneg
@@ -1898,6 +1921,23 @@ public:
 	//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
 					}
 				}
+			}
+		}
+		// post-processing results to implement saturation and projection after rounding logic
+		if constexpr (isSaturating) {
+			if (isinf(INF_TYPE_POSITIVE) || isnan(NAN_TYPE_QUIET)) {
+				maxpos();
+			}
+			else if (isinf(INF_TYPE_NEGATIVE) || isnan(NAN_TYPE_SIGNALLING)) {
+				maxneg();
+			}
+		}
+		else {
+			if (isnan(NAN_TYPE_QUIET)) {
+				setinf(false);
+			}
+			else if (isnan(NAN_TYPE_SIGNALLING)) {
+				setinf(true);
 			}
 		}
 		return *this;  // TODO: unreachable in some configurations
