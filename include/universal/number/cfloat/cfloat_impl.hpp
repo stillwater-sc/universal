@@ -212,6 +212,8 @@ public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
 	static_assert(_es < 2147483647ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a classic floating point number");
+	// how do you assert on the condition that if es == 1 then subnormals and supernormals bust be true?
+//	static_assert(_es == 1 && _hasSubnormals && _hasSupernormals, "when es == 1, cfloat must have both sub and supernormals");
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
@@ -241,7 +243,7 @@ public:
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull -es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
-	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
+	static constexpr int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS);
 	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
@@ -671,15 +673,28 @@ public:
 			//uint64_t raw{ 0 };
 			if (scale >= MIN_EXP_SUBNORMAL && scale < MIN_EXP_NORMAL) {
 				// we are a subnormal number: all exponent bits are 1
+				// what do you do know? If you set them all to 1, you still
+				// don't have the right scale
+				return false;
 			}
 			else {
-				// we are a normal number
-				//uint32_t exponent_bits = scale + EXP_BIAS;
+				// TODO: optimize
+				uint32_t exponentBits = scale + EXP_BIAS;
+				uint32_t mask = (1ul << (es - 1));
+				for (int i = nbits - 2; i > nbits - 2 - es; --i) {
+					setbit(i, (mask & exponentBits));
+					mask >>= 1;
+				}
 			}
 		}
 		else {
-			// TBD
-			return false;
+			// TODO: optimize
+			uint32_t exponentBits = scale + EXP_BIAS;
+			uint32_t mask = (1ul << (es - 1));
+			for (int i = nbits - 2; i > nbits - 2 - es; --i) {
+				setbit(i, (mask & exponentBits));
+				mask >>= 1;
+			}
 		}
 		return true;
 	}
@@ -704,17 +719,37 @@ public:
 	}
 	// specific number system values of interest
 	inline constexpr cfloat& maxpos() noexcept {
-		// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
-		clear();
-		flip();
-		setbit(nbits - 1ull, false);
-		setbit(1ull, false);
+		if constexpr (hasSupernormals) {
+			// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 11..11, f = 111...101
+			clear();
+			flip();
+			setbit(nbits - 1ull, false);
+			setbit(1ull, false);
+		}
+		else {
+			// maximum positive value has this bit pattern: 0-1...0-111...111, that is, sign = 0, e = 11..10, f = 111...111
+			clear();
+			flip();
+			blockbinary<es, bt> scale;
+			exponent(scale);
+			--scale;
+			setexponent(int(scale));
+			setbit(nbits - 1ull, false);
+		}
+
 		return *this;
 	}
 	inline constexpr cfloat& minpos() noexcept {
-		// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
-		clear();
-		setbit(0);
+		if constexpr (hasSubnormals) {
+			// minimum positive value has this bit pattern: 0-000-00...01, that is, sign = 0, e = 000, f = 00001
+			clear();
+			setbit(0);
+		}
+		else {
+			// minimum positive value has this bit pattern: 0-001-00...0, that is, sign = 0, e = 001, f = 0000
+			clear();
+			setexponent(1);
+		}
 		return *this;
 	}
 	inline constexpr cfloat& zero() noexcept {
@@ -723,17 +758,36 @@ public:
 		return *this;
 	}
 	inline constexpr cfloat& minneg() noexcept {
-		// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
-		clear();
-		setbit(nbits - 1ull);
-		setbit(0);
+		if constexpr (hasSubnormals) {
+			// minimum negative value has this bit pattern: 1-000-00...01, that is, sign = 1, e = 00, f = 00001
+			clear();
+			setbit(nbits - 1ull);
+			setbit(0);
+		}
+		else {
+			// minimum negative value has this bit pattern: 1-001-00...0, that is, sign = 1, e = 001, f = 0000
+			clear();
+			setexponent(1);
+			setbit(nbits - 1ull);
+		}
 		return *this;
 	}
 	inline constexpr cfloat& maxneg() noexcept {
-		// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1.1, f = 111...101, u = 0
-		clear();
-		flip();
-		setbit(1ull, false);
+		if constexpr (hasSupernormals) {
+			// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1..1, f = 111...101
+			clear();
+			flip();
+			setbit(1ull, false);
+		}
+		else {
+			// maximum negative value has this bit pattern: 1-1...0-111...111, that is, sign = 1, e = 11..10, f = 111...111
+			clear();
+			flip();
+			blockbinary<es, bt> scale;
+			exponent(scale);
+			--scale;
+			setexponent(int(scale));
+		}
 		return *this;
 	}
 
@@ -1845,27 +1899,6 @@ public:
 					}
 				}
 			}
-
-#ifdef IS_THIS_PROPER
-			// use conversion tests
-			// this is not proper IMHO as the bit pattern is test specific
-			// and not the way real values get into this method: 
-			// FIX!!!!
-			// post-processing results to implement saturation
-			if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
-				std::cerr << "saturating to maxpos\n"; // todo: does this get called?
-				clear();
-				flip();
-				setbit(nbits - 1ull, false);
-				setbit(1ull, false);
-			}
-			else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
-				std::cerr << "saturating to maxneg\n"; // todo: does this get called?
-				clear();
-				flip();
-				setbit(1ull, false);
-			}
-#endif
 		}
 		return *this;  // TODO: unreachable in some configurations
 	}

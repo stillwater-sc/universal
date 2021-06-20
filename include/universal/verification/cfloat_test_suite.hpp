@@ -387,8 +387,9 @@ namespace sw::universal {
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
 
-		std::cerr << typeid(TestType).name() << '\n';
-		std::cerr << "                                                     ignoring subnormals for the moment\n";
+		std::cerr << '\n' << typeid(TestType).name() << '\n';
+		// this is too verbose, so I turned it off
+		// std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		int nrOfFailedTests = 0;
 		cfloat<32, 8, uint32_t> ref; // this is a superset of IEEE-754 float with supernormals
