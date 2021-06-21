@@ -17,7 +17,7 @@ std::string to_binary(const std::complex<NumberType>& c, bool nibbleMarker = fal
 	std::stringstream ss;
 	NumberType r = c.real();  // real() and imag() provided by the number types math library
 	NumberType i = c.imag();
-	ss << '(' << to_binary(r, nibbleMarker) << ", " << to_binary(i, nibbleMarker) << ')'; // TODO: to_binary() for int does not have this interface
+	ss << '(' << to_binary(r, nibbleMarker) << ", " << to_binary(i, nibbleMarker) << ')';
 	return ss.str();
 }
 

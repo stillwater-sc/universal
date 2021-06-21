@@ -35,31 +35,31 @@ try {
 		alu_op = ALU_OPS::ADD;
 		c = ArithmeticLogicUnit(alu_op, a, b);
 		cout << a << " + " << b << " = " << c << '\n';
-		cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+		cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 	}
 	else if (op == "sub") {
 		alu_op = ALU_OPS::SUB;
 		c = ArithmeticLogicUnit(alu_op, a, b);
 		cout << a << " - " << b << " = " << c << '\n';
-		cout << to_binary(a) << " - " << to_binary(b) << " = " << to_binary(c) << '\n';
+		cout << to_binary(a, true) << " - " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 	}
 	else if (op == "mul") {
 		alu_op = ALU_OPS::MUL;
 		c = ArithmeticLogicUnit(alu_op, a, b);
 		cout << a << " * " << b << " = " << c << '\n';
-		cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << '\n';
+		cout << to_binary(a, true) << " * " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 	}
 	else if (op == "div") {
 		alu_op = ALU_OPS::DIV;
 		c = ArithmeticLogicUnit(alu_op, a, b);
 		cout << a << " / " << b << " = " << c << '\n';
-		cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << '\n';
+		cout << to_binary(a, true) << " / " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 	}
 	else if (op == "sqrt") {
 		alu_op = ALU_OPS::SQRT;
 		c = ArithmeticLogicUnit(alu_op, a, b);
 		cout << "sqrt(" << a << ") = " << c << '\n';
-		cout << "sqrt(" << to_binary(a) << " = " << to_binary(c) << '\n';
+		cout << "sqrt(" << to_binary(a, true) << " = " << to_binary(c, true) << '\n';
 	}
 
 	return EXIT_SUCCESS;

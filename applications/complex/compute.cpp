@@ -35,12 +35,13 @@
 template<typename Scalar>
 void TestComplexConjugate() 
 {
+	constexpr bool nibbleMarker = true;
 	std::complex<Scalar> c(0.25, 0.5);
 	std::complex<Scalar> cconj(0.25, -0.5);
-	std::cout << sw::universal::to_binary(c, false) << " : " << c << '\n';
-	std::cout << sw::universal::to_binary(cconj, false) << " : " << cconj << '\n';
+	std::cout << sw::universal::to_binary(c, nibbleMarker) << " : " << c << '\n';
+	std::cout << sw::universal::to_binary(cconj, nibbleMarker) << " : " << cconj << '\n';
 	std::complex<Scalar> product = c * cconj;
-	std::cout << "(0.25+0.5i)*(0.25-0.5i) = " << sw::universal::to_binary(product, false) << " : " << product << '\n';
+	std::cout << "(0.25+0.5i)*(0.25-0.5i) = " << sw::universal::to_binary(product, nibbleMarker) << " : " << product << '\n';
 }
 
 namespace special {
@@ -177,10 +178,12 @@ try {
 
 #if MANUAL_TESTING
 
-	// std::complex<double> c = 0.25 + 0.5i;
+	std::complex<double> c = 0.25 + 0.5i;
+	cout << "complex variable: " << c << '\n';
+
 	TestComplexConjugate<float>();
 	TestComplexConjugate<fixpnt<4, 3> >();
-	//TestComplexConjugate<posit<8, 0> >();
+	TestComplexConjugate<posit<8, 0> >();
 
 #else // MANUAL_TESTING
 

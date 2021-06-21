@@ -1241,12 +1241,14 @@ inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType>& p
 
 ////////////////// string operators
 template<size_t nbits, typename BlockType>
-inline std::string to_binary(const integer<nbits, BlockType>& number) {
-	std::stringstream ss;
+inline std::string to_binary(const integer<nbits, BlockType>& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << "0b";
 	for (int i = nbits - 1; i >= 0; --i) {
-		ss << (number.at(i) ? "1" : "0");
+		s << (number.at(i) ? "1" : "0");
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
-	return ss.str();
+	return s.str();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
