@@ -12,6 +12,7 @@
 // check on required compilation guards
 #if !defined(BIT_CAST_SUPPORT)
 #pragma message("BIT_CAST_SUPPORT is not defined")
+#define BIT_CAST_SUPPORT 0
 #endif
 #if !defined(CONSTEXPRESSION)
 #define CONSTEXPRESSION
