@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <limits>
 // TODO: is this the proper way to go about this type? 
 // For big integers, the return types will not yield standard types
 namespace std {
