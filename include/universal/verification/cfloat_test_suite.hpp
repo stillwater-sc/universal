@@ -555,7 +555,7 @@ namespace sw::universal {
 	void GenerateOrderedCfloatSet(std::vector<TestType>& set) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
-		using BlockType = TestType::BlockType;
+		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
@@ -599,7 +599,7 @@ namespace sw::universal {
 	{
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
-		using BlockType = TestType::BlockType;
+		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
@@ -630,7 +630,7 @@ namespace sw::universal {
 	{
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
-		using BlockType = TestType::BlockType;
+		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
@@ -668,7 +668,7 @@ namespace sw::universal {
 	int VerifyCfloatAddition(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
-		using BlockType = TestType::BlockType;
+		using BlockType = typename TestType::BlockType;
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
