@@ -144,6 +144,15 @@ int decode_regime(const internal::bitblock<nbits>& raw_bits) {
 // extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
 template<size_t nbits, size_t es, size_t fbits>
 void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
+	// check special case
+	bitblock<nbits> zero;
+	if (raw_bits == zero) {
+		_sign = false;
+		_regime.setzero();
+		_exponent.setzero();
+		_fraction.setzero();
+		return;
+	}
 	bitblock<nbits> tmp(raw_bits);
 	_sign = raw_bits[nbits - 1];
 	if (_sign) tmp = twos_complement(tmp);

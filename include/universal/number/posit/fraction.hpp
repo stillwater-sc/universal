@@ -48,7 +48,7 @@ public:
 		_NrOfBits = 0;
 		_Bits.reset();
 	}
-
+	void setzero() { reset(); }
 	internal::bitblock<fbits> get() const {
 		return _Bits;
 	}

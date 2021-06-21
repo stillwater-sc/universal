@@ -1,4 +1,4 @@
-// posit.cpp: testbench for a posit hardware ALU
+// posit.cpp: testbench for an integer hardware ALU
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 #include <universal/hw/alu.hpp>
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/integer/integer.hpp>
 
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
@@ -16,8 +16,8 @@ try {
 	using namespace sw::universal;
 
 	if (argc != 4) {
-		std::cerr << "Usage: hw_posit [add | sub | mul | div | sqrt] a b\n";
-		std::cerr << "Example: hw_posit add 1.5 -1.5\n";
+		std::cerr << "Usage: hw_int [add | sub | mul | div | sqrt] a b\n";
+		std::cerr << "Example: hw_int add 1.5 -1.5\n";
 		return EXIT_SUCCESS;  // needed for regression test success
 	}
 	string op = argv[1];
@@ -25,7 +25,7 @@ try {
 	float fb = atof(argv[3]);
 	cout << op << " " << fa << " and " << fb << '\n';
 
-	posit<8, 2> a, b, c;
+	integer<8> a, b, c;
 	a = fa;
 	b = fb;
 
