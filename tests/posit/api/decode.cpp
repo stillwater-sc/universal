@@ -8,7 +8,7 @@
 #define POSIT_TRACE_DECODE
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 /*
@@ -31,7 +31,7 @@ int ValidateDecode() {
 	int nrOfFailedTestCases = 0;
 	sw::universal::posit<4, 0> pa;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
-		pa.set_raw_bits(uint64_t(i));
+		pa.setbits(uint64_t(i));
 		if (fabs(double(pa) - golden_values[i]) > 0.0001) {
 			ReportDecodeError("Posit<4,0> decode failed: ", pa, golden_values[i]);
 			nrOfFailedTestCases++;

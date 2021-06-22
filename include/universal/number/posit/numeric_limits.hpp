@@ -132,16 +132,13 @@ namespace std {
 		using Posit = sw::universal::posit<nbits, es>;
 		static constexpr bool is_specialized = true;
 		static constexpr Posit min() { // return minimum value
-			Posit pminpos;
-			return sw::universal::minpos<nbits, es>(pminpos);
+			return Posit(sw::universal::SpecificValue::minpos);
 		} 
 		static constexpr Posit max() { // return maximum value
-			Posit pmaxpos;
-			return sw::universal::maxpos<nbits, es>(pmaxpos);
+			return Posit(sw::universal::SpecificValue::maxpos);
 		} 
 		static constexpr Posit lowest() { // return most negative value
-			Posit pmaxneg;
-			return sw::universal::maxneg<nbits, es>(pmaxneg);
+			return Posit(sw::universal::SpecificValue::maxneg);
 		} 
 		static constexpr Posit epsilon() { // return smallest effective increment from 1.0
 			Posit one{ 1 }, incr{ 1 };
@@ -151,8 +148,7 @@ namespace std {
 			return Posit(0.5);
 		}
 		static constexpr Posit denorm_min() {  // return minimum denormalized value
-			Posit pminpos;
-			return sw::universal::minpos<nbits, es>(pminpos);
+			return Posit(sw::universal::SpecificValue::minpos);
 		}
 		static constexpr Posit infinity() { // return positive infinity
 			return Posit(NAR);

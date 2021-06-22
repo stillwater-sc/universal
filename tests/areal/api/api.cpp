@@ -13,7 +13,7 @@
 #include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 #include <universal/number/areal/manipulators.hpp>  // hex_print and the like
 #include <universal/verification/test_suite_arithmetic.hpp>
 
@@ -44,7 +44,7 @@ try {
 	areal<8, 2> a;
 	uint32_t pattern = 0x00000001ul;
 	for (unsigned i = 0; i < 23; ++i) {
-		a.set_raw_bits(pattern);
+		a.setbits(pattern);
 		std::cout << std::setw(10) << pattern << " " << to_binary(a) << " " << a << std::endl;
 		pattern <<= 1;
 	}
@@ -60,7 +60,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

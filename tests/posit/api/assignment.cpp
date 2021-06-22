@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
@@ -61,7 +61,7 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 	// posit_raw -> to value in Ty -> assign to posit -> compare posits
 	sw::universal::posit<nbits, es> p, assigned;
 	for (size_t i = 0; i < NR_POSITS; i++) {
-		p.set_raw_bits(i); // std::cout << p.get() << endl;
+		p.setbits(i); // std::cout << p.get() << endl;
 		if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
 		Ty value = (Ty)(p);
 		assigned = value;

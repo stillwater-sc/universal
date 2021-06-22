@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 /*
  * ISO constants
@@ -20,7 +20,7 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {

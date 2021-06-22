@@ -10,10 +10,10 @@
 #define QUIRE_TRACE_ADD
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 // enable operation counts
 #define DECIMAL_OPERATIONS_COUNT 1
-#include <universal/number/decimal/decimal>
+#include <universal/number/decimal/decimal.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
@@ -59,7 +59,7 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {

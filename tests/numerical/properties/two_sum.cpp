@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 
@@ -91,9 +91,9 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 	Posit pa, pb, ps, pr, psum, pref;
 	pair<Posit, Posit> s_and_r;
 	for (size_t i = 0; i < NR_POSITS; i++) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		for (size_t j = 0; j < NR_POSITS; j++) {
-			pb.set_raw_bits(j);
+			pb.setbits(j);
 
 			s_and_r = sw::universal::twoSum(pa, pb);
 			ps = s_and_r.first;
@@ -132,18 +132,17 @@ try {
 	std::string tag = "TwoSum failed: ";
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << setprecision(12);
 
-	cout << "Posit TwoSum validation" << endl;
+	std::cout << "Posit TwoSum validation" << '\n';
 
 #if MANUAL_TEST
 
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 1;
 	using Posit = posit<nbits, es>;
-	Posit a, b;
-	minpos<nbits, es>(b);
+	Posit a, b(SpecificValue::minpos);
 	a = b;
 	GenerateTwoSumTestCase(a, b);
 	GenerateTwoSumTestCase(-a, -b);
@@ -151,13 +150,12 @@ try {
 	GenerateTwoSumTestCase(a, b);
 	++b;
 	GenerateTwoSumTestCase(a, b);
-	minpos<nbits, es>(a);
-	cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << endl;
+	a.minpos(a);
+	std::cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << '\n';
 	++a;
-	cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << endl;
+	std::cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << '\n';
 	++a;
-	cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << endl;
-
+	std::cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << '\n';
 
 #else
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "twoSum");
@@ -190,7 +188,7 @@ try {
 #endif // MANUAL_TEST
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

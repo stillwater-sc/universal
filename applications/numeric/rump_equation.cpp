@@ -8,13 +8,13 @@
 #include <numeric>   // nextafter
 
 // select the number systems we would like to compare
-#include <universal/number/decimal/decimal>
-#include <universal/number/integer/integer>
-#include <universal/number/fixpnt/fixpnt>
-#include <universal/number/areal/areal>
-#include <universal/number/bfloat/bfloat>
-#include <universal/number/posit/posit>
-#include <universal/number/lns/lns>
+#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/lns/lns.hpp>
 
 #include <universal/number/posit/numeric_limits.hpp>
 
@@ -248,11 +248,11 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

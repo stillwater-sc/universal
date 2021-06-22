@@ -11,7 +11,7 @@
 #define VALID_TRACE_CONVERSION
 // enable valid arithmetic exceptions
 #define VALID_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/valid/valid>
+#include <universal/number/valid/valid.hpp>
 
 int main(int argc, char** argv)
 try {
@@ -83,7 +83,7 @@ try {
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {

@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // Standard posit with nbits = 16 have es = 1 exponent bit.
@@ -43,7 +43,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::areal_arithmetic_exception& err) {

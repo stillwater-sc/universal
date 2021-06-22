@@ -126,6 +126,27 @@ namespace sw::universal {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
+				// specific value constructor
+				constexpr posit(const SpecificValue code) : _bits(0) {
+					switch (code) {
+					case SpecificValue::maxpos:
+						maxpos();
+						break;
+					case SpecificValue::minpos:
+						minpos();
+						break;
+					default:
+						zero();
+						break;
+					case SpecificValue::minneg:
+						minneg();
+						break;
+					case SpecificValue::maxneg:
+						maxneg();
+						break;
+					}
+				}
+
 				explicit posit(signed char initial_value) { *this = (long long)initial_value; }
 				explicit posit(short initial_value) { *this = (long long)initial_value; }
 				explicit posit(int initial_value) { *this = (long long)initial_value; }
@@ -193,11 +214,11 @@ namespace sw::universal {
 				explicit operator unsigned long() const { return to_long(); }
 				explicit operator unsigned int() const { return to_int(); }
 
-				posit& set(sw::universal::bitblock<NBITS_IS_4>& raw) {
+				posit& setBitblock(sw::universal::bitblock<NBITS_IS_4>& raw) {
 					_bits = uint8_t(raw.to_ulong());
 					return *this;
 				}
-				posit& set_raw_bits(uint64_t value) {
+				posit& setbits(uint64_t value) {
 					_bits = uint8_t(value & bit_mask);
 					return *this;
 				}
@@ -209,7 +230,7 @@ namespace sw::universal {
 						return *this;
 					}
 					posit p;
-					return p.set_raw_bits((~_bits) + 1);
+					return p.setbits((~_bits) + 1);
 				}
 				posit& operator+=(const posit& b) {
 					uint16_t index = (_bits << index_shift) | b._bits;
@@ -251,7 +272,7 @@ namespace sw::universal {
 				}
 				posit reciprocate() const {
 					posit p;
-					p.set_raw_bits(posit_4_0_reciprocal_lookup[_bits]);
+					p.setbits(posit_4_0_reciprocal_lookup[_bits]);
 					return p;
 				}
 				// SELECTORS
@@ -276,7 +297,26 @@ namespace sw::universal {
 				inline void clear() { _bits = 0; }
 				inline void setzero() { clear(); }
 				inline void setnar() { _bits = nar_encoding; }
-
+				inline posit& minpos() {
+					clear();
+					return ++(*this);
+				}
+				inline posit& maxpos() {
+					setnar();
+					return --(*this);
+				}
+				inline posit& zero() {
+					clear();
+					return *this;
+				}
+				inline posit& minneg() {
+					clear();
+					return --(*this);
+				}
+				inline posit& maxneg() {
+					setnar();
+					return ++(*this);
+				}
 			private:
 				uint8_t _bits;
 

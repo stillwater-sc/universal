@@ -16,7 +16,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // enable fast posits
 #define POSIT_FAST_SPECIALIZATION
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
@@ -205,7 +205,7 @@ try {
 	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {

@@ -13,16 +13,13 @@ public:
 	using AREAL = sw::universal::areal<nbits, es, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr AREAL min() { // return minimum value
-		AREAL aminpos;
-		return sw::universal::minpos<nbits,es,bt>(aminpos);
+		return AREAL(sw::universal::SpecificValue::minpos);
 	} 
 	static constexpr AREAL max() { // return maximum value
-		AREAL amaxpos;
-		return sw::universal::maxpos<nbits, es, bt>(amaxpos);
+		return AREAL(sw::universal::SpecificValue::maxpos);
 	} 
 	static constexpr AREAL lowest() { // return most negative value
-		AREAL amaxneg;
-		return sw::universal::maxneg<nbits, es, bt>(amaxneg);
+		return AREAL(sw::universal::SpecificValue::maxneg);
 	} 
 	static constexpr AREAL epsilon() { // return smallest effective increment from 1.0
 		AREAL one{ 1.0f }, incr{ 1.0f };

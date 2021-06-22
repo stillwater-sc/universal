@@ -9,8 +9,8 @@
 #include <algorithm>
 
 #include <universal/native/ieee754.hpp>
-#include <universal/number/decimal/decimal> // the oracle number system to use
-#include <universal/number/posit/posit>
+#include <universal/number/decimal/decimal.hpp> // the oracle number system to use
+#include <universal/number/posit/posit.hpp>
 #include <universal/functions/factorial.hpp>
 
 #include <universal/utility/error.hpp>
@@ -163,11 +163,11 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

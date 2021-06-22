@@ -7,7 +7,7 @@
 #include <string>
 // configure the decimal integer arithmetic class
 #define DECIMAL_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/decimal/decimal_impl.hpp>
 #include <universal/number/decimal/numeric_limits.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 

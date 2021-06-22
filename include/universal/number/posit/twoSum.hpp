@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // Default is to return a and b in exponential range of posits
 #ifndef GEOMETRIC_ROUNDING_CASES
@@ -28,8 +28,7 @@ a + b = s + r
 template<size_t nbits, size_t es>
 std::pair< posit<nbits, es>, posit<nbits, es> > twoSum(const posit<nbits, es>& a, const posit<nbits, es>& b) {
 #if GEOMETRIC_ROUNDING_CASES
-	posit<nbits, es> pminpos, pmaxpos;
-	minpos(pminpos); maxpos(pmaxpos);
+	posit<nbits, es> pminpos(SpecificValue::minpos), pmaxpos(SpecificValue::maxpos);
 	if ((pminpos == a && pminpos == b) || (pmaxpos == a && pmaxpos == b)) {
 		return std::pair< posit<nbits, es>, posit<nbits, es> >(a, b);
 	}
@@ -74,5 +73,5 @@ std::pair< posit<nbits, es>, posit<nbits, es> > twoSum(const posit<nbits, es>& a
 	}
 	*/
 
-}} // namespace sw::universal
+} // namespace sw::universal
 

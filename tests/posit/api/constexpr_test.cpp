@@ -10,14 +10,19 @@
 // requires C++20 <bit>
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/number/posit/posit.hpp"
-#include "universal/number/posit/numeric_limits.hpp"
+#include <universal/number/posit/posit_impl.hpp>
+#include <universal/number/posit/numeric_limits.hpp>
+
+#define CONSTEXPRESSION 
 
 int main(int argc, char** argv)
 {
+    using namespace std;
+    using namespace sw::universal;
+
 //     constexpr sw::universal::posit<32, 2> p1{4.2};
 //     constexpr sw::universal::posit<32, 2> p2= 4.3;
-    
+    CONSTEXPRESSION posit<32, 2> a(SpecificValue::maxpos);
     
     return 0;
 }

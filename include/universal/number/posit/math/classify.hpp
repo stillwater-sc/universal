@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -44,4 +44,4 @@ inline bool isnormal(const posit<nbits, es>& p) {
 	return std::isnormal((long double)(p));
 }
 
-}}  // namespace sw::universal
+}  // namespace sw::universal

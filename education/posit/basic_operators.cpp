@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 // quick helper to report on a posit's specialness
 template<size_t nbits, size_t es>
@@ -21,8 +21,8 @@ try {
 	const size_t es = 1;
 	posit<nbits, es> p1, p2, p3, p4, p5, p6;
 
-	/* constexpr */ double minpos = minpos_value<nbits, es>();
-	/* constexpr */ double maxpos = maxpos_value<nbits, es>();
+	/* constexpr */ double minpos = double(posit<nbits, es>(SpecificValue::minpos));
+	/* constexpr */ double maxpos = double(posit<nbits, es>(SpecificValue::maxpos));
 
 	// the two special cases of a posit configuration: 0 and NaR
 	p1 = 0;        checkSpecialCases(p1);

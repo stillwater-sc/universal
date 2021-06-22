@@ -102,7 +102,7 @@ void TestFindMsb() {
 	for (int i = 0; i < int(sizeof(golden_ref)/sizeof(int)); ++i) {
 		int msb = findMsb(a);
 		cout << "msb of " << to_binary(a) << " is " << msb << endl;
-		if (msb >= 0) a.reset(msb);
+		if (msb >= 0) a.setbit(msb, false);
 		if (msb != golden_ref[i]) pass = false;
 	}
 

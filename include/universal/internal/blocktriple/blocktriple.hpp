@@ -1,5 +1,5 @@
 #pragma once
-// blocktriple.hpp: definition of a (sign, scale, significant) representation of a real value
+// blocktriple.hpp: definition of a (sign, scale, significant) representation of a generic floating-point value
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -9,74 +9,63 @@
 #include <iomanip>
 #include <limits>
 
-#include <universal/native/ieee754.hpp>
-#include <universal/native/bit_functions.hpp>
-#include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/internal/blocktriple/trace_constants.hpp>
-
-
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
+// check on required compilation guards
+#if !defined(BIT_CAST_SUPPORT)
+#pragma message("BIT_CAST_SUPPORT is not defined")
 #define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
-#define CONSTEXPRESSION 
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-#define BIT_CAST_SUPPORT 1
-#define CONSTEXPRESSION constexpr
-#include <bit>
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
 #endif
+#if !defined(CONSTEXPRESSION)
+#define CONSTEXPRESSION
+#endif
+
+// dependent types for stand-alone use of this class
+#include <universal/native/integers.hpp> // to_binary(uint64_t)
+#include <universal/native/ieee754.hpp>
+#include <universal/native/subnormal.hpp>
+#include <universal/native/bit_functions.hpp>
+#include <universal/internal/blockfraction/blockfraction.hpp>
+// blocktriple operation trace options
+#include <universal/internal/blocktriple/trace_constants.hpp>
 
 namespace sw::universal {
 
 // Forward definitions
-template<size_t nbits, typename bt> class blocktriple;
-template<size_t nbits, typename bt> blocktriple<nbits,bt> abs(const blocktriple<nbits,bt>& v);
+template<size_t fbits, typename bt> class blocktriple;
+template<size_t fbits, typename bt> blocktriple<fbits, bt> abs(const blocktriple<fbits, bt>& v);
 
-template<size_t nbits, typename bt>
-blocktriple<nbits, bt>& convert(unsigned long long uint, blocktriple<nbits, bt>& tgt) {
+template<size_t fbits, typename bt>
+blocktriple<fbits, bt>& convert(unsigned long long uint, blocktriple<fbits, bt>& tgt) {
 	return tgt;
 }
 
 /// <summary>
 /// Generalized blocktriple representing a (sign, scale, significant) with unrounded arithmetic
 /// </summary>
-/// <typeparam name="bt"></typeparam>
-template<size_t nbits, typename bt = uint32_t>
+/// <typeparam name="nbits">number of fraction bits in the significant</typeparam>
+template<size_t fractionbits, typename bt = uint32_t> 
 class blocktriple {
 public:
-	static constexpr size_t fhbits = nbits;
-	static constexpr size_t fbits = nbits - 1;
-	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
-	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
-	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
+	static constexpr size_t nbits = fractionbits;  // a convenience and consistency alias
+	static constexpr size_t fbits = fractionbits;
+	static constexpr size_t bfbits = fbits + 3; // bf = 00h.ffff <- nbits of fraction bits plus three bits before radix point
+	typedef bt BlockType;
+	// to maximize performance, can we make the default blocktype a uint64_t?
+	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
+	// how to manage carry propagation on uint64_t using assembly code
+	using Frac = sw::universal::blockfraction<bfbits, bt>;
 
-	using BlockType = bt;
-	using bits = blockbinary<nbits, bt>;
+	static constexpr size_t bitsInByte = 8ull;
+	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+
+	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+
+	static constexpr size_t abits = fbits + 3ull;          // size of the addend
+	static constexpr size_t mbits = 2ull * fbits;          // size of the multiplier output
+	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
+	static constexpr bt ALL_ONES = bt(~0);
+	static constexpr size_t overflowPattern = (1ull << (nbits + 1)); // overflow of 1.11111 to 10.0000
 
 	constexpr blocktriple(const blocktriple&) noexcept = default;
 	constexpr blocktriple(blocktriple&&) noexcept = default;
@@ -86,48 +75,22 @@ public:
 
 	constexpr blocktriple() noexcept : 
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } {}
+		_sign{ false }, _scale{ 0 } {} // _significant use default constructor
 
 	// decorated constructors
-	constexpr blocktriple(signed char iv) noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(short iv)       noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(int iv)         noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(long iv)        noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(long long iv)   noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(char iv)               noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(unsigned short iv)     noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(unsigned int iv)       noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(unsigned long iv)      noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(unsigned long long iv) noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(float iv)       noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(double iv)      noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
-	constexpr blocktriple(long double iv) noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+	constexpr blocktriple(signed char iv) noexcept { *this = iv; }
+	constexpr blocktriple(short iv)       noexcept { *this = iv; }
+	constexpr blocktriple(int iv)         noexcept { *this = iv; }
+	constexpr blocktriple(long iv)        noexcept { *this = iv; }
+	constexpr blocktriple(long long iv)   noexcept { *this = iv; }
+	constexpr blocktriple(char iv)               noexcept { *this = iv; }
+	constexpr blocktriple(unsigned short iv)     noexcept { *this = iv; }
+	constexpr blocktriple(unsigned int iv)       noexcept { *this = iv; }
+	constexpr blocktriple(unsigned long iv)      noexcept { *this = iv; }
+	constexpr blocktriple(unsigned long long iv) noexcept  { *this = iv; }
+	constexpr blocktriple(float iv)       noexcept { *this = iv; }
+	constexpr blocktriple(double iv)      noexcept { *this = iv; }
+	constexpr blocktriple(long double iv) noexcept { *this = iv; }
 
 	// conversion operators
 	constexpr blocktriple& operator=(signed char rhs) noexcept { return convert_signed_integer(rhs); }
@@ -142,154 +105,21 @@ public:
 	constexpr blocktriple& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
 
-	template<typename Ty>
-	constexpr blocktriple& convert_unsigned_integer(const Ty& rhs) noexcept {
-		_nan = false;
-		_inf = false;
-		_zero = true;
-		if (0 == rhs) return *this;
-		_zero = false;
-		_sign = false;
-		uint64_t raw = static_cast<uint64_t>(rhs);
-		_scale = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - _scale - 1;
-		raw <<= shift;
-		_significant = round<sizeInBits, uint64_t>(raw);
-		return *this;
-	}
-	template<typename Ty>
-	constexpr blocktriple& convert_signed_integer(const Ty& rhs) noexcept {
-		_nan = false;
-		_inf = false;
-		_zero = true;
-		if (0 == rhs) return *this;
-		_zero = false;
-		_sign = (rhs < 0);
-		uint64_t raw = static_cast<uint64_t>(_sign ? -rhs : rhs);
-		_scale = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - _scale - 1;
-		raw <<= shift;
-		_significant = round<sizeInBits, uint64_t>(raw);
-		return *this;
-	}
-	constexpr blocktriple& operator=(float rhs) noexcept { // TODO: deal with subnormals and inf
-		_nan = false;
-		_inf = false;
-		_zero = true;
-		if (rhs == 0.0f) return *this;
-#if BIT_CAST_SUPPORT
-		_zero = false; 
-		// TODO: check inf and NaN
-		_inf = false; _nan = false;
-		// normal number
-		uint32_t bc = std::bit_cast<uint32_t>(rhs);
-		_sign = (0x8000'0000 & bc);
-		_scale = int((0x7F80'0000 & bc) >> 23) - 127;
-		uint32_t raw = (1ul << 23) | (0x007F'FFFF & bc);
-		_significant = round<24, uint32_t>(raw);
-#else
-		_zero = true;
-		_sign = false;
-		_scale = 0;
-		_significant.clear();
-#endif // !BIT_CAST_SUPPORT
-		return *this;
-	}
-	constexpr blocktriple& operator=(double rhs) noexcept { // TODO: deal with subnormals and inf
-		_nan = false;
-		_inf = false;
-		_zero = true;
-		if (rhs == 0.0f) return *this;
-#if BIT_CAST_SUPPORT
-		_zero = false; 
-		// TODO: check inf and NaN
-		_inf = false; _nan = false;
-		// normal
-		uint64_t bc = std::bit_cast<uint64_t>(rhs);
-		_sign = (0x8000'0000'0000'0000 & bc);
-		_scale = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
-		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-		_significant = static_cast<bt>(round<53, uint64_t>(raw));
-#else
-		_zero = true;
-		_sign = false;
-		_scale = 0;
-		_significant.clear();
-#endif // !BIT_CAST_SUPPORT
-		return *this;
-	}
+	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_float(rhs); }
+	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_double(rhs); }
 	constexpr blocktriple& operator=(long double rhs) noexcept {
 		return *this = double(rhs);
 	};
 	
-	void add(blocktriple<nbits - 1, bt>& a, blocktriple<nbits - 1, bt>& b) {
-
+	// align the blocktriple
+	inline constexpr void align(int rightShift) noexcept {
+		_scale += rightShift;
+		_significant >>= rightShift;
 	}
-	void mul(blocktriple<nbits / 2, bt>& a, blocktriple<nbits / 2, bt>& b) {
 
-	}
-	/// <summary>
-	/// round a set of source bits to the present representation.
-	/// srcbits is the number of bits of significant in the source representation
-	/// </summary>
-	/// <typeparam name="StorageType"></typeparam>
-	/// <param name="raw"></param>
-	/// <returns></returns>
-	template<size_t srcbits, typename StorageType>
-	constexpr bt round(StorageType raw) noexcept {
-		if constexpr (nbits < srcbits) {
-			 // round to even: lsb guard round sticky
-			// collect guard, round, and sticky bits
-			// this same logic will work for the case where
-			// we only have a guard bit and no round and sticky bits
-			// because the mask logic will make round and sticky both 0
-			constexpr uint32_t shift = srcbits - nbits - 1;
-			StorageType mask = (StorageType(1ull) << shift);
-			bool guard = (mask & raw);
-			mask >>= 1;
-			bool round = (mask & raw);
-			if constexpr (shift > 1) { // protect against a negative shift
-				mask = StorageType(StorageType(~0) << (shift - 2));
-				mask = ~mask;
-			}
-			else {
-				mask = 0;
-			}
-			bool sticky = (mask & raw);
-
-			raw >>= (shift + 1);  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1);
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			//       x     1       1     0        up
-			//       x     1       1     1        up
-			if (guard) {
-				if (lsb && (!round && !sticky)) ++raw; // round to even
-				if (round || sticky) ++raw;
-				if (raw == (1ull << nbits)) { // overflow
-					++_scale;
-					raw >>= 1;
-				}
-			}
-		}
-		else {
-			constexpr size_t shift = nbits - srcbits;
-			if constexpr (shift < sizeof(StorageType)) {
-				raw <<= shift;
-			}
-			else {
-#if !BIT_CAST_SUPPORT
-				std::cerr << "round: shift " << shift << " is too large (>= " << sizeof(StorageType) << ")\n";
-#endif
-			}
-		}
-		bt significant = bt(raw);
-		return significant;
+	// apply a 2's complement recoding of the fraction bits
+	inline constexpr void twosComplement() noexcept {
+		_significant.twosComplement();
 	}
 
 	// modifiers
@@ -318,20 +148,27 @@ public:
 		_zero = false;
 		_sign = sign;
 	}
-	constexpr void set_raw_bits(uint64_t raw) noexcept {
-		clear();
-		_significant.set_raw_bits(raw);
-	}
-	// set a non-zero, non-inf, non-nan value
-	constexpr void set(bool s, int scale, bits& significant) {
+	constexpr void setpos() noexcept { _sign = false; }
+	constexpr void setnormal() noexcept {
 		_nan = false;
 		_inf = false;
 		_zero = false;
-		_sign = s;
-		_scale = scale;
-		_significant = significant;
 	}
-	constexpr void setpos() noexcept { _sign = false; }
+	constexpr void setsign(bool s) noexcept { _sign = s; }
+	constexpr void setscale(int scale) noexcept { _scale = scale; }
+	constexpr void setbit(size_t index, bool v = true) noexcept { _significant.setbit(index, v); }
+	/// <summary>
+	/// set the bits of the significant given raw fraction bits
+	/// </summary>
+	/// <param name="raw">fraction bits</param>
+	/// <returns></returns>
+	constexpr void setbits(uint64_t raw) noexcept {
+		// do not clear the nan/inf/zero booleans: caller must manage
+		_significant.setbits(raw);
+	}
+	constexpr void setblock(size_t i, const bt& block) {
+		_significant.setblock(i, block);
+	}
 
 	// selectors
 	inline constexpr bool isnan()       const noexcept { return _nan; }
@@ -341,8 +178,10 @@ public:
 	inline constexpr bool isneg()       const noexcept { return _sign; }
 	inline constexpr bool sign()        const noexcept { return _sign; }
 	inline constexpr int  scale()       const noexcept { return _scale; }
-	inline constexpr bits significant() const noexcept { return _significant; }
-
+	inline constexpr Frac significant() const noexcept { return _significant; }
+	// specialty function to offer a fast path to get the fraction bits out of the representation
+	// to convert to a target number system: only valid for nbits <= 64
+	inline constexpr uint64_t fraction_ull() const noexcept{ return _significant.fraction_ull(); }
 	// fraction bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
 	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }
@@ -352,77 +191,340 @@ public:
 	explicit operator double()      const noexcept { return to_double(); }
 	explicit operator long double() const noexcept { return to_long_double(); }
 
-	template<size_t targetBits>
-	blockbinary<targetBits, bt> alignSignificant(int alignmentShift) const {
-		blockbinary<targetBits, bt> v;
-		v.assignWithoutSignExtend(_significant);
-		if (fhbits + static_cast<size_t>(alignmentShift) >= targetBits) {
-			std::cerr << "alignmentShift " << alignmentShift << " is too large (>" << targetBits << ")\n";
-			v.clear();
-			return v;
+	// ALU operators
+	/// <summary>
+	/// add two real numbers with nbits fraction bits yielding an nbits unrounded sum
+	/// To avoid fraction bit copies, the input requirements are pushed to the
+	/// calling environment to prepare the correct storage
+	/// </summary>
+	/// <param name="lhs">ephemeral blocktriple<abits> that may get modified</param>
+	/// <param name="rhs">ephemeral blocktriple<abits> that may get modified</param>
+	/// <param name="result">unrounded sum</param>
+	void add(blocktriple<nbits, bt>& lhs, blocktriple<nbits, bt>& rhs) {
+		int lhs_scale = lhs.scale();
+		int rhs_scale = rhs.scale();
+		int scale_of_result = std::max(lhs_scale, rhs_scale);
+
+		// avoid copy by directly manipulating the fraction bits of the arguments
+		int expDiff = lhs_scale - rhs_scale;
+		if (expDiff < 0) {
+			lhs.align(-expDiff);
 		}
-		return v <<= alignmentShift;
+		else if (expDiff > 0) {
+			rhs.align(expDiff);
+		}
+		if (lhs.isneg()) lhs._significant.twosComplement();
+		if (rhs.isneg()) rhs._significant.twosComplement();
+
+		_significant.add(lhs._significant, rhs._significant);
+
+		if constexpr (_trace_btriple_add) {
+			std::cout << "blockfraction unrounded add\n";
+			std::cout << typeid(lhs._significant).name() << '\n';
+			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(_significant).name() << '\n';
+			std::cout << "sum significant : " << to_binary(*this) << " : " << *this << '\n';
+		}
+		if (_significant.iszero()) {
+			clear();
+		}
+		else {
+			_zero = false;
+			if (_significant.test(bfbits-1)) {  // is the result negative
+				_significant.twosComplement();
+				_sign = true;
+			}
+			_scale = scale_of_result;
+			if (_significant.test(bfbits-2)) { // test for carry
+				_scale += 1;
+				_significant >>= 1; // TODO: do we need to round on bits shifted away?
+			}
+			else if (_significant.test(bfbits - 3)) { // check for the hidden bit
+				// ready to go
+			}
+			else {
+				// found a denormalized form, thus need to normalize: find MSB
+				int msb = _significant.msb(); // zero case has been taken care off above
+//				std::cout << "sum : " << to_binary(*this) << std::endl;
+//				std::cout << "msb : " << msb << std::endl;
+				int leftShift = static_cast<int>(bfbits) - 3 - msb;
+				_significant <<= leftShift;
+				_scale -= leftShift;
+			}
+		}
+		if constexpr (_trace_btriple_add) {
+			std::cout << "blocktriple normalized add\n";
+			std::cout << typeid(lhs).name() << '\n';
+			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(*this).name() << '\n';
+			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
+		}
 	}
-
-#ifdef NEVER
-	/// Normalized shift (e.g., for addition).
-	template <size_t tgtSize>
-	blockbinary<tgtSize, bt> nshift(int shift) const {
-		blockbinary<tgtSize, bt> number;
-
-		// Check range
-		if (static_cast<int>(fbits) + shift >= static_cast<int>(tgtSize)) {
-			std::cerr << "nshift: shift is too large\n";
-			number.reset();
-			return number;
-		}
-
-		int hpos = static_cast<int>(fbits) + shift;       // position of hidden bit
-		if (hpos <= 0) {   // If hidden bit is LSB or beyond just set uncertainty bit and call it a day
-			number[0] = true;
-			return number;
-		}
-		number[size_t(hpos)] = true;           // hidden bit now safely set
-
-											   // Copy fraction bits into certain part
-		for (int npos = hpos - 1, fpos = int(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
-			number[size_t(npos)] = _fraction[size_t(fpos)];
-
-		// Set uncertainty bit
-		bool uncertainty = false;
-		for (int fpos = std::min(int(fbits) - 1, -shift); fpos >= 0 && !uncertainty; --fpos)
-			uncertainty |= _fraction[size_t(fpos)];
-		number[0] = uncertainty;
-		return number;
-	}
-#endif
 
 private:
-	           // special cases to keep track of
+	// special cases to keep track of
 	bool _nan; // most dominant state
 	bool _inf; // second most dominant state
 	bool _zero;// third most dominant special case
 
-			   // the triple (sign, scale, significant)
+	// the triple (sign, scale, significant)
 	bool _sign;
 	int  _scale;
-	bits _significant;
+
+public:
+	Frac _significant;
 
 	// helpers
 
+private:
+	/// <summary>
+/// round a set of source bits to the present representation.
+/// srcbits is the number of bits of significant in the source representation
+/// round<> is intended only for rounding raw IEEE-754 bits
+/// </summary>
+/// <typeparam name="StorageType">type of incoming bits</typeparam>
+/// <param name="raw">the raw unrounded bits</param>
+/// <returns></returns>
+	template<size_t srcbits, typename StorageType>
+	constexpr StorageType round(StorageType raw) noexcept {
+		if constexpr (nbits < srcbits) {
+			// round to even: lsb guard round sticky
+			// collect guard, round, and sticky bits
+			// this same logic will work for the case where
+			// we only have a guard bit and no round and/or sticky bits
+			// because the mask logic will make round and sticky both 0
+
+			// example: rounding the bits of a float to our nbits 
+			// float significant: 24bits : 0bhfff'ffff'ffff'ffff'ffff'ffff; h is hidden, f is fraction bit
+			// blocktriple target: 10bits: 0bhfff'ffff'fff    hidden bit is implicit, 10 fraction bits
+			//                                           lg'rs
+			//                             0b0000'0000'0001'0000'0000'0000; guard mask == 1 << srcbits - nbits - 2: 24 - 10 - 2 = 12
+			constexpr uint32_t upper = 8 * sizeof(StorageType) + 2;
+			constexpr uint32_t shift = srcbits - nbits - 2ull;  // srcbits includes the hidden bit, nbits does not
+			StorageType mask = (StorageType{ 1ull } << shift);
+//			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType)*8, true) << '\n';
+//			std::cout << "guard : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
+			bool guard = (mask & raw);
+			mask >>= 1;
+//			std::cout << "round : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
+			bool round = (mask & raw);
+			if constexpr (shift > 1 && shift < upper) { // protect against a negative shift
+				StorageType allones(StorageType(~0));
+				mask = StorageType(allones << (shift - 1));
+				mask = ~mask;
+			}
+			else {
+				mask = 0;
+			}
+//			std::cout << "sticky: " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
+			bool sticky = (mask & raw);
+
+			raw >>= (shift + 1);  // shift out the bits we are rounding away
+			bool lsb = (raw & 0x1);
+//			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType) * 8, true) << '\n';
+
+			//  ... lsb | guard  round sticky   round
+			//       x     0       x     x       down
+			//       0     1       0     0       down  round to even
+			//       1     1       0     0        up   round to even
+			//       x     1       0     1        up
+			//       x     1       1     0        up
+			//       x     1       1     1        up
+			if (guard) {
+				if (lsb && (!round && !sticky)) ++raw; // round to even
+				if (round || sticky) ++raw;
+				if (raw == overflowPattern) {
+					++_scale;
+					raw >>= 1;
+				}
+			}
+		}
+		else {
+			constexpr size_t shift = nbits - srcbits;
+			if constexpr (shift < sizeof(StorageType)) {
+				raw <<= shift;
+			}
+			else {
+#if !BIT_CAST_SUPPORT
+				std::cerr << "round: shift " << shift << " is too large (>= " << sizeof(StorageType) << ")\n";
+#endif
+			}
+		}
+//		std::cout << "final : " << to_binary(raw, sizeof(StorageType) * 8, true) << '\n';
+		return static_cast<StorageType>(raw);
+	}
+
+	template<typename Ty>
+	constexpr inline blocktriple& convert_unsigned_integer(const Ty& rhs) noexcept {
+		_nan = false;
+		_inf = false;
+		_zero = true;
+		if (0 == rhs) return *this;
+		_zero = false;
+		_sign = false;
+		uint64_t raw = static_cast<uint64_t>(rhs);
+		_scale = static_cast<int>(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr size_t sizeInBits = 8 * sizeof(Ty);
+		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
+		raw <<= shift;
+		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
+		_significant.setbits(rounded_bits);
+		return *this;
+	}
+	template<typename Ty>
+	constexpr inline blocktriple& convert_signed_integer(const Ty& rhs) noexcept {
+		_nan = false;
+		_inf = false;
+		_zero = true;
+		if (0 == rhs) return *this;
+		_zero = false;
+		_sign = (rhs < 0);
+		uint64_t raw = static_cast<uint64_t>(_sign ? -rhs : rhs);
+		_scale = static_cast<int>(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr size_t sizeInBits = 8 * sizeof(Ty);
+		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
+		raw <<= shift;
+		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
+		_significant.setbits(rounded_bits);
+		return *this;
+	}
+
+	CONSTEXPRESSION inline blocktriple& convert_float(float rhs) noexcept {
+#if BIT_CAST_SUPPORT
+		// normal number
+		uint32_t bc = std::bit_cast<uint32_t>(rhs);
+		bool s = (0x8000'0000ul & bc);
+		uint32_t raw_exp = static_cast<uint32_t>((0x7F80'0000ul & bc) >> 23);
+		uint32_t raw = (1ul << 23) | (0x007F'FFFFul & bc);
+#else // !BIT_CAST_SUPPORT
+		float_decoder decoder;
+		decoder.f = rhs;
+		bool s = decoder.parts.sign ? true : false;
+		uint32_t raw_exp = decoder.parts.exponent;
+		uint32_t raw = (1ul << 23) | decoder.parts.fraction;
+#endif // !BIT_CAST_SUPPORT
+
+		// special case handling
+		if (raw_exp == 0xFFu) { // special cases
+			if (raw == 1ul || raw == 0x0040'0001ul) {
+				// 1.11111111.00000000000000000000001 signalling nan
+				// 0.11111111.00000000000000000000001 signalling nan
+				// MSVC
+				// 1.11111111.10000000000000000000001 signalling nan
+				// 0.11111111.10000000000000000000001 signalling nan
+				// NAN_TYPE_SIGNALLING;
+				_nan = true;
+				_inf = true; // this is the encoding of a signalling NaN
+				return *this;
+			}
+			if (raw == 0x0040'0000ul) {
+				// 1.11111111.10000000000000000000000 quiet nan
+				// 0.11111111.10000000000000000000000 quiet nan
+				// NAN_TYPE_QUIET);
+				_nan = true;
+				_inf = false; // this is the encoding of a quiet NaN
+				return *this;
+			}
+			if (raw == 0ul) {
+				// 1.11111111.00000000000000000000000 -inf
+				// 0.11111111.00000000000000000000000 +inf
+				_nan = false;
+				_inf = true;
+				_sign = s;  // + or - infinity
+				return *this;
+			}
+		}
+		if (rhs == 0.0f) { // IEEE rule: this is valid for + and - 0.0
+			_nan = false;
+			_inf = false;
+			_zero = true;
+			_sign = s;
+			return *this;
+		}
+		// normal number, not zero
+		_nan = false;
+		_inf = false;
+		_zero = false;
+		_sign = s;
+		_scale = static_cast<int>(raw_exp) - 127;
+		uint32_t rounded_bits = round<24, uint32_t>(raw);
+		_significant.setbits(rounded_bits);
+		return *this;
+	}
+	CONSTEXPRESSION inline blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
+#if BIT_CAST_SUPPORT
+		uint64_t bc = std::bit_cast<uint64_t>(rhs);
+		bool s = (0x8000'0000'0000'0000ull & bc);
+		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
+		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
+#else
+		double_decoder decoder;
+		decoder.d = rhs;
+		bool s = decoder.parts.sign ? true : false;
+		uint64_t raw_exp = decoder.parts.exponent;
+		uint64_t raw = (1ull << 52) | decoder.parts.fraction;
+#endif // !BIT_CAST_SUPPORT
+
+		// special case handling
+		if (raw_exp == 0x7FFu) { // special cases
+			if (raw == 1ul || raw == 0x0040'0001ul) {
+				// 1.111'1111'1111.0000000000...0000000001 signalling nan
+				// 0.111'1111'1111.0000000000...0000000001 signalling nan
+				// MSVC
+				// 1.111'1111'1111.1000000000...0000000001 signalling nan
+				// 0.111'1111'1111.1000000000...0000000001 signalling nan
+				// NAN_TYPE_SIGNALLING;
+				_nan = true;
+				_inf = true; // this is the encoding of a signalling NaN
+				return *this;
+	}
+			if (raw == 0x0008'0000'0000'0000ull) {
+				// 1.111'1111'1111.1000000000...0000000000 quiet nan
+				// 0.111'1111'1111.1000000000...0000000000 quiet nan
+				// NAN_TYPE_QUIET);
+				_nan = true;
+				_inf = false; // this is the encoding of a quiet NaN
+				return *this;
+			}
+			if (raw == 0ul) {
+				// 1.11111111.00000000000000000000000 -inf
+				// 0.11111111.00000000000000000000000 +inf
+				_nan = false;
+				_inf = true;
+				_sign = s;  // + or - infinity
+				return *this;
+			}
+		}
+		if (rhs == 0.0f) { // IEEE rule: this is valid for + and - 0.0
+			_nan = false;
+			_inf = false;
+			_zero = true;
+			_sign = s;
+			return *this;
+		}
+		// normal number
+		_nan = false;
+		_inf = false;
+		_zero = false;
+		_sign = s;
+		_scale = static_cast<int>(raw_exp) - 1023;
+		uint64_t rounded_bits = round<53, uint64_t>(raw); // round manipulates _scale if needed
+		_significant.setbits(rounded_bits);
+		return *this;
+	}
+
 	double      to_float() const {
-		return float(to_double());
+		if (_zero) return 0.0;
+		float v = float(_significant);
+		v *= std::pow(2.0f, float(_scale));
+		return (_sign ? -v : v);
 	}
 	double      to_double() const {  // TODO: this needs a native, correctly rounded version
 		if (_zero) return 0.0;
-		double v = 1.0;
-		double scale = 0.5;
-		for (int i = int(nbits) - 2; i >= 0; i--) {
-			if (_significant.test(size_t(i))) v += scale;
-			scale *= 0.5;
-			if (scale == 0.0) break;
-		}
-		v *= std::pow(2.0, _scale);
+		double v = double(_significant);
+		v *= std::pow(2.0, double(_scale));
 		return (_sign ? -v : v);
 	}
 	long double to_long_double() const {
@@ -430,30 +532,30 @@ private:
 	}
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t sbits, typename bbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<sbits, bbt>& a);
-	template<size_t sbits, typename bbt>
-	friend std::istream& operator>> (std::istream& istr, blocktriple<sbits, bbt>& a);
+	template<size_t nnbits, typename bbt>
+	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<nnbits, bbt>& a);
+	template<size_t nnbits, typename bbt>
+	friend std::istream& operator>> (std::istream& istr, blocktriple<nnbits, bbt>& a);
 
 	// declare as friends to avoid needing a marshalling function to get significant bits out
-	template<size_t sbits, typename bbt>
-	friend std::string to_binary(const blocktriple<sbits, bbt>&, bool);
-	template<size_t sbits, typename bbt>
-	friend std::string to_triple(const blocktriple<sbits, bbt>&, bool);
+	template<size_t nnbits, typename bbt>
+	friend std::string to_binary(const blocktriple<nnbits, bbt>&, bool);
+	template<size_t nnbits, typename bbt>
+	friend std::string to_triple(const blocktriple<nnbits, bbt>&, bool);
 
 	// logic operators
-	template<size_t ssbits, typename bbt>
-	friend bool operator==(const blocktriple<ssbits, bbt>& lhs, const blocktriple<ssbits, bbt>& rhs);
-	template<size_t ssbits, typename bbt>
-	friend bool operator!=(const blocktriple<ssbits, bbt>& lhs, const blocktriple<ssbits, bbt>& rhs);
-	template<size_t ssbits, typename bbt>
-	friend bool operator< (const blocktriple<ssbits, bbt>& lhs, const blocktriple<ssbits, bbt>& rhs);
-	template<size_t ssbits, typename bbt>
-	friend bool operator> (const blocktriple<ssbits, bbt>& lhs, const blocktriple<ssbits, bbt>& rhs);
-	template<size_t ssbits, typename bbt>
-	friend bool operator<=(const blocktriple<ssbits, bbt>& lhs, const blocktriple<ssbits, bbt>& rhs);
-	template<size_t ssbits, typename bbt>
-	friend bool operator>=(const blocktriple<ssbits, bbt>& lhs, const blocktriple<ssbits, bbt>& rhs);
+	template<size_t nnbits, typename bbt>
+	friend bool operator==(const blocktriple<nnbits, bbt>& lhs, const blocktriple<nnbits, bbt>& rhs);
+	template<size_t nnbits, typename bbt>
+	friend bool operator!=(const blocktriple<nnbits, bbt>& lhs, const blocktriple<nnbits, bbt>& rhs);
+	template<size_t nnbits, typename bbt>
+	friend bool operator< (const blocktriple<nnbits, bbt>& lhs, const blocktriple<nnbits, bbt>& rhs);
+	template<size_t nnbits, typename bbt>
+	friend bool operator> (const blocktriple<nnbits, bbt>& lhs, const blocktriple<nnbits, bbt>& rhs);
+	template<size_t nnbits, typename bbt>
+	friend bool operator<=(const blocktriple<nnbits, bbt>& lhs, const blocktriple<nnbits, bbt>& rhs);
+	template<size_t nnbits, typename bbt>
+	friend bool operator>=(const blocktriple<nnbits, bbt>& lhs, const blocktriple<nnbits, bbt>& rhs);
 };
 
 ////////////////////// operators
@@ -474,14 +576,14 @@ inline std::istream& operator>> (std::istream& istr, const blocktriple<nbits, bt
 	return istr;
 }
 
-template<size_t sbits, typename bt>
-inline bool operator==(const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significant == rhs._significant && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
+template<size_t nbits, typename bt>
+inline bool operator==(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significant == rhs._significant && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
 
-template<size_t sbits, typename bt>
-inline bool operator!=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, typename bt>
+inline bool operator!=(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) { return !operator==(lhs, rhs); }
 
-template<size_t sbits, typename bt>
-inline bool operator< (const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) {
+template<size_t nbits, typename bt>
+inline bool operator< (const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) {
 	if (lhs._inf) {
 		if (rhs._inf) return false; else return true; // everything is less than -infinity
 	}
@@ -548,71 +650,35 @@ inline bool operator< (const blocktriple<sbits, bt>& lhs, const blocktriple<sbit
 	}
 }
 
-template<size_t sbits, typename bt>
-inline bool operator> (const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) { return  operator< (rhs, lhs); }
-template<size_t sbits, typename bt>
-inline bool operator<=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) { return !operator> (lhs, rhs); }
-template<size_t sbits, typename bt>
-inline bool operator>=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) { return !operator< (lhs, rhs); }
+template<size_t nbits, typename bt>
+inline bool operator> (const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, typename bt>
+inline bool operator<=(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nbits, typename bt>
+inline bool operator>=(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) { return !operator< (lhs, rhs); }
 
 
 ////////////////////////////////// string conversion functions //////////////////////////////
 
 template<size_t nbits, typename bt>
-std::string to_binary(const sw::universal::blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
-	return to_triple(a, bNibbleMarker);
+std::string to_binary(const sw::universal::blocktriple<nbits, bt>& a, bool nibbleMarker = true) {
+	return to_triple(a, nibbleMarker);
 }
 
 template<size_t nbits, typename bt>
-std::string to_triple(const blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
+std::string to_triple(const blocktriple<nbits, bt>& a, bool nibbleMarker = true) {
 	std::stringstream s;
 	s << (a._sign ? "(-, " : "(+, ");
-	s << a._scale << ", ";
-	s << to_binary(a._significant, bNibbleMarker) << ')';
+	s << std::setw(3) << a._scale << ", ";
+	s << to_binary(a._significant, nibbleMarker) << ')';
 	return s.str();
 }
 
 template<size_t nbits, typename bt>
-blocktriple<nbits, bt> abs(const blocktriple<nbits, bt>& a) {
-	blocktriple<nbits, bt> absolute(a);
+blocktriple<nbits> abs(const blocktriple<nbits, bt>& a) {
+	blocktriple<nbits> absolute(a);
 	absolute.setpos();
 	return absolute;
-}
-// add two numbers with nbits significant bits, return the sumbits unrounded result value
-template<size_t nbits, size_t sumbits, typename bt>
-void module_add(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits,bt>& rhs, blocktriple<sumbits, bt>& result) {
-	int lhs_scale = lhs.scale();
-	int rhs_scale = rhs.scale();
-	int scale_of_result = std::max(lhs_scale, rhs_scale);
-
-	// align the significants and add a leading 0 bit so that we can 
-	// transform to a 2's complement encoding for negative numbers
-	blockbinary<sumbits, bt> r1 = lhs.template alignSignificant<sumbits>(lhs_scale - scale_of_result + 3);
-	blockbinary<sumbits, bt> r2 = rhs.template alignSignificant<sumbits>(rhs_scale - scale_of_result + 3);
-
-	if (lhs.isneg()) r1 = twosComplement(r1);
-	if (rhs.isneg()) r2 = twosComplement(r2);
-	blockbinary<sumbits, bt> sum = r1 + r2;
-
-	if constexpr (_trace_btriple_add) {
-		std::cout << "r1  : " << to_binary(r1) << " : " << r1 << '\n';
-		std::cout << "r2  : " << to_binary(r2) << " : " << r2 << '\n';
-		std::cout << "sum : " << to_binary(sum) << " : " << sum << '\n';
-	}
-	if (sum.iszero()) {                         
-		result.clear();
-	}
-	else {
-		bool sign = false;
-		if (sum.isneg()) {
-			sum = twosComplement(sum);
-			sign = true;
-		}
-		int shift = 0;
-		// TODO: normalize subnormal if needed
-		scale_of_result -= shift;
-		result.set(sign, scale_of_result, sum);
-	}
 }
 
 }  // namespace sw::universal

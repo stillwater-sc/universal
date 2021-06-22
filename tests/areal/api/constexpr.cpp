@@ -15,7 +15,7 @@
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 // fixed-point type manipulators such as pretty printers
 #include <universal/number/areal/manipulators.hpp>
 #include <universal/number/areal/math_functions.hpp>
@@ -79,6 +79,31 @@ void TestConstexprAssignment() {
 #endif // BIT_CAST_SUPPORT
 }
 
+//
+template<typename Real>
+void TestConstexprSpecificValues() {
+	{
+		constexpr Real positiveMax(sw::universal::SpecificValue::maxpos);
+		std::cout << "maxpos  : " << to_binary(positiveMax) << " : " << positiveMax << '\n';
+	}
+	{
+		constexpr Real positiveMin(sw::universal::SpecificValue::minpos);
+		std::cout << "minpos  : " << to_binary(positiveMin) << " : " << positiveMin << '\n';
+	}
+	{
+		constexpr Real zero(sw::universal::SpecificValue::zero);
+		std::cout << "zero    : " << to_binary(zero) << " : " << zero << '\n';
+	}
+	{
+		constexpr Real negativeMin(sw::universal::SpecificValue::minneg);
+		std::cout << "minneg  : " << to_binary(negativeMin) << " : " << negativeMin << '\n';
+	}
+	{
+		constexpr Real negativeMax(sw::universal::SpecificValue::maxneg);
+		std::cout << "maxneg  : " << to_binary(negativeMax) << " : " << negativeMax << '\n';
+	}
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -94,10 +119,11 @@ try {
 	
 	using Real = areal<12, 2>;
 	Real a;
-	a.debug();
+	a.constexprClassParameters();
 
 	TestConstexprConstruction<Real>();
 	TestConstexprAssignment<Real>();
+	TestConstexprSpecificValues<Real>();
 
 	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;
@@ -108,7 +134,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::areal_arithmetic_exception& err) {

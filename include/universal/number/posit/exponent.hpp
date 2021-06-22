@@ -30,6 +30,7 @@ public:
 		_NrOfBits = 0;
 		_Bits.reset();
 	}
+	void setzero() { reset(); }
 	size_t nrBits() const {
 		return _NrOfBits;
 	}

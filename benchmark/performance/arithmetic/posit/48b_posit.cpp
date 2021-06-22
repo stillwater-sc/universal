@@ -8,7 +8,7 @@
 #define POSIT_FAST_POSIT_48_3 0
 // second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/performance/number_system.hpp>
 
 int main(int argc, char** argv)
@@ -26,7 +26,7 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {

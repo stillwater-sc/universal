@@ -11,7 +11,7 @@
 #define POSIT_TRACE_POW
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/valid/valid.hpp>
+#include <universal/number/valid/valid_impl.hpp>
 #include <universal/number/valid/manipulators.hpp>
 //#include <universal/number/valid/math/exponent.hpp>
 //#include <universal/verification/valid_math_test_suite.hpp>

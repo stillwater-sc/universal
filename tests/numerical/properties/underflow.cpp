@@ -5,7 +5,7 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
 // pull in the posit number system
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 // Undetected underflow
 //

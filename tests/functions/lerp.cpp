@@ -6,7 +6,7 @@
 #include <random>  // only valid for native types
 #include <array>
 #include <algorithm>
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/functions/lerp.hpp>
 
 template <typename Rand>

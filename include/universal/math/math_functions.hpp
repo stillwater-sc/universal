@@ -9,7 +9,6 @@
 #include <universal/math/stub/abs.hpp>
 #include <universal/math/stub/classify.hpp>
 #include <universal/math/stub/complex.hpp>
-//#include <universal/math/stub/constants.hpp>
 #include <universal/math/stub/error_and_gamma.hpp>
 #include <universal/math/stub/exponent.hpp>
 #include <universal/math/stub/fractional.hpp>

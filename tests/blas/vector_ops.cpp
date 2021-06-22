@@ -14,7 +14,7 @@
 #define POSIT_FAST_POSIT_32_2 1
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 
 template<size_t nbits, size_t es>
@@ -51,7 +51,7 @@ try {
 		a[i] = 1;
 		b[i] = epsilon;
 	}
-	a[0] = a[vectorSize - 1] = maxpos<nbits, es>();
+	a[0] = a[vectorSize - 1] = posit<nbits, es>(SpecificValue::maxpos);
 	b[0] = -1;  b[vectorSize - 1] = 1;
 	if (vectorSize < 10) {
 		cout << a << endl;

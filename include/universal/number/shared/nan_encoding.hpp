@@ -1,5 +1,5 @@
 #pragma once
-// infinite_encoding.hpp: definition of encodings of infinite for real types
+// nan_encoding.hpp: definition of encodings of NaN for IEEE-754-style floating-point types
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

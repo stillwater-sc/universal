@@ -3,20 +3,16 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// minimum set of include files to reflect source code dependencies
-#define POSIT_ENABLE_LITERALS 1
+#include <universal/utility/directives.hpp>
+// use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math/classify.hpp>
-#include <universal/number/quire/exceptions.hpp>  // math library might use quire
 #include <universal/verification/posit_math_test_suite.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
@@ -36,7 +32,7 @@ try {
 	posit<nbits, es> pnar; pnar.setnar();
 	posit<nbits, es> pinf; pinf.setnar();
 	posit<nbits, es> pzero(0);
-	posit<nbits, es> pminpos; minpos<nbits, es>(pminpos);
+	posit<nbits, es> pminpos(SpecificValue::minpos);
 	posit<nbits, es> pdblmin(MY_DBL_MIN);
 	posit<nbits, es> pone(1);
 

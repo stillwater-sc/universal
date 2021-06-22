@@ -6,7 +6,7 @@
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 #include <universal/number/integer/math_functions.hpp>
 #include <universal/number/integer/primes.hpp>
 
@@ -101,11 +101,11 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& err) {
-	std::cerr << err.what() << std::endl;
+	std::cerr << "Caught exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

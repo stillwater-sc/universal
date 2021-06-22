@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 

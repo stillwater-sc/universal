@@ -13,63 +13,10 @@
 
 // mathematical function definitions and implementations
 #include <universal/number/posit/math_functions.hpp>
+#include <universal/verification/test_reporters.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 namespace sw::universal {
-
-static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
-
-template<size_t nbits, size_t es>
-void ReportTwoInputFunctionError(const std::string& test_case, const std::string& op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case << " " << op << "("
-		<< std::setprecision(20)
-		<< std::setw(FLOAT_TABLE_WIDTH) << a
-		<< ","
-		<< std::setw(FLOAT_TABLE_WIDTH) << b << ")"
-		<< " != "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get()
-		<< std::setprecision(5)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportTwoInputFunctionSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case << " " << op << "("
-		<< std::setprecision(20)
-		<< std::setw(FLOAT_TABLE_WIDTH) << a
-		<< ","
-		<< std::setw(FLOAT_TABLE_WIDTH) << b << ")"
-		<< " == "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " ==  "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get()
-		<< std::setprecision(5)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportOneInputFunctionError(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-		<< " != "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << pref.get() << " vs " << presult.get() << std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportOneInputFunctionSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-		<< " == "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref
-		<< " " << components_to_string(presult) << std::endl;
-}
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 
@@ -83,7 +30,7 @@ int VerifyLog(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, plog, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		plog = sw::universal::log(pa);
 		// generate reference
 		double da = double(pa);
@@ -107,7 +54,7 @@ int VerifyLog2(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, plog2, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		plog2 = sw::universal::log2(pa);
 		// generate reference
 		double da = double(pa);
@@ -132,7 +79,7 @@ int VerifyLog10(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, plog10, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		plog10 = sw::universal::log10(pa);
 		// generate reference
 		double da = double(pa);
@@ -157,7 +104,7 @@ int VerifyExp(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, pexp, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		pexp = sw::universal::exp(pa);
 		// generate reference
 		double da = double(pa);
@@ -183,13 +130,13 @@ int VerifyExp2(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, pexp2, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		pexp2 = sw::universal::exp2(pa);
 		// generate reference
 		double da = double(pa);
 		pref = std::exp2(da);
 		if (pexp2 != pref) {
-			if (std::exp(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
+			if (std::exp2(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp2", pa, pref, pexp2);
 			}
@@ -204,16 +151,16 @@ int VerifyExp2(bool bReportIndividualTestCases) {
 // enumerate all power method cases for a posit configuration
 template<size_t nbits, size_t es>
 int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
-	constexpr size_t NR_POSITS = (unsigned(1) << nbits);
+	constexpr size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, ppow, pref;
 
 	uint32_t testNr = 0;
-	for (size_t i = 0; i < NR_POSITS; ++i) {
-		pa.set_raw_bits(i);
+	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
+		pa.setbits(i);
 		double da = double(pa);
-		for (size_t j = 0; j < NR_POSITS; ++j) {
-			pb.set_raw_bits(j);
+		for (size_t j = 0; j < NR_TEST_CASES; ++j) {
+			pb.setbits(j);
 			double db = double(pb);
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 			try {
@@ -241,7 +188,7 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 			++testNr;
 			if (testNr > maxSamples) {
 				std::cerr << "VerifyPower has been truncated\n";
-				i = j = NR_POSITS;
+				i = j = NR_TEST_CASES;
 			}
 		}
 	}
@@ -257,7 +204,7 @@ int VerifySine(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, psin, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		psin = sw::universal::sin(pa);
 		// generate reference
 		double da = double(pa);
@@ -281,7 +228,7 @@ int VerifyCosine(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, pcos, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		pcos = sw::universal::cos(pa);
 		// generate reference
 		double da = double(pa);
@@ -305,7 +252,7 @@ int VerifyTangent(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, ptan, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		ptan = sw::universal::tan(pa);
 		// generate reference
 		double da = double(pa);
@@ -329,7 +276,7 @@ int VerifyAtan(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, patan, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		patan = sw::universal::atan(pa);
 		// generate reference
 		double da = double(pa);
@@ -353,7 +300,7 @@ int VerifyAsin(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, pasin, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		pasin = sw::universal::asin(pa);
 		// generate reference
 		double da = double(pa);
@@ -377,7 +324,7 @@ int VerifyAcos(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, pacos, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		pacos = sw::universal::acos(pa);
 		// generate reference
 		double da = double(pa);
@@ -401,7 +348,7 @@ int VerifySinh(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, psinh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		psinh = sw::universal::sinh(pa);
 		// generate reference
 		double da = double(pa);
@@ -425,7 +372,7 @@ int VerifyCosh(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, pcosh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		pcosh = sw::universal::cosh(pa);
 		// generate reference
 		double da = double(pa);
@@ -449,7 +396,7 @@ int VerifyTanh(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, ptanh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		ptanh = sw::universal::tanh(pa);
 		// generate reference
 		double da = double(pa);
@@ -473,7 +420,7 @@ int VerifyAtanh(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, patanh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		patanh = sw::universal::atanh(pa);
 		// generate reference
 		double da = double(pa);
@@ -497,7 +444,7 @@ int VerifyAsinh(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, pasinh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		pasinh = sw::universal::asinh(pa);
 		// generate reference
 		double da = double(pa);
@@ -521,7 +468,7 @@ int VerifyAcosh(bool bReportIndividualTestCases) {
 	posit<nbits, es> pa, pacosh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		pacosh = sw::universal::acosh(pa);
 		// generate reference
 		double da = double(pa);

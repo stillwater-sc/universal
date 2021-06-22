@@ -5,7 +5,7 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
 // pull in the posit number system
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 /*
 
@@ -81,7 +81,7 @@ try {
 	cout << "[ " << color_print(a / 2) << " " << color_print(a) << " " << color_print(2 * a) << " ]" << endl;
 	SterbenzCheck(a);
 
-	minpos<nbits, es>(a);
+	a.minpos();
 	a *= 2;
 	SterbenzCheck(a);
 	a *= 2;

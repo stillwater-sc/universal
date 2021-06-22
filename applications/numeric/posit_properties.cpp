@@ -10,13 +10,13 @@
 #include <array>
 
 // select the number systems we would like to compare
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 //#include <universal/fixpnt/fixpnt>   // TODO: this causes this warning for an unknown reason:
 // include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
-#include <universal/number/areal/areal>
-#include <universal/number/posit/posit>
-#include <universal/number/lns/lns>
-#include <universal/number/valid/valid>
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/lns/lns.hpp>
+#include <universal/number/valid/valid.hpp>
 
 //constexpr long double pi     = 3.14159265358979323846;
 //constexpr long double e      = 2.71828182845904523536;
@@ -85,24 +85,22 @@ const long double eps(size_t nbits) {
 template<size_t nbits, size_t es>
 std::string properties(const std::string& label) {
 	using Scalar = sw::universal::posit<nbits, es>;
-	Scalar minp(0), maxp(0);
-	sw::universal::minpos<nbits, es>(minp);
-	sw::universal::maxpos<nbits, es>(maxp);
+	Scalar minpos(sw::universal::SpecificValue::minpos), maxpos(sw::universal::SpecificValue::maxpos);
 	Scalar eps  = std::numeric_limits<Scalar>::epsilon();
 	std::stringstream ostr;
 	ostr << nbits
 		<< '\t'
 		<< label
 		<< '\t'
-		<< minp
+		<< minpos
 		<< '\t'
 		<< eps
 		<< '\t'
-		<< maxp
+		<< maxpos
 		<< '\t'
-		<< eps / minp
+		<< eps / minpos
 		<< '\t'
-		<< maxp / eps
+		<< maxpos / eps
 		<< '\n';
 	return ostr.str();
 }
@@ -177,11 +175,11 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg;
+	std::cerr << "Caught exception: " << msg;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what();
+	std::cerr << "Caught runtime exception: " << err.what();
 	return EXIT_FAILURE;
 }
 catch (...) {

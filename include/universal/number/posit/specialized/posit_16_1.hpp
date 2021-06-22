@@ -42,6 +42,27 @@ public:
 	posit& operator=(const posit&) = default;
 	posit& operator=(posit&&) = default;
 
+	// specific value constructor
+	constexpr posit(const SpecificValue code) : _bits(0) {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
+	}
+
 	// initializers for native types
 	explicit constexpr posit(signed char initial_value) : _bits(0)        { *this = initial_value; }
 	explicit constexpr posit(short initial_value) : _bits(0)              { *this = initial_value; }
@@ -82,11 +103,11 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& set(const bitblock<NBITS_IS_16>& raw) {
+	posit& setBitblock(const bitblock<NBITS_IS_16>& raw) {
 		_bits = uint16_t(raw.to_ulong());
 		return *this;
 	}
-	constexpr posit& set_raw_bits(uint64_t value) {
+	constexpr posit& setbits(uint64_t value) {
 		_bits = uint16_t(value & 0xffff);
 		return *this;
 	}
@@ -94,7 +115,7 @@ public:
 	// arithmetic assignment operators
 	constexpr posit operator-() const {
 		posit p;
-		return p.set_raw_bits((~_bits) + 1);
+		return p.setbits((~_bits) + 1);
 	}
 	posit& operator+=(const posit& b) {
 		// process special cases
@@ -401,7 +422,7 @@ public:
 		return *this;
 	}
 
-	// SELECTORS
+	// Selectors
 	inline bool sign() const       { return (_bits & sign_mask); }
 	inline bool isnar() const      { return (_bits == sign_mask); }
 	inline bool iszero() const     { return (_bits == 0x0); }
@@ -416,12 +437,33 @@ public:
 	bitblock<NBITS_IS_16> get() const { bitblock<NBITS_IS_16> bb; bb = int(_bits); return bb; }
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }
 
+	// Modifiers
 	inline void clear() { _bits = 0; }
 	inline void setzero() { clear(); }
 	inline void setnar() { _bits = sign_mask; }
+	inline posit& minpos() {
+		clear();
+		return ++(*this);
+	}
+	inline posit& maxpos() {
+		setnar();
+		return --(*this);
+	}
+	inline posit& zero() {
+		clear();
+		return *this;
+	}
+	inline posit& minneg() {
+		clear();
+		return --(*this);
+	}
+	inline posit& maxneg() {
+		setnar();
+		return ++(*this);
+	}
 	inline posit twosComplement() const {
 		posit p;
-		return p.set_raw_bits(~_bits + 1);
+		return p.setbits(~_bits + 1);
 	}
 
 	internal::value<fbits> to_value() const {

@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <limits>
 // TODO: is this the proper way to go about this type? 
 // For big integers, the return types will not yield standard types
 namespace std {
@@ -32,13 +32,13 @@ public:
 	static constexpr Integer min() { return 1; } // return minimum value
 	static constexpr Integer max() {             // return maximum value
 		Integer imax(0); // sw::universal::integers are 2's complement encoded numbers
-		imax.set(nbits - 1);
+		imax.setbit(nbits - 1);
 		imax.flip();
 		return imax;
 	} 
 	static constexpr Integer lowest() { // return most negative value
 		Integer ilowest(0); // 2's complement maxneg is 1000...0000
-		ilowest.set(nbits - 1);
+		ilowest.setbit(nbits - 1);
 		return ilowest;
 	}
 	static constexpr float epsilon() { // return smallest effective increment from 1.0

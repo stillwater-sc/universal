@@ -14,7 +14,7 @@
 #define POSIT_FAST_POSIT_8_1 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
@@ -29,7 +29,7 @@ void GenerateValues() {
 
 	posit<8, 1> a;
 	for (unsigned int i = 0; i < NR_POSITS; ++i) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		cout << hex << i << " " << dec << a << endl;
 	}
 }

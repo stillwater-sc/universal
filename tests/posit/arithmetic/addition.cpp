@@ -15,7 +15,7 @@
 #define POSIT_TRACE_ADD
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/numeric_limits.hpp>
 #include <universal/number/posit/specializations.hpp>
 #include <universal/number/posit/math_functions.hpp>

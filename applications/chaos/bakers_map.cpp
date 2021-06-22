@@ -4,7 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
-#define POSIT_ENABLE_LITERALS 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 
@@ -185,8 +184,7 @@ try {
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
-		Real x;
-		sw::universal::minpos(x);
+		Real x(sw::universal::SpecificValue::minpos);
 		std::cout << "minpos<32,2> : " << x << '\n';
 		Real y = 0.75;
 		TraceBakersMap(x, y, 5);
@@ -195,8 +193,7 @@ try {
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
-		Real x;
-		sw::universal::minpos(x);
+		Real x(sw::universal::SpecificValue::minpos);
 		x *= sw::universal::useed<32, 2>();
 		std::cout << "minpos<32,2> * useed : " << x << '\n';
 		Real y = 0.75;
@@ -206,8 +203,7 @@ try {
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
-		Real x;
-		sw::universal::minpos(x);
+		Real x(sw::universal::SpecificValue::minpos);
 		x *= sw::universal::useed<32, 2>() * sw::universal::useed<32,2>();
 		std::cout << "minpos<32,2> * useed^2 : " << x << '\n';
 		Real y = 0.75;
@@ -217,7 +213,7 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {

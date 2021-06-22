@@ -22,7 +22,7 @@
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
 // Now include the C++ library
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 
 // marshal takes a positN_t and marshals it into a raw bitblock
@@ -119,7 +119,7 @@ template<size_t nbits, size_t es, class positN_t> class convert_bytes : convert<
 		sw::universal::posit<nbits, es> pa;
 		sw::universal::bitblock<nbits> raw;
 		marshal<nbits,es>(bits, raw);
-		pa.set(raw);
+		pa.setBitblock(raw);
 		return pa;
 	}
 	static positN_t encode(sw::universal::posit<nbits, es> p) {

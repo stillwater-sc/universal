@@ -5,13 +5,13 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
 // pull in the native tools
-#include <universal/native/native>
+#include <universal/native/native.hpp>
 // pull in the posit number system
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 // pull in the arbitrary integer number system
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 // pull in the fixed-point systems
-#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/fixpnt/fixpnt.hpp>
 
 template<typename Scalar>
 bool TestPosit() {

@@ -11,7 +11,7 @@
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/areal_test_suite.hpp>
 #include <universal/number/areal/table.hpp>
@@ -62,7 +62,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

@@ -5,7 +5,7 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
 // pull in the posit number system
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 int main(int argc, char** argv)
 try {
@@ -25,11 +25,11 @@ try {
 
 	// with dynamic precision, we have the situation where multiplying
 	// extreme numbers creates precision we do not have..
-	Posit max; maxpos<nbits, es>(max);
-	Posit min; minpos<nbits, es>(min);
-	Posit one = min * max;
-	cout << "maxpos : " << info_print(max) << endl;
-	cout << "minpos : " << info_print(min) << endl;
+	Posit maxpos(SpecificValue::maxpos);
+	Posit minpos(SpecificValue::minpos);
+	Posit one = minpos * maxpos;
+	cout << "maxpos : " << info_print(maxpos) << endl;
+	cout << "minpos : " << info_print(minpos) << endl;
 	cout << "one    : " << info_print(one) << endl;
 
 	// restore the previous ostream precision

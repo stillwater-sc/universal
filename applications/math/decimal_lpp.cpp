@@ -8,7 +8,7 @@
 #include <cmath>
 #include <algorithm>
 // decimal number system
-#include <universal/number/decimal/decimal>
+#include <universal/number/decimal/decimal.hpp>
 
 /*
  * A palindrome number reads the same both ways. The largest palindrome made from the product
@@ -100,7 +100,7 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

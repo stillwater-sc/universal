@@ -7,8 +7,8 @@
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/number/areal/areal>
-#include <universal/number/posit/posit>
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/posit/posit.hpp>
 
 /*
 For simplicity, I will focus on sincospi(), which simultaneously provides both the sine and the cosine results. 
@@ -200,11 +200,11 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& err) {
-	std::cerr << err.what() << std::endl;
+	std::cerr << "Caught exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
