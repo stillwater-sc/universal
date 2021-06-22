@@ -4,4 +4,4 @@
 # docker run --security-opt seccomp:unconfined ...
 # example would be to strace an executable to find its dependencies
 
-docker build --force-rm -t stillwater/universal:3.8.1 -t stillwater/universal:latest ..
+docker build --force-rm -t stillwater/universal:3.31.1 -t stillwater/universal:latest ..
