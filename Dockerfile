@@ -15,8 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends -V \
 
 # install a specific cmake version
 RUN set -ex \
-  && for key in CBA23971357C2E6590D9EFD3EC8FEF3A7BFB4EDA; do \
-    gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
+  && for key in C6C265324BBEBDC350B513D02D2CEF1034921684; do \
+    gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys "$key" ; \
   done
 
 ENV CMAKE_VERSION 3.20.5
