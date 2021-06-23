@@ -514,6 +514,12 @@ public:
 		}
 		return internal::value<qbits>(_sign, scale, fraction, isZero, isNaR);
 	}
+	template <typename ToValue>
+	ToValue convert_to() const {
+            ToValue v;
+            convert(to_value(), v);
+            return v;
+        }
 	bool anyAfter(int index) const {
 		for (int i = index; i >= 0; i--) {
 			if (this->operator[](i)) return true;
