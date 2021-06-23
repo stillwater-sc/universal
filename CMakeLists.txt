@@ -498,6 +498,8 @@ if(BUILD_CI_CHECK)
 	# build IEEE float/double quire capability
 	set(BUILD_IEEE_FLOAT_QUIRES ON)
 
+	# build the HW validation environment
+	set(BUILD_VALIDATION_HW ON)
 endif(BUILD_CI_CHECK)
 
 if(BUILD_DEMONSTRATION)
