@@ -593,6 +593,66 @@ namespace sw::universal {
 
 	}
 
+	// test just the special cases of increment operator: operator+()
+	template<typename TestType>
+	int VerifyCfloatIncrementSpecialCases(bool bReportIndividualTestCases) {
+		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es = TestType::es;
+		using BlockType = typename TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+
+		TestType minneg(SpecificValue::minneg);
+		TestType maxneg(SpecificValue::maxneg);
+		TestType minpos(SpecificValue::minpos);
+		TestType maxpos(SpecificValue::maxpos);
+
+		int nrOfFailedTestCases = 0;
+
+		// special cases are transitions to different regimes and special encodings
+		if constexpr (hasSubnormals) {
+			TestType a(minneg);
+			++a;  // we are going to be -0
+			if (!a.iszero() && a.isneg()) {
+				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != -0\n";
+				++nrOfFailedTestCases;
+			}
+			++a; // going from -0 to +0
+			if (!a.iszero() && a.ispos()) {
+				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != +0\n";
+				++nrOfFailedTestCases;
+			}
+			if (++a != minpos) {
+				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+				++nrOfFailedTestCases;
+			}
+		}
+		else {  // the logic is exactly the same, but the values are very different
+			TestType a(minneg);
+			if (++a != 0) {
+				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != 0\n";
+				++nrOfFailedTestCases;
+			}
+			a = 0;
+			if (++a != minpos) {
+				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+				++nrOfFailedTestCases;
+			}
+		}
+		
+		if constexpr (hasSupernormals) {
+		}
+		else {
+		}
+		
+		// special case of saturing arithmetic: sequences will terminate at maxneg and maxpos
+		if constexpr (isSaturating) {
+
+		}
+		return nrOfFailedTestCases;
+	}
+
 	// validate the increment operator++
 	template<typename TestType>
 	int VerifyCfloatIncrement(bool bReportIndividualTestCases)
