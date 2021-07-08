@@ -56,6 +56,7 @@ void testCfloatOrderedSet() {
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
+#include <universal/number/posit/posit.hpp>
 int main()
 try {
 	using namespace std;
@@ -67,22 +68,63 @@ try {
 #if MANUAL_TESTING
 
 	{
-		float fa = 0.0f; // .03125f;
+		// max exp values as a function of es
+		constexpr int WIDTH = 15;
+		std::cout << 
+			std::setw(WIDTH) << "es" <<
+			std::setw(WIDTH) << "RAW_MAX_EXP" <<
+			std::setw(WIDTH) << "EXP_BIAS" <<
+			std::setw(WIDTH) << "MAX_EXP" <<
+			std::setw(WIDTH) << "MIN_EXP_NORMAL"
+			<< '\n';
+		for (size_t es = 1; es < 20; ++es) {
+			int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
+			int RAW_MAX_EXP = (es == 1) ? 1 : ((1l << es) - 1);
+			int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
+			int MIN_EXP_NORMAL = 1 - EXP_BIAS;
+			// MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
+			std::cout <<
+				std::setw(WIDTH) << es <<
+				std::setw(WIDTH) << RAW_MAX_EXP <<
+				std::setw(WIDTH) << EXP_BIAS <<
+				std::setw(WIDTH) << MAX_EXP <<
+				std::setw(WIDTH) << MIN_EXP_NORMAL <<
+				'\n';
+		}
+	}
+
+	// FAIL              0.03125 +               3.9375 !=                  inf golden reference is                    4 result 0b0.11.11110 vs ref 0b0.11.00000
+	// FAIL               0.3125 +                7.625 !=                   -0 golden reference is                  inf result 0b1.00.00000 vs ref 0b0.11.11110
+	// FAIL                0.375 +                7.625 !=                7.625 golden reference is                  inf result 0b0.11.11101 vs ref 0b0.11.11110
+	std::cout << "Manual Testing\n";
+	{
+//		float fa = 0.375; // 0.3125f;  //  0.03125f; // 0.21875f; 
 //		float fb = std::numeric_limits<float>::signaling_NaN();
-//		float fb = 0.0625f;
-//		float fb = 7.625f;
-		float fb = std::numeric_limits<float>::quiet_NaN();
+//		float fb = std::numeric_limits<float>::quiet_NaN();
+		float fa = std::numeric_limits<float>::infinity();
+		float fb = -fa; // 7.625f; // 0.0625f; 3.9375f; 
+
 		cfloat < 8, 2, uint8_t > a, b, c, cref;
+		a.constexprClassParameters();
 		a = fa;
 		b = fb;
 		c = a + b;
 		std::cout << a << " + " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		c = 7.65625f;
 		GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
 	}
 
+	{
+		float fa = std::numeric_limits<float>::infinity();
+		float fb = -fa;
+		std::cout << fa << " + " << fa << " = " << (fa + fa) << '\n';
+		std::cout << fa << " + " << fb << " = " << (fa + fb) << '\n';
+		std::cout << fb << " + " << fa << " = " << (fb + fa) << '\n';
+		std::cout << fb << " + " << fb << " = " << (fb + fb) << '\n';
+		std::cout << to_binary(fa + fb) << '\n';
+	}
+#ifdef LATER
 	{
 		cfloat<8, 2> c(SpecificValue::maxpos);
 		cfloat<9, 2> d(SpecificValue::maxpos);
@@ -109,15 +151,12 @@ try {
 		}
 	}
 
-#ifdef LATER
-
 	std::cout << "single precision IEEE-754\n";
 	float f = 1.06125f;
 	test754functions(f);
 	std::cout << "double precision IEEE-754\n";
 	double d = 1.06125;
 	test754functions(d);
-
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase< cfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
