@@ -1,4 +1,4 @@
-// <universal/posit/posit>: arbitrary configuration fixed-size posit standard header
+// <universal/posit/posit.hpp>: arbitrary configuration fixed-size posit standard header
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

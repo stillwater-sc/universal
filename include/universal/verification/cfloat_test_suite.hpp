@@ -764,28 +764,74 @@ namespace sw::universal {
 
 #else
 				nut = a + b;
-				if (!nut.inrange(ref)) {
-					// the result of the addition is outside of the range
-					// of the NUT (number system under test)
-					if constexpr (isSaturating) {
-						if (ref > 0) cref.maxpos(); else cref.maxneg();
+				if (a.isnan() || b.isnan()) {
+					// nan-type propagates
+					// if both are nan then signalling nan wins
+					// a        b   =   ref
+					// qnan    qnan = qnan
+					// qnan     #   = qnan
+					// #       qnan = qnan
+					// snan     #   = snan
+					// #       snan = snan
+					// snan    snan = snan
+					// snan    qnan = snan
+					// qnan    snan = snan
+					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
+						cref.setnan(NAN_TYPE_SIGNALLING);
 					}
 					else {
-						cref.setinf(ref < 0);
+						cref.setnan(NAN_TYPE_QUIET);
+					}
+				}
+				else if (a.isinf() || b.isinf()) {
+					// a      b  =  ref
+					// +inf +inf = +inf
+					// +inf -inf = snan
+					// -inf +inf = snan
+					// -inf -inf = -inf
+					if (a.isinf()) {
+						if (b.isinf()) {
+							if (a.sign() == b.sign()) {
+								cref.setinf(a.sign());
+							}
+							else {
+								cref.setnan(NAN_TYPE_SIGNALLING);
+							}
+						}
+						else {
+							cref.setinf(a.sign());
+						}
+					}
+					else {
+						cref.setinf(b.sign());
 					}
 				}
 				else {
-					cref = ref;
+					if (!nut.inrange(ref)) {
+						// the result of the addition is outside of the range
+						// of the NUT (number system under test)
+						if constexpr (isSaturating) {
+							if (ref > 0) cref.maxpos(); else cref.maxneg();
+						}
+						else {
+							cref.setinf(ref < 0);
+						}
+					}
+					else {
+						cref = ref;
+					}
 				}
+
 #endif // THROW_ARITHMETIC_EXCEPTION
 
 				if (nut != cref) {
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, nut);
+					std::cout << i << ',' << j << ' ' << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(nut) << ' ' << to_binary(cref) << ' ' << ref << '\n';
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, nut);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, nut, cref);
 				}
 				if (nrOfFailedTests > 9) return nrOfFailedTests;
 			}
