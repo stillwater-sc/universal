@@ -11,6 +11,7 @@
 #include <limits>
 #include <chrono>
 #include <universal/native/ieee754.hpp>
+#include <universal/utility/scientific.hpp>
 
 namespace sw::universal {
 

@@ -20,7 +20,7 @@
 // and fast posits
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/blas/solvers/cg.hpp>
@@ -158,7 +158,7 @@ The posit with nbits = 28 is a functional replacement for IEEE single precision 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {

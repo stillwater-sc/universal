@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-
 namespace sw::universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be

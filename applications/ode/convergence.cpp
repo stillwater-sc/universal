@@ -9,7 +9,7 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/blas/vector.hpp>
 #include <universal/blas/linspace.hpp>
 

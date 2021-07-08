@@ -11,7 +11,7 @@
 #endif 
 // enable/disable special posit format I/O
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/posit/table.hpp>
 
 int main(int argc, char** argv)

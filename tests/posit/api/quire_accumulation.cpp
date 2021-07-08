@@ -8,12 +8,13 @@
 #define HARDWARE_QA_OUTPUT 0
 
 // type definitions for the important types, posit<> and quire<>
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/posit_impl.hpp>
 #include <universal/traits/posit_traits.hpp>
 #include <universal/number/posit/quire.hpp>
 #include <universal/number/posit/fdp.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/quire_test_suite.hpp>
+#include <universal/utility/convert_to.hpp>
 
 // if you want to enable ISSUE_45
 //#define ISSUE_45_DEBUG
@@ -67,8 +68,9 @@ int ValidateExactDotProduct() {
 	int nrOfFailures = 0;
 	using Scalar = posit<nbits, es>;
 	using Vector = vector<Scalar>;
-	Scalar p; 
-	Vector pv = GenerateVectorForZeroValueFDP(nrElements, maxpos(p));
+	Scalar maxpos;
+	maxpos.maxpos();
+	Vector pv = GenerateVectorForZeroValueFDP(nrElements, maxpos);
 	Vector ones(nrElements);
 
 	{
@@ -124,21 +126,21 @@ int ValidateSignMagnitudeTransitions() {
 	int nrOfFailedTestCases = 0;
 	std::cout << "Quire configuration: quire<" << nbits << ", " << es << ", " << capacity << ">" << std::endl;
 
-	// moving through the four quadrants of a sign/magnitue adder/subtractor
-	sw::universal::posit<nbits, es> minp, min2, min3, min4;
-	minpos(minp);                                   // ...0001
-	min2 = minp; min2++;                        // ...0010
-	min3 = minp; min3++; min3++;                // ...0011
-	min4 = minp; min4++; min4++; min4++;        // ...0100
-	posit<nbits, es> maxp, max2, max3, max4;
-	maxp = sw::universal::maxpos_value<nbits, es>(); // 01..111
-	max2 = maxp; --max2;                        // 01..110
+	// moving through the four quadrants of a sign/magnitude adder/subtractor
+	posit<nbits, es> min1, min2, min3, min4;
+	min1.minpos();                              // ...0001
+	min2 = min1; min2++;                        // ...0010
+	min3 = min2; min3++;                        // ...0011
+	min4 = min3; min4++;                        // ...0100
+	posit<nbits, es> max1, max2, max3, max4;
+	max1.maxpos();                              // 01..111
+	max2 = max1; --max2;                        // 01..110
 	max3 = max2; --max3;                        // 01..101
 	max4 = max3; --max4;                        // 01..100
 
 	cout << endl;
 	cout << "Posit range extremes:" << endl;
-	cout << "minpos         " << minp.get() << " " << minp << endl;
+	cout << "min1 = minpos  " << min1.get() << " " << min1 << endl;
 	cout << "min2           " << min2.get() << " " << min2 << endl;
 	cout << "min3           " << min3.get() << " " << min3 << endl;
 	cout << "min4           " << min4.get() << " " << min4 << endl;
@@ -146,24 +148,37 @@ int ValidateSignMagnitudeTransitions() {
 	cout << "max4           " << max4.get() << " " << max4 << endl;
 	cout << "max3           " << max3.get() << " " << max3 << endl;
 	cout << "max2           " << max2.get() << " " << max2 << endl;
-	cout << "maxpos         " << maxp.get() << " " << maxp << endl;
+	cout << "max1 = maxpos  " << max1.get() << " " << max1 << endl;
 
 	cout << endl;
 
 	cout << "Quire experiments: sign/magnitude transitions at the range extremes" << endl;
 
+	posit<nbits, es> one{ 1.0f };
 	quire<nbits, es, capacity> q;
 	internal::value<2 * (nbits - 2 - es)> addend;
-	// TODO: how would you print a header to make it easier to interpret the bit positions
+
+		// show the relative positions of maxpos^2, maxpos, minpos, minpos^2
+	q = addend = quire_mul(max1, max1);
+	cout << q << " q == maxpos^2         = " << to_triple(addend) << endl;
+	q = addend = quire_mul(max1, one);  // indicative that the quire 'sits' behind the ALU.
+	cout << q << " q == maxpos           = " << to_triple(addend) << endl;
+	q = addend = quire_mul(min1, one);  // indicative that the quire 'sits' behind the ALU.
+	cout << q << " q == minpos           = " << to_triple(addend) << endl;
+	q = addend = quire_mul(min1, min1);
+	cout << q << " q == minpos^2         = " << to_triple(addend) << endl;
+
+	// reset to zero
+	q.clear();
 	cout << q << "                                               <-- start at zero" << endl;
 	// start in the positive, SE quadrant with minpos^2
-	q += addend = quire_mul(minp, minp);
+	q += addend = quire_mul(min1, min1);
 	cout << q << " q += minpos^2  addend = " << to_triple(addend) << endl;
 	// move to the negative SW quadrant by adding negative value that is bigger
 	q += addend = quire_mul(min2, -min2);
 	cout << q << " q += min2^2    addend = " << to_triple(addend) << endl;
 	// remove minpos^2 from the quire by subtracting it
-	q -= addend = quire_mul(minp, minp);
+	q -= addend = quire_mul(min1, min1);
 	cout << q << " q -= minpos^2  addend = " << to_triple(addend) << endl;
 	// move back into posit, SE quadrant by adding the next bigger product
 	q += addend = quire_mul(min3, min3);
@@ -172,7 +187,7 @@ int ValidateSignMagnitudeTransitions() {
 	q -= addend = quire_mul(min2, min2);
 	cout << q << " q -= min2^2    addend = " << to_triple(addend) << endl;
 	// add a -maxpos^2, to flip it again
-	q += addend = quire_mul(maxp, -maxp);
+	q += addend = quire_mul(max1, -max1);
 	cout << q << " q += -maxpos^2 addend = " << to_triple(addend) << endl;
 	// subtract min3^2 to propagate the carry
 	q -= addend = quire_mul(min3, min3);
@@ -183,13 +198,13 @@ int ValidateSignMagnitudeTransitions() {
 	q += addend = quire_mul(min2, min2);
 	cout << q << " q += min2^2    addend = " << to_triple(addend) << endl;
 	// borrow propagate
-	q += addend = quire_mul(minp, minp);
+	q += addend = quire_mul(min1, min1);
 	cout << q << " q += minpos^2  addend = " << to_triple(addend) << endl;
 	// flip the max3 bit
 	q += addend = quire_mul(max3, max3);
 	cout << q << " q += max3^2    addend = " << to_triple(addend) << endl;
 	// add maxpos^2 to be left with max3^2
-	q += addend = quire_mul(maxp, maxp);
+	q += addend = quire_mul(max1, max1);
 	cout << q << " q += maxpos^2  addend = " << to_triple(addend) << endl;;
 	// subtract max2^2 to flip the sign again
 	q -= addend = quire_mul(max2, max2);
@@ -198,28 +213,28 @@ int ValidateSignMagnitudeTransitions() {
 	q -= addend = quire_mul(max3, max3);
 	cout << q << " q -= max3^2    addend = " << to_triple(addend) << endl;
 	// remove the minpos^2 bits
-	q -= addend = quire_mul(minp, minp);
+	q -= addend = quire_mul(min1, min1);
 	cout << q << " q -= minpos^2  addend = " << to_triple(addend) << endl;
 	// add maxpos^2 to be left with max2^2 and flipped back to positive quadrant
-	q += addend = quire_mul(maxp, maxp);
+	q += addend = quire_mul(max1, max1);
 	cout << q << " q += maxpos^2  addend = " << to_triple(addend) << endl;
 	// add max2^2 to remove its remenants
 	q += addend = quire_mul(max2, max2);
 	cout << q << " q += max2^2    addend = " << to_triple(addend) << endl;
 	// subtract minpos^2 to propagate the borrow across the quire
-	q -= addend = quire_mul(minp, minp);
+	q -= addend = quire_mul(min1, min1);
 	cout << q << " q -= minpos^2  addend = " << to_triple(addend) << endl;
 	// subtract maxpos^2 to flip the sign and be left with minpos^2
-	q -= addend = quire_mul(maxp, maxp);
+	q -= addend = quire_mul(max1, max1);
 	cout << q << " q -= maxpos^2  addend = " << to_triple(addend) << endl;
 	// add minpos^2 to get to zero
-	q += addend = quire_mul(minp, minp);
+	q += addend = quire_mul(min1, min1);
 	cout << q << " q += minpos^2  addend = " << to_triple(addend) << endl;
 	// subtract minpos^2 to go negative
-	q += addend = -quire_mul(minp, minp);
+	q += addend = -quire_mul(min1, min1);
 	cout << q << " q += -minpos^2 addend = " << to_triple(addend) << endl;
 	// add minpos^2 to get to zero
-	q += addend = quire_mul(minp, minp);
+	q += addend = quire_mul(min1, min1);
 	cout << q << " q += minpos^2  addend = " << to_triple(addend) << " <-- back to zero" << endl;
 
 	return nrOfFailedTestCases;
@@ -232,7 +247,7 @@ int ValidateCarryPropagation(bool bReportIndividualTestCases) {
 
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
 	quire<nbits, es, capacity> q;
-	posit<nbits, es> mp; minpos(mp);
+	posit<nbits, es> mp(SpecificValue::minpos);
 	internal::value<mbits> minpos_square = quire_mul(mp, mp);
 	constexpr size_t NR_INCREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits+1));
 	for (size_t i = 0; i < NR_INCREMENTS_TO_OVERFLOW; ++i) {
@@ -251,7 +266,7 @@ int ValidateBorrowPropagation(bool bReportIndividualTestCases) {
 
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
 	quire<nbits, es, capacity> q;
-	posit<nbits, es> mp; minpos(mp);
+	posit<nbits, es> mp(SpecificValue::minpos);
 	internal::value<mbits> minpos_square = quire_mul(mp, mp);
 	q -= minpos_square;
 	std::cout << q << std::endl;
@@ -278,7 +293,8 @@ void TestCaseForProperZeroHandling() {
 	using namespace sw::universal;
 
 	quire<8, 1, 2> q;
-	posit<8, 1> minpos = minpos_value<8, 1>();
+	posit<8, 1> minpos;
+	minpos.minpos();
 	q += quire_mul(minpos, minpos);
 	internal::value<3> v3 = q.to_value().round_to<3>();
 	internal::value<5> v5 = q.to_value().round_to<5>();
@@ -338,8 +354,7 @@ try {
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<16, 1>();
 	
-	posit<8, 1> p8_1;
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos(p8_1));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::minpos));
 	
 	cout << "Carry Propagation\n";
 	nrOfFailedTestCases += ReportTestResult(ValidateCarryPropagation<4, 1>(bReportIndividualTestCases), "carry propagation", "increment");
@@ -354,30 +369,30 @@ try {
 
 #else
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 2>(bReportIndividualTestCases, 16, minpos<8, 0>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 2>(bReportIndividualTestCases, 16, minpos<8, 2>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 5>(bReportIndividualTestCases, 16, maxpos<8, 0>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 5>(bReportIndividualTestCases, 16, maxpos<8, 1>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 5>(bReportIndividualTestCases, 16, maxpos<8, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 2>(bReportIndividualTestCases, 16, posit<8, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 2>(bReportIndividualTestCases, 16, posit<8, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 5>(bReportIndividualTestCases, 16, posit<8, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 5>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 5>(bReportIndividualTestCases, 16, posit<8, 2>(SpecificValue::maxpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 2>(bReportIndividualTestCases, 256, minpos<16, 0>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 2>(bReportIndividualTestCases, 256, minpos<16, 1>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 2>(bReportIndividualTestCases, 256, minpos<16, 2>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 5>(bReportIndividualTestCases, 16, maxpos<16, 0>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 5>(bReportIndividualTestCases, 16, maxpos<16, 1>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 5>(bReportIndividualTestCases, 16, maxpos<16, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 2>(bReportIndividualTestCases, 256, posit<16, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 2>(bReportIndividualTestCases, 256, posit<16, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 2>(bReportIndividualTestCases, 256, posit<16, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 5>(bReportIndividualTestCases, 16, posit<16, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 5>(bReportIndividualTestCases, 16, posit<16, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 5>(bReportIndividualTestCases, 16, posit<16, 2>(SpecificValue::maxpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 0, 2>(bReportIndividualTestCases, 4096, minpos<24, 0>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 1, 2>(bReportIndividualTestCases, 4096, minpos<24, 1>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 2, 2>(bReportIndividualTestCases, 4096, minpos<24, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 0, 2>(bReportIndividualTestCases, 4096, posit<24, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 1, 2>(bReportIndividualTestCases, 4096, posit<24, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 2, 2>(bReportIndividualTestCases, 4096, posit<24, 2>(SpecificValue::minpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 2>(bReportIndividualTestCases, 65536, minpos<32, 0>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 2>(bReportIndividualTestCases, 65536, minpos<32, 1>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 2>(bReportIndividualTestCases, 65536, minpos<32, 2>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 5>(bReportIndividualTestCases, 16, maxpos<32, 0>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 5>(bReportIndividualTestCases, 16, maxpos<32, 1>());
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 5>(bReportIndividualTestCases, 16, maxpos<32, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 2>(bReportIndividualTestCases, 65536, posit<32, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 2>(bReportIndividualTestCases, 65536, posit<32, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 2>(bReportIndividualTestCases, 65536, posit<32, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 5>(bReportIndividualTestCases, 16, posit<32, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 5>(bReportIndividualTestCases, 16, posit<32, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 5>(bReportIndividualTestCases, 16, posit<32, 2>(SpecificValue::maxpos));
 
 #ifdef STRESS_TESTING
 
@@ -433,7 +448,7 @@ void Issue45() {
 	constexpr int n = 64;
 	std::vector<positX> Acoefficients(n);
 	for (int i = 0; i < n; ++i) {
-		Acoefficients[i] = sw::universal::minpos<nbits, es>();
+		Acoefficients[i] = posit<nbits, es>(sw::universal::SpecificValue::minpos);
 	}
 	std::vector<positX> xcoefficients(n);
 	for (int i = 0; i < n; ++i) {

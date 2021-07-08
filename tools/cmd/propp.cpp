@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 typedef std::numeric_limits< double > dbl;
 const char* msg = "arithmetic properties of a posit<16, 1> environment\n\
@@ -24,8 +24,10 @@ template<size_t nbits, size_t es, size_t capacity = 10>
 void arithmetic_properties(std::ostream& ostr) {
 	sw::universal::posit<nbits, es> p;
 	ostr << sw::universal::posit_range<nbits, es>() << std::endl;
-	ostr << "  minpos                     : " << sw::universal::hex_format(sw::universal::minpos<nbits, es>(p)) << " " << sw::universal::minpos<nbits, es>(p) << std::endl;
-	ostr << "  maxpos                     : " << sw::universal::hex_format(sw::universal::maxpos<nbits, es>(p)) << " " << sw::universal::maxpos<nbits, es>(p) << std::endl;
+	p.minpos();
+	ostr << "  minpos                     : " << sw::universal::hex_format(p) << " " << p << std::endl;
+	p.maxpos();
+	ostr << "  maxpos                     : " << sw::universal::hex_format(p) << " " << p << std::endl;
 	ostr << sw::universal::quire_properties<nbits, es, capacity>() << std::endl;
 	ostr << "Quire segments" << std::endl;
 	ostr << sw::universal::quire<nbits, es, capacity>() << std::endl;

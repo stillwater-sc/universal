@@ -14,7 +14,7 @@
 #define POSIT_FAST_POSIT_64_3 1  // TODO: fast posit<64,3> not implemented yet
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 
@@ -105,7 +105,8 @@ try {
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
-	double dminpos = double(minpos<nbits, es>(p));
+	p.minpos();
+	double dminpos = double(p);
 	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_SQRT,  RND_TEST_CASES, dminpos), tag, "sqrt            (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_EXP,   RND_TEST_CASES, dminpos), tag, "exp                       ");
 	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_EXP2,  RND_TEST_CASES, dminpos), tag, "exp2                      ");

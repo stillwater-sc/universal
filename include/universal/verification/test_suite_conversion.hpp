@@ -19,7 +19,6 @@
 
 namespace sw::universal {
 
-
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 template<typename TestType>
@@ -62,7 +61,7 @@ int VerifyAssignment(bool bReportIndividualTestCases, bool verbose = false) {
 	int nrOfFailedTestCases = 0;
 
 	for (size_t i = 0; i < NR_NUMBERS; i++) {
-		number.set_raw_bits(i); 
+		number.setbits(i); 
 		if (verbose) std::cout << to_binary(number) << std::endl;
 		RefType value = (RefType)(number);
 		assigned = value;
@@ -92,7 +91,7 @@ int VerifyIntegerConversion(bool bReportIndividualTestCases) {
 	a = 1;
 //	if (!a.isone()) nrOfFailedTestCases++;
 	for (size_t i = 0; i < NR_OF_TESTS; ++i) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		if (!a.isnan()) {             // <---- we need to support an isnan() for posits to unify the API
 			long long ref = (long long)a;
 			TestType result = ref;
@@ -157,7 +156,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 		RefType ref, prev, next;
 		SrcType testValue{ 0.0 };
-		ref.set_raw_bits(i);
+		ref.setbits(i);
 		SrcType da = SrcType(ref);
 		if (i > 0) {
 			eps = 1.0e-6; // da > 0 ? da * 1.0e-6 : da * -1.0e-6;
@@ -174,7 +173,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// this rounds up
 				testValue = da + eps;
 				nut = testValue;
-				next.set_raw_bits(i + 1);
+				next.setbits(i + 1);
 				golden = double(next);
 				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
@@ -183,7 +182,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// special case of projecting to maxpos
 				testValue = da - eps;
 				nut = testValue;
-				prev.set_raw_bits(HALF - 2);
+				prev.setbits(HALF - 2);
 				golden = double(prev);
 				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
@@ -198,7 +197,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// special case of projecting to minneg
 				testValue = da - eps;
 				nut = testValue;
-				prev.set_raw_bits(i - 1);
+				prev.setbits(i - 1);
 				golden = double(prev);
 				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
@@ -214,13 +213,13 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// round-down
 				testValue = da - eps;
 				nut = testValue;
-				prev.set_raw_bits(i - 1);
+				prev.setbits(i - 1);
 				golden = double(prev);
 				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				// round-up
 				testValue = da + eps;
 				nut = testValue;
-				next.set_raw_bits(i + 1);
+				next.setbits(i + 1);
 				golden = double(next);
 				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
@@ -245,7 +244,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// special case of projecting to minneg
 				testValue = da - eps;
 				nut = testValue;
-				prev.set_raw_bits(NR_TEST_CASES - 2);
+				prev.setbits(NR_TEST_CASES - 2);
 				golden = double(prev);
 				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}

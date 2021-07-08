@@ -13,7 +13,7 @@
 #include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 #include <universal/number/areal/manipulators.hpp>  // hex_print and the like
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/number/areal/table.hpp>
@@ -375,9 +375,9 @@ void TestScale(int& nrOfFailedTestCases) {
 	{
 		std::cout << "scale areal<3,1>               : ";
 		areal<3, 1> a; 
-		a.set_raw_bits(2); if (a.scale() != 1) ++nrOfFailedTestCases;
-		a.set_raw_bits(3); if (a.scale() != 1) ++nrOfFailedTestCases;
-		a.set_raw_bits(5); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(2); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(3); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(5); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	*/
@@ -385,8 +385,8 @@ void TestScale(int& nrOfFailedTestCases) {
 	{
 		std::cout << "scale areal<4,1>               : ";
 		areal<4, 1> a; 
-		a.set_raw_bits(5); if (a.scale() != 1) ++nrOfFailedTestCases;
-		a.set_raw_bits(11); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(5); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(11); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 
 	}
@@ -394,119 +394,119 @@ void TestScale(int& nrOfFailedTestCases) {
 	{
 		std::cout << "scale areal<5,1>               : ";
 		areal<5, 1> a;
-		a.set_raw_bits(12); if (a.scale() != 1) ++nrOfFailedTestCases;
-		a.set_raw_bits(20); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(12); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(20); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<5,2>               : ";
 		areal<5, 2> a;
 		// [1-11-11]
-		a.set_raw_bits(0x1F); if (a.scale() != 2) ++nrOfFailedTestCases;
+		a.setbits(0x1F); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-10-11]
-		a.set_raw_bits(0x1B); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0x1B); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-01-11]
-		a.set_raw_bits(0x17); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0x17); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-00-11]
-		a.set_raw_bits(0x13); if (a.scale() != -1) ++nrOfFailedTestCases;
+		a.setbits(0x13); if (a.scale() != -1) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<6,1>               : ";
 		areal<6, 1> a;
 		// [1-1-1111]
-		a.set_raw_bits(0x3F); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0x3F); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-1111]
-		a.set_raw_bits(0x2F); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0x2F); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<7,1>               : ";
 		areal<7, 1> a;
 		// [1-1-1'1111]
-		a.set_raw_bits(0x7F); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0x7F); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-1'1111]
-		a.set_raw_bits(0x5F); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0x5F); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<8,1>               : ";
 		areal<8, 1> a;
 		// [1-1-11'1111]
-		a.set_raw_bits(0xFF); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0xFF); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-11'1111]
-		a.set_raw_bits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<8,2>               : ";
 		areal<8, 2> a;
 		// [1-11-1'1111]
-		a.set_raw_bits(0xFF); if (a.scale() != 2) ++nrOfFailedTestCases;
+		a.setbits(0xFF); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-10-1'1111]
-		a.set_raw_bits(0xDF); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0xDF); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-01-1'1111]
-		a.set_raw_bits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-00-1'1111]
-		a.set_raw_bits(0x9F); if (a.scale() != -1) ++nrOfFailedTestCases;
+		a.setbits(0x9F); if (a.scale() != -1) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<8,3>               : ";
 		areal<8, 3> a;
 		// [1-111-'1111]
-		a.set_raw_bits(0xFF); if (a.scale() != 4) ++nrOfFailedTestCases;
+		a.setbits(0xFF); if (a.scale() != 4) ++nrOfFailedTestCases;
 		// [1-110-'1111]
-		a.set_raw_bits(0xEF); if (a.scale() != 3) ++nrOfFailedTestCases;
+		a.setbits(0xEF); if (a.scale() != 3) ++nrOfFailedTestCases;
 		// [1-101-'1111]
-		a.set_raw_bits(0xDF); if (a.scale() != 2) ++nrOfFailedTestCases;
+		a.setbits(0xDF); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-100-'1111]
-		a.set_raw_bits(0xCF); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0xCF); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-011-'1111]
-		a.set_raw_bits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-010-'1111]
-		a.set_raw_bits(0xAF); if (a.scale() != -1) ++nrOfFailedTestCases;
+		a.setbits(0xAF); if (a.scale() != -1) ++nrOfFailedTestCases;
 		// [1-001-'1111]
-		a.set_raw_bits(0x9F); if (a.scale() != -2) ++nrOfFailedTestCases;
+		a.setbits(0x9F); if (a.scale() != -2) ++nrOfFailedTestCases;
 		// [1-000-'1111]
-		a.set_raw_bits(0x8F); if (a.scale() != -3) ++nrOfFailedTestCases;
+		a.setbits(0x8F); if (a.scale() != -3) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<8,4>               : ";
 		areal<8, 4> a;
 		// [1-111'1-111]
-		a.set_raw_bits(0xFF); if (a.scale() != 8) ++nrOfFailedTestCases;
+		a.setbits(0xFF); if (a.scale() != 8) ++nrOfFailedTestCases;
 		// [1-111'0-111]
-		a.set_raw_bits(0xF7); if (a.scale() != 7) ++nrOfFailedTestCases;
+		a.setbits(0xF7); if (a.scale() != 7) ++nrOfFailedTestCases;
 		// [1-110'1-111]
-		a.set_raw_bits(0xEF); if (a.scale() != 6) ++nrOfFailedTestCases;
+		a.setbits(0xEF); if (a.scale() != 6) ++nrOfFailedTestCases;
 		// [1-110'0-111]
-		a.set_raw_bits(0xE7); if (a.scale() != 5) ++nrOfFailedTestCases;
+		a.setbits(0xE7); if (a.scale() != 5) ++nrOfFailedTestCases;
 		// [1-101'1-111]
-		a.set_raw_bits(0xDF); if (a.scale() != 4) ++nrOfFailedTestCases;
+		a.setbits(0xDF); if (a.scale() != 4) ++nrOfFailedTestCases;
 		// [1-101'0-111]
-		a.set_raw_bits(0xD7); if (a.scale() != 3) ++nrOfFailedTestCases;
+		a.setbits(0xD7); if (a.scale() != 3) ++nrOfFailedTestCases;
 		// [1-100'1-111]
-		a.set_raw_bits(0xCF); if (a.scale() != 2) ++nrOfFailedTestCases;
+		a.setbits(0xCF); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-100'0-111]
-		a.set_raw_bits(0xC7); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0xC7); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-011'1-111]
-		a.set_raw_bits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-011'0-111]
-		a.set_raw_bits(0xB7); if (a.scale() != -1) ++nrOfFailedTestCases;
+		a.setbits(0xB7); if (a.scale() != -1) ++nrOfFailedTestCases;
 		// [1-010'1-111]
-		a.set_raw_bits(0xAF); if (a.scale() != -2) ++nrOfFailedTestCases;
+		a.setbits(0xAF); if (a.scale() != -2) ++nrOfFailedTestCases;
 		// [1-010'0-111]
-		a.set_raw_bits(0xA7); if (a.scale() != -3) ++nrOfFailedTestCases;
+		a.setbits(0xA7); if (a.scale() != -3) ++nrOfFailedTestCases;
 		// [1-001'1-111]
-		a.set_raw_bits(0x9F); if (a.scale() != -4) ++nrOfFailedTestCases;
+		a.setbits(0x9F); if (a.scale() != -4) ++nrOfFailedTestCases;
 		// [1-001'0-111]
-		a.set_raw_bits(0x97); if (a.scale() != -5) ++nrOfFailedTestCases;
+		a.setbits(0x97); if (a.scale() != -5) ++nrOfFailedTestCases;
 		// [1-000'1-111]
-		a.set_raw_bits(0x8F); if (a.scale() != -6) ++nrOfFailedTestCases;
+		a.setbits(0x8F); if (a.scale() != -6) ++nrOfFailedTestCases;
 		// [1-000'0-111]
-		a.set_raw_bits(0x87); if (a.scale() != -7) ++nrOfFailedTestCases;
+		a.setbits(0x87); if (a.scale() != -7) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 
@@ -514,69 +514,69 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << "scale areal<8,5>               : ";
 		areal<8, 5> a;
 		// [1-111'11-11]
-		a.set_raw_bits(0xFF); if (a.scale() != 16) ++nrOfFailedTestCases;
+		a.setbits(0xFF); if (a.scale() != 16) ++nrOfFailedTestCases;
 		// [1-111'10-11]
-		a.set_raw_bits(0xFB); if (a.scale() != 15) ++nrOfFailedTestCases;
+		a.setbits(0xFB); if (a.scale() != 15) ++nrOfFailedTestCases;
 		// [1-111'01-11]
-		a.set_raw_bits(0xF7); if (a.scale() != 14) ++nrOfFailedTestCases;
+		a.setbits(0xF7); if (a.scale() != 14) ++nrOfFailedTestCases;
 		// [1-111'00-11]
-		a.set_raw_bits(0xF3); if (a.scale() != 13) ++nrOfFailedTestCases;
+		a.setbits(0xF3); if (a.scale() != 13) ++nrOfFailedTestCases;
 		// [1-110'11-11]
-		a.set_raw_bits(0xEF); if (a.scale() != 12) ++nrOfFailedTestCases;
+		a.setbits(0xEF); if (a.scale() != 12) ++nrOfFailedTestCases;
 		// [1-110'10-11]
-		a.set_raw_bits(0xEB); if (a.scale() != 11) ++nrOfFailedTestCases;
+		a.setbits(0xEB); if (a.scale() != 11) ++nrOfFailedTestCases;
 		// [1-110'01-11]
-		a.set_raw_bits(0xE7); if (a.scale() != 10) ++nrOfFailedTestCases;
+		a.setbits(0xE7); if (a.scale() != 10) ++nrOfFailedTestCases;
 		// [1-110'00-11]
-		a.set_raw_bits(0xE3); if (a.scale() != 9) ++nrOfFailedTestCases;
+		a.setbits(0xE3); if (a.scale() != 9) ++nrOfFailedTestCases;
 		// [1-101'11-11]
-		a.set_raw_bits(0xDF); if (a.scale() != 8) ++nrOfFailedTestCases;
+		a.setbits(0xDF); if (a.scale() != 8) ++nrOfFailedTestCases;
 		// [1-101'10-11]
-		a.set_raw_bits(0xDB); if (a.scale() != 7) ++nrOfFailedTestCases;
+		a.setbits(0xDB); if (a.scale() != 7) ++nrOfFailedTestCases;
 		// [1-101'01-11]
-		a.set_raw_bits(0xD7); if (a.scale() != 6) ++nrOfFailedTestCases;
+		a.setbits(0xD7); if (a.scale() != 6) ++nrOfFailedTestCases;
 		// [1-101'00-11]
-		a.set_raw_bits(0xD3); if (a.scale() != 5) ++nrOfFailedTestCases;
+		a.setbits(0xD3); if (a.scale() != 5) ++nrOfFailedTestCases;
 		// [1-100'11-11]
-		a.set_raw_bits(0xCF); if (a.scale() != 4) ++nrOfFailedTestCases;
+		a.setbits(0xCF); if (a.scale() != 4) ++nrOfFailedTestCases;
 		// [1-100'10-11]
-		a.set_raw_bits(0xCB); if (a.scale() != 3) ++nrOfFailedTestCases;
+		a.setbits(0xCB); if (a.scale() != 3) ++nrOfFailedTestCases;
 		// [1-100'01-11]
-		a.set_raw_bits(0xC7); if (a.scale() != 2) ++nrOfFailedTestCases;
+		a.setbits(0xC7); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-100'00-11]
-		a.set_raw_bits(0xC3); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0xC3); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-011'11-11]
-		a.set_raw_bits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-011'10-11]
-		a.set_raw_bits(0xBB); if (a.scale() != -1) ++nrOfFailedTestCases;
+		a.setbits(0xBB); if (a.scale() != -1) ++nrOfFailedTestCases;
 		// [1-011'01-11]
-		a.set_raw_bits(0xB7); if (a.scale() != -2) ++nrOfFailedTestCases;
+		a.setbits(0xB7); if (a.scale() != -2) ++nrOfFailedTestCases;
 		// [1-011'00-11]
-		a.set_raw_bits(0xB3); if (a.scale() != -3) ++nrOfFailedTestCases;
+		a.setbits(0xB3); if (a.scale() != -3) ++nrOfFailedTestCases;
 		// [1-010'11-11]
-		a.set_raw_bits(0xAF); if (a.scale() != -4) ++nrOfFailedTestCases;
+		a.setbits(0xAF); if (a.scale() != -4) ++nrOfFailedTestCases;
 		// [1-010'10-11]
-		a.set_raw_bits(0xAB); if (a.scale() != -5) ++nrOfFailedTestCases;
+		a.setbits(0xAB); if (a.scale() != -5) ++nrOfFailedTestCases;
 		// [1-010'01-11]
-		a.set_raw_bits(0xA7); if (a.scale() != -6) ++nrOfFailedTestCases;
+		a.setbits(0xA7); if (a.scale() != -6) ++nrOfFailedTestCases;
 		// [1-010'00-11]
-		a.set_raw_bits(0xA3); if (a.scale() != -7) ++nrOfFailedTestCases;
+		a.setbits(0xA3); if (a.scale() != -7) ++nrOfFailedTestCases;
 		// [1-001'11-11]
-		a.set_raw_bits(0x9F); if (a.scale() != -8) ++nrOfFailedTestCases;
+		a.setbits(0x9F); if (a.scale() != -8) ++nrOfFailedTestCases;
 		// [1-001'10-11]
-		a.set_raw_bits(0x9B); if (a.scale() != -9) ++nrOfFailedTestCases;
+		a.setbits(0x9B); if (a.scale() != -9) ++nrOfFailedTestCases;
 		// [1-001'01-11]
-		a.set_raw_bits(0x97); if (a.scale() != -10) ++nrOfFailedTestCases;
+		a.setbits(0x97); if (a.scale() != -10) ++nrOfFailedTestCases;
 		// [1-001'00-11]
-		a.set_raw_bits(0x93); if (a.scale() != -11) ++nrOfFailedTestCases;
+		a.setbits(0x93); if (a.scale() != -11) ++nrOfFailedTestCases;
 		// [1-000'11-11]
-		a.set_raw_bits(0x8F); if (a.scale() != -12) ++nrOfFailedTestCases;
+		a.setbits(0x8F); if (a.scale() != -12) ++nrOfFailedTestCases;
 		// [1-000'10-11]
-		a.set_raw_bits(0x8B); if (a.scale() != -13) ++nrOfFailedTestCases;
+		a.setbits(0x8B); if (a.scale() != -13) ++nrOfFailedTestCases;
 		// [1-000'01-11]
-		a.set_raw_bits(0x87); if (a.scale() != -14) ++nrOfFailedTestCases;
+		a.setbits(0x87); if (a.scale() != -14) ++nrOfFailedTestCases;
 		// [1-000'00-11]
-		a.set_raw_bits(0x83); if (a.scale() != -15) ++nrOfFailedTestCases;
+		a.setbits(0x83); if (a.scale() != -15) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 #if 0
@@ -598,107 +598,107 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << "scale areal<8,2,uint8_t>       : ";
 		areal<8, 2, uint8_t> a;
 		// [1-11-1'1111]
-		a.set_raw_bits(0xFF); if (a.scale() != 2) ++nrOfFailedTestCases;
+		a.setbits(0xFF); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-10-1'1111]
-		a.set_raw_bits(0xDF); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0xDF); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-01-1'1111]
-		a.set_raw_bits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-00-1'1111]
-		a.set_raw_bits(0x9F); if (a.scale() != -1) ++nrOfFailedTestCases;
+		a.setbits(0x9F); if (a.scale() != -1) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<16,5,uint16_t>     : ";
 		areal<16, 5, uint16_t> a;
 		// [1-111'11-11'0000'0000]
-		a.set_raw_bits(0xFF00); if (a.scale() != 16) ++nrOfFailedTestCases;
+		a.setbits(0xFF00); if (a.scale() != 16) ++nrOfFailedTestCases;
 		// [1-111'10-11'0000'0000]
-		a.set_raw_bits(0xFB00); if (a.scale() != 15) ++nrOfFailedTestCases;
+		a.setbits(0xFB00); if (a.scale() != 15) ++nrOfFailedTestCases;
 		// [1-111'01-11'0000'0000]
-		a.set_raw_bits(0xF700); if (a.scale() != 14) ++nrOfFailedTestCases;
+		a.setbits(0xF700); if (a.scale() != 14) ++nrOfFailedTestCases;
 		// [1-111'00-11'0000'0000]
-		a.set_raw_bits(0xF300); if (a.scale() != 13) ++nrOfFailedTestCases;
+		a.setbits(0xF300); if (a.scale() != 13) ++nrOfFailedTestCases;
 		// [1-110'11-11'0000'0000]
-		a.set_raw_bits(0xEF00); if (a.scale() != 12) ++nrOfFailedTestCases;
+		a.setbits(0xEF00); if (a.scale() != 12) ++nrOfFailedTestCases;
 		// [1-110'10-11'0000'0000]
-		a.set_raw_bits(0xEB00); if (a.scale() != 11) ++nrOfFailedTestCases;
+		a.setbits(0xEB00); if (a.scale() != 11) ++nrOfFailedTestCases;
 		// [1-110'01-11'0000'0000]
-		a.set_raw_bits(0xE700); if (a.scale() != 10) ++nrOfFailedTestCases;
+		a.setbits(0xE700); if (a.scale() != 10) ++nrOfFailedTestCases;
 		// [1-110'00-11'0000'0000]
-		a.set_raw_bits(0xE300); if (a.scale() != 9) ++nrOfFailedTestCases;
+		a.setbits(0xE300); if (a.scale() != 9) ++nrOfFailedTestCases;
 		// [1-101'11-11'0000'0000]
-		a.set_raw_bits(0xDF00); if (a.scale() != 8) ++nrOfFailedTestCases;
+		a.setbits(0xDF00); if (a.scale() != 8) ++nrOfFailedTestCases;
 		// [1-101'10-11'0000'0000]
-		a.set_raw_bits(0xDB00); if (a.scale() != 7) ++nrOfFailedTestCases;
+		a.setbits(0xDB00); if (a.scale() != 7) ++nrOfFailedTestCases;
 		// [1-101'01-11'0000'0000]
-		a.set_raw_bits(0xD700); if (a.scale() != 6) ++nrOfFailedTestCases;
+		a.setbits(0xD700); if (a.scale() != 6) ++nrOfFailedTestCases;
 		// [1-101'00-11'0000'0000]
-		a.set_raw_bits(0xD300); if (a.scale() != 5) ++nrOfFailedTestCases;
+		a.setbits(0xD300); if (a.scale() != 5) ++nrOfFailedTestCases;
 		// [1-100'11-11'0000'0000]
-		a.set_raw_bits(0xCF00); if (a.scale() != 4) ++nrOfFailedTestCases;
+		a.setbits(0xCF00); if (a.scale() != 4) ++nrOfFailedTestCases;
 		// [1-100'10-11'0000'0000]
-		a.set_raw_bits(0xCB00); if (a.scale() != 3) ++nrOfFailedTestCases;
+		a.setbits(0xCB00); if (a.scale() != 3) ++nrOfFailedTestCases;
 		// [1-100'01-11'0000'0000]
-		a.set_raw_bits(0xC700); if (a.scale() != 2) ++nrOfFailedTestCases;
+		a.setbits(0xC700); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-100'00-11'0000'0000]
-		a.set_raw_bits(0xC300); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.setbits(0xC300); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-011'11-11'0000'0000]
-		a.set_raw_bits(0xBF00); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBF00); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-011'10-11'0000'0000]
-		a.set_raw_bits(0xBB00); if (a.scale() != -1) ++nrOfFailedTestCases;
+		a.setbits(0xBB00); if (a.scale() != -1) ++nrOfFailedTestCases;
 		// [1-011'01-11'0000'0000]
-		a.set_raw_bits(0xB700); if (a.scale() != -2) ++nrOfFailedTestCases;
+		a.setbits(0xB700); if (a.scale() != -2) ++nrOfFailedTestCases;
 		// [1-011'00-11'0000'0000]
-		a.set_raw_bits(0xB300); if (a.scale() != -3) ++nrOfFailedTestCases;
+		a.setbits(0xB300); if (a.scale() != -3) ++nrOfFailedTestCases;
 		// [1-010'11-11'0000'0000]
-		a.set_raw_bits(0xAF00); if (a.scale() != -4) ++nrOfFailedTestCases;
+		a.setbits(0xAF00); if (a.scale() != -4) ++nrOfFailedTestCases;
 		// [1-010'10-11'0000'0000]
-		a.set_raw_bits(0xAB00); if (a.scale() != -5) ++nrOfFailedTestCases;
+		a.setbits(0xAB00); if (a.scale() != -5) ++nrOfFailedTestCases;
 		// [1-010'01-11'0000'0000]
-		a.set_raw_bits(0xA700); if (a.scale() != -6) ++nrOfFailedTestCases;
+		a.setbits(0xA700); if (a.scale() != -6) ++nrOfFailedTestCases;
 		// [1-010'00-11'0000'0000]
-		a.set_raw_bits(0xA300); if (a.scale() != -7) ++nrOfFailedTestCases;
+		a.setbits(0xA300); if (a.scale() != -7) ++nrOfFailedTestCases;
 		// [1-001'11-11'0000'0000]
-		a.set_raw_bits(0x9F00); if (a.scale() != -8) ++nrOfFailedTestCases;
+		a.setbits(0x9F00); if (a.scale() != -8) ++nrOfFailedTestCases;
 		// [1-001'10-11'0000'0000]
-		a.set_raw_bits(0x9B00); if (a.scale() != -9) ++nrOfFailedTestCases;
+		a.setbits(0x9B00); if (a.scale() != -9) ++nrOfFailedTestCases;
 		// [1-001'01-11'0000'0000]
-		a.set_raw_bits(0x9700); if (a.scale() != -10) ++nrOfFailedTestCases;
+		a.setbits(0x9700); if (a.scale() != -10) ++nrOfFailedTestCases;
 		// [1-001'00-11'0000'0000]
-		a.set_raw_bits(0x9300); if (a.scale() != -11) ++nrOfFailedTestCases;
+		a.setbits(0x9300); if (a.scale() != -11) ++nrOfFailedTestCases;
 		// [1-000'11-11'0000'0000]
-		a.set_raw_bits(0x8F00); if (a.scale() != -12) ++nrOfFailedTestCases;
+		a.setbits(0x8F00); if (a.scale() != -12) ++nrOfFailedTestCases;
 		// [1-000'10-11'0000'0000]
-		a.set_raw_bits(0x8B00); if (a.scale() != -13) ++nrOfFailedTestCases;
+		a.setbits(0x8B00); if (a.scale() != -13) ++nrOfFailedTestCases;
 		// [1-000'01-11'0000'0000]
-		a.set_raw_bits(0x8700); if (a.scale() != -14) ++nrOfFailedTestCases;
+		a.setbits(0x8700); if (a.scale() != -14) ++nrOfFailedTestCases;
 		// [1-000'00-11'0000'0000]
-		a.set_raw_bits(0x8300); if (a.scale() != -15) ++nrOfFailedTestCases;
+		a.setbits(0x8300); if (a.scale() != -15) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<32,8,uint32_t>     : ";
 		areal<32, 8, uint32_t> a;
 		// [1-111'1111'1-111'1111'1111'1111'1111'0000]
-		a.set_raw_bits(0xFFFF'FFF0); if (a.scale() != 128) ++nrOfFailedTestCases;
+		a.setbits(0xFFFF'FFF0); if (a.scale() != 128) ++nrOfFailedTestCases;
 		// [1-011'1111'1-111'1111'1111'1111'1111'0000]
-		a.set_raw_bits(0xBFFF'FFF0); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBFFF'FFF0); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-000'0000'0-111'1111'1111'1111'1111'0000]
-		a.set_raw_bits(0x807F'FFF0); if (a.scale() != -127) ++nrOfFailedTestCases;
+		a.setbits(0x807F'FFF0); if (a.scale() != -127) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
 		std::cout << "scale areal<64,11,uint64_t>    : ";
 		areal<64, 11, uint64_t> a;
 		// [1-111'1111'1111-'1111'1111'1111'1111'0000]
-		a.set_raw_bits(0xFFFF'FFFF'FFFF'FFF0); if (a.scale() != 1024) ++nrOfFailedTestCases;
+		a.setbits(0xFFFF'FFFF'FFFF'FFF0); if (a.scale() != 1024) ++nrOfFailedTestCases;
 		// [1-111'1111'1110-'1111'1111'1111'1111'0000]
-		a.set_raw_bits(0xFFEF'FFFF'FFFF'FFF0); 
+		a.setbits(0xFFEF'FFFF'FFFF'FFF0); 
 		if (a.scale() != 1023) ++nrOfFailedTestCases;
 		// [1-011'1111'1111-'1111'1111'1111'1111'0000]
-		a.set_raw_bits(0xBFFF'FFFF'FFFF'FFF0); if (a.scale() != 0) ++nrOfFailedTestCases;
+		a.setbits(0xBFFF'FFFF'FFFF'FFF0); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-000'0000'0000-'1111'1111'1111'1111'0000]
-		a.set_raw_bits(0x800F'FFFF'FFFF'FFF0); if (a.scale() != -1023) ++nrOfFailedTestCases;
+		a.setbits(0x800F'FFFF'FFFF'FFF0); if (a.scale() != -1023) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
@@ -742,7 +742,7 @@ try {
 	areal<8, 2> a;
 	uint32_t pattern = 0x00000001ul;
 	for (unsigned i = 0; i < 23; ++i) {
-		a.set_raw_bits(pattern);
+		a.setbits(pattern);
 		std::cout << std::setw(10) << pattern << " " << to_binary(a) << " " << a << std::endl;
 		pattern <<= 1;
 	}
@@ -773,7 +773,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

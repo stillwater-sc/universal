@@ -26,8 +26,8 @@
 #define POSIT_FAST_POSIT_64_3 0  // TODO
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
-#include <universal/number/decimal/decimal>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/decimal/decimal.hpp>
 #include <universal/blas/blas.hpp>
 
 int main(int argc, char** argv)

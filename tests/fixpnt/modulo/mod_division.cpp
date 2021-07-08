@@ -15,7 +15,7 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/number/fixpnt/math_functions.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
@@ -33,8 +33,8 @@ inline sw::universal::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::
 	// normalize both arguments to positive in new size
 	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
 	blockbinary<nbits + 1, BlockType> b_new(b);
-	if (a.sign()) a_new.twoscomplement();
-	if (b.sign()) b_new.twoscomplement();
+	if (a.sign()) a_new.twosComplement();
+	if (b.sign()) b_new.twosComplement();
 	blockbinary<2 * nbits, BlockType> multiplicant(b_new);
 
 	std::cout << "    " << a_new << " * " << b_new << std::endl;
@@ -48,7 +48,7 @@ inline sw::universal::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::
 		std::cout << std::setw(3) << i << ' ' << multiplicant << ' ' << result << std::endl;
 
 	}
-	if (result_sign) result.twoscomplement();
+	if (result_sign) result.twosComplement();
 
 	std::cout << "fnl " << result << std::endl;
 	return result;
@@ -73,8 +73,8 @@ inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded
 	// normalize both arguments to positive in new size
 	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
 	blockbinary<nbits + 1, BlockType> b_new(b);
-	if (a_sign) a_new.twoscomplement();
-	if (b_sign) b_new.twoscomplement();
+	if (a_sign) a_new.twosComplement();
+	if (b_sign) b_new.twosComplement();
 
 	// initialize the long division
 	blockbinary<2 * nbits + roundingBits, BlockType> decimator(a_new);
@@ -100,10 +100,10 @@ inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			quotient.set(static_cast<size_t>(i));
+			quotient.setbit(static_cast<size_t>(i));
 		}
 		else {
-			quotient.reset(static_cast<size_t>(i));
+			quotient.setbit(static_cast<size_t>(i), false);
 		}
 		subtractand >>= 1;
 
@@ -145,7 +145,7 @@ void GenerateValueTable() {
 	cout << "Fixed-point type: " << typeid(a).name() << endl;
 
 	for (size_t i = 0; i < NR_VALUES; ++i) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		cout << to_binary(i,nbits) << " : " << to_binary(a) << " = " << setw(10) << a << endl;
 	}
 }
@@ -156,8 +156,8 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 	using namespace sw::universal;
 
 	fixpnt<nbits, rbits> a, b, c;
-	a.set_raw_bits(a_bits);
-	b.set_raw_bits(b_bits);
+	a.setbits(a_bits);
+	b.setbits(b_bits);
 	c = a * b;
 	float fa = float(a);
 	float fb = float(b);

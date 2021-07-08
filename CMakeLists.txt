@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 8)
+  set(UNIVERSAL_VERSION_MINOR 31)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -76,7 +76,7 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 # Continuous Integration override to build all
 option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
 # or subsets of the components
-option(BUILD_INTRODUCTION                "Set to ON to build the introductory components"      ON)
+option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
 option(BUILD_NUMERICAL_CHECKS            "Set to ON to build all the numerical components"     OFF)
 option(BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
 option(BUILD_REGRESSION_SUITES           "Set to ON to build all the regression suites"        OFF)
@@ -99,12 +99,12 @@ option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"
 option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 
 # number systems and their verification suites
-option(BUILD_STORAGE_CLASSES             "Set to ON to build storage class tests"              OFF)
+option(BUILD_ARITHMETIC_CLASSES          "Set to ON to build arithmetic class tests"           OFF)
 option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
 option(BUILD_INTEGERS                    "Set to ON to build integer tests"                    OFF)
 option(BUILD_DECIMALS                    "Set to ON to build decimal tests"                    OFF)
 option(BUILD_FIXPNTS                     "Set to ON to build fixed-point tests"                OFF)
-option(BUILD_BFLOATS                     "Set to ON to build bfloat tests"                     OFF)
+option(BUILD_CFLOATS                     "Set to ON to build cfloat tests"                     OFF)
 option(BUILD_AREALS                      "Set to ON to build areal tests"                      OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build unum Type 1 tests"                OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build unum Type 2 tests"                OFF)
@@ -134,6 +134,10 @@ option(BUILD_MIXEDPRECISION_INTEGRATE    "Set to ON to build mixed-precision int
 option(BUILD_MIXEDPRECISION_INTERPOLATE  "Set to ON to build mixed-precision interpolation"    OFF)
 option(BUILD_MIXEDPRECISION_OPTIMIZE     "Set to ON to build mixed-precision optimization"     OFF)
 option(BUILD_MIXEDPRECISION_CONJUGATE    "Set to ON to build mixed-precision CG"               OFF)
+
+# validation
+option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
+option(BUILD_VALIDATION_HW               "Set to ON to build hw validation testbenches"        OFF)
 
 # documentation
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
@@ -354,7 +358,7 @@ endif()
 # universal/integer
 # universal/decimal
 # universal/fixpnt
-# universal/bfloat
+# universal/cfloat
 # universal/areal
 # universal/unum
 # universal/unum2
@@ -477,7 +481,7 @@ install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
 
 if(BUILD_CI_CHECK)
 	# set the grouped components to build (will trigger builds when tested)
-	set(BUILD_INTRODUCTION ON)
+	set(BUILD_DEMONSTRATION ON)
 	set(BUILD_NUMERICAL_CHECKS ON)
 	set(BUILD_BENCHMARKS ON)
 	set(BUILD_REGRESSION_SUITES ON)
@@ -494,16 +498,18 @@ if(BUILD_CI_CHECK)
 	# build IEEE float/double quire capability
 	set(BUILD_IEEE_FLOAT_QUIRES ON)
 
+	# build the HW validation environment
+	set(BUILD_VALIDATION_HW ON)
 endif(BUILD_CI_CHECK)
 
-if(BUILD_INTRODUCTION)
-	# core example applications that use the library
+if(BUILD_DEMONSTRATION)
+	# core demonstration example applications that use the library
 	set(BUILD_EDUCATION ON)
 	set(BUILD_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
 
 	set(BUILD_PLAYGROUND ON)
-endif(BUILD_INTRODUCTION)
+endif(BUILD_DEMONSTRATION)
 
 if(BUILD_NUMERICAL_CHECKS)
 	set(BUILD_NUMERICAL_CHALLENGES ON)
@@ -519,13 +525,13 @@ endif(BUILD_BENCHMARKS)
 
 if(BUILD_REGRESSION_SUITES)
 	# build the different test/verification suites for each number system
-	set(BUILD_STORAGE_CLASSES ON)
+	set(BUILD_ARITHMETIC_CLASSES ON)
 	set(BUILD_NATIVE_TYPES ON)
 	set(BUILD_REALS ON)
 	set(BUILD_INTEGERS ON)
 	set(BUILD_DECIMALS ON)
 	set(BUILD_FIXPNTS ON)
-	set(BUILD_BFLOATS ON)
+	set(BUILD_CFLOATS ON)
 	set(BUILD_AREALS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
@@ -547,11 +553,13 @@ if(BUILD_MIXEDPRECISION_SDK)
 endif(BUILD_MIXEDPRECISION_SDK)
 
 # Build the tests for the underlying storage classes
-if(BUILD_STORAGE_CLASSES)
+if(BUILD_ARITHMETIC_CLASSES)
 add_subdirectory("tests/bitblock")
+add_subdirectory("tests/value")
 add_subdirectory("tests/blockbinary")
+add_subdirectory("tests/blockfraction")
 add_subdirectory("tests/blocktriple")
-endif(BUILD_STORAGE_CLASSES)
+endif(BUILD_ARITHMETIC_CLASSES)
 
 if(BUILD_NATIVE_TYPES)
 add_subdirectory("tests/native")
@@ -575,7 +583,6 @@ endif(BUILD_FIXPNTS)
 # Arbitrary reals tests
 if(BUILD_REALS)
 add_subdirectory("tests/adaptivefloat")
-add_subdirectory("tests/value")
 endif(BUILD_REALS)
 
 if(BUILD_LNS)
@@ -605,10 +612,10 @@ if(BUILD_AREALS)
 add_subdirectory("tests/areal")
 endif(BUILD_AREALS)
 
-# bfloats
-if(BUILD_BFLOATS)
-add_subdirectory("tests/bfloat")
-endif(BUILD_BFLOATS)
+# cfloats
+if(BUILD_CFLOATS)
+add_subdirectory("tests/cfloat")
+endif(BUILD_CFLOATS)
 
 # conversion tests suites
 if(BUILD_CONVERSION_TESTS)
@@ -646,7 +653,7 @@ add_subdirectory("benchmark/performance/blas")
 add_subdirectory("benchmark/performance/arithmetic/decimal")
 add_subdirectory("benchmark/performance/arithmetic/integer")
 add_subdirectory("benchmark/performance/arithmetic/fixpnt")
-add_subdirectory("benchmark/performance/arithmetic/bfloat")
+add_subdirectory("benchmark/performance/arithmetic/cfloat")
 add_subdirectory("benchmark/performance/arithmetic/areal")
 add_subdirectory("benchmark/performance/arithmetic/lns")
 add_subdirectory("benchmark/performance/arithmetic/posit")
@@ -707,6 +714,10 @@ if(BUILD_NUMERICAL_CHALLENGES)
 add_subdirectory("tests/numerical/properties")
 add_subdirectory("tests/numerical/fpbench")
 endif(BUILD_NUMERICAL_CHALLENGES)
+
+if(BUILD_VALIDATION_HW)
+add_subdirectory("validation/hw")
+endif(BUILD_VALIDATION_HW)
 
 if(BUILD_FUNCTIONS)
 add_subdirectory("tests/functions")

@@ -5,8 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-
-namespace sw {	namespace universal {
+namespace sw::universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -18,7 +17,7 @@ posit<nbits,es> exp(posit<nbits,es> x) {
 	posit<nbits, es> p;
 	double d = std::exp(double(x));
 	if (d == 0.0) {
-		minpos<nbits, es>(p);
+		p.minpos();
 	}
 	else {
 		p = d;
@@ -33,7 +32,7 @@ posit<nbits,es> exp2(posit<nbits,es> x) {
 	posit<nbits, es> p;
 	double d = std::exp2(double(x));
 	if (d == 0.0) {
-		minpos<nbits, es>(p);
+		p.minpos();
 	}
 	else {
 		p = d;
@@ -54,4 +53,4 @@ posit<nbits,es> expm1(posit<nbits,es> x) {
 }
 
 
-}}  // namespace sw::universal
+}  // namespace sw::universal

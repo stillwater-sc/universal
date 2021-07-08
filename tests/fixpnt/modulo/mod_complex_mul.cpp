@@ -15,7 +15,7 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/number/fixpnt/math_functions.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
@@ -58,17 +58,17 @@ int VerifyComplexMultiplication(const std::string& tag, bool bReportIndividualTe
 
 	complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		ar.set_raw_bits(i);
+		ar.setbits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			ar.set_raw_bits(j);
+			ar.setbits(j);
 			a = complex<FixedPoint>(ar, ai);
 			da = complex<double>(double(ar), double(ai));
 
 			// generate all the right sides
 			for (size_t k = 0; k < NR_VALUES; ++k) {
-				br.set_raw_bits(k);
+				br.setbits(k);
 				for (size_t l = 0; l < NR_VALUES; ++l) {
-					bi.set_raw_bits(l);
+					bi.setbits(l);
 					b = complex<FixedPoint>(br, bi);
 					db = complex<double>(double(br), double(bi));
 					dc = da * db;
@@ -130,8 +130,8 @@ try {
 
 	{
 		blockbinary<8> a, b;
-		a.set_raw_bits(0x02);
-		b.set_raw_bits(0x80);
+		a.setbits(0x02);
+		b.setbits(0x80);
 		blockbinary<16> c;
 		c = urmul2(a, b);
 		cout << a << " * " << b << " = " << c << " : " << (long long)c << endl;

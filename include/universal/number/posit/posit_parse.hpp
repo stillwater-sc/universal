@@ -42,11 +42,11 @@ bool parse(std::string& txt, posit<nbits, es>& p) {
 		std::istringstream ss(bitStr);
 		ss >> std::hex >> raw;
 		//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
-		// if not aligned, set_raw_bits takes the least significant nbits, so we need to shift to pick up the most significant nbits
+		// if not aligned, setbits takes the least significant nbits, so we need to shift to pick up the most significant nbits
 		if (nbits < nbits_in) {
 			raw >>= (nbits_in - nbits);
 		}
-		p.set_raw_bits(raw);  
+		p.setbits(raw);  
 		bSuccess = true;
 	}
 	else {

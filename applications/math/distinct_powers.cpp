@@ -155,7 +155,7 @@ version_posit_set:
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

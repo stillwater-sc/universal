@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 
@@ -18,10 +18,10 @@ int GenerateAdditionError(const std::string& tag, bool bReportIndividualTestCase
 	//pair<Posit, Posit> s_and_r;
 	double da, db;
 	for (size_t i = 0; i < NR_POSITS; i++) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		da = double(pa);
 		for (size_t j = 0; j < NR_POSITS; j++) {
-			pb.set_raw_bits(j);
+			pb.setbits(j);
 			db = double(pb);
 			pref = da - db;
 			psum = pa + pb;

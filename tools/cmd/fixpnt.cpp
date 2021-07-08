@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
-#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/fixpnt/fixpnt.hpp>
 
 const char* msg = "\n\
                                                               class sw::universal::fixpnt < 8, 4, 1, unsigned char>\n\

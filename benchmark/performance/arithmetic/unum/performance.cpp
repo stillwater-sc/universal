@@ -7,7 +7,7 @@
 #include <chrono>
 // configure the arithmetic class
 #define UNUM_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/unum/unum>
+#include <universal/number/unum/unum.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
@@ -127,7 +127,7 @@ try {
 #endif // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught exception: " << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 #include <universal/verification/test_status.hpp>
 
 namespace sw::universal {
@@ -17,10 +17,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference
 
@@ -55,10 +55,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference
 
@@ -93,10 +93,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference
 
@@ -131,10 +131,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference
 
@@ -169,10 +169,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference
 
@@ -207,10 +207,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference
 
@@ -426,7 +426,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::areal_divide_by_zero& err) {

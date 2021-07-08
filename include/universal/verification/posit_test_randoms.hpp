@@ -245,8 +245,8 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			posit<nbits, es> testa, testb, testresult, testref;
-			testa.set_raw_bits(distr(eng));
-			testb.set_raw_bits(distr(eng));
+			testa.setbits(distr(eng));
+			testb.setbits(distr(eng));
 			double da = double(testa);
 			double db = double(testb);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
@@ -350,7 +350,7 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType testa, testresult, testref;
-			testa.set_raw_bits(distr(eng));
+			testa.setbits(distr(eng));
 			if (sqrtOperator && testa < 0) testa = -testa;
 			double da = double(testa);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
@@ -423,7 +423,7 @@ namespace sw::universal {
 			posit<nbits, es> testresult, ptarget;
 			// generate random value
 			unsigned long long value = distr(eng);
-			pref.set_raw_bits(value);   // assign to a posit<nbits+1,es> to generate the reference we know how to perturb
+			pref.setbits(value);   // assign to a posit<nbits+1,es> to generate the reference we know how to perturb
 
 /*
 			long double da = (long double)(pref);

@@ -17,7 +17,7 @@
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/areal_impl.hpp>
 #include <universal/number/areal/manipulators.hpp>
 #include <universal/number/areal/math_functions.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
@@ -38,11 +38,11 @@ void GenerateArealComparisonTable(const std::string& tag) {
 
 	// enumerate and compare the sampling of the real value line of the two types
 	for (size_t i = 0; i < NR_VALUES; ++i) {
-		a.set_raw_bits(i);
-		b.set_raw_bits(2*i);
+		a.setbits(i);
+		b.setbits(2*i);
 		cout << setw(columnWidth - 11ull) << pretty_print(b) << ' ' << setw(10) << b << "  |  " << pretty_print(a) << ' ' << setw(10) << a << endl;
 
-		b.set_raw_bits(2 * i + 1);
+		b.setbits(2 * i + 1);
 		cout << setw(columnWidth - 11ull) << pretty_print(b) << ' ' << setw(10) << b << "  |  " << endl;
 	}
 }
@@ -86,7 +86,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::areal_arithmetic_exception& err) {

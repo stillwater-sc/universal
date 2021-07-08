@@ -8,10 +8,95 @@
 #include <iomanip>
 #include <fstream>
 #include <typeinfo>
+
+// BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+
+#define BIT_CAST_SUPPORT 0
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+
+#define BIT_CAST_SUPPORT 0
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+
+#define BIT_CAST_SUPPORT 1
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+
+#endif
+
 // minimum set of include files to reflect source code dependencies
+#define BLOCKTRIPLE_VERBOSE_OUTPUT
+#define BLOCKTRIPLE_TRACE_ADD 1
 #include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/number/bfloat/bfloat.hpp>
-#include <universal/number/bfloat/manipulators.hpp>
+
+/*
+ BlockTriple is the unifying compute engine for any of the
+ floating-point number systems, linear, tapered, compressed, etc.
+
+ The use case of blocktriple is as an ephemeral input/operator/round/output
+ data structure through the computational pipeline.
+ The blocktriple enables a uniform machine to go from source number system,
+ through different arithmetic operators, such as,
+ add/sub/mul/div/sqrt/special function, back to the source number encoding,
+ or a new target number system
+
+ To make this fast, we need to avoid any unnecessary copies.
+ This will be particularly important for precise numbers, that is,
+ numbers with many fraction bits, as the cost of the copy grows
+ linearly with the size of the fraction bits.
+
+ The input step is a normalization from number system to a triple.
+ A triple is (sign, scale, significant).
+ The blocktriple uses a 2's complement encoded significant, that is,
+ the fraction bits including the hidden bit, and additionally extended
+ for the specific use case, such as inputs to ALUs or Special Function Units (SFU).
+
+ TODO: is there an optimization that can be applied that makes this
+ even faster? What about moves? Need to ping Peter Gottschling.
+
+ The significant is the input to the ALUs and SFUs.
+ For addition and subtraction the significant needs to be aligned,
+ which involves a shift operation, which is expensive for multi-block
+ representations.
+*/
+
+template<typename Real>
+void TestConversionRounding(Real f = 511.5f)
+{
+	using namespace std;
+	using namespace sw::universal;
+	cout << "\n " << typeid(Real).name() << " conversion use case and result\n";
+	cout << to_binary(f, true) << '\n';
+	CONSTEXPRESSION blocktriple<6> a = f;
+	cout << to_triple(a) << " : " << a << '\n';
+	CONSTEXPRESSION blocktriple<7> b = f;
+	cout << to_triple(b) << " : " << b << '\n';
+	CONSTEXPRESSION blocktriple<8> c = f;
+	cout << to_triple(c) << " : " << c << '\n';
+	CONSTEXPRESSION blocktriple<9> d = f;
+	cout << to_triple(d) << " : " << d << '\n';
+	CONSTEXPRESSION blocktriple<10> e = f;
+	cout << to_triple(e) << " : " << e << '\n';
+}
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -29,88 +114,32 @@ try {
 
 #if MANUAL_TESTING
 
+	// relationship between native float/double and blocktriple
 	{
-		CONSTEXPRESSION blocktriple<10, uint32_t> a = 511.5f;
-		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+		blocktriple<8, uint8_t> a;
+		a = 1.5f;
+		cout << "IEEE-754 float  : " << to_binary(1.5f, true) << endl;
+		cout << "IEEE-754 float  : " << to_triple(1.5f, true) << endl;
+		cout << "blocktriple<8>  : " << to_triple(a) << endl;
+		a = 1.5;
+		cout << "IEEE-754 double : " << to_binary(1.5, true) << endl;
+		cout << "IEEE-754 double : " << to_triple(1.5, true) << endl;
+		cout << "blocktriple<8>  : " << to_triple(a) << endl;
 	}
-	{
-		constexpr double d = 511.5;
-		cout << to_binary(d, true) << '\n';
-		CONSTEXPRESSION blocktriple<8, uint64_t> a = d;
-		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
-		CONSTEXPRESSION blocktriple<9, uint64_t> b = d;
-		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
-		CONSTEXPRESSION blocktriple<10, uint64_t> c = d;
-		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
-	}
-	{
-		constexpr size_t fbits = 7;
-		constexpr size_t fhbits = fbits + 1;
-		//constexpr size_t abits = fhbits + 3;
-		//constexpr size_t sumbits = abits + 1;
 
-		blocktriple<fhbits, uint8_t> a, b;
-		//blocktriple<8, uint8_t> sum;
-		blockbinary<fhbits, uint8_t> bba, bbb;
-		bba.set_raw_bits(0xAAAAu);
-		a.set(false, 7, bba);
-		cout << to_triple(a) << " : " << a << '\n';
-		b.set_raw_bits(0xAAAAu);
-		b.set(false, 8, bbb);
-		cout << to_triple(b) << " : " << b << '\n';
-		//int aScale = a.scale();
-		//int bScale = b.scale();
-		//int maxScale = (aScale > bScale ? aScale : bScale);
-		//blockbinary<sumbits, uint8_t> r1 = a.alignSignificant<sumbits>(aScale - maxScale + 3);
-		cout << to_triple(a) << " : " << a << '\n';  // at this point the scale is off
-	}
-	{
-		/*
-		 * BlockTriple is the unifying compute engine for any of the 
-		 * floating-point number systems, linear, tapered, compressed, etc.
-		 * 
-		 * The use case of BlockTriple is as a input/operator/round/output pipeline 
-		 * from source number system, through BlockTriple, back to source, or a new target number system
-		 * To make this fast, we need to avoid any unnecessary copies.
-		 * This will be particularly important for precise numbers, that is,
-		 * numbers with many fraction bits.
-		 * 
-		 * The input step is a normalization from number system to a (sign, scale, significant) triple.
-		 * BlockTriple uses significant, that is, the fraction bits including the hidden bit.
-		 * TODO: is there an optimization that can be applied that I am missing?
-		 * 
-		 * The significant is the input to the ALU operators. 
-		 * For addition and subtraction the significant needs to be aligned,
-		 * which involves a shift operation, which is expensive for multi-block
-		 * representations.
-		 */
+	// pick a value that rounds up to even between 6 to 10 bits of fraction
+	TestConversionRounding(511.5f);
+	TestConversionRounding(511.5);
 
-		bfloat<8, 2, uint8_t> a, b, c;
-		a = 1.0f;
-		b = -1.0f;
-		constexpr size_t abits = a.fhbits; // a.abits;
-		blocktriple<abits, uint8_t> aa, bb;
-		blocktriple<abits + 1, uint8_t> sum;
-		a.normalize(aa);  // decode of a bits into a triple form aa
-		b.normalize(bb);  // decode of b bits into a triple form bb
-		module_add(aa, bb, sum);  // ALU add operator
-		convert(sum, c);
-		cout << to_triple(sum) << " : " << sum << '\n';
-		cout << color_print(c) << " : " << c << endl;
-	}
 	{
-		bfloat<8, 2, uint8_t> a, b, c;
-		a = 1.0f;
-		b = -1.0f;
-		constexpr size_t mbits = a.fhbits; // a.abits;
-		blocktriple<mbits, uint8_t> aa, bb;
-		blocktriple<2*mbits, uint8_t> product;
-		a.normalize(aa);  // decode of a bits into a triple form aa
-		b.normalize(bb);  // decode of b bits into a triple form bb
-		product.mul(aa, bb);  // ALU mule operator
-		convert(product, c);
-		cout << to_triple(product) << " : " << product << '\n';
-		cout << color_print(c) << " : " << c << endl;
+		cout << "\nblocktriple add\n";
+		constexpr size_t abits = 7;
+		blocktriple<abits> a, b, c;
+		a = 1.03125f;
+		b = -1.03125f;
+		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		c.add(a, b);
+		cout << to_triple(c) << " : " << c << '\n';
 	}
 
 #else // !MANUAL_TESTING

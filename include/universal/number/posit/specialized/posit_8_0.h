@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <math.h>  // for NAN and INFINITY
+#include <math.h>  // for NAN, INFINITY, isnan(), and isinf()
 
 #include <universal/number/posit/positctypes.h>
 

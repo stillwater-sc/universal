@@ -9,15 +9,15 @@
 #include <numeric>   // nextafter
 
 // select the number systems we would like to compare
-#include <universal/number/integer/integer>
-//#include <universal/fixpnt/fixpnt>// TODO: this causes this warning for an unknown reason:
+#include <universal/number/integer/integer.hpp>
+//#include <universal/number/fixpnt/fixpnt.hpp>// TODO: this causes this warning for an unknown reason:
 // include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
 
-#include <universal/number/areal/areal>
-#include <universal/number/posit/posit>
-#include <universal/number/lns/lns>
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/lns/lns.hpp>
 
-#include <universal/blas/blas>
+#include <universal/blas/blas.hpp>
 #include <universal/blas/generators/frank.hpp>
 #include <universal/blas/generators/hilbert.hpp>
 
@@ -315,11 +315,11 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

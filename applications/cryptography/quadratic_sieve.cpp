@@ -11,7 +11,7 @@
 #include <chrono>
 // include the number system we want to use, and configure overflow exceptions so we can capture failures
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 
 int main(int argc, char** argv)
 try {
@@ -21,7 +21,7 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
