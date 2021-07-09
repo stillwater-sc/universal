@@ -827,7 +827,14 @@ namespace sw::universal {
 				if (nut != cref) {
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
-					std::cout << i << ',' << j << ' ' << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(nut) << ' ' << to_binary(cref) << ' ' << ref << '\n';
+					auto oldPrecision = std::cout.precision(15);
+					std::cout << i << ',' << j << '\n';
+					std::cout 
+						<< "a    " << to_binary(a) << ' ' << std::setw(20) << a << ' ' << to_binary(float(a)) << '\n'
+						<< "b    " << to_binary(b) << ' ' << std::setw(20) << b << ' ' << to_binary(float(b)) << '\n'
+						<< "nut  " << to_binary(nut) << ' ' << std::setw(20) << nut << ' ' << to_binary(float(nut)) << '\n'
+						<< "cref " << to_binary(cref) << ' ' << std::setw(20) << cref << ' ' << to_binary(float(cref)) << '\n';
+					std::cout.precision(oldPrecision);
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
 				}
 				else {
