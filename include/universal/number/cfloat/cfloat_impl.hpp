@@ -1160,9 +1160,9 @@ public:
 		std::cout << "type              : " << typeid(*this).name() << '\n';
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
-		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false");
-		std::cout << "hasSupernormals   : " << (hasSupernormals ? "true" : "false");
-		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false");
+		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false") << '\n';
+		std::cout << "hasSupernormals   : " << (hasSupernormals ? "true" : "false") << '\n';
+		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false") << '\n';
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
 		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
 		std::cout << "nrBlocks          : " << nrBlocks << '\n';
@@ -1804,7 +1804,7 @@ public:
 							mask = 0;
 						}
 						bool sticky = (mask & rawFraction);
-						rawFraction >>= (shiftRight + adjustment);
+						rawFraction >>= (static_cast<int64_t>(shiftRight) + static_cast<int64_t>(adjustment));
 
 						// execute rounding operation
 						if (guard) {

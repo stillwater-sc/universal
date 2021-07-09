@@ -12,6 +12,8 @@
 //#include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/utility/bit_cast.hpp>
+#include <universal/number/cfloat/table.hpp>
+
 // generate specific test case that you can trace with the trace conditions in cfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename cfloatConfiguration, typename Ty>
@@ -44,6 +46,36 @@ void test754functions(Real value) {
 	cout << color_print(value) << '\n';
 }
 
+void TableCfloatExponentBounds()
+{
+	// max exp values as a function of es
+	constexpr int WIDTH = 15;
+	std::cout <<
+		std::setw(WIDTH) << "es" <<
+		std::setw(WIDTH) << "RAW_MAX_EXP" <<
+		std::setw(WIDTH) << "EXP_BIAS" <<
+		std::setw(WIDTH) << "MAX_EXP" <<
+		std::setw(WIDTH) << "MIN_EXP_NORMAL" <<
+		std::setw(WIDTH) << "MIN_NORMAL"
+		<< '\n';
+	for (size_t es = 1; es < 20; ++es) {
+		int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
+		int RAW_MAX_EXP = (es == 1) ? 1 : ((1l << es) - 1);
+		int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
+		int MIN_EXP_NORMAL = 1 - EXP_BIAS;
+		double MIN_NORMAL = std::pow(2.0, MIN_EXP_NORMAL);
+		// MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
+		std::cout <<
+			std::setw(WIDTH) << es <<
+			std::setw(WIDTH) << RAW_MAX_EXP <<
+			std::setw(WIDTH) << EXP_BIAS <<
+			std::setw(WIDTH) << MAX_EXP <<
+			std::setw(WIDTH) << MIN_EXP_NORMAL <<
+			std::setw(WIDTH) << MIN_NORMAL <<
+			'\n';
+	}
+}
+
 template<typename Cfloat>
 void testCfloatOrderedSet() {
 	std::vector<Cfloat> set;
@@ -56,7 +88,6 @@ void testCfloatOrderedSet() {
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-#include <universal/number/posit/posit.hpp>
 int main()
 try {
 	using namespace std;
@@ -67,44 +98,25 @@ try {
 
 #if MANUAL_TESTING
 
-	{
-		// max exp values as a function of es
-		constexpr int WIDTH = 15;
-		std::cout << 
-			std::setw(WIDTH) << "es" <<
-			std::setw(WIDTH) << "RAW_MAX_EXP" <<
-			std::setw(WIDTH) << "EXP_BIAS" <<
-			std::setw(WIDTH) << "MAX_EXP" <<
-			std::setw(WIDTH) << "MIN_EXP_NORMAL"
-			<< '\n';
-		for (size_t es = 1; es < 20; ++es) {
-			int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
-			int RAW_MAX_EXP = (es == 1) ? 1 : ((1l << es) - 1);
-			int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
-			int MIN_EXP_NORMAL = 1 - EXP_BIAS;
-			// MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
-			std::cout <<
-				std::setw(WIDTH) << es <<
-				std::setw(WIDTH) << RAW_MAX_EXP <<
-				std::setw(WIDTH) << EXP_BIAS <<
-				std::setw(WIDTH) << MAX_EXP <<
-				std::setw(WIDTH) << MIN_EXP_NORMAL <<
-				'\n';
-		}
-	}
+	TableCfloatExponentBounds();
+//	GenerateTable< cfloat<8,4,uint8_t> >(std::cout);
+	cfloat<8, 4> c = -0.482421875;
+	std::cout << c << " " << to_binary(c) << std::endl;
+	cfloat<8, 4> a{ 0.5 };
+	std::cout << (a + c) << " " << to_binary(a + c) << std::endl;
 
-	// FAIL              0.03125 +               3.9375 !=                  inf golden reference is                    4 result 0b0.11.11110 vs ref 0b0.11.00000
-	// FAIL               0.3125 +                7.625 !=                   -0 golden reference is                  inf result 0b1.00.00000 vs ref 0b0.11.11110
-	// FAIL                0.375 +                7.625 !=                7.625 golden reference is                  inf result 0b0.11.11101 vs ref 0b0.11.11110
+
+	// 9,176 0b0.0001.001 0b1.0110.000 0b1.0110.000 0b1.0101.111 -0.48242
+	// FAIL          0.017578125 + -0.5 != -0.5 golden reference is - 0.46875 result 0b1.0110.000 vs ref 0b1.0101.111
 	std::cout << "Manual Testing\n";
 	{
-//		float fa = 0.375; // 0.3125f;  //  0.03125f; // 0.21875f; 
+		float fa = 0.017578125; // 0.375; // 0.3125f;  //  0.03125f; // 0.21875f; 
 //		float fb = std::numeric_limits<float>::signaling_NaN();
 //		float fb = std::numeric_limits<float>::quiet_NaN();
-		float fa = std::numeric_limits<float>::infinity();
-		float fb = -fa; // 7.625f; // 0.0625f; 3.9375f; 
+//		float fa = std::numeric_limits<float>::infinity();
+		float fb = -0.5f; // 7.625f; // 0.0625f; 3.9375f; 
 
-		cfloat < 8, 2, uint8_t > a, b, c, cref;
+		cfloat < 8, 4, uint8_t > a, b, c, cref;
 		a.constexprClassParameters();
 		a = fa;
 		b = fb;
@@ -112,7 +124,7 @@ try {
 		std::cout << a << " + " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		GenerateTestCase< cfloat<8, 2, uint8_t>, float>(fa, fb);
+		GenerateTestCase< cfloat<8, 4, uint8_t>, float>(fa, fb);
 	}
 
 	{
