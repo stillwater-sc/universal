@@ -6,8 +6,9 @@
 #include <math.h>
 #include <stdint.h>
 #include <iostream>
-#include <complex>
 
+#include <cmath>
+#include <complex>
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
@@ -31,6 +32,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/math/complex_manipulators.hpp>  // to_binary() for complex types
+
 
 template<typename Scalar>
 void TestComplexConjugate() 
@@ -182,7 +184,7 @@ try {
 	cout << "complex variable: " << c << '\n';
 
 	TestComplexConjugate<float>();
-	TestComplexConjugate<fixpnt<4, 3> >();
+//	TestComplexConjugate<fixpnt<4, 3> >();
 	TestComplexConjugate<posit<8, 0> >();
 
 #else // MANUAL_TESTING
