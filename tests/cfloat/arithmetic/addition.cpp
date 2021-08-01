@@ -27,8 +27,12 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	Ty reference = _a + _b;
 	ref = reference;
 
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << reference << std::endl;
+	std::cout << std::setprecision(10);
+//	std::cout << "native: " << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << reference << std::endl;
+	Ty _c{ reference };
+	std::cout << sw::universal::to_binary(_a) << " : " << _a << '\n';
+	std::cout << sw::universal::to_binary(_b) << " : " << _b << '\n';
+	std::cout << sw::universal::to_binary(_c) << " : " << _c << '\n';
 	std::cout << a << " + " << b << " = " << sum << " (reference: " << ref << ")   ";
 	std::cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(sum, true) << " (reference: " << to_binary(ref, true) << ")   ";
 	std::cout << (ref == sum ? "PASS" : "FAIL") << std::endl << std::endl;
@@ -99,12 +103,6 @@ try {
 #if MANUAL_TESTING
 
 	TableCfloatExponentBounds();
-//	GenerateTable< cfloat<8,4,uint8_t> >(std::cout);
-	cfloat<8, 4> c = -0.482421875;
-	std::cout << c << " " << to_binary(c) << std::endl;
-	cfloat<8, 4> a{ 0.5 };
-	std::cout << (a + c) << " " << to_binary(a + c) << std::endl;
-
 
 	// 9,176 0b0.0001.001 0b1.0110.000 0b1.0110.000 0b1.0101.111 -0.48242
 	// FAIL          0.017578125 + -0.5 != -0.5 golden reference is - 0.46875 result 0b1.0110.000 vs ref 0b1.0101.111
