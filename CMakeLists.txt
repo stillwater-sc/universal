@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 31)
+  set(UNIVERSAL_VERSION_MINOR 32)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -91,6 +91,8 @@ option(BUILD_APPLICATIONS                "Set to ON to build application example
 
 # numerical and special math functions
 option(BUILD_NUMERICAL_CHALLENGES        "Set to ON to build numerical challenge programs"     OFF)
+option(BUILD_NUMERICAL_UTILS             "Set to ON to build numerical utilities"              OFF)
+option(BUILD_FPBENCH                     "Set to ON to build fpbench benchmarks"               OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
 
 # C API library and test programs
@@ -674,9 +676,9 @@ endif(BUILD_BENCHMARK_ENERGY)
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
-add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
+# educational examples
 if(BUILD_EDUCATION)
 add_subdirectory("education/tables")
 add_subdirectory("education/integer")
@@ -690,6 +692,7 @@ add_subdirectory("education/valid")
 add_subdirectory("education/lns")
 endif(BUILD_EDUCATION)
 
+# application examples
 if(BUILD_APPLICATIONS)
 add_subdirectory("applications/blas")
 add_subdirectory("applications/chaos")
@@ -710,10 +713,16 @@ add_subdirectory("applications/trigonometry")
 add_subdirectory("applications/weather")
 endif(BUILD_APPLICATIONS)
 
+# numerical benchmarks and challenge problems
 if(BUILD_NUMERICAL_CHALLENGES)
 add_subdirectory("tests/numerical/properties")
-add_subdirectory("tests/numerical/fpbench")
 endif(BUILD_NUMERICAL_CHALLENGES)
+if(BUILD_NUMERICAL_UTILS)
+add_subdirectory("tests/numerical/utils")
+endif(BUILD_NUMERICAL_UTILS)
+if(BUILD_FPBENCH)
+add_subdirectory("tests/numerical/fpbench")
+endif(BUILD_FPBENCH)
 
 if(BUILD_VALIDATION_HW)
 add_subdirectory("validation/hw")
