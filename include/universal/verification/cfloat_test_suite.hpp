@@ -827,6 +827,8 @@ namespace sw::universal {
 				if (nut != cref) {
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
+#ifdef TRACE_ROUNDING
 					blocktriple<TestType::abits, BlockType> bta, btb, btsum;
 					// transform the inputs into (sign,scale,significant) 
 					// triples of the correct width
@@ -841,18 +843,19 @@ namespace sw::universal {
 						<< "nut  " << to_binary(nut) << ' ' << std::setw(20) << nut << ' ' << to_binary(float(nut)) << ' ' << to_triple(btsum) << '\n'
 						<< "cref " << to_binary(cref) << ' ' << std::setw(20) << cref << ' ' << to_binary(float(cref)) << ' ' << to_triple(cref) << '\n';
 					std::cout.precision(oldPrecision);
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
+
+					if (nrOfFailedTests > 9) return nrOfFailedTests;
+#endif
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, nut, cref);
 				}
-				if (nrOfFailedTests > 9) return nrOfFailedTests;
 			}
 			if constexpr (NR_VALUES > 256 * 256) {
 				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
 			}
 		}
-		std::cout << std::endl;
+//		std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 } // namespace sw::universal

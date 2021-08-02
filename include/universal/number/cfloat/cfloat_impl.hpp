@@ -242,7 +242,7 @@ public:
 	static constexpr size_t es = _es;
 	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
-	static constexpr size_t abits = fhbits + 6ull;         // size of the addend
+	static constexpr size_t abits = fhbits + 8ull;         // size of the addend
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
 
