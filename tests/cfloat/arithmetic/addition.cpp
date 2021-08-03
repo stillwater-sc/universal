@@ -90,7 +90,32 @@ void testCfloatOrderedSet() {
 }
 
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+#define STRESS_TESTING 1
+
+/*
+  Minimum number of operand bits for the adder = <abits> 
+  to yield correctly rounded addition
+
+                          number of exponent bits = <es>
+  nbits   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16
+	 1    -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+	 2    -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+	 3    2   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+	 4    3   3   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+	 5    4   4   4   -   -   -   -   -   -   -   -   -   -   -   -   -
+	 6    5   5   6   4   -   -   -   -   -   -   -   -   -   -   -   -
+	 7    6   6   8   6   4   -   -   -   -   -   -   -   -   -   -   -
+	 8    7   7  10   8   6   4   -   -   -   -   -   -   -   -   -   -
+	 9    8   8  11  10   8   6   5   -   -   -   -   -   -   -   -   -
+	10    9   9  12  12  10   8   6   4   -   -   -   -   -   -   -   -
+	11   10  10  13  14  12  10   8   6   4   -   -   -   -   -   -   -
+	12   11  11  14  16  14  12  10   8   6   4   -   -   -   -   -   -
+	13   12  12  15  18  16  14  12  10   8   6   4   -   -   -   -   -
+	14   13  13  16      18  16  14  12  10   8   6   4   -   -   -   -
+	15   14  14  17          18  16  14  12  10       6   4   -   -   -
+	16   15  15  18                                       6   4   -   -
+
+*/
 
 int main()
 try {
@@ -195,6 +220,7 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = true;
 
+
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat< 3, 1,uint8_t,subnormals,supernormals,!saturating>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat< 4, 1,uint8_t,subnormals,supernormals,!saturating>", "addition");
@@ -261,7 +287,37 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<12, 9, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<12, 9,uint8_t,subnormals,supernormals,!saturating>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<12,10, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<12,10,uint8_t,subnormals,supernormals,!saturating>", "addition");
 
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 3, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<13, 3,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 4, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<13, 4,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 5, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<13, 5,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 6, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<13, 6,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 7, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<13, 7,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<13, 8,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 9, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<13, 9,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 10, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<13,10,uint8_t,subnormals,supernormals,!saturating>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14, 3,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14, 4,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14, 5,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 6, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14, 6,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 7, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14, 7,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14, 8,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 9, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14, 9,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 10, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14,10,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 11, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<14,11,uint8_t,subnormals,supernormals,!saturating>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 3, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15, 3,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 4, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15, 4,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 5, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15, 5,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 6, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15, 6,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 7, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15, 7,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15, 8,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 9, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15, 9,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 10, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15,10,uint8_t,subnormals,supernormals,!saturating>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<15, 11, uint8_t, hasSubnormals, hasSupernormals, !isSaturating> >(bReportIndividualTestCases), "cfloat<15,11,uint8_t,subnormals,supernormals,!saturating>", "addition");
+
 #endif  // STRESS_TESTING
+
 
 #endif  // MANUAL_TESTING
 
