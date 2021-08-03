@@ -559,6 +559,8 @@ namespace sw::universal {
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+
 		constexpr size_t NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
 
 		// generate a set in the order we want increment and decrement to progress
@@ -575,8 +577,8 @@ namespace sw::universal {
 		// 0.11.110   inf
 		// 0.11.111   nan
 
-		std::vector< cfloat<nbits, es> > s(NR_OF_REALS);
-		TestType c;
+		std::vector< Cfloat > s(NR_OF_REALS);
+		Cfloat c; // == TestType but marshalled
 		constexpr size_t NEGATIVE_ZERO = (1ull << (nbits - 1)); // pattern 1.00.000
 		constexpr size_t MAX_POS = (~0ull >> (64 - nbits + 1)); // pattern 0.11.111
 		size_t i = 0;
@@ -602,11 +604,12 @@ namespace sw::universal {
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		TestType minneg(SpecificValue::minneg);
-		TestType maxneg(SpecificValue::maxneg);
-		TestType minpos(SpecificValue::minpos);
-		TestType maxpos(SpecificValue::maxpos);
+		Cfloat minneg(SpecificValue::minneg);
+		Cfloat maxneg(SpecificValue::maxneg);
+		Cfloat minpos(SpecificValue::minpos);
+		Cfloat maxpos(SpecificValue::maxpos);
 
 		int nrOfFailedTestCases = 0;
 
@@ -663,15 +666,16 @@ namespace sw::universal {
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		std::vector< cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> > set;
+		std::vector< Cfloat > set;
 		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, nan]
 
 		int nrOfFailedTestCases = 0;
 
-		TestType c, ref;
+		Cfloat c, ref; // == TestType but marshalled
 		// starting from SNaN iterating from -inf, -maxpos to maxpos, +inf, +nan
-		for (typename std::vector < cfloat<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
+		for (typename std::vector < Cfloat >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 			c = *it;
 			c++; // this will test both postfix and prefix operators
 			ref = *(it + 1);
@@ -694,15 +698,15 @@ namespace sw::universal {
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
-
-		std::vector< cfloat<nbits, es> > set;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		std::vector< Cfloat > set;
 		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, nan]
 
 		int nrOfFailedTestCases = 0;
 
-		cfloat<nbits, es> c, ref;
+		Cfloat c, ref;
 		// starting from +nan, +inf, maxpos, ..., +0, -0, ..., maxneg, -inf, -nan
-		for (typename std::vector < cfloat<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); --it) {
+		for (typename std::vector < Cfloat >::iterator it = set.end() - 1; it != set.begin(); --it) {
 			c = *it;
 			c--;  // this will test both postfix and prefix operators
 			ref = *(it - 1);
@@ -732,14 +736,16 @@ namespace sw::universal {
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+
 		constexpr size_t NR_VALUES = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 
 		// set the saturation clamps
-		TestType maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
+		Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
-		TestType a, b, nut, cref;
+		Cfloat a, b, nut, cref;
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);

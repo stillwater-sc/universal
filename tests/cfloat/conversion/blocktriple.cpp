@@ -67,7 +67,7 @@ namespace sw::universal {
 		constexpr size_t nbits = CfloatConfigurate::nbits;
 		constexpr size_t es = CfloatConfigurate::es;
 		using bt = typename CfloatConfigurate::BlockType;
-		constexpr size_t fbits = CfloatConfigurate::fbits;
+		//constexpr size_t fbits = CfloatConfigurate::fbits;
 		constexpr size_t abits = CfloatConfigurate::abits;
 
 		int nrOfTestFailures{ 0 };

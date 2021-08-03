@@ -716,7 +716,7 @@ public:
 				// TODO: optimize
 				uint32_t exponentBits = scale + EXP_BIAS;
 				uint32_t mask = (1ul << (es - 1));
-				for (int i = nbits - 2; i > nbits - 2 - es; --i) {
+				for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
 					setbit(i, (mask & exponentBits));
 					mask >>= 1;
 				}
@@ -726,7 +726,7 @@ public:
 			// TODO: optimize
 			uint32_t exponentBits = scale + EXP_BIAS;
 			uint32_t mask = (1ul << (es - 1));
-			for (int i = nbits - 2; i > nbits - 2 - es; --i) {
+			for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
 				setbit(i, (mask & exponentBits));
 				mask >>= 1;
 			}

@@ -94,6 +94,9 @@ option(BUILD_NUMERICAL_CHALLENGES        "Set to ON to build numerical challenge
 option(BUILD_NUMERICAL_UTILS             "Set to ON to build numerical utilities"              OFF)
 option(BUILD_FPBENCH                     "Set to ON to build fpbench benchmarks"               OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
+# reproducible IEEE-754
+option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
+
 
 # C API library and test programs
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
@@ -116,9 +119,6 @@ option(BUILD_REALS                       "Set to ON to build real tests"        
 option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
 # conversion test suites
 option(BUILD_CONVERSIONS                 "Set to ON to build conversion test suites"           OFF)
-
-# reproducible IEEE-754
-option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
 
 # Basic Linear Algebra tests
 option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
@@ -515,6 +515,7 @@ endif(BUILD_DEMONSTRATION)
 
 if(BUILD_NUMERICAL_CHECKS)
 	set(BUILD_NUMERICAL_CHALLENGES ON)
+	set(BUILD_NUMERICAL_UTILS ON)
 	set(BUILD_FUNCTIONS ON)
 endif(BUILD_NUMERICAL_CHECKS)
 
