@@ -952,12 +952,12 @@ namespace sw::universal {
 						}
 					}
 					else {
-						cref.setinf(b.sign());
+						cref.setinf(!b.sign());
 					}
 				}
 				else {
 					if (!nut.inrange(ref)) {
-						// the result of the addition is outside of the range
+						// the result of the subtraction is outside of the range
 						// of the NUT (number system under test)
 						if constexpr (isSaturating) {
 							if (ref > 0) cref.maxpos(); else cref.maxneg();
@@ -976,7 +976,7 @@ namespace sw::universal {
 				if (nut != cref) {
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, nut, cref);
 #ifdef TRACE_ROUNDING
 					blocktriple<TestType::abits, BlockType> bta, btb, btsum;
 					// transform the inputs into (sign,scale,significant) 

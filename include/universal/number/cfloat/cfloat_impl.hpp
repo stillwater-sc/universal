@@ -428,7 +428,10 @@ public:
 		return *this += cfloat(rhs);
 	}
 	cfloat& operator-=(const cfloat& rhs) {
-		return *this += -rhs;
+		if (rhs.isnan()) 
+			return *this += rhs;
+		else 
+			return *this += -rhs;
 	}
 	cfloat& operator-=(double rhs) {
 		return *this -= cfloat(rhs);
