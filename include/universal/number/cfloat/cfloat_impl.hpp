@@ -127,17 +127,21 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 	}
 	else {
 		int64_t scale   = src.scale();
-		int64_t expBias = cfloatType::EXP_BIAS;
 		if (scale < cfloatType::MIN_EXP_SUBNORMAL) {
 			tgt.setzero();
 			return;
 		}
 		if (scale > cfloatType::MAX_EXP) {
-			if (src.sign()) {
-				tgt.maxneg();
+			if constexpr (isSaturating) {
+				if (src.sign()) {
+					tgt.maxneg();
+				}
+				else {
+					tgt.maxpos();
+				}
 			}
 			else {
-				tgt.maxpos();
+				tgt.setinf(src.sign());
 			}
 			return;
 		}
@@ -146,7 +150,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 		if constexpr (nbits < 65) {
 			// we can use a uint64_t to construct the cfloat
 			uint64_t raw = (src.sign() ? 1ull : 0ull);
-			raw <<= es; // shift to make room for the exponent bits
+			raw <<= es; // shift left to make room for the exponent bits
 			if (scale >= cfloatType::MIN_EXP_SUBNORMAL && scale < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
 				// resulting cfloat will be a subnormal number: all exponent bits are 0
 				raw <<= cfloatType::fbits;
@@ -155,11 +159,10 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 				//uint64_t fracbits = src.fraction_ull();
 				fracbits >>= rightShift + (srcbits - cfloatType::fbits);
 				raw |= fracbits;
+				tgt.setbits(raw);
 			}
 			else {
-				// resulting cfloat will be a normal number: construct the exponent
-				raw |= scale + expBias;  // this is guaranteed to be an unsigned string of bits
-				raw <<= cfloatType::fbits;
+				// resulting cfloat will be a normal number
 				uint64_t fracbits = src.fraction_ull();
 				constexpr size_t shift = srcbits - cfloatType::fbits;
 
@@ -183,9 +186,27 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 //				std::cout << (roundup ? "rounding up\n" : "rounding down\n");
 				fracbits >>= shift;
 				fracbits += (roundup ? 1ull : 0ull);
-				raw |= fracbits;
+				if (fracbits != (1ull << cfloatType::fbits)) { // check for overflow
+					raw |= scale + cfloatType::EXP_BIAS;  // this is guaranteed to be a value that can be unsigned encoded
+					raw <<= cfloatType::fbits;
+					raw |= fracbits;
+					tgt.setbits(raw);
+					tgt.post_process();
+				}
+				else {
+					// rounding made the fraction overflow
+					if (scale < cfloatType::MAX_EXP) {
+						++scale;
+						raw |= scale + cfloatType::EXP_BIAS;
+						raw <<= cfloatType::fbits;
+						raw |= (fracbits & cfloatType::ALL_ONES_FR); // reset the overflow bit
+						tgt.setbits(raw);
+					}
+					else {
+						tgt.setinf(src.sign());
+					}
+				}
 			}
-			tgt.setbits(raw);
 		}
 		else {
 			// compose the segments
@@ -194,7 +215,6 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 			// this api doesn't work: tgt.setfraction(src.significant());
 			std::cerr << "convert nbits > 64 TBD\n";
 		}
-
 	}
 }
 
@@ -217,16 +237,20 @@ public:
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
-	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
-	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
 
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
 	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
-	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
+	static constexpr size_t abits = 2 * fhbits;            // size of the addend
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
+
+	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
+	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
+	static constexpr uint64_t ALL_ONES_FR = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - fbits)); // special case for nbits <= 64
+	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
@@ -243,7 +267,7 @@ public:
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull -es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
-	static constexpr int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS);
+	static constexpr int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
 	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
@@ -364,12 +388,23 @@ public:
 		// -inf + -inf   = -inf
 		// -inf + inf    = ?
 		if (isinf()) {
-			return *this;
+			if (rhs.isinf()) {
+				if (sign() != rhs.sign()) {
+					setnan(NAN_TYPE_SIGNALLING);
+				}
+				return *this;
+			}
+			else {
+				return *this;
+			}
 		}
-		if (rhs.isinf()) {
-			*this = rhs;
-			return *this;
+		else {
+			if (rhs.isinf()) {
+				*this = rhs;
+				return *this;
+			}
 		}
+
 		if (iszero()) {
 			*this = rhs;
 			return *this;
@@ -393,7 +428,10 @@ public:
 		return *this += cfloat(rhs);
 	}
 	cfloat& operator-=(const cfloat& rhs) {
-		return *this += -rhs;
+		if (rhs.isnan()) 
+			return *this += rhs;
+		else 
+			return *this += -rhs;
 	}
 	cfloat& operator-=(double rhs) {
 		return *this -= cfloat(rhs);
@@ -681,7 +719,7 @@ public:
 				// TODO: optimize
 				uint32_t exponentBits = scale + EXP_BIAS;
 				uint32_t mask = (1ul << (es - 1));
-				for (int i = nbits - 2; i > nbits - 2 - es; --i) {
+				for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
 					setbit(i, (mask & exponentBits));
 					mask >>= 1;
 				}
@@ -691,7 +729,7 @@ public:
 			// TODO: optimize
 			uint32_t exponentBits = scale + EXP_BIAS;
 			uint32_t mask = (1ul << (es - 1));
-			for (int i = nbits - 2; i > nbits - 2 - es; --i) {
+			for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
 				setbit(i, (mask & exponentBits));
 				mask >>= 1;
 			}
@@ -1125,9 +1163,9 @@ public:
 		std::cout << "type              : " << typeid(*this).name() << '\n';
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
-		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false");
-		std::cout << "hasSupernormals   : " << (hasSupernormals ? "true" : "false");
-		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false");
+		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false") << '\n';
+		std::cout << "hasSupernormals   : " << (hasSupernormals ? "true" : "false") << '\n';
+		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false") << '\n';
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
 		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
 		std::cout << "nrBlocks          : " << nrBlocks << '\n';
@@ -1769,15 +1807,20 @@ public:
 							mask = 0;
 						}
 						bool sticky = (mask & rawFraction);
-						rawFraction >>= shiftRight + adjustment;
+						rawFraction >>= (static_cast<int64_t>(shiftRight) + static_cast<int64_t>(adjustment));
 
 						// execute rounding operation
 						if (guard) {
 							if (lsb && (!round && !sticky)) ++rawFraction; // round to even
 							if (round || sticky) ++rawFraction;
 							if (rawFraction == (1ul << fbits)) { // overflow
-								++biasedExponent;
-								rawFraction = 0;
+								if (biasedExponent == ALL_ONES_ES) { // overflow to INF == .111..01
+									rawFraction = INF_ENCODING;
+								}
+								else {
+									++biasedExponent;
+									rawFraction = 0;
+								}
 							}
 						}
 #if TRACE_CONVERSION
@@ -1941,6 +1984,28 @@ public:
 			}
 		}
 		return *this;  // TODO: unreachable in some configurations
+	}
+
+	// post-processing results to implement saturation and projection after rounding logic
+	// arithmetic bit operations can't produce NaN encodings, so we need to re-interpret
+	// these encodings and 'project' them to the proper values.
+	void constexpr post_process() noexcept {
+		if constexpr (isSaturating) {
+			if (isinf(INF_TYPE_POSITIVE) || isnan(NAN_TYPE_QUIET)) {
+				maxpos();
+			}
+			else if (isinf(INF_TYPE_NEGATIVE) || isnan(NAN_TYPE_SIGNALLING)) {
+				maxneg();
+			}
+		}
+		else {
+			if (isnan(NAN_TYPE_QUIET)) {
+				setinf(false);
+			}
+			else if (isnan(NAN_TYPE_SIGNALLING)) {
+				setinf(true);
+			}
+		}
 	}
 
 protected:
@@ -2191,31 +2256,40 @@ inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const c
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt> diff(lhs);
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt> mul(lhs);
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-	cfloat<nbits, es, bt> ratio(lhs);
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
+}
+
+// encoding helpers
+
+// return the Unit in the Last Position
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(a);
+	return ++b - a;
 }
 
 // convert to std::string
@@ -2238,7 +2312,7 @@ inline std::string to_string(const cfloat<nbits,es,bt, hasSubnormals, hasSuperno
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = false) {
 	std::stringstream s;
-	s << 'b';
+	s << "0b";
 	size_t index = nbits;
 	s << (number.at(--index) ? '1' : '0') << '.';
 

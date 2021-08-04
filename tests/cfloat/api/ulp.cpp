@@ -1,79 +1,82 @@
-// ulp.cpp: application programming interface utilities tests for classic cfloat number system
+// ulp.cpp: testing ulp values and algebra for classic floating-point cfloat configurations
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/utility/directives.hpp>
 
-// minimum set of include files to reflect source code dependencies
 // Configure the cfloat template environment
 // first: enable general or specialized configurations
 #define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
-#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
+// third: enable native literals in logic and arithmetic operations
+#define CFLOAT_ENABLE_LITERALS 1
 
+// minimum set of include files to reflect source code dependencies
 #include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
-#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/number/cfloat/numeric_limits.hpp>
+// type manipulators such as pretty printers
+#include <universal/number/cfloat/manipulators.hpp>
+#include <universal/number/cfloat/math_functions.hpp>
 
-namespace sw::universal {
-	template<size_t nbits, size_t es, typename bt>
-	void GenerateUlpsInRange(const cfloat<nbits, es, bt>& begin, const cfloat<nbits, es, bt>& end) {
-		/*
-		cfloat<nbits, es, bt> current(begin);
-		while (current < end) {
-			cfloat<nbits, es, bt> bulp = ulp(current);
-			std::cout << to_binary(bulp, true) << " : " << bulp << '\n';
-		}
-		*/
-		cfloat<nbits, es, bt> current(begin);
-		while (current != end) { // != is simpler than <
-			cfloat<nbits, es, bt> prev(current++);
-			cfloat<nbits, es, bt> bulp = current - prev;
-			std::cout << to_binary(prev, true) << " : " << to_binary(bulp, true) << " : " << bulp << '\n';
-		}
-	}
-}
-
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
-int main(int argc, char** argv)
-try {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+void TestULP() 
+{
+	using namespace std;
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat a(1.0f);
+	cout << typeid(a).name() << '\n';
+	double da(1.0);
+	cout << "cfloat at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << " : value : " << a << '\n';
+	cout << "double at 1.0  : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << " : value : " << da << '\n';
+
+	a = std::numeric_limits< Cfloat >::epsilon();
+	cout << "cfloat epsilon : " << to_binary(a) << " : " << a << '\n';
+}
+
+// conditional compile flags
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
+
+int main()
+try {
+	using namespace std;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "cfloat<> Unit in Last Position tests" << std::endl;
+	cout << "classic floating-point ULP tests" << endl;
 
-#if MANUAL_TESTING
-
-	cfloat<8,2,uint8_t> begin(0), end;
-	end.setbits(0x7Fu);
-	GenerateUlpsInRange(begin, end);
-
-#else // !MANUAL_TESTING
-
-
-
-#endif // MANUAL_TESTING
-
-	std::cout << "\ncfloat Unit in Last Position test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
-	//bool bReportIndividualTestCases = false;
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = true;
+	TestULP<8, 2, uint8_t, !hasSubnormals, !hasSupernormals, !isSaturating>();     // quarter precision
+	TestULP<16, 5, uint16_t, hasSubnormals, !hasSupernormals, !isSaturating>();    // half precision
+	TestULP<32, 8, uint32_t, hasSubnormals, !hasSupernormals, !isSaturating>();    // single precision
+	TestULP<64, 11, uint64_t, hasSubnormals, !hasSupernormals, !isSaturating>();   // double precision
+//	TestULP<128, 15, uint32_t, hasSubnormals, !hasSupernormals, !isSaturating>();  // quad precision
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
+	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::cfloat_arithmetic_exception& err) {
+	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::cfloat_internal_exception& err) {
+	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "caught unknown exception" << std::endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 31)
+  set(UNIVERSAL_VERSION_MINOR 32)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -91,7 +91,12 @@ option(BUILD_APPLICATIONS                "Set to ON to build application example
 
 # numerical and special math functions
 option(BUILD_NUMERICAL_CHALLENGES        "Set to ON to build numerical challenge programs"     OFF)
+option(BUILD_NUMERICAL_UTILS             "Set to ON to build numerical utilities"              OFF)
+option(BUILD_FPBENCH                     "Set to ON to build fpbench benchmarks"               OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
+# reproducible IEEE-754
+option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
+
 
 # C API library and test programs
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
@@ -114,9 +119,6 @@ option(BUILD_REALS                       "Set to ON to build real tests"        
 option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
 # conversion test suites
 option(BUILD_CONVERSIONS                 "Set to ON to build conversion test suites"           OFF)
-
-# reproducible IEEE-754
-option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
 
 # Basic Linear Algebra tests
 option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
@@ -513,6 +515,7 @@ endif(BUILD_DEMONSTRATION)
 
 if(BUILD_NUMERICAL_CHECKS)
 	set(BUILD_NUMERICAL_CHALLENGES ON)
+	set(BUILD_NUMERICAL_UTILS ON)
 	set(BUILD_FUNCTIONS ON)
 endif(BUILD_NUMERICAL_CHECKS)
 
@@ -674,9 +677,9 @@ endif(BUILD_BENCHMARK_ENERGY)
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
-add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
+# educational examples
 if(BUILD_EDUCATION)
 add_subdirectory("education/tables")
 add_subdirectory("education/integer")
@@ -690,6 +693,7 @@ add_subdirectory("education/valid")
 add_subdirectory("education/lns")
 endif(BUILD_EDUCATION)
 
+# application examples
 if(BUILD_APPLICATIONS)
 add_subdirectory("applications/blas")
 add_subdirectory("applications/chaos")
@@ -710,10 +714,16 @@ add_subdirectory("applications/trigonometry")
 add_subdirectory("applications/weather")
 endif(BUILD_APPLICATIONS)
 
+# numerical benchmarks and challenge problems
 if(BUILD_NUMERICAL_CHALLENGES)
 add_subdirectory("tests/numerical/properties")
-add_subdirectory("tests/numerical/fpbench")
 endif(BUILD_NUMERICAL_CHALLENGES)
+if(BUILD_NUMERICAL_UTILS)
+add_subdirectory("tests/numerical/utils")
+endif(BUILD_NUMERICAL_UTILS)
+if(BUILD_FPBENCH)
+add_subdirectory("tests/numerical/fpbench")
+endif(BUILD_FPBENCH)
 
 if(BUILD_VALIDATION_HW)
 add_subdirectory("validation/hw")
