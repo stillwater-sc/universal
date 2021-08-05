@@ -11,6 +11,19 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_random.hpp>
 
+template<typename Cfloat>
+int Randoms(bool bReportIndividualTestCases, const std::string& tag, size_t nrTests) 
+{
+	using namespace sw::universal;
+
+	int fails{ 0 };
+	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(bReportIndividualTestCases, OPCODE_ADD, nrTests), tag, "addition      ");
+	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(bReportIndividualTestCases, OPCODE_SUB, nrTests), tag, "subtraction   ");
+//	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(bReportIndividualTestCases, OPCODE_MUL, nrTests), tag, "multiplication");
+//	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(bReportIndividualTestCases, OPCODE_DIV, nrTests), tag, "division      ");
+	return fails;
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -22,25 +35,37 @@ try {
 	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = " classic floating-point operators ";
+	std::string tag = "randoms";
 
 	cout << "Random test generation for large classic floatint-point configurations" << endl;
 
-	bool bReportIndividualTestCases = false;
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< cfloat<8, 2> >(bReportIndividualTestCases, OPCODE_ADD, 100), tag, "addition      ");
-
-
 #if MANUAL_TESTING
 
+	bool bReportIndividualTestCases = true;
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = true;
+
+	{
+		using Cfloat = cfloat<24, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
+		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 100);
+	}
+	{
+		using Cfloat = cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
+		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 100);
+	}
+	{
+		using Cfloat = cfloat<40, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
+		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 100);
+	}
+
+	nrOfFailedTestCases = 0; // manual testing ignores any test failures
 
 #else // !MANUAL_TESTING
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 
 	bool bReportIndividualTestCases = false;
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+
 #endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
