@@ -61,11 +61,13 @@ public:
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
-	static constexpr size_t abits = fbits + 3ull;          // size of the addend
+//	static constexpr size_t abits = fbits + 3ull;          // size of the addend
 	static constexpr size_t mbits = 2ull * fbits;          // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
 	static constexpr bt ALL_ONES = bt(~0);
-	static constexpr size_t overflowPattern = (1ull << (nbits + 1)); // overflow of 1.11111 to 10.0000
+	// special case overflow pattern mask when representation is nbits + 1 < 64
+	static constexpr size_t maxbits = (nbits + 1) < 63 ? (nbits + 1) : 63;
+	static constexpr size_t overflowPattern = (maxbits < 63) ? (1ull << maxbits) : 0ull; // overflow of 1.11111 to 10.0000
 
 	constexpr blocktriple(const blocktriple&) noexcept = default;
 	constexpr blocktriple(blocktriple&&) noexcept = default;

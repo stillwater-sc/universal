@@ -75,7 +75,8 @@ void ReportUnaryArithmeticSucces(const std::string& test_case, const std::string
 }
 
 template<typename InputType, typename ResultType, typename RefType>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const InputType& lhs, const InputType& rhs, const ResultType& result, const RefType& ref) {
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, 
+	const InputType& lhs, const InputType& rhs, const ResultType& result, const RefType& ref) {
 	using namespace sw::universal;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -86,8 +87,12 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< " != "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-//		<< " " << to_binary(result) << " vs " << to_binary(ref, true)    // helpful if RefType is an IEEE-754 float
+		<< '\n'
 		<< " result " << to_binary(result) << " vs ref " << to_binary(ref)
+		<< '\n'
+		<< to_binary(lhs)
+		<< " " << op << " "
+		<< to_binary(rhs)
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }

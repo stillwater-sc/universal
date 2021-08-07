@@ -84,20 +84,23 @@ int scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturati
 /// <returns></returns>
 template<size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> parse(const std::string& str) {
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
+parse(const std::string& str) {
 	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	cfloatType a{ 0 };
-	if (str[0] == 'b') {
-		size_t index = nbits;
-		for (size_t i = 1; i < str.size(); ++i) {
-			if (str[i] == '1') {
-				a.setbit(--index, true);
-			}
-			else if (str[i] == '0') {
-				a.setbit(--index, false);
-			}
-			else if (str[i] == '.' || str[i] == '\'') {
-				// ignore annotation
+	if (str.length() > 2) {
+		if (str[0] == '0' && str[1] == 'b') {
+			size_t index = nbits;
+			for (size_t i = 1; i < str.size(); ++i) {
+				if (str[i] == '1') {
+					a.setbit(--index, true);
+				}
+				else if (str[i] == '0') {
+					a.setbit(--index, false);
+				}
+				else if (str[i] == '.' || str[i] == '\'') {
+					// ignore annotation
+				}
 			}
 		}
 	}
@@ -155,10 +158,15 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 				// resulting cfloat will be a subnormal number: all exponent bits are 0
 				raw <<= cfloatType::fbits;
 				int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(scale);
-				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit explicitely as it will shift into the msb of the denorm
-				//uint64_t fracbits = src.fraction_ull();
-				fracbits >>= rightShift + (srcbits - cfloatType::fbits);
-				raw |= fracbits;
+				if constexpr (srcbits < 64) {
+					uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit explicitely as it will shift into the msb of the denorm
+					//uint64_t fracbits = src.fraction_ull();
+					fracbits >>= rightShift + (srcbits - cfloatType::fbits);
+					raw |= fracbits;
+				}
+				else {
+					static_assert(srcbits < 65, "trouble");
+				}
 				tgt.setbits(raw);
 			}
 			else {
@@ -932,7 +940,7 @@ public:
 		return *this;
 	}
 	/// <summary>
-	/// assign the value of the string representation of a scientific number to the cfloat
+	/// assign the value of the string representation to the cfloat
 	/// </summary>
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
