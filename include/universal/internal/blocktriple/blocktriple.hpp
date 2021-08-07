@@ -61,7 +61,7 @@ public:
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
-//	static constexpr size_t abits = fbits + 3ull;          // size of the addend
+	static constexpr size_t abits = fbits + 3ull;          // size of the addend
 	static constexpr size_t mbits = 2ull * fbits;          // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
 	static constexpr bt ALL_ONES = bt(~0);

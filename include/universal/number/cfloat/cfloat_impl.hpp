@@ -165,7 +165,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 					raw |= fracbits;
 				}
 				else {
-					static_assert(srcbits < 65, "trouble");
+					//static_assert(srcbits < 65, "trouble");
+
 				}
 				tgt.setbits(raw);
 			}

@@ -54,11 +54,11 @@ try {
 
 	std::cout << "Manual Testing\n";
 	{
-		float fa = 0.017578125; // 0.375; // 0.3125f;  //  0.03125f; // 0.21875f; 
+		float fa = 0.5f; 
 //		float fb = std::numeric_limits<float>::signaling_NaN();
 //		float fb = std::numeric_limits<float>::quiet_NaN();
 //		float fa = std::numeric_limits<float>::infinity();
-		float fb = 0.5f; // 7.625f; // 0.0625f; 3.9375f; 
+		float fb = 2.0f;
 
 		cfloat < 8, 4, uint8_t > a, b, c, cref;
 		a.constexprClassParameters();

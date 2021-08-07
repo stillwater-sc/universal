@@ -402,6 +402,7 @@ so as to enable the representation of special states such as
 infinity and Not a Number.If the exponent field is zero, the
 value is a denormal number and the exponent of 2 is 16382.
 */
+#include <universal/native/nonconstexpr/extract_fp_components.hpp>
 #include <universal/native/nonconstexpr/msvc_long_double.hpp>
 #include <universal/native/nonconstexpr/clang_long_double.hpp>
 #include <universal/native/nonconstexpr/gcc_long_double.hpp>
