@@ -26,7 +26,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 	using namespace sw::universal;
 
 	//	cout << endl;
-	//	cout << "blockfraction<" <<nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	//	cout << "blockfraction<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
@@ -68,7 +68,7 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -87,15 +87,12 @@ try {
 	GenerateTestCase<4>(0xF, 0x9);
 	GenerateTestCase<4>(0xF, 0x8);
 
-	blockfraction<4> a, b;
-	blockfraction<8> c;
-	a.set_raw_bits(0xF);
-	b.set_raw_bits(0x9);
-	c = urmul(a, b);
-	blockfraction<4> result = c; // take the lower nbits
-	cout << to_binary(result) << endl;
-
-	return 0;
+	blockfraction<8, uint32_t> a, b, c;
+	a.setbits(0xF);
+	b.setbits(0x9);
+	c.mul(a, b);
+	blockfraction<8, uint32_t> result = c; // take the lower nbits
+	std::cout << to_binary(result) << endl;
 
 	uint8_t mask;
 //	mask = (1 << (bitsInBlock - ((nbits % (nrBlocks * bitsInBlock)) - 1)))
@@ -107,45 +104,21 @@ try {
 		cout << "nbits = " << nbits << " nrBlocks = " << nrBlocks << " mask = 0x" << to_binary(mask) << " " << int(mask) << endl;
 	}
 
-	return 0;
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8>(12345, 54321);
 	
 	{
-		blockfraction<4> a, b, c;
-		a.set_raw_bits(0x8);
-		b.set_raw_bits(0x2);
-	b.sign();
-		int bb = (int)b.to_long_long();
-		cout << (b.sign() ? "-1" : "+1") << "  value = " << bb << endl;
-
-		c = a * b;
-		cout << (long long)a << " * " << (long long)b << " = " << (long long)c << endl;
-		cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(c) << endl;
-	}
-
-	{
-		blockfraction<12> a, b, c;
-		blockfraction<13> d;
-		a = 0x7FF;  // maxpos
-		b = 0x001;  // +1
-		c = a + b;  // modulo add yields maxneg
-		d = uradd(a, b); // unrounded add yields 0x401
-		cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << endl;
-	}
-	{
-		blockfraction<12> a, b, c;
-		blockfraction<24> d;
+		blockfraction<24, uint32_t> a, b, c, d;
 		a = 0x7FF;  // maxpos
 		b = 0x7FF;  // maxpos
-		c = a * b;  // rounded mul
-		d = urmul(a, b); // unrounded mul yields
+//		c = a * b;  // rounded mul
+		d.mul(a, b); // unrounded mul yields
 		cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << endl;
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint8_t>(true), "blockfraction<4,uint8>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint8_t>(true), "blockfraction<8,uint8>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint16_t>(true), "blockfraction<8,uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<4, uint8_t> >(true), "blockfraction<4,uint8>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<8, uint8_t> >(true), "blockfraction<8,uint8>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<8, uint16_t> >(true), "blockfraction<8,uint16>", "multiplication");
 
 	nrOfFailedTestCases = 0;
 

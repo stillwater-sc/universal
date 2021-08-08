@@ -41,22 +41,27 @@ try {
 		Real c{ 0 };
 		// emulate addition
 		constexpr size_t fbits = Real::fbits;
-		blocktriple<fbits, bt> _a, _b;
-		a.normalize(_a);
-		b.normalize(_b);
+		constexpr size_t mbits = 2 * (fbits + 1);
+		blocktriple<mbits, bt> _a, _b;
+		a.normalizeAddition(_a);
+		b.normalizeAddition(_b);
 		std::cout << to_binary(a) << " : " << to_triple(a) << std::endl;
 	}
 
 	{
-		cfloat<16, 4, uint16_t> a(1.0);
-		cfloat<16, 4, uint16_t> b;
-		b = 1.5f;
-		blocktriple<12> bt;
-//		b.normalize(bt);
-		std::cout << to_binary(b) << " : " << b << " : " << to_binary(bt) << std::endl;
-		std::cout << color_print(b) << std::endl;
-		cfloat<16, 4, uint16_t> c;
+		using bt = uint16_t;
+		using Real = cfloat<16, 4, bt>;
+		Real a(1.0), b{ 1.5f }, c;
 		c = a * b;
+
+		// emulate multiplication
+		constexpr size_t fbits = Real::fbits;
+		constexpr size_t mbits = 2 * (fbits + 1);
+		blocktriple<mbits, bt> _a, _b, _c;
+		a.normalizeMultiplication(_a);
+		b.normalizeMultiplication(_b);
+		std::cout << to_binary(b) << " : " << b << std::endl;
+		std::cout << color_print(b) << std::endl;
 	}
 
 	{

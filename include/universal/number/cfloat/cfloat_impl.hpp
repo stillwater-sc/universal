@@ -166,7 +166,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 				}
 				else {
 					//static_assert(srcbits < 65, "trouble");
-
+					std::cerr << "srcbits >= 64  : srcbits == " << srcbits << '\n';
 				}
 				tgt.setbits(raw);
 			}
@@ -258,7 +258,8 @@ public:
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
 	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
-	static constexpr uint64_t ALL_ONES_FR = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - fbits)); // special case for nbits <= 64
+	static constexpr uint64_t topfbits = fbits % 64;
+	static constexpr uint64_t ALL_ONES_FR = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - topfbits)); // special case for nbits <= 64
 	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
@@ -446,6 +447,65 @@ public:
 		return *this -= cfloat(rhs);
 	}
 	cfloat& operator*=(const cfloat& rhs) {
+		if constexpr (_trace_cfloat_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		// special case handling of the inputs
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
+			throw cfloat_operand_is_nan{};
+		}
+#else
+		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
+			setnan(NAN_TYPE_SIGNALLING);
+			return *this;
+		}
+		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+			setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
+#endif
+		// normal + inf  = inf
+		// normal + -inf = -inf
+		// inf + normal = inf
+		// inf + inf    = inf
+		// inf + -inf    = ?
+		// -inf + normal = -inf
+		// -inf + -inf   = -inf
+		// -inf + inf    = ?
+		if (isinf()) {
+			if (rhs.isinf()) {
+				if (sign() != rhs.sign()) {
+					setnan(NAN_TYPE_SIGNALLING);
+				}
+				return *this;
+			}
+			else {
+				return *this;
+			}
+		}
+		else {
+			if (rhs.isinf()) {
+				*this = rhs;
+				return *this;
+			}
+		}
+
+		if (iszero()) {
+			*this = rhs;
+			return *this;
+		}
+		if (rhs.iszero()) return *this;
+
+		// arithmetic operation
+		blocktriple<mbits, bt> a, b, product;
+
+		// transform the inputs into (sign,scale,significant) 
+		// triples of the correct width
+		normalizeMultiplication(a);
+		rhs.normalizeMultiplication(b);
+		product.mul(a, b);
+
+		convert(product, *this);
+
 		return *this;
 	}
 	cfloat& operator*=(double rhs) {
@@ -1577,6 +1637,104 @@ public:
 		}
 	}
 
+	// convert a cfloat to a blocktriple with the fraction format 01.ffffeeee
+	// we are using the same block type so that we can use block copies to move bits around.
+	// Since we tend to have at least two exponent bits, this will lead to
+	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
+	// The relationship between the source cfloat and target blocktriple is not
+	// arbitrary, enforce it: blocktriple fbits = cfloat (nbits - es - 1)
+	constexpr void normalizeMultiplication(blocktriple<mbits, bt>& tgt) const {
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal(); // a blocktriple is always normalized
+			int scale = this->scale();
+			tgt.setsign(sign());
+			tgt.setscale(scale);
+			// set significant
+			// we are going to unify to the format 01.ffffeeee
+			// where 'f' is a fraction bit, and 'e' is an extension bit
+			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
+			if (isnormal()) {
+				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
+				}
+			}
+			else { // it is a subnormal encoding in this target cfloat
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scale;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
+				}
+			}
+		}
+	}
 
 protected:
 	// HELPER methods

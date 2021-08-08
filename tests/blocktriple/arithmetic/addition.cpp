@@ -66,7 +66,8 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	// 3 bits, so that we are able to correctly round.
 
 	/*
-	 * the structure of a blocktriple is always 00h.ffff, that is, we have an explicit normal bit.
+	 * the structure of a blocktriple is always 00h.ffff, that is,
+	 * we have an explicit normal bit.
 	 * When we are adding two blocktriples we need to append 3 bits to 
 	 * potentially hold the guard, round, and sticky bits during alignment.
 	 * Thus if we want to verify the addition state space of a blocktriple<4>,

@@ -193,7 +193,9 @@ public:
 	explicit operator double()      const noexcept { return to_double(); }
 	explicit operator long double() const noexcept { return to_long_double(); }
 
+	/////////////////////////////////////////////////////////////
 	// ALU operators
+
 	/// <summary>
 	/// add two real numbers with nbits fraction bits yielding an nbits unrounded sum
 	/// To avoid fraction bit copies, the input requirements are pushed to the
@@ -257,6 +259,63 @@ public:
 		}
 		if constexpr (_trace_btriple_add) {
 			std::cout << "blocktriple normalized add\n";
+			std::cout << typeid(lhs).name() << '\n';
+			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(*this).name() << '\n';
+			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
+		}
+	}
+
+	/// <summary>
+/// multiply two real numbers with <nbits> fraction bits yielding an <2*nbits> unrounded result
+/// To avoid fraction bit copies, the input requirements are pushed to the
+/// calling environment to prepare the correct storage
+/// </summary>
+/// <param name="lhs">ephemeral blocktriple<mbits> that may get modified</param>
+/// <param name="rhs">ephemeral blocktriple<mbits> that may get modified</param>
+/// <param name="result">unrounded sum</param>
+	void mul(blocktriple<nbits, bt>& lhs, blocktriple<nbits, bt>& rhs) {
+		int lhs_scale = lhs.scale();
+		int rhs_scale = rhs.scale();
+		int scale_of_result = lhs_scale + rhs_scale;
+
+		// avoid copy by directly manipulating the fraction bits of the arguments
+		_significant.mul(lhs._significant, rhs._significant);
+
+		if constexpr (_trace_btriple_mul) {
+			std::cout << "blockfraction unrounded mul\n";
+			std::cout << typeid(lhs._significant).name() << '\n';
+			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(_significant).name() << '\n';
+			std::cout << "mul significant : " << to_binary(*this) << " : " << *this << '\n';
+		}
+		if (_significant.iszero()) {
+			clear();
+		}
+		else {
+			_zero = false;
+			_scale = scale_of_result;
+			if (_significant.test(bfbits - 2)) { // test for carry
+				_scale += 1;
+				_significant >>= 1; // TODO: do we need to round on bits shifted away?
+			}
+			else if (_significant.test(bfbits - 3)) { // check for the hidden bit
+				// ready to go
+			}
+			else {
+				// found a denormalized form, thus need to normalize: find MSB
+				int msb = _significant.msb(); // zero case has been taken care off above
+//				std::cout << "mul : " << to_binary(*this) << std::endl;
+//				std::cout << "msb : " << msb << std::endl;
+				int leftShift = static_cast<int>(bfbits) - 3 - msb;
+				_significant <<= leftShift;
+				_scale -= leftShift;
+			}
+		}
+		if constexpr (_trace_btriple_mul) {
+			std::cout << "blocktriple normalized mul\n";
 			std::cout << typeid(lhs).name() << '\n';
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
@@ -580,10 +639,8 @@ inline std::istream& operator>> (std::istream& istr, const blocktriple<nbits, bt
 
 template<size_t nbits, typename bt>
 inline bool operator==(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significant == rhs._significant && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
-
 template<size_t nbits, typename bt>
 inline bool operator!=(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) { return !operator==(lhs, rhs); }
-
 template<size_t nbits, typename bt>
 inline bool operator< (const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) {
 	if (lhs._inf) {
@@ -651,7 +708,6 @@ inline bool operator< (const blocktriple<nbits, bt>& lhs, const blocktriple<nbit
 		}
 	}
 }
-
 template<size_t nbits, typename bt>
 inline bool operator> (const blocktriple<nbits, bt>& lhs, const blocktriple<nbits, bt>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nbits, typename bt>

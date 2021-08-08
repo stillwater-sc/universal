@@ -174,7 +174,7 @@ public:
 	// none
 
 	/// arithmetic operators
-	//
+	// none
 
 	/// <summary>
 	/// add two fractions of the form 00h.fffff, that is, radix point at nbits-3
@@ -325,7 +325,7 @@ public:
 			_block[1] = 0;
 			_block[2] = 0;
 		}
-		else if constexpr (3 == nrBlocks) {
+		else if constexpr (4 == nrBlocks) {
 			_block[0] = 0;
 			_block[1] = 0;
 			_block[2] = 0;
@@ -583,7 +583,6 @@ public:
 		if (_block[topBlock] & mask) return true;
 		return false;
 	}
-
 
 protected:
 	// HELPER methods

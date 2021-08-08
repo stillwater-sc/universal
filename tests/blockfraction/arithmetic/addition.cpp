@@ -25,7 +25,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	using namespace sw::universal;
 	
 //	cout << endl;
-//	cout << "blockfraction<" <<nbits << ',' << typeid(BlockType).name() << '>' << endl;
+//	cout << "blockfraction<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
