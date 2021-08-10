@@ -13,8 +13,9 @@
 #include <universal/internal/bitblock/bitblock.hpp>
 // minimum set of include files to reflect source code dependencies                    
 #include <universal/native/ieee754.hpp>
+// uncomment to enable operator tracing
 //#define BLOCKTRIPLE_VERBOSE_OUTPUT
-#define BLOCKTRIPLE_TRACE_ADD 0
+//#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp>

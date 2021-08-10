@@ -41,23 +41,24 @@ blocktriple<fbits, bt>& convert(unsigned long long uint, blocktriple<fbits, bt>&
 /// <summary>
 /// Generalized blocktriple representing a (sign, scale, significant) with unrounded arithmetic
 /// </summary>
-/// <typeparam name="nbits">number of fraction bits in the significant</typeparam>
+/// <typeparam name="fractionbits">number of fraction bits in the significant</typeparam>
+/// <typeparam name="bt">block type: one of [uint8_t, uint16_t, uint32_t, uint64_t]</typeparam>
 template<size_t fractionbits, typename bt = uint32_t> 
 class blocktriple {
 public:
 	static constexpr size_t nbits = fractionbits;  // a convenience and consistency alias
 	static constexpr size_t fbits = fractionbits;
-	static constexpr size_t bfbits = fbits + 3; // bf = 00h.ffff <- nbits of fraction bits plus three bits before radix point
+	static constexpr size_t bfbits = fbits + 3; // blockfraction = 00h.ffff <- fraction bits plus three bits before radix point
 	typedef bt BlockType;
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
-	// how to manage carry propagation on uint64_t using assembly code
+	// how to manage carry propagation on uint64_t using intrinsics/assembly code
 	using Frac = sw::universal::blockfraction<bfbits, bt>;
 
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr size_t storageMask = (0xFFFF'FFFF'FFFF'FFFFull >> (64ull - bitsInBlock));
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
@@ -65,7 +66,7 @@ public:
 	static constexpr size_t mbits = 2ull * fbits;          // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
 	static constexpr bt ALL_ONES = bt(~0);
-	// special case overflow pattern mask when representation is nbits + 1 < 64
+	// generate the special case overflow pattern mask when representation is nbits + 1 < 64
 	static constexpr size_t maxbits = (nbits + 1) < 63 ? (nbits + 1) : 63;
 	static constexpr size_t overflowPattern = (maxbits < 63) ? (1ull << maxbits) : 0ull; // overflow of 1.11111 to 10.0000
 
@@ -77,41 +78,37 @@ public:
 
 	constexpr blocktriple() noexcept : 
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
-		_sign{ false }, _scale{ 0 } {} // _significant use default constructor
+		_sign{ false }, _scale{ 0 } {} // _significant uses default constructor
 
 	// decorated constructors
-	constexpr blocktriple(signed char iv) noexcept { *this = iv; }
-	constexpr blocktriple(short iv)       noexcept { *this = iv; }
-	constexpr blocktriple(int iv)         noexcept { *this = iv; }
-	constexpr blocktriple(long iv)        noexcept { *this = iv; }
-	constexpr blocktriple(long long iv)   noexcept { *this = iv; }
+	constexpr blocktriple(signed char iv)        noexcept { *this = iv; }
+	constexpr blocktriple(short iv)              noexcept { *this = iv; }
+	constexpr blocktriple(int iv)                noexcept { *this = iv; }
+	constexpr blocktriple(long iv)               noexcept { *this = iv; }
+	constexpr blocktriple(long long iv)          noexcept { *this = iv; }
 	constexpr blocktriple(char iv)               noexcept { *this = iv; }
 	constexpr blocktriple(unsigned short iv)     noexcept { *this = iv; }
 	constexpr blocktriple(unsigned int iv)       noexcept { *this = iv; }
 	constexpr blocktriple(unsigned long iv)      noexcept { *this = iv; }
-	constexpr blocktriple(unsigned long long iv) noexcept  { *this = iv; }
-	constexpr blocktriple(float iv)       noexcept { *this = iv; }
-	constexpr blocktriple(double iv)      noexcept { *this = iv; }
-	constexpr blocktriple(long double iv) noexcept { *this = iv; }
+	constexpr blocktriple(unsigned long long iv) noexcept { *this = iv; }
+	constexpr blocktriple(float iv)              noexcept { *this = iv; }
+	constexpr blocktriple(double iv)             noexcept { *this = iv; }
+	constexpr blocktriple(long double iv)        noexcept { *this = iv; }
 
 	// conversion operators
-	constexpr blocktriple& operator=(signed char rhs) noexcept { return convert_signed_integer(rhs); }
-	constexpr blocktriple& operator=(short rhs)       noexcept { return convert_signed_integer(rhs); }
-	constexpr blocktriple& operator=(int rhs)         noexcept { return convert_signed_integer(rhs); }
-	constexpr blocktriple& operator=(long rhs)        noexcept { return convert_signed_integer(rhs); }
-	constexpr blocktriple& operator=(long long rhs)   noexcept { return convert_signed_integer(rhs); }
-
+	constexpr blocktriple& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
+	constexpr blocktriple& operator=(short rhs)              noexcept { return convert_signed_integer(rhs); }
+	constexpr blocktriple& operator=(int rhs)                noexcept { return convert_signed_integer(rhs); }
+	constexpr blocktriple& operator=(long rhs)               noexcept { return convert_signed_integer(rhs); }
+	constexpr blocktriple& operator=(long long rhs)          noexcept { return convert_signed_integer(rhs); }
 	constexpr blocktriple& operator=(char rhs)               noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned short rhs)     noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
-
 	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_float(rhs); }
 	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_double(rhs); }
-	constexpr blocktriple& operator=(long double rhs) noexcept {
-		return *this = double(rhs);
-	};
+	constexpr blocktriple& operator=(long double rhs)        noexcept { return *this = double(rhs); };
 	
 	// align the blocktriple
 	inline constexpr void align(int rightShift) noexcept {
@@ -160,7 +157,7 @@ public:
 	constexpr void setscale(int scale) noexcept { _scale = scale; }
 	constexpr void setbit(size_t index, bool v = true) noexcept { _significant.setbit(index, v); }
 	/// <summary>
-	/// set the bits of the significant given raw fraction bits
+	/// set the bits of the significant, given raw fraction bits. only works for bfbits < 64
 	/// </summary>
 	/// <param name="raw">fraction bits</param>
 	/// <returns></returns>
@@ -182,7 +179,7 @@ public:
 	inline constexpr int  scale()       const noexcept { return _scale; }
 	inline constexpr Frac significant() const noexcept { return _significant; }
 	// specialty function to offer a fast path to get the fraction bits out of the representation
-	// to convert to a target number system: only valid for nbits <= 64
+	// to convert to a target number system: only valid for bfbits <= 64
 	inline constexpr uint64_t fraction_ull() const noexcept{ return _significant.fraction_ull(); }
 	// fraction bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
@@ -268,13 +265,13 @@ public:
 	}
 
 	/// <summary>
-/// multiply two real numbers with <nbits> fraction bits yielding an <2*nbits> unrounded result
-/// To avoid fraction bit copies, the input requirements are pushed to the
-/// calling environment to prepare the correct storage
-/// </summary>
-/// <param name="lhs">ephemeral blocktriple<mbits> that may get modified</param>
-/// <param name="rhs">ephemeral blocktriple<mbits> that may get modified</param>
-/// <param name="result">unrounded sum</param>
+	/// multiply two real numbers with <nbits> fraction bits yielding an <2*nbits> unrounded result
+	/// To avoid fraction bit copies, the input requirements are pushed to the
+	/// calling environment to prepare the correct storage
+	/// </summary>
+	/// <param name="lhs">ephemeral blocktriple<mbits> that may get modified</param>
+	/// <param name="rhs">ephemeral blocktriple<mbits> that may get modified</param>
+	/// <param name="result">unrounded sum</param>
 	void mul(blocktriple<nbits, bt>& lhs, blocktriple<nbits, bt>& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
@@ -289,7 +286,7 @@ public:
 			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
 			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "mul significant : " << to_binary(*this) << " : " << *this << '\n';
+			std::cout << "mul significant : " << to_binary(*this) << " : " << *this << '\n';  // <-- the scale of this representation is not yet set
 		}
 		if (_significant.iszero()) {
 			clear();
@@ -297,12 +294,12 @@ public:
 		else {
 			_zero = false;
 			_scale = scale_of_result;
-			if (_significant.test(bfbits - 2)) { // test for carry
+			if (_significant.test(bfbits - 1)) { // test for carry
 				_scale += 1;
-				_significant >>= 1; // TODO: do we need to round on bits shifted away?
+				_significant >>= 2; // TODO: do we need to round on bits shifted away?
 			}
-			else if (_significant.test(bfbits - 3)) { // check for the hidden bit
-				// ready to go
+			else if (_significant.test(bfbits - 2)) { // check for the hidden bit
+				_significant >>= 1;
 			}
 			else {
 				// found a denormalized form, thus need to normalize: find MSB
