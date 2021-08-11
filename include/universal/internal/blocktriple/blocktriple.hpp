@@ -38,6 +38,30 @@ blocktriple<fbits, bt>& convert(unsigned long long uint, blocktriple<fbits, bt>&
 	return tgt;
 }
 
+/*
+  The blocktriple is used as a marshalling class to transform
+floating-point type number systems into a uniform floating-point
+arithmetic class that we can validate and reuse.
+
+The blocktriple design favors performance over encapsulation. 
+During arithmetic operations, the fraction bits of the arguments
+need to be manipulated and extended, and we wanted to avoid
+copying these fraction bits into new storage classes.
+
+However, the size of the fraction bit buffers depends on the
+arithmetic operator. This implies that at the time of creation
+we need to know the intended use, and configure the blocktriple 
+accordingly.
+
+for add and subtract
+blockfraction = 00h.ffffeee <- three bits before radix point, fraction bits plus 3 rounding bits
+size_t bfbits = fbits + 3; 
+
+for multiply
+size_t bfbits = 2*fhbits;
+ */
+
+
 /// <summary>
 /// Generalized blocktriple representing a (sign, scale, significant) with unrounded arithmetic
 /// </summary>
@@ -48,8 +72,8 @@ class blocktriple {
 public:
 	static constexpr size_t nbits = fractionbits;  // a convenience and consistency alias
 	static constexpr size_t fbits = fractionbits;
-	static constexpr size_t bfbits = fbits + 3; // blockfraction = 00h.ffff <- fraction bits plus three bits before radix point
 	typedef bt BlockType;
+	static constexpr size_t bfbits = fbits + 3;
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using intrinsics/assembly code
@@ -62,8 +86,9 @@ public:
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
-	static constexpr size_t abits = fbits + 3ull;          // size of the addend
-	static constexpr size_t mbits = 2ull * fbits;          // size of the multiplier output
+	static constexpr size_t fhbits = fbits + 1;            // size of all bits
+	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
+	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
 	static constexpr bt ALL_ONES = bt(~0);
 	// generate the special case overflow pattern mask when representation is nbits + 1 < 64

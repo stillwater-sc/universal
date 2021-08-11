@@ -77,15 +77,15 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	 */
 
 	blocktriple<abits> a, b, c, refResult;
-	constexpr size_t hiddenBit = (size_t(1) << abits);
+	constexpr size_t hiddenBit = (size_t(1) << (abits-1));
 	a.setnormal();
 	b.setnormal();
 	c.setnormal();  // we are only enumerating normal values, special handling is not tested here
 
-	// key problem: the add operator will change the arguments as they need to be aligned
-	// the add operator will shift the fraction and adjust the scale
-	// This implies that we need to set up the values of the blocktriples in the inner loop,
-	// that is, the test input values will not remain invariant as they are manipulated by add();
+	// key problem: the add operator will change the arguments during alignment
+	// specifically, the add operator will shift the fraction and adjust the scale
+	// This requires the values of the blocktriples to be set in the inner loop,
+	// as the test input values will not remain invariant as they are manipulated by add();
 	double aref, bref, cref;
 	for (int scale = -6; scale < 7; ++scale) {
 		for (size_t i = 0; i < NR_VALUES; i++) {
@@ -131,10 +131,6 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 //					cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << endl;
 //					cout << a << " + " << b << " = " << c << endl;
 //					cout << aref << " + " << bref << " = " << cref << " vs " << refResult << endl;
-
-//					cout << to_binary(2.0625) << endl;
-//					cout << to_binary(cref) << endl;
-//					cout << to_binary(2.125) << endl;
 
 					++nrOfFailedTests;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
@@ -196,7 +192,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "modular addition failed: ";
+	std::string tag = "blocktriple addition failed: ";
 
 #if MANUAL_TESTING
 
@@ -204,8 +200,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 1, uint8_t> >(bReportIndividualTestCases), "blocktriple<1, uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 4, uint8_t> >(bReportIndividualTestCases), "blocktriple<4, uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, uint8_t>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint8_t> >(bReportIndividualTestCases), "blocktriple<12, uint8_t>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint16_t> >(bReportIndividualTestCases), "blocktriple<12, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint8_t> >(bReportIndividualTestCases), "blocktriple<12, uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint16_t> >(bReportIndividualTestCases), "blocktriple<12, uint16_t>", "addition");
 
 #if STRESS_TESTING
 
@@ -216,7 +212,7 @@ try {
 
 #else
 
-	cout << "block addition validation" << endl;
+	cout << "blocktriple addition validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<4, uint8_t> >(bReportIndividualTestCases), "blocktriple<4,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<4, uint16_t> >(bReportIndividualTestCases), "blocktriple<4,uint16_t>", "addition");
@@ -244,7 +240,7 @@ try {
 
 #if STRESS_TESTING
 
-
+	// none
 
 #endif  // STRESS_TESTING
 
