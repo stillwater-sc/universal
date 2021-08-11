@@ -20,23 +20,28 @@ namespace sw::universal::internal {
 	template<typename Scalar>
 	void AdditionSubtractionWorkload(uint64_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
+		d.clear();
 		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
-		a = b = c = d;
+		c = d;
+		b = c;
+		a = b;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			c.add(a, b);
-//			b = c;
 		}
+		if (c == d) std::cout << "amazing\n";
 	}
 
 	// Generic set of multiplies for a given number system type
 	template<typename Scalar>
 	void MultiplicationWorkload(uint64_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
-		d.setbits(0xFFFFFFFFFFFFFFFFull);
-		a = b = c = d;
+		d.clear();
+		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
+		c = d;
+		b = c;
+		a = b;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
-			//c = a * b;
-			c.clear(); // reset to zero so d = c is fast
+			c.mul(a, b);
 			d = c;
 		}
 	}
@@ -45,8 +50,11 @@ namespace sw::universal::internal {
 	template<typename Scalar>
 	void DivisionWorkload(uint64_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
-		d.setbits(0xFFFFFFFFFFFFFFFFull);
-		a = b = c = d;
+		d.clear();
+		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
+		c = d;
+		b = c;
+		a = b;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			//c = a / b;
 			c.clear(); // reset to zero so d = c is fast

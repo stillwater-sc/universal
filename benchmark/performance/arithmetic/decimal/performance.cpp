@@ -21,14 +21,14 @@
 // test performance of shift operator on integer<> class
 void TestShiftOperatorPerformance() {
 	using namespace std;
-	using IntegerType = sw::universal::decimal;
+	using Decimal = sw::universal::decimal;
 	cout << endl << "DECIMAL Logical shift operator performance" << endl;
 
 	constexpr uint64_t NR_OPS = 1000;
 
-	PerformanceRunner("decimal 1-digits     shifts        ", ShiftPerformanceWorkload< decimal >, NR_OPS);
-	PerformanceRunner("decimal 10-digits    shifts        ", ShiftPerformanceWorkload< decimal >, NR_OPS);
-	PerformanceRunner("decimal 100-digits   shifts        ", ShiftPerformanceWorkload< decimal >, NR_OPS);
+	PerformanceRunner("decimal 1-digits     shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("decimal 10-digits    shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("decimal 100-digits   shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
 }
 
 // measure performance of arithmetic operators
