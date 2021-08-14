@@ -42,7 +42,7 @@ try {
 		// emulate addition
 		constexpr size_t fbits = Real::fbits;
 		constexpr size_t abits = Real::abits;
-		blocktriple<fbits, BlockTripleOperator::ADD, bt> _a, _b;
+		blocktriple<abits, BlockTripleOperator::ADD, bt> _a, _b;
 		a.normalizeAddition(_a);
 		b.normalizeAddition(_b);
 		std::cout << to_binary(a) << " : " << to_triple(a) << std::endl;

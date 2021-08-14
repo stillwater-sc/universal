@@ -422,7 +422,7 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, sum;
+		blocktriple<abits, BlockTripleOperator::ADD, bt> a, b, sum;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
@@ -1543,7 +1543,7 @@ public:
 	}
 
 	// normalize a cfloat to a blocktriple used in add/sub
-	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
+	constexpr void normalizeAddition(blocktriple<abits, BlockTripleOperator::ADD, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();

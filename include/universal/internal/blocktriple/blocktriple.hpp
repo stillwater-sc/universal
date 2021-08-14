@@ -85,7 +85,7 @@ public:
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
 	static constexpr size_t fhbits = fbits + 1;            // size of all bits
-	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
+	static constexpr size_t abits = fbits + 3ull;          // size of the addend
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
 	static constexpr size_t sqrtbits = 2ull * fhbits;      // size of the square root output
@@ -655,6 +655,29 @@ private:
 };
 
 ////////////////////// operators
+
+inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& op) {
+	switch (op) {
+	case BlockTripleOperator::ADD:
+		ostr << "ADD";
+		break;
+	case BlockTripleOperator::MUL:
+		ostr << "MUL";
+		break;
+	case BlockTripleOperator::DIV:
+		ostr << "DIV";
+		break;
+	case BlockTripleOperator::SQRT:
+		ostr << "SQRT";
+		break;
+	case BlockTripleOperator::REPRESENTATION:
+		ostr << "REP";
+		break;
+	default:
+		ostr << "NOP";
+	}
+	return ostr;
+}
 template<size_t nbits, BlockTripleOperator op, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<nbits, op, bt>& a) {
 	if (a._inf) {
