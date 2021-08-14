@@ -28,15 +28,15 @@ namespace sw::universal {
 	/// <typeparam name="bt">block storage type of representation</typeparam>
 	/// <param name="bReportIndividualTestCases">if true print individual test cases</param>
 	/// <returns></returns>
-	template<typename CfloatConfigurate>
+	template<typename CfloatConfiguration>
 	int VerifyCfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfigurate::nbits;
-		constexpr size_t es = CfloatConfigurate::es;
-		using bt = typename CfloatConfigurate::BlockType;
-		constexpr size_t fbits = CfloatConfigurate::fbits;
-		constexpr size_t abits = CfloatConfigurate::abits;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr size_t fbits = CfloatConfiguration::fbits;
+		constexpr size_t abits = CfloatConfiguration::abits;
 
 		int nrOfTestFailures{ 0 };
 		constexpr size_t NR_VALUES = (1u << nbits);
@@ -60,20 +60,21 @@ namespace sw::universal {
 	}
 
 
-	template<typename CfloatConfigurate>
+	template<typename CfloatConfiguration>
 	int VerifyBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfigurate::nbits;
-		constexpr size_t es = CfloatConfigurate::es;
-		using bt = typename CfloatConfigurate::BlockType;
-		//constexpr size_t fbits = CfloatConfigurate::fbits;
-		constexpr size_t abits = CfloatConfigurate::abits;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr size_t fbits = CfloatConfiguration::fbits;
+//		constexpr size_t abits = CfloatConfiguration::abits;
 
 		int nrOfTestFailures{ 0 };
 		constexpr size_t NR_VALUES = (1u << nbits);
 		cfloat<nbits, es, bt> a, nut;
-		blocktriple<abits+1, bt> b; // blocktriple that comes out of an addition or subtraction
+//		blocktriple<abits+1, bt> b; // blocktriple that comes out of an addition or subtraction
+		blocktriple<fbits, BlockTripleOperator::ADD, bt> b; // blocktriple that comes out of an addition or subtraction
 
 		if (bReportIndividualTestCases) a.constexprClassParameters();
 

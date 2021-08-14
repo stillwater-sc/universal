@@ -22,14 +22,14 @@ std::string convert(Ty f) {
 	return s.str();
 }
 
-template<size_t fbits, typename ConversionType>
+template<size_t fbits, sw::universal::BlockTripleOperator op, typename ConversionType>
 int VerifyConversion() {
 	using namespace std;
 	using namespace sw::universal;
 
 	cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", uint8_t>    ";
 	int nrOfFailures = 0;
-	blocktriple<fbits, uint8_t> a, nut;
+	blocktriple<fbits, op, uint8_t> a, nut;
 	constexpr size_t NR_VALUES = (1ull << (fbits + 1));
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		if (i == 0) a.setzero(); else a.setnormal();
@@ -46,7 +46,7 @@ int VerifyConversion() {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -137,6 +137,10 @@ try {
 	cout << convert<11, long>(l) << '\n';
 	cout << convert<8, long>(l) << '\n';
 
+	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, float>();
+	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::MUL, float>();
+	nrOfFailedTestCases = 0;
+
 #if STRESS_TESTING
 
 	// manual exhaustive test
@@ -147,17 +151,17 @@ try {
 
 	cout << tag << endl;
 
-	nrOfFailedTestCases += VerifyConversion<5, float>();
-	nrOfFailedTestCases += VerifyConversion<9, float>();
-	nrOfFailedTestCases += VerifyConversion<12, float>();
+	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, float>();
+	nrOfFailedTestCases += VerifyConversion<9, BlockTripleOperator::ADD, float>();
+	nrOfFailedTestCases += VerifyConversion<12, BlockTripleOperator::ADD, float>();
 
-	nrOfFailedTestCases += VerifyConversion<5, double>();
-	nrOfFailedTestCases += VerifyConversion<9, double>();
-	nrOfFailedTestCases += VerifyConversion<12, double>();
+	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, double>();
+	nrOfFailedTestCases += VerifyConversion<9, BlockTripleOperator::ADD, double>();
+	nrOfFailedTestCases += VerifyConversion<12, BlockTripleOperator::ADD, double>();
 
 	for (int i = 1; i < 257; i *= 2) {
 		float f = float(i);
-		blocktriple<9, uint8_t> nut = f;
+		blocktriple<9, BlockTripleOperator::ADD, uint8_t> nut = f;
 		if (f != float(nut)) {
 			++nrOfFailedTestCases;
 		}

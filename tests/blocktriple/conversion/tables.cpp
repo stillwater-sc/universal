@@ -116,9 +116,13 @@ try {
 	std::string tag = "Generate value tables for blocktriple configurations";
 	cout << tag << endl;
 
-	GenerateTable < blocktriple<3, uint8_t> >(cout, csv);
-	GenerateTable < blocktriple<4, uint8_t> >(cout, csv);
-	GenerateTable < blocktriple<5, uint8_t> >(cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
+	GenerateTable < blocktriple<3, BlockTripleOperator::ADD, uint8_t> >(cout, csv);
+	GenerateTable < blocktriple<4, BlockTripleOperator::ADD, uint8_t> >(cout, csv);
+	GenerateTable < blocktriple<5, BlockTripleOperator::ADD, uint8_t> >(cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
+
+	GenerateTable < blocktriple<3, BlockTripleOperator::MUL, uint8_t> >(cout, csv);
+	GenerateTable < blocktriple<4, BlockTripleOperator::MUL, uint8_t> >(cout, csv);
+	GenerateTable < blocktriple<5, BlockTripleOperator::MUL, uint8_t> >(cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
 
 	return EXIT_SUCCESS;
 }

@@ -169,7 +169,7 @@ try {
 #if MANUAL_TESTING
 
 	{
-		blocktripleM<2, uint8_t> a, b, c;
+		blocktriple<2, BlockTripleOperator::MUL, uint8_t> a, b, c;
 		std::cout << to_binary(a) << '\n';
 		a = 1.0f;
 		b = 0.5f;

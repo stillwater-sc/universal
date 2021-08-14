@@ -70,7 +70,7 @@ try {
 	{
 		constexpr size_t nbits = 8;  // hidden + fraction bits
 
-		blocktriple<nbits, uint32_t> a, b, c;
+		blocktriple<nbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
 		a = 1.0f;
 		b = 1.0f;
 		cout << to_triple(a) << " : " << a << '\n';

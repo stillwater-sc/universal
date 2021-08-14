@@ -116,7 +116,7 @@ try {
 
 	// relationship between native float/double and blocktriple
 	{
-		blocktriple<8, uint8_t> a;
+		blocktriple<8, BlockTripleOperator::ADD, uint8_t> a;
 		a = 1.5f;
 		cout << "IEEE-754 float  : " << to_binary(1.5f, true) << endl;
 		cout << "IEEE-754 float  : " << to_triple(1.5f, true) << endl;

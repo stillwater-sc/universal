@@ -111,9 +111,9 @@ parse(const std::string& str) {
 }
 
 // convert a blocktriple to a cfloat
-template<size_t srcbits, size_t nbits, size_t es, typename bt,
+template<size_t srcbits, BlockTripleOperator op, size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, 
+inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, 
 	                              cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& tgt) {
 //	std::cout << "convert: " << to_binary(src) << std::endl;
 	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
@@ -422,7 +422,7 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<abits, bt> a, b, sum;
+		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, sum;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
@@ -496,13 +496,13 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<mbits, bt> a, b, product;
+		blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
-		normalizeMultiplication(a);
-		rhs.normalizeMultiplication(b);
-		product.mul(a, b);
+//		normalizeMultiplication(a);
+//		rhs.normalizeMultiplication(b);
+//		product.mul(a, b);
 
 		convert(product, *this);
 
@@ -1449,7 +1449,7 @@ public:
 	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
 	// The relationship between the source cfloat and target blocktriple is not
 	// arbitrary, enforce it: blocktriple fbits = cfloat (nbits - es - 1)
-	constexpr void normalize(blocktriple<fbits, bt>& tgt) const {
+	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -1543,7 +1543,7 @@ public:
 	}
 
 	// normalize a cfloat to a blocktriple used in add/sub
-	constexpr void normalizeAddition(blocktriple<abits, bt>& tgt) const {
+	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -1643,7 +1643,7 @@ public:
 	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
 	// The relationship between the source cfloat and target blocktriple is not
 	// arbitrary, enforce it: blocktriple fbits = cfloat (nbits - es - 1)
-	constexpr void normalizeMultiplication(blocktriple<mbits, bt>& tgt) const {
+	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -2503,7 +2503,7 @@ inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = true) {
 	std::stringstream s;
-	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, bt> triple;
+	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, BlockTripleOperator::REPRESENTATION, bt> triple;
 	number.normalize(triple);
 	s << to_triple(triple, nibbleMarker);
 	return s.str();

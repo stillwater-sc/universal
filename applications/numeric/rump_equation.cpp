@@ -243,7 +243,7 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	
 	// trace out the original Rump equation with different number systems
 	TraceRump1<double>(a, b);
-	TraceRump1<posit<156,2>>(a, b);
+//	TraceRump1<posit<156,2>>(a, b);
 
 	return EXIT_SUCCESS;
 }
