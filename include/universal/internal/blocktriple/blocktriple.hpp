@@ -219,14 +219,14 @@ public:
 	// ALU operators
 
 	/// <summary>
-	/// add two real numbers with nbits fraction bits yielding an nbits unrounded sum
+	/// add two real numbers with <fbits> fraction bits yielding an <fbits> unrounded sum
 	/// To avoid fraction bit copies, the input requirements are pushed to the
 	/// calling environment to prepare the correct storage
 	/// </summary>
 	/// <param name="lhs">ephemeral blocktriple<abits> that may get modified</param>
 	/// <param name="rhs">ephemeral blocktriple<abits> that may get modified</param>
 	/// <param name="result">unrounded sum</param>
-	void add(blocktriple<nbits, bt>& lhs, blocktriple<nbits, bt>& rhs) {
+	void add(blocktriple<fbits, bt>& lhs, blocktriple<fbits, bt>& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
 		int scale_of_result = std::max(lhs_scale, rhs_scale);
@@ -289,62 +289,7 @@ public:
 		}
 	}
 
-	/// <summary>
-	/// multiply two real numbers with <nbits> fraction bits yielding an <2*nbits> unrounded result
-	/// To avoid fraction bit copies, the input requirements are pushed to the
-	/// calling environment to prepare the correct storage
-	/// </summary>
-	/// <param name="lhs">ephemeral blocktriple<mbits> that may get modified</param>
-	/// <param name="rhs">ephemeral blocktriple<mbits> that may get modified</param>
-	/// <param name="result">unrounded sum</param>
-	void mul(blocktriple<nbits, bt>& lhs, blocktriple<nbits, bt>& rhs) {
-		int lhs_scale = lhs.scale();
-		int rhs_scale = rhs.scale();
-		int scale_of_result = lhs_scale + rhs_scale;
 
-		// avoid copy by directly manipulating the fraction bits of the arguments
-		_significant.mul(lhs._significant, rhs._significant);
-
-		if constexpr (_trace_btriple_mul) {
-			std::cout << "blockfraction unrounded mul\n";
-			std::cout << typeid(lhs._significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "mul significant : " << to_binary(*this) << " : " << *this << '\n';  // <-- the scale of this representation is not yet set
-		}
-		if (_significant.iszero()) {
-			clear();
-		}
-		else {
-			_zero = false;
-			_scale = scale_of_result;
-			if (_significant.test(bfbits - 1)) { // test for carry
-				_scale += 1;
-				_significant >>= 2; // TODO: do we need to round on bits shifted away?
-			}
-			else if (_significant.test(bfbits - 2)) { // check for the hidden bit
-				_significant >>= 1;
-			}
-			else {
-				// found a denormalized form, thus need to normalize: find MSB
-				int msb = _significant.msb(); // zero case has been taken care off above
-//				std::cout << "mul : " << to_binary(*this) << std::endl;
-//				std::cout << "msb : " << msb << std::endl;
-				int leftShift = static_cast<int>(bfbits) - 3 - msb;
-				_significant <<= leftShift;
-				_scale -= leftShift;
-			}
-		}
-		if constexpr (_trace_btriple_mul) {
-			std::cout << "blocktriple normalized mul\n";
-			std::cout << typeid(lhs).name() << '\n';
-			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << typeid(*this).name() << '\n';
-			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
-		}
-	}
 
 private:
 	// special cases to keep track of
@@ -760,5 +705,75 @@ blocktriple<nbits> abs(const blocktriple<nbits, bt>& a) {
 	absolute.setpos();
 	return absolute;
 }
+
+////////////////////   arithmetic specializations ////////////////////////
+
+/// <summary>
+/// blocktriple for multiply operations
+/// </summary>
+/// <typeparam name="bt"></typeparam>
+template<size_t fbits, typename bt = uint32_t>
+class blocktripleM : public blocktriple<2*(1+fbits), bt> {
+public:
+	/// <summary>
+	/// multiply two real numbers with <fbits> fraction bits yielding an <fbits> unrounded product
+	/// To avoid fraction bit copies, the input requirements are pushed to the
+	/// calling environment to prepare the correct storage
+	/// </summary>
+	/// <param name="lhs">ephemeral blocktriple<mbits> that may get modified</param>
+	/// <param name="rhs">ephemeral blocktriple<mbits> that may get modified</param>
+	/// <param name="result">unrounded sum</param>
+	void mul(blocktripleM<fbits, bt>& lhs, blocktripleM<fbits, bt>& rhs) {
+		int lhs_scale = lhs.scale();
+		int rhs_scale = rhs.scale();
+		int scale_of_result = lhs_scale + rhs_scale;
+
+		// avoid copy by directly manipulating the fraction bits of the arguments
+		_significant.mul(lhs._significant, rhs._significant);
+
+		if constexpr (_trace_btriple_mul) {
+			std::cout << "blockfraction unrounded mul\n";
+			std::cout << typeid(lhs._significant).name() << '\n';
+			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(_significant).name() << '\n';
+			std::cout << "mul significant : " << to_binary(*this) << " : " << *this << '\n';  // <-- the scale of this representation is not yet set
+		}
+		if (_significant.iszero()) {
+			clear();
+		}
+		else {
+			_zero = false;
+			_scale = scale_of_result;
+			if (_significant.test(bfbits - 1)) { // test for carry
+				_scale += 1;
+				_significant >>= 2; // TODO: do we need to round on bits shifted away?
+			}
+			else if (_significant.test(bfbits - 2)) { // check for the hidden bit
+				_significant >>= 1;
+			}
+			else {
+				// found a denormalized form, thus need to normalize: find MSB
+				int msb = _significant.msb(); // zero case has been taken care off above
+//				std::cout << "mul : " << to_binary(*this) << std::endl;
+//				std::cout << "msb : " << msb << std::endl;
+				int leftShift = static_cast<int>(bfbits) - 3 - msb;
+				_significant <<= leftShift;
+				_scale -= leftShift;
+			}
+		}
+		if constexpr (_trace_btriple_mul) {
+			std::cout << "blocktriple normalized mul\n";
+			std::cout << typeid(lhs).name() << '\n';
+			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(*this).name() << '\n';
+			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
+		}
+	}
+
+private:
+
+};
 
 }  // namespace sw::universal
