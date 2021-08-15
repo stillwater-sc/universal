@@ -348,9 +348,9 @@ public:
 	constexpr cfloat(unsigned int iv)       noexcept : _block{ 0 } { *this = iv; }
 	constexpr cfloat(unsigned long iv)      noexcept : _block{ 0 } { *this = iv; }
 	constexpr cfloat(unsigned long long iv) noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(float iv)              noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(double iv)             noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(long double iv)        noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(float iv)        noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(double iv)       noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
 	constexpr cfloat& operator=(signed char rhs) { return convert_signed_integer(rhs); }
@@ -501,7 +501,7 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<mbits, BlockTripleOperator::MUL, bt> a, b, product;
+		blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
@@ -1650,7 +1650,7 @@ public:
 	// normalize a cfloat to a blocktriple used in mul, which has the form 0'00001.fffff
 	// that is 2*fbits, plus 1 overflow bit, and the radix set at <fbits>.
 	// the result radix will go to 2*fbits after multiplication.
-	constexpr void normalizeMultiplication(blocktriple<mbits, BlockTripleOperator::MUL, bt>& tgt) const {
+	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();

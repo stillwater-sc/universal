@@ -37,8 +37,8 @@ try {
 	{
 		using bt = uint8_t;
 		using Real = cfloat<8, 3, bt>;
-		constexpr Real a(1.0f);
-		Real b(-1.0f);
+		CONSTEXPRESSION Real a(1.0f + 0.5f + 0.25f + 0.125f + 0.0625f);
+		Real b(-1.0f - 0.5f - 0.25f - 0.125f - 0.0625f);
 		constexpr size_t fbits = Real::fbits;
 		constexpr size_t abits = Real::abits;
 		constexpr size_t mbits = Real::mbits;
@@ -74,7 +74,7 @@ try {
 			std::cout << "result of multiplication : " << color_print(c) << '\n';
 
 			// emulate multiplication
-			blocktriple<mbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
+			blocktriple<fbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
 			a.normalizeMultiplication(_a);
 			b.normalizeMultiplication(_b);
 			_c.mul(_a, _b);

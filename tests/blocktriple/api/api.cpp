@@ -66,9 +66,13 @@
 
  The input step is a normalization from number system to a triple.
  A triple is (sign, scale, significant).
- The blocktriple uses a 2's complement encoded significant, that is,
- the fraction bits including the hidden bit, and additionally extended
- for the specific use case, such as inputs to ALUs or Special Function Units (SFU).
+ The blocktriple uses a 2's complement encoded significant for addition and subtraction.
+ The format is bit-extended so that it can capture the largest value,
+ which leads to the format: 00h.ff...ff. We need to two extra positions
+ to capture a negative overflow.
+
+ For multiplication, the blocktriple is encoded as a signed magnitude number
+ and the radix adapts after the multiply.
 
  TODO: is there an optimization that can be applied that makes this
  even faster? What about moves? Need to ping Peter Gottschling.
@@ -85,16 +89,16 @@ void TestConversionRounding(Real f = 511.5f)
 	using namespace std;
 	using namespace sw::universal;
 	cout << "\n " << typeid(Real).name() << " conversion use case and result\n";
-	cout << to_binary(f, true) << '\n';
-	CONSTEXPRESSION blocktriple<6> a = f;
+	cout << to_binary(f, true) << " : " << f << '\n';
+	CONSTEXPRESSION blocktriple<6, BlockTripleOperator::ADD, uint8_t> a = f;
 	cout << to_triple(a) << " : " << a << '\n';
-	CONSTEXPRESSION blocktriple<7> b = f;
+	CONSTEXPRESSION blocktriple<7, BlockTripleOperator::ADD, uint8_t> b = f;
 	cout << to_triple(b) << " : " << b << '\n';
-	CONSTEXPRESSION blocktriple<8> c = f;
+	CONSTEXPRESSION blocktriple<8, BlockTripleOperator::ADD, uint8_t> c = f;
 	cout << to_triple(c) << " : " << c << '\n';
-	CONSTEXPRESSION blocktriple<9> d = f;
+	CONSTEXPRESSION blocktriple<9, BlockTripleOperator::ADD, uint8_t> d = f;
 	cout << to_triple(d) << " : " << d << '\n';
-	CONSTEXPRESSION blocktriple<10> e = f;
+	CONSTEXPRESSION blocktriple<10, BlockTripleOperator::ADD, uint8_t> e = f;
 	cout << to_triple(e) << " : " << e << '\n';
 }
 

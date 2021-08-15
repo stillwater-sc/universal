@@ -97,10 +97,10 @@ public:
 				(op == BlockTripleOperator::DIV ? divbits :
 					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits))));  // REPRESENTATION is the fall through condition
 	static constexpr int radix =
-		(op == BlockTripleOperator::ADD ? fbits :
-			(op == BlockTripleOperator::MUL ? fbits :
-				(op == BlockTripleOperator::DIV ? fbits :
-					(op == BlockTripleOperator::SQRT ? sqrtbits : fbits))));  // REPRESENTATION is the fall through condition
+		(op == BlockTripleOperator::ADD ? static_cast<int>(fbits) :
+			(op == BlockTripleOperator::MUL ? static_cast<int>(fbits) :
+				(op == BlockTripleOperator::DIV ? static_cast<int>(fbits) :
+					(op == BlockTripleOperator::SQRT ? static_cast<int>(sqrtbits) : static_cast<int>(fbits)))));  // REPRESENTATION is the fall through condition
 
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
@@ -120,9 +120,7 @@ public:
 
 	constexpr blocktriple() noexcept : 
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
-		_sign{ false }, _scale{ 0 } {} // _significant uses default constructor
-//		_significant.setradix(radix);
-//	}
+		_sign{ false }, _scale{ 0 } {} // _significant uses default constructor and static constexpr radix computation
 
 	// decorated constructors
 	constexpr blocktriple(signed char iv)        noexcept { *this = iv; }
@@ -262,7 +260,8 @@ public:
 		if (lhs.isneg()) lhs._significant.twosComplement();
 		if (rhs.isneg()) rhs._significant.twosComplement();
 
-		_significant.add(lhs._significant, rhs._significant);
+		_significant.add(lhs._significant, rhs._significant);  // do the bit arithmetic manipulation
+		_significant.setradix(radix);                          // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_add) {
 			std::cout << "blockfraction unrounded add\n";
@@ -323,7 +322,8 @@ public:
 		int scale_of_result = lhs_scale + rhs_scale;
 
 		// avoid copy by directly manipulating the fraction bits of the arguments
-		_significant.mul(lhs._significant, rhs._significant);
+		_significant.mul(lhs._significant, rhs._significant);  // do the bit arithmetic manipulation
+		_significant.setradix(2*fbits);                          // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_mul) {
 			std::cout << "blockfraction unrounded mul\n";
@@ -344,7 +344,7 @@ public:
 				_significant >>= 2; // TODO: do we need to round on bits shifted away?
 			}
 			else if (_significant.test(bfbits - 2)) { // check for the hidden bit
-				_significant >>= 1;
+//				_significant >>= 1;
 			}
 			else {
 				// found a denormalized form, thus need to normalize: find MSB
