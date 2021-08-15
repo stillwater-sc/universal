@@ -29,7 +29,6 @@ try {
 
 	std::string tag = "blockfraction storage class construction/conversion testing";
 
-#ifdef DEPRECATED
 	// we have deprecated the blockfraction copy constructor to catch any
 	// unsuspecting conversion copies in blockfraction use-cases
 	{
@@ -42,16 +41,14 @@ try {
 		size_t msbMask = (1 << fbits);
 		size_t frac = msbMask;
 		blockfraction<fhbits, uint8_t> a;
+		a.setradix(fhbits - 3);
 		for (size_t i = 0; i < fbits; ++i) {
-			a.setBits(frac);
-			blockfraction<sumbits, uint8_t> b(a);   // blockfraction copies map MSB -> MSB
-			cout << to_binary(a, true) << '\n';
-			cout << to_binary(b, true) << '\n';
+			a.setbits(frac);
+			cout << to_binary(a, true) << " : " << a << '\n';
 			msbMask >>= 1;
 			frac |= msbMask;
 		}
 	}
-#endif 
 
 }
 catch (char const* msg) {
