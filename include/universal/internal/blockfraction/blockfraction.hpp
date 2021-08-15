@@ -624,9 +624,8 @@ protected:
 	// none
 
 public:
-	// fraction bits managed in blocks, radix point is always at nbits - 3
-	bt _block[nrBlocks];
 	int radixPoint;
+	bt _block[nrBlocks];
 
 private:
 	//////////////////////////////////////////////////////////////////////////////

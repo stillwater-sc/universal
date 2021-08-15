@@ -30,31 +30,41 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 	return s.str();
 }
 
+// print subnormals of the cfloat configuration
 template<typename cfloatConfiguration>
 void subnormals() {
 	constexpr size_t nbits = cfloatConfiguration::nbits;
 	constexpr size_t es = cfloatConfiguration::es;
 	constexpr size_t fbits = cfloatConfiguration::fbits;
 	using bt = typename cfloatConfiguration::BlockType;
-	cfloat<nbits, es, bt> a{ 0 };
-	std::cout << type_tag(a) << '\n';
+	constexpr bool hasSubnormals = cfloatConfiguration::hasSubnormals;
+	constexpr bool hasSupernormals = cfloatConfiguration::hasSupernormals;
+	constexpr bool isSaturating = cfloatConfiguration::isSaturating;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
+
 	++a;
-	if constexpr (nbits < 65) {
-		for (size_t i = 0; i < fbits; ++i) {
-			std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
-			uint64_t fraction = a.fraction_ull();
-			fraction <<= 1;
-			a.setfraction(fraction);
+	if constexpr (hasSubnormals) {
+		std::cout << type_tag(a) << " subnormals\n";
+		if constexpr (nbits < 65) {
+			for (size_t i = 0; i < fbits; ++i) {
+				std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
+				uint64_t fraction = a.fraction_ull();
+				fraction <<= 1;
+				a.setfraction(fraction);
+			}
+		}
+		else {
+			blockbinary<fbits, bt> fraction{ 0 };
+			for (size_t i = 0; i < fbits; ++i) {
+				std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
+				a.fraction(fraction);
+				fraction <<= 1;
+				a.setfraction(fraction);
+			}
 		}
 	}
 	else {
-		blockbinary<fbits, bt> fraction{ 0 };
-		for (size_t i = 0; i < fbits; ++i) {
-			std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
-			a.fraction(fraction);
-			fraction <<= 1;
-			a.setfraction(fraction);
-		}
+		std::cout << type_tag(a) << " has no subnormals\n";
 	}
 }
 
@@ -118,9 +128,9 @@ inline std::string to_hex(const cfloat<nbits, es, bt>& v) {
 
 // generate a cfloat format ASCII hex format nbits.esxNN...NNa
 template<size_t nbits, size_t es, typename bt>
-inline std::string hex_print(const cfloat<nbits, es, bt>& r) {
+inline std::string hex_print(const cfloat<nbits, es, bt>& c) {
 	std::stringstream s;
-	s << nbits << '.' << es << 'x' << to_hex(r) << 'r';
+	s << nbits << '.' << es << 'x' << to_hex(c) << 'c';
 	return s.str();
 }
 

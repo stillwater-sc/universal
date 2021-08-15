@@ -25,18 +25,27 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = true;
+	// case when the cfloat doesn't have subnormals
+	subnormals<cfloat<8, 2, uint8_t, !hasSubnormals, hasSupernormals, !isSaturating>>();  // 1 block
 
-	subnormals<cfloat<8, 2, uint8_t>>();  // 1 block
-	subnormals<cfloat<16, 5, uint8_t>>(); // 2 blocks
-	subnormals<cfloat<32, 8, uint8_t>>(); // 4 blocks
-	subnormals<cfloat<48, 11, uint16_t>>(); // 3 blocks
-	subnormals<cfloat<64, 11, uint16_t>>(); // 4 blocks
-	subnormals<cfloat<80, 11, uint16_t>>(); // 5 blocks
+	// configurations with subnormals
+	subnormals<cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>>();  // 1 block
+	subnormals<cfloat<16, 5, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 2 blocks
+	subnormals<cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 4 blocks
+	subnormals<cfloat<48, 11, uint16_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 3 blocks
+	subnormals<cfloat<64, 11, uint16_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 4 blocks
+	subnormals<cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 5 blocks
+	subnormals<cfloat<96, 11, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 3 blocks
+	subnormals<cfloat<112, 11, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 3 blocks
+	subnormals<cfloat<128, 11, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 4 blocks
 
 	nrOfFailedTestCases = 0;
 
 #else
-	cout << "Arbitrary Real addition validation" << endl;
+	cout << "subnormal validation" << endl;
 
 	bool bReportIndividualTestCases = false;
 	std::string tag = "float subnormal conversion failed: ";

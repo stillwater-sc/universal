@@ -33,10 +33,11 @@ try {
 
 #if MANUAL_TESTING
 
+	// 
 	{
 		using bt = uint8_t;
 		using Real = cfloat<8, 3, bt>;
-		Real a(1.0f);
+		constexpr Real a(1.0f);
 		Real b(-1.0f);
 		constexpr size_t fbits = Real::fbits;
 		constexpr size_t abits = Real::abits;
@@ -47,8 +48,9 @@ try {
 			blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt> _a, _b;
 			a.normalize(_a);
 			b.normalize(_b);
-			std::cout << to_binary(a) << " : " << to_triple(_a) << std::endl;
-			std::cout << to_binary(b) << " : " << to_triple(_b) << std::endl;
+			std::cout << to_binary(a) << " : " << to_triple(_a) << '\n';
+			std::cout << to_binary(b) << " : " << to_triple(_b) << '\n';
+			std::cout << hex_print(a) << '\n';
 			std::cout << "========  end of representation  =========\n\n";
 		}
 

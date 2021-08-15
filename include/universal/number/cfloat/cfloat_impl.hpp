@@ -186,7 +186,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 				bool guard = fracbits & mask;
 				mask >>= 1;
 				bool round = fracbits & mask;
-				mask = 0xFFFF'FFFF'FFFF'FFFF << (shift - 2);
+				if constexpr (shift < 2) {
+					mask = 0xFFFF'FFFF'FFFF'FFFFull;
+				}
+				else {
+					mask = 0xFFFF'FFFF'FFFF'FFFFull << (shift - 2);
+				}
 				mask = ~mask;
 //				std::cout << to_binary(fracbits) << std::endl;
 //				std::cout << to_binary(mask) << std::endl;
