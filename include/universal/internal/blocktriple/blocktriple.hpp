@@ -96,6 +96,11 @@ public:
 			(op == BlockTripleOperator::MUL ? mbits :
 				(op == BlockTripleOperator::DIV ? divbits :
 					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits))));  // REPRESENTATION is the fall through condition
+	static constexpr int radix =
+		(op == BlockTripleOperator::ADD ? fbits :
+			(op == BlockTripleOperator::MUL ? fbits :
+				(op == BlockTripleOperator::DIV ? fbits :
+					(op == BlockTripleOperator::SQRT ? sqrtbits : fbits))));  // REPRESENTATION is the fall through condition
 
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
@@ -116,6 +121,8 @@ public:
 	constexpr blocktriple() noexcept : 
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
 		_sign{ false }, _scale{ 0 } {} // _significant uses default constructor
+//		_significant.setradix(radix);
+//	}
 
 	// decorated constructors
 	constexpr blocktriple(signed char iv)        noexcept { *this = iv; }
@@ -196,10 +203,11 @@ public:
 	/// <summary>
 	/// set the bits of the significant, given raw fraction bits. only works for bfbits < 64
 	/// </summary>
-	/// <param name="raw">fraction bits</param>
+	/// <param name="raw">raw bit pattern representing the fraction bits</param>
 	/// <returns></returns>
 	constexpr void setbits(uint64_t raw) noexcept {
 		// do not clear the nan/inf/zero booleans: caller must manage
+		_significant.setradix(radix);
 		_significant.setbits(raw);
 	}
 	constexpr void setblock(size_t i, const bt& block) {
@@ -354,10 +362,58 @@ public:
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
 			std::cout << typeid(*this).name() << '\n';
-			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
+			std::cout << "mul : " << to_binary(*this) << " : " << *this << '\n';
 		}
 	}
 
+	void div(blocktriple& lhs, blocktriple& rhs) {
+		int lhs_scale = lhs.scale();
+		int rhs_scale = rhs.scale();
+		int scale_of_result = lhs_scale + rhs_scale;
+
+		// avoid copy by directly manipulating the fraction bits of the arguments
+		_significant.mul(lhs._significant, rhs._significant);
+
+		if constexpr (_trace_btriple_div) {
+			std::cout << "blockfraction unrounded div\n";
+			std::cout << typeid(lhs._significant).name() << '\n';
+			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(_significant).name() << '\n';
+			std::cout << "div significant : " << to_binary(*this) << " : " << *this << '\n';  // <-- the scale of this representation is not yet set
+		}
+		if (_significant.iszero()) {
+			clear();
+		}
+		else {
+			_zero = false;
+			_scale = scale_of_result;
+			if (_significant.test(bfbits - 1)) { // test for carry
+				_scale += 1;
+				_significant >>= 2; // TODO: do we need to round on bits shifted away?
+			}
+			else if (_significant.test(bfbits - 2)) { // check for the hidden bit
+				_significant >>= 1;
+			}
+			else {
+				// found a denormalized form, thus need to normalize: find MSB
+				int msb = _significant.msb(); // zero case has been taken care off above
+//				std::cout << "div : " << to_binary(*this) << std::endl;
+//				std::cout << "msb : " << msb << std::endl;
+				int leftShift = static_cast<int>(bfbits) - 3 - msb;
+				_significant <<= leftShift;
+				_scale -= leftShift;
+			}
+		}
+		if constexpr (_trace_btriple_div) {
+			std::cout << "blocktriple normalized div\n";
+			std::cout << typeid(lhs).name() << '\n';
+			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(*this).name() << '\n';
+			std::cout << "div : " << to_binary(*this) << " : " << *this << '\n';
+		}
+	}
 
 private:
 	// special cases to keep track of
@@ -466,6 +522,23 @@ private:
 		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
 		raw <<= shift;
 		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
+		switch (op) {
+		case BlockTripleOperator::ADD:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::MUL:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::DIV:
+			_significant.setradix(3 * fbits);
+			break;
+		case BlockTripleOperator::SQRT:
+			_significant.setradix(2 * fbits);
+			break;
+		case BlockTripleOperator::REPRESENTATION:
+			_significant.setradix(fbits);
+			break;
+		}
 		_significant.setbits(rounded_bits);
 		return *this;
 	}
@@ -483,6 +556,23 @@ private:
 		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
 		raw <<= shift;
 		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
+		switch (op) {
+		case BlockTripleOperator::ADD:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::MUL:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::DIV:
+			_significant.setradix(3*fbits);
+			break;
+		case BlockTripleOperator::SQRT:
+			_significant.setradix(2*fbits);
+			break;
+		case BlockTripleOperator::REPRESENTATION:
+			_significant.setradix(fbits);
+			break;
+		}
 		_significant.setbits(rounded_bits);
 		return *this;
 	}
@@ -546,6 +636,23 @@ private:
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 127;
 		uint32_t rounded_bits = round<24, uint32_t>(raw);
+		switch (op) {
+		case BlockTripleOperator::ADD:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::MUL:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::DIV:
+			_significant.setradix(3 * fbits);
+			break;
+		case BlockTripleOperator::SQRT:
+			_significant.setradix(2 * fbits);
+			break;
+		case BlockTripleOperator::REPRESENTATION:
+			_significant.setradix(fbits);
+			break;
+		}
 		_significant.setbits(rounded_bits);
 		return *this;
 	}
@@ -607,6 +714,23 @@ private:
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 1023;
 		uint64_t rounded_bits = round<53, uint64_t>(raw); // round manipulates _scale if needed
+		switch (op) {
+		case BlockTripleOperator::ADD:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::MUL:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::DIV:
+			_significant.setradix(3 * fbits);
+			break;
+		case BlockTripleOperator::SQRT:
+			_significant.setradix(2 * fbits);
+			break;
+		case BlockTripleOperator::REPRESENTATION:
+			_significant.setradix(fbits);
+			break;
+		}
 		_significant.setbits(rounded_bits);
 		return *this;
 	}

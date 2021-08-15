@@ -66,7 +66,6 @@ try {
 		cout << to_binary(a) << " : " << a << '\n';
 		cout << to_binary(b) << " : " << b << '\n';
 		c.add(a, b);
-		// this moves the radix
 		cout << to_binary(c) << " : " << c << endl;
 		uint64_t fractionBits = c.fraction_ull();
 		cout << to_binary(fractionBits, 9) << endl;

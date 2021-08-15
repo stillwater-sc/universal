@@ -54,9 +54,10 @@ What is the required API of blockfraction to support that semantic?
 
 
 /// <summary>
-/// a block-based floating-point fraction in 2's complement of the form  ###.ff---ff
-/// for add/sub, expanded to ###.ff---ffaaa
-/// for mul, expanded to ###.ff--ffff--ff
+/// a block-based floating-point fraction 
+/// for add/sub  in 2's complement of the form  ##h.fffff
+/// for mul      in sign-magnitude form expanded to 0'00001.fffff
+/// for div      in sign-magnitude form expanded to 00000'00001'fffff
 /// 
 /// NOTE: don't set a default blocktype as this makes the integration more brittle
 /// as blocktriple uses the blockfraction as storage class and needs to interact
@@ -69,7 +70,6 @@ class blockfraction {
 public:
 	typedef bt BlockType;
 	static constexpr size_t nbits = _nbits;
-	static constexpr size_t rbit = nbits - 3;  // default rbit
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
@@ -85,8 +85,8 @@ public:
 	static constexpr bt OVERFLOW_BIT = ~(MSU_MASK >> 1) & MSU_MASK;
 
 	// constructors
-	constexpr blockfraction() noexcept : _block{ 0 } {}
-	constexpr blockfraction(uint64_t raw) noexcept : _block{ 0 } {
+	constexpr blockfraction() noexcept : radixPoint{ nbits }, _block { 0 } {}
+	constexpr blockfraction(uint64_t raw, int radixPoint) noexcept : radixPoint{ radixPoint }, _block { 0 } {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = static_cast<bt>(storageMask & raw);;
 		}
@@ -134,7 +134,6 @@ public:
 	// blockfraction cannot have decorated constructors or assignment
 	// as blockfraction does not have all the information to interpret a value
 	// So by design, the class interface does not interact with values
-
 	constexpr blockfraction(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
 
 	constexpr blockfraction& operator=(long long rhs) noexcept {
@@ -371,6 +370,7 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
+	inline constexpr void setradix(int radix) { radixPoint = radix; }
 	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
@@ -386,6 +386,7 @@ public:
 		// when b is out of bounds, fail silently as no-op
 	}
 	inline constexpr void setbits(uint64_t value) noexcept {
+		// radixPoint needs to be set, either using the constructor or the setradix() function
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
 		}
@@ -418,6 +419,7 @@ public:
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
 	}
+	inline constexpr int  radix() const { return radixPoint; }
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
 	inline constexpr bool sign() const { return false; } // dummy to unify the API with other number systems in Universal 
@@ -624,6 +626,7 @@ protected:
 public:
 	// fraction bits managed in blocks, radix point is always at nbits - 3
 	bt _block[nrBlocks];
+	int radixPoint;
 
 private:
 	//////////////////////////////////////////////////////////////////////////////
@@ -658,6 +661,7 @@ template<size_t nbits, typename bt>
 std::string to_binary(const blockfraction<nbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
+#ifdef DEPRECATED
 	int i = nbits - 1;
 	s << (number.at(size_t(i--)) ? '1' : '0'); // sign indicator of 2's complement
 	s << (number.at(size_t(i--)) ? '1' : '0'); // overflow indicator to trigger right shift
@@ -666,6 +670,16 @@ std::string to_binary(const blockfraction<nbits, bt>& number, bool nibbleMarker 
 	for (; i >= 0; --i) {
 		s << (number.at(size_t(i)) ? '1' : '0');
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+#endif
+	for (int i = nbits - 1; i >= 0; --i) {
+		s << (number.at(size_t(i)) ? '1' : '0');
+		if (i == number.radix()) {
+			s << '.';
+		}
+		else {
+			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+		}
 	}
 	return s.str();
 }

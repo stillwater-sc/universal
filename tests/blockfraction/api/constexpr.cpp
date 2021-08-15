@@ -22,10 +22,11 @@ try {
 
 	std::string tag = "blockfraction storage class constexpr compile-time testing";
 
+#ifdef NO_PROGRAMMABLE_RADIX
 	{
 		constexpr blockfraction<8, uint8_t> b8_1w{ 0x21 };
-		constexpr blockfraction<8, uint16_t> b8_2b(0x21);
-		constexpr blockfraction<8, uint32_t> b8_4b(0x21);
+		constexpr blockfraction<8, uint16_t> b8_2b{ 0x21 };;
+		constexpr blockfraction<8, uint32_t> b8_4b{ 0x21 };;
 		cout << to_binary(b8_1w, true) << " : " << b8_1w << '\n';
 		cout << to_binary(b8_2b, true) << " : " << b8_2b << '\n';
 		cout << to_binary(b8_4b, true) << " : " << b8_4b << '\n';
@@ -67,8 +68,9 @@ try {
 		constexpr blockfraction<32, uint64_t> bf(0xAAAA'AAAA'5AAA'AAAA);
 		std::cout << to_binary(bf) << " : " << bf << '\n';
 	}
-}
+#endif
 
+}
 catch (char const* msg) {
 	std::cerr << msg << '\n';
 	return EXIT_FAILURE;

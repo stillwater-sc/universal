@@ -94,9 +94,12 @@ logic though.
 */
 
 // a block-based 2's complement binary number
-template<size_t nbits, typename bt = uint8_t>
+template<size_t _nbits, typename bt = uint8_t>
 class blockbinary {
 public:
+	static constexpr size_t nbits = _nbits;
+	typedef bt BlockType;
+
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");

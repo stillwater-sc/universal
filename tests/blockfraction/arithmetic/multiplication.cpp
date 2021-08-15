@@ -109,8 +109,9 @@ try {
 	
 	{
 		blockfraction<24, uint32_t> a, b, c, d;
-		a = 0x7FF;  // maxpos
-		b = 0x7FF;  // maxpos
+		// a = 0x7FF;  worked at one point, must have gone through the default assignment: broke when adding radixPoint
+		a.setbits(0x7FFu);  // maxpos
+		b.setbits(0x7FFu);  // maxpos
 //		c = a * b;  // rounded mul
 		d.mul(a, b); // unrounded mul yields
 		cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << endl;

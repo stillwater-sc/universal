@@ -252,7 +252,7 @@ public:
 	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
 	static constexpr size_t abits = 2 * fhbits;            // size of the addend
-	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
+	static constexpr size_t mbits = 2ull * fbits + 1ull;   // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
@@ -496,13 +496,13 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
+		blocktriple<mbits, BlockTripleOperator::MUL, bt> a, b, product;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
-//		normalizeMultiplication(a);
-//		rhs.normalizeMultiplication(b);
-//		product.mul(a, b);
+		normalizeMultiplication(a);
+		rhs.normalizeMultiplication(b);
+		product.mul(a, b);
 
 		convert(product, *this);
 
@@ -1443,12 +1443,12 @@ public:
 	}
 #endif
 
-	// convert a cfloat to a blocktriple with the fraction format 01.ffffeeee
+	// convert a cfloat to a blocktriple with the fraction format 1.ffff
 	// we are using the same block type so that we can use block copies to move bits around.
 	// Since we tend to have at least two exponent bits, this will lead to
 	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
 	// The relationship between the source cfloat and target blocktriple is not
-	// arbitrary, enforce it: blocktriple fbits = cfloat (nbits - es - 1)
+	// arbitrary, enforce it by setting the blocktriple fbits to the cfloat's (nbits - es - 1)
 	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
@@ -1542,7 +1542,12 @@ public:
 		}
 	}
 
-	// normalize a cfloat to a blocktriple used in add/sub
+	// normalize a cfloat to a blocktriple used in add/sub, which has the form 00h.fffff
+	// that is 3 + fbits, the 3 extra bits are required to be able to use 2's complement 
+	// and capture the largest value of an addition/subtraction.
+	// TODO: currently abits = 2*fhbits as the worst case input argument size to
+	// capture the smallest normal value in aligned form. There is a faster/smaller
+	// implementation where the input is constrainted to just the round, guard, and sticky bits.
 	constexpr void normalizeAddition(blocktriple<abits, BlockTripleOperator::ADD, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
@@ -1637,13 +1642,107 @@ public:
 		}
 	}
 
-	// convert a cfloat to a blocktriple with the fraction format 01.ffffeeee
-	// we are using the same block type so that we can use block copies to move bits around.
-	// Since we tend to have at least two exponent bits, this will lead to
-	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
-	// The relationship between the source cfloat and target blocktriple is not
-	// arbitrary, enforce it: blocktriple fbits = cfloat (nbits - es - 1)
-	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
+	// normalize a cfloat to a blocktriple used in mul, which has the form 0'00001.fffff
+	// that is 2*fbits, plus 1 overflow bit, and the radix set at <fbits>.
+	// the result radix will go to 2*fbits after multiplication.
+	constexpr void normalizeMultiplication(blocktriple<mbits, BlockTripleOperator::MUL, bt>& tgt) const {
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal(); // a blocktriple is always normalized
+			int scale = this->scale();
+			tgt.setsign(sign());
+			tgt.setscale(scale);
+			// set significant
+			// we are going to unify to the format 01.ffffeeee
+			// where 'f' is a fraction bit, and 'e' is an extension bit
+			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
+			if (isnormal()) {
+				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
+				}
+			}
+			else { // it is a subnormal encoding in this target cfloat
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scale;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
+				}
+			}
+		}
+	}
+
+	// normalize a cfloat to a blocktriple used in div, which has the form 0'00000'00001.fffff
+	// that is 3*fbits, plus 1 overflow bit, and the radix set at <fbits>.
+	// the result radix will go to 2*fbits after multiplication.
+	// TODO: needs implementation
+	constexpr void normalizeDivision(blocktriple<divbits, BlockTripleOperator::DIV, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
