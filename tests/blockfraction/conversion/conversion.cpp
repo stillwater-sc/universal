@@ -36,8 +36,8 @@ try {
 		// is used as storage type for the significant using a very specific format 00h.ffff
 		constexpr size_t fbits   = 8;
 		constexpr size_t fhbits  = fbits + 1;
-		constexpr size_t abits   = fhbits + 3;
-		constexpr size_t sumbits = abits + 1;
+		//constexpr size_t abits   = fhbits + 3;
+		//constexpr size_t sumbits = abits + 1;
 		size_t msbMask = (1 << fbits);
 		size_t frac = msbMask;
 		blockfraction<fhbits, uint8_t, BitEncoding::Twos> a;

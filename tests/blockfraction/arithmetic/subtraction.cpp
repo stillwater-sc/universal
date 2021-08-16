@@ -63,7 +63,7 @@ template<size_t nbits, typename BlockType, sw::universal::BitEncoding encoding>
 void GenerateTestCase(const sw::universal::blockfraction<nbits, BlockType, encoding>& lhs, const sw::universal::blockfraction <nbits, BlockType, encoding>& rhs) {
 	using namespace sw::universal;
 
-	blockfraction<nbits, BlockType> a, b, c;
+	blockfraction<nbits, BlockType, encoding> a, b, c;
 
 	a = lhs;
 	b = rhs;

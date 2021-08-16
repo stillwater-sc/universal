@@ -41,18 +41,18 @@ namespace sw::universal {
 	};
 
 // forward references
-template<size_t nbits, typename bt, BitEncoding code> class blockfraction;
-template<size_t nbits, typename bt, BitEncoding code> constexpr blockfraction<nbits, bt, code> twosComplement(const blockfraction<nbits, bt, code>&);
-template<size_t nbits, typename bt, BitEncoding code> struct bfquorem;
-template<size_t nbits, typename bt, BitEncoding code> bfquorem<nbits, bt, code> longdivision(const blockfraction<nbits, bt, code>&, const blockfraction<nbits, bt, code>&);
+template<size_t nbits, typename bt, BitEncoding encoding> class blockfraction;
+template<size_t nbits, typename bt, BitEncoding encoding> constexpr blockfraction<nbits, bt, encoding> twosComplement(const blockfraction<nbits, bt, encoding>&);
+template<size_t nbits, typename bt, BitEncoding encoding> struct bfquorem;
+template<size_t nbits, typename bt, BitEncoding encoding> bfquorem<nbits, bt, encoding> longdivision(const blockfraction<nbits, bt, encoding>&, const blockfraction<nbits, bt, encoding>&);
 
 // idiv_t for blockfraction<nbits> to capture quotient and remainder during long division
-template<size_t nbits, typename bt, BitEncoding code>
+template<size_t nbits, typename bt, BitEncoding encoding>
 struct bfquorem {
 	bfquorem() {} // default constructors
 	int exceptionId;
-	blockfraction<nbits, bt, code> quo; // quotient
-	blockfraction<nbits, bt, code> rem; // remainder
+	blockfraction<nbits, bt, encoding> quo; // quotient
+	blockfraction<nbits, bt, encoding> rem; // remainder
 };
 
 /*
@@ -96,12 +96,12 @@ What is the required API of blockfraction to support that semantic?
 /// simplifies the copying of exponent and fraction bits from and to the client.
 /// </summary>
 /// <typeparam name="bt"></typeparam>
-template<size_t _nbits, typename bt, BitEncoding code>
+template<size_t _nbits, typename bt, BitEncoding _encoding>
 class blockfraction {
 public:
 	typedef bt BlockType;
 	static constexpr size_t nbits = _nbits;
-	static constexpr BitEncoding encoding = code;
+	static constexpr BitEncoding encoding = _encoding;
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
@@ -230,8 +230,8 @@ public:
 		add(lhs, rhs.twosComplement());
 	}
 	void mul(const blockfraction& lhs, const blockfraction& rhs) {
-		blockfraction<nbits, bt, code> base(lhs);
-		blockfraction<nbits, bt, code> multiplicant(rhs);
+		blockfraction<nbits, bt, encoding> base(lhs);
+		blockfraction<nbits, bt, encoding> multiplicant(rhs);
 		clear();
 		for (size_t i = 0; i < nbits; ++i) {
 			if (base.at(i)) {
@@ -243,14 +243,14 @@ public:
 		// we don't need to null here
 	}
 	void div(const blockfraction& lhs, const blockfraction& rhs) {
-		bfquorem<nbits, bt, code> result = longdivision(*this, rhs);
+		bfquorem<nbits, bt, encoding> result = longdivision(*this, rhs);
 		*this = result.quo;
 	}
 
 #ifdef FRACTION_REMAINDER
 	// remainder operator
 	blockfraction& operator%=(const blockfraction& rhs) {
-		bfquorem<nbits, bt, code> result = longdivision(*this, rhs);
+		bfquorem<nbits, bt, encoding> result = longdivision(*this, rhs);
 		*this = result.rem;
 		return *this;
 	}
@@ -423,9 +423,15 @@ public:
 			_block[0] = value & storageMask;
 		}
 		else if constexpr (1 < nrBlocks) {
-			for (size_t i = 0; i < nrBlocks; ++i) {
-				_block[i] = value & storageMask;
-				value >>= bitsInBlock;
+			if constexpr (bitsInBlock == 64) {
+				// just set the highest bits with the value provided
+				_block[MSU] = value;
+			}
+			else {
+				for (size_t i = 0; i < nrBlocks; ++i) {
+					_block[i] = value & storageMask;
+					value >>= bitsInBlock;
+				}
 			}
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
@@ -439,7 +445,7 @@ public:
 	}
 	// in-place 2's complement
 	inline constexpr blockfraction& twosComplement() noexcept {
-		blockfraction<nbits, bt, code> plusOne;
+		blockfraction<nbits, bt, encoding> plusOne;
 		plusOne.setbit(0);
 		flip();
 		add(*this, plusOne);
@@ -481,41 +487,47 @@ public:
 	}
 	inline constexpr uint64_t fraction_ull() const noexcept {
 		uint64_t raw{ 0 };
-		if constexpr (1 == nrBlocks) {
-			raw = _block[MSU];
-			raw &= MSU_MASK;
-		}
-		else if constexpr (2 == nrBlocks) {
-			raw = _block[MSU];
-			raw &= MSU_MASK;
-			raw <<= bitsInBlock;
-			raw |= _block[0];
-		}
-		else if constexpr (3 == nrBlocks) {
-			raw = _block[MSU];
-			raw &= MSU_MASK;
-			raw <<= bitsInBlock;
-			raw |= _block[1];
-			raw <<= bitsInBlock;
-			raw |= _block[0];
-		}
-		else if constexpr (4 == nrBlocks) {
-			raw = _block[MSU];
-			raw &= MSU_MASK;
-			raw <<= bitsInBlock;
-			raw |= _block[2];
-			raw <<= bitsInBlock;
-			raw |= _block[1];
-			raw <<= bitsInBlock;
-			raw |= _block[0];
-		}
-		else {
-			raw = _block[MSU];
-			raw &= MSU_MASK;
-			for (int i = MSU - 1; i >= 0; --i) {
-				raw <<= bitsInBlock;
-				raw |= _block[i];
+		if constexpr (bitsInBlock < 64) {
+			if constexpr (1 == nrBlocks) {
+				raw = _block[MSU];
+				raw &= MSU_MASK;
 			}
+			else if constexpr (2 == nrBlocks) {
+				raw = _block[MSU];
+				raw &= MSU_MASK;
+				raw <<= bitsInBlock;
+				raw |= _block[0];
+			}
+			else if constexpr (3 == nrBlocks) {
+				raw = _block[MSU];
+				raw &= MSU_MASK;
+				raw <<= bitsInBlock;
+				raw |= _block[1];
+				raw <<= bitsInBlock;
+				raw |= _block[0];
+			}
+			else if constexpr (4 == nrBlocks) {
+				raw = _block[MSU];
+				raw &= MSU_MASK;
+				raw <<= bitsInBlock;
+				raw |= _block[2];
+				raw <<= bitsInBlock;
+				raw |= _block[1];
+				raw <<= bitsInBlock;
+				raw |= _block[0];
+			}
+			else {
+				raw = _block[MSU];
+				raw &= MSU_MASK;
+				for (int i = MSU - 1; i >= 0; --i) {
+					raw <<= bitsInBlock;
+					raw |= _block[i];
+				}
+			}
+		}
+		else { // take top 64bits and ignore the reset
+			raw = _block[MSU];
+			raw &= MSU_MASK;
 		}
 		// remove the non-fraction bits
 		raw &= fmask;
@@ -757,9 +769,9 @@ inline bool operator<(const blockfraction<N, B, C>& lhs, const blockfraction<N, 
 	if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
 	if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
 	if (lhs == rhs) return false; // so the maxneg logic works
-	blockfraction<N, B> mneg; maxneg<N, B>(mneg);
+	blockfraction<N, B, C> mneg; maxneg<N, B>(mneg);
 	if (rhs == mneg) return false; // special case: nothing is smaller than maximum negative
-	blockfraction<N, B> diff = lhs - rhs;
+	blockfraction<N, B, C> diff = lhs - rhs;
 	return diff.isneg();
 }
 template<size_t N, typename B, BitEncoding C>
@@ -780,12 +792,12 @@ inline bool operator>=(const blockfraction<N, B, C>& lhs, const blockfraction<N,
 
 template<size_t nbits, typename bt, BitEncoding encoding>
 inline blockfraction<nbits, bt, encoding> operator<<(const blockfraction<nbits, bt, encoding>& a, const long b) {
-	blockfraction<nbits, bt> c(a);
+	blockfraction<nbits, bt, encoding> c(a);
 	return c <<= b;
 }
 template<size_t nbits, typename bt, BitEncoding encoding>
 inline blockfraction<nbits, bt, encoding> operator>>(const blockfraction<nbits, bt, encoding>& a, const long b) {
-	blockfraction<nbits, bt> c(a);
+	blockfraction<nbits, bt, encoding> c(a);
 	return c >>= b;
 }
 
@@ -842,7 +854,7 @@ bfquorem<nbits, bt, encoding> longdivision(const blockfraction<nbits, bt, encodi
 	else {
 		result.rem = accumulator;
 	}
-#endif;
+#endif
 	return result;
 }
 
@@ -852,8 +864,8 @@ bfquorem<nbits, bt, encoding> longdivision(const blockfraction<nbits, bt, encodi
 
 #define TRACE_DIV 0
 // unrounded division, returns a blockfraction that is of size 2*nbits
-template<size_t nbits, size_t roundingBits, typename bt, BitEncoding code>
-inline blockfraction<2 * nbits + roundingBits, bt, code> urdiv(const blockfraction<nbits, bt, code>& a, const blockfraction<nbits, bt, code>& b, blockfraction<roundingBits, bt, code>& r) {
+template<size_t nbits, size_t roundingBits, typename bt, BitEncoding encoding>
+inline blockfraction<2 * nbits + roundingBits, bt, encoding> urdiv(const blockfraction<nbits, bt, encoding>& a, const blockfraction<nbits, bt, encoding>& b, blockfraction<roundingBits, bt, encoding>& r) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";
@@ -865,15 +877,15 @@ inline blockfraction<2 * nbits + roundingBits, bt, code> urdiv(const blockfracti
 	bool result_negative = (a_sign ^ b_sign);
 
 	// normalize both arguments to positive in new size
-	blockfraction<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
-	blockfraction<nbits + 1, bt> b_new(b);
+	blockfraction<nbits + 1, bt, encoding> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blockfraction<nbits + 1, bt, encoding> b_new(b);
 	if (a_sign) a_new.twoscomplement();
 	if (b_sign) b_new.twoscomplement();
 
 	// initialize the long division
-	blockfraction<2 * nbits + roundingBits, bt> decimator(a_new);
-	blockfraction<2 * nbits + roundingBits, bt> subtractand(b_new); // prepare the subtractand
-	blockfraction<2 * nbits + roundingBits, bt> result;
+	blockfraction<2 * nbits + roundingBits, bt, encoding> decimator(a_new);
+	blockfraction<2 * nbits + roundingBits, bt, encoding> subtractand(b_new); // prepare the subtractand
+	blockfraction<2 * nbits + roundingBits, bt, encoding> result;
 
 	int msp = nbits + roundingBits - 1; // msp = most significant position
 	decimator <<= msp; // scale the decimator to the largest possible positive value
@@ -906,15 +918,15 @@ inline blockfraction<2 * nbits + roundingBits, bt, code> urdiv(const blockfracti
 #endif
 	}
 	result <<= scale;
-	if (result_negative) result.twoscomplement();
+	if (result_negative) result.twosComplement();
 	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
 }
 
 // free function generator of the 2's complement of a blockfraction
-template<size_t nbits, typename bt, BitEncoding code>
-inline constexpr blockfraction<nbits, bt, code> twosComplement(const blockfraction<nbits, bt, code>& a) {
-	blockfraction<nbits, bt> b(a);
+template<size_t nbits, typename bt, BitEncoding encoding>
+inline constexpr blockfraction<nbits, bt, encoding> twosComplement(const blockfraction<nbits, bt, encoding>& a) {
+	blockfraction<nbits, bt, encoding> b(a);
 	return b.twosComplement();
 }
 

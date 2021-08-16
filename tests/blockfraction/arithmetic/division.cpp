@@ -71,13 +71,13 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
-template<size_t nbits, typename BlockType = uint8_t>
+template<size_t nbits, typename BlockType, sw::universal::BitEncoding encoding>
 void TestMostSignificantBit() {
 	using namespace std;
 	using namespace sw::universal;
-	blockfraction<nbits, BlockType> a;
+	blockfraction<nbits, BlockType, encoding> a;
 	cout << to_binary(a) << ' ' << a.msb() << endl;
-	a = 1;
+	a.setbits(0x01ull);
 	for (size_t i = 0; i < nbits; ++i) {
 		cout << to_binary(a) << ' ' << a.msb() << endl;
 		a <<= 1;
@@ -101,9 +101,9 @@ try {
 
 #if MANUAL_TESTING
 
-//	TestMostSignificantBit<27, uint8_t>();
-//	TestMostSignificantBit<27, uint16_t>();
-//	TestMostSignificantBit<33, uint32_t>();
+	TestMostSignificantBit<27, uint8_t, BitEncoding::Ones>();
+	TestMostSignificantBit<27, uint16_t, BitEncoding::Twos>();
+	TestMostSignificantBit<33, uint32_t, BitEncoding::Twos>();
 
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockfraction<4>", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockfraction<8>", "division");
