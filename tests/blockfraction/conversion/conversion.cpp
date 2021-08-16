@@ -33,14 +33,14 @@ try {
 	// unsuspecting conversion copies in blockfraction use-cases
 	{
 		// scenario that happens in unrounded add/sub where blockfraction 
-		// is used as storage type for the significant using a very specific format 0h.ffff
+		// is used as storage type for the significant using a very specific format 00h.ffff
 		constexpr size_t fbits   = 8;
 		constexpr size_t fhbits  = fbits + 1;
 		constexpr size_t abits   = fhbits + 3;
 		constexpr size_t sumbits = abits + 1;
 		size_t msbMask = (1 << fbits);
 		size_t frac = msbMask;
-		blockfraction<fhbits, uint8_t> a;
+		blockfraction<fhbits, uint8_t, BitEncoding::Twos> a;
 		a.setradix(fhbits - 3);
 		for (size_t i = 0; i < fbits; ++i) {
 			a.setbits(frac);
@@ -50,6 +50,15 @@ try {
 		}
 	}
 
+	// the radix point is programmable, test value and printing
+	{
+		constexpr size_t nbits = 8;
+		blockfraction<nbits, uint8_t, BitEncoding::Ones> a(0xff, 1);
+		for (size_t radix = 1; radix < nbits; ++radix) {
+			a.setradix(radix);
+			cout << to_binary(a) << " : " << a << '\n';
+		}
+	}
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

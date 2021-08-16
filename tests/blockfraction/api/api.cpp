@@ -31,7 +31,7 @@ try {
 	std::string tag = "blockfraction storage class construction/conversion testing";
 
 	{
-		blockfraction<7, uint8_t> a, b, c;
+		blockfraction<7, uint8_t, BitEncoding::Twos> a, b, c;
 		a.setbits(0x11); // 1.0 in 7-bit blockfraction form
 		b.setbits(0x11);
 		cout << to_binary(a) << " : " << a << '\n';
@@ -47,7 +47,7 @@ try {
 		// a 00h.fffff format is thus 8 bits
 		// By design, the 00h.fffff format contains all the valid values
 		// for addition and subtraction.
-		blockfraction<8, uint8_t> a, b, c;
+		blockfraction<8, uint8_t, BitEncoding::Twos> a, b, c;
 		a.setbits(0x21); // 1.0 in 8-bit blockfraction form
 		b.setbits(0x21);
 		cout << to_binary(a) << " : " << a << '\n';
@@ -59,7 +59,7 @@ try {
 	}
 
 	{
-		blockfraction<12, uint8_t> a, b, c;
+		blockfraction<12, uint8_t, BitEncoding::Twos> a, b, c;
 		a.setbits(0x100);
 		b.setbits(0x200);
 		b.twosComplement();

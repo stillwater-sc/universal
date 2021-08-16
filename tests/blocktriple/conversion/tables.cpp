@@ -28,6 +28,8 @@ namespace sw::universal {
 		constexpr size_t nbits = TestType::nbits;  // nbits of a blocktriple represent the number of fraction bits of the representation
 		constexpr size_t bfbits = TestType::bfbits;
 		using bt = typename TestType::BlockType;
+		constexpr sw::universal::BitEncoding encoding = TestType::encoding;
+
 		constexpr size_t NR_VALUES = (1 << nbits);
 		TestType v;
 
@@ -45,7 +47,7 @@ namespace sw::universal {
 				v.setbits(i + NR_VALUES);
 				bool s = v.sign();
 				int scale = v.scale();
-				blockfraction<bfbits, bt> f = v.significant();
+				blockfraction<bfbits, bt, encoding> f = v.significant();
 
 				ostr << i << ','
 					<< to_binary(v) << ','
@@ -85,7 +87,7 @@ namespace sw::universal {
 						if (sign) v.setbits(2 * NR_VALUES - 1 - i); else v.setbits(i + NR_VALUES);  // to have the same progression as posits
 						bool s = v.sign();
 						int scale = v.scale();
-						blockfraction<bfbits, bt> f = v.significant();
+						blockfraction<bfbits, bt, encoding> f = v.significant();
 
 						ostr << std::setw(4) << ++cnt << ": "
 							<< std::setw(bin_column) << to_binary(v)

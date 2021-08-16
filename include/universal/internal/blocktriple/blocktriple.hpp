@@ -101,11 +101,16 @@ public:
 			(op == BlockTripleOperator::MUL ? static_cast<int>(fbits) :
 				(op == BlockTripleOperator::DIV ? static_cast<int>(fbits) :
 					(op == BlockTripleOperator::SQRT ? static_cast<int>(sqrtbits) : static_cast<int>(fbits)))));  // REPRESENTATION is the fall through condition
+	static constexpr BitEncoding encoding =
+		(op == BlockTripleOperator::ADD ? BitEncoding::Twos :
+			(op == BlockTripleOperator::MUL ? BitEncoding::Ones :
+				(op == BlockTripleOperator::DIV ? BitEncoding::Ones :
+					(op == BlockTripleOperator::SQRT ? BitEncoding::Ones : BitEncoding::Ones))));
 
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using intrinsics/assembly code
-	using Frac = sw::universal::blockfraction<bfbits, bt>;
+	using Frac = sw::universal::blockfraction<bfbits, bt, encoding>;
 
 	static constexpr bt ALL_ONES = bt(~0);
 	// generate the special case overflow pattern mask when representation is nbits + 1 < 64
