@@ -591,52 +591,38 @@ public:
 
 	// conversion to native types
 	inline constexpr float to_float() const noexcept {
-		float f{ 0.0f };
-		// nbits in the form 00h.fffff in 2's complement, so check if we are negative and fix that first
-		blockfraction<nbits, bt, encoding> tmp(*this);
-		if (test(nbits - 1)) tmp.twosComplement();
-		// process the value above the radix
-		// after this conditional 2's complement, the bit at nbits - 1 is always going to be zero
-		if (tmp.test(nbits - 2)) f += 2.0f;
-		if (tmp.test(nbits - 3)) f += 1.0f;
-//		in the default pattern of #oh.ffff, the 'o' bit at(nbits - 2) is an overflow bit
-
-		// enumerate from the smallest bit position and add and increment value
-		if constexpr (nbits < 21) { // check if we can represent this value with a native normal float with 23 fraction bits => nbits <= (23 - 3)
-			constexpr size_t radix = nbits - 3;
-			float v = std::pow(2.0f, -float(radix));   // start from the small samples
-			for (size_t fractionBit = 0; fractionBit < radix; ++fractionBit) {
-				if (tmp.test(fractionBit)) f += v;
-				v *= 2.0;
-			}
-		}
-		else {
-			std::cerr << "to_float() will yield inaccurate result since blockfraction has more precision than native IEEE-754 double\n";
-		}
-		return f;
+		return float(to_double());
 	}
 	inline constexpr double to_double() const noexcept {
 		double d{ 0.0 };
-		// nbits in the form 00h.fffff in 2's complement, so check if we are negative and fix that first
 		blockfraction<nbits, bt, encoding> tmp(*this);
-		if (test(nbits - 1)) tmp.twosComplement();
-		// process the value above the radix
-		// after this conditional 2's complement, the bit at nbits - 1 is always going to be zero
-		if (tmp.test(nbits - 2)) d += 2.0;
-		if (tmp.test(nbits - 3)) d += 1.0;
-		//		in the default config of #oh.ffff, the 'o' bit at(nbits - 2) is an overflow bit
+		int bit = static_cast<int>(nbits - 1);
+		int shift = static_cast<int>(nbits - 1 - radixPoint);
 
-		if constexpr (nbits < 50) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 3)
-			constexpr size_t radix = nbits - 3;
-			double v = std::pow(2.0, -double(radix));
-			for (size_t fractionBit = 0; fractionBit < radix; ++fractionBit) {
-				if (tmp.test(fractionBit)) d += v;
-				v *= 2.0;
-			}
+		// special case preprocessing for 2's complement encodings
+		if constexpr (encoding == BitEncoding::Twos) {
+			// nbits in the target form 00h.fffff, check msb and if set take 2's complement
+			if (test(static_cast<size_t>(bit--))) tmp.twosComplement();
+			--shift; // and remove the MSB from the value computation
 		}
-		else {
+
+		// process the value above the radix
+		size_t bitValue = 1ull << shift;
+		for (; bit >= radixPoint; --bit) {
+			if (tmp.test(static_cast<size_t>(bit))) d += static_cast<double>(bitValue);
+			bitValue >>= 1;
+		}
+		// process the value below the radix
+		double v = std::pow(2.0, -double(radixPoint));
+		for (size_t fbit = 0; fbit < static_cast<size_t>(radixPoint); ++fbit) {
+			if (tmp.test(fbit)) d += v;
+			v *= 2.0;
+		}
+
+		if constexpr (nbits > 49) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 3)
 			std::cerr << "to_double() will yield inaccurate result since blockfraction has more precision than native IEEE-754 double\n";
 		}
+
 		return d;
 	}
 	inline constexpr long double to_long_double() const noexcept {
@@ -693,7 +679,7 @@ private:
 // ostream operator
 template<size_t nbits, typename bt, BitEncoding encoding>
 std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt, encoding>& number) {
-	return ostr << to_binary(number);
+	return ostr << double(number);
 }
 
 //////////////////////////////////////////////////////////////////////////////
