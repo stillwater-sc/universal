@@ -207,6 +207,18 @@ public:
 	/// arithmetic operators
 	// none
 
+	void increment() {
+		bool carry = true;
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			// cast up so we can test for overflow
+			uint64_t l = uint64_t(_block[i]);
+			uint64_t s = l + (carry ? uint64_t(1) : uint64_t(0));
+			carry = (s > ALL_ONES);
+			_block[i] = bt(s);
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
+	}
 	/// <summary>
 	/// add two fractions of the form 00h.fffff, that is, radix point at nbits-3
 	/// In this encoding, all valid values are encapsulated

@@ -45,7 +45,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
-#define BLOCKTRIPLE_TRACE_ADD 1
+#define BLOCKTRIPLE_TRACE_ALL
 #include <universal/internal/blocktriple/blocktriple.hpp>
 
 /*
@@ -137,12 +137,34 @@ try {
 
 	{
 		cout << "\nblocktriple add\n";
-		constexpr size_t abits = 7;
-		blocktriple<abits> a, b, c;
+		constexpr size_t fbits = 7;
+		blocktriple<fbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
 		a = 1.03125f;
 		b = -1.03125f;
 		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
 		c.add(a, b);
+		cout << to_triple(c) << " : " << c << '\n';
+	}
+
+	{
+		cout << "\nblocktriple sub\n";
+		constexpr size_t fbits = 7;
+		blocktriple<fbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
+		a = 1.03125f;
+		b = 1.03125f;
+		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		c.sub(a, b);
+		cout << to_triple(c) << " : " << c << '\n';
+	}
+
+	{
+		cout << "\nblocktriple mul\n";
+		constexpr size_t fbits = 8;
+		blocktriple<fbits, BlockTripleOperator::MUL, uint32_t> a, b, c;
+		a = 2.0f;
+		b = -0.5f;
+		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		c.mul(a, b);
 		cout << to_triple(c) << " : " << c << '\n';
 	}
 

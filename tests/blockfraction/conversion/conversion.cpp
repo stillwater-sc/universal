@@ -9,17 +9,31 @@
 #include <universal/internal/blockfraction/blockfraction.hpp>
 
 /*
-A blockfraction is a 2's complement binary encoding with a radix point that is aligned
-with the hidden bit of the fraction encoding in a floating-point representation.
+A blockfraction is a 1's or 2's complement binary encoding with a radix point 
+that is aligned with the hidden bit of the fraction encoding in a 
+floating-point representation. 
+  - multiplication uses a 1's complement encoding.
+  - addition and subtraction use a 2's complement encoding.
+  - division uses a 2's complement encoding.
+  - square root uses a 1's complement encoding.
+
 
 The main goal of the blockfraction abstraction is to support arbitrary floating-point 
 number systems with a high-quality, high-performance arithmetic engine.
 
 The expensive part in these abstractions is the need to receive, expand, and align
-bit strings, so special attention is given to fast implementations using copies.
-This is acceptable, and leads to cleaner code, for small representations. However,
-for very large representations these copies become prohibitive, and for those situations
-the blockfraction is not a good solution.
+bit strings, so special attention must be given to fast implementations.
+Implementations that use copies leads to cleaner code, and is ok for small representations. 
+However, for larger representations these copies become prohibitive, 
+and implementations that do not copy the fraction bits are superior.
+The current blockfraction implementation avoids copies but the block storage
+is assumed to be allocated on the stack. This implies that blockfraction
+is useful for representing fixed-size number systems with good performance
+for sizes up to several thousands of bits. 
+
+For arbitrary and adaptive size number systems, blockfraction is not the
+right abstraction. High-performance arbitrary precision systems use a
+dynamic data structure and a custom memory manager to avoid copies.
 
 */
 int main()

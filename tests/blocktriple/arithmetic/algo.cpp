@@ -14,7 +14,7 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value.hpp>
 #define BLOCKTRIPLE_VERBOSE_OUTPUT 1
-#define BLOCKTRIPLE_TRACE_ADD 1
+#define BLOCKTRIPLE_TRACE_ALL
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 // #include <universal/verification/test_reporters.hpp>
@@ -60,7 +60,7 @@ try {
 
 	// to support the quire (Kulisch superaccumulator):
 	// - operators add/sub/mul need to produce unrounded results
-	// - oprarators div/sqrt are rounded as part of the conversion iteration
+	// - operators div/sqrt are rounded as part of the conversion iteration
 	
 	// for a significant of nbits, the add/sub input size is nbits + 3
 	// The extra 3 bits, are the guard, round, and stick bits that need

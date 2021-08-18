@@ -76,7 +76,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	 * space between 00h.0000'000 and 00h.1111'000.
 	 */
 
-	blocktriple<abits> a, b, c, refResult;
+	blocktriple<abits, BlockTripleOperator::ADD> a, b, c, refResult;
 	constexpr size_t hiddenBit = (size_t(1) << (abits-1));
 	a.setnormal();
 	b.setnormal();

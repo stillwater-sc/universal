@@ -69,13 +69,13 @@ blocktriple<fbits, op, bt>& convert(unsigned long long uint, blocktriple<fbits, 
 /// </summary>
 /// <typeparam name="fractionbits">number of fraction bits in the significant</typeparam>
 /// <typeparam name="bt">block type: one of [uint8_t, uint16_t, uint32_t, uint64_t]</typeparam>
-template<size_t fractionbits, BlockTripleOperator op = BlockTripleOperator::ADD, typename bt = uint32_t>
+template<size_t fractionbits, BlockTripleOperator _op = BlockTripleOperator::ADD, typename bt = uint32_t>
 class blocktriple {
 public:
 	static constexpr size_t nbits = fractionbits;  // a convenience and consistency alias
 	static constexpr size_t fbits = fractionbits;
 	typedef bt BlockType;
-//	typedef op BlockTripleOp;
+	static constexpr BlockTripleOperator op = _op;
 
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
@@ -164,8 +164,9 @@ public:
 	}
 
 	// apply a 2's complement recoding of the fraction bits
-	inline constexpr void twosComplement() noexcept {
+	inline constexpr blocktriple& twosComplement() noexcept {
 		_significant.twosComplement();
+		return *this;
 	}
 
 	// modifiers
@@ -313,6 +314,10 @@ public:
 		}
 	}
 
+	void sub(blocktriple& lhs, blocktriple& rhs) {
+		add(lhs, rhs.twosComplement());
+	}
+
 	/// <summary>
 	/// multiply two real numbers with <fbits> fraction bits yielding an <fbits> unrounded product
 	/// To avoid fraction bit copies, the input requirements are pushed to the
@@ -344,12 +349,14 @@ public:
 		else {
 			_zero = false;
 			_scale = scale_of_result;
+			_sign = (lhs.sign() == rhs.sign()) ? false : true;
 			if (_significant.test(bfbits - 1)) { // test for carry
 				_scale += 1;
-				_significant >>= 2; // TODO: do we need to round on bits shifted away?
+				_significant >>= 1;
+				_significant.increment();
 			}
-			else if (_significant.test(bfbits - 2)) { // check for the hidden bit
-//				_significant >>= 1;
+			else if (_significant.test(bfbits - 2)) {
+//				all good, found a normal form
 			}
 			else {
 				// found a denormalized form, thus need to normalize: find MSB
@@ -582,7 +589,7 @@ private:
 		return *this;
 	}
 
-	CONSTEXPRESSION inline blocktriple& convert_float(float rhs) noexcept {
+	CONSTEXPRESSION inline blocktriple& convert_float(float rhs) noexcept {   // TODO: deal with subnormals and inf
 #if BIT_CAST_SUPPORT
 		// normal number
 		uint32_t bc = std::bit_cast<uint32_t>(rhs);
@@ -641,26 +648,11 @@ private:
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 127;
 		uint32_t rounded_bits = round<24, uint32_t>(raw);
-		switch (op) {
-		case BlockTripleOperator::ADD:
-			_significant.setradix(fbits);
-			break;
-		case BlockTripleOperator::MUL:
-			_significant.setradix(fbits);
-			break;
-		case BlockTripleOperator::DIV:
-			_significant.setradix(3 * fbits);
-			break;
-		case BlockTripleOperator::SQRT:
-			_significant.setradix(2 * fbits);
-			break;
-		case BlockTripleOperator::REPRESENTATION:
-			_significant.setradix(fbits);
-			break;
-		}
+		_significant.setradix(fbits); // round maps the fraction bits to the radix at fbits
 		_significant.setbits(rounded_bits);
 		return *this;
 	}
+
 	CONSTEXPRESSION inline blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
 #if BIT_CAST_SUPPORT
 		uint64_t bc = std::bit_cast<uint64_t>(rhs);
@@ -719,28 +711,12 @@ private:
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 1023;
 		uint64_t rounded_bits = round<53, uint64_t>(raw); // round manipulates _scale if needed
-		switch (op) {
-		case BlockTripleOperator::ADD:
-			_significant.setradix(fbits);
-			break;
-		case BlockTripleOperator::MUL:
-			_significant.setradix(fbits);
-			break;
-		case BlockTripleOperator::DIV:
-			_significant.setradix(3 * fbits);
-			break;
-		case BlockTripleOperator::SQRT:
-			_significant.setradix(2 * fbits);
-			break;
-		case BlockTripleOperator::REPRESENTATION:
-			_significant.setradix(fbits);
-			break;
-		}
+		_significant.setradix(fbits); // round maps the fraction bits to the radix at fbits
 		_significant.setbits(rounded_bits);
 		return *this;
 	}
 
-	double      to_float() const {
+	float       to_float() const {
 		if (_zero) return 0.0;
 		float v = float(_significant);
 		v *= std::pow(2.0f, float(_scale));
