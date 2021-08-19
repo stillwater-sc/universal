@@ -34,10 +34,10 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 	using namespace std;
 	using namespace sw::universal;
 	
-	cout << endl;
-	cout << "blocktriple<" <<fbits << ',' << op << ',' << typeid(BlockType).name() << '>' << endl;
-	cout << "Fraction        bits : " << fbits << endl;
-	cout << "Multiplication  bits : " << mbits << endl;
+//	cout << endl;
+//	cout << "blocktriple<" <<fbits << ',' << op << ',' << typeid(BlockType).name() << '>' << endl;
+//	cout << "Fraction        bits : " << fbits << endl;
+//	cout << "Multiplication  bits : " << mbits << endl;
 
 	/*
 		blocktriple<fbits> has fbits fraction bits in the form h.<fbits>
@@ -67,10 +67,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 
 	int nrOfFailedTests = 0;
 
-
-
-
-	blocktriple<fbits, BlockTripleOperator::MUL> a, b, c, refResult;
+	blocktriple<fbits, BlockTripleOperator::MUL> a, b, c;
 	constexpr size_t hiddenBit = (size_t(1) << fbits);
 	a.setnormal();
 	b.setnormal();
@@ -86,28 +83,31 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 				b.setbits(j + hiddenBit);
 				b.setscale(0);
 
-				cout << to_binary(a) << " * " << to_binary(b) << endl;
-				cout << a << " * " << b << " = " << c << endl;
+//				cout << to_binary(a) << " * " << to_binary(b) << endl;
+//				cout << a << " * " << b << " = " << c << endl;
 
 				c.mul(a, b); // generate the unrounded mul value under test
 				
-				double aref = double(a); // cast to double is reasonable constraint for exhaustive test
-				double bref = double(b); // cast to double is reasonable constraint for exhaustive test
+				double aref = double(a);
+				double bref = double(b);
 				double cref = aref * bref; // calculate the reference test value
 
-				refResult = cref;  // assign
+				// map the result into the unrounded representation
+				blocktriple<2*fbits, BlockTripleOperator::MUL> reference;
+				reference = cref;
+				double btref = double(reference);  // map the double result to the unrounded blocktriple representation
 
-				if (cref != double(c)) {
-					cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << endl;
-					cout << a << " * " << b << " = " << c << endl;
-					cout << aref << " * " << bref << " = " << cref << " vs " << refResult << endl;
+				if (btref != double(c)) {
+					cout << "test case   : " << a << " * " << b << " = " << c << endl;
+					cout << "conversion  : " << aref << " * " << bref << " = " << cref << " vs " << btref << endl;
+					cout << "blocktriple : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << endl;
 
 					++nrOfFailedTests;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, c, refResult);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, double(c), btref);
 //					cout << "---------------------\n";
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, refResult);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, reference);
 				}
 //				if (nrOfFailedTests > 24) return nrOfFailedTests;
 			}
@@ -120,10 +120,10 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 
 // generate specific test case that you can trace with the trace conditions in blocktriple
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename ArgumentType>
+template<size_t fbits, typename ArgumentType>
 void GenerateTestCase(ArgumentType lhs, ArgumentType rhs) {
 	using namespace sw::universal;
-	blocktriple<nbits, BlockTripleOperator::MUL> a, b, result;  // MUL creates a blockfraction of mbits = 2*fhbits and set the initial radix at mbits
+	blocktriple<fbits, BlockTripleOperator::MUL> a, b, result;  // MUL creates a blockfraction of mbits = 2*fhbits and set the initial radix at mbits
 
 	// convert to blocktriple
 	a = lhs;  // operator=() sets the radix to nbits, which is the number of fraction bits in the blocktriple representation for a format h.fffff
@@ -137,20 +137,30 @@ void GenerateTestCase(ArgumentType lhs, ArgumentType rhs) {
 
 	ArgumentType ref = ArgumentType(result); // use the argument type as the marshalling reference type
 
+	// map the result into the unrounded representation
+	constexpr size_t mbits = 2 * (fbits);
+	blocktriple<mbits, BlockTripleOperator::MUL> reference;
+	reference = _c;
+
+	ArgumentType btref = ArgumentType(reference);
+
 	// check that the round-trip through the blocktriple yields the same value as direct conversion
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(5);
-	std::cout << std::setw(nbits) << lhs << " * " << std::setw(nbits) << rhs << " = " << std::setw(nbits) << lhs * rhs << '\n';
-	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << '\n';
-	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << ": " << result << " (reference: " << _c << ")   "; 
-	std::cout << (_c == ref ? "PASS" : "FAIL") << '\n';
+	std::cout << "original float : " << lhs << " * " << rhs << " = " << lhs * rhs << '\n';
+	std::cout << "blocktriple    : " << a << " * " << b << " = " << result << " vs reference " << reference << '\n';
+	std::cout << "result         : " << to_binary(result) << '\n';
+	std::cout << "reference      : " << to_binary(reference) << '\n';
+	std::cout << "blocktriple    : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << ": " << result << " (reference: " << _c << ")   ";
+	std::cout << (btref == ref ? "PASS" : "FAIL") << '\n';
+	std::cout << "converted float: " << _a << " * " << _b << " = " << _c << '\n';
 	std::cout << to_binary(_c) << '\n';
 	std::cout << to_binary(ref) << '\n';
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -167,14 +177,13 @@ try {
 
 #if MANUAL_TESTING
 
-	GenerateTestCase<2, float>(0.3125f, 1.75f);
-	return 0;
+	GenerateTestCase<2, float>(0.375f, 1.5f);
 
 	// 2^4 = 16 * 16 * 13 =  3328 : 568 fails
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple< 2, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases), "blocktriple<2, BlockTripleOperator::MUL, uint8_t>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple< 4, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases), "blocktriple<4, BlockTripleOperator::MUL, uint8_t>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple< 8, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, BlockTripleOperator::MUL, uint8_t>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases), "blocktriple<12, BlockTripleOperator::MUL, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple< 4, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases), "blocktriple<4, BlockTripleOperator::MUL, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple< 8, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, BlockTripleOperator::MUL, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases), "blocktriple<12, BlockTripleOperator::MUL, uint8_t>", "multiplication");
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, BlockTripleOperator::MUL, uint16_t> >(bReportIndividualTestCases), "blocktriple<12, BlockTripleOperator::MUL, uint16_t>", "multiplication");
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, BlockTripleOperator::MUL, uint32_t> >(bReportIndividualTestCases), "blocktriple<12, BlockTripleOperator::MUL, uint32_t>", "multiplication");
 
@@ -189,32 +198,34 @@ try {
 
 	cout << "blocktriple multiplication validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<4, uint8_t> >(bReportIndividualTestCases), "blocktriple<4,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<4, uint16_t> >(bReportIndividualTestCases), "blocktriple<4,uint16_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<4, uint32_t> >(bReportIndividualTestCases), "blocktriple<4,uint32_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<4, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases),  "blocktriple< 4, BlockTripleOperator::MUL,uint8_t> ", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<4, BlockTripleOperator::MUL, uint16_t> >(bReportIndividualTestCases), "blocktriple< 4, BlockTripleOperator::MUL,uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<4, BlockTripleOperator::MUL, uint32_t> >(bReportIndividualTestCases), "blocktriple< 4, BlockTripleOperator::MUL,uint32_t>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<8, uint8_t> >(bReportIndividualTestCases), "blocktriple<8,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<8, uint16_t> >(bReportIndividualTestCases), "blocktriple<8,uint16_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<8, uint32_t> >(bReportIndividualTestCases), "blocktriple<8,uint32_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<8, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases),  "blocktriple< 8, BlockTripleOperator::MUL,uint8_t> ", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<8, BlockTripleOperator::MUL, uint16_t> >(bReportIndividualTestCases), "blocktriple< 8, BlockTripleOperator::MUL,uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<8, BlockTripleOperator::MUL, uint32_t> >(bReportIndividualTestCases), "blocktriple< 8, BlockTripleOperator::MUL,uint32_t>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<9, uint8_t> >(bReportIndividualTestCases), "blocktriple<9,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<9, uint16_t> >(bReportIndividualTestCases), "blocktriple<9,uint16_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<9, uint32_t> >(bReportIndividualTestCases), "blocktriple<9,uint32_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<9, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases),  "blocktriple< 9, BlockTripleOperator::MUL,uint8_t> ", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<9, BlockTripleOperator::MUL, uint16_t> >(bReportIndividualTestCases), "blocktriple< 9, BlockTripleOperator::MUL,uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<9, BlockTripleOperator::MUL, uint32_t> >(bReportIndividualTestCases), "blocktriple< 9, BlockTripleOperator::MUL,uint32_t>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<10, uint8_t> >(bReportIndividualTestCases), "blocktriple<10,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<10, uint16_t> >(bReportIndividualTestCases), "blocktriple<10,uint16_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<10, uint32_t> >(bReportIndividualTestCases), "blocktriple<10,uint32_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<10, BlockTripleOperator::MUL, uint32_t> >(bReportIndividualTestCases), "blocktriple<10, BlockTripleOperator::MUL,uint32_t>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<11, uint8_t> >(bReportIndividualTestCases), "blocktriple<11,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<11, uint16_t> >(bReportIndividualTestCases), "blocktriple<11,uint16_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<11, uint32_t> >(bReportIndividualTestCases), "blocktriple<11,uint32_t>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, uint8_t> >(bReportIndividualTestCases), "blocktriple<12,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, uint16_t> >(bReportIndividualTestCases), "blocktriple<12,uint16_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, uint32_t> >(bReportIndividualTestCases), "blocktriple<12,uint32_t>", "multiplication");
 
 #if STRESS_TESTING
 
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<10, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases),  "blocktriple<10, BlockTripleOperator::MUL,uint8_t> ", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<10, BlockTripleOperator::MUL, uint16_t> >(bReportIndividualTestCases), "blocktriple<10, BlockTripleOperator::MUL,uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<10, BlockTripleOperator::MUL, uint32_t> >(bReportIndividualTestCases), "blocktriple<10, BlockTripleOperator::MUL,uint32_t>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<11, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases),  "blocktriple<11, BlockTripleOperator::MUL,uint8_t> ", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<11, BlockTripleOperator::MUL, uint16_t> >(bReportIndividualTestCases), "blocktriple<11, BlockTripleOperator::MUL,uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<11, BlockTripleOperator::MUL, uint32_t> >(bReportIndividualTestCases), "blocktriple<11, BlockTripleOperator::MUL,uint32_t>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases),  "blocktriple<12, BlockTripleOperator::MUL,uint8_t> ", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, BlockTripleOperator::MUL, uint16_t> >(bReportIndividualTestCases), "blocktriple<12, BlockTripleOperator::MUL,uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<12, BlockTripleOperator::MUL, uint32_t> >(bReportIndividualTestCases), "blocktriple<12, BlockTripleOperator::MUL,uint32_t>", "multiplication");
 
 
 #endif  // STRESS_TESTING

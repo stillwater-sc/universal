@@ -333,7 +333,7 @@ public:
 
 		// avoid copy by directly manipulating the fraction bits of the arguments
 		_significant.mul(lhs._significant, rhs._significant);  // do the bit arithmetic manipulation
-		_significant.setradix(2*fbits);                          // set the radix interpretation of the output
+		_significant.setradix(2*fbits);                        // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_mul) {
 			std::cout << "blockfraction unrounded mul\n";
@@ -351,9 +351,10 @@ public:
 			_scale = scale_of_result;
 			_sign = (lhs.sign() == rhs.sign()) ? false : true;
 			if (_significant.test(bfbits - 1)) { // test for carry
+				bool roundup = _significant.test(1) && _significant.test(0);
 				_scale += 1;
 				_significant >>= 1;
-				_significant.increment();
+				if (roundup) _significant.increment();
 			}
 			else if (_significant.test(bfbits - 2)) {
 //				all good, found a normal form
