@@ -5,8 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-#define BLOCKTRIPLE_VERBOSE_OUTPUT
-//#define BLOCKTRIPLE_TRACE_ADD
+#define CFLOAT_VERBOSE_OUTPUT
+#define CFLOAT_TRACE_MUL
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/verification/test_status.hpp>
 //#include <universal/verification/test_suite_arithmetic.hpp>
@@ -53,44 +53,84 @@ try {
 #if MANUAL_TESTING
 
 	std::cout << "Manual Testing\n";
+
+/*
+Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT format
+   #           Binary    sign   scale        exponent        fraction                         value      hex_format
+   0:          0b0.0.0       0       0              b0              b0                             0        3.1x0x0c
+   1:          0b0.0.1       0       0              b0              b1                             1        3.1x0x1c
+   2:          0b0.1.0       0       1              b1              b0                           inf        3.1x0x2c
+   3:          0b0.1.1       0       1              b1              b1                           nan        3.1x0x3c
+   4:          0b1.0.0       1       0              b0              b0                            -0        3.1x0x4c
+   5:          0b1.0.1       1       0              b0              b1                            -1        3.1x0x5c
+   6:          0b1.1.0       1       1              b1              b0                          -inf        3.1x0x6c
+   7:          0b1.1.1       1       1              b1              b1                     nan(snan)        3.1x0x7c
+
+   Generate table for a class sw::universal::cfloat<4,2,unsigned char,1,1,0> in TXT format
+   #           Binary    sign   scale        exponent        fraction                         value      hex_format
+   0:         0b0.00.0       0      -1             b00              b0                             0        4.2x0x0c
+   1:         0b0.00.1       0      -1             b00              b1                           0.5        4.2x0x1c
+   2:         0b0.01.0       0       0             b01              b0                             1        4.2x0x2c
+   3:         0b0.01.1       0       0             b01              b1                           1.5        4.2x0x3c
+   4:         0b0.10.0       0       1             b10              b0                             2        4.2x0x4c
+   5:         0b0.10.1       0       1             b10              b1                             3        4.2x0x5c
+   6:         0b0.11.0       0       2             b11              b0                           inf        4.2x0x6c
+   7:         0b0.11.1       0       2             b11              b1                           nan        4.2x0x7c
+   8:         0b1.00.0       1      -1             b00              b0                            -0        4.2x0x8c
+   9:         0b1.00.1       1      -1             b00              b1                          -0.5        4.2x0x9c
+  10:         0b1.01.0       1       0             b01              b0                            -1        4.2x0xAc
+  11:         0b1.01.1       1       0             b01              b1                          -1.5        4.2x0xBc
+  12:         0b1.10.0       1       1             b10              b0                            -2        4.2x0xCc
+  13:         0b1.10.1       1       1             b10              b1                            -3        4.2x0xDc
+  14:         0b1.11.0       1       2             b11              b0                          -inf        4.2x0xEc
+  15:         0b1.11.1       1       2             b11              b1                     nan(snan)        4.2x0xFc
+   */
 	{
 		float fa = 0.5f; 
 //		float fb = std::numeric_limits<float>::signaling_NaN();
 //		float fb = std::numeric_limits<float>::quiet_NaN();
-//		float fa = std::numeric_limits<float>::infinity();
-		float fb = 2.0f;
+//		float fb = std::numeric_limits<float>::infinity();
+		float fb = 1.5f;
 
-		cfloat < 8, 4, uint8_t > a, b, c, cref;
-		a.constexprClassParameters();
+		constexpr size_t nbits = 4;
+		constexpr size_t es = 2;
+		constexpr bool hasSubnormal = true;
+		constexpr bool hasSupernormal = true;
+		constexpr bool isSaturating = true;
+		using Cfloat = cfloat < nbits, es, uint8_t, hasSubnormal, hasSupernormal, !isSaturating >;
+		Cfloat a, b, c, cref;
+//		GenerateTable<Cfloat>(cout);
+//		a.constexprClassParameters();
 		a = fa;
 		b = fb;
 		c = a * b;
 		std::cout << a << " * " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		GenerateTestCase< cfloat<8, 4, uint8_t>, float>(fa, fb);
+		GenerateTestCase< Cfloat, float>(fa, fb);
 	}
-
+	return 0;
 	{ // special cases of snan/qnan
 		constexpr float fa = std::numeric_limits<float>::quiet_NaN();
 		constexpr float fb = std::numeric_limits<float>::signaling_NaN();
-		std::cout << fa << " * " << fa << " = " << (fa - fa) << '\n';
-		std::cout << fa << " * " << fb << " = " << (fa - fb) << '\n';
-		std::cout << fb << " * " << fa << " = " << (fb - fa) << '\n';
-		std::cout << fb << " * " << fb << " = " << (fb - fb) << '\n';
+		std::cout << fa << " * " << fa << " = " << (fa * fa) << '\n';
+		std::cout << fa << " * " << fb << " = " << (fa * fb) << '\n';
+		std::cout << fb << " * " << fa << " = " << (fb * fa) << '\n';
+		std::cout << fb << " * " << fb << " = " << (fb * fb) << '\n';
 		std::cout << to_binary(fa - fb) << '\n';
 	}
 
 	{ // special cases of +-inf
 		constexpr float fa = std::numeric_limits<float>::infinity();
 		float fb = -fa;
-		std::cout << fa << " * " << fa << " = " << (fa - fa) << '\n';
-		std::cout << fa << " * " << fb << " = " << (fa - fb) << '\n';
-		std::cout << fb << " * " << fa << " = " << (fb - fa) << '\n';
-		std::cout << fb << " * " << fb << " = " << (fb - fb) << '\n';
+		std::cout << fa << " * " << fa << " = " << (fa * fa) << '\n';
+		std::cout << fa << " * " << fb << " = " << (fa * fb) << '\n';
+		std::cout << fb << " * " << fa << " = " << (fb * fa) << '\n';
+		std::cout << fb << " * " << fb << " = " << (fb * fb) << '\n';
+		std::cout << 0.0f << " * " << fa << " = " << (0.0f * fa) << '\n';
 		std::cout << to_binary(fa - fb) << '\n';
 	}
-
+//	return 0;
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = true;

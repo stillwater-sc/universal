@@ -16,6 +16,8 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 // cfloat exception structure
 #include <universal/number/cfloat/exceptions.hpp>
+// cfloat tracing options
+#include <universal/number/cfloat/trace_constants.hpp>
 // composition types used by cfloat
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
@@ -28,8 +30,6 @@
 #endif
 
 namespace sw::universal {
-
-constexpr bool _trace_cfloat_add = false;  // TODO consolidate in a trace include file
 
 /*
  * classic floats have denorms, but no gradual overflow, and 
@@ -378,7 +378,7 @@ public:
 	}
 
 	cfloat& operator+=(const cfloat& rhs) {
-		if constexpr (_trace_cfloat_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		if constexpr (cfloat_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -443,6 +443,7 @@ public:
 		return *this += cfloat(rhs);
 	}
 	cfloat& operator-=(const cfloat& rhs) {
+		if constexpr (cfloat_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 		if (rhs.isnan()) 
 			return *this += rhs;
 		else 
@@ -452,7 +453,7 @@ public:
 		return *this -= cfloat(rhs);
 	}
 	cfloat& operator*=(const cfloat& rhs) {
-		if constexpr (_trace_cfloat_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		if constexpr (cfloat_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -468,37 +469,34 @@ public:
 			return *this;
 		}
 #endif
-		// normal + inf  = inf
-		// normal + -inf = -inf
-		// inf + normal = inf
-		// inf + inf    = inf
-		// inf + -inf    = ?
-		// -inf + normal = -inf
-		// -inf + -inf   = -inf
-		// -inf + inf    = ?
+		//  inf * inf = inf
+		//  inf * -inf = -inf
+		// -inf * inf = -inf
+		// -inf * -inf = inf
+		//	0 * inf = -nan(ind)
+		bool resultSign = sign() != rhs.sign();
 		if (isinf()) {
 			if (rhs.isinf()) {
-				if (sign() != rhs.sign()) {
-					setnan(NAN_TYPE_SIGNALLING);
-				}
+				setsign(resultSign);
 				return *this;
 			}
 			else {
+				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
 		}
 		else {
 			if (rhs.isinf()) {
-				*this = rhs;
+				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
 		}
 
-		if (iszero()) {
-			*this = rhs;
+		if (iszero() || rhs.iszero()) {			
+			setzero();
+			setsign(resultSign); // deal with negative 0
 			return *this;
 		}
-		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
 		blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
@@ -511,12 +509,16 @@ public:
 
 		convert(product, *this);
 
+		if constexpr (cfloat_trace_mul) {
+			std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(product) << '\n';
+		}
 		return *this;
 	}
 	cfloat& operator*=(double rhs) {
 		return *this *= cfloat(rhs);
 	}
 	cfloat& operator/=(const cfloat& rhs) {
+		if constexpr (cfloat_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 		return *this;
 	}
 	cfloat& operator/=(double rhs) {

@@ -745,10 +745,10 @@ namespace sw::universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a, b, nut, cref;
-		for (size_t i = 0; i < NR_VALUES; i++) {
+		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; j++) {
+			for (size_t j = 0; j < NR_VALUES; ++j) {
 				b.setbits(j);
 				db = double(b);
 				ref = da + db;
@@ -889,10 +889,10 @@ namespace sw::universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a, b, nut, cref;
-		for (size_t i = 0; i < NR_VALUES; i++) {
+		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; j++) {
+			for (size_t j = 0; j < NR_VALUES; ++j) {
 				b.setbits(j);
 				db = double(b);
 				ref = da - db;
@@ -1033,10 +1033,10 @@ namespace sw::universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a, b, nut, cref;
-		for (size_t i = 0; i < NR_VALUES; i++) {
+		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; j++) {
+			for (size_t j = 0; j < NR_VALUES; ++j) {
 				b.setbits(j);
 				db = double(b);
 				ref = da * db;
@@ -1059,16 +1059,6 @@ namespace sw::universal {
 				nut = a * b;
 				if (a.isnan() || b.isnan()) {
 					// nan-type propagates
-					// if both are nan then signalling nan wins
-					// a        b   =   ref
-					// qnan    qnan = qnan
-					// qnan     #   = qnan
-					// #       qnan = qnan
-					// snan     #   = snan
-					// #       snan = snan
-					// snan    snan = snan
-					// snan    qnan = snan
-					// qnan    snan = snan
 					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
 						cref.setnan(NAN_TYPE_SIGNALLING);
 					}
@@ -1078,30 +1068,26 @@ namespace sw::universal {
 				}
 				else if (a.isinf() || b.isinf()) {
 					// a      b  =  ref
-					// +inf +inf = snan
-					// +inf -inf = +inf
+					// +inf +inf = +inf
+					// +inf -inf = -inf
 					// -inf +inf = -inf
-					// -inf -inf = snan
+					// -inf -inf = +inf
+					//  0   +inf = snan
 					if (a.isinf()) {
 						if (b.isinf()) {
-							if (a.sign() != b.sign()) {
-								cref.setinf(a.sign());
-							}
-							else {
-								cref.setnan(NAN_TYPE_SIGNALLING);
-							}
+							cref.setinf(a.sign() != b.sign());
 						}
 						else {
-							cref.setinf(a.sign());
+							cref.setnan(NAN_TYPE_SIGNALLING);
 						}
 					}
 					else {
-						cref.setinf(!b.sign());
+						cref.setnan(NAN_TYPE_SIGNALLING);
 					}
 				}
 				else {
 					if (!nut.inrange(ref)) {
-						// the result of the subtraction is outside of the range
+						// the result of the multiplication is outside of the range
 						// of the NUT (number system under test)
 						if constexpr (isSaturating) {
 							if (ref > 0) cref.maxpos(); else cref.maxneg();
