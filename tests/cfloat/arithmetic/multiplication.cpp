@@ -44,7 +44,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -149,7 +148,7 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else
-	cout << "classic floating-point multiplication validation" << endl;
+	std::cout << "classic floating-point multiplication validation\n";
 
 	bool bReportIndividualTestCases = false;
 	constexpr bool hasSubnormals = true;

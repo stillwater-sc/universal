@@ -23,16 +23,14 @@
 
 template<typename Matrix, typename Vector>
 void report(const Matrix& A, const Vector& b, const Vector& x, size_t itr, typename Vector::value_type& w) {
-	using namespace std;
-	cout << "solution in " << itr << " iterations\n";
-	cout << "solution is " << x << '\n';
+	std::cout << "solution in " << itr << " iterations\n";
+	std::cout << "solution is " << x << '\n';
 
-	cout << "validation\n" << A * x << " = " << b << endl;
+	std::cout << "validation\n" << A * x << " = " << b << std::endl;
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
@@ -43,7 +41,7 @@ try {
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 	using Vector = sw::universal::blas::vector<Scalar>;
 
-	if (argc == 1) cout << argv[0] << '\n';
+	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
 	// Initialize 'A' 'b' & intial guess 'x' * _
@@ -57,8 +55,8 @@ try {
 	Scalar w = 1.5f;
 	size_t itr = 0;
 
-	cout << A << endl;
-	cout << b << endl;
+	std::cout << A << std::endl;
+	std::cout << b << std::endl;
 
 	itr = sor(A, b, x, w); 
 	report(A, b, x, itr, w);
@@ -76,9 +74,9 @@ try {
 
 	//  in matrix form
 	tridiag(A, 5);
-	cout << A << endl;
+	std::cout << A << std::endl;
 	auto diagonal = diag(A);
-	cout << "\nDiagonal vector\n" << diagonal << endl;
+	std::cout << "\nDiagonal vector\n" << diagonal << std::endl;
 	auto D = diag(diag(A));
 	auto L = tril(A) - D;
 	auto U = triu(A) - D;
@@ -87,11 +85,11 @@ try {
 	// check for convergence of the system
 	auto e = 0.95; //  max(eig(inv(D + w * L) * (D * (1 - w) - w * U)));
 	if (abs(e) >= 1) {
-		cerr << "Not convergent: modulus of the largest eigen value is >= 1\n";
+		std::cerr << "Not convergent: modulus of the largest eigen value is >= 1\n";
 		return EXIT_FAILURE;
 	}
 
-	cout << "Inverse of (D + w*L)\n" << inv(B) << endl;
+	std::cout << "Inverse of (D + w*L)\n" << inv(B) << std::endl;
 
 	// TODO eig() operator
 

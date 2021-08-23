@@ -21,7 +21,6 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 	using BlockType = typename BlockFractionConfiguration::BlockType;
 
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace std;
 	using namespace sw::universal;
 
 //	cout << endl;
@@ -102,7 +101,7 @@ void GenerateMaxValues() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
+
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
@@ -140,7 +139,7 @@ try {
 
 #else
 
-	cout << "block subtraction validation" << endl;
+	std::cout << "block subtraction validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction< 4, uint8_t >", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 4, uint16_t>", "subtraction");

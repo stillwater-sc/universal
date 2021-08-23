@@ -64,9 +64,8 @@ namespace sw::universal::internal {
 
 
 	void TestArithmeticOperatorPerformance() {
-		using namespace std;
 		using namespace sw::universal;
-		cout << endl << "Arithmetic operator performance" << endl;
+		std::cout << "\nArithmetic operator performance\n";
 
 		size_t NR_OPS = 1024ull * 1024ull * 4ull;
 
@@ -129,9 +128,8 @@ namespace sw::universal::internal {
 	blocktriple<1024,uint64_t>  add       2097152 per       0.0758496sec ->  27 Mops/sec
 	*/
 	void TestBlockPerformanceOnAdd() {
-		using namespace std;
 		using namespace sw::universal;
-		cout << endl << "ADDITION: blocktriple arithemetic performance as a function of size and BlockType" << endl;
+		std::cout << "\nADDITION: blocktriple arithemetic performance as a function of size and BlockType\n";
 
 		constexpr size_t NR_OPS = 32ull * 1024ull * 1024ull;
 
@@ -167,9 +165,8 @@ namespace sw::universal::internal {
 	}
 
 	void TestBlockPerformanceOnDiv() {
-		using namespace std;
 		using namespace sw::universal;
-		cout << endl << "DIVISION: blocktriple arithemetic performance as a function of size and BlockType" << endl;
+		std::cout << "\nDIVISION: blocktriple arithemetic performance as a function of size and BlockType\n";
 
 		constexpr size_t NR_OPS = 1024ull * 1024;
 		PerformanceRunner("blocktriple<4,uint8>      div   ", DivisionWorkload< sw::universal::blocktriple<4, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS);
@@ -184,9 +181,8 @@ namespace sw::universal::internal {
 	}
 
 	void TestBlockPerformanceOnMul() {
-		using namespace std;
 		using namespace sw::universal;
-		cout << endl << "MULTIPLICATION: blocktriple arithemetic performance as a function of size and BlockType" << endl;
+		std::cout << "\nMULTIPLICATION: blocktriple arithemetic performance as a function of size and BlockType\n";
 
 		constexpr size_t NR_OPS = 512ull * 1024;
 		PerformanceRunner("blocktriple<4,uint8>      mul   ", MultiplicationWorkload< sw::universal::blocktriple<4, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
@@ -207,7 +203,6 @@ namespace sw::universal::internal {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal::internal;
 
 	std::string tag = "blocktriple operator performance benchmarking";
@@ -219,7 +214,7 @@ try {
 
 	ShiftPerformanceWorkload< sw::universal::blocktriple<8> >(1);
 	
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else

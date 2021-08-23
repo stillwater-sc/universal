@@ -77,7 +77,6 @@ Scalar MathLib(Scalar a, Scalar b =  Scalar(1)) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// test Class Template Argument Deduction (CTAD) for elementary functions

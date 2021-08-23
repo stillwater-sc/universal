@@ -22,18 +22,17 @@
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 void TestULP() 
 {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	Cfloat a(1.0f);
-	cout << typeid(a).name() << '\n';
+	std::cout << typeid(a).name() << '\n';
 	double da(1.0);
-	cout << "cfloat at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << " : value : " << a << '\n';
-	cout << "double at 1.0  : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << " : value : " << da << '\n';
+	std::cout << "cfloat at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << " : value : " << a << '\n';
+	std::cout << "double at 1.0  : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << " : value : " << da << '\n';
 
 	a = std::numeric_limits< Cfloat >::epsilon();
-	cout << "cfloat epsilon : " << to_binary(a) << " : " << a << '\n';
+	std::cout << "cfloat epsilon : " << to_binary(a) << " : " << a << '\n';
 }
 
 // conditional compile flags
@@ -42,12 +41,11 @@ void TestULP()
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "classic floating-point ULP tests" << endl;
+	std::cout << "classic floating-point ULP tests\n";
 
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;

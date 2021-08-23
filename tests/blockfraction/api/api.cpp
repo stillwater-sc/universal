@@ -25,7 +25,6 @@ the blockfraction is not a good solution.
 */
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockfraction storage class construction/conversion testing";
@@ -34,12 +33,12 @@ try {
 		blockfraction<7, uint8_t, BitEncoding::Twos> a, b, c;
 		a.setbits(0x11); // 1.0 in 7-bit blockfraction form
 		b.setbits(0x11);
-		cout << to_binary(a) << " : " << a << '\n';
-		cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
 		c.add(a, b);
-		cout << to_binary(c) << " : " << c << endl;
+		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		cout << to_binary(fractionBits, 4) << endl;
+		std::cout << to_binary(fractionBits, 4) << '\n';
 	}
 
 	{
@@ -50,12 +49,12 @@ try {
 		blockfraction<8, uint8_t, BitEncoding::Twos> a, b, c;
 		a.setbits(0x21); // 1.0 in 8-bit blockfraction form
 		b.setbits(0x21);
-		cout << to_binary(a) << " : " << a << '\n';
-		cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
 		c.add(a, b);
-		cout << to_binary(c) << " : " << c << endl;
+		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		cout << to_binary(fractionBits, 5) << endl;
+		std::cout << to_binary(fractionBits, 5) << '\n';
 	}
 
 	{
@@ -63,12 +62,12 @@ try {
 		a.setbits(0x100);
 		b.setbits(0x200);
 		b.twosComplement();
-		cout << to_binary(a) << " : " << a << '\n';
-		cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
 		c.add(a, b);
-		cout << to_binary(c) << " : " << c << endl;
+		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		cout << to_binary(fractionBits, 9) << endl;
+		std::cout << to_binary(fractionBits, 9) << '\n';
 	}
 }
 catch (char const* msg) {

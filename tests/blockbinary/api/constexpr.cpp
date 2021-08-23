@@ -11,7 +11,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockbinary storage class constexpr compile-time testing";
@@ -22,7 +21,7 @@ try {
 		constexpr blockbinary<8, uint16_t> b8_2b(0x5555);
 		constexpr blockbinary<8, uint32_t> b8_4b(0x5555);
 
-		cout << b8 << '\n' << b8_1b << '\n' << b8_2b << '\n' << b8_4b << endl;
+		std::cout << b8 << '\n' << b8_1b << '\n' << b8_2b << '\n' << b8_4b << '\n';
 	}
 
 	{
@@ -31,7 +30,7 @@ try {
 		constexpr blockbinary<16, uint16_t> b16_1(0x5555);
 		constexpr blockbinary<16, uint32_t> b16_4b(0x5555);
 
-		cout << b16 << '\n' << b16_1 << '\n' << b16_2 << '\n' << b16_4b << endl;
+		std::cout << b16 << '\n' << b16_1 << '\n' << b16_2 << '\n' << b16_4b << '\n';
 	}
 
 }

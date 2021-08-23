@@ -24,12 +24,11 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "posit class interface tests" << endl;
+	std::cout << "posit class interface tests\n";
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// SATURATING posits
@@ -45,8 +44,8 @@ try {
 		if (a != (d - 32)) ++nrOfFailedTestCases; // saturating to maxneg
 		if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
 		if (nrOfFailedTestCases - start > 0) {
-			cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
-			cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << endl;
+			std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
+			std::cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << '\n';
 		}
 	}
 
@@ -272,10 +271,10 @@ try {
 #endif // LATER
 
 	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
+		std::cout << "FAIL\n";
 	}
 	else {
-		cout << "PASS" << endl;
+		std::cout << "PASS\n";
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

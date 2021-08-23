@@ -33,7 +33,6 @@ constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	const size_t nbits = 16;
@@ -42,7 +41,7 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	posit<nbits, es> two_pi = 2.0 * pi;
-	vector< posit<nbits, es> > sinusoid(vecSize), weights(vecSize);
+	std::vector< posit<nbits, es> > sinusoid(vecSize), weights(vecSize);
 
 	for (size_t i = 0; i < vecSize; i++) {
 		sinusoid[i] = sin((float(i) / float(vecSize)) * two_pi);
@@ -56,7 +55,7 @@ try {
 	for (size_t i = 0; i < vecSize; i++) {
 		fir += sinusoid[i] * weights[i];
 	}
-	cout << "Value is " << fir << endl;
+	std::cout << "Value is " << fir << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

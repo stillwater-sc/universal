@@ -54,11 +54,10 @@ size_t Experiment(size_t DoF) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	if (argc == 1) cout << argv[0] << '\n';
+	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL

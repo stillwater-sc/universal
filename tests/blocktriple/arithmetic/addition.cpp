@@ -33,13 +33,11 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	//    setBits(i + shiftLeft + hiddenBit);
 	constexpr size_t NR_VALUES = (size_t(1) << fbits);
 
-	using namespace std;
 	using namespace sw::universal;
 	
-	cout << endl;
-	cout << "blocktriple<" <<fbits << ',' << typeid(BlockType).name() << '>' << endl;
-	cout << "Fractions bits : " << fbits << endl;
-	cout << "Addition  bits : " << abits << endl;
+	std::cout << "blocktriple<" << fbits << ',' << typeid(BlockType).name() << ">/\n";
+	std::cout << "Fractions bits : " << fbits << '\n';
+	std::cout << "Addition  bits : " << abits << '\n';
 
 	/*
 		blocktriple<fbits> has fbits fraction bits in the form 00h.<fbits>
@@ -134,7 +132,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 					++nrOfFailedTests;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
-//					cout << "---------------------\n";
+//					std::cout << "---------------------\n";
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, refResult);
@@ -144,7 +142,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 			//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 		}
 	}
-//	cout << endl;
+//	std::cout << '\n';
 	return nrOfFailedTests;
 }
 
@@ -184,7 +182,6 @@ void GenerateTestCase(ArgumentType lhs, ArgumentType rhs) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);

@@ -180,7 +180,6 @@ void GenerateTestCase(double input, double reference, const sw::universal::posit
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -229,7 +228,7 @@ try {
 
 #else
 
-	cout << "Posit conversion validation" << endl;
+	std::cout << "Posit conversion validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(bReportIndividualTestCases), "posit<3,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0>(bReportIndividualTestCases), "posit<4,0>", "conversion");

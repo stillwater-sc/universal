@@ -24,44 +24,43 @@
 
 // sign of 0 is flipped on MSVC Release builds
 void CompilerBug() {
-	using namespace std;
 	using namespace sw::universal;
 	{
 		cfloat<5, 1> a;
 		a.setbits(0x0);
-		cout << "cfloat<5,1> : " << to_binary(a) << " : " << a << endl;
+		std::cout << "cfloat<5,1> : " << to_binary(a) << " : " << a << '\n';
 		float f = float(a);
-		cout << "float      : " << f << endl;
+		std::cout << "float      : " << f << '\n';
 		double d = double(a);
-		cout << "double     : " << d << endl;
+		std::cout << "double     : " << d << '\n';
 	}
 	{
 		cfloat<5, 1> a;
 		a.setbits(0x10);
-		cout << "cfloat<5,1> : " << to_binary(a) << " : " << a << endl;
+		std::cout << "cfloat<5,1> : " << to_binary(a) << " : " << a << '\n';
 		float f = float(a);
-		cout << "float      : " << f << endl;
+		std::cout << "float      : " << f << '\n';
 		double d = double(a);
-		cout << "double     : " << d << endl;
+		std::cout << "double     : " << d << '\n';
 	}
 
 	{
 		cfloat<6, 1> a;
 		a.setbits(0x0);
-		cout << "cfloat<6,1> : " << to_binary(a) << " : " << a << endl;
+		std::cout << "cfloat<6,1> : " << to_binary(a) << " : " << a << '\n';
 		float f = float(a);
-		cout << "float      : " << f << endl;
+		std::cout << "float      : " << f << '\n';
 		double d = double(a);
-		cout << "double     : " << d << endl;
+		std::cout << "double     : " << d << '\n';
 	}
 	{
 		cfloat<6, 1> a;
 		a.setbits(0x20);
-		cout << "cfloat<6,1> : " << to_binary(a) << " : " << a << endl;
+		std::cout << "cfloat<6,1> : " << to_binary(a) << " : " << a << '\n';
 		float f = float(a);
-		cout << "float      : " << f << endl;
+		std::cout << "float      : " << f << '\n';
 		double d = double(a);
-		cout << "double     : " << d << endl;
+		std::cout << "double     : " << d << '\n';
 	}
 }
 
@@ -211,7 +210,6 @@ void GenerateDoublePrecisionSubnormals()
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -321,7 +319,7 @@ ref : b0.10110101010.0010011001110010111000110101011001101000111101100111
 
 #else  // !MANUAL_TESTING
 	bool bReportIndividualTestCases = false;
-	cout << "cfloat conversion from double validation" << endl;
+	std::cout << "cfloat conversion from double validation\n";
 
 	// es = 1
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1>, double >(bReportIndividualTestCases), tag, "cfloat< 4,1>");

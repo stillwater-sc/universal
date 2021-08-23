@@ -13,7 +13,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// compare bits of different real number representations
@@ -22,19 +21,19 @@ try {
 	double d        = 1.0e10;
 	long double ld  = 1.0e100;
 
-	cout << "scale of " << f << " is 2^" << scale(f) << " ~ 10^" << int(scale(f)/ 3.3) << '\n';
-	cout << "scale of " << d << " is 2^" << scale(d) << " ~ 10^" << int(scale(d) / 3.3) << '\n';
-	cout << "scale of " << ld << " is 2^" << scale(ld) << " ~ 10^" << int(scale(ld) / 3.3) << '\n';
+	std::cout << "scale of " << f << " is 2^" << scale(f) << " ~ 10^" << int(scale(f)/ 3.3) << '\n';
+	std::cout << "scale of " << d << " is 2^" << scale(d) << " ~ 10^" << int(scale(d) / 3.3) << '\n';
+	std::cout << "scale of " << ld << " is 2^" << scale(ld) << " ~ 10^" << int(scale(ld) / 3.3) << '\n';
 
-	cout << to_binary(f, true) << " " << f << '\n';
-	cout << to_binary(d, true) << " " << d << '\n';
-	cout << to_binary(ld, true) << " " << ld << '\n';
+	std::cout << to_binary(f, true) << " " << f << '\n';
+	std::cout << to_binary(d, true) << " " << d << '\n';
+	std::cout << to_binary(ld, true) << " " << ld << '\n';
 
-	cout << color_print(f) << " " << f << '\n';
-	cout << color_print(d) << " " << d << '\n';
-	cout << color_print(ld) << " " << ld << '\n';
+	std::cout << color_print(f) << " " << f << '\n';
+	std::cout << color_print(d) << " " << d << '\n';
+	std::cout << color_print(ld) << " " << ld << '\n';
 
-	cout << endl; // flush the stream
+	std::cout << std::endl; // flush the stream
 
 	return EXIT_SUCCESS;
 }

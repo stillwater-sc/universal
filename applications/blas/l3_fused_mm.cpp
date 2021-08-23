@@ -27,8 +27,7 @@ std::string conditional_fdp(const sw::universal::blas::vector< Scalar >& a, cons
 }
 template<size_t nbits, size_t es>
 std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& a, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
-	using namespace std;
-	stringstream ss;
+	std::stringstream ss;
 	ss << sw::universal::fdp(a, b);
 	return ss.str();
 }
@@ -45,31 +44,29 @@ void check_precision() {
 	Scalar b3 = -1;
 	Scalar b4 = -1.6e8;
 
-	using namespace std;
-	cout << a1 << " * " << b1 << " = " << a1 * b1 << endl;
-	cout << a2 << " * " << b2 << " = " << a2 * b2 << endl;
-	cout << a3 << " * " << b3 << " = " << a3 * b3 << endl;
-	cout << a4 << " * " << b4 << " = " << a4 * b4 << endl;
+	std::cout << a1 << " * " << b1 << " = " << a1 * b1 << '\n';
+	std::cout << a2 << " * " << b2 << " = " << a2 * b2 << '\n';
+	std::cout << a3 << " * " << b3 << " = " << a3 * b3 << '\n';
+	std::cout << a4 << " * " << b4 << " = " << a4 * b4 << '\n';
 
-	cout << a1 << " * " << b4 << " = " << a1 * b4 << endl;
-	cout << a2 << " * " << b3 << " = " << a2 * b3 << endl;
-	cout << a3 << " * " << b2 << " = " << a3 * b2 << endl;
-	cout << a4 << " * " << b1 << " = " << a4 * b1 << endl;
+	std::cout << a1 << " * " << b4 << " = " << a1 * b4 << '\n';
+	std::cout << a2 << " * " << b3 << " = " << a2 * b3 << '\n';
+	std::cout << a3 << " * " << b2 << " = " << a3 * b2 << '\n';
+	std::cout << a4 << " * " << b1 << " = " << a4 * b1 << '\n';
 
 	sw::universal::blas::vector<Scalar> a = { a1, a2, a3, a4 };
 	sw::universal::blas::vector<Scalar> b_v1 = { b1, b2, b3, b4 };
 	sw::universal::blas::vector<Scalar> b_v2 = { b4, b3, b2, b1 };
 
-	cout << "dot(a,b)         " << sw::universal::blas::dot(a, b_v1) << endl;
-	cout << "dot(a,b_flipped) " << sw::universal::blas::dot(a, b_v2) << endl;
-	cout << "fdp(a,b)         " << conditional_fdp(a, b_v1) << endl;
-	cout << "fdp(a,b_flipped) " << conditional_fdp(a, b_v2) << endl;
+	std::cout << "dot(a,b)         " << sw::universal::blas::dot(a, b_v1) << '\n';
+	std::cout << "dot(a,b_flipped) " << sw::universal::blas::dot(a, b_v2) << '\n';
+	std::cout << "fdp(a,b)         " << conditional_fdp(a, b_v1) << '\n';
+	std::cout << "fdp(a,b_flipped) " << conditional_fdp(a, b_v2) << '\n';
 }
 
 template<typename Scalar>
 void catastrophicCancellationTest() {
-	using namespace std;
-	cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
+	std::cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	Scalar a1 = 3.2e8;
@@ -91,22 +88,21 @@ void catastrophicCancellationTest() {
 		{ b4, b1 }
 	};
 
-	cout << std::setprecision(10);
-	cout << "matrix A: \n" << A << endl;
-	cout << "matrix B: \n" << B << endl;
+	std::cout << std::setprecision(10);
+	std::cout << "matrix A: \n" << A << '\n';
+	std::cout << "matrix B: \n" << B << '\n';
 	auto C = A * B;
-	cout << "matrix C: \n" << C << endl;
+	std::cout << "matrix C: \n" << C << '\n';
 	if (C[0][0] == 2 && C[1][1] == 2) {
-			cout << "PASS\n";
+		std::cout << "PASS\n";
 	}
 	else {
-		cout << "FAIL\n";
+		std::cout << "FAIL\n";
 	}
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::blas;
 
 	catastrophicCancellationTest<float>();  // FAILS due to catastrophic cancellation
@@ -120,20 +116,20 @@ try {
 	{
 		sw::universal::blas::matrix< sw::universal::posit<32, 2> > A(4, 4);
 		A[0][0] = 1;
-		cout << A << endl;
+		std::cout << A << '\n';
 	}
 
 	{
 		sw::universal::blas::matrix< sw::universal::posit<32, 2> > A(SIZE_1K, SIZE_1K);
 		A[0][0] = 1;
-		cout << "A(0,0) = " << A[0][0] << " A(SIZE_1K-1, SIZE_1K-1) = " << A[SIZE_1K - 1][SIZE_1K - 1] << endl;
+		std::cout << "A(0,0) = " << A[0][0] << " A(SIZE_1K-1, SIZE_1K-1) = " << A[SIZE_1K - 1][SIZE_1K - 1] << '\n';
 	}
 
 	{
 		using Real = sw::universal::posit<32,2>;
 		sw::universal::blas::vector<Real> a = { 1, 2 };
 		sw::universal::blas::vector<Real> b = { 2, 1 };
-		cout << "fdp = " << sw::universal::fdp(a, b) << endl;
+		std::cout << "fdp = " << sw::universal::fdp(a, b) << '\n';
 	}
 
 	try {

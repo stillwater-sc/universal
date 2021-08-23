@@ -43,10 +43,9 @@ Scalar myFunc(const Scalar& x, const Scalar& y) {
 // Use Butcher's table as argument and define ODE
 template<typename Scalar>
 Scalar GRK(Scalar b_table[5][5], Scalar (*f)(const Scalar&, const Scalar&), const Scalar h, Scalar x0, Scalar y0) {
-	using namespace std;
 	int s = sizeof(b_table[0])/sizeof(b_table[0][0]) - 1; // number of steps
     Scalar ks[4];
-    fill(ks, ks + s, Scalar(0));
+	std::fill(ks, ks + s, Scalar(0));
 
     for(int i = 0; i < s; i++){
         Scalar sum = 0;
@@ -67,7 +66,6 @@ Scalar GRK(Scalar b_table[5][5], Scalar (*f)(const Scalar&, const Scalar&), cons
 
 int main() 
 try {
-	using namespace std;
 	using namespace sw::universal;
 	{
 		using Scalar = float;
@@ -83,10 +81,10 @@ try {
 		Scalar x0 = 0;
 
 		Scalar solution = GRK(butcher, myFunc, h, x0, y0);
-		cout << "y(" << x0 + h << ") ~= " << solution << endl;
+		std::cout << "y(" << x0 + h << ") ~= " << solution << '\n';
 
 		float true_sol = exp(0.98);
-		cout << "true = " << true_sol << endl;
+		std::cout << "true = " << true_sol << '\n';
 	}
 
 	return EXIT_SUCCESS;

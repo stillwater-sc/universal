@@ -27,23 +27,21 @@
 
 template<typename Scalar>
 void RandsvdMatrixTest(size_t N = 5) {
-	using namespace std;
 	using namespace sw::universal::blas;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 	Matrix A(N,N), S(N, N), V(N, N), D(N, N);
-	cout << "RandsvdMatrixTest for type: " << typeid(Scalar).name() << endl;
+	std::cout << "RandsvdMatrixTest for type: " << typeid(Scalar).name() << '\n';
 	std::tie(S, V, D) = randsvd(A);
-	cout << S << '\n';
-	cout << V << '\n';
-	cout << D << '\n';
+	std::cout << S << '\n';
+	std::cout << V << '\n';
+	std::cout << D << '\n';
 }
 
 int main(int argc, char* argv[])
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc == 1) cout << argv[0] << endl;
+	if (argc == 1) std::cout << argv[0] << '\n';
 
 //	RandsvdMatrixTest< float >();
 	RandsvdMatrixTest< posit<32, 2> >();

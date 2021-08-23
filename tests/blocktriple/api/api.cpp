@@ -86,20 +86,19 @@
 template<typename Real>
 void TestConversionRounding(Real f = 511.5f)
 {
-	using namespace std;
 	using namespace sw::universal;
-	cout << "\n " << typeid(Real).name() << " conversion use case and result\n";
-	cout << to_binary(f, true) << " : " << f << '\n';
+	std::cout << "\n " << typeid(Real).name() << " conversion use case and result\n";
+	std::cout << to_binary(f, true) << " : " << f << '\n';
 	CONSTEXPRESSION blocktriple<6, BlockTripleOperator::ADD, uint8_t> a = f;
-	cout << to_triple(a) << " : " << a << '\n';
+	std::cout << to_triple(a) << " : " << a << '\n';
 	CONSTEXPRESSION blocktriple<7, BlockTripleOperator::ADD, uint8_t> b = f;
-	cout << to_triple(b) << " : " << b << '\n';
+	std::cout << to_triple(b) << " : " << b << '\n';
 	CONSTEXPRESSION blocktriple<8, BlockTripleOperator::ADD, uint8_t> c = f;
-	cout << to_triple(c) << " : " << c << '\n';
+	std::cout << to_triple(c) << " : " << c << '\n';
 	CONSTEXPRESSION blocktriple<9, BlockTripleOperator::ADD, uint8_t> d = f;
-	cout << to_triple(d) << " : " << d << '\n';
+	std::cout << to_triple(d) << " : " << d << '\n';
 	CONSTEXPRESSION blocktriple<10, BlockTripleOperator::ADD, uint8_t> e = f;
-	cout << to_triple(e) << " : " << e << '\n';
+	std::cout << to_triple(e) << " : " << e << '\n';
 }
 
 #define MANUAL_TESTING 1
@@ -107,12 +106,11 @@ void TestConversionRounding(Real f = 511.5f)
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
 
-	std::cout << "blocktriple<> class interface tests" << std::endl;
+	std::cout << "blocktriple<> class interface tests\n";
 
 	int nrOfFailedTestCases = 0;
 
@@ -122,13 +120,13 @@ try {
 	{
 		blocktriple<8, BlockTripleOperator::ADD, uint8_t> a;
 		a = 1.5f;
-		cout << "IEEE-754 float  : " << to_binary(1.5f, true) << endl;
-		cout << "IEEE-754 float  : " << to_triple(1.5f, true) << endl;
-		cout << "blocktriple<8>  : " << to_triple(a) << endl;
+		std::cout << "IEEE-754 float  : " << to_binary(1.5f, true) << '\n';
+		std::cout << "IEEE-754 float  : " << to_triple(1.5f, true) << '\n';
+		std::cout << "blocktriple<8>  : " << to_triple(a) << '\n';
 		a = 1.5;
-		cout << "IEEE-754 double : " << to_binary(1.5, true) << endl;
-		cout << "IEEE-754 double : " << to_triple(1.5, true) << endl;
-		cout << "blocktriple<8>  : " << to_triple(a) << endl;
+		std::cout << "IEEE-754 double : " << to_binary(1.5, true) << '\n';
+		std::cout << "IEEE-754 double : " << to_triple(1.5, true) << '\n';
+		std::cout << "blocktriple<8>  : " << to_triple(a) << '\n';
 	}
 
 	// pick a value that rounds up to even between 6 to 10 bits of fraction
@@ -136,36 +134,36 @@ try {
 	TestConversionRounding(511.5);
 
 	{
-		cout << "\nblocktriple add\n";
+		std::cout << "\nblocktriple add\n";
 		constexpr size_t fbits = 7;
 		blocktriple<fbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
 		a = 1.03125f;
 		b = -1.03125f;
-		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		std::cout << to_triple(a) << '\n' << to_triple(b) << '\n';
 		c.add(a, b);
-		cout << to_triple(c) << " : " << c << '\n';
+		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
 	{
-		cout << "\nblocktriple sub\n";
+		std::cout << "\nblocktriple sub\n";
 		constexpr size_t fbits = 7;
 		blocktriple<fbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
 		a = 1.03125f;
 		b = 1.03125f;
-		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		std::cout << to_triple(a) << '\n' << to_triple(b) << '\n';
 		c.sub(a, b);
-		cout << to_triple(c) << " : " << c << '\n';
+		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
 	{
-		cout << "\nblocktriple mul\n";
+		std::cout << "\nblocktriple mul\n";
 		constexpr size_t fbits = 8;
 		blocktriple<fbits, BlockTripleOperator::MUL, uint32_t> a, b, c;
 		a = 2.0f;
 		b = -0.5f;
-		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		std::cout << to_triple(a) << '\n' << to_triple(b) << '\n';
 		c.mul(a, b);
-		cout << to_triple(c) << " : " << c << '\n';
+		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
 #else // !MANUAL_TESTING

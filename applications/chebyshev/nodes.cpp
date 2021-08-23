@@ -33,13 +33,12 @@ constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
 	// TBD
-	cout << "PI = " << pi << endl;
+	std::cout << "PI = " << pi << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

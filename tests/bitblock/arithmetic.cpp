@@ -115,7 +115,6 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
@@ -163,10 +162,10 @@ try {
 
 #else
 
-	cout << "Test of operators on bitblocks" << endl;
+	std::cout << "Test of operators on bitblocks\n";
 	nrOfFailedTestCases += Conversions();
 
-	cout << "Register management" << endl;
+	std::cout << "Register management\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<3, 8>(bReportIndividualTestCases),   "bitblock<  5>", "copyInto");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<4, 8>(bReportIndividualTestCases),   "bitblock<  8>", "copyInto");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<8, 16>(bReportIndividualTestCases),  "bitblock< 16>", "copyInto");
@@ -176,7 +175,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<8, 64>(bReportIndividualTestCases),  "bitblock< 64>", "copyInto");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<8, 128>(bReportIndividualTestCases), "bitblock<128>", "copyInto");
 
-	cout << "Arithmetic: addition" << endl;
+	std::cout << "Arithmetic: addition\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<3>(bReportIndividualTestCases), "bitblock<3>", "+");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<4>(bReportIndividualTestCases), "bitblock<4>", "+");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<5>(bReportIndividualTestCases), "bitblock<5>", "+");
@@ -184,7 +183,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<7>(bReportIndividualTestCases), "bitblock<7>", "+");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<8>(bReportIndividualTestCases), "bitblock<8>", "+");
 
-	cout << "Arithmetic: subtraction" << endl;
+	std::cout << "Arithmetic: subtraction\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<3>(bReportIndividualTestCases), "bitblock<3>", "-");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<4>(bReportIndividualTestCases), "bitblock<4>", "-");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<5>(bReportIndividualTestCases), "bitblock<5>", "-");
@@ -192,7 +191,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<7>(bReportIndividualTestCases), "bitblock<7>", "-");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<8>(bReportIndividualTestCases), "bitblock<8>", "-");
 
-	cout << "Arithmetic: multiplication" << endl;
+	std::cout << "Arithmetic: multiplication\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<3>(bReportIndividualTestCases), "bitblock<3>", "*");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<4>(bReportIndividualTestCases), "bitblock<4>", "*");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<5>(bReportIndividualTestCases), "bitblock<5>", "*");
@@ -200,17 +199,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<7>(bReportIndividualTestCases), "bitblock<7>", "*");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<8>(bReportIndividualTestCases), "bitblock<8>", "*");
 
-	cout << "Arithmetic: division" << endl;
+	std::cout << "Arithmetic: division\n";
 	bitblock<8> a, b;
 	bitblock<16> c;
 	try {
 		integer_divide_unsigned(a, b, c); // divide by zero
 	}
 	catch (const bitblock_divide_by_zero& e) {
-		cout << "Properly caught exception: " << e.what() << endl;
+		std::cerr << "Properly caught exception: " << e.what() << std::endl;
 	}
 	catch (...) {
-		cout << "Why can't I catch this specific exception type?" << endl;
+		std::cerr << "Why can't I catch this specific exception type?" << std::endl;
 	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetDivision<3>(bReportIndividualTestCases), "bitblock<3>", "/");

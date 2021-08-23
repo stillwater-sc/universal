@@ -104,7 +104,6 @@ void GenerateSinglePrecisionSubnormals()
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// for any cfloat with es == 1, you must have subnormals and supernormals

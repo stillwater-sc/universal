@@ -41,13 +41,12 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 template<typename Real>
 void test754functions(Real value) {
-	using namespace std;
 	using namespace sw::universal;
-	cout << to_hex(value) << '\n';
-	cout << to_binary(value) << '\n';
-	cout << to_triple(value) << '\n';
-	cout << to_base2_scientific(value) << '\n';
-	cout << color_print(value) << '\n';
+	std::cout << to_hex(value) << '\n';
+	std::cout << to_binary(value) << '\n';
+	std::cout << to_triple(value) << '\n';
+	std::cout << to_base2_scientific(value) << '\n';
+	std::cout << color_print(value) << '\n';
 }
 
 void TableCfloatExponentBounds()
@@ -119,7 +118,6 @@ void testCfloatOrderedSet() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -213,7 +211,7 @@ try {
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else
-	cout << "classic floating-point addition validation" << endl;
+	std::cout << "classic floating-point addition validation\n";
 
 	bool bReportIndividualTestCases = false;
 	constexpr bool hasSubnormals = true;

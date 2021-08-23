@@ -144,10 +144,9 @@ void Knead(int nrOfFolds) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal::blas;
 
-	cout << "Baker's Map\n";
+	std::cout << "Baker's Map\n";
 
 	{
 		using Real = float;
@@ -163,7 +162,7 @@ try {
 		TraceBakersMap(x, y, 25);
 	}
 
-	cout << "Baker's Map\n";
+	std::cout << "Baker's Map\n";
 	double random_value = double(rand()) / double(RAND_MAX);
 	{
 		using Real = float;
@@ -180,7 +179,7 @@ try {
 
 	// setting x to minpos fails as 2 * minpos still rounds to minpos
 
-	cout << "Baker's Map: minpos fail:\n";
+	std::cout << "Baker's Map: minpos fail:\n";
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
@@ -189,7 +188,7 @@ try {
 		Real y = 0.75;
 		TraceBakersMap(x, y, 5);
 	}
-	cout << "Baker's Map: region k-1:\n";
+	std::cout << "Baker's Map: region k-1:\n";
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
@@ -199,7 +198,7 @@ try {
 		Real y = 0.75;
 		TraceBakersMap(x, y, 5);
 	}
-	cout << "Baker's Map: region k-2:\n";
+	std::cout << "Baker's Map: region k-2:\n";
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);

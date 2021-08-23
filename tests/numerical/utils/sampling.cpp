@@ -74,7 +74,6 @@ void Sample(cfloatConfiguration start, cfloatConfiguration stop, Real sample) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 

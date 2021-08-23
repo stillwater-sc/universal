@@ -31,7 +31,6 @@ void GenerateTestCase(Ty a) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
@@ -57,8 +56,6 @@ try {
 	GenerateLogarithmTable<7, 0>();
 #endif
 
-	cout << endl;
-
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifyLog< cfloat<8, 4, uint8_t> >(true), "cfloat<8,4>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog2< cfloat<8, 4, uint8_t> >(true), "cfloat<8,4>", "log2");
@@ -66,7 +63,7 @@ try {
 
 #else
 
-	cout << "cfloat log validation" << endl;
+	std::cout << "classic floating-point cfloat log validation\n";
 
 
 #if STRESS_TESTING

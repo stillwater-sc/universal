@@ -16,7 +16,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
@@ -26,69 +25,69 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// Performance benchmarks for value class
-	cout << endl << "Performance benchmarks for value<> class" << endl;
-	cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases" << endl;
+	std::cout << "\nPerformance benchmarks for value<> class\n";
+	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
-	cout << "half precision float\n";
+	std::cout << "half precision float\n";
 	{
 		constexpr size_t fbits = 10;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
 
-	cout << "single precision float\n";
+	std::cout << "single precision float\n";
 	{
 		constexpr size_t fbits = 22;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
 
-	cout << "double precision float\n";
+	std::cout << "double precision float\n";
 	{
 		constexpr size_t fbits = 53;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
 
-	cout << "extended precision float\n";
+	std::cout << "extended precision float\n";
 	{
 		constexpr size_t fbits = 64;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
 
-	cout << "quad precision float\n";
+	std::cout << "quad precision float\n";
 	{
 		constexpr size_t fbits = 112;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
 
 #else
 
-	cout << "TBD" << endl;
+	std::cout << "TBD\n";
 
 #endif // MANUAL_TESTING
 
-	if (nrOfFailedTestCases > 0) cout << "FAIL"; else cout << "PASS";
+	if (nrOfFailedTestCases > 0) std::cout << "FAIL"; else std::cout << "PASS";
 
-	cout.flush();
+	std::cout.flush();
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

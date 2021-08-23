@@ -25,7 +25,6 @@ std::string convert(Ty f) {
 
 template<size_t fbits, sw::universal::BlockTripleOperator op, typename ConversionType>
 int VerifyConversion() {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", " << op << ", uint8_t>\n";
@@ -39,10 +38,10 @@ int VerifyConversion() {
 		nut = v;
 		if (v != float(nut)) {
 			++nrOfFailures;
-			std::cout << "FAIL: " << setw(10) << i << " : " << to_binary(a) << " != " << to_binary(nut) << '\n';
+			std::cout << "FAIL: " << std::setw(10) << i << " : " << to_binary(a) << " != " << to_binary(nut) << '\n';
 		}
 		else {
-			std::cout << "PASS: " << setw(10) << i << " : " << to_binary(a) << " == " << to_binary(nut) << '\n';
+			std::cout << "PASS: " << std::setw(10) << i << " : " << to_binary(a) << " == " << to_binary(nut) << '\n';
 		}
 	}
 	std::cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", " << op << ", uint8_t>  ";
@@ -56,7 +55,6 @@ int VerifyConversion() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);

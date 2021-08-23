@@ -25,12 +25,9 @@
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
-
-	if (argc > 0) { cout << argv[0] << endl; }
 
 	constexpr size_t RND_TEST_CASES = 2*1024*1024;
 
@@ -42,9 +39,9 @@ try {
 	std::string tag = " posit<16,1>";
 
 #if POSIT_FAST_POSIT_16_1
-	cout << "Fast specialization posit<16,1> configuration tests" << endl;
+	std::cout << "Fast specialization posit<16,1> configuration tests\n";
 #else
-	cout << "Standard posit<16,1> configuration tests" << endl;
+	std::cout << "Standard posit<16,1> configuration tests\n";
 #endif
 
 #if MANUAL_TESTING
@@ -97,11 +94,11 @@ try {
 	nrOfFailedTestCases = 0;  // ignore failures in manual testing
 #else
 	posit<nbits, es> p;
-	cout << dynamic_range(p) << endl << endl;
+	std::cout << dynamic_range(p) << "\n\n";
 
 	// special cases
-	cout << "Special case tests " << endl;
-	string test = "Initialize to zero: ";
+	std::cout << "Special case tests\n";
+	std::string test = "Initialize to zero: ";
 	p = 0;
 	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
 	test = "Initialize to NAN";
@@ -122,7 +119,7 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	// logic tests
-	cout << "Logic operator tests " << endl;
+	std::cout << "Logic operator tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=         (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessThan          <nbits, es>(), tag, "    <          (native)  ");
@@ -131,13 +128,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         (native)  ");
 
 	// conversion tests
-	cout << "Assignment/conversion tests " << endl;
+	std::cout << "Assignment/conversion tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(bReportIndividualTestCases), tag, "integer assign (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(bReportIndividualTestCases), tag, "float assign   (native)  ");
 
 	// arithmetic tests
 	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
-	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
+	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPA, RND_TEST_CASES), tag, "+=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    (native)  ");
@@ -148,7 +145,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=             (native)  ");
 
 	// elementary function tests
-	cout << "Elementary function tests " << endl;
+	std::cout << "Elementary function tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifySqrt                        <nbits, es>(bReportIndividualTestCases), tag, "sqrt           (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyExp                         <nbits, es>(bReportIndividualTestCases), tag, "exp                      ");
 	nrOfFailedTestCases += ReportTestResult( VerifyExp2                        <nbits, es>(bReportIndividualTestCases), tag, "exp2                     ");
@@ -170,7 +167,7 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction               <nbits, es>(bReportIndividualTestCases), tag, "pow                      ");
 #endif
-	cout << flush;
+	std::cout << std::flush;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -37,7 +37,6 @@ void GenerateTestCase(Ty a, Ty b) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -86,18 +85,18 @@ try {
 #else
 	bool bReportIndividualTestCases = false;
 
-	cout << "Integer power function\n";
+	std::cout << "Integer power function\n";
 	int a = 2;
 	unsigned int b = 32;
-	cout << "2 ^ 32   = " << ipow(a, b) << endl;
-	cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << endl;
+	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
+	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
 
 	int64_t c = 1024;
 	uint8_t d = 2;
-	cout << "1024 ^ 2 = " << ipow(c, unsigned(d)) << endl;
-	cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << endl;
+	std::cout << "1024 ^ 2 = " << ipow(c, unsigned(d)) << '\n';
+	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
 
-	cout << "Posit Power function validation\n";
+	std::cout << "Posit Power function validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(bReportIndividualTestCases), "posit<2,0>", "pow");
 

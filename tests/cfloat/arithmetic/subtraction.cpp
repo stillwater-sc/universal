@@ -69,7 +69,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -143,7 +142,7 @@ try {
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else
-	cout << "classic floating-point subtraction validation" << endl;
+	std::cout << "classic floating-point subtraction validation\n";
 
 	bool bReportIndividualTestCases = false;
 	constexpr bool hasSubnormals = true;

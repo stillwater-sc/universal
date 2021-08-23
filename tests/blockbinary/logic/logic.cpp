@@ -231,7 +231,6 @@ int VerifyGreaterOrEqualThan(bool bReportIndividualTestCases) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockbinary logic operator tests";

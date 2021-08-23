@@ -56,7 +56,6 @@ void GenerateTestCase(Ty a) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 //	GenerateEulersNumber();  // 9000 digits of e
@@ -98,7 +97,7 @@ try {
 
 #else
 
-	cout << "cfloat exponential function validation" << endl;
+	std::cout << "classic floating-point cfloat exponential function validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "exp");
 	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 8, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<8,3>", "exp");

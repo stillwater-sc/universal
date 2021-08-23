@@ -45,7 +45,6 @@ namespace sw::universal {
 	/// <returns></returns>
 	template<typename CfloatConfiguration>
 	int VerifyCfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
-		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = CfloatConfiguration::nbits;
 		constexpr size_t es = CfloatConfiguration::es;
@@ -72,7 +71,7 @@ namespace sw::universal {
 					if (a.isinf() && b.isinf()) continue;
 
 					++nrOfTestFailures;
-					if (bReportIndividualTestCases) cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
 				}
 			}
 		}
@@ -82,7 +81,6 @@ namespace sw::universal {
 
 	template<typename CfloatConfiguration>
 	int VerifyBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
-		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = CfloatConfiguration::nbits;
 		constexpr size_t es = CfloatConfiguration::es;
@@ -113,7 +111,7 @@ namespace sw::universal {
 					if (a.isinf() && b.isinf()) continue;
 
 					++nrOfTestFailures;
-					if (bReportIndividualTestCases) cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
 				}
 			}
 		}
@@ -130,7 +128,6 @@ namespace sw::universal {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -177,7 +174,7 @@ try {
 
 	nrOfFailedTestCases += VerifyBlocktripleToCfloatConversion < cfloat < 8, 2, uint8_t > > (true);
 
-	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
+	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
 
 #if STRESS_TESTING

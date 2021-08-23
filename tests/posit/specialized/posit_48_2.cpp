@@ -24,12 +24,9 @@ Extended Standard posit with nbits = 48 have es = 2 exponent bits.
 
 #define STRESS_TESTING 1
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
-
-	if (argc > 0) { cout << argv[0] << endl; }
 
 	constexpr size_t RND_TEST_CASES = 150000;
 
@@ -41,17 +38,17 @@ try {
 	std::string tag = " posit<48,2>";
 
 #if POSIT_FAST_POSIT_48_2
-	cout << "Fast specialization posit<48,2> configuration tests" << endl;
+	std::cout << "Fast specialization posit<48,2> configuration tests\n";
 #else
-	cout << "Extended Standard posit<48,2> configuration tests" << endl;
+	std::cout << "Extended Standard posit<48,2> configuration tests\n";
 #endif
 
 	posit<nbits, es> p;
-	cout << dynamic_range(p) << endl << endl;
+	std::cout << dynamic_range(p) << "\n\n";
 
 	// special cases
-	cout << "Special case tests " << endl;
-	string test = "Initialize to zero: ";
+	std::cout << "Special case tests\n";
+	std::string test = "Initialize to zero: ";
 	p = 0;
 	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
 	test = "Initialize to NAN";
@@ -74,8 +71,8 @@ try {
 	// TODO: as we don't have a reference floating point implementation to Verify
 	// the arithmetic operations we are going to ignore the failures
 #if STRESS_TESTING
-	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-	cout << "Without an arithmetic reference, test failures can be ignored" << endl;
+	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
+	std::cout << "Without an arithmetic reference, test failures can be ignored\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");

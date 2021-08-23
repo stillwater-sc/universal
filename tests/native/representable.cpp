@@ -23,14 +23,13 @@ void ReproducibilityTestSuite() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "failed";
 
 	ReproducibilityTestSuite();
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 

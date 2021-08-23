@@ -23,12 +23,9 @@
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 1
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
-
-	if (argc > 0) { cout << argv[0] << endl; }
 
 	constexpr size_t RND_TEST_CASES = 10000;
 
@@ -40,22 +37,22 @@ try {
 	std::string tag = " posit<64,3>";
 
 #if POSIT_FAST_POSIT_64_3
-	cout << "Fast specialization posit<64,3> configuration tests" << endl;
+	std::cout << "Fast specialization posit<64,3> configuration tests\n";
 #else
-	cout << "Standard posit<64,3> configuration tests" << endl;
+	std::cout << "Standard posit<64,3> configuration tests\n";
 #endif
 
 	using Scalar = posit<nbits, es>;
 	Scalar p;
-	cout << dynamic_range(p) << endl << endl;
+	std::cout << dynamic_range(p) << "\n\n";
 
 #if MANUAL_TESTING
 
 #else
 
 	// special cases
-	cout << "Special case tests " << endl;
-	string test = "Initialize to zero: ";
+	std::cout << "Special case tests\n";
+	std::string test = "Initialize to zero: ";
 	p = 0;
 	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
 	test = "Initialize to NAN";
@@ -76,7 +73,7 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	// logic tests
-	cout << "Logic operator tests " << endl;
+	std::cout << "Logic operator tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==          (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=          (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessThan          <nbits, es>(), tag, "    <           (native)  ");
@@ -86,14 +83,14 @@ try {
 
 	// conversion tests
 	// internally this generators are clamped as the state space 2^33 is too big
-	cout << "Assignment/conversion tests " << endl;
+	std::cout << "Assignment/conversion tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(bReportIndividualTestCases), tag, "sint32 assign   (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyUintConversion              <nbits, es>(bReportIndividualTestCases), tag, "uint32 assign   (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(bReportIndividualTestCases), tag, "float assign    (native)  ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
 
 	// arithmetic tests
-	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
+	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction     (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
@@ -104,7 +101,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "/=              (native)  ");
 
 	// elementary function tests
-	cout << "Elementary function tests " << endl;
+	std::cout << "Elementary function tests\n";
 	p.minpos();
 	double dminpos = double(p);
 	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_SQRT,  RND_TEST_CASES, dminpos), tag, "sqrt            (native)  ");

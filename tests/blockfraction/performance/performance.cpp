@@ -16,9 +16,8 @@
 
 // test construction peformance
 void TestBlockPerformanceOnConstruction() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Construction performance" << endl;
+	std::cout << "\nConstruction performance\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull + 1;
 	constexpr BitEncoding flex = BitEncoding::Flex;
@@ -35,9 +34,8 @@ void TestBlockPerformanceOnConstruction() {
 
 // test performance of shift operator on blockfraction<> class
 void TestShiftOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Logical shift operator performance" << endl;
+	std::cout << "\nLogical shift operator performance\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
 	constexpr BitEncoding flex = BitEncoding::Flex;
@@ -52,9 +50,8 @@ void TestShiftOperatorPerformance() {
 }
 
 void TestBlockPerformanceOnShift() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Block size performance on logical shift operators" << endl;
+	std::cout << "\nBlock size performance on logical shift operators\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
 	constexpr BitEncoding flex = BitEncoding::Flex;
@@ -155,9 +152,8 @@ void BFDivisionWorkload(uint64_t NR_OPS) {
 }
 
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Arithmetic operator performance" << endl;
+	std::cout << "\nArithmetic operator performance\n";
 
 	size_t NR_OPS = 1024ull * 1024ull * 2ull;
 	constexpr BitEncoding ones = BitEncoding::Ones;
@@ -207,9 +203,8 @@ void TestArithmeticOperatorPerformance() {
 }
 
 void TestBlockPerformanceOnAdd() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "ADDITION: blockfraction arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nADDITION: blockfraction arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 2ull * 1024ull * 1024ull;
 	constexpr BitEncoding twos = BitEncoding::Twos;
@@ -239,9 +234,8 @@ void TestBlockPerformanceOnAdd() {
 }
 
 void TestBlockPerformanceOnDiv() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "DIVISION: blockfraction arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nDIVISION: blockfraction arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024;
 	constexpr BitEncoding ones = BitEncoding::Ones;
@@ -272,9 +266,8 @@ void TestBlockPerformanceOnDiv() {
 
 #if FRACTION_REMAINDER
 void TestBlockPerformanceOnRem() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "REMAINDER: blockfraction arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nREMAINDER: blockfraction arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024;
 	constexpr BitEncoding ones = BitEncoding::Ones;
@@ -305,9 +298,8 @@ void TestBlockPerformanceOnRem() {
 #endif
 
 void TestBlockPerformanceOnMul() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "MULTIPLICATION: blockfraction arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nMULTIPLICATION: blockfraction arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 512ull * 1024;
 	constexpr BitEncoding ones = BitEncoding::Ones;
@@ -342,7 +334,6 @@ void TestBlockPerformanceOnMul() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockfraction operator performance benchmarking";
@@ -354,7 +345,7 @@ try {
 
 	ShiftPerformanceWorkload< sw::universal::blockfraction<8, uint8_t> >(1);
 	
-	cout << "done" << endl;
+	std::cout << "done\n";
 
 	return EXIT_SUCCESS;
 #else

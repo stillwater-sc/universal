@@ -36,17 +36,16 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 // progressions
 void Progressions(uint32_t digit) {
-	using namespace std;
 	using BlockType = uint32_t;
 	sw::universal::adaptivefloat f;
-	vector<BlockType> coef;
+	std::vector<BlockType> coef;
 
 	constexpr size_t digitsInWord = 9;
 	coef.clear();
 	coef.push_back(digit);
 	for (size_t i = 0; i < digitsInWord; ++i) {
 		f.test(false, -1, coef);
-		cout << "(+, exp = -1, coef = " << coef[0] << ") = " << f << endl;
+		std::cout << "(+, exp = -1, coef = " << coef[0] << ") = " << f << '\n';
 		coef[0] *= 10;
 		coef[0] += digit;
 	}
@@ -54,7 +53,7 @@ void Progressions(uint32_t digit) {
 	coef.push_back(digit);
 	for (size_t i = 0; i < digitsInWord; ++i) {
 		f.test(false, 0, coef);
-		cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << endl;
+		std::cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << '\n';
 		coef[0] *= 10;
 		coef[0] += digit;
 	}
@@ -62,7 +61,7 @@ void Progressions(uint32_t digit) {
 	coef.push_back(digit);
 	for (size_t i = 0; i < digitsInWord; ++i) {
 		f.test(false, 1, coef);
-		cout << "(+, exp = 1, coef = " << coef[0] << ") = " << f << endl;
+		std::cout << "(+, exp = 1, coef = " << coef[0] << ") = " << f << '\n';
 		coef[0] *= 10;
 		coef[0] += digit;
 	}
@@ -73,7 +72,6 @@ void Progressions(uint32_t digit) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -88,9 +86,9 @@ try {
 
 	adaptivefloat f;
 	f = 0;
-	cout << f << endl;
+	std::cout << f << '\n';
 
-	vector<uint32_t> coef;
+	std::vector<uint32_t> coef;
 
 	Progressions(1);
 	Progressions(9);
@@ -101,20 +99,20 @@ try {
 	for (int i = 0; i < 13; ++i) {
 		coef[0] += 1;
 		f.test(false, 0, coef);
-		cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << endl;
+		std::cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << '\n';
 	}
 	coef[0] = 999999999;
 	f.test(false, 0, coef);
-	cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << endl;
+	std::cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << '\n';
 	coef.push_back(0);
 	for (int i = 0; i < 13; ++i) {
 		coef[0] = 0;
 		coef[1] += 1;
 		f.test(false, 0, coef);
-		cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << endl;
+		std::cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << '\n';
 		coef[0] = 999999999;
 		f.test(false, 0, coef);
-		cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << endl;
+		std::cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << '\n';
 
 	}
 

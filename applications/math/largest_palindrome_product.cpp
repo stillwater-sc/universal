@@ -18,7 +18,6 @@
 
 template<size_t nbits>
 bool Largest2DigitPalindromeProduct() {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
@@ -39,7 +38,7 @@ bool Largest2DigitPalindromeProduct() {
 			while (a < 100) {
 				b = palindrome / a;
 				if ((palindrome % a) == 0 && b < 100) {
-					cout << "In step " << nrOfSteps << " found largest 2-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
+					std::cout << "In step " << nrOfSteps << " found largest 2-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << '\n';
 					return true;
 				}
 				else {
@@ -54,7 +53,6 @@ bool Largest2DigitPalindromeProduct() {
 
 template<size_t nbits>
 bool Largest3DigitPalindromeProduct() {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
@@ -76,7 +74,7 @@ bool Largest3DigitPalindromeProduct() {
 				while (a < 1000) {
 					b = palindrome / a;
 					if ((palindrome % a) == 0 && b < 1000) {
-						cout << "In step " << nrOfSteps << " found largest 3-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
+						std::cout << "In step " << nrOfSteps << " found largest 3-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << '\n';
 						return true;
 					}
 					else {
@@ -92,7 +90,6 @@ bool Largest3DigitPalindromeProduct() {
 
 template<size_t nbits>
 bool Largest4DigitPalindromeProduct() {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
@@ -115,7 +112,7 @@ bool Largest4DigitPalindromeProduct() {
 					while (a < 10000) {
 						b = palindrome / a;
 						if ((palindrome % a) == 0 && b < 10000) {
-							cout << "In step " << nrOfSteps << " found largest 4-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
+							std::cout << "In step " << nrOfSteps << " found largest 4-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << '\n';
 							return true;
 						}
 						else {
@@ -132,7 +129,6 @@ bool Largest4DigitPalindromeProduct() {
 
 template<size_t nbits>
 bool Largest5DigitPalindromeProduct() {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
@@ -156,7 +152,7 @@ bool Largest5DigitPalindromeProduct() {
 						while (a < 100000) {
 							b = palindrome / a;
 							if ((palindrome % a) == 0 && b < 100000) {
-								cout << "In step " << nrOfSteps << " found largest 5-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
+								std::cout << "In step " << nrOfSteps << " found largest 5-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << '\n';
 								return true;
 							}
 							else {
@@ -174,7 +170,6 @@ bool Largest5DigitPalindromeProduct() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	Largest2DigitPalindromeProduct<16>();

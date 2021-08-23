@@ -22,7 +22,6 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	constexpr sw::universal::BitEncoding encoding = BlockFractionConfiguration::encoding;
 
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace std;
 	using namespace sw::universal;
 	
 //	cout << endl;
@@ -96,7 +95,6 @@ void GenerateTestCase(const sw::universal::blockfraction<nbits, BlockType, encod
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -130,7 +128,7 @@ try {
 
 #else
 
-	cout << "blockfraction addition validation" << endl;
+	std::cout << "blockfraction addition validation\n";
 	constexpr BitEncoding twos = BitEncoding::Twos;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<4, uint8_t, twos> >(bReportIndividualTestCases),  "blockfraction< 4, uint8_t >", "addition");

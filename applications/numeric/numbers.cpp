@@ -116,10 +116,9 @@ type_name()
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "high-precision constants " << endl;
+	std::cout << "high-precision constants\n";
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1300)
 	std::cout << "Microsoft Visual C++: " << _MSC_VER << '\n';
@@ -198,33 +197,33 @@ try {
 
 	// report on precision and dynamic range of the number system
 
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 
 	constexpr size_t columnWidth = 30;
-	numberTraits<int32, columnWidth>(cout);
-	numberTraits<fixpnt32, columnWidth>(cout);
-	numberTraits<float, columnWidth>(cout);
-	numberTraits<areal32, columnWidth>(cout);
-	numberTraits<posit32, columnWidth>(cout);
-	numberTraits<lns32, columnWidth>(cout);
+	numberTraits<int32, columnWidth>(std::cout);
+	numberTraits<fixpnt32, columnWidth>(std::cout);
+	numberTraits<float, columnWidth>(std::cout);
+	numberTraits<areal32, columnWidth>(std::cout);
+	numberTraits<posit32, columnWidth>(std::cout);
+	numberTraits<lns32, columnWidth>(std::cout);
 
-	cout << "a better type name: " << type_name<const posit32>() << endl;
+	std::cout << "a better type name: " << type_name<const posit32>() << '\n';
 
-	cout << minmax_range<float>() << endl;
-	cout << minmax_range<posit32>() << endl;
-	cout << minmax_range<lns32>() << endl;
+	std::cout << minmax_range<float>() << '\n';
+	std::cout << minmax_range<posit32>() << '\n';
+	std::cout << minmax_range<lns32>() << '\n';
 
-	cout << dynamic_range<float>() << endl;
-	cout << dynamic_range<posit32>() << endl;
-	cout << dynamic_range<lns32>() << endl;
+	std::cout << dynamic_range<float>() << '\n';
+	std::cout << dynamic_range<posit32>() << '\n';
+	std::cout << dynamic_range<lns32>() << '\n';
 
-	cout << symmetry<float>() << endl;
-	cout << symmetry<posit32>() << endl;
-	cout << symmetry<lns32>() << endl;
+	std::cout << symmetry<float>() << '\n';
+	std::cout << symmetry<posit32>() << '\n';
+	std::cout << symmetry<lns32>() << '\n';
 
-	compareNumberTraits<float, areal32>(cout);
-	compareNumberTraits<float, posit32>(cout);
-	compareNumberTraits<float, lns32>(cout);
+	compareNumberTraits<float, areal32>(std::cout);
+	compareNumberTraits<float, posit32>(std::cout);
+	compareNumberTraits<float, lns32>(std::cout);
 
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 	constexpr long double pi     = 3.14159265358979323846;
@@ -239,8 +238,8 @@ try {
 	cout << "pi_v<long double> " << std::numbers::pi_v<long double> << endl;
 #endif
 
-	cout << setprecision(precision);
-	cout << endl;
+	std::cout << std::setprecision(precision);
+	std::cout << std::endl;
 	
 	return EXIT_SUCCESS;
 }

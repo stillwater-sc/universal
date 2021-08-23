@@ -23,7 +23,6 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 	constexpr sw::universal::BitEncoding encoding = BlockFractionConfiguration::encoding;
 
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace std;
 	using namespace sw::universal;
 
 	//	cout << endl;
@@ -74,7 +73,6 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
@@ -93,7 +91,7 @@ try {
 	b.setbits(0x9);
 	c.mul(a, b);
 	blockfraction<8, uint32_t, BitEncoding::Ones> result = c; // take the lower nbits
-	std::cout << to_binary(result) << endl;
+	std::cout << to_binary(result) << '\n';
 
 	uint8_t mask;
 //	mask = (1 << (bitsInBlock - ((nbits % (nrBlocks * bitsInBlock)) - 1)))
@@ -102,7 +100,7 @@ try {
 		bitsInBlock = 8;
 		int nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
 		mask = (uint8_t(1) << ((nbits-1) % bitsInBlock));
-		cout << "nbits = " << nbits << " nrBlocks = " << nrBlocks << " mask = 0x" << to_binary(mask) << " " << int(mask) << endl;
+		std::cout << "nbits = " << nbits << " nrBlocks = " << nrBlocks << " mask = 0x" << to_binary(mask) << " " << int(mask) << '\n';
 	}
 
 	// generate individual testcases to hand trace/debug
@@ -115,7 +113,7 @@ try {
 		b.setbits(0x7FFu);  // maxpos
 //		c = a * b;  // rounded mul
 		d.mul(a, b); // unrounded mul yields
-		cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << endl;
+		std::cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << '\n';
 	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<4, uint8_t, BitEncoding::Ones> >(true), "blockfraction<4,uint8>", "multiplication");

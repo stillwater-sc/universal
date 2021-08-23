@@ -246,7 +246,6 @@ namespace sw::universal {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -262,12 +261,12 @@ try {
 	nrOfFailedTestCases = 0;
 
 #else
-	cout << "BLOCKTRIPLE logic operator validation" << endl;
+	std::cout << "BLOCKTRIPLE logic operator validation\n";
 
 	//bool bReportIndividualTestCases = false;
 	std::string tag = "Comparison failed: ";
 
-	cout << "Logic: operator==()" << endl;
+	std::cout << "Logic: operator==()\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicEqual< blocktriple< 4> >(), "blocktriple< 4>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicEqual< blocktriple< 5> >(), "blocktriple< 5>", "==");
@@ -278,7 +277,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicEqual< blocktriple<10> >(), "blocktriple<10>", "==");
 
 	
-	cout << "Logic: operator!=()" << endl;
+	std::cout << "Logic: operator!=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicNotEqual< blocktriple< 4> >(), "blocktriple< 4>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicNotEqual< blocktriple< 5> >(), "blocktriple< 5>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicNotEqual< blocktriple< 6> >(), "blocktriple< 6>", "!=");
@@ -290,7 +289,7 @@ try {
 
 
 #ifdef BLOCKTRIPLE_SUBTRACT_IS_IMPLEMENTED
-	cout << "Logic: operator<()" << endl;
+	std::cout << "Logic: operator<()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicLessThan< blocktriple< 4> >(), "blocktriple< 4>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicLessThan< blocktriple< 5> >(), "blocktriple< 5>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicLessThan< blocktriple< 6> >(), "blocktriple< 6>", "<");
@@ -301,7 +300,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicLessThan< blocktriple<12> >(), "blocktriple<12>", "<");
 
 
-	cout << "Logic: operator<=()" << endl;
+	std::cout << "Logic: operator<=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicLessThan< blocktriple< 4> >(), "blocktriple< 4>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicLessThan< blocktriple< 5> >(), "blocktriple< 5>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicLessThan< blocktriple< 6> >(), "blocktriple< 6>", "<");

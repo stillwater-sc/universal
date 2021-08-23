@@ -41,13 +41,12 @@ void GenerateTestCase(Ty a) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	cout << "Posit reciprocate validation" << endl;
+	std::cout << "Posit reciprocate validation\n";
 
 	std::string tag = "Reciprocation failed: ";
 

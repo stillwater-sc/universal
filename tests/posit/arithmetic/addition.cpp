@@ -47,7 +47,6 @@ void GenerateTestCase(Ty a, Ty b) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -73,7 +72,7 @@ try {
 
 #else
 
-	cout << "Posit addition validation" << endl;
+	std::cout << "Posit addition validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<2, 0>(bReportIndividualTestCases), "posit<2,0>", "addition");
 

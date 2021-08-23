@@ -13,7 +13,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -27,7 +26,7 @@ try {
 	std::vector< Scalar > set;
 	GenerateOrderedPositSet<nbits, es>(set);
 	for_each (begin(set), end(set), [](const Scalar& s){
-		std::cout << s.get() << " " << s << std::endl;
+		std::cout << s.get() << " " << s << '\n';
 	});
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<nbits, es>(bReportIndividualTestCases), positConfig, "operator++");
@@ -38,7 +37,8 @@ try {
 	// Otherwise stated, an enumeration of tests for different posit configurations is a bit superfluous.
 
 	// DECREMENT tests
-	cout << endl << "DECREMENT tests" << endl;
+	std::cout << "\n posit decrement operator tests\n";
+
 	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<3, 0>(bReportIndividualTestCases), "posit<3,0>", "operator--");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<4, 0>(bReportIndividualTestCases), "posit<4,0>", "operator--");

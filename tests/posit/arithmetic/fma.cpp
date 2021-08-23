@@ -45,7 +45,6 @@ void ReportErrors();
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
@@ -66,8 +65,8 @@ try {
 		pb = db;
 		pc = dc;
 		pfma = sw::universal::fma(pa, pb, pc);
-		if (da*db + dc != 0.0)  cout << "Incorrect:  ";
-		cout << pfma << " : " << (long double)(pfma) << endl;
+		if (da*db + dc != 0.0)  std::cout << "Incorrect:  ";
+		std::cout << pfma << " : " << (long double)(pfma) << '\n';
 	}
 
 	{
@@ -77,8 +76,8 @@ try {
 		pb = db;
 		pc = dc;
 		pfma = sw::universal::fma(pa, pb, pc);
-		if (da*db + dc != 1.0)  cout << "Incorrect:  ";
-		cout << pfma << " : " << (long double)(pfma) << endl;
+		if (da*db + dc != 1.0)  std::cout << "Incorrect:  ";
+		std::cout << pfma << " : " << (long double)(pfma) << '\n';
 	}
 
 	return 0;
@@ -127,7 +126,6 @@ catch (...) {
 
 void ReportSizeof() 
 {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
@@ -146,56 +144,56 @@ void ReportSizeof()
 	posit<64, 3> p64_3;
 	internal::value<64> v64;
 
-	cout << "sizeof(posit< 8,0>)    = " << sizeof(p8_0)  << " bytes" << endl;
-	cout << "sizeof(posit<16,1>)    = " << sizeof(p16_1) << " bytes" << endl;
-	cout << "sizeof(posit<32,2>)    = " << sizeof(p32_2) << " bytes" << endl;
-	cout << "sizeof(posit<64,3>)    = " << sizeof(p64_3) << " bytes" << endl;
+	std::cout << "sizeof(posit< 8,0>)    = " << sizeof(p8_0)  << " bytes\n";
+	std::cout << "sizeof(posit<16,1>)    = " << sizeof(p16_1) << " bytes\n";
+	std::cout << "sizeof(posit<32,2>)    = " << sizeof(p32_2) << " bytes\n";
+	std::cout << "sizeof(posit<64,3>)    = " << sizeof(p64_3) << " bytes\n";
 
-	cout << "sizeof(regime< 8,0>)   = " << sizeof(r8_0) << " bytes" << endl;
-	cout << "sizeof(exponent< 8,0>) = " << sizeof(e8_0) << " bytes" << endl;
-	cout << "sizeof(fraction< 8,0>) = " << sizeof(f8_0) << " bytes" << endl;
+	std::cout << "sizeof(regime< 8,0>)   = " << sizeof(r8_0) << " bytes\n";
+	std::cout << "sizeof(exponent< 8,0>) = " << sizeof(e8_0) << " bytes\n";
+	std::cout << "sizeof(fraction< 8,0>) = " << sizeof(f8_0) << " bytes\n";
 
-	cout << "sizeof(regime<32,2>)   = " << sizeof(r32_2) << " bytes" << endl;
-	cout << "sizeof(exponent<32,2>) = " << sizeof(e32_2) << " bytes" << endl;
-	cout << "sizeof(fraction<32,2>) = " << sizeof(f32_2) << " bytes" << endl;
+	std::cout << "sizeof(regime<32,2>)   = " << sizeof(r32_2) << " bytes\n";
+	std::cout << "sizeof(exponent<32,2>) = " << sizeof(e32_2) << " bytes\n";
+	std::cout << "sizeof(fraction<32,2>) = " << sizeof(f32_2) << " bytes\n";
 
-	cout << "sizeof(value<8 >)      = " << sizeof(v8)  << " bytes" << endl;
-	cout << "sizeof(value<16>)      = " << sizeof(v16) << " bytes" << endl;
-	cout << "sizeof(value<32>)      = " << sizeof(v32) << " bytes" << endl;
-	cout << "sizeof(value<64>)      = " << sizeof(v64) << " bytes" << endl;
+	std::cout << "sizeof(value<8 >)      = " << sizeof(v8)  << " bytes\n";
+	std::cout << "sizeof(value<16>)      = " << sizeof(v16) << " bytes\n";
+	std::cout << "sizeof(value<32>)      = " << sizeof(v32) << " bytes\n";
+	std::cout << "sizeof(value<64>)      = " << sizeof(v64) << " bytes\n";
 
-//	cout << "sizeof(bitset<8 >)     = " << sizeof(std::bitset<8>) << " bytes" << endl;
-//	cout << "sizeof(bitset<16>)     = " << sizeof(std::bitset<16>) << " bytes" << endl;
-//	cout << "sizeof(bitset<32>)     = " << sizeof(std::bitset<32>) << " bytes" << endl;
-//	cout << "sizeof(bitset<64>)     = " << sizeof(std::bitset<64>) << " bytes" << endl;
+//	std::cout << "sizeof(bitset<8 >)     = " << sizeof(std::bitset<8>) << " bytes\n";
+//	std::cout << "sizeof(bitset<16>)     = " << sizeof(std::bitset<16>) << " bytes\n";
+//	std::cout << "sizeof(bitset<32>)     = " << sizeof(std::bitset<32>) << " bytes\n";
+//	std::cout << "sizeof(bitset<64>)     = " << sizeof(std::bitset<64>) << " bytes\n";
 
-	cout << "sizeof(bitblock< 4>)   = " << sizeof(bitblock<4>) << " bytes" << endl;
-	cout << "sizeof(bitblock< 8>)   = " << sizeof(bitblock<8>) << " bytes" << endl;
-	cout << "sizeof(bitblock<16>)   = " << sizeof(bitblock<16>) << " bytes" << endl;
-	cout << "sizeof(bitblock<32>)   = " << sizeof(bitblock<32>) << " bytes" << endl;
-	cout << "sizeof(bitblock<48>)   = " << sizeof(bitblock<48>) << " bytes" << endl;
-	cout << "sizeof(bitblock<64>)   = " << sizeof(bitblock<64>) << " bytes" << endl;
-	cout << "sizeof(bitblock<80>)   = " << sizeof(bitblock<80>) << " bytes" << endl;
-	cout << "sizeof(bitblock<96>)   = " << sizeof(bitblock<96>) << " bytes" << endl;
-	cout << "sizeof(bitblock<112>)  = " << sizeof(bitblock<112>) << " bytes" << endl;
-	cout << "sizeof(bitblock<128>)  = " << sizeof(bitblock<128>) << " bytes" << endl;
+	std::cout << "sizeof(bitblock< 4>)   = " << sizeof(bitblock<4>) << " bytes\n";
+	std::cout << "sizeof(bitblock< 8>)   = " << sizeof(bitblock<8>) << " bytes\n";
+	std::cout << "sizeof(bitblock<16>)   = " << sizeof(bitblock<16>) << " bytes\n";
+	std::cout << "sizeof(bitblock<32>)   = " << sizeof(bitblock<32>) << " bytes\n";
+	std::cout << "sizeof(bitblock<48>)   = " << sizeof(bitblock<48>) << " bytes\n";
+	std::cout << "sizeof(bitblock<64>)   = " << sizeof(bitblock<64>) << " bytes\n";
+	std::cout << "sizeof(bitblock<80>)   = " << sizeof(bitblock<80>) << " bytes\n";
+	std::cout << "sizeof(bitblock<96>)   = " << sizeof(bitblock<96>) << " bytes\n";
+	std::cout << "sizeof(bitblock<112>)  = " << sizeof(bitblock<112>) << " bytes\n";
+	std::cout << "sizeof(bitblock<128>)  = " << sizeof(bitblock<128>) << " bytes\n";
 
-	cout << "sizeof(posit< 4,0>)    = " << sizeof(posit<4,0>) << " bytes" << endl;
-	cout << "sizeof(posit< 8,0>)    = " << sizeof(posit<8,0>) << " bytes" << endl;
-	cout << "sizeof(posit<16,1>)    = " << sizeof(posit<16,1>) << " bytes" << endl;
-	cout << "sizeof(posit<32,2>)    = " << sizeof(posit<32,2>) << " bytes" << endl;
-	cout << "sizeof(posit<48,2>)    = " << sizeof(posit<48,2>) << " bytes" << endl;
-	cout << "sizeof(posit<64,3>)    = " << sizeof(posit<64,3>) << " bytes" << endl;
-	cout << "sizeof(posit<80,3>)    = " << sizeof(posit<80,3>) << " bytes" << endl;
-	cout << "sizeof(posit<96,3>)    = " << sizeof(posit<96,3>) << " bytes" << endl;
-	cout << "sizeof(posit<112,4>)   = " << sizeof(posit<112,4>) << " bytes" << endl;
-	cout << "sizeof(posit<128,4>)   = " << sizeof(posit<128,4>) << " bytes" << endl;
+	std::cout << "sizeof(posit< 4,0>)    = " << sizeof(posit<4,0>) << " bytes\n";
+	std::cout << "sizeof(posit< 8,0>)    = " << sizeof(posit<8,0>) << " bytes\n";
+	std::cout << "sizeof(posit<16,1>)    = " << sizeof(posit<16,1>) << " bytes\n";
+	std::cout << "sizeof(posit<32,2>)    = " << sizeof(posit<32,2>) << " bytes\n";
+	std::cout << "sizeof(posit<48,2>)    = " << sizeof(posit<48,2>) << " bytes\n";
+	std::cout << "sizeof(posit<64,3>)    = " << sizeof(posit<64,3>) << " bytes\n";
+	std::cout << "sizeof(posit<80,3>)    = " << sizeof(posit<80,3>) << " bytes\n";
+	std::cout << "sizeof(posit<96,3>)    = " << sizeof(posit<96,3>) << " bytes\n";
+	std::cout << "sizeof(posit<112,4>)   = " << sizeof(posit<112,4>) << " bytes\n";
+	std::cout << "sizeof(posit<128,4>)   = " << sizeof(posit<128,4>) << " bytes\n";
 
-	cout << "sizeof(bool)           = " << sizeof(bool) << " bytes" << endl;
-	cout << "sizeof(uint8_t)        = " << sizeof(uint8_t) << " bytes" << endl;
-	cout << "sizeof(uint16_t)       = " << sizeof(uint16_t) << " bytes" << endl;
-	cout << "sizeof(uint32_t)       = " << sizeof(uint32_t) << " bytes" << endl;
-	cout << "sizeof(uint64_t)       = " << sizeof(uint64_t) << " bytes" << endl;
+	std::cout << "sizeof(bool)           = " << sizeof(bool) << " bytes\n";
+	std::cout << "sizeof(uint8_t)        = " << sizeof(uint8_t) << " bytes\n";
+	std::cout << "sizeof(uint16_t)       = " << sizeof(uint16_t) << " bytes\n";
+	std::cout << "sizeof(uint32_t)       = " << sizeof(uint32_t) << " bytes\n";
+	std::cout << "sizeof(uint64_t)       = " << sizeof(uint64_t) << " bytes\n";
 }
 
 void ReportFmaResults()

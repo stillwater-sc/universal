@@ -113,7 +113,6 @@ const double pi = 3.14159265358979323846;
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
@@ -129,8 +128,6 @@ try {
 	GenerateTestCaseAsinh<16, 1, double>(pi / 2.0);
 	GenerateTestCaseAcosh<16, 1, double>(pi / 2.0);
 	GenerateTestCaseAtanh<16, 1, double>(pi / 4.0);
-
-	cout << endl;
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>(true), "posit<2,0>", "sinh");

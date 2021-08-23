@@ -57,32 +57,30 @@ void smallest_value(std::ostream& ostr) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "ULP math " << endl;
+	std::cout << "ULP math\n";
 
 	// operations on the unit in last position
 
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 
-	ULP(cout, 1.25e-10f);
-	ULP(cout, 1.25e-20);
-	ULP(cout, 1.25e-40l);
+	ULP(std::cout, 1.25e-10f);
+	ULP(std::cout, 1.25e-20);
+	ULP(std::cout, 1.25e-40l);
 
-	ULP(cout, posit< 32, 2>(1.25e-10f));
-	ULP(cout, posit< 64, 3>(1.25e-20));
-	ULP(cout, posit<128, 4>(1.25e-40l));
+	ULP(std::cout, posit< 32, 2>(1.25e-10f));
+	ULP(std::cout, posit< 64, 3>(1.25e-20));
+	ULP(std::cout, posit<128, 4>(1.25e-40l));
 
-	smallest_value<float>(cout);
-	smallest_value<double>(cout);
-	smallest_value<long double>(cout);
-	smallest_value< posit< 32, 2> >(cout);
-	smallest_value< posit< 64, 3> >(cout);
-	smallest_value< posit<128, 4> >(cout);
+	smallest_value<float>(std::cout);
+	smallest_value<double>(std::cout);
+	smallest_value<long double>(std::cout);
+	smallest_value< posit< 32, 2> >(std::cout);
+	smallest_value< posit< 64, 3> >(std::cout);
+	smallest_value< posit<128, 4> >(std::cout);
 
-	cout << setprecision(precision);
-	cout << endl;
+	std::cout << std::setprecision(precision) << std::endl;
 	
 	return EXIT_SUCCESS;
 }

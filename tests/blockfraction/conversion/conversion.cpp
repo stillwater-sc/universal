@@ -38,7 +38,6 @@ dynamic data structure and a custom memory manager to avoid copies.
 */
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockfraction storage class value conversion testing";
@@ -66,7 +65,7 @@ try {
 		a.setradix(fhbits - 3);
 		for (size_t i = 0; i < fbits; ++i) {
 			a.setbits(frac);
-			cout << to_binary(a, true) << " : " << a << '\n';
+			std::cout << to_binary(a, true) << " : " << a << '\n';
 			msbMask >>= 1;
 			frac |= msbMask;
 		}
@@ -83,7 +82,7 @@ try {
 		frac = msbMask;
 		for (size_t i = 0; i < fbits; ++i) {
 			a.setbits(frac);
-			cout << to_binary(a, true) << " : " << -double(a) << '\n';
+			std::cout << to_binary(a, true) << " : " << -double(a) << '\n';
 			msbMask >>= 1;
 			frac |= msbMask;
 		}
@@ -101,7 +100,7 @@ try {
 		blockfraction<nbits, uint8_t, BitEncoding::Ones> a(0xff, 1);
 		for (int radix = 1; radix < nbits; ++radix) {
 			a.setradix(radix);
-			cout << to_binary(a) << " : " << a << '\n';
+			std::cout << to_binary(a) << " : " << a << '\n';
 		}
 	}
 }

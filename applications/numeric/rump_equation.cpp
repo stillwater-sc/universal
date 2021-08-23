@@ -149,10 +149,9 @@ void GenerateRow(double a, double b, sw::universal::blas::matrix<double>& table,
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "Rump's equation\n";
+	std::cout << "Rump's equation\n";
 
 /*
  * one off constant computation from "Handbook of Floating-Point Arithmetic":
@@ -178,7 +177,7 @@ It requires 122 bits of mantissa under MPFR to get the correct answer, and is re
 There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#Rump's%20example
 */
 
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 	double a = 77617.0;
 	double b = 33096.0;
 
@@ -226,20 +225,20 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 
 	// print the table
 	constexpr size_t COLUMN_WIDTH = 20;
-	cout << setw(COLUMN_WIDTH) << "type" << "  |  ";
+	std::cout << std::setw(COLUMN_WIDTH) << "type" << "  |  ";
 	for (size_t j = 0; j < size(column); ++j) {
-		cout << setw(COLUMN_WIDTH) << column[j] << "  |  ";
+		std::cout << std::setw(COLUMN_WIDTH) << column[j] << "  |  ";
 	}
-	cout << '\n';
+	std::cout << '\n';
 	for (size_t i = 0; i < size(rowLbls); ++i) {
-		cout << setw(COLUMN_WIDTH) << rowLbls[i] << "  |  ";
+		std::cout << std::setw(COLUMN_WIDTH) << rowLbls[i] << "  |  ";
 		for (size_t j = 0; j < 3; ++j) {
-			cout << setw(COLUMN_WIDTH) << table(i, j) << "  |  ";
+			std::cout << std::setw(COLUMN_WIDTH) << table(i, j) << "  |  ";
 		}
-		cout << '\n';
+		std::cout << '\n';
 	}
-	cout << setprecision(precision);
-	cout << endl;
+	std::cout << std::setprecision(precision);
+	std::cout << std::endl;
 	
 	// trace out the original Rump equation with different number systems
 	TraceRump1<double>(a, b);

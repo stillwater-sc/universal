@@ -37,7 +37,6 @@ void GenerateTestCase(Ty a) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
@@ -62,8 +61,6 @@ try {
 	GenerateLogarithmTable<6, 3>();
 	GenerateLogarithmTable<7, 0>();
 #endif
-
-	cout << endl;
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<2, 0>(true), "posit<2,0>", "log");

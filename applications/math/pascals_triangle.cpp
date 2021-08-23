@@ -65,7 +65,6 @@ void Binomials(Scalar n) {
 
 int main() 
 try {
-	using namespace std;
 	using namespace sw::function;
 
 #if MANUAL_TESTING

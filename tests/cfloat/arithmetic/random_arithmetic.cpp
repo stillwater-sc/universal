@@ -31,7 +31,6 @@ int Randoms(bool bReportIndividualTestCases, const std::string& tag, size_t nrTe
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -39,7 +38,7 @@ try {
 	int nrOfFailedTestCases = 0;
 	std::string tag = "randoms";
 
-	cout << "Random test generation for large classic floatint-point configurations" << endl;
+	std::cout << "Random test generation for large classic floatint-point configurations\n";
 
 #if MANUAL_TESTING
 

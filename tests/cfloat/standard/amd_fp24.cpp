@@ -12,7 +12,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -25,11 +24,11 @@ try {
 	int nrOfFailedTestCases = 0;
 	std::string tag = " cfloat<24,7>";
 
-	cout << "Standard AMD fp24 format, which is equivalent to a cfloat<24,7> configuration tests" << endl;
+	std::cout << "Standard AMD fp24 format, which is equivalent to a cfloat<24,7> configuration tests\n";
 
 	amd_fp24 r;
 	r = 1.2345;
-	cout << r << endl;
+	std::cout << r << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

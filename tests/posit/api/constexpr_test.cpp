@@ -17,7 +17,6 @@
 
 int main(int argc, char** argv)
 {
-    using namespace std;
     using namespace sw::universal;
 
 //     constexpr sw::universal::posit<32, 2> p1{4.2};

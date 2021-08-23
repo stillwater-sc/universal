@@ -17,7 +17,6 @@ void ConstexprBlockConstructor(uint64_t pattern) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockfraction storage class constexpr compile-time testing";
@@ -26,9 +25,9 @@ try {
 		constexpr blockfraction<8, uint8_t, BitEncoding::Twos> b8_1w( 0x21, 5 );
 		constexpr blockfraction<8, uint16_t, BitEncoding::Twos> b8_2b( 0x21, 5 );
 		constexpr blockfraction<8, uint32_t, BitEncoding::Twos> b8_4b( 0x21, 5 );
-		cout << to_binary(b8_1w, true) << " : " << b8_1w << '\n';
-		cout << to_binary(b8_2b, true) << " : " << b8_2b << '\n';
-		cout << to_binary(b8_4b, true) << " : " << b8_4b << '\n';
+		std::cout << to_binary(b8_1w, true) << " : " << b8_1w << '\n';
+		std::cout << to_binary(b8_2b, true) << " : " << b8_2b << '\n';
+		std::cout << to_binary(b8_4b, true) << " : " << b8_4b << '\n';
 	}
 
 	{
@@ -36,9 +35,9 @@ try {
 		constexpr blockfraction<16, uint16_t, BitEncoding::Twos> b16_1w( 0x2001, 13 );
 		constexpr blockfraction<16, uint32_t, BitEncoding::Twos> b16_4b( 0x2001, 13 );
 
-		cout << to_binary(b16_2b, true) << " : " << b16_2b << '\n';
-		cout << to_binary(b16_1w, true) << " : " << b16_1w << '\n';
-		cout << to_binary(b16_4b, true) << " : " << b16_4b << '\n';
+		std::cout << to_binary(b16_2b, true) << " : " << b16_2b << '\n';
+		std::cout << to_binary(b16_1w, true) << " : " << b16_1w << '\n';
+		std::cout << to_binary(b16_4b, true) << " : " << b16_4b << '\n';
 	}
 
 	{
@@ -46,9 +45,9 @@ try {
 		constexpr blockfraction<32, uint16_t, BitEncoding::Twos> b32_2w( 0x2001, 29 );
 		constexpr blockfraction<32, uint32_t, BitEncoding::Twos> b32_1w( 0x30000001, 29 ); // == 1.5
 
-		cout << to_binary(b32_4b, true) << " : " << b32_4b << '\n';
-		cout << to_binary(b32_2w, true) << " : " << b32_2w << '\n';
-		cout << to_binary(b32_1w, true) << " : " << b32_1w << '\n';
+		std::cout << to_binary(b32_4b, true) << " : " << b32_4b << '\n';
+		std::cout << to_binary(b32_2w, true) << " : " << b32_2w << '\n';
+		std::cout << to_binary(b32_1w, true) << " : " << b32_1w << '\n';
 	}
 
 	{

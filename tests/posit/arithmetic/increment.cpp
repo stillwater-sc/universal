@@ -13,7 +13,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -38,7 +37,7 @@ try {
 	// Otherwise stated, an enumeration of tests for different posit configurations is a bit superfluous.
 
 	// INCREMENT tests
-	cout << endl << "INCREMENT tests" << endl;
+	std::cout << "\n posit increment operator tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<3, 0>(bReportIndividualTestCases), "posit<3,0>", "operator++");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<4, 0>(bReportIndividualTestCases), "posit<4,0>", "operator++");

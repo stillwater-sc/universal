@@ -11,57 +11,56 @@
 // receive a float and print the components of a double representation
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	auto list = std::list<int>{1,2,3,4,5};
 	for (auto& element: list) {
-		cout << element++ << ' ';
+		std::cout << element++ << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 	for (auto& element : reverse(list)) {
-		cout << --element << ' ';
+		std::cout << --element << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 	for (auto& element : list) {
-		cout << element << ' ';
+		std::cout << element << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 
 	// const containers
 	const auto const_list = { 1, 2, 3, 4, 5 };
 	for (auto& element : const_list) {
-		cout << element << ' ';
+		std::cout << element << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 	for (auto& element : reverse(const_list)) {
-		cout << element << ' ';
+		std::cout << element << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 
 	// temporary sequences, they need more machinery to apply a reverse view as
 	// you need to copy the contents of the temporary into the reverse view
 	// otherwise the sequence will have gone out of scope by the time we
 	// apply the begin/end methods.
 	for (auto& element : std::list<int>{10, 20, 30, 40, 50}) {
-		cout << element << ' ';
+		std::cout << element << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 	for (auto& element : reverse(std::list<int>{10, 20, 30, 40, 50})) {
-		cout << element << ' ';
+		std::cout << element << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 
 	// arrays
-	array<int, 5> array = { 100, 200, 300, 400, 500 };
+	std::array<int, 5> array = { 100, 200, 300, 400, 500 };
 	for (auto& element : array) {
-		cout << element << ' ';
+		std::cout << element << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 	for (auto& element : reverse(array)) {
-		cout << element << ' ';
+		std::cout << element << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 
 	return EXIT_SUCCESS;
 }

@@ -153,45 +153,44 @@ Real MethodOfViete(size_t N) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "Perfect approximations of PI for different number systems" << endl;
+	std::cout << "Perfect approximations of PI for different number systems\n";
 
-	cout << pi1000 << endl;
-	cout << "pi  = " << setprecision(25) << pi << endl;
-	cout << "ref = " << pi50 << endl;
+	std::cout << pi1000 << '\n';
+	std::cout << "pi  = " << std::setprecision(25) << pi << '\n';
+	std::cout << "ref = " << pi50 << '\n';
 
 	using Real = posit<64,3>; 
 	size_t N = 100;
-	cout << "Viete Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
-	cout << "pi  = " << setprecision(20) << MethodOfViete<float>(N) << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfViete<double>(N) << endl;
-	cout << "ref = " << pi50 << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfViete<Real>(N) << endl;
+	std::cout << "Viete Series using " << N << " iteration\n"; // doesn't really work for floats as rounding error accumulates to quickly
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfViete<float>(N) << '\n';
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfViete<double>(N) << '\n';
+	std::cout << "ref = " << pi50 << '\n';
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfViete<Real>(N) << '\n';
 
 	N = 1000;
-	cout << "Wallis Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
-	cout << "pi  = " << setprecision(20) << MethodOfWallis<float>(N) << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfWallis<double>(N) << endl;
-	cout << "ref = " << pi50 << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfWallis<Real>(N) << endl;
+	std::cout << "Wallis Series using " << N << " iteration\n"; // doesn't really work for floats as rounding error accumulates to quickly
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfWallis<float>(N) << '\n';
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfWallis<double>(N) << '\n';
+	std::cout << "ref = " << pi50 << '\n';
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfWallis<Real>(N) << '\n';
 
 	N = 1000;
-	cout << "Madhava of Sangamagrama (or Leibniz) Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
-	cout << "pi  = " << setprecision(20) << MethodOfMadhavaOfSangamagrama<float>(N) << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfMadhavaOfSangamagrama<double>(N) << endl;
-	cout << "ref = " << pi50 << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfMadhavaOfSangamagrama<Real>(N) << endl;
+	std::cout << "Madhava of Sangamagrama (or Leibniz) Series using " << N << " iteration\n"; // doesn't really work for floats as rounding error accumulates to quickly
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfMadhavaOfSangamagrama<float>(N) << '\n';
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfMadhavaOfSangamagrama<double>(N) << '\n';
+	std::cout << "ref = " << pi50 << '\n';
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfMadhavaOfSangamagrama<Real>(N) << '\n';
 
 	N = 1000;
-	cout << "Nilakantha Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
-	cout << "pi  = " << setprecision(20) << MethodOfNilakantha<float>(N) << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfNilakantha<double>(N) << endl;
-	cout << "ref = " << pi50 << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfNilakantha<Real>(N) << endl;
+	std::cout << "Nilakantha Series using " << N << " iteration\n"; // doesn't really work for floats as rounding error accumulates to quickly
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfNilakantha<float>(N) << '\n';
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfNilakantha<double>(N) << '\n';
+	std::cout << "ref = " << pi50 << '\n';
+	std::cout << "pi  = " << std::setprecision(20) << MethodOfNilakantha<Real>(N) << '\n';
 
 
 	// 1000 digits -> 1.e1000 -> 2^3322 -> 1.051103774764883380737596422798e+1000 -> you will need 3322 bits to represent 1000 digits of pi

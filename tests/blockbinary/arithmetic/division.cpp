@@ -17,11 +17,9 @@
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyDivision(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl;
-	cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	std::cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << ">\n";
 
 	bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
@@ -41,13 +39,13 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 			cref = aref / bref;
 
 			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) cout << setw(5) << aref << " / " << setw(5) << bref << " = " << setw(5) << cref << " : ";
-				if (bReportOverflowCondition) cout << "underflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " / " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
+				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) cout << setw(5) << aref << " / " << setw(5) << bref << " = " << setw(5) << cref << " : ";
-				if (bReportOverflowCondition) cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " / " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
+				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
 				++nrOfOverflows;
 			}
 
@@ -63,19 +61,19 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 		}
 		//		if (i % 1024 == 0) std::cout << '.';
 	}
-	cout << "Total State Space: " << setw(10) << NR_VALUES * NR_VALUES << " Overflows: " << setw(10) << nrOfOverflows << " Underflows " << setw(10) << nrOfUnderflows << endl;
+	std::cout << "Total State Space: " << std::setw(10) << NR_VALUES * NR_VALUES 
+		<< " Overflows: " << std::setw(10) << nrOfOverflows << " Underflows " << std::setw(10) << nrOfUnderflows << '\n';
 	return nrOfFailedTests;
 }
 
 template<size_t nbits, typename BlockType = uint8_t>
 void TestMostSignificantBit() {
-	using namespace std;
 	using namespace sw::universal;
 	blockbinary<nbits, BlockType> a;
-	cout << to_binary(a) << ' ' << a.msb() << endl;
+	std::cout << to_binary(a) << ' ' << a.msb() << '\n';
 	a = 1;
 	for (size_t i = 0; i < nbits; ++i) {
-		cout << to_binary(a) << ' ' << a.msb() << endl;
+		std::cout << to_binary(a) << ' ' << a.msb() << '\n';
 		a <<= 1;
 	}
 }
@@ -98,11 +96,11 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
-	std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << std::endl;
+	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << '\n';
+	std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << '\n';
 	//	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
 	reference.set_raw_bits(_c);
-	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << (result == reference ? "PASS" : "FAIL") << "\n\n";
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
@@ -112,7 +110,6 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
@@ -140,7 +137,7 @@ try {
 
 #else
 
-	cout << "blockbinary division validation" << endl;
+	std::cout << "blockbinary division validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, uint8_t>(bReportIndividualTestCases), "blockbinary<5,uint8_t>", "division");

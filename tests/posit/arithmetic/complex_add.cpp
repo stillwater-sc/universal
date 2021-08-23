@@ -66,32 +66,31 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 // enumerate all addition cases for a posit configuration
 template<size_t nbits, size_t es>
 int ValidateComplexAddition(const std::string& tag, bool bReportIndividualTestCases) {
-	using namespace std;
 	using namespace sw::universal;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> ar, ai, br, bi;
-	complex<posit<nbits, es>> a, b, result, ref;
+	std::complex<posit<nbits, es>> a, b, result, ref;
 
-	complex<double> da, db, dc;
+	std::complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_POSITS; ++i) {
 		ar.setbits(i);
 		for (size_t j = 0; j < NR_POSITS; ++j) {
 			ai.setbits(j);
-			a = complex<posit<nbits, es>>(ar, ai);
-			da = complex<double>(double(ar), double(ai));
+			a = std::complex<posit<nbits, es>>(ar, ai);
+			da = std::complex<double>(double(ar), double(ai));
 
 			// generate all the right sides
 			for (size_t k = 0; k < NR_POSITS; ++k) {
 				br.setbits(k);
 				for (size_t l = 0; l < NR_POSITS; ++l) {
 					bi.setbits(l);
-					b = complex<posit<nbits, es>>(br, bi);
-					db = complex<double>(double(br), double(bi));
+					b = std::complex<posit<nbits, es>>(br, bi);
+					db = std::complex<double>(double(br), double(bi));
 
 					result = a + b;
 					dc = da + db;
-					ref = complex<posit<nbits, es>>(dc.real(), dc.imag());
+					ref = std::complex<posit<nbits, es>>(dc.real(), dc.imag());
 
 					if (result.real() != ref.real() || result.imag() != ref.imag()) {
 						nrOfFailedTests++;
@@ -111,9 +110,9 @@ int ValidateComplexAddition(const std::string& tag, bool bReportIndividualTestCa
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
+	using namespace std;  // needed to get the imaginary literals
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;

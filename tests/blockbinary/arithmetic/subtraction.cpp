@@ -89,7 +89,6 @@ void GenerateMaxValues() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
@@ -107,7 +106,7 @@ try {
 	blockbinary<12, uint8_t> a, b;
 	a = 0xfff;
 	b = twosComplement(a);
-	cout << to_hex(a) << ' ' << to_hex(b) << ' ' << to_hex(twosComplement(b)) << endl;
+	std::cout << to_hex(a) << ' ' << to_hex(b) << ' ' << to_hex(twosComplement(b)) << '\n';
 
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint8_t>(true), "uint8_t<4>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint16_t>(true), "uint16_t<4>", "subtraction");
@@ -122,7 +121,7 @@ try {
 
 #else
 
-	cout << "block subtraction validation" << endl;
+	std::cout << "block subtraction validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>(bReportIndividualTestCases), "uint8_t<8>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint16_t>(bReportIndividualTestCases), "uint16_t<8>", "subtraction");

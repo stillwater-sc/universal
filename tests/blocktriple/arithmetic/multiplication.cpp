@@ -31,7 +31,6 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 	// for the test we are going to enumerate the fbits state space
 	constexpr size_t NR_VALUES = (size_t(1) << fbits);
 
-	using namespace std;
 	using namespace sw::universal;
 	
 //	cout << endl;
@@ -98,13 +97,13 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 				double btref = double(reference);  // map the double result to the unrounded blocktriple representation
 
 				if (btref != double(c)) {
-					cout << "test case   : " << a << " * " << b << " = " << c << endl;
-					cout << "conversion  : " << aref << " * " << bref << " = " << cref << " vs " << btref << endl;
-					cout << "blocktriple : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << endl;
+					std::cout << "test case   : " << a << " * " << b << " = " << c << '\n';
+					std::cout << "conversion  : " << aref << " * " << bref << " = " << cref << " vs " << btref << '\n';
+					std::cout << "blocktriple : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << '\n';
 
 					++nrOfFailedTests;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, double(c), btref);
-//					cout << "---------------------\n";
+//					std::cout << "---------------------\n";
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, reference);
@@ -114,7 +113,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 			//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 		}
 	}
-//	cout << endl;
+//	std::cout << '\n';
 	return nrOfFailedTests;
 }
 
@@ -165,7 +164,6 @@ void GenerateTestCase(ArgumentType lhs, ArgumentType rhs) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -196,7 +194,7 @@ try {
 
 #else
 
-	cout << "blocktriple multiplication validation" << endl;
+	std::cout << "blocktriple multiplication validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<4, BlockTripleOperator::MUL, uint8_t> >(bReportIndividualTestCases),  "blocktriple< 4, BlockTripleOperator::MUL,uint8_t> ", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple<4, BlockTripleOperator::MUL, uint16_t> >(bReportIndividualTestCases), "blocktriple< 4, BlockTripleOperator::MUL,uint16_t>", "multiplication");

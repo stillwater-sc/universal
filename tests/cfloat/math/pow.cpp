@@ -31,7 +31,6 @@ void GenerateTestCase(Ty a, Ty b) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -83,13 +82,13 @@ try {
 	std::cout << "Integer power function\n";
 	int a = 2;
 	unsigned b = 32;
-	std::cout << "2 ^ 32   = " << ipow(a, b) << endl;
-	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << endl;
+	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
+	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
 
 	int64_t c = 1024;
 	uint8_t d = 2;
-	std::cout << "1024 ^ 2 = " << ipow(c, d) << endl;
-	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << endl;
+	std::cout << "1024 ^ 2 = " << ipow(c, d) << '\n';
+	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
 
 	std::cout << "cfloat Power function validation\n";
 

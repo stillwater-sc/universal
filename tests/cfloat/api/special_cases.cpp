@@ -731,7 +731,7 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "cfloat<> Application Programming Interface tests" << std::endl;
+	std::cout << "cfloat<> Application Programming Interface tests\n";
 
 #if MANUAL_TESTING
 

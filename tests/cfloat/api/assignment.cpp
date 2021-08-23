@@ -307,7 +307,6 @@ int TestDoubleBlockRepresentations(const std::string& op, bool bReportIndividual
 
 	std::string testcase;
 
-
 	if constexpr (es < 7) {
 		std::stringstream ss;
 		ss << "cfloat<9, " << es << ", uint8_t> ";
@@ -441,7 +440,6 @@ cfloat<32,2> 'seem'ffff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '000h'1111'11
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -510,7 +508,7 @@ try {
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else //!MANUAL_TESTING
-	cout << "cfloat assignment validation" << endl;
+	std::cout << "cfloat assignment validation\n";
 
 	bool bVerbose = false;
 

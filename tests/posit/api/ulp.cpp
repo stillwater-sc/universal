@@ -22,17 +22,16 @@
 template<size_t nbits, size_t es>
 void TestULP() 
 {
-	using namespace std;
 	using namespace sw::universal;
 
 	posit<nbits, es> a(1.0f);
-	cout << typeid(a).name() << '\n';
+	std::cout << typeid(a).name() << '\n';
 //	double da(1.0);
-	cout << "posit at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << '\n';
-//	cout << "double at 1.0 : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << '\n';
+	std::cout << "posit at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << '\n';
+//	std::cout << "double at 1.0 : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << '\n';
 
 	a = std::numeric_limits< posit<64, 3> >::epsilon();
-	cout << "posit epsilon : " << to_binary(a) << " : " << a << '\n';
+	std::cout << "posit epsilon : " << to_binary(a) << " : " << a << '\n';
 }
 
 // conditional compile flags
@@ -41,12 +40,11 @@ void TestULP()
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "posit ULP tests" << endl;
+	std::cout << "posit ULP tests\n";
 
 	TestULP<8, 0>();
 	TestULP<16, 1>();
