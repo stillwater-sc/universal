@@ -14,13 +14,12 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	cout << "Valid use cases" << endl;
+	std::cout << "Valid use cases\n";
 
 
 #if MANUAL_TESTING

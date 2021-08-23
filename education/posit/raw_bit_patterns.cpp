@@ -101,81 +101,81 @@ void ManualPatternSet() {
 	// 1152921504606846976
 	raw.reset();
 	// positive regime infinity - 1
-	using namespace std;
-	cout << setprecision(34);
+
+	std::cout << std::setprecision(34);
 	raw[15] = 1;							// NaR (Not a Real)
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.flip();								// 72057594037927936			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[0] = false;							// 4503599627370496			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[1] = false;							// 281474976710656			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[2] = false;							// 17592186044416			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[3] = false;							// 1099511627776			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[4] = false;							// 68719476736			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[5] = false;							// 4294967296			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[6] = false;							// 268435456			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[7] = false;							// 16777216			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[8] = false;							// 1048576			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[9] = false;							// 65536			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[10] = false;						// 4096			
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[11] = false;						// 256
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[12] = false;						// 16
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[13] = false;						// 1
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 
 	raw.reset();
 	// positive fractional regime 1 - 0
 	raw[13] = true;			// 1
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[12] = true;			// 1/16
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[11] = true;			// 1/256
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[10] = true;			// 1/4096
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[9] = true;			// 1/65536
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[8] = true;			// 1/1048576
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[7] = true;			// 1/16777216
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[6] = true;			// 1/268435456
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[5] = true;			// 1/4294967296
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[4] = true;			// 1/68719476736
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[3] = true;			// 1/1099511627776
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[2] = true;			// 1/17592186044416
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[1] = true;			// 1/281474976710656
-	p.setBitblock(raw); 	cout << raw << "      " << p << '\n';
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << '\n';
 	raw[1] = false;			// 0
-	p.setBitblock(raw); 	cout << raw << "      " << p << " 0" << endl;
+	p.setBitblock(raw); 	std::cout << raw << "      " << p << " 0\n";
 }

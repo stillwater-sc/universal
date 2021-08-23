@@ -15,11 +15,10 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	bool bSuccess = true;
 
-	cout << "valid elementary functions not implemented yet" << endl;
+	std::cout << "valid elementary functions not implemented yet\n";
 	/*
 	valid<32, 2> x(1.0), y(-1.0), v(0.0);
 	std::complex< valid<32, 2> > c(x,y),d;

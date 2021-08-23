@@ -9,7 +9,6 @@
 // generate the maximum value unit in the last place
 template<size_t nbits, size_t es>
 void GenerateMaxRangeUlp(int64_t startValue = 0, int precision = 20) {
-	using namespace std;
 	using Posit = sw::universal::posit<nbits, es>;
 	Posit p = 0;
 	Posit pn = startValue;  // just to speed up the loop as we are doing sw emulation
@@ -17,23 +16,22 @@ void GenerateMaxRangeUlp(int64_t startValue = 0, int precision = 20) {
 		p = pn;
 		pn += 1.0f;
 	}
-	std::streamsize old_precision = cout.precision();
-	cout << setprecision(precision);
-	cout << "posit<" << nbits << "," << es << ">\n";
-	cout << "p       = " << p << endl;     
-	cout << "p - 1   = " << p - 1 << endl; // 8.388607e6
-	cout << "p + 1   = " << p + 1 << endl; // 8.388608e6
-	cout << "ulp(p)  = " << ulp(p) << endl;
-	cout << setprecision(old_precision);
+	std::streamsize old_precision = std::cout.precision();
+	std::cout << std::setprecision(precision);
+	std::cout << "posit<" << nbits << "," << es << ">\n";
+	std::cout << "p       = " << p << '\n';
+	std::cout << "p - 1   = " << p - 1 << '\n'; // 8.388607e6
+	std::cout << "p + 1   = " << p + 1 << '\n'; // 8.388608e6
+	std::cout << "ulp(p)  = " << ulp(p) << '\n';
+	std::cout << std::setprecision(old_precision);
 }
 
 // examples of Unit in the Last Place (ULP) measurements
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "Unit in the last place experiments" << endl;
+	std::cout << "Unit in the last place experiments\n";
 
 /*
 	The IEEE 754 specification requires that the result of an 
@@ -73,13 +71,13 @@ try {
 		f = n;
 		n += 1.0f;
 	}
-	cout << setprecision(8);
-	cout << "float 32-bit\n";
-	cout << "f       = " << f << endl;     // 1.6777216e7
-	cout << "f - 1   = " << f - 1 << endl; // 1.6777215e7
-	cout << "f + 1   = " << f + 1 << endl; // 1.6777216e7
-	cout << "ulp(f-1)= " << ulp(f - 1) << endl;
-	cout << "ulp(f)  = " << ulp(f) << endl;
+	std::cout << std::setprecision(8);
+	std::cout << "float 32-bit\n";
+	std::cout << "f       = " << f << '\n';     // 1.6777216e7
+	std::cout << "f - 1   = " << f - 1 << '\n'; // 1.6777215e7
+	std::cout << "f + 1   = " << f + 1 << '\n'; // 1.6777216e7
+	std::cout << "ulp(f-1)= " << ulp(f - 1) << '\n';
+	std::cout << "ulp(f)  = " << ulp(f) << '\n';
 
 	GenerateMaxRangeUlp<32, 2>(    8000000);//    8388608  ~ 8.3e6
 	GenerateMaxRangeUlp<40, 2>(  536870000);//  536870912  ~ 5.36e8

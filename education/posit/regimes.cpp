@@ -110,8 +110,6 @@ int ValidateRegimeScales(const std::string& tag, bool bReportIndividualTestCases
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
-
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -141,7 +139,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "regimes");
 
 #else
-	cout << "Regime tests" << endl;
+	std::cout << "Regime tests\n";
 
 	// TEST REGIME DECODE
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<3, 0>(tag, bReportIndividualTestCases), "regime<3,0>", "regime");

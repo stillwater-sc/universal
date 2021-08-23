@@ -13,7 +13,6 @@
 
 int main(int argc, char** argv)
 try {
-    using namespace std;
     using namespace sw::universal;
 
     typedef posit<32,2> posit_32_2;
@@ -33,13 +32,13 @@ try {
                         
         posit_32_2 p;
         lnstream >> std::ws >> p;
-		cout << pretty_print(p) << endl;
+        std::cout << pretty_print(p) << std::endl;
     }
 
 { // Test conversion from long to posit
 
 	posit_32_2 p = 1/posit_32_2(10000000000);
-	cout << pretty_print(p) << endl;
+    std::cout << pretty_print(p) << std::endl;
 }        
     return 0;
 }

@@ -12,7 +12,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 16;
@@ -25,7 +24,7 @@ try {
 		pa = 1.0f;
 		pb = 0;
 		pc = pa / pb;
-		cout << "Correct: division by zero exception didn't fire as it is not enabled" << endl;
+		std::cout << "Correct: division by zero exception didn't fire as it is not enabled\n";
 	}
 	catch (const divide_by_zero& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
@@ -35,7 +34,7 @@ try {
 		pa = 1.0f;
 		pb.setnar();
 		pc = pa / pb;
-		cout << "Correct: division by nar exception didn't fire as it is not enabled" << endl;
+		std::cout << "Correct: division by nar exception didn't fire as it is not enabled\n";
 	}
 	catch (const divide_by_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
@@ -45,7 +44,7 @@ try {
 		pa.setnar();
 		pb = 1.0f;
 		pc = pa / pb;
-		cout << "Correct: numerator is nar exception didn't fire as it is not enabled" << endl;
+		std::cout << "Correct: numerator is nar exception didn't fire as it is not enabled\n";
 	}
 	catch (const numerator_is_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
@@ -55,7 +54,7 @@ try {
 		pa.setnar();
 		pb = 1.0f;
 		pc = pa + pb;
-		cout << "Correct: operand is nar exception didn't fire as it is not enabled" << endl;
+		std::cout << "Correct: operand is nar exception didn't fire as it is not enabled\n";
 	}
 	catch (const operand_is_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
@@ -65,7 +64,7 @@ try {
 		pa.setnar();
 		pb = 1.0f;
 		pc = pa - pb;
-		cout << "Correct: operand is nar exception didn't fire as it is not enabled" << endl;
+		std::cout << "Correct: operand is nar exception didn't fire as it is not enabled\n";
 	}
 	catch (const operand_is_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
@@ -75,7 +74,7 @@ try {
 		pa.setnar();
 		pb = 1.0f;
 		pc = pa * pb;
-		cout << "Correct: operand is nar exception didn't fire as it is not enabled" << endl;
+		std::cout << "Correct: operand is nar exception didn't fire as it is not enabled\n";
 	}
 	catch (const operand_is_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;

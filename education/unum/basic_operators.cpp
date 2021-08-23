@@ -14,7 +14,6 @@ void checkSpecialCases(sw::universal::unum<nbits, es> p) {
 // Demonstrate basic arithmetic with unum numbers
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;	// standard namespace for unum
 
 	const size_t nbits = 16;
@@ -36,12 +35,12 @@ try {
 	p5 = p2 * p4;
 	p6 = p5 / p4;
 
-	cout << "p1          : " << setw(3) << p1 << '\n';
-	cout << "p2          : " << setw(3) << p2 << '\n';
-	cout << "p3 = p1 + p2: " << setw(3) << p3 << '\n';
-	cout << "p4 = p2 - p1: " << setw(3) << p4 << '\n';
-	cout << "p5 = p2 * p4: " << setw(3) << p5 << '\n';
-	cout << "p6 = p5 / p4: " << setw(3) << p6 << '\n';
+	std::cout << "p1          : " << std::setw(3) << p1 << '\n';
+	std::cout << "p2          : " << std::setw(3) << p2 << '\n';
+	std::cout << "p3 = p1 + p2: " << std::setw(3) << p3 << '\n';
+	std::cout << "p4 = p2 - p1: " << std::setw(3) << p4 << '\n';
+	std::cout << "p5 = p2 * p4: " << std::setw(3) << p5 << '\n';
+	std::cout << "p6 = p5 / p4: " << std::setw(3) << p6 << '\n';
 
 //	cout << "minpos      : " << minpos << '\n';
 //	cout << "maxpos      : " << maxpos << '\n';
@@ -61,7 +60,7 @@ try {
 //	cout << "-1+eps      : " << pretty_print(p1) << '\n';
 //	cout << "-1-eps      : " << pretty_print(p2) << '\n';
 
-	cout << endl;
+	std::cout << std::endl;
 
 	return EXIT_SUCCESS;
 }

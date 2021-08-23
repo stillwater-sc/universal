@@ -66,7 +66,6 @@ void TestConversionResult(bool bValid, const std::string& descriptor) {
 
 template<size_t fbits>
 bool ValidateValue() {
-	using namespace std;
 	using namespace sw::universal;
 
 	const int NR_TEST_CASES = 12;
@@ -87,7 +86,7 @@ bool ValidateValue() {
 		internal::value<fbits> v;
 		v = input[i];
 		if (fabs(double(v) - golden_answer[i]) > 0.00000001) {
-			cerr << "FAIL [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != " << setw(5) << v << endl;
+			std::cerr << "FAIL [" << std::setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != " << std::setw(5) << v << std::endl;
 			bValid = false;
 		}
 	}
@@ -95,7 +94,7 @@ bool ValidateValue() {
 		internal::value<fbits> v;
 		v = 1.0 / input[i];
 		if (fabs(double(v) - (1.0 / golden_answer[i])) > 0.00000001) {
-			cerr << "FAIL [" << setw(2) << NR_TEST_CASES + i << "] input " << 1.0 / input[i] << " ref = " << 1.0 / golden_answer[i] << " != " << setw(5) << v << endl;
+			std::cerr << "FAIL [" << std::setw(2) << NR_TEST_CASES + i << "] input " << 1.0 / input[i] << " ref = " << 1.0 / golden_answer[i] << " != " << std::setw(5) << v << std::endl;
 			bValid = false;
 		}
 	}
@@ -116,7 +115,6 @@ LDBL_TRUE_MIN
  */
 template<size_t fbits>
 bool ValidateSubnormalFloats() {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr float flt_min = std::numeric_limits<float>::min();
@@ -125,22 +123,22 @@ bool ValidateSubnormalFloats() {
 
 	bool bSuccess = false;
 
-	cout << flt_min << " " << flt_max << endl;
-	cout << flt_true_min << endl;
-	cout << hexfloat << flt_min << defaultfloat << endl;
+	std::cout << flt_min << " " << flt_max << '\n';
+	std::cout << flt_true_min << '\n';
+	std::cout << std::hexfloat << flt_min << defaultfloat << '\n';
 
 	internal::value<23> v;
 	float flt = flt_min;
-	std::cout << to_triple(v) << std::endl;
+	std::cout << to_triple(v) <<'\n';
 	for (size_t i = 0; i < 24; ++i) {
 		flt /= 2.0;
 		v = flt;
-		cout << hexfloat << flt << defaultfloat << " " << flt << " " << to_triple(v) << " " << v << endl;
+		std::cout << std::hexfloat << flt << std::defaultfloat << " " << flt << " " << to_triple(v) << " " << v << '\n';
 	}
 
 	flt = flt_min + 3*flt_true_min;
 	v = flt;
-	cout << hexfloat << flt << defaultfloat << " " << flt << " " << to_triple(v) << " " << v << endl;
+	std::cout << std::hexfloat << flt << std::defaultfloat << " " << flt << " " << to_triple(v) << " " << v << '\n';
 
 	return bSuccess;
 }
@@ -152,18 +150,17 @@ void PrintValue(float f, const sw::universal::internal::value<fbits>& v) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "Validate subnormal floats" << endl;
+	std::cout << "Validate subnormal floats\n";
 	ValidateSubnormalFloats<std::numeric_limits<float>::digits>();
 
-	cout << "Value configuration validation" << endl;
+	std::cout << "Value configuration validation\n";
 	TestConversionResult(ValidateValue<8>(), "value<8>");
 
-	cout << "Conversion values of importance" << endl;
+	std::cout << "Conversion values of importance\n";
 	/*
 	no exp left : geo-dw d          0.125  result          0.0625  scale = -4  k = -2  exp = -  0001 00010          0.0625     PASS
 	no rounding alltaken u          0.125  result             0.5  scale = -1  k = -1  exp = 1  0011 00100            0.25 FAIL
@@ -189,27 +186,27 @@ try {
 	f = -0.12500f; v = f; PrintValue(f, v);
 	f = -0.12499f; v = f; PrintValue(f, v);
 
-	cout << "Rounding" << endl;
+	std::cout << "Rounding\n";
 	internal::bitblock<8> fraction;
 	fraction = 0x55;
 	internal::value<8> r8(false, 0, fraction, false, false);
-	cout << "Value is " << r8 << " components are " << to_triple(r8) << endl;
+	std::cout << "Value is " << r8 << " components are " << to_triple(r8) << '\n';
 	internal::value<7> r7 = r8.round_to<7>();
-	cout << "Value is " << r7 << " components are " << to_triple(r7) << endl;
+	std::cout << "Value is " << r7 << " components are " << to_triple(r7) << '\n';
 	internal::value<6> r6 = r8.round_to<6>();
-	cout << "Value is " << r6 << " components are " << to_triple(r6) << endl;
+	std::cout << "Value is " << r6 << " components are " << to_triple(r6) << '\n';
 	internal::value<5> r5 = r8.round_to<5>();
-	cout << "Value is " << r5 << " components are " << to_triple(r5) << endl;
+	std::cout << "Value is " << r5 << " components are " << to_triple(r5) << '\n';
 	internal::value<4> r4 = r8.round_to<4>();
-	cout << "Value is " << r4 << " components are " << to_triple(r4) << endl;
+	std::cout << "Value is " << r4 << " components are " << to_triple(r4) << '\n';
 	internal::value<3> r3 = r8.round_to<3>();
-	cout << "Value is " << r3 << " components are " << to_triple(r3) << endl;
+	std::cout << "Value is " << r3 << " components are " << to_triple(r3) << '\n';
 	internal::value<2> r2 = r8.round_to<2>();
-	cout << "Value is " << r2 << " components are " << to_triple(r2) << endl;
+	std::cout << "Value is " << r2 << " components are " << to_triple(r2) << '\n';
 	internal::value<1> r1 = r8.round_to<1>();
-	cout << "Value is " << r1 << " components are " << to_triple(r1) << endl;
+	std::cout << "Value is " << r1 << " components are " << to_triple(r1) << '\n';
 	internal::value<0> r0 = r8.round_to<0>();
-	cout << "Value is " << r0 << " components are " << to_triple(r0) << endl;
+	std::cout << "Value is " << r0 << " components are " << to_triple(r0) << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

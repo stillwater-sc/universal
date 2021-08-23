@@ -74,7 +74,6 @@ namespace sw {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	bool bSuccess = true;
 
 	A a;
@@ -87,23 +86,23 @@ try {
 	cout << serialize(c) << endl;
 	*/
 
-	cout << hasSerialize<A>::value << endl;
-	cout << hasSerialize<B>::value << endl;
-	cout << hasSerialize<C>::value << endl;
+	std::cout << hasSerialize<A>::value << '\n';
+	std::cout << hasSerialize<B>::value << '\n';
+	std::cout << hasSerialize<C>::value << '\n';
 
 	// pedantic
 	sw::enable_if<true, int>::type t1; // type t1 is an int
 	sw::enable_if<hasSerialize<B>::value, int>::type t2; // t2 is an int
 	// to get rid of warnings in g++
 	t1 = t2 = 1;
-	cout << t1 << t2 << endl;
+	std::cout << t1 << t2 << '\n';
 	// enable_if<false, int>::type t3;  doesn't compile as enable_if<false, ...> doesn't have a type type
 	// enable_if<hasSerialize<A>::value, int>::type t4; doesn't compile as enable_if<false, ...> doesn't have a type type
 
 	// with enable_if we have the indirection to dispatch the right function: serialize or to_string
-	cout << sw::serialize(a) << endl;
-	cout << sw::serialize(b) << endl;
-	cout << sw::serialize(c) << endl;
+	std::cout << sw::serialize(a) << '\n';
+	std::cout << sw::serialize(b) << '\n';
+	std::cout << sw::serialize(c) << '\n';
 
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }

@@ -12,38 +12,37 @@
 
 template<size_t nbits, size_t es>
 void EnumeratePositComponentsAcrossTheirScale() {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "Enumerating posit components across the dynamic range of the posit<" << nbits << "," << es << ">\n";
+	std::cout << "Enumerating posit components across the dynamic range of the posit<" << nbits << "," << es << ">\n";
 
 	// calculate the dynamic range of this posit configuration
 	int k_max = nbits - 2;
 	int bound = (k_max << es);
 
 	// regime component of the posit
-	cout << "REGIME\n";
+	std::cout << "REGIME\n";
 	regime<nbits, es> test_regime;
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = scale >> es;
 		test_regime.assign_regime_pattern(k);
-		cout << "scale of input number: " << setw(4) << scale << " regime attributes: k " << setw(2) << k << " " << test_regime.get() << " scale " << test_regime.scale() << '\n';
+		std::cout << "scale of input number: " << setw(4) << scale << " regime attributes: k " << setw(2) << k << " " << test_regime.get() << " scale " << test_regime.scale() << '\n';
 	}
-	cout << endl;
+	std::cout << '\n';
 
 	// exponent component of the posit
-	cout << "EXPONENT\n";
+	std::cout << "EXPONENT\n";
 	exponent<nbits, es> test_exponent;
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = calculate_k<nbits, es>(scale);
 		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
-		cout << "scale of input number: " << setw(4) << scale << " exponent bits: " << test_exponent << '\n';
+		std::cout << "scale of input number: " << setw(4) << scale << " exponent bits: " << test_exponent << '\n';
 	}
-	cout << endl;
+	std::cout << '\n';
 
 	// fraction component of the posit
-	cout << "FRACTION\n";
+	std::cout << "FRACTION\n";
 	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	bitblock<fbits> _fraction;
 	fraction<fbits> test_fraction;
@@ -52,14 +51,13 @@ void EnumeratePositComponentsAcrossTheirScale() {
 		int k = calculate_k<nbits, es>(scale);;
 		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
-		cout << "scale of input number: " << setw(4) << scale << " fraction bits: " << test_fraction << '\n';
+		std::cout << "scale of input number: " << setw(4) << scale << " fraction bits: " << test_fraction << '\n';
 	}
-	cout << endl;
+	std::cout << '\n';
 }
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	EnumeratePositComponentsAcrossTheirScale<4, 5>();

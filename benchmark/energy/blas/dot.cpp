@@ -32,11 +32,10 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	std::streamsize prec = cout.precision();
-	cout << setprecision(17);
+	std::streamsize prec = std::cout.precision();
+	std::cout << std::setprecision(17);
 	
 	{
 		using Scalar = decimal;
@@ -48,15 +47,15 @@ try {
 		Vector a = { a1, a2, a3, a4 };
 		Vector b = { b1, b2, b3, b4 };
 
-		cout << "a: " << a << '\n';
-		cout << "b: " << b << '\n';
+		std::cout << "a: " << a << '\n';
+		std::cout << "b: " << b << '\n';
 
-		cout << "\n\n";
+		std::cout << "\n\n";
 		decimal v = dot(a, b);
-		cout << v << (v == 2 ? " <----- PASS" : " <-----      FAIL") << endl;
+		std::cout << v << (v == 2 ? " <----- PASS\n" : " <-----      FAIL\n");
 	}
 
-	cout << setprecision(prec);
+	std::cout << std::setprecision(prec);
 
 	return EXIT_SUCCESS;
 }

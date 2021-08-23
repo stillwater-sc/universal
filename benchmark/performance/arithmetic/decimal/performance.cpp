@@ -20,9 +20,9 @@
 
 // test performance of shift operator on integer<> class
 void TestShiftOperatorPerformance() {
-	using namespace std;
+	using namespace sw::universal;
 	using Decimal = sw::universal::decimal;
-	cout << endl << "DECIMAL Logical shift operator performance" << endl;
+	std::cout << "\nDECIMAL Logical shift operator performance\n";
 
 	constexpr uint64_t NR_OPS = 1000;
 
@@ -33,10 +33,9 @@ void TestShiftOperatorPerformance() {
 
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
 	using IntegerType = sw::universal::decimal;
-	cout << endl << "DECIMAL Arithmetic operator performance" << endl;
+	std::cout << "\nDECIMAL Arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 1000;
 
@@ -72,7 +71,6 @@ void TestArithmeticOperatorPerformance() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Decimal integer operator performance benchmarking";
@@ -82,7 +80,7 @@ try {
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else

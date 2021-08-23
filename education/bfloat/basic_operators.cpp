@@ -13,7 +13,6 @@ void checkSpecialCases(sw::universal::cfloat<nbits, es, bt> b) {
 // Demonstrate basic arithmetic with cfloat numbers
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;	// standard namespace for cfloat
 
 	constexpr size_t nbits = 16;
@@ -37,20 +36,20 @@ try {
 	b5 = b2 * b4;
 	b6 = b5 / b4;
 
-	cout << "b1          : " << setw(3) << b1 << '\n';
-	cout << "b2          : " << setw(3) << b2 << '\n';
-	cout << "b3 = b1 + b2: " << setw(3) << b3 << '\n';
-	cout << "b4 = b2 - b1: " << setw(3) << b4 << '\n';
-	cout << "b5 = b2 * b4: " << setw(3) << b5 << '\n';
-	cout << "b6 = b5 / b4: " << setw(3) << b6 << '\n';
+	std::cout << "b1          : " << std::setw(3) << b1 << '\n';
+	std::cout << "b2          : " << std::setw(3) << b2 << '\n';
+	std::cout << "b3 = b1 + b2: " << std::setw(3) << b3 << '\n';
+	std::cout << "b4 = b2 - b1: " << std::setw(3) << b4 << '\n';
+	std::cout << "b5 = b2 * b4: " << std::setw(3) << b5 << '\n';
+	std::cout << "b6 = b5 / b4: " << std::setw(3) << b6 << '\n';
 
-	cout << "minpos      : " << minpos << '\n';
-	cout << "maxpos      : " << maxpos << '\n';
+	std::cout << "minpos      : " << minpos << '\n';
+	std::cout << "maxpos      : " << maxpos << '\n';
 
 	b1 = 0; ++b1;         // another way to get to minpos
 	b2 = INFINITY; --b2;  // another way to get to maxpos
-	cout << "minpos      : " << pretty_print(b1) << '\n';
-	cout << "maxpos      : " << pretty_print(b2) << '\n';
+	std::cout << "minpos      : " << pretty_print(b1) << '\n';
+	std::cout << "maxpos      : " << pretty_print(b2) << '\n';
 
 	/*
 	pretty_print(posit) will print the different segments of cfloat
@@ -65,15 +64,15 @@ try {
 
 	b1 = 1.0; ++b1;
 	b2 = 1.0; --b2;
-	cout << "+1+eps      : " << pretty_print(b1) << '\n';
-	cout << "+1-eps      : " << pretty_print(b2) << '\n';
+	std::cout << "+1+eps      : " << pretty_print(b1) << '\n';
+	std::cout << "+1-eps      : " << pretty_print(b2) << '\n';
 
 	b1 = -1.0; ++b1;
 	b2 = -1.0; --b2;
-	cout << "-1+eps      : " << pretty_print(b1) << '\n';
-	cout << "-1-eps      : " << pretty_print(b2) << '\n';
+	std::cout << "-1+eps      : " << pretty_print(b1) << '\n';
+	std::cout << "-1-eps      : " << pretty_print(b2) << '\n';
 
-	cout << endl;
+	std::cout << std::endl;
 
 	return EXIT_SUCCESS;
 }

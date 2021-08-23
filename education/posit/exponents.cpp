@@ -8,11 +8,10 @@
 // examples of how regime and exponent are related to the scale of a posit
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// generate individual testcases to hand trace/debug
-	cout << "Manual Exponent tests" << endl;
+	std::cout << "Manual Exponent tests\n";
 	constexpr size_t nbits = 6;
 	constexpr size_t es = 2;
 	posit<nbits, es> p; // for calculate_k method
@@ -20,12 +19,12 @@ try {
 	exponent<nbits, es> e;
 
 	// create a two column table of regime and exponent bits
-	cout << "regime  exponent\n";
+	std::cout << "regime  exponent\n";
 	for (int scale = minpos_scale<nbits,es>()-1; scale < maxpos_scale<nbits,es>()+1; ++scale) {
 		p = std::pow(2.0, scale);
 		size_t nrRegimeBits = r.assign_regime_pattern(decode_regime(p.get()));
 		e.extract_exponent_bits(p.get(), nrRegimeBits);
-		cout << r << ' ' << e << endl;
+		std::cout << r << ' ' << e << '\n';
 	}
 
 	return EXIT_SUCCESS;

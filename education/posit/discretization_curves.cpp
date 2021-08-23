@@ -11,11 +11,10 @@
 */
 int main(int argc, char** argv)
 try {
-	using namespace std;
 
-		cout << "Discretization Curves" << endl;
+	std::cout << "Discretization Curves\n";
 
-		cout << "TBD" << endl;
+	std::cout << "TBD" << std::endl;
 		// generate a CSV file for different posit comparisons:
 		// compare posits with the same exponent structure but vary nbits = 3 till 12
 		// compare posits with the same nbits, but vary es from 0 to 4

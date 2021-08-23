@@ -11,7 +11,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 16;
@@ -24,7 +23,7 @@ try {
 		pa = 1.0f;
 		pb = 0;
 		pc = pa / pb;
-		cout << "Incorrect: division by zero exception didn't fire" << endl; // just in case the exception doesn't fire
+		std::cout << "Incorrect: division by zero exception didn't fire\n"; // just in case the exception doesn't fire
 	}
 	catch (const divide_by_zero& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
@@ -34,7 +33,7 @@ try {
 		pa = 1.0f;
 		pb.setnar();
 		pc = pa / pb;
-		cout << "Incorrect: division by nar exception didn't fire" << endl;
+		std::cout << "Incorrect: division by nar exception didn't fire\n";
 	}
 	catch (const divide_by_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
@@ -44,7 +43,7 @@ try {
 		pa.setnar();
 		pb = 1.0f;
 		pc = pa / pb;
-		cout << "Incorrect: numerator is nar exception didn't fire" << endl;
+		std::cout << "Incorrect: numerator is nar exception didn't fire\n";
 	}
 	catch (const numerator_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
@@ -54,7 +53,7 @@ try {
 		pa.setnar();
 		pb = 1.0f;
 		pc = pa + pb;
-		cout << "Incorrect: operand is nar exception didn't fire" << endl;
+		std::cout << "Incorrect: operand is nar exception didn't fire\n";
 	}
 	catch (const operand_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
@@ -64,7 +63,7 @@ try {
 		pa.setnar();
 		pb = 1.0f;
 		pc = pa - pb;
-		cout << "Incorrect: operand is nar exception didn't fire" << endl;
+		std::cout << "Incorrect: operand is nar exception didn't fire\n";
 	}
 	catch (const operand_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
@@ -74,7 +73,7 @@ try {
 		pa.setnar();
 		pb = 1.0f;
 		pc = pa * pb;	// TODO: operator *= throws the same exception, but for some reason we can't catch it here
-		cout << "Incorrect: operand is nar exception didn't fire" << endl;
+		std::cout << "Incorrect: operand is nar exception didn't fire\n";
 	}
 	catch (const operand_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;

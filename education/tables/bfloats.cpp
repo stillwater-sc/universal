@@ -22,7 +22,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// Usage: tables_cfloats [-csv]
@@ -30,7 +29,7 @@ try {
 	if (argc == 2) {
 		if (std::string(argv[1]) == std::string("-csv")) csv = true;
 	}
-	cout << "Generate value tables for cfloat configurations" << endl;
+	std::cout << "Generate value tables for cfloat configurations\n";
 
 #if MANUAL_TESTING
 
@@ -45,32 +44,32 @@ try {
 	*/
 
 #else // !MANUAL_TESTING
-	GenerateTable< cfloat<3, 1, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<3, 1, uint8_t> >(std::cout, csv);
 
-	GenerateTable< cfloat<4, 1, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<4, 2, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<4, 1, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<4, 2, uint8_t> >(std::cout, csv);
 
-	GenerateTable< cfloat<5, 1, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<5, 2, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<5, 3, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<5, 1, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<5, 2, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<5, 3, uint8_t> >(std::cout, csv);
 
-	GenerateTable< cfloat<6, 1, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<6, 2, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<6, 3, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<6, 4, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<6, 1, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<6, 2, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<6, 3, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<6, 4, uint8_t> >(std::cout, csv);
 
-	GenerateTable< cfloat<7, 1, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<7, 2, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<7, 3, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<7, 4, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<7, 5, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<7, 1, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<7, 2, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<7, 3, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<7, 4, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<7, 5, uint8_t> >(std::cout, csv);
 
-	GenerateTable< cfloat<8, 1, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<8, 2, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<8, 3, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<8, 4, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<8, 5, uint8_t> >(cout, csv);
-	GenerateTable< cfloat<8, 6, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<8, 1, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<8, 2, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<8, 3, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<8, 4, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<8, 5, uint8_t> >(std::cout, csv);
+	GenerateTable< cfloat<8, 6, uint8_t> >(std::cout, csv);
 #endif
 
 	return EXIT_SUCCESS;

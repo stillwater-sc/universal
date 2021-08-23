@@ -35,15 +35,14 @@ log_e(10)		M_LN10		2.30258509299404568402
 template<size_t nbits, size_t es>
 void ColorPrintTable()
 {
-	using namespace std;
 	constexpr size_t NR_POSITS = (size_t(1) << nbits);
 	sw::universal::posit<nbits, es> p;
-	cout << "Color Printing a posit configuration\n";
+	std::cout << "Color Printing a posit configuration\n";
 	for (size_t i = 0; i < NR_POSITS; ++i) {
 		p.setbits(i);
-		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << std::endl;
+		std::cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << std::endl;
 	}
-	cout << endl << endl;
+	std::cout << "\n\n";
 }
 
 void HexVsDefaultFloatPrinting()

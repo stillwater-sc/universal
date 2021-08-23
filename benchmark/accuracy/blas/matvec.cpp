@@ -16,8 +16,7 @@
 
 template<typename Scalar>
 void catastrophicCancellationTest() {
-	using namespace std;
-	cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
+	std::cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 	using Vector = sw::universal::blas::vector<Scalar>;
 
@@ -29,25 +28,23 @@ void catastrophicCancellationTest() {
 		{ a1, a2, a3, a4 }, 
 		{ a1, a2, a3, a4 } 
 	};
-	cout << std::setprecision(10);
-	cout << "matrix A: \n" << A << endl;
+	std::cout << std::setprecision(10);
+	std::cout << "matrix A: \n" << A << '\n';
 	Vector x = { 4.0e7, 1, -1, -1.6e8 };
-	cout << "vector x: \n" << x << endl;
+	std::cout << "vector x: \n" << x << '\n';
 	Vector b(2);
 	b = A * x;
-	cout << "vector b: \n" << b << endl;
+	std::cout << "vector b: \n" << b << '\n';
 	if (b[0] == 2 && b[1] == 2) {
-		cout << "PASS\n";
+		std::cout << "PASS\n";
 	}
 	else {
-		cout << "FAIL\n";
+		std::cout << "FAIL\n";
 	}
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
-
 	catastrophicCancellationTest<float>();
 	catastrophicCancellationTest<double>();
 	catastrophicCancellationTest< sw::universal::posit<32,2> >();

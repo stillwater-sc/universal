@@ -14,7 +14,6 @@ void checkSpecialCases(sw::universal::integer<nbits> i) {
 // Demonstrate basic arithmetic with integer numbers
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;	// standard namespace for integer<>
 
 	using bt = uint8_t;
@@ -37,22 +36,22 @@ try {
 	i5 = i2 * i4;
 	i6 = i5 / i4;
 
-	cout << "i1          : " << setw(3) << i1 << '\n';
-	cout << "i2          : " << setw(3) << i2 << '\n';
-	cout << "i3 = i1 + i2: " << setw(3) << i3 << '\n';
-	cout << "i4 = i2 - i1: " << setw(3) << i4 << '\n';
-	cout << "i5 = i2 * i4: " << setw(3) << i5 << '\n';
-	cout << "i6 = i5 / i4: " << setw(3) << i6 << '\n';
+	std::cout << "i1          : " << std::setw(3) << i1 << '\n';
+	std::cout << "i2          : " << std::setw(3) << i2 << '\n';
+	std::cout << "i3 = i1 + i2: " << std::setw(3) << i3 << '\n';
+	std::cout << "i4 = i2 - i1: " << std::setw(3) << i4 << '\n';
+	std::cout << "i5 = i2 * i4: " << std::setw(3) << i5 << '\n';
+	std::cout << "i6 = i5 / i4: " << std::setw(3) << i6 << '\n';
 
-	cout << "minpos      : " << minpos << '\n';
-	cout << "maxpos      : " << maxpos << '\n';
+	std::cout << "minpos      : " << minpos << '\n';
+	std::cout << "maxpos      : " << maxpos << '\n';
 
 	i1 = 0; ++i1;         // another way to get to minpos
 	i2 = maxpos; --i2;  // another way to get to maxpos
-	cout << "minpos      : " << to_binary(i1) << '\n';
-	cout << "maxpos      : " << to_binary(i2) << '\n';
+	std::cout << "minpos      : " << to_binary(i1) << '\n';
+	std::cout << "maxpos      : " << to_binary(i2) << '\n';
 
-	cout << endl;
+	std::cout << std::endl;
 
 	return EXIT_SUCCESS;
 }

@@ -14,7 +14,6 @@ void checkSpecialCases(sw::universal::posit<nbits, es> p) {
 // Demonstrate basic arithmetic with posit numbers
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;	// standard namespace for posits
 
 	const size_t nbits = 16;
@@ -35,20 +34,20 @@ try {
 	p5 = p2 * p4;
 	p6 = p5 / p4;
 
-	cout << "p1          : " << setw(3) << p1 << '\n';
-	cout << "p2          : " << setw(3) << p2 << '\n';
-	cout << "p3 = p1 + p2: " << setw(3) << p3 << '\n';
-	cout << "p4 = p2 - p1: " << setw(3) << p4 << '\n';
-	cout << "p5 = p2 * p4: " << setw(3) << p5 << '\n';
-	cout << "p6 = p5 / p4: " << setw(3) << p6 << '\n';
+	std::cout << "p1          : " << std::setw(3) << p1 << '\n';
+	std::cout << "p2          : " << std::setw(3) << p2 << '\n';
+	std::cout << "p3 = p1 + p2: " << std::setw(3) << p3 << '\n';
+	std::cout << "p4 = p2 - p1: " << std::setw(3) << p4 << '\n';
+	std::cout << "p5 = p2 * p4: " << std::setw(3) << p5 << '\n';
+	std::cout << "p6 = p5 / p4: " << std::setw(3) << p6 << '\n';
 
-	cout << "minpos      : " << minpos << '\n';
-	cout << "maxpos      : " << maxpos << '\n';
+	std::cout << "minpos      : " << minpos << '\n';
+	std::cout << "maxpos      : " << maxpos << '\n';
 
 	p1 = 0; ++p1;         // another way to get to minpos
 	p2 = INFINITY; --p2;  // another way to get to maxpos
-	cout << "minpos      : " << pretty_print(p1) << '\n';
-	cout << "maxpos      : " << pretty_print(p2) << '\n';
+	std::cout << "minpos      : " << pretty_print(p1) << '\n';
+	std::cout << "maxpos      : " << pretty_print(p2) << '\n';
 
 	/*
 	pretty_print(posit) will print the different segments of a posit
@@ -64,15 +63,15 @@ try {
 
 	p1 = 1.0; ++p1;
 	p2 = 1.0; --p2;
-	cout << "+1+eps      : " << pretty_print(p1) << '\n';
-	cout << "+1-eps      : " << pretty_print(p2) << '\n';
+	std::cout << "+1+eps      : " << pretty_print(p1) << '\n';
+	std::cout << "+1-eps      : " << pretty_print(p2) << '\n';
 
 	p1 = -1.0; ++p1;
 	p2 = -1.0; --p2;
-	cout << "-1+eps      : " << pretty_print(p1) << '\n';
-	cout << "-1-eps      : " << pretty_print(p2) << '\n';
+	std::cout << "-1+eps      : " << pretty_print(p1) << '\n';
+	std::cout << "-1-eps      : " << pretty_print(p2) << '\n';
 
-	cout << endl;
+	std::cout << std::endl;
 
 	return EXIT_SUCCESS;
 }

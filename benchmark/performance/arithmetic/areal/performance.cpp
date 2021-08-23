@@ -21,16 +21,14 @@
 
 // measure performance of conversion operators
 void TestConversionPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "AREAL Conversion operator performance" << endl;
+	std::cout << "\nAREAL Conversion operator performance\n";
 
 	//uint64_t NR_OPS = 1000000;
 }
 
 template<typename Scalar>
 void DecodeWorkload(uint64_t NR_OPS) {
-	using namespace std;
 	using namespace sw::universal;
 
 	Scalar a{ 0 };
@@ -50,23 +48,22 @@ void DecodeWorkload(uint64_t NR_OPS) {
 			// this shouldn't happen, but found a bug this way with areal<64,11,uint64_t> as type
 			if (first) {
 				first = false;
-				cout << typeid(a).name() << " :\n" 
-					<< to_binary(a,true) << "\n" 
+				std::cout << typeid(a).name() << " :\n"
+					<< to_binary(a,true) << '\n'
 					<< "sign    : " << (s ? "-1\n" : "+1\n") 
-					<< "exponent: " << to_binary(e,true) << "\n" 
-					<< "fraction: " << to_binary(f,true) << "\n"
-					<< "ubit    : " << (ubit ? "1" : "0") << endl;
+					<< "exponent: " << to_binary(e,true) << '\n'
+					<< "fraction: " << to_binary(f,true) << '\n'
+					<< "ubit    : " << (ubit ? "1" : "0") << '\n';
 			}
 		}
 	}
-	if (success == 0) cout << "DECODE FAIL\n"; // just a quick double check that all went well
+	if (success == 0) std::cout << "DECODE FAIL\n"; // just a quick double check that all went well
 }
 
 // measure performance of conversion operators
 void TestDecodePerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "AREAL decode operator performance" << endl;
+	std::cout << "\nAREAL decode operator performance\n";
 
 	uint64_t NR_OPS = 1000000;
 	PerformanceRunner("areal<8,2,uint8_t>      decode         ", DecodeWorkload< sw::universal::areal<8, 2, uint8_t> >, NR_OPS);
@@ -99,9 +96,8 @@ areal<64,11,uint64_t>   decode             1000000 per       0.0017222sec -> 580
 
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "AREAL Arithmetic operator performance" << endl;
+	std::cout << "\nAREAL Arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 1000000;
 
@@ -144,7 +140,6 @@ void TestArithmeticOperatorPerformance() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "AREAL operator performance benchmarking";
@@ -159,18 +154,18 @@ try {
 	blockbinary<a.fbits, typename Scalar::BlockType> f;
 	bool ubit{ false };
 	sw::universal::decode(a, s, e, f, ubit);
-	cout << typeid(a).name() << " :\n"
-		<< to_binary(a, true) << "\n"
+	std::cout << typeid(a).name() << " :\n"
+		<< to_binary(a, true) << '\n'
 		<< "sign    : " << (s ? "-1\n" : "+1\n")
-		<< "exponent: " << to_binary(e, true) << "\n"
-		<< "fraction: " << to_binary(f, true) << "\n"
-		<< "ubit    : " << (ubit ? "1" : "0") << endl;
+		<< "exponent: " << to_binary(e, true) << '\n'
+		<< "fraction: " << to_binary(f, true) << '\n'
+		<< "ubit    : " << (ubit ? "1" : "0") << '\n';
 
-	cout << "nbits: " << a.nbits << endl;
-	cout << "es   : " << a.es << endl;
-	cout << "fbits: " << a.fbits << endl;
+	std::cout << "nbits: " << a.nbits << '\n';
+	std::cout << "es   : " << a.es << '\n';
+	std::cout << "fbits: " << a.fbits << '\n';
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else

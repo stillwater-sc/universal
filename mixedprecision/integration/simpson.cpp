@@ -45,7 +45,6 @@ Scalar SimpsonOneOverThreeRule(const Scalar& a, const Scalar& b, size_t n, Scala
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
@@ -57,7 +56,7 @@ try {
 	// area is roughly: 2.80992881892
 	for (size_t n = 10; n < 41; n += 2) {   // precondition: n must be even for Simpson 1/3 rule
 		Scalar area = SimpsonOneOverThreeRule(a, b, n, &f);
-		cout << "integral of f(x) between " << a << " and " << b << " = " << area << endl;
+		std::cout << "integral of f(x) between " << a << " and " << b << " = " << area << '\n';
 	}
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -93,14 +93,13 @@ int ValidateRoundingAssessment(const std::string& tag, bool bReportIndividualTes
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// generate individual testcases to hand trace/debug
 	ValidateFixedPointNumber<4>("Hello", true);
 	ValidateRoundingAssessment<8>("", true);
 
-	cout << "Fraction tests" << endl;
+	std::cout << "Fraction tests\n";
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 

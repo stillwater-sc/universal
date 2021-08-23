@@ -10,35 +10,33 @@
 template<size_t nbits, size_t es, typename Ty>
 sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 	constexpr size_t fbits = std::numeric_limits<Ty>::digits - 1;
-
-	using namespace std;
 	using namespace sw::universal;
 
 	internal::value<fbits> v((Ty)rhs);
 	posit<nbits, es> p;
 
-	cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";
-	cout << "Test for ZERO\n";
-	cout << to_triple(v);
+	std::cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";
+	std::cout << "Test for ZERO\n";
+	std::cout << to_triple(v);
 	if (v.iszero()) {
 		p.setzero();
-		cout << " input value is zero\n";
-		cout << info_print(p);
+		std::cout << " input value is zero\n";
+		std::cout << info_print(p);
 		return p;
 	}
 	else {
-		cout << " input value is NOT zero\n";
+		std::cout << " input value is NOT zero\n";
 	}
-	cout << "Test for NaR\n";
-	cout << to_triple(v);
+	std::cout << "Test for NaR\n";
+	std::cout << to_triple(v);
 	if (v.isnan() || v.isinf()) {
 		p.setnar();
-		cout << " input value is NaR\n";
-		cout << info_print(p);
+		std::cout << " input value is NaR\n";
+		std::cout << info_print(p);
 		return p;
 	}
 	else {
-		cout << " input value is NOT NaR\n";
+		std::cout << " input value is NOT NaR\n";
 	}
 
 
@@ -47,7 +45,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 	sw::universal::bitblock<fbits> fraction_in = v.fraction();
 
 	p.clear();
-	cout << " construct the posit\n";
+	std::cout << " construct the posit\n";
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
 		// we are projecting to minpos/maxpos
@@ -79,7 +77,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 		// copy the most significant nf fraction bits into fraction
 		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
 		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
-		cout << fraction_in << "  full fraction bits\n";
+		std::cout << fraction_in << "  full fraction bits\n";
 
 		int remaining_bits = fbits - 1 - nf;
 		bool sb = false;
@@ -87,59 +85,59 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 			sb = anyAfter(fraction_in, fbits - 1 - nf);
 			bitblock<fbits> sb_mask;
 			for (int i = 0; i < remaining_bits; i++) sb_mask.set(i);
-			cout << sb_mask << "  mask of remainder bits\n";
+			std::cout << sb_mask << "  mask of remainder bits\n";
 		}
 
 		// construct the untruncated posit
-		cout << pt_bits << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << "\n";
+		std::cout << pt_bits << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << '\n';
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
 		regime <<= es + nf + 1;
-		cout << regime << "  runlength = " << run << endl;
+		std::cout << regime << "  runlength = " << run << '\n';
 		exponent <<= nf + 1;
-		cout << exponent << "  exponent value = " << hex << esval << dec << endl;
+		std::cout << exponent << "  exponent value = " << std::hex << esval << std::dec << '\n';
 		fraction <<= 1;
-		cout << fraction << "  most significant " << nf << " fraction bits (nbits-1-run-es)\n";
+		std::cout << fraction << "  most significant " << nf << " fraction bits (nbits-1-run-es)\n";
 		sticky_bit.set(0, sb);
 		if (remaining_bits > 0) {
-			cout << sticky_bit << "  sticky bit representing the truncated fraction bits\n";
+			std::cout << sticky_bit << "  sticky bit representing the truncated fraction bits\n";
 		}
 		else {
-			cout << sticky_bit << "  sticky bit representing the fraction bits which are not truncated\n";
+			std::cout << sticky_bit << "  sticky bit representing the fraction bits which are not truncated\n";
 		}
 
 		pt_bits |= regime;
 		pt_bits |= exponent;
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
-		cout << pt_bits << "  unconstrained posit bits ";
+		std::cout << pt_bits << "  unconstrained posit bits ";
 
 		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
-		cout << " length = " << len << endl;
+		std::cout << " length = " << len << '\n';
 		bool blast = pt_bits.test(len - nbits);
 		bitblock<pt_len> blast_bb;
 		blast_bb.set(len - nbits);
-		cout << blast_bb << "  last bit mask\n";
+		std::cout << blast_bb << "  last bit mask\n";
 		bool bafter = pt_bits.test(len - nbits - 1);
 		bitblock<pt_len> bafter_bb;
 		bafter_bb.set(len - nbits - 1);
-		cout << bafter_bb << "  bit after last bit mask\n";
+		std::cout << bafter_bb << "  bit after last bit mask\n";
 		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
 		bitblock<pt_len> bsticky_bb;
 		for (int i = len - nbits - 2; i >= 0; --i) bsticky_bb.set(i);
-		cout << bsticky_bb << "  sticky bit mask\n";
+		std::cout << bsticky_bb << "  sticky bit mask\n";
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
-		cout << "rounding decision (blast & bafter) | (bafter & bsticky): " << (rb ? "round up" : "round down") << endl;
+		std::cout << "rounding decision (blast & bafter) | (bafter & bsticky): " << (rb ? "round up\n" : "round down\n");
 
 		bitblock<nbits> ptt;
 		pt_bits <<= pt_len - len;
-		cout << pt_bits << "  shifted posit\n";
+		std::cout << pt_bits << "  shifted posit\n";
 		truncate(pt_bits, ptt);
-		cout << ptt << "  truncated posit\n";
+		std::cout << ptt << "  truncated posit\n";
 		if (rb) increment_bitset(ptt);
-		cout << ptt << "  rounded posit\n";
+		std::cout << ptt << "  rounded posit\n";
 		if (s) ptt = twos_complement(ptt);
-		cout << ptt << "  final posit\n";
+		std::cout << ptt << "  final posit\n";
 		p.setBitblock(ptt);
 	}
 	return p;
@@ -148,7 +146,6 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -160,21 +157,21 @@ try {
 		--p;
 		float sample = float(p);
 		p = convert_to_posit<nbits, es, float>(sample);
-		cout << color_print(p) << endl;
-		cout << hex_format(p) << endl;
-		cout << p << endl;
+		std::cout << color_print(p) << '\n';
+		std::cout << hex_format(p) << '\n';
+		std::cout << p << '\n';
 	}
 
 
 	{
-		cout << "Tracing conversion algorithm\n";
+		std::cout << "Tracing conversion algorithm\n";
 		long long sample = 1614591918;
 		posit<32, 2> p(sample);
-		cout << "long : " << sample << " posit : " << hex_format(p) << " rounded : " << (long long)p << endl;
+		std::cout << "long : " << sample << " posit : " << hex_format(p) << " rounded : " << (long long)p << '\n';
 		p = convert_to_posit<32, 2, long long>(sample);
-		cout << color_print(p) << endl;
-		cout << hex_format(p) << endl;
-		cout << p << endl;
+		std::cout << color_print(p) << '\n';
+		std::cout << hex_format(p) << '\n';
+		std::cout << p << '\n';
 	}
 
 #else
@@ -214,9 +211,9 @@ try {
 
 	int i = 0;
 	for (auto sample : samples) {
-		cout << "Sample[" << i++ << "] = " << sample << endl;
+		std::cout << "Sample[" << i++ << "] = " << sample << endl;
 		p = convert_to_posit<nbits,es,float>(sample);
-		cout << "********************************************************************\n";
+		std::cout << "********************************************************************\n";
 	}
 #endif
 

@@ -10,12 +10,11 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "Lossless serialization of posit values\n";
+	std::cout << "Lossless serialization of posit values\n";
 
 	constexpr size_t nbits = 40;
 	constexpr size_t es    =  3;
@@ -36,16 +35,16 @@ try {
 	//	a : 40.3x40f03290a3p
 	//	b : 40.3xbf0fcd6f5dp
 	//	c : 40.3x8000000000p
-	cout << "a : " << a << endl;
-	cout << "b : " << b << endl;
-	cout << "c : " << c << endl;
+	std::cout << "a : " << a << '\n';
+	std::cout << "b : " << b << '\n';
+	std::cout << "c : " << c << '\n';
 
 	// in addition to using a system-wide flag to modify ostream behavior
 	// you can also print native posit format using an ostream helper
-	cout << "Using an ostream helper\n";
-	cout << "a : " << hex_format(a) << " a value : " << double(a) << endl;
-	cout << "b : " << hex_format(b) << " b value : " << double(b) << endl;
-	cout << "c : " << hex_format(c) << " c value : " << double(c) << endl;
+	std::cout << "Using an ostream helper\n";
+	std::cout << "a : " << hex_format(a) << " a value : " << double(a) << '\n';
+	std::cout << "b : " << hex_format(b) << " b value : " << double(b) << '\n';
+	std::cout << "c : " << hex_format(c) << " c value : " << double(c) << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

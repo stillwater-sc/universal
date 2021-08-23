@@ -374,12 +374,11 @@ int ValidateScales(std::string& str, bool bReportIndividualTestCases) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "Experiments with the scale of posit numbers" << std::endl;
+	std::cout << "Experiments with the scale of posit numbers\n";
 
 	std::string tag = "Posit Scales failed";
 

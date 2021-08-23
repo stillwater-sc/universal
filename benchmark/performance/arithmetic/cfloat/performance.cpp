@@ -20,7 +20,6 @@
 
 template<typename cfloatConfiguration>
 void CopyWorkload(uint64_t NR_OPS) {
-	using namespace std;
 	using namespace sw::universal;
 	cfloatConfiguration a,b,c;
 
@@ -84,48 +83,47 @@ When running in debug, the assembly is identical, but in Release builts the perf
 /// measure performance of copying numbers around
 /// </summary>
 void TestCopyPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "cfloat decode operator performance" << endl;
+	std::cout << "classic floating-piont cfloat copy performance\n";
 
 	uint64_t NR_OPS = 10000000;
 	// single block representations
-	cout << "single block representations\n";
+	std::cout << "single block representations\n";
 	PerformanceRunner("cfloat<8,2,uint8_t>      copy           ", CopyWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint16_t>    copy           ", CopyWorkload< sw::universal::cfloat<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint32_t>    copy           ", CopyWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint64_t>   copy           ", CopyWorkload< sw::universal::cfloat<64, 11, uint64_t> >, NR_OPS);
 
 	// multi-block representations
-	cout << "byte representations\n";
+	std::cout << "byte representations\n";
 	PerformanceRunner("cfloat<8,2,uint8_t>      copy           ", CopyWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint8_t>     copy           ", CopyWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint8_t>     copy           ", CopyWorkload< sw::universal::cfloat<32, 8, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint8_t>    copy           ", CopyWorkload< sw::universal::cfloat<64, 11, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint8_t>   copy           ", CopyWorkload< sw::universal::cfloat<128, 11, uint8_t> >, NR_OPS);
 
-	cout << "2-byte representations\n";
+	std::cout << "2-byte representations\n";
 	PerformanceRunner("cfloat<8,2,uint16_t>     copy           ", CopyWorkload< sw::universal::cfloat<8, 2, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint16_t>    copy           ", CopyWorkload< sw::universal::cfloat<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint16_t>    copy           ", CopyWorkload< sw::universal::cfloat<32, 8, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint16_t>   copy           ", CopyWorkload< sw::universal::cfloat<64, 11, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint16_t>  copy           ", CopyWorkload< sw::universal::cfloat<128, 11, uint16_t> >, NR_OPS);
 
-	cout << "4-byte representations\n";
+	std::cout << "4-byte representations\n";
 	PerformanceRunner("cfloat<8,2,uint32_t>     copy           ", CopyWorkload< sw::universal::cfloat<8, 2, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint32_t>    copy           ", CopyWorkload< sw::universal::cfloat<16, 5, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint32_t>    copy           ", CopyWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint32_t>   copy           ", CopyWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint32_t>  copy           ", CopyWorkload< sw::universal::cfloat<128, 11, uint32_t> >, NR_OPS);
 
-	cout << "8-byte representations\n";
+	std::cout << "8-byte representations\n";
 	PerformanceRunner("cfloat<8,2,uint64_t>     copy           ", CopyWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint64_t>    copy           ", CopyWorkload< sw::universal::cfloat<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint64_t>    copy           ", CopyWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint64_t>   copy           ", CopyWorkload< sw::universal::cfloat<64, 11, uint64_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint64_t>  copy           ", CopyWorkload< sw::universal::cfloat<128, 11, uint64_t> >, NR_OPS);
 
-	cout << "very large representations\n";
+	std::cout << "very large representations\n";
 	PerformanceRunner("cfloat<80,11,uint64_t>   copy           ", CopyWorkload< sw::universal::cfloat<80, 11, uint64_t> >, NR_OPS);
 	PerformanceRunner("cfloat<96,11,uint64_t>   copy           ", CopyWorkload< sw::universal::cfloat<96, 11, uint64_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint64_t>  copy           ", CopyWorkload< sw::universal::cfloat<128, 11, uint64_t> >, NR_OPS);
@@ -136,7 +134,6 @@ void TestCopyPerformance() {
 
 template<typename Scalar>
 void DecodeWorkload(uint64_t NR_OPS) {
-	using namespace std;
 	using namespace sw::universal;
 
 	Scalar a{ 0 };
@@ -218,48 +215,47 @@ cfloat<256,11,uint64_t>  decode              100000 per       0.0447077sec ->   
 /// NOTE: es is <= 11 due to limits of dynamic range of a 64-bit double
 /// </summary>
 void TestDecodePerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "cfloat decode operator performance" << endl;
+	std::cout << "classic floating-point cfloat decode operator performance\n";
 
 	uint64_t NR_OPS = 100000;
 	// single block representations
-	cout << "single block representations\n";
+	std::cout << "single block representations\n";
 	PerformanceRunner("cfloat<8,2,uint8_t>      decode         ", DecodeWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint16_t>    decode         ", DecodeWorkload< sw::universal::cfloat<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint32_t>    decode         ", DecodeWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<64, 11, uint64_t> >, NR_OPS);
 
 	// multi-block representations
-	cout << "byte representations\n";
+	std::cout << "byte representations\n";
 	PerformanceRunner("cfloat<8,2,uint8_t>      decode         ", DecodeWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint8_t>     decode         ", DecodeWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint8_t>     decode         ", DecodeWorkload< sw::universal::cfloat<32, 8, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint8_t>    decode         ", DecodeWorkload< sw::universal::cfloat<64, 11, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint8_t>   decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint8_t> >, NR_OPS);
 
-	cout << "2-byte representations\n";
+	std::cout << "2-byte representations\n";
 	PerformanceRunner("cfloat<8,2,uint16_t>     decode         ", DecodeWorkload< sw::universal::cfloat<8, 2, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint16_t>    decode         ", DecodeWorkload< sw::universal::cfloat<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint16_t>    decode         ", DecodeWorkload< sw::universal::cfloat<32, 8, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint16_t>   decode         ", DecodeWorkload< sw::universal::cfloat<64, 11, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint16_t>  decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint16_t> >, NR_OPS);
 
-	cout << "4-byte representations\n";
+	std::cout << "4-byte representations\n";
 	PerformanceRunner("cfloat<8,2,uint32_t>     decode         ", DecodeWorkload< sw::universal::cfloat<8, 2, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint32_t>    decode         ", DecodeWorkload< sw::universal::cfloat<16, 5, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint32_t>    decode         ", DecodeWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint32_t>   decode         ", DecodeWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint32_t>  decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint32_t> >, NR_OPS);
 
-	cout << "8-byte representations\n";
+	std::cout << "8-byte representations\n";
 	PerformanceRunner("cfloat<8,2,uint64_t>     decode         ", DecodeWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
 	PerformanceRunner("cfloat<16,5,uint64_t>    decode         ", DecodeWorkload< sw::universal::cfloat<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint64_t>    decode         ", DecodeWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<64, 11, uint64_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint64_t> >, NR_OPS);
 
-	cout << "very large representations\n";
+	std::cout << "very large representations\n";
 	PerformanceRunner("cfloat<80,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<80, 11, uint64_t> >, NR_OPS);
 	PerformanceRunner("cfloat<96,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<96, 11, uint64_t> >, NR_OPS);
 	PerformanceRunner("cfloat<128,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint64_t> >, NR_OPS); 
@@ -270,7 +266,6 @@ void TestDecodePerformance() {
 #ifdef LATER
 template<typename cfloatConfiguration>
 void NormalizeWorkload(uint64_t NR_OPS) {
-	using namespace std;
 	using namespace sw::universal;
 	constexpr size_t nbits = cfloatConfiguration::nbits;
 	constexpr size_t es = cfloatConfiguration::es;
@@ -284,11 +279,11 @@ void NormalizeWorkload(uint64_t NR_OPS) {
 		a.setbits(i);
 		a.normalize(b);
 		if (a.sign() != b.sign()) {
-//			cout << to_binary(a, true) << " : " << to_triple(b, true) << '\n';
+//			std::cout << to_binary(a, true) << " : " << to_triple(b, true) << '\n';
 			bFail = true;
 		}
 	}
-	if (bFail) cout << "NORMALIZE FAIL\n"; // just a quick double check that all went well
+	if (bFail) std::cout << "NORMALIZE FAIL\n"; // just a quick double check that all went well
 }
 
 /*
@@ -312,7 +307,6 @@ cfloat<128,11,uint8_t>   normalize           100000 per        0.026631sec ->   
 /// NOTE: es is <= 11 due to limits of dynamic range of a 64-bit double
 /// </summary>
 void TestNormalizePerformance() {
-	using namespace std;
 	using namespace sw::universal;
 	cout << endl << "cfloat normalize operator performance" << endl;
 
@@ -336,18 +330,16 @@ void TestNormalizePerformance() {
 
 // measure performance of conversion operators
 void TestConversionPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "cfloat Conversion operator performance" << endl;
+	std::cout << "classic floating-point cfloat conversion performance\n";
 
 //	uint64_t NR_OPS = 1000000;
 }
 
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "cfloat Arithmetic operator performance" << endl;
+	std::cout << "classic floating-point cfloat arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 1000000;
 
@@ -391,7 +383,6 @@ void TestArithmeticOperatorPerformance() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "cfloat operator performance benchmarking";
@@ -408,7 +399,7 @@ try {
 	PerformanceRunner("cfloat<16,5,uint32_t>    copy           ", CopyWorkload< sw::universal::cfloat<16, 5, uint32_t> >, NR_OPS);
 
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else

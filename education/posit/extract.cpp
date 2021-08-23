@@ -83,7 +83,6 @@ sw::universal::posit<nbits, es> extract(double d) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	const size_t nbits = 32;
@@ -98,7 +97,7 @@ try {
 	unsigned long long	ullfraction;
 	bitblock<nbits>     _fraction;
 
-	cout << "Extraction examples" << endl;
+	std::cout << "Extraction examples\n";
 
 	union {
 		float f;
@@ -107,25 +106,25 @@ try {
 
 
 	uf.i = FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 | !FLOAT_SIGN_MASK;
-	cout << "Positive Regime: float value: " << uf.f << endl;
+	std::cout << "Positive Regime: float value: " << uf.f << '\n';
 	extract_fp_components(uf.f, sign, exponent, ffr, ulfraction);
 	_fraction = extract_23b_fraction<nbits>(ulfraction);
-	cout << "f " << uf.f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ulfraction << endl;
+	std::cout << "f " << uf.f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ulfraction << '\n';
 
 	p = extract<nbits, es>(uf.f);
-	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components(p) << endl;
+	std::cout << "posit<" << nbits << "," << es << "> = " << p << '\n';
+	std::cout << "posit<" << nbits << "," << es << "> = " << components(p) << '\n';
 
 
 	uf.i = FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 | FLOAT_SIGN_MASK;
-	cout << "Negative Regime: float value: " << uf.f << endl;
+	std::cout << "Negative Regime: float value: " << uf.f << '\n';
 	extract_fp_components(uf.f, sign, exponent, ffr, ulfraction);
 	_fraction = extract_23b_fraction<nbits>(ulfraction);
-	cout << "f " << uf.f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ulfraction << endl;
+	std::cout << "f " << uf.f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ulfraction << '\n';
 
 	p = extract<nbits, es>(uf.f);
-	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components(p) << endl;
+	std::cout << "posit<" << nbits << "," << es << "> = " << p << '\n';
+	std::cout << "posit<" << nbits << "," << es << "> = " << components(p) << '\n';
 
 	union {
 		double d;
@@ -134,25 +133,24 @@ try {
 
 
 	ud.i = DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 | !DOUBLE_SIGN_MASK;
-	cout << "Positive Regime: float value: " << ud.d << endl;
+	std::cout << "Positive Regime: float value: " << ud.d << '\n';
 	extract_fp_components((double)ud.d, sign, exponent, dfr, ullfraction);
 	_fraction = extract_52b_fraction<nbits>(ullfraction);
-	cout << "d " << ud.d << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ullfraction << endl;
+	std::cout << "d " << ud.d << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ullfraction << '\n';
 
 	p = extract<nbits, es>(ud.d);
-	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components(p) << endl;
-
+	std::cout << "posit<" << nbits << "," << es << "> = " << p << '\n';
+	std::cout << "posit<" << nbits << "," << es << "> = " << components(p) << '\n';
 
 	ud.i = DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 | DOUBLE_SIGN_MASK;
-	cout << "Negative Regime: float value: " << ud.d << endl;
+	std::cout << "Negative Regime: float value: " << ud.d << '\n';
 	extract_fp_components((double)ud.d, sign, exponent, dfr, ullfraction);
 	_fraction = extract_52b_fraction<nbits>(ullfraction);
-	cout << "d " << ud.d << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ullfraction << endl;
+	std::cout << "d " << ud.d << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << ullfraction << '\n';
 
 	p = extract<nbits, es>(uf.f);
-	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components(p) << endl;
+	std::cout << "posit<" << nbits << "," << es << "> = " << p << '\n';
+	std::cout << "posit<" << nbits << "," << es << "> = " << components(p) << '\n';
 
 	return EXIT_SUCCESS;
 }
