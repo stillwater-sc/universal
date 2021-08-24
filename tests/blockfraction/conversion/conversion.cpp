@@ -98,7 +98,7 @@ try {
 		//	0b1.1111111 : 1.99219
 		constexpr size_t nbits = 8;
 		blockfraction<nbits, uint8_t, BitEncoding::Ones> a(0xff, 1);
-		for (int radix = 1; radix < nbits; ++radix) {
+		for (int radix = 1; radix < static_cast<int>(nbits); ++radix) {
 			a.setradix(radix);
 			std::cout << to_binary(a) << " : " << a << '\n';
 		}

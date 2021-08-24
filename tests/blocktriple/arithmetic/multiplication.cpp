@@ -23,16 +23,17 @@
 // enumerate all multiplication cases for an blocktriple<nbits,BlockType> configuration
 template<typename BlockTripleConfiguration>
 int VerifyMultiplication(bool bReportIndividualTestCases) {
+	using namespace sw::universal;
+	
 	constexpr size_t fbits = BlockTripleConfiguration::fbits;  // just the number of fraction bits
-	constexpr size_t mbits = BlockTripleConfiguration::mbits;
 	using BlockType = typename BlockTripleConfiguration::BlockType;
 	constexpr sw::universal::BlockTripleOperator op = BlockTripleConfiguration::op;
 
-	// for the test we are going to enumerate the fbits state space
-	constexpr size_t NR_VALUES = (size_t(1) << fbits);
-
-	using namespace sw::universal;
-	
+	if constexpr (op != BlockTripleOperator::MUL) {
+		std::cerr << "VerifyMultiplication requires a blocktriple with the MUL operator designation\n";
+		return 1;
+	}
+//	constexpr size_t mbits = BlockTripleConfiguration::mbits;
 //	cout << endl;
 //	cout << "blocktriple<" <<fbits << ',' << op << ',' << typeid(BlockType).name() << '>' << endl;
 //	cout << "Fraction        bits : " << fbits << endl;
@@ -50,7 +51,8 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 		1.110
 		1.111
 
-		The scale shifts these value relative to 1. So a scale of -3 shifts these bits to the right, a scale of +3 shifts them to the left
+		The scale shifts these value relative to 1. So a scale of -3 shifts these bits 
+		to the right, a scale of +3 shifts them to the left
 
 		when multiplying, we generate 2*fhbits result bits with radix at 2*fbits
 		which we'll need to round using round-nearest-tie-to-even : lsb|guard|round|sticky.
@@ -64,9 +66,12 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 		test is going to enumerate input argument 1.00000 through 1.11111
 	 */
 
+	// for the test we are going to enumerate the fbits state space
+	constexpr size_t NR_VALUES = (size_t(1) << fbits);
+
 	int nrOfFailedTests = 0;
 
-	blocktriple<fbits, BlockTripleOperator::MUL> a, b, c;
+	blocktriple<fbits, BlockTripleOperator::MUL, BlockType> a, b, c;
 	constexpr size_t hiddenBit = (size_t(1) << fbits);
 	a.setnormal();
 	b.setnormal();

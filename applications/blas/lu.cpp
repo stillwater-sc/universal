@@ -93,7 +93,7 @@ void GaussianEliminationTest() {
 	std::cout << "A\n" << A << '\n';
 	size_t N = num_cols(A);
 	// define a difficult solution
-	Scalar epsplus = Scalar(1) + numeric_limits<Scalar>::epsilon();
+	Scalar epsplus = Scalar(1) + std::numeric_limits<Scalar>::epsilon();
 	Vector x(N);
 	x = epsplus;
 	auto b = fmv(A, x);   // construct the right hand side

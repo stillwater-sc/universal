@@ -65,7 +65,7 @@ void TestLinearSamples() {
 	using namespace sw::universal;
 	using Posit = posit<nbits, es>;
 
-	Posit epsilon = numeric_limits<Posit>::epsilon();
+	Posit epsilon = std::numeric_limits<Posit>::epsilon();
 	std::cout << "epsilon is " << epsilon << " " << color_print(epsilon) << '\n';
 
 	constexpr size_t NR_VALUES = (1 << nbits);
