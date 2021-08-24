@@ -165,7 +165,7 @@ try {
 
 	bool gt = a > b; 
 	bool let = a <= b;
-	std::cout << gt << " " << let << '\n";
+	std::cout << gt << " " << let << '\n';
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<3>(), "bitblock<3>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<3>(), "bitblock<3>", "!=");

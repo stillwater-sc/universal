@@ -45,7 +45,7 @@ WORKDIR /home/stillwater/universal/build
 # test RUN statement to speed-up CI testing
 #RUN cmake -DBUILD_VALIDATION_HW=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
 # full RUN statement to execute full regression test suite
-RUN cmake -DBUILD_CI_CHECK=ON .. && make
+RUN cmake -DBUILD_ALL=ON .. && make
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
