@@ -7,10 +7,8 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/functions/ddpoly.hpp>
 
-
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::function;
 
@@ -18,8 +16,8 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	// define a polynomial
 	// p(x) = c0 + c1 * x + c2 * x^2 + c3 * x^3
@@ -28,17 +26,17 @@ try {
 	std::vector<float> pd(4);
 
 	ddpoly(1.0f, c, pd);
-	cout << "p(x)      = " << c[0] << " + " << c[1] << "*x + " << c[2] << "*x^2 + " << c[3] << "*x^3" << endl;
-	cout << "p(1.0)    = " << pd[0] << endl;
-	cout << "p'(x)     = " << c[1] << " + " << 2*c[2] << "*x + " << 3*c[3] << "*x^2" << endl;
-	cout << "p'(1.0)   = " << pd[1] << endl;
-	cout << "p''(x)    = " << 2 * c[2] << " + " << 6 * c[3] << "*x" << endl;
-	cout << "p''(1.0)  = " << pd[2] << endl;
-	cout << "p'''(x)   = " << 6 * c[3] << endl;
-	cout << "p'''(1.0) = " << pd[3] << endl;
+	std::cout << "p(x)      = " << c[0] << " + " << c[1] << "*x + " << c[2] << "*x^2 + " << c[3] << "*x^3" << '\n';
+	std::cout << "p(1.0)    = " << pd[0] << '\n';
+	std::cout << "p'(x)     = " << c[1] << " + " << 2*c[2] << "*x + " << 3*c[3] << "*x^2" << '\n';
+	std::cout << "p'(1.0)   = " << pd[1] << '\n';
+	std::cout << "p''(x)    = " << 2 * c[2] << " + " << 6 * c[3] << "*x" << '\n';
+	std::cout << "p''(1.0)  = " << pd[2] << '\n';
+	std::cout << "p'''(x)   = " << 6 * c[3] << '\n';
+	std::cout << "p'''(1.0) = " << pd[3] << '\n';
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

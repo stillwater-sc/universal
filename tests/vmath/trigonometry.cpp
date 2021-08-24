@@ -14,23 +14,21 @@ constexpr double PI = 3.14159265358979323846;  // best practice for C++
 
 template<typename Scalar>
 void TestTriangleVmath(size_t N = 12) {
-	using namespace std;
 	using namespace sw::universal::blas;
 	using std::pow;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	Vector v = linspace<Scalar>(0, 2*PI, N);
-	cout << "radians  = " << v << endl;
+	std::cout << "radians  = " << v << '\n';;
 	auto cosines = sw::universal::blas::cos(v);
-	cout << "cosines  = " << cosines << endl;
+	std::cout << "cosines  = " << cosines << '\n';;
 	auto sines = sin(v);
-	cout << "sines    = " << sines << endl;
+	std::cout << "sines    = " << sines << '\n';;
 	auto tangents = tan(v);
-	cout << "tangents = " << tangents << endl;
+	std::cout << "tangents = " << tangents << '\n';;
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::blas;
 
 	int nrOfFailedTestCases = 0;

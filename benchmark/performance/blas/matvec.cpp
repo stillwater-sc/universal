@@ -36,10 +36,10 @@ void catastrophicCancellationTest() {
 	b = A * x;
 	std::cout << "vector b: \n" << b << '\n';
 	if (b[0] == 2 && b[1] == 2) {
-		cout << "PASS\n";
+		std::cout << "PASS\n";
 	}
 	else {
-		cout << "FAIL\n";
+		std::cout << "FAIL\n";
 	}
 }
 

@@ -16,8 +16,7 @@
 #define STRESS_TESTING 0
 
 int main()
-try {
-	using namespace std;
+try {;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;

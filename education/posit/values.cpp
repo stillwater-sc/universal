@@ -125,7 +125,7 @@ bool ValidateSubnormalFloats() {
 
 	std::cout << flt_min << " " << flt_max << '\n';
 	std::cout << flt_true_min << '\n';
-	std::cout << std::hexfloat << flt_min << defaultfloat << '\n';
+	std::cout << std::hexfloat << flt_min << std::defaultfloat << '\n';
 
 	internal::value<23> v;
 	float flt = flt_min;

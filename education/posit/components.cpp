@@ -26,7 +26,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = scale >> es;
 		test_regime.assign_regime_pattern(k);
-		std::cout << "scale of input number: " << setw(4) << scale << " regime attributes: k " << setw(2) << k << " " << test_regime.get() << " scale " << test_regime.scale() << '\n';
+		std::cout << "scale of input number: " << std::setw(4) << scale << " regime attributes: k " << std::setw(2) << k << " " << test_regime.get() << " scale " << test_regime.scale() << '\n';
 	}
 	std::cout << '\n';
 
@@ -37,7 +37,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 		int k = calculate_k<nbits, es>(scale);
 		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
-		std::cout << "scale of input number: " << setw(4) << scale << " exponent bits: " << test_exponent << '\n';
+		std::cout << "scale of input number: " << std::setw(4) << scale << " exponent bits: " << test_exponent << '\n';
 	}
 	std::cout << '\n';
 
@@ -51,7 +51,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 		int k = calculate_k<nbits, es>(scale);;
 		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
-		std::cout << "scale of input number: " << setw(4) << scale << " fraction bits: " << test_fraction << '\n';
+		std::cout << "scale of input number: " << std::setw(4) << scale << " fraction bits: " << test_fraction << '\n';
 	}
 	std::cout << '\n';
 }

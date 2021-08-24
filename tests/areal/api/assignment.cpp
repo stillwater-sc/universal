@@ -436,7 +436,6 @@ double      s-eee'eeee'eeee-ffff'...'ffff  (52 fraction bits, 1 hidden bit
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -504,7 +503,7 @@ try {
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else
-	cout << "AREAL assignment validation" << endl;
+	std::cout << "AREAL assignment validation\n";
 
 	bool bVerbose = false;
 

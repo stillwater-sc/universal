@@ -29,11 +29,10 @@
 
 int main(int argc, char* argv[])
 try {
-	using namespace std;
 	using namespace sw::universal::blas;
 
 
-	if (argc == 1) cout << argv[0] << endl;
+	if (argc == 1) std::cout << argv[0] << std::endl;
 
 	// Av = lambda * v
 	// AQ = Q * Sigma
@@ -45,20 +44,20 @@ try {
 	constexpr size_t M = 5;
 	constexpr size_t N = 2;
 	Matrix Qbase = uniform_random<Matrix>(M, N);
-	cout << Qbase << endl;
+	std::cout << Qbase << '\n';
 
 	// normalize the column vectors
 	auto total = sum(Qbase);
-	cout << "Total    : " << total << endl;
+	std::cout << "Total    : " << total << '\n';
 	auto rowSums = sum(Qbase, 1);
-	cout << "Row sums : " << rowSums << endl;
+	std::cout << "Row sums : " << rowSums << '\n';
 	auto colSums = sum(Qbase, 2);
-	cout << "Col sums : " << colSums << endl;
+	std::cout << "Col sums : " << colSums << '\n';
 
 	normalize(Qbase, 2);  // normalize columns so they are unit length
-	cout << Qbase << endl;
+	std::cout << Qbase << '\n';
 	auto colNorms = matrixNorm(Qbase, 2);
-	cout << "Col norms: " << colNorms << endl;
+	std::cout << "Col norms: " << colNorms << '\n';
 
 	return EXIT_SUCCESS;
 }

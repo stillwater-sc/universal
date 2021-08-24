@@ -9,7 +9,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 16;
@@ -20,20 +19,20 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	// with dynamic precision, we have the situation where multiplying
 	// extreme numbers creates precision we do not have..
 	Posit maxpos(SpecificValue::maxpos);
 	Posit minpos(SpecificValue::minpos);
 	Posit one = minpos * maxpos;
-	cout << "maxpos : " << info_print(maxpos) << endl;
-	cout << "minpos : " << info_print(minpos) << endl;
-	cout << "one    : " << info_print(one) << endl;
+	std::cout << "maxpos : " << info_print(maxpos) << '\n';
+	std::cout << "minpos : " << info_print(minpos) << '\n';
+	std::cout << "one    : " << info_print(one) << '\n';
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

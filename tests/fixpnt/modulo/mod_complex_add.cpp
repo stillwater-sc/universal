@@ -42,7 +42,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 // enumerate all complex addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCases) {
-	using namespace std;
 	using namespace sw::universal;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
@@ -51,25 +50,25 @@ int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCase
 	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
 	int nrOfFailedTests = 0;
 	FixedPoint ar, ai, br, bi;
-	complex<FixedPoint> a, b, result, ref;
+	std::complex<FixedPoint> a, b, result, ref;
 
-	complex<double> da, db, dc;
+	std::complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		ar.setbits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			ar.setbits(j);
-			a = complex<FixedPoint>(ar, ai);
-			da = complex<double>(double(ar), double(ai));
+			a = std::complex<FixedPoint>(ar, ai);
+			da = std::complex<double>(double(ar), double(ai));
 
 			// generate all the right sides
 			for (size_t k = 0; k < NR_VALUES; ++k) {
 				br.setbits(k);
 				for (size_t l = 0; l < NR_VALUES; ++l) {
 					bi.setbits(l);
-					b = complex<FixedPoint>(br, bi);
-					db = complex<double>(double(br), double(bi));
+					b = std::complex<FixedPoint>(br, bi);
+					db = std::complex<double>(double(br), double(bi));
 					dc = da + db;
-					ref = complex<FixedPoint>(dc.real(), dc.imag());
+					ref = std::complex<FixedPoint>(dc.real(), dc.imag());
 
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 					// catching overflow
@@ -130,7 +129,6 @@ namespace sw { namespace universal { namespace complex_literals {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -154,7 +152,7 @@ try {
 
 #else
 
-	cout << "Fixed-point modular addition validation" << endl;
+	std::cout << "Fixed-point complex addition validation\n";
 
 	// 4-bits: 2^16 arithmetic combinations
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "addition");

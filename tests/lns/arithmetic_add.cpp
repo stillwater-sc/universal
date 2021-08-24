@@ -38,7 +38,6 @@ int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -54,7 +53,7 @@ try {
 
 	nrOfFailedTestCases = 0;
 #else
-	cout << "Arbitrary LNS addition validation" << endl;
+	std::cout << "Arbitrary LNS addition validation\n";
 
 	bool bReportIndividualTestCases = false;
 	std::string tag = "Addition failed: ";

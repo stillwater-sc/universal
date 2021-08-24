@@ -41,32 +41,30 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 template<size_t nbits, size_t rbits>
 void GenerateFixedPointComparisonTable(std::string& tag) {
-	using namespace std;
 	using namespace sw::universal;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	fixpnt<nbits, rbits> fp;
 	fixpnt<nbits+1, rbits+1> fpnext;
-	cout << "  fixpnt<" << nbits + 1 << "," << rbits + 1 << ">      |    fixpnt<" << nbits << ", " << rbits << ">" << endl;
+	std::cout << "  fixpnt<" << nbits + 1 << "," << rbits + 1 << ">      |    fixpnt<" << nbits << ", " << rbits << ">" << '\n';
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		fp.set_raw_bits(i);
 		fpnext.set_raw_bits(2*i);
-		cout << to_binary(fpnext) << ' ' << setw(10) << fpnext << "  |  " << to_binary(fp) << ' ' << setw(15) << fp << endl;
+		std::cout << to_binary(fpnext) << ' ' << std::setw(10) << fpnext << "  |  " << to_binary(fp) << ' ' << std::setw(15) << fp << '\n';
 		fpnext.set_raw_bits(2 * i + 1);
-		cout << to_binary(fpnext) << ' ' << setw(10) << fpnext << "  |  " << endl;
+		std::cout << to_binary(fpnext) << ' ' << std::setw(10) << fpnext << "  |  " << '\n';
 	}
 }
 
 /*
 void GenerateFixedPointRangeTable() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << "fixpnt<4,#> ranges\n";
+	std::cout << "fixpnt<4,#> ranges\n";
 	ReportFixedPointRanges<4, 0, Modulo>(cout);
 	ReportFixedPointRanges<4, 1, Modulo>(cout);
 	ReportFixedPointRanges<4, 2, Modulo>(cout);
 	ReportFixedPointRanges<4, 3, Modulo>(cout);
 	ReportFixedPointRanges<4, 4, Modulo>(cout);
-	cout << "fixpnt<6,#> ranges\n";
+	std::cout << "fixpnt<6,#> ranges\n";
 	ReportFixedPointRanges<6, 0, Modulo>(cout);
 	ReportFixedPointRanges<6, 1, Modulo>(cout);
 	ReportFixedPointRanges<6, 2, Modulo>(cout);
@@ -74,7 +72,7 @@ void GenerateFixedPointRangeTable() {
 	ReportFixedPointRanges<6, 4, Modulo>(cout);
 	ReportFixedPointRanges<6, 5, Modulo>(cout);
 	ReportFixedPointRanges<6, 6, Modulo>(cout);
-	cout << "fixpnt<8,#> ranges\n";
+	std::cout << "fixpnt<8,#> ranges\n";
 	ReportFixedPointRanges<8, 0, Modulo>(cout);
 	ReportFixedPointRanges<8, 1, Modulo>(cout);
 	ReportFixedPointRanges<8, 2, Modulo>(cout);
@@ -84,7 +82,7 @@ void GenerateFixedPointRangeTable() {
 	ReportFixedPointRanges<8, 6, Modulo>(cout);
 	ReportFixedPointRanges<8, 7, Modulo>(cout);
 	ReportFixedPointRanges<8, 8, Modulo>(cout);
-	cout << "fixpnt<10,#> ranges\n";
+	std::cout << "fixpnt<10,#> ranges\n";
 	ReportFixedPointRanges<10, 0, Modulo>(cout);
 	ReportFixedPointRanges<10, 1, Modulo>(cout);
 	ReportFixedPointRanges<10, 2, Modulo>(cout);
@@ -96,7 +94,7 @@ void GenerateFixedPointRangeTable() {
 	ReportFixedPointRanges<10, 8, Modulo>(cout);
 	ReportFixedPointRanges<10, 9, Modulo>(cout);
 	ReportFixedPointRanges<10, 10, Modulo>(cout);
-	cout << "fixpnt<12,#> ranges\n";
+	std::cout << "fixpnt<12,#> ranges\n";
 	ReportFixedPointRanges<12, 0, Modulo>(cout);
 	ReportFixedPointRanges<12, 1, Modulo>(cout);
 	ReportFixedPointRanges<12, 2, Modulo>(cout);
@@ -110,7 +108,7 @@ void GenerateFixedPointRangeTable() {
 	ReportFixedPointRanges<12, 10, Modulo>(cout);
 	ReportFixedPointRanges<12, 11, Modulo>(cout);
 	ReportFixedPointRanges<12, 12, Modulo>(cout);
-	cout << "fixpnt<14,#> ranges\n";
+	std::cout << "fixpnt<14,#> ranges\n";
 	ReportFixedPointRanges<14, 0, Modulo>(cout);
 	ReportFixedPointRanges<14, 1, Modulo>(cout);
 	ReportFixedPointRanges<14, 2, Modulo>(cout);
@@ -126,7 +124,7 @@ void GenerateFixedPointRangeTable() {
 	ReportFixedPointRanges<14, 12, Modulo>(cout);
 	ReportFixedPointRanges<14, 13, Modulo>(cout);
 	ReportFixedPointRanges<14, 14, Modulo>(cout);
-	cout << "fixpnt<16,#> ranges\n";
+	std::cout << "fixpnt<16,#> ranges\n";
 	ReportFixedPointRanges<16, 0, Modulo>(cout);
 	ReportFixedPointRanges<16, 1, Modulo>(cout);
 	ReportFixedPointRanges<16, 2, Modulo>(cout);
@@ -144,7 +142,7 @@ void GenerateFixedPointRangeTable() {
 	ReportFixedPointRanges<16, 14, Modulo>(cout);
 	ReportFixedPointRanges<16, 15, Modulo>(cout);
 	ReportFixedPointRanges<16, 16, Modulo>(cout);
-	cout << "fixpnt<20,#> ranges\n";
+	std::cout << "fixpnt<20,#> ranges\n";
 	ReportFixedPointRanges<20, 0, Modulo>(cout);
 	ReportFixedPointRanges<20, 1, Modulo>(cout);
 	ReportFixedPointRanges<20, 2, Modulo>(cout);
@@ -174,7 +172,6 @@ void GenerateFixedPointRangeTable() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -225,7 +222,7 @@ try {
 
 #else  // !MANUAL_TESTING
 
-	cout << "Fixed-point conversion validation" << endl;
+	std::cout << "Fixed-point conversion validation\n";
 
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<4,0,Modulo,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<4,1,Modulo,uint8_t>");

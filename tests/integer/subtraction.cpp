@@ -32,7 +32,6 @@ void GenerateSubTest(const Scalar& x, const Scalar& y, Scalar& z) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "integer subtraction";
@@ -44,11 +43,11 @@ try {
 	b = 1235;
 	GenerateSubTest(a, b, c);
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else
-	std::cout << "Integer Arithmetic verfication" << std::endl;
+	std::cout << "Integer subtraction verfication\n";
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

@@ -9,17 +9,16 @@
 
 template<typename Scalar>
 void ContractionExpansion(int depth) {
-	using namespace std;
 	using namespace sw::universal;
 
 	int columnWidth = 20;
 	Scalar seed = 2.0;
-	cout << "Contraction/Expansion sequence sqrt(sqrt(sqrt(...sqrt(x))))))^depth => seed with seed = " << seed << endl;
-	cout << setw(3) << "#"
-		<< setw(columnWidth) << "contraction"
-		<< setw(columnWidth) << "expansion"
-		<< setw(columnWidth) << "error"
-		<< endl;
+	std::cout << "Contraction/Expansion sequence sqrt(sqrt(sqrt(...sqrt(x))))))^depth => seed with seed = " << seed << '\n';
+	std::cout << std::setw(3) << "#"
+		<< std::setw(columnWidth) << "contraction"
+		<< std::setw(columnWidth) << "expansion"
+		<< std::setw(columnWidth) << "error"
+		<< '\n';
 	for (int i = 1; i < depth; ++i) {
 		Scalar x = seed;
 		for (int k = 1; k < i; ++k) {
@@ -30,17 +29,16 @@ void ContractionExpansion(int depth) {
 			x = exp2(x);
 		}
 		Scalar expansion = x;
-		cout << setw(3) << i << " " 
-			<< setw(columnWidth) << contraction << " "
-			<< setw(columnWidth) << expansion << " "
-			<< setw(columnWidth) << expansion - seed 
-			<< endl;
+		std::cout << std::setw(3) << i << " "
+			<< std::setw(columnWidth) << contraction << " "
+			<< std::setw(columnWidth) << expansion << " "
+			<< std::setw(columnWidth) << expansion - seed
+			<< '\n';
 	}
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
@@ -51,13 +49,13 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	ContractionExpansion<Posit>(10);
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

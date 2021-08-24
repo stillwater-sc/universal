@@ -176,13 +176,12 @@ int check() {
 }
 
 void TestFastdiv() {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl << "TestFastdiv" << endl;
+	std::cout << "\nTestFastdiv\n";
 	// fast integer division by transformation to multiply with magic constant followed by a shift
 	fid::fastdiv fast_divisor(1);
-	cout << "size of fastdiv: " << sizeof(fast_divisor) << endl;
+	std::cout << "size of fastdiv: " << sizeof(fast_divisor) << '\n';
 	fast_divisor.info();
 
 	// int q = dividend / divisor;
@@ -190,7 +189,7 @@ void TestFastdiv() {
 	for (int i = 0; i < 10; i++) {
 		int divisor = rand();
 		fid::fastdiv fast_divisor(divisor);
-		cout << "divisor : " << divisor << std::endl;
+		std::cout << "divisor : " << divisor << '\n';
 		fast_divisor.info();
 	}
 
@@ -210,7 +209,6 @@ void ExamplePattern() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer Arithmetic tests failed";
@@ -226,7 +224,7 @@ try {
 	ReportTestResult(VerifyDivision<4, uint8_t>("manual test", true), "integer<4, uint8_t>", "divisio");
 	ReportTestResult(VerifyDivision<11, uint8_t>("manual test", true), "integer<11, uint8_t>", "divisio");
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else

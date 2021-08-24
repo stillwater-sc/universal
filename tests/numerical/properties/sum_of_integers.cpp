@@ -18,7 +18,6 @@ Scalar NaiveSumOfIntegers(long lowerbound = 0, long upperbound = 10000) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
@@ -29,26 +28,26 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
-	cout << "SumOfIntegers using 64-bit int\n";
+	std::cout << "SumOfIntegers using 64-bit int\n";
 	for (int i = 1; i < 8; ++i) {
-		cout << " 0 - " << pow(10,i) << " : " << NaiveSumOfIntegers<long long>(0, (long)pow(10,i)) << endl;
+		std::cout << " 0 - " << pow(10,i) << " : " << NaiveSumOfIntegers<long long>(0, (long)pow(10,i)) << '\n';
 	}
-	cout << "SumOfIntegers using IEEE single precision float\n";
+	std::cout << "SumOfIntegers using IEEE single precision float\n";
 
 	for (int i = 1; i < 8; ++i) {
-		cout << " 0 - " << pow(10, i) << " : " << NaiveSumOfIntegers<float>(0, (long)pow(10, i)) << endl;
+		std::cout << " 0 - " << pow(10, i) << " : " << NaiveSumOfIntegers<float>(0, (long)pow(10, i)) << '\n';
 	}
-	cout << "SumOfIntegers using posit<32,2>\n";
+	std::cout << "SumOfIntegers using posit<32,2>\n";
 
 	for (int i = 1; i < 8; ++i) {
-		cout << " 0 - " << pow(10, i) << " : " << NaiveSumOfIntegers<Posit>(0, (long)pow(10, i)) << endl;
+		std::cout << " 0 - " << pow(10, i) << " : " << NaiveSumOfIntegers<Posit>(0, (long)pow(10, i)) << '\n';
 	}
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

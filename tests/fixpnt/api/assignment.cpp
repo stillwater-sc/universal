@@ -20,13 +20,12 @@
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 void PositiveTestCases() {
-	using namespace std;
 	using namespace sw::universal;
 
 	float fa, fb, fc, fd;
 	fixpnt<8, 4> a, b, c, d;
 
-	cout << "POSITIVE TEST CASES\n";
+	std::cout << "POSITIVE TEST CASES\n";
 	a.setbits(0x14);
 	b.setbits(0x15);
 	c.setbits(0x16);
@@ -35,73 +34,72 @@ void PositiveTestCases() {
 	fb = float(b);
 	fc = float(c);
 	fd = float(d);
-	cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
-	cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
-	cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
-	cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
+	std::cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << '\n';
+	std::cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << '\n';
+	std::cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << '\n';
+	std::cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << '\n';
 
-	cout << to_hex(fa) << endl;
-	cout << to_hex(fb) << endl;
-	cout << to_hex(fc) << endl;
-	cout << to_hex(fd) << endl;
+	std::cout << to_hex(fa) << '\n';
+	std::cout << to_hex(fb) << '\n';
+	std::cout << to_hex(fc) << '\n';
+	std::cout << to_hex(fd) << '\n';
 
 	float eps[24] = { 0.0f };
 	for (int i = 23; i >= 0; --i) {
 		eps[i] = 1.0f / float(1 << i);
 	}
 
-	cout << to_binary(eps[20]) << endl;
-	cout << to_binary(eps[21]) << endl;
-	cout << to_binary(eps[22]) << endl;
-	cout << to_binary(eps[23]) << endl;
+	std::cout << to_binary(eps[20]) << '\n';
+	std::cout << to_binary(eps[21]) << '\n';
+	std::cout << to_binary(eps[22]) << '\n';
+	std::cout << to_binary(eps[23]) << '\n';
 
 	float mashup;
 	fixpnt<8, 4> fixedPoint;
-	cout << "fa + eps" << endl;
+	std::cout << "fa + eps" << '\n';
 	/*
 	for (int i = 5; i < 9; ++i) {
 		mashup = fa + eps[i];
 		fixedPoint = mashup;
-		cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+		cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	}
 	*/
 
 	mashup = fa + eps[5];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fa + eps[5] + eps[6];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fa + eps[5] + eps[20];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fa + eps[6];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 
-	cout << "fb + eps" << endl;
+	std::cout << "fb + eps" << '\n';
 	mashup = fb + eps[5];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fb + eps[5] + eps[6];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fb + eps[5] + eps[20];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fb + eps[6];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 }
 
 void NegativeTestCases() {
-	using namespace std;
 	using namespace sw::universal;
 
 	float fa, fb, fc, fd;
 	fixpnt<8, 4> a, b, c, d;
 
-	cout << "NEGATIVE TEST CASES\n";
+	std::cout << "NEGATIVE TEST CASES\n";
 	a.setbits(~0x14u + 1u);
 	b.setbits(~0x15u + 1u);
 	c.setbits(~0x16u + 1u);
@@ -110,63 +108,63 @@ void NegativeTestCases() {
 	fb = float(b);
 	fc = float(c);
 	fd = float(d);
-	cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
-	cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
-	cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
-	cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
+	std::cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << '\n';
+	std::cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << '\n';
+	std::cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << '\n';
+	std::cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << '\n';
 
-	cout << to_hex(fa) << endl;
-	cout << to_hex(fb) << endl;
-	cout << to_hex(fc) << endl;
-	cout << to_hex(fd) << endl;
+	std::cout << to_hex(fa) << '\n';
+	std::cout << to_hex(fb) << '\n';
+	std::cout << to_hex(fc) << '\n';
+	std::cout << to_hex(fd) << '\n';
 
 	float eps[24] = { 0.0f };
 	for (int i = 23; i >= 0; --i) {
 		eps[i] = 1.0f / float(1 << i);
 	}
 
-	cout << to_binary(eps[20]) << endl;
-	cout << to_binary(eps[21]) << endl;
-	cout << to_binary(eps[22]) << endl;
-	cout << to_binary(eps[23]) << endl;
+	std::cout << to_binary(eps[20]) << '\n';
+	std::cout << to_binary(eps[21]) << '\n';
+	std::cout << to_binary(eps[22]) << '\n';
+	std::cout << to_binary(eps[23]) << '\n';
 
 	float mashup;
 	fixpnt<8, 4> fixedPoint;
-	cout << "fa - eps" << endl;
+	std::cout << "fa - eps" << '\n';
 	/*
 	for (int i = 5; i < 9; ++i) {
 		mashup = fa + eps[i];
 		fixedPoint = mashup;
-		cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+		std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	}
 	*/
 
 	mashup = fa - eps[5];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fa - eps[5] - eps[6];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fa - eps[5] - eps[20];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fa - eps[6];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 
-	cout << "fb - eps" << endl;
+	std::cout << "fb - eps" << '\n';
 	mashup = fb - eps[5];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fb - eps[5] - eps[6];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fb - eps[5] - eps[20];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 	mashup = fb - eps[6];
 	fixedPoint = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << '\n';
 }
 
 // conditional compile flags
@@ -175,10 +173,9 @@ void NegativeTestCases() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 0) { cout << argv[0] << endl; }
+	if (argc > 0) { std::cout << argv[0] << '\n'; }
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -193,19 +190,19 @@ try {
 	{
 		fixpnt<4, 1> a, b, c;
 		// overflow test
-		a = -4; cout << a << endl;  // rounds to 3.5
+		a = -4; std::cout << a << '\n';  // rounds to 3.5
 		b = 4.0f;
 		c = a * b;
-		cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+		std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << '\n';
 	}
 
 	{
 		fixpnt<4, 1> a, b, c;
 		// rounding test
-		a = 0.5f; cout << a << endl;
+		a = 0.5f; std::cout << a << '\n';
 		b = 0.5f;
 		c = a * b;
-		cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+		std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << '\n';
 	}
 
 
@@ -224,7 +221,7 @@ try {
 #endif
 
 #else
-	cout << "Fixed-point modular assignment validation" << endl;
+	std::cout << "Fixed-point modular assignment validation" << '\n';
 
 	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 0, Modulo, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0,Modulo,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,1,Modulo,uint8_t>");

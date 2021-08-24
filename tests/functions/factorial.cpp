@@ -19,31 +19,29 @@
 // generate factorials in an Integer and a Posit number system to compare
 template<size_t pbits, size_t pes>
 void GenerateFactorialTableComparison(unsigned upperbound, unsigned long long factorialValue = 1, sw::universal::posit<pbits,pes> positRef = 1, int columnWidth = 30) {
-	using namespace std;
-	cout << "\n+---------------\n" << typeid(factorialValue).name() << " and " << typeid(positRef).name() << endl;
-	cout << "  i    " << setw(columnWidth) << "integer(N!)" << "  " << setw(columnWidth) << "posit(N!)" << setw(columnWidth) << "abs(error)\n";
+	std::cout << "\n+---------------\n" << typeid(factorialValue).name() << " and " << typeid(positRef).name() << '\n';
+	std::cout << "  i    " << std::setw(columnWidth) << "integer(N!)" << "  " << std::setw(columnWidth) << "posit(N!)" << std::setw(columnWidth) << "abs(error)\n";
 	for (unsigned i = 2; i < upperbound; ++i) {
 		factorialValue *= i;
 		positRef *= i;
 		unsigned long long integerRef;
 		integerRef = (unsigned long long)positRef;
 		unsigned long long error = (factorialValue > integerRef ? factorialValue - integerRef : integerRef - factorialValue);
-		cout << setw(5) << i << "  " << setw(columnWidth) << factorialValue << "  " << setw(columnWidth) << positRef << setw(columnWidth) << error << endl;
+		std::cout << std::setw(5) << i << "  " << std::setw(columnWidth) << factorialValue << "  " << std::setw(columnWidth) << positRef << std::setw(columnWidth) << error << '\n';
 	}
 }
 
 template<size_t ibits, size_t pbits, size_t pes>
 void GenerateFactorialTableComparison(unsigned upperbound, sw::universal::integer<ibits> factorialValue = 1, sw::universal::posit<pbits, pes> positRef = 1, int columnWidth = 30) {
-	using namespace std;
-	cout << "\n+---------------\n" << typeid(factorialValue).name() << " and " << typeid(positRef).name() << endl;
-	cout << "  i    " << setw(columnWidth) << "integer(N!)" << "  " << setw(columnWidth) << "posit(N!)" << setw(columnWidth) << "abs(error)\n";
+	std::cout << "\n+---------------\n" << typeid(factorialValue).name() << " and " << typeid(positRef).name() << '\n';
+	std::cout << "  i    " << std::setw(columnWidth) << "integer(N!)" << "  " << std::setw(columnWidth) << "posit(N!)" << std::setw(columnWidth) << "abs(error)\n";
 	for (unsigned i = 2; i < upperbound; ++i) {
 		factorialValue *= i;
 		positRef *= i;
 		sw::universal::integer<ibits> integerRef;
 		integerRef = positRef;
 		sw::universal::integer<ibits> error = (factorialValue > integerRef ? factorialValue - integerRef : integerRef - factorialValue);
-		cout << setw(5) << i << "  " << setw(columnWidth) << factorialValue << "  " << setw(columnWidth) << positRef << setw(columnWidth) << error << endl;
+		std::cout << std::setw(5) << i << "  " << std::setw(columnWidth) << factorialValue << "  " << std::setw(columnWidth) << positRef << std::setw(columnWidth) << error << '\n';
 	}
 }
 
@@ -51,15 +49,14 @@ void GenerateFactorialTableComparison(unsigned upperbound, sw::universal::intege
 // generate factorial tables using different number types
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	unsigned upperbound = 22;   
 	{
@@ -224,7 +221,7 @@ class sw::universal::integer<128> and class sw::universal::posit<128,4>
 	}
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

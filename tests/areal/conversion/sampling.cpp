@@ -25,25 +25,24 @@
 
 template<size_t nbits, size_t es>
 void GenerateArealComparisonTable(const std::string& tag) {
-	using namespace std;
 	using namespace sw::universal;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 
 	areal<nbits, es> a;
-	string typeOfa = typeid(a).name();
+	std::string typeOfa = typeid(a).name();
 	areal<nbits+1, es> b;
-	string typeOfb = typeid(b).name();
+	std::string typeOfb = typeid(b).name();
 	size_t columnWidth = 6 + std::max(typeOfa.length(), typeOfb.length());
-	cout << tag << endl << setw(columnWidth) << typeOfb << "  |  " << setw(columnWidth) << typeOfa << endl;
+	std::cout << tag << '\n' << std::setw(columnWidth) << typeOfb << "  |  " << std::setw(columnWidth) << typeOfa << '\n';
 
 	// enumerate and compare the sampling of the real value line of the two types
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
 		b.setbits(2*i);
-		cout << setw(columnWidth - 11ull) << pretty_print(b) << ' ' << setw(10) << b << "  |  " << pretty_print(a) << ' ' << setw(10) << a << endl;
+		std::cout << std::setw(columnWidth - 11ull) << pretty_print(b) << ' ' << std::setw(10) << b << "  |  " << pretty_print(a) << ' ' << std::setw(10) << a << '\n';
 
 		b.setbits(2 * i + 1);
-		cout << setw(columnWidth - 11ull) << pretty_print(b) << ' ' << setw(10) << b << "  |  " << endl;
+		std::cout << std::setw(columnWidth - 11ull) << pretty_print(b) << ' ' << std::setw(10) << b << "  |  " << '\n';
 	}
 }
 
@@ -53,7 +52,6 @@ void GenerateArealComparisonTable(const std::string& tag) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
@@ -73,7 +71,7 @@ try {
 
 #else  // !MANUAL_TESTING
 
-	cout << "Sampling of the reals by different areal configurations" << endl;
+	std::cout << "Sampling of the reals by different areal configurations\n";
 
 
 

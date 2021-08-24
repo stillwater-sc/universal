@@ -36,10 +36,9 @@ void arithmetic_properties(std::ostream& ostr) {
 // transformation of user-provided values to constexpr values
 template<size_t capacity>
 void ReportArithmeticProperties(size_t nbits, size_t es) {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "arithmetic properties of a posit<" << nbits << ", " << es << "> environment" << endl;
+	std::cout << "arithmetic properties of a posit<" << nbits << ", " << es << "> environment\n";
 
 /*
 	constexpr size_t es_0 = 0;
@@ -56,44 +55,44 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 
 	switch (nbits) {
 	case 1:
-		cerr << "nbits = 1 implies just a sign bit" << endl;
+		std::cerr << "nbits = 1 implies just a sign bit\n";
 		break;
 	case 8:
 	{
 		constexpr size_t nbits = 8;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, capacity>(cout);
+			arithmetic_properties<nbits, 0, capacity>(std::cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, capacity>(cout);
+			arithmetic_properties<nbits, 1, capacity>(std::cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, capacity>(cout);
+			arithmetic_properties<nbits, 2, capacity>(std::cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, capacity>(cout);
+			arithmetic_properties<nbits, 3, capacity>(std::cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, capacity>(cout);
+			arithmetic_properties<nbits, 4, capacity>(std::cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, capacity>(cout);
+			arithmetic_properties<nbits, 5, capacity>(std::cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, capacity>(cout);
+			arithmetic_properties<nbits, 6, capacity>(std::cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, capacity>(cout);
+			arithmetic_properties<nbits, 7, capacity>(std::cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, capacity>(cout);
+			arithmetic_properties<nbits, 8, capacity>(std::cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, capacity>(cout);
+			arithmetic_properties<nbits, 9, capacity>(std::cout);
 			break;
 		default:
-			cerr << "es = " << es << " reporting is not supported by this program" << endl;
+			std::cerr << "es = " << es << " reporting is not supported by this program\n";
 		}
 	}
 		break;
@@ -102,37 +101,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 		constexpr size_t nbits = 16;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, capacity>(cout);
+			arithmetic_properties<nbits, 0, capacity>(std::cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, capacity>(cout);
+			arithmetic_properties<nbits, 1, capacity>(std::cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, capacity>(cout);
+			arithmetic_properties<nbits, 2, capacity>(std::cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, capacity>(cout);
+			arithmetic_properties<nbits, 3, capacity>(std::cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, capacity>(cout);
+			arithmetic_properties<nbits, 4, capacity>(std::cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, capacity>(cout);
+			arithmetic_properties<nbits, 5, capacity>(std::cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, capacity>(cout);
+			arithmetic_properties<nbits, 6, capacity>(std::cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, capacity>(cout);
+			arithmetic_properties<nbits, 7, capacity>(std::cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, capacity>(cout);
+			arithmetic_properties<nbits, 8, capacity>(std::cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, capacity>(cout);
+			arithmetic_properties<nbits, 9, capacity>(std::cout);
 			break;
 		default:
-			cerr << "es = " << es << " reporting is not supported by this program" << endl;
+			std::cerr << "es = " << es << " reporting is not supported by this program\n";
 		}
 	}
 		break;
@@ -141,37 +140,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 		constexpr size_t nbits = 31;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, capacity>(cout);
+			arithmetic_properties<nbits, 0, capacity>(std::cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, capacity>(cout);
+			arithmetic_properties<nbits, 1, capacity>(std::cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, capacity>(cout);
+			arithmetic_properties<nbits, 2, capacity>(std::cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, capacity>(cout);
+			arithmetic_properties<nbits, 3, capacity>(std::cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, capacity>(cout);
+			arithmetic_properties<nbits, 4, capacity>(std::cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, capacity>(cout);
+			arithmetic_properties<nbits, 5, capacity>(std::cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, capacity>(cout);
+			arithmetic_properties<nbits, 6, capacity>(std::cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, capacity>(cout);
+			arithmetic_properties<nbits, 7, capacity>(std::cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, capacity>(cout);
+			arithmetic_properties<nbits, 8, capacity>(std::cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, capacity>(cout);
+			arithmetic_properties<nbits, 9, capacity>(std::cout);
 			break;
 		default:
-			cerr << "es = " << es << " reporting is not supported by this program" << endl;
+			std::cerr << "es = " << es << " reporting is not supported by this program\n";
 		}
 	}
 		break;
@@ -180,37 +179,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 		constexpr size_t nbits = 32;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, capacity>(cout);
+			arithmetic_properties<nbits, 0, capacity>(std::cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, capacity>(cout);
+			arithmetic_properties<nbits, 1, capacity>(std::cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, capacity>(cout);
+			arithmetic_properties<nbits, 2, capacity>(std::cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, capacity>(cout);
+			arithmetic_properties<nbits, 3, capacity>(std::cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, capacity>(cout);
+			arithmetic_properties<nbits, 4, capacity>(std::cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, capacity>(cout);
+			arithmetic_properties<nbits, 5, capacity>(std::cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, capacity>(cout);
+			arithmetic_properties<nbits, 6, capacity>(std::cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, capacity>(cout);
+			arithmetic_properties<nbits, 7, capacity>(std::cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, capacity>(cout);
+			arithmetic_properties<nbits, 8, capacity>(std::cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, capacity>(cout);
+			arithmetic_properties<nbits, 9, capacity>(std::cout);
 			break;
 		default:
-			cerr << "es = " << es << " reporting is not supported by this program" << endl;
+			std::cerr << "es = " << es << " reporting is not supported by this program\n";
 		}
 	}
 		break;
@@ -219,37 +218,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 			constexpr size_t nbits = 64;
 			switch (es) {
 			case 0:
-				arithmetic_properties<nbits, 0, capacity>(cout);
+				arithmetic_properties<nbits, 0, capacity>(std::cout);
 				break;
 			case 1:
-				arithmetic_properties<nbits, 1, capacity>(cout);
+				arithmetic_properties<nbits, 1, capacity>(std::cout);
 				break;
 			case 2:
-				arithmetic_properties<nbits, 2, capacity>(cout);
+				arithmetic_properties<nbits, 2, capacity>(std::cout);
 				break;
 			case 3:
-				arithmetic_properties<nbits, 3, capacity>(cout);
+				arithmetic_properties<nbits, 3, capacity>(std::cout);
 				break;
 			case 4:
-				arithmetic_properties<nbits, 4, capacity>(cout);
+				arithmetic_properties<nbits, 4, capacity>(std::cout);
 				break;
 			case 5:
-				arithmetic_properties<nbits, 5, capacity>(cout);
+				arithmetic_properties<nbits, 5, capacity>(std::cout);
 				break;
 			case 6:
-				arithmetic_properties<nbits, 6, capacity>(cout);
+				arithmetic_properties<nbits, 6, capacity>(std::cout);
 				break;
 			case 7:
-				arithmetic_properties<nbits, 7, capacity>(cout);
+				arithmetic_properties<nbits, 7, capacity>(std::cout);
 				break;
 			case 8:
-				arithmetic_properties<nbits, 8, capacity>(cout);
+				arithmetic_properties<nbits, 8, capacity>(std::cout);
 				break;
 			case 9:
-				arithmetic_properties<nbits, 9, capacity>(cout);
+				arithmetic_properties<nbits, 9, capacity>(std::cout);
 				break;
 			default:
-				cerr << "es = " << es << " reporting is not supported by this program" << endl;
+				std::cerr << "es = " << es << " reporting is not supported by this program\n";
 			}
 		}
 		break;
@@ -258,37 +257,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 		constexpr size_t nbits = 128;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, capacity>(cout);
+			arithmetic_properties<nbits, 0, capacity>(std::cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, capacity>(cout);
+			arithmetic_properties<nbits, 1, capacity>(std::cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, capacity>(cout);
+			arithmetic_properties<nbits, 2, capacity>(std::cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, capacity>(cout);
+			arithmetic_properties<nbits, 3, capacity>(std::cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, capacity>(cout);
+			arithmetic_properties<nbits, 4, capacity>(std::cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, capacity>(cout);
+			arithmetic_properties<nbits, 5, capacity>(std::cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, capacity>(cout);
+			arithmetic_properties<nbits, 6, capacity>(std::cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, capacity>(cout);
+			arithmetic_properties<nbits, 7, capacity>(std::cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, capacity>(cout);
+			arithmetic_properties<nbits, 8, capacity>(std::cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, capacity>(cout);
+			arithmetic_properties<nbits, 9, capacity>(std::cout);
 			break;
 		default:
-			cerr << "es = " << es << " reporting is not supported by this program" << endl;
+			std::cerr << "es = " << es << " reporting is not supported by this program\n";
 		}
 	}
 		break;
@@ -297,42 +296,42 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 		constexpr size_t nbits = 256;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, capacity>(cout);
+			arithmetic_properties<nbits, 0, capacity>(std::cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, capacity>(cout);
+			arithmetic_properties<nbits, 1, capacity>(std::cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, capacity>(cout);
+			arithmetic_properties<nbits, 2, capacity>(std::cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, capacity>(cout);
+			arithmetic_properties<nbits, 3, capacity>(std::cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, capacity>(cout);
+			arithmetic_properties<nbits, 4, capacity>(std::cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, capacity>(cout);
+			arithmetic_properties<nbits, 5, capacity>(std::cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, capacity>(cout);
+			arithmetic_properties<nbits, 6, capacity>(std::cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, capacity>(cout);
+			arithmetic_properties<nbits, 7, capacity>(std::cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, capacity>(cout);
+			arithmetic_properties<nbits, 8, capacity>(std::cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, capacity>(cout);
+			arithmetic_properties<nbits, 9, capacity>(std::cout);
 			break;
 		default:
-			cerr << "es = " << es << " reporting is not supported by this program" << endl;
+			std::cerr << "es = " << es << " reporting is not supported by this program\n";
 		}
 	}
 	break;
 	default:
-		cerr << "nbits = " << nbits << " reporting is not supported by this program" << endl;
+		std::cerr << "nbits = " << nbits << " reporting is not supported by this program\n";
 	}
 }
 
@@ -340,15 +339,14 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 // receive a float and print its components
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc == 4) cout << argv[0] << ": posit properties\n";
+	if (argc == 4) std::cout << argv[0] << ": posit properties\n";
 	if (argc != 4) {
-		cerr << "Show the arithmetic properties of a posit.\n";
-	    cerr << "Usage: propp [nbits es capacity]\n";
-		cerr << "Example: propp 16 1 8\n";
-		cerr <<  msg << endl;
+		std::cerr << "Show the arithmetic properties of a posit.\n";
+		std::cerr << "Usage: propp [nbits es capacity]\n";
+		std::cerr << "Example: propp 16 1 8\n";
+		std::cerr <<  msg << '\n';
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 
@@ -382,7 +380,7 @@ try {
 		ReportArithmeticProperties<32>(nbits, es);
 		break;
 	default:
-		cerr << "capacity = " << capacity << " reporting is not supported by this program: set of values to select from is [0,4,8,10,16,20,24,32]";
+		std::cerr << "capacity = " << capacity << " reporting is not supported by this program: set of values to select from is [0,4,8,10,16,20,24,32]\n";
 	}
 	
 	return EXIT_SUCCESS;

@@ -84,12 +84,11 @@ bool GenerateTwoSumTestCase(const Scalar& a, const Scalar& b) {
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
 int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
-	using namespace std;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	using Posit = sw::universal::posit<nbits, es>;
 	Posit pa, pb, ps, pr, psum, pref;
-	pair<Posit, Posit> s_and_r;
+	std::pair<Posit, Posit> s_and_r;
 	for (size_t i = 0; i < NR_POSITS; i++) {
 		pa.setbits(i);
 		for (size_t j = 0; j < NR_POSITS; j++) {
@@ -101,7 +100,7 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 			pref = ps + pr;
 			psum = pa + pb;
 
-//			cout << pa << " + " << pb << " = " << ps << " + " << pr << "    " << psum << " vs " << pref << endl;
+//			std::cout << pa << " + " << pb << " = " << ps << " + " << pr << "    " << psum << " vs " << pref << '\n';
 
 			if (psum != pref) {
 				nrOfFailedTests++;
@@ -121,7 +120,6 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// print detailed bit-level computational intermediate results
@@ -133,7 +131,7 @@ try {
 
 	// preserve the existing ostream precision
 	auto precision = std::cout.precision();
-	std::cout << setprecision(12);
+	std::cout << std::setprecision(12);
 
 	std::cout << "Posit TwoSum validation" << '\n';
 

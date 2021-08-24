@@ -83,74 +83,73 @@ constexpr double pi = 3.14159265358979323846;
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 0) { cout << argv[0] << endl; }
+	if (argc > 0) { std::cout << argv[0] << std::endl; }
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "fixed-point constexpr tests" << endl;
+	std::cout << "fixed-point constexpr tests\n";
 	
 	{
 		fixpnt<8, 4> a(pi);
-		cout << a << endl;
+		std::cout << a << '\n';
 	}
 #ifdef CONSTEXPR
 	{
 		// decorated constructors
 		{
 			constexpr fixpnt<8, 4> a(1l);  // signed long
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			constexpr fixpnt<8, 4> a(1ul);  // unsigned long
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			constexpr fixpnt<8, 4> a(1.0f);  // float
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			constexpr fixpnt<8, 4> a(1.0);   // double
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			constexpr fixpnt<8, 4> a(1.0l);  // long double
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 	}
 	{
 		// assignment operators
 		{
 			constexpr fixpnt<8, 4> a = 1l;  // signed long
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			constexpr fixpnt<8, 4> a = 1ul;  // unsigned long
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			constexpr fixpnt<8, 4> a = 1.0f;  // float
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			constexpr fixpnt<8, 4> a = 1.0;   // double
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			constexpr fixpnt<8, 4> a = 1.0l;  // long double
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 	}
 #endif
 
 
 	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
+		std::cout << "FAIL" << '\n';
 	}
 	else {
-		cout << "PASS" << endl;
+		std::cout << "PASS" << '\n';
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

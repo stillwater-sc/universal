@@ -9,44 +9,41 @@
 template<size_t nbits, size_t es, typename Ty>
 sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 	constexpr size_t fbits = std::numeric_limits<Ty>::digits - 1;
-
-	using namespace std;
 	using namespace sw::universal;
 
 	internal::value<fbits> v((Ty)rhs);
 	posit<nbits, es> p;
 
-	cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";
-	cout << "Test for ZERO\n";
-	cout << to_triple(v);
+	std::cout << std::setprecision(std::numeric_limits<Ty>::digits10) << v << "   input value\n";
+	std::cout << "Test for ZERO\n";
+	std::cout << to_triple(v);
 	if (v.iszero()) {
 		p.setzero();
-		cout << " input value is zero\n";
-		cout << info_print(p);
+		std::cout << " input value is zero\n";
+		std::cout << info_print(p);
 		return p;
 	}
 	else {
-		cout << " input value is NOT zero\n";
+		std::cout << " input value is NOT zero\n";
 	}
-	cout << "Test for NaR\n";
-	cout << to_triple(v);
+	std::cout << "Test for NaR\n";
+	std::cout << to_triple(v);
 	if (v.isnan() || v.isinf()) {
 		p.setnar();
-		cout << " input value is NaR\n";
-		cout << info_print(p);
+		std::cout << " input value is NaR\n";
+		std::cout << info_print(p);
 		return p;
 	}
 	else {
-		cout << " input value is NOT NaR\n";
+		std::cout << " input value is NOT NaR\n";
 	}
-
 
 	bool _sign = v.sign();
 	int _scale = v.scale();
 	sw::universal::bitblock<fbits> fraction_in = v.fraction();
 
 	p.clear();
-	cout << " construct the posit\n";
+	std::cout << " construct the posit\n";
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
 															   // we are projecting to minpos/maxpos
@@ -78,7 +75,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 		// copy the most significant nf fraction bits into fraction
 		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
 		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
-		cout << fraction_in << "  full fraction bits\n";
+		std::cout << fraction_in << "  full fraction bits\n";
 
 		int remaining_bits = fbits - 1 - nf;
 		bool sb = false;
@@ -87,59 +84,59 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 			bitblock<fbits> sb_mask;
 			//for (int i = 0; i < int(fbits) - 1 - nf; i++) sb_mask.set(i);
 			for (int i = 0; i < remaining_bits; i++) sb_mask.set(i);
-			cout << sb_mask << "  mask of remainder bits\n";
+			std::cout << sb_mask << "  mask of remainder bits\n";
 		}
 
 		// construct the untruncated posit
-		cout << pt_bits << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << "\n";
+		std::cout << pt_bits << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << "\n";
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
 		regime <<= es + nf + 1;
-		cout << regime << "  runlength = " << run << endl;
+		std::cout << regime << "  runlength = " << run << '\n';
 		exponent <<= nf + 1;
-		cout << exponent << "  exponent value = " << hex << esval << dec << endl;
+		std::cout << exponent << "  exponent value = " << std::hex << esval << std::dec << '\n';
 		fraction <<= 1;
-		cout << fraction << "  most significant " << nf << " fraction bits (nbits-1-run-es)\n";
+		std::cout << fraction << "  most significant " << nf << " fraction bits (nbits-1-run-es)\n";
 		sticky_bit.set(0, sb);
 		if (remaining_bits > 0) {
-			cout << sticky_bit << "  sticky bit representing the truncated fraction bits\n";
+			std::cout << sticky_bit << "  sticky bit representing the truncated fraction bits\n";
 		}
 		else {
-			cout << sticky_bit << "  sticky bit representing the fraction bits which are not truncated\n";
+			std::cout << sticky_bit << "  sticky bit representing the fraction bits which are not truncated\n";
 		}
 		
 		pt_bits |= regime;
 		pt_bits |= exponent;
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
-		cout << pt_bits << "  unconstrained posit bits ";
+		std::cout << pt_bits << "  unconstrained posit bits ";
 
 		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
-		cout << " length = " << len << endl;
+		std::cout << " length = " << len << '\n';
 		bool blast = pt_bits.test(len - nbits);
 		bitblock<pt_len> blast_bb;
 		blast_bb.set(len - nbits);
-		cout << blast_bb << "  last bit mask\n";
+		std::cout << blast_bb << "  last bit mask\n";
 		bool bafter = pt_bits.test(len - nbits - 1);
 		bitblock<pt_len> bafter_bb;
 		bafter_bb.set(len - nbits - 1);
-		cout << bafter_bb << "  bit after last bit mask\n";
+		std::cout << bafter_bb << "  bit after last bit mask\n";
 		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
 		bitblock<pt_len> bsticky_bb;
 		for (int i = len - nbits - 2; i >= 0; --i) bsticky_bb.set(i);
-		cout << bsticky_bb << "  sticky bit mask\n";
+		std::cout << bsticky_bb << "  sticky bit mask\n";
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
-		cout << "rounding decision (blast & bafter) | (bafter & bsticky): " << (rb ? "round up" : "round down") << endl;
+		std::cout << "rounding decision (blast & bafter) | (bafter & bsticky): " << (rb ? "round up" : "round down") << '\n';
 
 		bitblock<nbits> ptt;
 		pt_bits <<= pt_len - len;
-		cout << pt_bits << "  shifted posit\n";
+		std::cout << pt_bits << "  shifted posit\n";
 		truncate(pt_bits, ptt);
-		cout << ptt << "  truncated posit\n";
+		std::cout << ptt << "  truncated posit\n";
 		if (rb) increment_bitset(ptt);
-		cout << ptt << "  rounded posit\n";
+		std::cout << ptt << "  rounded posit\n";
 		if (s) ptt = twos_complement(ptt);
-		cout << ptt << "  final posit\n";
+		std::cout << ptt << "  final posit\n";
 		p.setBitblock(ptt);
 	}
 	return p;
@@ -174,14 +171,13 @@ rounding decision(blast & bafter) | (bafter & bsticky) : round down\n\
 // receive a float and print its components
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc != 3) {
-		cerr << "Show the conversion of a float to a posit step-by-step." << endl;
-		cerr << "Usage: float2posit floating_point_value posit_size_in_bits[one of 8|16|32|48|64|80|96|128|256]" << endl;
-		cerr << "Example: convert -1.123456789e17 32" << endl;
-		cerr <<  msg << endl;
+		std::cerr << "Show the conversion of a float to a posit step-by-step.\n";
+		std::cerr << "Usage: float2posit floating_point_value posit_size_in_bits[one of 8|16|32|48|64|80|96|128|256]\n";
+		std::cerr << "Example: convert -1.123456789e17 32\n";
+		std::cerr <<  msg << '\n';
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	double d = atof(argv[1]);
@@ -200,43 +196,43 @@ try {
 	switch (size) {
 	case 8:
 		p8_0 = convert_to_posit<8, 0, double>(d);
-		cout << color_print(p8_0);
+		std::cout << color_print(p8_0);
 		break;
 	case 16:
 		p16_1 = convert_to_posit<16, 1, double>(d);
-		cout << color_print(p16_1);
+		std::cout << color_print(p16_1);
 		break;
 	case 32:
 		p32_2 = convert_to_posit<32, 2, double>(d);
-		cout << color_print(p32_2);
+		std::cout << color_print(p32_2);
 		break;
 	case 48:
 		p48_2 = convert_to_posit<48, 2, double>(d);
-		cout << color_print(p48_2);
+		std::cout << color_print(p48_2);
 		break;
 	case 64:
 		p64_3 = convert_to_posit<64, 3, double>(d);
-		cout << color_print(p64_3);
+		std::cout << color_print(p64_3);
 		break;
 	case 80:
 		p80_3 = convert_to_posit<80, 3, double>(d);
-		cout << color_print(p80_3);
+		std::cout << color_print(p80_3);
 		break;
 	case 96:
 		p96_3 = convert_to_posit<96, 3, double>(d);
-		cout << color_print(p96_3);
+		std::cout << color_print(p96_3);
 		break;
 	case 128:
 		p128_4 = convert_to_posit<128, 4, double>(d);
-		cout << color_print(p128_4);
+		std::cout << color_print(p128_4);
 		break;
 	case 256:
 		p256_5 = convert_to_posit<256, 5, double>(d);
-		cout << color_print(p256_5);
+		std::cout << color_print(p256_5);
 		break;
 	default:
 		p32_2 = convert_to_posit<32, 2, double>(d);
-		cout << color_print(p32_2);
+		std::cout << color_print(p32_2);
 		break;
 	}
 

@@ -42,7 +42,6 @@ void GenerateEulersNumber() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	GenerateEulersNumber();
@@ -69,7 +68,7 @@ try {
 	GenerateExponentTable<7, 0>();
 #endif
 
-	cout << endl;
+	std::cout << std::endl;
 
 	bool bReportIndividualTestCases = true;
 	// manual exhaustive test
@@ -90,7 +89,7 @@ try {
 
 #else
 
-	cout << "VALID exponential function validation" << endl;
+	std::cout << "VALID exponential function validation\n";
 
 #if LATER
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<2, 0>(tag, bReportIndividualTestCases), "valid<2,0>", "exp");

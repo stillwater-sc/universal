@@ -38,7 +38,6 @@ int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCas
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -51,18 +50,18 @@ try {
 
 	constexpr double e = 2.71828182845904523536;
 	lns<16> a, b, c;
-	a = 0.5; cout << a << endl;
-	a = e; cout << a << endl;
+	a = 0.5; std::cout << a << '\n';
+	a = e; std::cout << a << '\n';
 	b = 1.0 / e;
 	c = a * b;
-	cout << c.to_long_double() << endl;
+	std::cout << c.to_long_double() << '\n';
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", true), "lns<8>", "multiplication");
 
 	nrOfFailedTestCases = 0;  // in manual testing mode, we ignore any failures
 #else
-	cout << "Arbitrary LNS multiplication validation" << endl;
+	std::cout << "Arbitrary LNS multiplication validation\n";
 
 	bool bReportIndividualTestCases = false;
 	std::string tag = "multiplication failed: ";

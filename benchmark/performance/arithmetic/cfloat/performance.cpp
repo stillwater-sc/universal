@@ -33,7 +33,7 @@ void CopyWorkload(uint64_t NR_OPS) {
 			bFail = true;
 		}
 	}
-	if (bFail) cout << "COPY FAIL\n"; // just a quick double check that all went well
+	if (bFail) std::cout << "COPY FAIL\n"; // just a quick double check that all went well
 }
 
 /* 
@@ -152,7 +152,7 @@ void DecodeWorkload(uint64_t NR_OPS) {
 			// this shouldn't happen, but found a bug this way with cfloat<64,11,uint64_t> as type
 			if (first) {
 				first = false;
-				cout << typeid(a).name() << " :\n" 
+				std::cout << typeid(a).name() << " :\n"
 					<< to_binary(a,true) << "\n" 
 					<< "sign    : " << (s ? "-1\n" : "+1\n") 
 					<< "exponent: " << to_binary(e,true) << "\n" 
@@ -160,7 +160,7 @@ void DecodeWorkload(uint64_t NR_OPS) {
 			}
 		}
 	}
-	if (success == 0) cout << "DECODE FAIL\n"; // just a quick double check that all went well
+	if (success == 0) std::cout << "DECODE FAIL\n"; // just a quick double check that all went well
 }
 
 /*

@@ -108,14 +108,13 @@ void TestConstexprSpecificValues() {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "AREAL constexpr tests" << endl;
+	std::cout << "AREAL constexpr tests\n";
 	
 	using Real = areal<12, 2>;
 	Real a;
@@ -126,10 +125,10 @@ try {
 	TestConstexprSpecificValues<Real>();
 
 	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
+		std::cout << "FAIL\n";
 	}
 	else {
-		cout << "PASS" << endl;
+		std::cout << "PASS\n";
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

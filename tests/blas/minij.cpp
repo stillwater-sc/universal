@@ -28,27 +28,25 @@
 
 template<typename Scalar>
 void MinIJMatrixTest(size_t N = 5) {
-	using namespace std;
 	using namespace sw::universal::blas;
 
-	cout << "MinIJ MatrixTest for type: " << typeid(Scalar).name() << endl;
+	std::cout << "MinIJ MatrixTest for type: " << typeid(Scalar).name() << '\n';
 	auto M = minij<Scalar>(N);
 
 	// normalize the column vectors
 	auto total = sum(M);
-	cout << "Total    : " << total << endl;
+	std::cout << "Total    : " << total << '\n';
 	auto rowSums = sum(M, 1);
-	cout << "Row sums : " << rowSums << endl;
+	std::cout << "Row sums : " << rowSums << '\n';
 	auto colSums = sum(M, 2);
-	cout << "Col sums : " << colSums << endl;
+	std::cout << "Col sums : " << colSums << '\n';
 }
 
 int main(int argc, char* argv[])
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc == 1) cout << argv[0] << endl;
+	if (argc == 1) std::cout << argv[0] << std::endl;
 
 	MinIJMatrixTest< float >();
 	MinIJMatrixTest< posit<32, 2> >();

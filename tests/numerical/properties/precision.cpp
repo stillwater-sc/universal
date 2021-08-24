@@ -74,10 +74,9 @@ we know the focal length to ~0.65 decimal digits, or ~2.16 bits.
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "Experiments in precision and accuracy" << endl;
+	std::cout << "Experiments in precision and accuracy\n";
 
 	return EXIT_SUCCESS;
 }

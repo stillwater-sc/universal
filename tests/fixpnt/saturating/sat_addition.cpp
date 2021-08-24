@@ -45,7 +45,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -79,7 +78,7 @@ try {
 
 #else
 
-	cout << "Fixed-point modular addition validation" << endl;
+	std::cout << "Fixed-point saturating addition validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Saturating,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "addition");

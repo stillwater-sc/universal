@@ -9,7 +9,6 @@
 // receive a float and print its components
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::internal;
 
 	// float attributes
@@ -17,17 +16,17 @@ try {
 	constexpr int fbits = std::numeric_limits<float>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "float : components of an IEEE single-precision float\n";
-		cerr << "Show the sign/scale/fraction components of an IEEE float.\n";
-		cerr << "Usage: float float_value\n";
-		cerr << "Example: float 0.03124999\n";
-		cerr << "float: 0.031249990686774254 (+,-6,11111111111111111111011)" << endl;
+		std::cerr << "float : components of an IEEE single-precision float\n";
+		std::cerr << "Show the sign/scale/fraction components of an IEEE float.\n";
+		std::cerr << "Usage: float float_value\n";
+		std::cerr << "Example: float 0.03124999\n";
+		std::cerr << "float: 0.031249990686774254 (+,-6,11111111111111111111011)\n";
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	float f = float(atof(argv[1]));
 	value<fbits> v(f);
 
-	cout << "float: " << setprecision(max_digits10) << f << " " << to_triple(v) << endl;
+	std::cout << "float: " << std::setprecision(max_digits10) << f << " " << to_triple(v) << '\n';
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {

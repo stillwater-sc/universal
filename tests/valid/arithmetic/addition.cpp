@@ -27,14 +27,13 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = "Addition failed: ";
 
-	cout << "Valid addition validation" << endl;
+	std::cout << "Valid addition validation\n";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -43,18 +42,18 @@ try {
 	valid<nbits, es> v1, v2;
 
 	v1.clear();
-	cout << v1 << endl;
+	std::cout << v1 << '\n';
 
 	v2.setinclusive();
-	cout << v2 << endl;
+	std::cout << v2 << '\n';
 
 	v1 = 1;
-	cout << v1 << endl;
+	std::cout << v1 << '\n';
 
 	posit<nbits, es> lb(1.25f), ub(1.375f);
 	v2.setlb(lb, false);
 	v2.setub(ub, true);
-	cout << v2 << endl;
+	std::cout << v2 << '\n';
 
 #else
 

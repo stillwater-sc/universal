@@ -40,7 +40,6 @@ void ExamplePattern() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer Arithmetic tests failed";
@@ -49,19 +48,19 @@ try {
 
 	integer<12, uint8_t> a, b, c;
 	a = 0x800; 
-	cout << to_binary(a) << " = " << a << endl;
+	std::endl; cout << to_binary(a) << " = " << a << '\n';
 	b = 0x800;
 	GenerateMulTest(a, b, c);
 
 	ExamplePattern();
 
-	cout << "done" << endl;
+	std::endl; cout << "done" << std::endl; endl;
 
 	ReportTestResult(VerifyMultiplication<4, uint8_t>(tag, true), "integer<4, uint8_t>", "multiplication");
 
 
 #else
-	std::cout << "Integer Arithmetic verfication" << std::endl;
+	std::cout << "Integer Arithmetic verfication\n";
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

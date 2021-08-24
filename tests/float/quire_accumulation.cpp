@@ -13,7 +13,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::ieee;
 
 	//bool bReportIndividualTestCases = false;
@@ -25,9 +24,9 @@ try {
 
 #else
 
-	cout << "IEEE Floating Point Quire experiments" << endl;
+	std::cout << "IEEE Floating Point Quire experiments\n";
 	
-	cout << "\nTBD\n";
+	std::cout << "\nTBD\n";
 
 #ifdef STRESS_TESTING
 

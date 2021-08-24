@@ -15,7 +15,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 	internal::value<fbits> v((Ty)rhs);
 	posit<nbits, es> p;
 
-	std::cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";
+	std::cout << std::setprecision(std::numeric_limits<Ty>::digits10) << v << "   input value\n";
 	std::cout << "Test for ZERO\n";
 	std::cout << to_triple(v);
 	if (v.iszero()) {

@@ -40,7 +40,6 @@ void ExamplePattern() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer Arithmetic tests failed";

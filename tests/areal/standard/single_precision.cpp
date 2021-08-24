@@ -6,12 +6,11 @@
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal_impl.hpp>
+#include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//const size_t RND_TEST_CASES = 500000;
@@ -20,16 +19,16 @@ try {
 	constexpr size_t es = 8;
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = " areal<32,8>";
+	std::string tag = " cfloat<32,8>";
 
-	cout << "Standard single-precision areal<8,23> configuration tests" << endl;
+	std::cout << "Standard single-precision cfloat<8,23> configuration tests\n";
 
-	areal<nbits, es> r;
+	cfloat<nbits, es> r;
 	r = 1.2345;
-	cout << r << endl;
+	std::cout << r << '\n';
 
 #if 0
-	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
+	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << std::endl;
 	bool bReportIndividualTestCases = false;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
@@ -44,11 +43,11 @@ catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::areal_arithmetic_exception& err) {
+catch (const sw::universal::cfloat_arithmetic_exception& err) {
 	std::cerr << "Uncaught real arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::areal_internal_exception& err) {
+catch (const sw::universal::cfloat_internal_exception& err) {
 	std::cerr << "Uncaught real internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

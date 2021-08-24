@@ -22,12 +22,11 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "unum class interface tests" << endl;
+	std::cout << "unum class interface tests\n";
 #undef LATER
 #ifdef LATER
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -368,10 +367,10 @@ try {
 #endif // LATER
 
 	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
+		std::cout << "FAIL\n";
 	}
 	else {
-		cout << "PASS" << endl;
+		std::cout << "PASS\n";
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

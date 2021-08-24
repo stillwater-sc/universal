@@ -9,22 +9,20 @@
 
 template<typename Scalar>
 void Exponentiation(int depth) {
-	using namespace std;
 	using namespace sw::universal;
 
 	Scalar seed = 2.0;
 	Scalar x = seed;
-	cout << x << endl;
+	std::cout << x << '\n';
 	for (int i = 0; i < depth; ++i) {
 		x = exp2(x);
-		cout << x << endl;
+		std::cout << x << '\n';
 	}
 
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
@@ -35,13 +33,13 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	Exponentiation<Posit>(5);
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }
