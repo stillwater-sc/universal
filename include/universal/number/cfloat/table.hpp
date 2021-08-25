@@ -29,7 +29,7 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 	TestType v;
 
 	if (csvFormat) {
-		ostr << "\"Generate Lookup table for a " << typeid(v).name() << " in CSV format\"" << std::endl;
+		ostr << "\"Generate Lookup table for a " << type_tag(v) << " in CSV format\"" << std::endl;
 		ostr << "#, Binary, sign, scale, exponent, fraction, value, hex\n";
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			v.setbits(i);
@@ -49,7 +49,7 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 		ostr << std::endl;
 	}
 	else {
-		ostr << "Generate table for a " << typeid(v).name() << " in TXT format" << std::endl;
+		ostr << "Generate table for a " << type_tag(v) << " in TXT format" << std::endl;
 
 		const size_t index_column = 5;
 		const size_t bin_column = 16;

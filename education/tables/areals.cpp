@@ -38,8 +38,6 @@ try {
 
 #if MANUAL_TESTING
 
-
-
 	GenerateArealTable<5, 1>(cout, ubit, csv);
 	GenerateArealTable<5, 2>(cout, ubit, csv);
 	GenerateArealTable<6, 1>(cout, ubit, csv);

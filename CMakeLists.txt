@@ -682,15 +682,8 @@ endif(BUILD_CMD_LINE_TOOLS)
 # educational examples
 if(BUILD_EDUCATION)
 add_subdirectory("education/tables")
-add_subdirectory("education/integer")
-add_subdirectory("education/fixpnt")
-add_subdirectory("education/bfloat")
-add_subdirectory("education/areal")
-add_subdirectory("education/unum")
-add_subdirectory("education/posit")
+add_subdirectory("education/number")
 add_subdirectory("education/quire")
-add_subdirectory("education/valid")
-add_subdirectory("education/lns")
 endif(BUILD_EDUCATION)
 
 # application examples
