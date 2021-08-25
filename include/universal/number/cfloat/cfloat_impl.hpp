@@ -1415,6 +1415,14 @@ public:
 				v = exponentiation * f;
 			}
 			else {
+				if (ebits.isallones()) {
+					if constexpr (hasSupernormals == false) {
+						// supernormals are mapped to quiet NaNs
+						v = std::numeric_limits<TargetFloat>::quiet_NaN();
+						return v;
+					}
+				}
+
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 				if (-64 < exponent && exponent < 64) {
@@ -1425,6 +1433,7 @@ public:
 					double exponentiation = ipow(exponent);
 					v = TargetFloat(exponentiation * (1.0 + f));
 				}
+
 			}
 			v = sign() ? -v : v;
 		}

@@ -8,37 +8,6 @@
 #include <string>
 #include <sstream>
 
-// compiler specific operators
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
 namespace sw::universal {
 
 // forward references
@@ -398,6 +367,11 @@ public:
 	inline constexpr bool isneg() const noexcept { return sign(); }
 	inline constexpr bool iszero() const noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
+		return true;
+	}
+	inline constexpr bool isallones() const noexcept {
+		for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != ALL_ONES) return false;
+		if (_block[MSU] != MSU_MASK) return false;
 		return true;
 	}
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
