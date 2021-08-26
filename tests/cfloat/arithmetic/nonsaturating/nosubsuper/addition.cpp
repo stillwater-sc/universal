@@ -121,7 +121,7 @@ try {
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = "Addition failed: ";
+	std::string tag = "cfloat addition failed: ";
 
 #if MANUAL_TESTING
 
@@ -157,7 +157,7 @@ try {
 		std::cout << fb << " + " << fb << " = " << (fb + fb) << '\n';
 		std::cout << to_binary(fa + fb) << '\n';
 	}
-#ifdef LATER
+
 	{
 		cfloat<8, 2> c(SpecificValue::maxpos);
 		cfloat<9, 2> d(SpecificValue::maxpos);
@@ -195,7 +195,6 @@ try {
 	GenerateTestCase< cfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
 
 	GenerateTestCase< cfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
-#endif
 
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
