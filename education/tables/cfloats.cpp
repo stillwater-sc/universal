@@ -19,6 +19,39 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/table.hpp>
 
+template<bool hasSubnormals, bool hasSupernormals, bool isSaturating, typename bt = uint8_t>
+void GenerateCfloatTables(std::ostream& ostr, bool csv) {
+	using namespace sw::universal;
+
+	GenerateTable< cfloat<3, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+
+	GenerateTable< cfloat<4, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<4, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+
+	GenerateTable< cfloat<5, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<5, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<5, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+
+	GenerateTable< cfloat<6, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<6, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<6, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<6, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+
+	GenerateTable< cfloat<7, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<7, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<7, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<7, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<7, 5, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+
+	GenerateTable< cfloat<8, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 5, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	GenerateTable< cfloat<8, 6, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+
+}
+
 #define MANUAL_TESTING 0
 
 int main(int argc, char** argv)
@@ -41,109 +74,37 @@ try {
 
 #if MANUAL_TESTING
 
+	constexpr size_t nbits = 5;
+	constexpr size_t es = 2;
 	std::ofstream ostr;
-	ostr.open("cfloat_8_1_subnormal_supernormal_notsaturating.csv");
-	GenerateTable< cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(ostr, true);
+	ostr.open("cfloat_5_2_subnormal_supernormal_notsaturating.csv");
+	GenerateTable< cfloat<nbits, es, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(ostr, true);
 	ostr.close();
-	ostr.open("cfloat_8_1_subnormal_nosupernormal_notsaturating.csv");
-	GenerateTable< cfloat<8, 1, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(ostr, true);
+	ostr.open("cfloat_5_2_subnormal_nosupernormal_notsaturating.csv");
+	GenerateTable< cfloat<nbits, es, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(ostr, true);
 	ostr.close();
-	ostr.open("cfloat_8_1_nosubnormal_supernormal_notsaturating.csv");
-	GenerateTable< cfloat<8, 1, uint8_t, noSubnormals, hasSupernormals, notSaturating> >(ostr, true);
+	ostr.open("cfloat_5_2_nosubnormal_supernormal_notsaturating.csv");
+	GenerateTable< cfloat<nbits, es, uint8_t, noSubnormals, hasSupernormals, notSaturating> >(ostr, true);
 	ostr.close();
-	ostr.open("cfloat_8_1_nosubnormal_nosupernormal_notsaturating.csv");
-	GenerateTable< cfloat<8, 1, uint8_t, noSubnormals, noSupernormals, notSaturating> >(ostr, true);
+	ostr.open("cfloat_5_2_nosubnormal_nosupernormal_notsaturating.csv");
+	GenerateTable< cfloat<nbits, es, uint8_t, noSubnormals, noSupernormals, notSaturating> >(ostr, true);
 	ostr.close();
 
-	ostr.open("cfloat_8_1_nosubnormal_nosupernormal_notsaturating.txt");
-	GenerateTable< cfloat<8, 1, uint8_t, noSubnormals, noSupernormals, notSaturating> >(ostr, false);
+	ostr.open("cfloat_5_2_nosubnormal_nosupernormal_notsaturating.txt");
+	GenerateTable< cfloat<nbits, es, uint8_t, noSubnormals, noSupernormals, notSaturating> >(ostr, false);
 	ostr.close();
 
 #else // !MANUAL_TESTING
 
 	// no subnormals, no supernormals, not saturating
-	GenerateTable< cfloat<3, 1, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<4, 1, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<4, 2, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<5, 1, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<5, 2, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<5, 3, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<6, 1, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 2, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 3, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 4, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<7, 1, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 2, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 3, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 4, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 5, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<8, 1, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 2, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 3, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 4, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 5, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 6, uint8_t, noSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
+	GenerateCfloatTables<noSubnormals, noSupernormals, notSaturating, uint8_t>(std::cout, csv);
 
 	// subnormals, no supernormals, not saturating
-	GenerateTable< cfloat<3, 1, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<4, 1, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<4, 2, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<5, 1, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<5, 2, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<5, 3, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<6, 1, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 2, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 3, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 4, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<7, 1, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 2, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 3, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 4, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 5, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<8, 1, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 2, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 3, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 4, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 5, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 6, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(std::cout, csv);
+	GenerateCfloatTables<hasSubnormals, noSupernormals, notSaturating>(std::cout, csv);
 
 	// subnormals, supernormals, not saturating
-	GenerateTable< cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
+	GenerateCfloatTables<hasSubnormals, hasSupernormals, notSaturating>(std::cout, csv);
 
-	GenerateTable< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<5, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<5, 3, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 3, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<6, 4, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<7, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 2, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 3, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 4, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<7, 5, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-
-	GenerateTable< cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
-	GenerateTable< cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout, csv);
 #endif
 
 	return EXIT_SUCCESS;
