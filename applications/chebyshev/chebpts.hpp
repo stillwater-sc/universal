@@ -6,11 +6,13 @@
 // Author: James Quinlan
 // See Readme for further details
 
+#pragma once
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 
-namespace sw::universal {
+namespace chebyshev {
+	using namespace sw::universal;
 	template<typename Scalar>
 	blas::vector<Scalar> chebpts(int n, size_t kind = 2)
 	{

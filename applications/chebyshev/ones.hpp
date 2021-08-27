@@ -5,8 +5,8 @@
 //
 // James Quinlan, 04/29/2021
 
-#include <universal/number/posit/posit>
-#include <universal/blas/blas>
+#include <universal/number/posit/posit.hpp>
+#include <universal/blas/blas.hpp>
 
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 namespace sw::universal{

@@ -5,11 +5,14 @@
 //
 // Author: James Quinlan
 
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
-#include <universal/blas/blas>
+#pragma once
 
-namespace sw::universal {
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/posit/posit.hpp>
+#include <universal/blas/blas.hpp>
+
+namespace chebyshev {
+    using namespace sw::universal;
 	template<typename Scalar>
 	blas::vector<Scalar> chebpoly(size_t n)
 	{

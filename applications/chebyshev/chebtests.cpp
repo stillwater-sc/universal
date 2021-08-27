@@ -42,12 +42,14 @@ log_e(10)		M_LN10		2.30258509299404568402
 //#include "ones.hpp"
 #include "rpad.hpp"
 #include "chebpoly.hpp"
+#include "chebfun.hpp"
 
 int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
+	using namespace chebyshev;
 	
 	#define USE_POSIT 0
 	#if USE_POSIT
@@ -68,7 +70,7 @@ try {
 	//std::cout << "Chebyshev 1st kind = " << x << std::endl;	 
 
 	
-	 auto y = chebpts<Scalar>(10); 							// x = chebypts(n,2,[a,b])
+	 // auto y = chebyshev::chebpts<Scalar>(10); 							// x = chebypts(n,2,[a,b])
 	//std::cout << "Chebyshev 2nd kind = " << y << std::endl;	 
 
 	//auto z = chebpts<Scalar>(-3,1); 						// x = chebypts(n,kind,[a,b])
@@ -90,8 +92,8 @@ try {
 	//std::cout << c << std::endl;
 
 	// 5. Test meandistance(x)
-	auto d = meandistance<Scalar>(y);
-	std::cout << d << std::endl;
+	//auto d = chebyshev::meandistance<Scalar>(y);
+	//std::cout << d << std::endl;
 
 	// 6. Ones vector
 	// blas::vector<Scalar> a(5,1);
@@ -141,7 +143,10 @@ try {
 	//std::cout << chebpoly<Scalar>(3) + rpad<Scalar>(chebpoly<Scalar>(1), 3-1) << std::endl;
 	//chebpoly<Scalar>(n);
 
-
+	// 13.
+	
+	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
+//	auto f = chebyshev::chebfun<float>(std::sin);
 
 
 
