@@ -150,15 +150,7 @@ inline std::string to_base2_scientific(float number) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
-	s << "e2^" << std::showpos << (decoder.parts.exponent - 127);
-/* deprecated
-	bool s;
-	int base2Exp;
-	float _fr;
-	unsigned int mantissa;
-	extract_fp_components(number, s, base2Exp, _fr, mantissa);
-	s << (s ? "-" : "+") << "1." << std::bitset<23>(mantissa) << "e2^" << std::showpos << base2Exp - 1;
-*/
+	s << "e" << std::showpos << (static_cast<int>(decoder.parts.exponent) - 127);
 	return s.str();
 }
 
@@ -334,7 +326,7 @@ inline std::string to_base2_scientific(double number) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	} 
-	s << "e2^" << std::showpos << (decoder.parts.exponent - 1023);
+	s << "e" << std::showpos << (static_cast<int>(decoder.parts.exponent) - 1023);
 	return s.str();
 }
 

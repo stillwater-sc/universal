@@ -33,6 +33,10 @@ try {
 	std::cout << color_print(d) << " " << d << '\n';
 	std::cout << color_print(ld) << " " << ld << '\n';
 
+	valueRepresentations(f);
+	valueRepresentations(d);
+	valueRepresentations(ld);
+
 	std::cout << std::endl; // flush the stream
 
 	return EXIT_SUCCESS;

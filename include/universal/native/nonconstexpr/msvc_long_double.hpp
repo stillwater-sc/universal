@@ -26,6 +26,11 @@ union long_double_decoder {
 };
 */
 
+// specialization for IEEE long double precision floats
+inline std::string to_base2_scientific(long double number) {
+	return to_base2_scientific(double(number));
+}
+
 // generate a binary string for a native long double precision IEEE floating point
 inline std::string to_hex(long double number) {
 	return to_hex(double(number));

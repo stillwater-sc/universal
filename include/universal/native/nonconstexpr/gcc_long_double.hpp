@@ -38,6 +38,21 @@ inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits,
 	rawFractionBits = decoder.parts.fraction;
 }
 
+// specialization for IEEE long double precision floats
+inline std::string to_base2_scientific(long double number) {
+	std::stringstream s;
+	long_double_decoder decoder;
+	decoder.ld = number;
+	s << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
+	uint64_t mask = (uint64_t(1) << 63);
+	for (int i = 63; i >= 0; --i) {
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
+		mask >>= 1;
+	}
+	s << "e" << std::showpos << (static_cast<int>(decoder.parts.exponent) - 16383);
+	return s.str();
+}
+
 // generate a binary string for a native double precision IEEE floating point
 inline std::string to_hex(const long double& number) {
 	std::stringstream s;

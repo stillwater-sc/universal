@@ -88,5 +88,38 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 	}
 }
 
+/// <summary>
+/// generate a table of cfloat exponent bounds up till es=20
+/// </summary>
+void GenerateCfloatExponentBounds()
+{
+	// max exp values as a function of es
+	constexpr int WIDTH = 15;
+	std::cout <<
+		std::setw(WIDTH) << "es" <<
+		std::setw(WIDTH) << "RAW_MAX_EXP" <<
+		std::setw(WIDTH) << "EXP_BIAS" <<
+		std::setw(WIDTH) << "MAX_EXP" <<
+		std::setw(WIDTH) << "MIN_EXP_NORMAL" <<
+		std::setw(WIDTH) << "MIN_NORMAL"
+		<< '\n';
+	for (size_t es = 1; es < 20; ++es) {
+		int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
+		int RAW_MAX_EXP = (es == 1) ? 1 : ((1l << es) - 1);
+		int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
+		int MIN_EXP_NORMAL = 1 - EXP_BIAS;
+		double MIN_NORMAL = std::pow(2.0, MIN_EXP_NORMAL);
+		// MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
+		std::cout <<
+			std::setw(WIDTH) << es <<
+			std::setw(WIDTH) << RAW_MAX_EXP <<
+			std::setw(WIDTH) << EXP_BIAS <<
+			std::setw(WIDTH) << MAX_EXP <<
+			std::setw(WIDTH) << MIN_EXP_NORMAL <<
+			std::setw(WIDTH) << MIN_NORMAL <<
+			'\n';
+	}
+}
+
 }  // namespace sw::universal
 
