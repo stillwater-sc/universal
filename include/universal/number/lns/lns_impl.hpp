@@ -47,11 +47,16 @@ lns<nbits, bt>& maxneg(lns<nbits, bt>& lmaxneg) {
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<size_t nbits, typename bt = uint8_t>
+template<size_t _nbits, typename bt = uint8_t>
 class lns {
 public:
+	static constexpr size_t nbits = _nbits;
+	typename bt BlockType;
 	static constexpr size_t rbits = nbits >> 1;
 	static constexpr double scaling = double(1ull << rbits);
+	static constexpr size_t bitsInByte = 8ull;
+	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+
 
 	lns() : _bits{ 0 } {}
 
@@ -132,6 +137,10 @@ public:
 	inline constexpr bool isnan() const { return false; }
 	inline constexpr bool sign() const { return false; }
 	inline constexpr int scale() const { return false; }
+
+	inline constexpr bool at(size_t bitIndex) const noexcept {
+		return _bits.at(bitIndex);
+	}
 	inline std::string get() const { 
 		std::stringstream s;
 		s << std::exp(double(_bits.to_long_long()));
@@ -231,6 +240,16 @@ inline lns<nbits, bt> operator/(const lns<nbits, bt>& lhs, const lns<nbits, bt>&
 	return ratio;
 }
 
+template<size_t nbits, typename bt>
+inline std::string to_binary(const lns<nbits, bt>& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << "0b";
+	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
+		s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	return s.str();
+}
 
 template<size_t nbits, typename bt>
 inline std::string components(const lns<nbits,bt>& v) {

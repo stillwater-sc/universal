@@ -78,7 +78,7 @@ try {
 		std::cout << a << " + " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		TestCaseAdd< Cfloat, float>(fa, fb);
+		TestCase< Cfloat, float>(TestCaseOperator::ADD, fa, fb);
 	}
 
 	{
@@ -118,10 +118,8 @@ try {
 	}
 
 	// generate individual testcases to hand trace/debug
-	TestCaseAdd< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(1.0f, 1.0f);
-
-	TestCaseAdd< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(INFINITY, INFINITY);
-
+	TestCase< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
+	TestCase< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatAddition< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,2,uint8_t,f,t,f>", "addition");

@@ -7,24 +7,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/lns/lns_impl.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
-
-// generate specific test case that you can trace with the trace conditions in areal.hpp
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename Ty>
-void GenerateTestCase(Ty a, Ty b) {
-	Ty ref;
-	sw::universal::lns<nbits> pa, pb, pref, psum;
-	pa = a;
-	pb = b;
-	ref = a + b;
-	pref = ref;
-	psum = pa + pb;
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
-	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(5);
-}
+#include <universal/verification/test_case.hpp>
 
 template<size_t nbits> 
 int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
@@ -45,8 +28,8 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, double>(INFINITY, INFINITY);
-	GenerateTestCase<8, float>(0.5f, -0.5f);
+	TestCase< lns<16, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+	TestCase< lns<8, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>("Manual Testing", true), "lns<8>", "addition");

@@ -75,7 +75,7 @@ try {
 		std::cout << a << " - " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		TestCaseSub< cfloat<8, 4, uint8_t>, float>(fa, fb);
+		TestCase< cfloat<8, 4, uint8_t>, float>(TestCaseOperator::SUB, fa, fb);
 	}
 
 	{ // special cases of snan/qnan

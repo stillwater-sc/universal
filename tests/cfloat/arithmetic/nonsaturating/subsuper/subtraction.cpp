@@ -57,15 +57,13 @@ try {
 
 #if MANUAL_TESTING
 
-	// 9,176 0b0.0001.001 0b1.0110.000 0b1.0110.000 0b1.0101.111 -0.48242
-	// FAIL          0.017578125 + -0.5 != -0.5 golden reference is - 0.46875 result 0b1.0110.000 vs ref 0b1.0101.111
 	std::cout << "Manual Testing\n";
 	{
-		float fa = 0.017578125; // 0.375; // 0.3125f;  //  0.03125f; // 0.21875f; 
+		float fa = 0.017578125;
+//		float fa = std::numeric_limits<float>::infinity();
 //		float fb = std::numeric_limits<float>::signaling_NaN();
 //		float fb = std::numeric_limits<float>::quiet_NaN();
-//		float fa = std::numeric_limits<float>::infinity();
-		float fb = 0.5f; // 7.625f; // 0.0625f; 3.9375f; 
+		float fb = 0.5f;
 
 		using Cfloat = cfloat < 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating >;
 		Cfloat a, b, c, cref;
@@ -76,7 +74,7 @@ try {
 		std::cout << a << " - " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		TestCaseSub< Cfloat, float>(fa, fb);
+		TestCase< Cfloat, float>(TestCaseOperator::SUB, fa, fb);
 	}
 
 	{ // special cases of snan/qnan

@@ -63,11 +63,8 @@ try {
 	// FAIL          0.017578125 + -0.5 != -0.5 golden reference is - 0.46875 result 0b1.0110.000 vs ref 0b1.0101.111
 	std::cout << "Manual Testing\n";
 	{
-		float fa = 0.017578125; // 0.375; // 0.3125f;  //  0.03125f; // 0.21875f; 
-//		float fb = std::numeric_limits<float>::signaling_NaN();
-//		float fb = std::numeric_limits<float>::quiet_NaN();
-//		float fa = std::numeric_limits<float>::infinity();
-		float fb = -0.5f; // 7.625f; // 0.0625f; 3.9375f; 
+		float fa = 0.017578125;
+		float fb = -0.5f;
 
 		using Cfloat = cfloat < 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating >;
 		Cfloat a, b, c, cref;
@@ -78,50 +75,12 @@ try {
 		std::cout << a << " + " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		TestCaseAdd< Cfloat, float>(fa, fb);
-	}
-
-	{
-		float fa = std::numeric_limits<float>::infinity();
-		float fb = -fa;
-		std::cout << fa << " + " << fa << " = " << (fa + fa) << '\n';
-		std::cout << fa << " + " << fb << " = " << (fa + fb) << '\n';
-		std::cout << fb << " + " << fa << " = " << (fb + fa) << '\n';
-		std::cout << fb << " + " << fb << " = " << (fb + fb) << '\n';
-		std::cout << to_binary(fa + fb) << '\n';
-	}
-
-	{
-		cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating > c(SpecificValue::maxpos);
-		cfloat<9, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> d(SpecificValue::maxpos);
-		std::cout << to_binary(c) << " : " << c << '\n';
-		std::cout << to_binary(d) << " : " << d << '\n';
-		d.setbits(0x0fa);
-		std::cout << to_binary(d) << " : " << d << '\n';
-		d.setbits(0x0fb);
-		std::cout << to_binary(d) << " : " << d << '\n';
-
-		std::cout << '\n';
-		d = float(c);
-		++d;
-		std::cout << to_binary(d) << " : " << d << '\n';
-
-		{
-			cfloat<8,2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> c(SpecificValue::maxneg);
-			cfloat<9,2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> d;
-			d = double(c);
-			std::cout << to_binary(d) << " : " << d << '\n';
-			--d;
-			std::cout << to_binary(d) << " : " << d << '\n';
-
-		}
+		TestCase< Cfloat, float>(TestCaseOperator::ADD, fa, fb);
 	}
 
 	// generate individual testcases to hand trace/debug
-	TestCaseAdd< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(1.0f, 1.0f);
-
-	TestCaseAdd< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(INFINITY, INFINITY);
-
+	TestCase< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
+	TestCase< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
 
 //	nrOfFailedTestCases += ReportTestResult(
 //		VerifyCfloatAddition< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,2,uint8_t,f,f,t>", "addition");

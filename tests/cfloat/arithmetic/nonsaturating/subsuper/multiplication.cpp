@@ -85,7 +85,7 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 		std::cout << a << " * " << b << " = " << c << '\n';
 		std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << '\n';
 
-		TestCaseMul< Cfloat, float>(fa, fb);
+		TestCase< Cfloat, float>(TestCaseOperator::MUL, fa, fb);
 	}
 	return 0;
 	{ // special cases of snan/qnan
