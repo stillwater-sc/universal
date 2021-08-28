@@ -51,7 +51,7 @@ template<size_t _nbits, typename bt = uint8_t>
 class lns {
 public:
 	static constexpr size_t nbits = _nbits;
-	typename bt BlockType;
+	typedef bt BlockType;
 	static constexpr size_t rbits = nbits >> 1;
 	static constexpr double scaling = double(1ull << rbits);
 	static constexpr size_t bitsInByte = 8ull;

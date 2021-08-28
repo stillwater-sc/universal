@@ -203,6 +203,7 @@ public:
 	}
 	constexpr void setsign(bool s) noexcept { _sign = s; }
 	constexpr void setscale(int scale) noexcept { _scale = scale; }
+	constexpr void setradix(int radix) noexcept { _significant.setradix(radix); }
 	constexpr void setbit(size_t index, bool v = true) noexcept { _significant.setbit(index, v); }
 	/// <summary>
 	/// set the bits of the significant, given raw fraction bits. only works for bfbits < 64
@@ -607,7 +608,7 @@ private:
 
 		// special case handling
 		if (raw_exp == 0xFFu) { // special cases
-			if (raw == 1ul || raw == 0x0040'0001ul) {
+			if (raw == 1ul || raw == 0x00C0'0001ul) {
 				// 1.11111111.00000000000000000000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
 				// MSVC
@@ -615,15 +616,17 @@ private:
 				// 0.11111111.10000000000000000000001 signalling nan
 				// NAN_TYPE_SIGNALLING;
 				_nan = true;
-				_inf = true; // this is the encoding of a signalling NaN
+				_inf = false; 
+				_sign = true; // this is the encoding of a signalling NaN
 				return *this;
 			}
-			if (raw == 0x0040'0000ul) {
+			if (raw == 0x00C0'0000ul) {
 				// 1.11111111.10000000000000000000000 quiet nan
 				// 0.11111111.10000000000000000000000 quiet nan
 				// NAN_TYPE_QUIET);
 				_nan = true;
-				_inf = false; // this is the encoding of a quiet NaN
+				_inf = false; 
+				_sign = false; // this is the encoding of a quiet NaN
 				return *this;
 			}
 			if (raw == 0ul) {

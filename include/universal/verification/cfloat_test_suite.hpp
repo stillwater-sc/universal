@@ -1108,18 +1108,18 @@ namespace sw::universal {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, nut, cref);
 #ifdef TRACE_ROUNDING
-					blocktriple<TestType::abits, BlockType> bta, btb, btsum;
+					blocktriple<TestType::abits, BlockType> bta, btb, btprod;
 					// transform the inputs into (sign,scale,significant) 
 					// triples of the correct width
 					a.normalizeAddition(bta);
 					b.normalizeAddition(btb);
-					btsum.add(bta, btb);
+					btprod.mul(bta, btb);
 					auto oldPrecision = std::cout.precision(15);
 					std::cout << i << ',' << j << '\n';
 					std::cout
 						<< "a    " << to_binary(a) << ' ' << std::setw(20) << a << ' ' << to_binary(float(a)) << ' ' << to_triple(bta) << '\n'
 						<< "b    " << to_binary(b) << ' ' << std::setw(20) << b << ' ' << to_binary(float(b)) << ' ' << to_triple(btb) << '\n'
-						<< "nut  " << to_binary(nut) << ' ' << std::setw(20) << nut << ' ' << to_binary(float(nut)) << ' ' << to_triple(btsum) << '\n'
+						<< "nut  " << to_binary(nut) << ' ' << std::setw(20) << nut << ' ' << to_binary(float(nut)) << ' ' << to_triple(btprod) << '\n'
 						<< "cref " << to_binary(cref) << ' ' << std::setw(20) << cref << ' ' << to_binary(float(cref)) << ' ' << to_triple(cref) << '\n';
 					std::cout.precision(oldPrecision);
 
@@ -1127,7 +1127,7 @@ namespace sw::universal {
 #endif
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
+					if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
 				}
 			}
 			if constexpr (NR_VALUES > 256 * 256) {

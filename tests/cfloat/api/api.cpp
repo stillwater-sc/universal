@@ -33,15 +33,34 @@ try {
 
 #if MANUAL_TESTING
 
-	// 
+	// default behavior
 	{
+		std::cout << "Default cfloat has subnormals, supernormals and is not saturating\n";
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 3;
+		using Real = cfloat<nbits, es>;
+		Real a(1.0f), b(0.5f), c(0.0);
+		c = a + b;
+		std::cout << "c = " << c << std::endl;
+		c = c - a;
+		std::cout << "c = " << c << std::endl;
+		c = c * b;
+		std::cout << "c = " << c << std::endl;
+		std::cout << "---\n";
+	}
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 3;
 		using bt = uint8_t;
-		using Real = cfloat<8, 3, bt>;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		using Real = cfloat<8, 3, bt, hasSubnormals, hasSupernormals, isSaturating>;
 		CONSTEXPRESSION Real a(1.0f + 0.5f + 0.25f + 0.125f + 0.0625f);
 		Real b(-1.0f - 0.5f - 0.25f - 0.125f - 0.0625f);
 		constexpr size_t fbits = Real::fbits;
 		constexpr size_t abits = Real::abits;
-		//constexpr size_t mbits = Real::mbits;
+		constexpr size_t mbits = Real::mbits;
 		constexpr size_t divbits = Real::divbits;
 		{
 			// emulate conversion to blocktriple
@@ -74,7 +93,7 @@ try {
 			std::cout << "result of multiplication : " << color_print(c) << '\n';
 
 			// emulate multiplication
-			blocktriple<fbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
+			blocktriple<mbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
 			a.normalizeMultiplication(_a);
 			b.normalizeMultiplication(_b);
 			_c.mul(_a, _b);
