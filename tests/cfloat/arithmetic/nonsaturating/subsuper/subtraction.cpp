@@ -15,7 +15,7 @@
 #include <universal/utility/bit_cast.hpp>
 #include <universal/number/cfloat/table.hpp>
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 /*

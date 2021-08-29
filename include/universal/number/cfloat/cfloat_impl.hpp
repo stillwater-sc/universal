@@ -110,12 +110,23 @@ parse(const std::string& str) {
 	return a;
 }
 
-// convert a blocktriple to a cfloat
+/// <summary>
+/// convert a blocktriple to a cfloat. blocktriples come out of the arithmetic
+/// engine in the form bb.ff...ff and a scale. The conversion must take this
+/// denormalized form into account during conversion.
+/// 
+/// The blocktriple must be in this form to round correctly, as all the bits
+/// after an arithmetic operation must be taken into account.
+/// </summary>
+/// <typeparam name="bt"></typeparam>
+/// <param name="src"></param>
+/// <param name="tgt"></param>
 template<size_t srcbits, BlockTripleOperator op, size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, 
 	                              cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& tgt) {
 //	std::cout << "convert: " << to_binary(src) << std::endl;
+	using btType = blocktriple<srcbits, op, bt>;
 	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	// test special cases
 	if (src.isnan()) {
@@ -129,19 +140,14 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		tgt.setsign(src.sign()); // preserve sign
 	}
 	else {
-		int64_t scale   = src.scale();
-		if (scale < cfloatType::MIN_EXP_SUBNORMAL) {
+		int scale = src.scale() + src.significantscale();
+		if (scale < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
 			tgt.setzero();
 			return;
 		}
 		if (scale > cfloatType::MAX_EXP) {
 			if constexpr (isSaturating) {
-				if (src.sign()) {
-					tgt.maxneg();
-				}
-				else {
-					tgt.maxpos();
-				}
+				if (src.sign()) tgt.maxneg(); else tgt.maxpos();
 			}
 			else {
 				tgt.setinf(src.sign());
@@ -172,8 +178,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			}
 			else {
 				// resulting cfloat will be a normal number
-				uint64_t fracbits = src.fraction_ull();
-				constexpr size_t shift = srcbits - cfloatType::fbits;
+				// uint64_t fracbits = src.fraction_ull();
+				uint64_t fracbits = src.get_ull();
+				// null the top bit to remove the hidden bit of a denormalized form
+				fracbits &= btType::normalFormMask;
+
+				size_t shift = btType::radix - cfloatType::fbits + src.significantscale();
 
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
@@ -186,7 +196,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 				bool guard = fracbits & mask;
 				mask >>= 1;
 				bool round = fracbits & mask;
-				if constexpr (shift < 2) {
+				if (shift < 2) {
 					mask = 0xFFFF'FFFF'FFFF'FFFFull;
 				}
 				else {

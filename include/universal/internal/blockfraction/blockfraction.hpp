@@ -498,6 +498,13 @@ public:
 		return _block[b];
 	}
 	inline constexpr uint64_t fraction_ull() const noexcept {
+		uint64_t raw = get_ull();
+		// remove the non-fraction bits
+		uint64_t fractionBits = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - radixPoint));
+		raw &= fractionBits;
+		return raw;
+	}
+	inline constexpr uint64_t get_ull() const noexcept {
 		uint64_t raw{ 0 };
 		if constexpr (bitsInBlock < 64) {
 			if constexpr (1 == nrBlocks) {
@@ -537,15 +544,12 @@ public:
 				}
 			}
 		}
-		else { // take top 64bits and ignore the reset
+		else { // take top 64bits and ignore the rest
 			raw = _block[MSU];
 			raw &= MSU_MASK;
 		}
-		// remove the non-fraction bits
-		raw &= fmask;
 		return raw;
 	}
-
 #ifdef DEPRECATED
 	// copy a value over from one blockfraction to this blockfraction
 	// blockfraction is a 2's complement encoding, so we sign-extend by default

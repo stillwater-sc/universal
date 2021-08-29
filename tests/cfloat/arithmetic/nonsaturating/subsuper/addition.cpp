@@ -6,7 +6,7 @@
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
-//#define BLOCKTRIPLE_TRACE_ADD
+#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_case.hpp>
@@ -15,7 +15,7 @@
 #include <universal/utility/bit_cast.hpp>
 #include <universal/number/cfloat/table.hpp>
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 /*
@@ -78,7 +78,7 @@ try {
 
 		TestCase< Cfloat, float>(TestCaseOperator::ADD, fa, fb);
 	}
-
+	return 0;
 	{
 		float fa = std::numeric_limits<float>::infinity();
 		float fb = -fa;
@@ -87,32 +87,6 @@ try {
 		std::cout << fb << " + " << fa << " = " << (fb + fa) << '\n';
 		std::cout << fb << " + " << fb << " = " << (fb + fb) << '\n';
 		std::cout << to_binary(fa + fb) << '\n';
-	}
-
-	{
-		cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating > c(SpecificValue::maxpos);
-		cfloat<9, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> d(SpecificValue::maxpos);
-		std::cout << to_binary(c) << " : " << c << '\n';
-		std::cout << to_binary(d) << " : " << d << '\n';
-		d.setbits(0x0fa);
-		std::cout << to_binary(d) << " : " << d << '\n';
-		d.setbits(0x0fb);
-		std::cout << to_binary(d) << " : " << d << '\n';
-
-		std::cout << '\n';
-		d = float(c);
-		++d;
-		std::cout << to_binary(d) << " : " << d << '\n';
-
-		{
-			cfloat<8,2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> c(SpecificValue::maxneg);
-			cfloat<9,2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> d;
-			d = double(c);
-			std::cout << to_binary(d) << " : " << d << '\n';
-			--d;
-			std::cout << to_binary(d) << " : " << d << '\n';
-
-		}
 	}
 
 	// generate individual testcases to hand trace/debug

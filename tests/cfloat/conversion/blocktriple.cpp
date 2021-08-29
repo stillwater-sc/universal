@@ -193,6 +193,59 @@ namespace sw::universal {
 	}
 }
 
+/*
+How do you test the conversion state space of blocktriple to cfloat.
+We need to convert the blocktriple that comes out of an ADD, a MUL, and a DIV operation.
+The blocktriples have bits that need to be rounded by convert.
+How do you test that rounding?
+
+Convert the blocktriple to a value.
+Use the cfloat operator=() to round. That is your reference. This assumes that cfloat operator=() has been validated.
+Use convert() to convert to a cfloat.
+Compare the operator=() and convert() cfloat patterns to check correctness
+ */
+template<typename CfloatConfiguration>
+int VerifyMulConvert(bool bReportIndividualTestCases) {
+	using namespace sw::universal;
+	constexpr size_t nbits = CfloatConfiguration::nbits;
+	constexpr size_t es = CfloatConfiguration::es;
+	using bt = typename CfloatConfiguration::BlockType;
+	constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+	constexpr size_t fbits = CfloatConfiguration::fbits;
+	constexpr size_t mbits = CfloatConfiguration::mbits;
+
+	int nrOfTestFailures{ 0 };
+	constexpr size_t NR_VALUES = (1ull << (mbits+1)); // the state space of the output of the MUL operator given fbits-szied operands
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+
+	if (bReportIndividualTestCases) a.constexprClassParameters();
+
+	{ // testing conversion of add and subtract outputs to cfloat
+		blocktriple<fbits, BlockTripleOperator::MUL, bt> b; // blocktriple type that comes out of an addition or subtraction operation
+		for (size_t i = 0; i < NR_VALUES; ++i) {
+			if (i > 0) {
+				b.setnormal();
+			}
+			b.setbits(i);
+			a = float(b);
+			convert(b, nut);
+			if (a != nut) {
+				if (a.isnan() && b.isnan()) continue;
+				if (a.isinf() && b.isinf()) continue;
+
+				++nrOfTestFailures;
+				if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " : " << nut << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+			}
+			else {
+				if (bReportIndividualTestCases) std::cout << "PASS: " << to_binary(a) << " == " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+			}
+		}
+	}
+	return nrOfTestFailures;
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -220,10 +273,34 @@ try {
 		constexpr bool isSaturating = false;
 		using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 
-		nrOfFailedTestCases += VerifyCfloatToAddBlocktripleConversion<Cfloat>(true);
+		// how do you round a non-normalized blocktriple?
+		// you would need to modify the lsb/guard/round/sticky bit masks
+		// so that you use all info to make the rounding decision,
+		// then normalize (basically shift to the right) and apply
+		// the rounding decision.
+		{
+			constexpr size_t fbits = Cfloat::fbits;
+			typedef Cfloat::BlockType bt;
+			blocktriple<fbits, BlockTripleOperator::MUL, bt> b; // blocktriple type that comes out of a multiplication operation
+			// 0b01.1110  == 1.875
+ 			b.setbits(0x1e);
+			float v = float(b);
+			Cfloat nut, ref;
+			convert(b, nut);
+			ref = v;
+			std::cout << "blocktriple: " << to_binary(b) << " : " << float(b) << '\n';
+			std::cout << "cfloat     : " << to_binary(nut) << " : " << nut << '\n';
+			std::cout << "cfloat ref : " << to_binary(ref) << " : " << ref << '\n';
+		}
+
+		nrOfFailedTestCases += VerifyMulConvert<Cfloat>(true);
+
+//		nrOfFailedTestCases += VerifyCfloatToAddBlocktripleConversion<Cfloat>(true);
 //		nrOfFailedTestCases += VerifyCfloatToMulBlocktripleConversion<Cfloat>(true);
-		nrOfFailedTestCases += VerifyAddBlocktripleToCfloatConversion<Cfloat>(true);
+//		nrOfFailedTestCases += VerifyAddBlocktripleToCfloatConversion<Cfloat>(true);
 //		nrOfFailedTestCases += VerifyMulBlocktripleToCfloatConversion<Cfloat>(true);
+
+
 	}
 	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system

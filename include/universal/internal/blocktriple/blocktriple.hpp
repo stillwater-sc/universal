@@ -96,9 +96,10 @@ public:
 			(op == BlockTripleOperator::MUL ? mbits :
 				(op == BlockTripleOperator::DIV ? divbits :
 					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits))));  // REPRESENTATION is the fall through condition
+	// radix point of the OUTPUT of an operator
 	static constexpr int radix =
 		(op == BlockTripleOperator::ADD ? static_cast<int>(fbits) :
-			(op == BlockTripleOperator::MUL ? static_cast<int>(fbits) :
+			(op == BlockTripleOperator::MUL ? static_cast<int>(2*fbits) :
 				(op == BlockTripleOperator::DIV ? static_cast<int>(fbits) :
 					(op == BlockTripleOperator::SQRT ? static_cast<int>(sqrtbits) : static_cast<int>(fbits)))));  // REPRESENTATION is the fall through condition
 	static constexpr BitEncoding encoding =
@@ -106,7 +107,8 @@ public:
 			(op == BlockTripleOperator::MUL ? BitEncoding::Ones :
 				(op == BlockTripleOperator::DIV ? BitEncoding::Ones :
 					(op == BlockTripleOperator::SQRT ? BitEncoding::Ones : BitEncoding::Ones))));
-
+	static constexpr size_t normalBits = (bfbits < 64 ? bfbits : 64);
+	static constexpr size_t normalFormMask = (normalBits == 64) ? 0xFFFF'FFFF'FFFF'FFFFull : (~(0xFFFF'FFFF'FFFF'FFFFull << (normalBits - 1)));
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using intrinsics/assembly code
@@ -211,26 +213,52 @@ public:
 	/// <param name="raw">raw bit pattern representing the fraction bits</param>
 	/// <returns></returns>
 	constexpr void setbits(uint64_t raw) noexcept {
-		// do not clear the nan/inf/zero booleans: caller must manage
+		// the setbits() api cannot be modified as it is shared by all number systems
+		// as a standard mechanism for the test suites to set bits.
+		// However, blocktriple uses extra state to encode the special values,
+		// and the test can't use this interface to set that. 
+		// Thus the caller (typically the test suite) must manage this special state.
+		// Here we just check for 0
+		_nan = false;
+		_inf = false;
+		_scale = 0;
 		_significant.setradix(radix);
-		_significant.setbits(raw);
+		if (raw == 0) {
+			_zero = true;
+			_significant.clear();
+		}
+		else {
+			_zero = false;
+			_significant.setbits(raw);
+		}
 	}
 	constexpr void setblock(size_t i, const bt& block) {
 		_significant.setblock(i, block);
 	}
 
 	// selectors
-	inline constexpr bool isnan()       const noexcept { return _nan; }
-	inline constexpr bool isinf()       const noexcept { return _inf; }
-	inline constexpr bool iszero()      const noexcept { return _zero; }
-	inline constexpr bool ispos()       const noexcept { return !_sign; }
-	inline constexpr bool isneg()       const noexcept { return _sign; }
-	inline constexpr bool sign()        const noexcept { return _sign; }
-	inline constexpr int  scale()       const noexcept { return _scale; }
-	inline constexpr Frac significant() const noexcept { return _significant; }
+	inline constexpr bool isnan()            const noexcept { return _nan; }
+	inline constexpr bool isinf()            const noexcept { return _inf; }
+	inline constexpr bool iszero()           const noexcept { return _zero; }
+	inline constexpr bool ispos()            const noexcept { return !_sign; }
+	inline constexpr bool isneg()            const noexcept { return _sign; }
+	inline constexpr bool sign()             const noexcept { return _sign; }
+	inline constexpr int  scale()            const noexcept { return _scale; }
+	inline constexpr int  significantscale() const noexcept {
+		int sigScale = 0;
+		for (int i = bfbits - 1; i >= radix; --i) {
+			if (_significant.at(i)) {
+				sigScale = i - radix;
+				break;
+			}
+		}
+		return sigScale;
+	}
+	inline constexpr Frac significant()      const noexcept { return _significant; }
 	// specialty function to offer a fast path to get the fraction bits out of the representation
 	// to convert to a target number system: only valid for bfbits <= 64
-	inline constexpr uint64_t fraction_ull() const noexcept{ return _significant.fraction_ull(); }
+	inline constexpr uint64_t fraction_ull() const noexcept { return _significant.fraction_ull(); }
+	inline constexpr uint64_t get_ull()      const noexcept { return _significant.get_ull(); }
 	// fraction bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
 	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }
