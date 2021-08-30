@@ -1,5 +1,5 @@
 #pragma once
-// math_functions.hpp: elementary functions for the posit number system
+// mathlib.hpp: elementary functions for the posit number system
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

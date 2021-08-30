@@ -33,6 +33,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/fixpnt/math_functions.hpp>
+#include <universal/number/fixpnt/mathlib.hpp>
 
 #endif
