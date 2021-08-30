@@ -61,33 +61,31 @@ typename Vector::value_type GenerateData(Vector& data, size_t nrElements) {
 
 template<typename Scalar>
 void GenerateTest(std::ostream& ostr, size_t N) {
-	using namespace std;
 	std::vector<Scalar> data;
 	auto naiveSum = GenerateData(data, N);
 	auto p = KahanSummation(data);
 	auto oldprecision = ostr.precision();
 	auto target = std::numeric_limits<Scalar>::max_digits10;
-	ostr << setprecision(target)
-		<< setw(COLUMN_WIDTH+15)
+	ostr << std::setprecision(target)
+		<< std::setw(COLUMN_WIDTH+15)
 		<< typeid(Scalar).name()
 		<< ", "
-		<< setw(COLUMN_WIDTH)
+		<< std::setw(COLUMN_WIDTH)
 		<< naiveSum
 		<< ", "
-		<< setw(COLUMN_WIDTH)
+		<< std::setw(COLUMN_WIDTH)
 		<< p.first
 		<< ", "
-		<< setw(COLUMN_WIDTH)
+		<< std::setw(COLUMN_WIDTH)
 		<< p.second 
-		<< setw(oldprecision)
-		<< endl;
+		<< std::setw(oldprecision)
+		<< std::endl;
 }
 
 #define MANUAL_TEST 1
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// print detailed bit-level computational intermediate results
@@ -97,9 +95,9 @@ try {
 
 	// preserve the existing ostream precision
 	auto precision = std::cout.precision();
-	std::cout << setprecision(12);
+	std::cout << std::setprecision(12);
 
-	std::cout << "Kahan summation comparison" << endl;
+	std::cout << "Kahan summation comparison\n";
 
 #if MANUAL_TEST
 
@@ -117,26 +115,26 @@ Kahan summation comparison
 			 class sw::universal::posit<64,3>,                         1,                         1,                         0
 */
 
-	cout << setw(COLUMN_WIDTH+15) << "type" << ", " 
-		<< setw(COLUMN_WIDTH) << "Naive Sum" << ", " 
-		<< setw(COLUMN_WIDTH) << "Kahan Sum" << ", " 
-		<< setw(COLUMN_WIDTH) << "Residual Error" << std::endl;
+	std::cout << std::setw(COLUMN_WIDTH+15) << "type" << ", "
+		<< std::setw(COLUMN_WIDTH) << "Naive Sum" << ", "
+		<< std::setw(COLUMN_WIDTH) << "Kahan Sum" << ", "
+		<< std::setw(COLUMN_WIDTH) << "Residual Error\n";
 
 	{
 		constexpr size_t N = 100;
-		GenerateTest<float>(cout, N);
-		GenerateTest<double>(cout, N);
-		GenerateTest<sw::universal::posit<32, 2>>(cout, N);
-		GenerateTest<sw::universal::posit<64, 3>>(cout, N);
+		GenerateTest<float>(std::cout, N);
+		GenerateTest<double>(std::cout, N);
+		GenerateTest<sw::universal::posit<32, 2>>(std::cout, N);
+		GenerateTest<sw::universal::posit<64, 3>>(std::cout, N);
 	}
 
-	cout << ">>>> a floating point value that is perfectly representable\n";
+	std::cout << ">>>> a floating point value that is perfectly representable\n";
 	{
 		constexpr size_t N = 65536;
-		GenerateTest<float>(cout, N);
-		GenerateTest<double>(cout, N);
-		GenerateTest<sw::universal::posit<32, 2>>(cout, N);
-		GenerateTest<sw::universal::posit<64, 3>>(cout, N);
+		GenerateTest<float>(std::cout, N);
+		GenerateTest<double>(std::cout, N);
+		GenerateTest<sw::universal::posit<32, 2>>(std::cout, N);
+		GenerateTest<sw::universal::posit<64, 3>>(std::cout, N);
 	}
 
 #else
@@ -145,7 +143,7 @@ Kahan summation comparison
 #endif // MANUAL_TEST
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

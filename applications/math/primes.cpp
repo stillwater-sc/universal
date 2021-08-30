@@ -16,7 +16,6 @@
 
 int main() 
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 #if MANUAL_TESTING
@@ -25,28 +24,28 @@ try {
 	using BlockType = uint32_t;
 	using Integer = integer<nbits, BlockType>;
 	Integer a, b, c;
-	vector<Integer> v;
+	std::vector<Integer> v;
 
-	cout << "\nFind all prime numbers in a range\n";
+	std::cout << "\nFind all prime numbers in a range\n";
 	v.clear();
 	a = 2; b = 100;
 	primeNumbersInRange(a, b, v);
-	cout << v.size() << " prime numbers in range [" << a << ", " << b << ")" << endl;
+	std::cout << v.size() << " prime numbers in range [" << a << ", " << b << ")\n";
 
-	cout << "\nCheck primeness of a couple of values around 1k\n";
+	std::cout << "\nCheck primeness of a couple of values around 1k\n";
 	a = 1024 + 1;
 	for ( a = 1025; a < 1050; a += 2) { // skip the even numbers
-		cout << a << (isPrime(a) ? " is a prime number" : " is not a prime number") << endl;
+		std::cout << a << (isPrime(a) ? " is a prime number\n" : " is not a prime number\n");
 	}
 
 	// test Fermat's method
-	cout << "\nFermat's factorization\n";
+	std::cout << "\nFermat's factorization\n";
 	a = 1024;
 	for (Integer i = a + 1; i < a + 25; i += 2) {
-		cout << i << " " << fermatFactorization(i) << endl;
+		std::cout << i << " " << fermatFactorization(i) << '\n';
 	}
 
-	cout << "\nFind all prime factors of a number\n";
+	std::cout << "\nFind all prime factors of a number\n";
 	// find all prime factors of a number
 	a = ipow(Integer(2), Integer(5))
 		* ipow(Integer(3), Integer(4))
@@ -62,7 +61,7 @@ try {
 	primefactors<nbits, uint32_t> factors;
 	primeFactorization(a, factors);
 	for (size_t i = 0; i < factors.size(); ++i) {
-		cout << " factor " << factors[i].first << " exponent " << factors[i].second << endl;
+		std::cout << " factor " << factors[i].first << " exponent " << factors[i].second << '\n';
 	}
 
 #ifdef NOW

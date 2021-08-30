@@ -8,11 +8,9 @@
 
 int main(int argc, char* argv[]) 
 try {
-	using namespace std;
-
 	int nrOfFailedTestCases = 0;
 
-	cerr << "TBD" << endl;
+	std::cerr << "TBD" << std::endl;
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

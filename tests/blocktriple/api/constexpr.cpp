@@ -60,55 +60,54 @@ namespace sw::experiment {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "blocktriple constexpr tests" << endl;
+	std::cout << "blocktriple constexpr tests\n";
 	
 	{
 		// decorated constructors
 		{
 			// this will round-up to 16 due to the fact that we only have 3 bits of significant
 			CONSTEXPRESSION blocktriple<3> a(15);  // signed long
-			cout << "constexpr constructor for type 'int'                 " << a << endl;
+			std::cout << "constexpr constructor for type 'int'                 " << a << '\n';
 		}
 		{
 			// this will stay 15 due to the fact that we have 4 bits of significant
 			CONSTEXPRESSION blocktriple<4> a(15);  // signed long
-			cout << "constexpr constructor for type 'int'                 " << a << endl;
+			std::cout << "constexpr constructor for type 'int'                 " << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a(2);  // signed long
-			cout << "constexpr constructor for type 'int'                 " << a << endl;
+			std::cout << "constexpr constructor for type 'int'                 " << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a(4ll);  // long long
-			cout << "constexpr constructor for type 'long long'           " << a << endl;
+			std::cout << "constexpr constructor for type 'long long'           " << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a(8ul);  // unsigned long
-			cout << "constexpr constructor for type 'unsigned long'       " << a << endl;
+			std::cout << "constexpr constructor for type 'unsigned long'       " << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a(16ull);  // unsigned long
-			cout << "constexpr constructor for type 'unsigned long long'  " << a << endl;
+			std::cout << "constexpr constructor for type 'unsigned long long'  " << a << '\n';
 		}
 #if BIT_CAST_SUPPORT
 		{
 			CONSTEXPRESSION blocktriple<32> a(1.125f);  // float
-			cout << "constexpr constructor for type 'float'               " << a << endl;
+			std::cout << "constexpr constructor for type 'float'               " << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a(1.0625);   // double
-			cout << "constexpr constructor for type 'double'              " << a << endl;
+			std::cout << "constexpr constructor for type 'double'              " << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a(1.03125l);  // long double
-			cout << "constexpr constructor for type 'long double'         " << a << endl;
+			std::cout << "constexpr constructor for type 'long double'         " << a << '\n';
 		}
 #endif // BIT_CAST_SUPPORT
 	}
@@ -117,24 +116,24 @@ try {
 		// assignment operators
 		{
 			CONSTEXPRESSION blocktriple<32> a = 1l;  // signed long
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a = 1ul;  // unsigned long
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 #if BIT_CAST_SUPPORT
 		{
 			CONSTEXPRESSION blocktriple<32> a = 1.0f;  // float
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a = 1.0;   // double
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 		{
 			CONSTEXPRESSION blocktriple<32> a = 1.0l;  // long double
-			cout << a << endl;
+			std::cout << a << '\n';
 		}
 #endif // BIT_CAST_SUPPORT
 	}
@@ -142,10 +141,10 @@ try {
 
 
 	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
+		std::cout << "FAIL\n";
 	}
 	else {
-		cout << "PASS" << endl;
+		std::cout << "PASS\n";
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -21,12 +21,9 @@
  posit of size nbits = 2 without exponent bits, i.e. es = 0.
 */
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
-
-	if (argc > 0) { cout << argv[0] << endl; }
 
 	// no randoms, 2-bit posits can be done exhaustively
 
@@ -38,17 +35,17 @@ try {
 	std::string tag = " posit<2,0>";
 
 #if defined(POSIT_FAST_POSIT_2_0)
-	cout << "Fast specialization posit<2,0> configuration tests" << endl;
+	std::cout << "Fast specialization posit<2,0> configuration tests\n";;
 #else
-	cout << "Reference posit<2,0> configuration tests" << endl;
+	std::cout << "Reference posit<2,0> configuration tests\n";
 #endif
 
 	posit<nbits,es> p;
-	cout << dynamic_range(p) << endl;
+	std::cout << dynamic_range(p) << "\n\n";
 
 	// special cases
-	cout << "Special case tests " << endl;
-	string test = "Initialize to zero: ";
+	std::cout << "Special case tests\n";;
+	std::string test = "Initialize to zero: ";
 	p = 0;
 	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
 	test = "Initialize to NAN";
@@ -69,7 +66,7 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	// logic tests
-	cout << "Logic operator tests " << endl;
+	std::cout << "Logic operator tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan          <nbits, es>(), tag, "    <          ");
@@ -78,12 +75,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
 	
 	// conversion tests
-	cout << "Assignment/conversion tests " << endl;
+	std::cout << "Assignment/conversion tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign ");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   ");
 	
 	// arithmetic tests
-	cout << "Arithmetic tests " << endl;
+	std::cout << "Arithmetic tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(bReportIndividualTestCases), tag, "add            ");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(bReportIndividualTestCases), tag, "subtract       ");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(bReportIndividualTestCases), tag, "multiply       ");

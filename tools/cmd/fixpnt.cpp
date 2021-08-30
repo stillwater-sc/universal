@@ -34,15 +34,14 @@ void attributes(const FixedPoint& v) {
 // receive a float and print its components
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc != 2) {
-		cerr << "fixpnt : components of a fixed-point value\n";
-		cerr << "Show the sign/scale/fraction components of a fixed-point value.\n";
-		cerr << "Usage: fixpnt float_value\n";
-		cerr << "Example: fixpnt 1.0625\n";
-		cerr << msg << endl;
+		std::cerr << "fixpnt : components of a fixed-point value\n";
+		std::cerr << "Show the sign/scale/fraction components of a fixed-point value.\n";
+		std::cerr << "Usage: fixpnt float_value\n";
+		std::cerr << "Example: fixpnt 1.0625\n";
+		std::cerr << msg << '\n';
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	double d = atof(argv[1]);

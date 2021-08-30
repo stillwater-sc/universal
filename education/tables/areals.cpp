@@ -19,7 +19,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// Usage: areals [-ubit] [-csv]
@@ -35,11 +34,9 @@ try {
 		if (std::string(argv[2]) == std::string("-ubit")) ubit = true;
 		if (std::string(argv[2]) == std::string("-csv")) csv = true;
 	}
-	cout << "Generate value tables for areal configurations" << endl;
+	std::cout << "Generate value tables for areal configurations\n";
 
 #if MANUAL_TESTING
-
-
 
 	GenerateArealTable<5, 1>(cout, ubit, csv);
 	GenerateArealTable<5, 2>(cout, ubit, csv);
@@ -64,25 +61,25 @@ try {
 	*/
 
 #else // !MANUAL_TESTING
-	GenerateArealTable<4, 1>(cout, ubit, csv);
+	GenerateArealTable<4, 1>(std::cout, ubit, csv);
 
-	GenerateArealTable<5, 1>(cout, ubit, csv);
-	GenerateArealTable<5, 2>(cout, ubit, csv);
+	GenerateArealTable<5, 1>(std::cout, ubit, csv);
+	GenerateArealTable<5, 2>(std::cout, ubit, csv);
 
-	GenerateArealTable<6, 1>(cout, ubit, csv);
-	GenerateArealTable<6, 2>(cout, ubit, csv);
-	GenerateArealTable<6, 3>(cout, ubit, csv);
+	GenerateArealTable<6, 1>(std::cout, ubit, csv);
+	GenerateArealTable<6, 2>(std::cout, ubit, csv);
+	GenerateArealTable<6, 3>(std::cout, ubit, csv);
 
-	GenerateArealTable<7, 1>(cout, ubit, csv);
-	GenerateArealTable<7, 2>(cout, ubit, csv);
-	GenerateArealTable<7, 3>(cout, ubit, csv);
-	GenerateArealTable<7, 4>(cout, ubit, csv);
+	GenerateArealTable<7, 1>(std::cout, ubit, csv);
+	GenerateArealTable<7, 2>(std::cout, ubit, csv);
+	GenerateArealTable<7, 3>(std::cout, ubit, csv);
+	GenerateArealTable<7, 4>(std::cout, ubit, csv);
 
-	GenerateArealTable<8, 1>(cout, ubit, csv);
-	GenerateArealTable<8, 2>(cout, ubit, csv);
-	GenerateArealTable<8, 3>(cout, ubit, csv);
-	GenerateArealTable<8, 4>(cout, ubit, csv);
-	GenerateArealTable<8, 5>(cout, ubit, csv);
+	GenerateArealTable<8, 1>(std::cout, ubit, csv);
+	GenerateArealTable<8, 2>(std::cout, ubit, csv);
+	GenerateArealTable<8, 3>(std::cout, ubit, csv);
+	GenerateArealTable<8, 4>(std::cout, ubit, csv);
+	GenerateArealTable<8, 5>(std::cout, ubit, csv);
 
 #endif
 

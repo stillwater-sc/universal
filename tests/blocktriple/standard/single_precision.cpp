@@ -15,7 +15,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -23,7 +22,7 @@ try {
 	int nrOfFailedTestCases = 0;
 	std::string tag = " blocktriple<23>";
 
-	cout << "Standard single-precision blocktriple<23> configuration tests" << endl;
+	std::cout << "Standard single-precision blocktriple<23> configuration tests\n";
 
 #if MANUAL_TESTING
 

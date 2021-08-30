@@ -107,14 +107,13 @@ std::string properties(const std::string& label) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "minpos/epsilon/maxpos for different number systems " << endl;
+	std::cout << "minpos/epsilon/maxpos for different number systems\n";
 
 	// report on smallest number, precision and dynamic range of the number system
 
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 
 //	std::cout << "Fibonacci(45) = " << fibonacci(45) << '\n';
 //	std::cout << "posit<16,2> | 16 |  " << eps(16) << '\n';
@@ -169,8 +168,8 @@ try {
 	std::cout << properties<240, 2>("posit<240,2>");
 	std::cout << properties<256, 2>("posit<256,2>");
 
-	cout << setprecision(precision);
-	cout << endl;
+	std::cout << std::setprecision(precision);
+	std::cout << std::endl;
 	
 	return EXIT_SUCCESS;
 }

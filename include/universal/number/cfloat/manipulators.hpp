@@ -24,37 +24,47 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 		<< nbits << ", "
 		<< es << ", "
 		<< typeid(bt).name() << ", "
-		<< (hasSubnormals ? "hasSubnormals, " : "no subnormals, ")
-		<< (hasSupernormals ? "hasSupernormals, " : "no supernormals, ")
-		<< (isSaturating ? "isSaturating>" : "not saturating>");
+		<< (hasSubnormals ? "hasSubnormals, " : "noSubnormals, ")
+		<< (hasSupernormals ? "hasSupernormals, " : "noSupernormals, ")
+		<< (isSaturating ? "Saturating>" : "notSaturating>");
 	return s.str();
 }
 
+// print subnormals of the cfloat configuration
 template<typename cfloatConfiguration>
 void subnormals() {
 	constexpr size_t nbits = cfloatConfiguration::nbits;
 	constexpr size_t es = cfloatConfiguration::es;
 	constexpr size_t fbits = cfloatConfiguration::fbits;
 	using bt = typename cfloatConfiguration::BlockType;
-	cfloat<nbits, es, bt> a{ 0 };
-	std::cout << type_tag(a) << '\n';
+	constexpr bool hasSubnormals = cfloatConfiguration::hasSubnormals;
+	constexpr bool hasSupernormals = cfloatConfiguration::hasSupernormals;
+	constexpr bool isSaturating = cfloatConfiguration::isSaturating;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
+
 	++a;
-	if constexpr (nbits < 65) {
-		for (size_t i = 0; i < fbits; ++i) {
-			std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
-			uint64_t fraction = a.fraction_ull();
-			fraction <<= 1;
-			a.setfraction(fraction);
+	if constexpr (hasSubnormals) {
+		std::cout << type_tag(a) << " subnormals\n";
+		if constexpr (nbits < 65) {
+			for (size_t i = 0; i < fbits; ++i) {
+				std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
+				uint64_t fraction = a.fraction_ull();
+				fraction <<= 1;
+				a.setfraction(fraction);
+			}
+		}
+		else {
+			blockbinary<fbits, bt> fraction{ 0 };
+			for (size_t i = 0; i < fbits; ++i) {
+				std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
+				a.fraction(fraction);
+				fraction <<= 1;
+				a.setfraction(fraction);
+			}
 		}
 	}
 	else {
-		blockbinary<fbits, bt> fraction{ 0 };
-		for (size_t i = 0; i < fbits; ++i) {
-			std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
-			a.fraction(fraction);
-			fraction <<= 1;
-			a.setfraction(fraction);
-		}
+		std::cout << type_tag(a) << " has no subnormals\n";
 	}
 }
 
@@ -78,8 +88,8 @@ std::string dynamic_range(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, 
 }
 
 // Generate a string representing the cfloat components: sign, exponent, faction and value
-template<size_t nbits, size_t es, typename bt>
-std::string components(const cfloat<nbits, es, bt>& v) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string components(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	std::stringstream s;
 	bool sign{ false };
 	blockbinary<v.es, bt> e;
@@ -97,8 +107,8 @@ std::string components(const cfloat<nbits, es, bt>& v) {
 }
 
 // generate a binary string for cfloat
-template<size_t nbits, size_t es, typename bt>
-inline std::string to_hex(const cfloat<nbits, es, bt>& v) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	constexpr size_t bitsInByte = 8;
 	constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -117,17 +127,17 @@ inline std::string to_hex(const cfloat<nbits, es, bt>& v) {
 }
 
 // generate a cfloat format ASCII hex format nbits.esxNN...NNa
-template<size_t nbits, size_t es, typename bt>
-inline std::string hex_print(const cfloat<nbits, es, bt>& r) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::string hex_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
 	std::stringstream s;
-	s << nbits << '.' << es << 'x' << to_hex(r) << 'r';
+	s << nbits << '.' << es << 'x' << to_hex(c) << 'c';
 	return s.str();
 }
 
-template<size_t nbits, size_t es, typename bt>
-std::string pretty_print(const cfloat<nbits, es, bt>& r) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
 	std::stringstream s;
-	constexpr size_t fbits = cfloat<nbits, es, bt>::fbits;
+	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
 	bool sign{ false };
 	blockbinary<es, bt> e;
 	blockbinary<fbits, bt> f;
@@ -151,14 +161,14 @@ std::string pretty_print(const cfloat<nbits, es, bt>& r) {
 	return s.str();
 }
 
-template<size_t nbits, size_t es, typename bt>
-std::string info_print(const cfloat<nbits, es, bt>& p, int printPrecision = 17) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string info_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& p, int printPrecision = 17) {
 	return "TBD";
 }
 
 // generate a binary, color-coded representation of the cfloat
-template<size_t nbits, size_t es, typename bt>
-std::string color_print(const cfloat<nbits, es, bt>& r) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
 	using Real = cfloat<nbits, es, bt>;
 	std::stringstream s;
 	bool sign{ false };

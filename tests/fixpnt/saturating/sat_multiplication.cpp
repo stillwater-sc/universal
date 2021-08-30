@@ -47,7 +47,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -120,7 +119,7 @@ try {
 	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
 #else
 
-	cout << "Fixed-point modular multiplication validation" << endl;
+	std::cout << "Fixed-point saturating multiplication validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Saturating, uint8_t>(true), "fixpnt<4,0,Saturating,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Saturating, uint8_t>(true), "fixpnt<4,1,Saturating,uint8_t>", "multiplication");

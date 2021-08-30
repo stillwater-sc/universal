@@ -9,5 +9,20 @@ compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfl
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/logic" "${LOGIC_SRC}")
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/conversion" "${CONVERSION_SRC}")
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic/non-saturating/no-sub-no-super" "${ARITHMETIC_NONSAT_NONE_SRC}")
+compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic/non-saturating/subnormal" "${ARITHMETIC_NONSAT_SUB_SRC}")
+compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic/non-saturating/supernormal" "${ARITHMETIC_NONSAT_SUPER_SRC}")
+compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic/non-saturating/subnormal-supernormal" "${ARITHMETIC_NONSAT_BOTH_SRC}")
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/standard" "${STANDARD_SRC}")
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/math" "${MATH_SRC}")
+
+# non-saturating variety
+add_subdirectory("arithmetic/nonsaturating/nosubsuper")
+add_subdirectory("arithmetic/nonsaturating/subnormal")
+add_subdirectory("arithmetic/nonsaturating/supernormal")
+add_subdirectory("arithmetic/nonsaturating/subsuper")
+# saturating variety
+add_subdirectory("arithmetic/saturating/nosubsuper")
+add_subdirectory("arithmetic/saturating/subnormal")
+add_subdirectory("arithmetic/saturating/supernormal")
+add_subdirectory("arithmetic/saturating/subsuper")

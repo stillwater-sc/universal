@@ -37,13 +37,12 @@ void GenerateTestCase(Ty fa) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	cout << "Posit negation validation" << endl;
+	std::cout << "Posit negation validation\n";
 
 	std::string tag = "Negation failed: ";
 

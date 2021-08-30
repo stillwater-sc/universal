@@ -1,0 +1,32 @@
+cfloat conversion cases
+
+cfloat with less than 23 bits of fraction  : cfloat<nbits, es, bt> with nbits - es - 1 < 23
+
+
+cfloat with less than 64 bits of fraction : cfloat<nbits, es, bt> with nbits - es -1 < 64
+   can we use a native uint64_t to gather the representative bits?
+no: to gather the representative bits in a uint64_t, ALL the bits, sign, exponent, and fraction need to fit
+an IEEE double will have 1 sign, 11 exponent bits, and 52 fraction bits
+a possible cfloat with more than es > 11 exponent bits would not be representable in a uint64_t
+
+
+inputs:
+	float: 1 sign, 8 exponent bits, 23 fraction bits
+
+output:
+	cfloat<35, 11, bt>: 1 sign, 11 exponent bits, 23 fraction bits
+
+
+two cases to process: cfloat with nbits < 64 and nbits > 64
+
+
+or, we construct sign, exponent, and fraction fields in a native type, and compose the target cfloat
+depending on nbits fitting in a native uint64_t type:
+conversion:
+	extract source bit fields: this is independent of the cfloat nbits parameter
+	if constexpr (nbits < 64) {
+		aggregate in native uint64_t
+	}
+	else {
+		aggregate in block-aware shifts
+	}

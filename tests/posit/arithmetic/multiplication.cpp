@@ -106,13 +106,12 @@ void DifficultRoundingCases() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	cout << "Posit multiplication validation" << endl;
+	std::cout << "Posit multiplication validation\n";
 
 	std::string tag = "Multiplication failed: ";
 

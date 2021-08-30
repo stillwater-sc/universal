@@ -156,7 +156,6 @@ bool less(const decimal& lhs, const decimal& rhs) {
 
 
 void examples() {
-	using namespace std;
 	using namespace sw::universal;
 	decimal d1, d2, d3;
 	
@@ -165,104 +164,97 @@ void examples() {
 	d1 = -49;
 	d2 =  50;
 	d3 = d2 + d1;
-	cout << d1 << " + " << d2 << " = " << d3 << endl;
-
-	//cin >> d2;
-	//cout << d2 << endl;
-
-
+	std::cout << d1 << " + " << d2 << " = " << d3 << '\n';
 
 	std::string val = "1234567890";
 	if (!d1.parse(val)) {
-		cerr << "failed to parse the decimal value -" << val << "-\n";
+		std::cerr << "failed to parse the decimal value -" << val << "-\n";
 	}
-	cout << d1 << endl;
+	std::cout << d1 << '\n';
 
 	val = "-123";
 	if (!d2.parse(val)) {
-		cerr << "failed to parse the decimal value -" << val << "-\n";
+		std::cerr << "failed to parse the decimal value -" << val << "-\n";
 	}
-	cout << d2 << endl;
+	std::cout << d2 << '\n';
 
 	val = "+123";
 	if (!d3.parse(val)) {
-		cerr << "failed to parse the decimal value -" << val << "-\n";
+		std::cerr << "failed to parse the decimal value -" << val << "-\n";
 	}
-	cout << d3 << endl;
+	std::cout << d3 << '\n';
 
-	d1.setzero();		cout << d1.iszero() << endl;
-	d1.push_back(0);	cout << d1.iszero() << endl;
+	d1.setzero();		std::cout << d1.iszero() << '\n';
+	d1.push_back(0);	std::cout << d1.iszero() << '\n';
 
-	cout << "Conversions\n";
+	std::cout << "Conversions\n";
 	// signed integers
 	d2 = (char)1;
-	if (d2 != 1) cout << "assignment conversion (char) failed\n";
+	if (d2 != 1) std::cout << "assignment conversion (char) failed\n";
 	d2 = (short)2;
-	if (d2 != 2) cout << "assignment conversion (short) failed\n";
+	if (d2 != 2) std::cout << "assignment conversion (short) failed\n";
 	d2 = (int)3;
-	if (d2 != 3) cout << "assignment conversion (int) failed\n";
+	if (d2 != 3) std::cout << "assignment conversion (int) failed\n";
 	d2 = (long)4;
-	if (d2 != 4) cout << "assignment conversion (long) failed\n";
+	if (d2 != 4) std::cout << "assignment conversion (long) failed\n";
 	d2 = (long long)5;
-	if (d2 != 5) cout << "assignment conversion (long long) failed\n";
+	if (d2 != 5) std::cout << "assignment conversion (long long) failed\n";
 	// unsigned integers
 	d2 = (unsigned char)6;
-	if (d2 != 6) cout << "assignment conversion (unsigned char) failed\n";
+	if (d2 != 6) std::cout << "assignment conversion (unsigned char) failed\n";
 	d2 = (unsigned short)7;
-	if (d2 != 7) cout << "assignment conversion (unsigned short) failed\n";
+	if (d2 != 7) std::cout << "assignment conversion (unsigned short) failed\n";
 	d2 = (unsigned int)8;
-	if (d2 != 8) cout << "assignment conversion (unsigned int) failed\n";
+	if (d2 != 8) std::cout << "assignment conversion (unsigned int) failed\n";
 	d2 = (unsigned long)9;
-	if (d2 != 9) cout << "assignment conversion (unsigned long) failed\n";
+	if (d2 != 9) std::cout << "assignment conversion (unsigned long) failed\n";
 	d2 = (unsigned long long)10;
-	if (d2 != 10) cout << "assignment conversion (unsigned long long) failed\n";
+	if (d2 != 10) std::cout << "assignment conversion (unsigned long long) failed\n";
 
-	cout << "char type: " << numeric_limits<char>::digits << " max value " << (int)numeric_limits<char>::max() << endl;
-	cout << "schar type : " << numeric_limits<signed char>::digits << " max value " << (int)numeric_limits<signed char>::max() << endl;
+	std::cout << "char type: " << std::numeric_limits<char>::digits << " max value " << (int)std::numeric_limits<char>::max() << '\n';
+	std::cout << "schar type : " << std::numeric_limits<signed char>::digits << " max value " << (int)std::numeric_limits<signed char>::max() << '\n';
 
 	unsigned char utest = 255;
-	cout << " char       = " << (uint16_t)utest << endl;
+	std::cout << " char       = " << (uint16_t)utest << '\n';
 	signed char test = 127;
-	cout << "signed char = " << (int)test << endl;
+	std::cout << "signed char = " << (int)test << '\n';
 }
 
 template<typename Ty>
 void reportType(Ty v) {
-	using namespace std;
-
-	cout << "Numeric limits for type " << typeid(v).name() << '\n';
-	cout << "Type              : " << typeid(v).name() << endl;
+	std::cout << "Numeric limits for type " << typeid(v).name() << '\n';
+	std::cout << "Type              : " << typeid(v).name() << '\n';
 #if _MSC_VER
-	cout << "mangled C++ type  : " << typeid(v).raw_name() << endl;
+	std::cout << "mangled C++ type  : " << typeid(v).raw_name() << '\n';
 #endif
-	cout << "min()             : " << numeric_limits<Ty>::min() << '\n';
-	cout << "max()             : " << numeric_limits<Ty>::max() << '\n';
-	cout << "lowest()          : " << numeric_limits<Ty>::lowest() << '\n';
-	cout << "epsilon()         : " << numeric_limits<Ty>::epsilon() << '\n';
+	std::cout << "min()             : " << std::numeric_limits<Ty>::min() << '\n';
+	std::cout << "max()             : " << std::numeric_limits<Ty>::max() << '\n';
+	std::cout << "lowest()          : " << std::numeric_limits<Ty>::lowest() << '\n';
+	std::cout << "epsilon()         : " << std::numeric_limits<Ty>::epsilon() << '\n';
 
-	cout << "digits            : " << numeric_limits<Ty>::digits << '\n';
-	cout << "digits10          : " << numeric_limits<Ty>::digits10 << '\n';
-	cout << "max_digits10      : " << numeric_limits<Ty>::max_digits10 << '\n';
-	cout << "is_signed         : " << numeric_limits<Ty>::is_signed << '\n';
-	cout << "is_integer        : " << numeric_limits<Ty>::is_integer << '\n';
-	cout << "is_exact          : " << numeric_limits<Ty>::is_exact << '\n';
+	std::cout << "digits            : " << std::numeric_limits<Ty>::digits << '\n';
+	std::cout << "digits10          : " << std::numeric_limits<Ty>::digits10 << '\n';
+	std::cout << "max_digits10      : " << std::numeric_limits<Ty>::max_digits10 << '\n';
+	std::cout << "is_signed         : " << std::numeric_limits<Ty>::is_signed << '\n';
+	std::cout << "is_integer        : " << std::numeric_limits<Ty>::is_integer << '\n';
+	std::cout << "is_exact          : " << std::numeric_limits<Ty>::is_exact << '\n';
 
-	cout << "min_exponent      : " << numeric_limits<Ty>::min_exponent << '\n';
-	cout << "min_exponent10    : " << numeric_limits<Ty>::min_exponent10 << '\n';
-	cout << "max_exponent      : " << numeric_limits<Ty>::max_exponent << '\n';
-	cout << "max_exponent10    : " << numeric_limits<Ty>::max_exponent10 << '\n';
-	cout << "has_infinity      : " << numeric_limits<Ty>::has_infinity << '\n';
-	cout << "has_quiet_NaN     : " << numeric_limits<Ty>::has_quiet_NaN << '\n';
-	cout << "has_signaling_NaN : " << numeric_limits<Ty>::has_signaling_NaN << '\n';
-	cout << "has_denorm        : " << numeric_limits<Ty>::has_denorm << '\n';
-	cout << "has_denorm_loss   : " << numeric_limits<Ty>::has_denorm_loss << '\n';
+	std::cout << "min_exponent      : " << std::numeric_limits<Ty>::min_exponent << '\n';
+	std::cout << "min_exponent10    : " << std::numeric_limits<Ty>::min_exponent10 << '\n';
+	std::cout << "max_exponent      : " << std::numeric_limits<Ty>::max_exponent << '\n';
+	std::cout << "max_exponent10    : " << std::numeric_limits<Ty>::max_exponent10 << '\n';
+	std::cout << "has_infinity      : " << std::numeric_limits<Ty>::has_infinity << '\n';
+	std::cout << "has_quiet_NaN     : " << std::numeric_limits<Ty>::has_quiet_NaN << '\n';
+	std::cout << "has_signaling_NaN : " << std::numeric_limits<Ty>::has_signaling_NaN << '\n';
+	std::cout << "has_denorm        : " << std::numeric_limits<Ty>::has_denorm << '\n';
+	std::cout << "has_denorm_loss   : " << std::numeric_limits<Ty>::has_denorm_loss << '\n';
 
-	cout << "is_iec559         : " << numeric_limits<Ty>::is_iec559 << '\n';
-	cout << "is_bounded        : " << numeric_limits<Ty>::is_bounded << '\n';
-	cout << "is_modulo         : " << numeric_limits<Ty>::is_modulo << '\n';
-	cout << "traps             : " << numeric_limits<Ty>::traps << '\n';
-	cout << "tinyness_before   : " << numeric_limits<Ty>::tinyness_before << '\n';
-	cout << "round_style       : " << numeric_limits<Ty>::round_style << '\n';
+	std::cout << "is_iec559         : " << std::numeric_limits<Ty>::is_iec559 << '\n';
+	std::cout << "is_bounded        : " << std::numeric_limits<Ty>::is_bounded << '\n';
+	std::cout << "is_modulo         : " << std::numeric_limits<Ty>::is_modulo << '\n';
+	std::cout << "traps             : " << std::numeric_limits<Ty>::traps << '\n';
+	std::cout << "tinyness_before   : " << std::numeric_limits<Ty>::tinyness_before << '\n';
+	std::cout << "round_style       : " << std::numeric_limits<Ty>::round_style << '\n';
 }
 
 void findLargestMultipleTest() {
@@ -286,21 +278,20 @@ void findLargestMultipleTest() {
 }
 
 int BigNumberComputation() {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "big number computation\n";
+	std::cout << "big number computation\n";
 	int nrOfFailedTestCases = 0;
 	decimal a, b, c, d, e, f;
-	a.parse("1234567890"); cout << a << endl;
-	b.parse("5432109876"); cout << b << endl;
-	c = decimal(1) << 9; cout << c << endl;
-	d = a * b * c; cout << d << endl;
-	e = d / a;  cout << e << endl;
-	f = e / b; cout << f << endl;
+	a.parse("1234567890"); std::cout << a << '\n';
+	b.parse("5432109876"); std::cout << b << '\n';
+	c = decimal(1) << 9; std::cout << c << '\n';
+	d = a * b * c; std::cout << d << '\n';
+	e = d / a;  std::cout << e << '\n';
+	f = e / b; std::cout << f << '\n';
 	if (c != f) {
 		++nrOfFailedTestCases;
-		cout << "FAIL: " << c << " is not equal to " << f << endl;
+		std::cout << "FAIL: " << c << " is not equal to " << f << '\n';
 	}
 	return nrOfFailedTestCases;
 }
@@ -310,7 +301,6 @@ int BigNumberComputation() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -325,27 +315,27 @@ try {
 	d1 = -1'234'567'890;
 	d2 = +1'234'567'890;
 	d3 = d1 + d2;
-	cout << d1 << " + " << d2 << " = " << d3 << endl;
+	std::cout << d1 << " + " << d2 << " = " << d3 << '\n';
 
 	// double conversion is not implemented yet
 	d1 = -0.25;
-	cout << d1 << endl;
+	std::cout << d1 << '\n';
 	d1 = 2.5;
-	cout << d1 << endl;
+	std::cout << d1 << '\n';
 	d1 = 123456789.5;
-	cout << d1 << endl;
+	std::cout << d1 << '\n';
 	d1 = 1.234567895e10;
-	cout << d1 << endl;
+	std::cout << d1 << '\n';
 	d1 = 1.234567895e100;
-	cout << d1 << endl;
+	std::cout << d1 << '\n';
 	return 0;
 	//reportType(d1);
 
 	findLargestMultipleTest();
 
 	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-	cout << d1 << endl;
-	cout << d1 + d1 << endl;
+	std::cout << d1 << '\n';
+	std::cout << d1 + d1 << '\n';
 
 	long rangeBound = 10; // 100;
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
@@ -358,10 +348,10 @@ try {
 	nrOfFailedTestCases = 0; // in manual testing ignore failures
 
 #else
-	std::cout << "Decimal Arithmetic verfication" << std::endl;
+	std::cout << "Decimal Arithmetic verfication\n";
 
 	long rangeBound = 100;
-	cout << "quick sample test with range bound: " << rangeBound << endl;
+	std::cout << "quick sample test with range bound: " << rangeBound << '\n';
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
@@ -372,7 +362,7 @@ try {
 #if STRESS_TESTING
 
 	long stressRangeBound = (1 << 9);
-	cout << "stress testing with range bound: " << stressRangeBound << endl;
+	std::cout << "stress testing with range bound: " << stressRangeBound << '\n';
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", stressRangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", stressRangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", stressRangeBound, bReportIndividualTestCases), "decimal", "multiplication");

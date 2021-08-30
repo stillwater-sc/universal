@@ -189,7 +189,6 @@ void compareSmallcfloats(float f) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -266,7 +265,7 @@ try {
 
 #else  // !MANUAL_TESTING
 	bool bReportIndividualTestCases = false;
-	cout << "cfloat conversion from float validation" << endl;
+	std::cout << "cfloat conversion from float validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint8_t>(bReportIndividualTestCases), tag, "cfloat<32, 8, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint16_t>(bReportIndividualTestCases), tag, "cfloat<32, 8, uint16_t>");

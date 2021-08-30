@@ -245,7 +245,6 @@ namespace sw::universal {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -259,15 +258,14 @@ try {
 	nrOfFailedTestCases = 0;
 
 #else
-	cout << "AREAL logic operator validation" << endl;
+	std::cout << "AREAL logic operator validation\n";
 
 	//bool bReportIndividualTestCases = false;
 	std::string tag = "Comparison failed: ";
 
 	areal<16, 1> a;
 
-	cout << "Logic: operator==()" << endl;
-
+	std::cout << "Logic: operator==()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal< 4, 1> >(), "areal< 4,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal< 5, 1> >(), "areal< 5,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal< 6, 1> >(), "areal< 6,1>", "==");
@@ -301,7 +299,7 @@ try {
 		ReportTestResult(0, "areal<16,1> == 0.0l", "== long double literal");
 	}
 	
-	cout << "Logic: operator!=()" << endl;
+	std::cout << "Logic: operator!=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal< 4, 1> >(), "areal< 4,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal< 5, 1> >(), "areal< 5,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal< 6, 1> >(), "areal< 6,1>", "!=");
@@ -337,7 +335,7 @@ try {
 	}
 
 #ifdef AREAL_SUBTRACT_IS_IMPLEMENTED
-	cout << "Logic: operator<()" << endl;
+	std::cout << "Logic: operator<()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 4, 1> >(), "areal< 4,1>", "<");
 	return 0;
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 5, 1> >(), "areal< 5,1>", "<");
@@ -373,7 +371,7 @@ try {
 		ReportTestResult(0, "areal<16,1> < 0.0l", "== long double literal");
 	}
 
-	cout << "Logic: operator<=()" << endl;
+	std::cout << "Logic: operator<=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 4, 1> >(), "areal< 4,1>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 5, 1> >(), "areal< 5,1>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 6, 1> >(), "areal< 6,1>", "<");

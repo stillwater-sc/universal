@@ -106,19 +106,18 @@ std::string report_compiler_version() {
 
 template<typename Scalar>
 void Represent(std::ostream& ostr, Scalar s, std::streamsize precision = 17, bool hexFormat = false) {
-	using namespace std;
 	// preserve the existing ostream precision
-	auto old_precision = cout.precision();
-	ostr << setprecision(precision);
+	auto old_precision = std::cout.precision();
+	ostr << std::setprecision(precision);
 
-	ostr << setw(15) << s;
+	ostr << std::setw(15) << s;
 	if (hexFormat) {
-		ostr << " : " << setw(70) << color_print(s) << " : " << hex_format(s);
+		ostr << " : " << std::setw(70) << sw::universal::color_print(s) << " : " << sw::universal::hex_format(s);
 	}
-	ostr << endl;
+	ostr << std::endl;
 
 	// restore the previous ostream precision
-	ostr << setprecision(old_precision);
+	ostr << std::setprecision(old_precision);
 }
 
 void Sample(std::ostream& ostr, long double constant) {
@@ -135,7 +134,6 @@ void Sample(std::ostream& ostr, long double constant) {
 }
 
 void CompareIEEEValues(std::ostream& ostr, long double constant) {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr int f_prec = std::numeric_limits<float>::max_digits10;
@@ -156,26 +154,25 @@ void CompareIEEEValues(std::ostream& ostr, long double constant) {
 
 	int width = q_prec + 5;
 
-	std::streamsize old_precision = cout.precision();
+	std::streamsize old_precision = std::cout.precision();
 
-	ostr << report_compiler_version() << endl;
+	ostr << report_compiler_version() << std::endl;
 	ostr << "float precision       : " << f_fbits << " bits\n";
 	ostr << "double precision      : " << d_fbits << " bits\n";
 	ostr << "long double precision : " << q_fbits << " bits\n";
 
-	cout << endl;
+	std::cout << std::endl;
 
-//	ostr << "input value: " << setprecision(f_prec) << setw(width) << constant << endl;
-	ostr << "      float: " << setprecision(f_prec) << setw(width) << f << " " << to_triple(vf) << endl;
-	ostr << "     double: " << setprecision(d_prec) << setw(width) << d << " " << to_triple(vd) << endl;
-	ostr << "long double: " << setprecision(q_prec) << setw(width) << q << " " << to_triple(vq) << endl;
+//	ostr << "input value: " << std::setprecision(f_prec) << std::setw(width) << constant << endl;
+	ostr << "      float: " << std::setprecision(f_prec) << std::setw(width) << f << " " << to_triple(vf) << std::endl;
+	ostr << "     double: " << std::setprecision(d_prec) << std::setw(width) << d << " " << to_triple(vd) << std::endl;
+	ostr << "long double: " << std::setprecision(q_prec) << std::setw(width) << q << " " << to_triple(vq) << std::endl;
 
-	cout << setprecision(old_precision);
+	std::cout << std::setprecision(old_precision);
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//constexpr size_t nbits = 32;
@@ -191,32 +188,27 @@ try {
 	long double NA = 6.02214076e23;  // (mol−1)
 
 
-	cout << "The Planck constant h is exactly 6.62607015*10^-34 joule - second.\n";
-	Sample(cout, h);
-	cout << endl;
+	std::cout << "The Planck constant h is exactly 6.62607015*10^-34 joule - second.\n";
+	Sample(std::cout, h);
 
-	cout << "The elementary charge e is exactly 1.602176634*10^-19 coulomb.\n";
-	Sample(cout, e);
-	cout << endl;
+	std::cout << "The elementary charge e is exactly 1.602176634*10^-19 coulomb.\n";
+	Sample(std::cout, e);
 
-	cout << "The Boltzmann constant k is exactly 1.380649*10^-23 joule per kelvin.\n";
-	Sample(cout, k);
-	cout << endl;
+	std::cout << "The Boltzmann constant k is exactly 1.380649*10^-23 joule per kelvin.\n";
+	Sample(std::cout, k);
 
-	cout << "The Avogadro constant NA is exactly 6.02214076*10^+23 reciprocal mole.\n";
-	Sample(cout, NA);
-	cout << endl;
+	std::cout << "The Avogadro constant NA is exactly 6.02214076*10^+23 reciprocal mole.\n";
+	Sample(std::cout, NA);
 
-
-	cout << "----\n\n";
-	CompareIEEEValues(cout, h);
+	std::cout << "----\n\n";
+	CompareIEEEValues(std::cout, h);
 
 	integer<128> i;
 	if (parse("66260701500000000000000000000000000", i)) {
-		cout << "h = " << i << endl;
+		std::cout << "h = " << i << '\n';
 	}
 	else {
-		cerr << "error parsing h" << endl;
+		std::cerr << "error parsing h\n";
 	}
 
 	return EXIT_SUCCESS;

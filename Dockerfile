@@ -45,12 +45,12 @@ WORKDIR /home/stillwater/universal/build
 # test RUN statement to speed-up CI testing
 #RUN cmake -DBUILD_VALIDATION_HW=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
 # full RUN statement to execute full regression test suite
-RUN cmake -DBUILD_CI_CHECK=ON .. && make
+RUN cmake -DBUILD_ALL=ON .. && make
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Builder Version 3.32.1"]
+CMD ["echo", "Universal Numbers Library Builder Version 3.33.1"]
 
 
 # RELEASE stage
@@ -108,4 +108,4 @@ WORKDIR /home/stillwater/universal/build
 
 # the command 'make test' is run as part of the CI test pipeline of this release container
 
-CMD ["echo", "Universal Numbers Library Version 3.32.1"]
+CMD ["echo", "Universal Numbers Library Version 3.33.1"]

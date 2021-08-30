@@ -47,7 +47,6 @@ void GenerateTestCase(Ty a) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -61,7 +60,7 @@ try {
 	my_test_sqrt(0.25f);
 	GenerateTestCase<3, 1, float>(4.0f);
 	posit<3, 1> p(2.0000000001f);
-	cout << p.get() << endl;
+	std::cout << p.get() << '\n';
 
 	return 0;
 
@@ -89,11 +88,9 @@ try {
 		cout << "base " << base << " root " << root << endl;
 		base *= 2.0f;
 	}
-	cout << "sqrt(2.0) " << sw::universal::my_test_sqrt(2.0f) << endl;
+	std::cout << "sqrt(2.0) " << sw::universal::my_test_sqrt(2.0f) << '\n';
 
 #endif
-
-	cout << endl;
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<2, 0>("Manual Testing", true), "posit<2,0>", "sqrt");
@@ -112,7 +109,7 @@ try {
 
 #else
 
-	cout << "Posit sqrt validation" << endl;
+	std::cout << "Posit square root validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<2, 0>(bReportIndividualTestCases), "posit<2,0>", "sqrt");
 

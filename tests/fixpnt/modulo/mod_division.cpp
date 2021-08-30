@@ -137,22 +137,20 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 template<size_t nbits, size_t rbits>
 void GenerateValueTable() {
-	using namespace std;
 	using namespace sw::universal;
 	size_t NR_VALUES = (1 << nbits);
 
 	fixpnt<nbits, rbits> a;
-	cout << "Fixed-point type: " << typeid(a).name() << endl;
+	std::cout << "Fixed-point type: " << typeid(a).name() << '\n';
 
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
-		cout << to_binary(i,nbits) << " : " << to_binary(a) << " = " << setw(10) << a << endl;
+		std::cout << to_binary(i,nbits) << " : " << to_binary(a) << " = " << std::setw(10) << a << '\n';
 	}
 }
 
 template<size_t nbits, size_t rbits>
 void GenerateComparison(size_t a_bits, size_t b_bits) {
-	using namespace std;
 	using namespace sw::universal;
 
 	fixpnt<nbits, rbits> a, b, c;
@@ -163,31 +161,31 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 	float fb = float(b);
 	float fc = fa * fb;
 
-	cout << "fixpnt: " << a << " * " << b << " = " << c << " reference: " << fixpnt<nbits, rbits>(fc) << endl;
-	cout << "float : " << fa << " * " << fb << " = " << fc << endl;
+	std::cout << "fixpnt: " << a << " * " << b << " = " << c << " reference: " << fixpnt<nbits, rbits>(fc) << '\n';
+	std::cout << "float : " << fa << " * " << fb << " = " << fc << '\n';
 
 	{
-		cout << "multiplication trace\n";
+		std::cout << "multiplication trace\n";
 
 		blockbinary<2 * nbits> cc = unrounded_mul(a.getbb(), b.getbb());
 		bool roundUp = cc.roundingMode(rbits);
 		cc >>= rbits;
 		if (roundUp) ++cc;
 		fixpnt<nbits, rbits> result; result = cc; // select the lower nbits of the result
-		cout << "final result: " << result << endl;
+		std::cout << "final result: " << result << '\n';
 	}
 
-	cout << "fixpnt: " << c << " / " << a << " = " << c / a << " reference: " << fixpnt<nbits, rbits>(fc / fa) << endl;
-	cout << "fixpnt: " << c << " / " << b << " = " << c / b << " reference: " << fixpnt<nbits, rbits>(fc / fb) << endl;
-	cout << "float : " << fc << " / " << fa << " = " << fc / fa << endl;
-	cout << "float : " << fc << " / " << fb << " = " << fc / fb << endl;
+	std::cout << "fixpnt: " << c << " / " << a << " = " << c / a << " reference: " << fixpnt<nbits, rbits>(fc / fa) << '\n';
+	std::cout << "fixpnt: " << c << " / " << b << " = " << c / b << " reference: " << fixpnt<nbits, rbits>(fc / fb) << '\n';
+	std::cout << "float : " << fc << " / " << fa << " = " << fc / fa << '\n';
+	std::cout << "float : " << fc << " / " << fb << " = " << fc / fb << '\n';
 
 	{
-		cout << "division trace\n";
+		std::cout << "division trace\n";
 
 		{
-			cout << "----------------------------------------------\n";
-			std::cout << c << " / " << b << std::endl;
+			std::cout << "----------------------------------------------\n";
+			std::cout << c << " / " << b << '\n';
 
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits> roundingBits;
@@ -198,12 +196,12 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 			if (roundUp) ++a;
 			std::cout << " rounded " << aa << std::endl;
 			fixpnt<nbits, rbits> result; result = aa; // select the lower nbits of the result
-			cout << "final result: " << to_binary(result) << " : " << result << endl;
+			std::cout << "final result: " << to_binary(result) << " : " << result << '\n';
 		}
 
 		{
-			cout << "----------------------------------------------\n";
-			std::cout << c << " / " << a << std::endl;
+			std::cout << "----------------------------------------------\n";
+			std::cout << c << " / " << a << '\n';
 
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits> roundingBits;
@@ -212,21 +210,19 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 			bool roundUp = bb.roundingMode(rbits + roundingDecisionBits);
 			bb >>= rbits + nbits + roundingDecisionBits - 1;
 			if (roundUp) ++bb;
-			std::cout << " rounded " << bb << std::endl;
+			std::cout << " rounded " << bb << '\n';
 			fixpnt<nbits, rbits> result; result = bb; // select the lower nbits of the result
-			cout << "final result: " << to_binary(result) << " : " << result << endl;
+			std::cout << "final result: " << to_binary(result) << " : " << result << '\n';
 		}
-
 	}
-
 }
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -268,7 +264,7 @@ try {
 #else
 	bool bReportIndividualTestCases = false;
 
-	cout << "Fixed-point modular division validation" << endl;
+	std::cout << "Fixed-point modular division validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "division");

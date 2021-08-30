@@ -20,6 +20,23 @@
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
+/*
+   DESIGN and IMPLEMENTATION HISTORY
+
+   The first floating-point back-end design using value<> had a fraction 
+   bit parameter to select  among different normalizations for 
+   addition, multiplication, and division.
+   
+   But the normalization is NOT a generic op, it is very specific for 
+   add, mul, div, or sqrt, thus having a fully parameterized interface 
+   creates a state space for bugs that could get triggered by incorrect 
+   calling of the normalize method. Secondly, no efficient unit test was 
+   feasible as most of the state space would NOT be valid conversions.
+   Given that context of the experience with value<> we decided to clamp down
+   on this parameterization overkill and create explicit normalization 
+   conversions for add, mul, div, and sqrt. 
+ */
+
 namespace sw::universal {
 
 	/// <summary>
@@ -28,74 +45,205 @@ namespace sw::universal {
 	/// <typeparam name="bt">block storage type of representation</typeparam>
 	/// <param name="bReportIndividualTestCases">if true print individual test cases</param>
 	/// <returns></returns>
-	template<typename CfloatConfigurate>
-	int VerifyCfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
-		using namespace std;
+	template<typename CfloatConfiguration>
+	int VerifyCfloatToAddBlocktripleConversion(bool bReportIndividualTestCases) {
 		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfigurate::nbits;
-		constexpr size_t es = CfloatConfigurate::es;
-		using bt = typename CfloatConfigurate::BlockType;
-		constexpr size_t fbits = CfloatConfigurate::fbits;
-		constexpr size_t abits = CfloatConfigurate::abits;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+		constexpr size_t fbits = CfloatConfiguration::fbits;
+		constexpr size_t abits = CfloatConfiguration::abits;
 
 		int nrOfTestFailures{ 0 };
 		constexpr size_t NR_VALUES = (1u << nbits);
-		cfloat<nbits, es, bt> a;
-		blocktriple<fbits, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
 
 		if (bReportIndividualTestCases) a.constexprClassParameters();
 
-		for (size_t i = 0; i < NR_VALUES; ++i) {
-			a.setbits(i);
-			a.normalize(b);           // if normalize had a fraction bit parameter, we could support arbitrary conversions: TODO
-			if (double(a) != double(b)) {
-				if (a.isnan() && b.isnan()) continue;
-				if (a.isinf() && b.isinf()) continue;
+		{ // testing conversion of normalization for add and subtract
+			blocktriple<abits, BlockTripleOperator::ADD, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				a.normalizeAddition(b);
+				if (double(a) != double(b)) {
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
 
-				++nrOfTestFailures;
-				if (bReportIndividualTestCases) cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+					++nrOfTestFailures;
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+				}
 			}
 		}
 		return nrOfTestFailures;
 	}
 
-
-	template<typename CfloatConfigurate>
-	int VerifyBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
-		using namespace std;
+	template<typename CfloatConfiguration>
+	int VerifyCfloatToMulBlocktripleConversion(bool bReportIndividualTestCases) {
 		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfigurate::nbits;
-		constexpr size_t es = CfloatConfigurate::es;
-		using bt = typename CfloatConfigurate::BlockType;
-		//constexpr size_t fbits = CfloatConfigurate::fbits;
-		constexpr size_t abits = CfloatConfigurate::abits;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+		constexpr size_t mbits = CfloatConfiguration::mbits;
 
 		int nrOfTestFailures{ 0 };
 		constexpr size_t NR_VALUES = (1u << nbits);
-		cfloat<nbits, es, bt> a, nut;
-		blocktriple<abits+1, bt> b; // blocktriple that comes out of an addition or subtraction
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
 
 		if (bReportIndividualTestCases) a.constexprClassParameters();
 
+		{ // testing conversion of normalization for add and subtract
+			blocktriple<mbits, BlockTripleOperator::MUL, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				a.normalizeMultiplication(b);
+				if (double(a) != double(b)) {
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
+
+					++nrOfTestFailures;
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+				}
+			}
+		}
+		return nrOfTestFailures;
+	}
+
+	template<typename CfloatConfiguration>
+	int VerifyAddBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
+		using namespace sw::universal;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+		constexpr size_t fbits = CfloatConfiguration::fbits;
+
+		int nrOfTestFailures{ 0 };
+		constexpr size_t NR_VALUES = (1ull << nbits);
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+
+		if (bReportIndividualTestCases) a.constexprClassParameters();
+
+		{ // testing conversion of add and subtract outputs to cfloat
+			blocktriple<fbits, BlockTripleOperator::ADD, bt> b; // blocktriple type that comes out of an addition or subtraction operation
+
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				b = float(a); // we use a float as this verification test is only intended to be used for small cfloats and floats are easier to print and inspect
+				convert(b, nut);
+//				std::cout << "cfloat in  : " << to_binary(a) << " : " << a << '\n';
+//				std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+				if (a != nut) {
+					std::cout << "cfloat in  : " << to_binary(a) << " : " << a << '\n';
+					std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
+
+					++nrOfTestFailures;
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+				}
+			}
+		}
+		return nrOfTestFailures;
+	}
+
+	template<typename CfloatConfiguration>
+	int VerifyMulBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
+		using namespace sw::universal;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+		constexpr size_t fbits = CfloatConfiguration::fbits;
+
+		int nrOfTestFailures{ 0 };
+		constexpr size_t NR_VALUES = (1ull << nbits);
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+
+		if (bReportIndividualTestCases) a.constexprClassParameters();
+
+		{ // testing conversion of add and subtract outputs to cfloat
+			blocktriple<fbits, BlockTripleOperator::MUL, bt> b; // blocktriple type that comes out of a multiplication operation
+
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				b = float(a); // we use a float as this verification test is only intended to be used for small cfloats and floats are easier to print and inspect
+				convert(b, nut);
+				//				cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+				if (a != nut) {
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
+
+					++nrOfTestFailures;
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+				}
+			}
+		}
+		return nrOfTestFailures;
+	}
+}
+
+/*
+How do you test the conversion state space of blocktriple to cfloat.
+We need to convert the blocktriple that comes out of an ADD, a MUL, and a DIV operation.
+The blocktriples have bits that need to be rounded by convert.
+How do you test that rounding?
+
+Convert the blocktriple to a value.
+Use the cfloat operator=() to round. That is your reference. This assumes that cfloat operator=() has been validated.
+Use convert() to convert to a cfloat.
+Compare the operator=() and convert() cfloat patterns to check correctness
+ */
+template<typename CfloatConfiguration>
+int VerifyMulConvert(bool bReportIndividualTestCases) {
+	using namespace sw::universal;
+	constexpr size_t nbits = CfloatConfiguration::nbits;
+	constexpr size_t es = CfloatConfiguration::es;
+	using bt = typename CfloatConfiguration::BlockType;
+	constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+	constexpr size_t fbits = CfloatConfiguration::fbits;
+	constexpr size_t mbits = CfloatConfiguration::mbits;
+
+	int nrOfTestFailures{ 0 };
+	constexpr size_t NR_VALUES = (1ull << (mbits+1)); // the state space of the output of the MUL operator given fbits-szied operands
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+
+	if (bReportIndividualTestCases) a.constexprClassParameters();
+
+	{ // testing conversion of add and subtract outputs to cfloat
+		blocktriple<fbits, BlockTripleOperator::MUL, bt> b; // blocktriple type that comes out of an addition or subtraction operation
 		for (size_t i = 0; i < NR_VALUES; ++i) {
-			a.setbits(i);
-			// we can't use this to test the output of the ALU conversion use case
-			// as this is the input case:
-			// a.normalizeAddition(b);           // if normalize had a fraction bit parameter, we could support arbitrary conversions: TODO
-			b = float(a); // we use a float as this verification test is only intended to be used for small cfloats
+			if (i > 0) {
+				b.setnormal();
+			}
+			b.setbits(i);
+			a = float(b);
 			convert(b, nut);
-			cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
 			if (a != nut) {
 				if (a.isnan() && b.isnan()) continue;
 				if (a.isinf() && b.isinf()) continue;
 
 				++nrOfTestFailures;
-				if (bReportIndividualTestCases) cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+				if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " : " << nut << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+			}
+			else {
+				if (bReportIndividualTestCases) std::cout << "PASS: " << to_binary(a) << " == " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
 			}
 		}
-		return nrOfTestFailures;
 	}
-
+	return nrOfTestFailures;
 }
 
 // conditional compile flags
@@ -104,7 +252,6 @@ namespace sw::universal {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -120,38 +267,42 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
-#ifdef LATER
 	{
-		constexpr size_t nbits = 64;
-		constexpr size_t es = 11;
-		constexpr size_t fbits = nbits - 1ull - es;
-		using bt = uint32_t;
-		cfloat<nbits, es, bt> a;
-		blocktriple<fbits, bt> b;
-//		a = 0.015625f;
-		a = 2.0f;
-		a.normalize(b);
-		a.constexprClassParameters();
-		blockbinary<es, bt> exponent; a.exponent(exponent);
-		blockbinary<fbits, bt> fraction; a.fraction(fraction);
-		cout << "cfloat     : " << to_binary(a) << " : " << a << " : scale " << a.scale() << " : " << exponent << " : " << fraction << '\n';
-		cout << "blocktriple: " << to_triple(b) << " : " << b << endl;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+
+		// how do you round a non-normalized blocktriple?
+		// you would need to modify the lsb/guard/round/sticky bit masks
+		// so that you use all info to make the rounding decision,
+		// then normalize (basically shift to the right) and apply
+		// the rounding decision.
+		{
+			constexpr size_t fbits = Cfloat::fbits;
+			typedef Cfloat::BlockType bt;
+			blocktriple<fbits, BlockTripleOperator::MUL, bt> b; // blocktriple type that comes out of a multiplication operation
+			// 0b01.1110  == 1.875
+ 			b.setbits(0x1e);
+			float v = float(b);
+			Cfloat nut, ref;
+			convert(b, nut);
+			ref = v;
+			std::cout << "blocktriple: " << to_binary(b) << " : " << float(b) << '\n';
+			std::cout << "cfloat     : " << to_binary(nut) << " : " << nut << '\n';
+			std::cout << "cfloat ref : " << to_binary(ref) << " : " << ref << '\n';
+		}
+
+		nrOfFailedTestCases += VerifyMulConvert<Cfloat>(true);
+
+//		nrOfFailedTestCases += VerifyCfloatToAddBlocktripleConversion<Cfloat>(true);
+//		nrOfFailedTestCases += VerifyCfloatToMulBlocktripleConversion<Cfloat>(true);
+//		nrOfFailedTestCases += VerifyAddBlocktripleToCfloatConversion<Cfloat>(true);
+//		nrOfFailedTestCases += VerifyMulBlocktripleToCfloatConversion<Cfloat>(true);
+
+
 	}
-
-
-	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 3, 1, uint8_t> >(false);
-	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t> >(false);
-	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t> >(false);
-	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 8, 4, uint8_t> >(false);
-
-	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat< 9, 1, uint8_t> >(true);
-	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t> >(true);
-	nrOfFailedTestCases += VerifyCfloatToBlocktripleConversion< cfloat<18, 5, uint8_t> >(true);
-#endif
-
-	nrOfFailedTestCases += VerifyBlocktripleToCfloatConversion < cfloat < 8, 2, uint8_t > > (true);
-
-	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
+	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
 
 #if STRESS_TESTING

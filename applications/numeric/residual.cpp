@@ -62,11 +62,10 @@ sw::universal::blas::vector<sw::universal::posit<nbits, es>> residual(const sw::
 
 template<typename Scalar>
 void FrankMatrixTest(int N) {
-	using namespace std;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 	Matrix A = sw::universal::blas::frank<Scalar>(N);
-	cout << "Frank matrix order " << N << endl;
+	std::cout << "Frank matrix order " << N << '\n';
 	Vector b(N), x(N);
 	x = Scalar(1);
 	b = A * x;
@@ -74,7 +73,7 @@ void FrankMatrixTest(int N) {
 	x = solve(A, b);
 //	cout << "solution vector [" << x << "]\n";
 	Vector e = A * x - b;
-	cout << "L1-norm of error vector: " << norm(e, 1) << endl;
+	std::cout << "L1-norm of error vector: " << norm(e, 1) << '\n';
 }
 
 void Experiment1() {
@@ -88,7 +87,6 @@ void Experiment1() {
 template<typename Matrix>
 void ResidualTest(const Matrix& A) {
 	/*
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
@@ -159,8 +157,6 @@ void ResidualTest(const Matrix& A) {
 }
 
 void Experiment2() {
-	using namespace std;
-
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = sw::universal::posit<nbits, es>;
@@ -168,11 +164,11 @@ void Experiment2() {
 	constexpr size_t N = 5;
 	Matrix A = sw::universal::blas::frank<Scalar>(N);
 
-	cout << "Frank matrix\n";
+	std::cout << "Frank matrix\n";
 	ResidualTest(A);
-	cout << '\n';
+	std::cout << '\n';
 
-	cout << "Hilbert matrix\n";
+	std::cout << "Hilbert matrix\n";
 	A = sw::universal::blas::hilbert<Scalar>(N);
 	ResidualTest(A);
 
@@ -188,7 +184,7 @@ void Experiment2() {
 		Matrix A = sw::universal::blas::hilbert<Scalar>(N);
 		b = A * ones;
 		Vector x = solve(A, b);
-		cout << "1-norm of float ref    :   " << norm(x - ones, 1) << endl;
+		std::cout << "1-norm of float ref    :   " << norm(x - ones, 1) << '\n';
 
 	}
 
@@ -204,7 +200,7 @@ void Experiment2() {
 		Matrix A = sw::universal::blas::hilbert<Scalar>(N);
 		b = A * ones;
 		Vector x = solve(A, b);
-		cout << "1-norm of double ref   :   " << norm(x - ones, 1) << endl;
+		std::cout << "1-norm of double ref   :   " << norm(x - ones, 1) << '\n';
 
 	}
 
@@ -286,21 +282,20 @@ void IeeeReference(size_t MATRIX_ROWS) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	cout << "Kulisch iterator\n";
+	std::cout << "Kulisch iterator\n";
 
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = sw::universal::posit<nbits, es>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
-	cout << "epsilon for " << typeid(Scalar).name() << " = " << numeric_limits<Scalar>::epsilon() << '\n';
-	cout << "Hilbert matrix\n";
+	std::cout << "epsilon for " << typeid(Scalar).name() << " = " << std::numeric_limits<Scalar>::epsilon() << '\n';
+	std::cout << "Hilbert matrix\n";
 	constexpr size_t MATRIX_ROWS = 10;
 	Matrix A = sw::universal::blas::hilbert<Scalar>(MATRIX_ROWS); // default is a scaled Hilbert matrix with exact representation
 	QuireCompensation(A);
@@ -309,8 +304,8 @@ try {
 	IeeeReference<double>(MATRIX_ROWS);
 	IeeeReference<long double>(MATRIX_ROWS);
 
-	cout << setprecision(precision);
-	cout << endl;
+	std::cout << std::setprecision(precision);
+	std::cout << std::endl;
 	
 	return EXIT_SUCCESS;
 }

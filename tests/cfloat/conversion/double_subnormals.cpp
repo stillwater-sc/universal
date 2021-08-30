@@ -10,13 +10,11 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
-
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -35,10 +33,10 @@ try {
 	nrOfFailedTestCases = 0;
 
 #else
-	cout << "Arbitrary Real addition validation" << endl;
+	cout << "subnormal validation" << endl;
 
 	bool bReportIndividualTestCases = false;
-	std::string tag = "Addition failed: ";
+	std::string tag = "double subnormal conversion failed: ";
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "cfloat<8,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "cfloat<8,4>", "addition");

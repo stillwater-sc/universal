@@ -21,7 +21,6 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 	using BlockType = typename BlockFractionConfiguration::BlockType;
 
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace std;
 	using namespace sw::universal;
 
 //	cout << endl;
@@ -29,7 +28,7 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 
 	int nrOfFailedTests = 0;
 
-	blockfraction<nbits, BlockType> a, b, c;
+	blockfraction<nbits, BlockType, sw::universal::BitEncoding::Twos> a, b, c;
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -59,11 +58,11 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 
 // generate specific test case that you can trace with the trace conditions in blockfraction
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename BlockType>
-void GenerateTestCase(const sw::universal::blockfraction<nbits, BlockType>& lhs, const sw::universal::blockfraction <nbits, BlockType>& rhs) {
+template<size_t nbits, typename BlockType, sw::universal::BitEncoding encoding>
+void GenerateTestCase(const sw::universal::blockfraction<nbits, BlockType, encoding>& lhs, const sw::universal::blockfraction <nbits, BlockType, encoding>& rhs) {
 	using namespace sw::universal;
 
-	blockfraction<nbits, BlockType> a, b, c;
+	blockfraction<nbits, BlockType, encoding> a, b, c;
 
 	a = lhs;
 	b = rhs;
@@ -102,7 +101,7 @@ void GenerateMaxValues() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
+
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
@@ -140,32 +139,32 @@ try {
 
 #else
 
-	cout << "block subtraction validation" << endl;
+	std::cout << "block subtraction validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint8_t> >(bReportIndividualTestCases),  "blockfraction< 4, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint16_t> >(bReportIndividualTestCases), "blockfraction< 4, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint32_t> >(bReportIndividualTestCases), "blockfraction< 4, uint32_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint64_t> >(bReportIndividualTestCases), "blockfraction< 4, uint64_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction< 4, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 4, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 4, uint32_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 4, uint64_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 4, uint64_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 8, uint8_t> >(bReportIndividualTestCases),  "blockfraction< 8, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 8, uint16_t> >(bReportIndividualTestCases), "blockfraction< 8, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 8, uint32_t> >(bReportIndividualTestCases), "blockfraction< 8, uint32_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 8, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction< 8, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 8, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 8, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 8, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 8, uint32_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 9, uint8_t> >(bReportIndividualTestCases),  "blockfraction< 9, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 9, uint16_t> >(bReportIndividualTestCases), "blockfraction< 9, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 9, uint32_t> >(bReportIndividualTestCases), "blockfraction< 9, uint32_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 9, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction< 9, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 9, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 9, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction< 9, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 9, uint32_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<10, uint8_t> >(bReportIndividualTestCases),  "blockfraction<10, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<10, uint16_t> >(bReportIndividualTestCases), "blockfraction<10, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<10, uint32_t> >(bReportIndividualTestCases), "blockfraction<10, uint32_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<10, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction<10, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<10, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction<10, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<10, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction<10, uint32_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<11, uint8_t> >(bReportIndividualTestCases),  "blockfraction<11, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<11, uint16_t> >(bReportIndividualTestCases), "blockfraction<11, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<11, uint32_t> >(bReportIndividualTestCases), "blockfraction<11, uint32_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<11, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction<11, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<11, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction<11, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<11, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction<11, uint32_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<12, uint8_t> >(bReportIndividualTestCases),  "blockfraction<12, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<12, uint16_t> >(bReportIndividualTestCases), "blockfraction<12, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<12, uint32_t> >(bReportIndividualTestCases), "blockfraction<12, uint32_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<12, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction<12, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<12, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction<12, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blockfraction<12, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction<12, uint32_t>", "subtraction");
 
 #if STRESS_TESTING
 

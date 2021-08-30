@@ -23,7 +23,6 @@
 
 template<typename Matrix, typename Vector>
 void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 	assert(num_rows(A) == num_cols(A));
@@ -35,15 +34,15 @@ void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 		steady_clock::time_point t2 = steady_clock::now();
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 		double elapsed = time_span.count();
-		std::cout << "Gauss-Jordan took " << elapsed << " seconds." << std::endl;
+		std::cout << "Gauss-Jordan took " << elapsed << " seconds.\n";
 		double nrOps = double(N) * double(N) * double(N);
-		std::cout << "Performance " << (uint32_t)(nrOps / (1000000.0 * elapsed)) << " MOPS/s" << std::endl;
+		std::cout << "Performance " << (uint32_t)(nrOps / (1000000.0 * elapsed)) << " MOPS/s\n";
 
 		x = Ainv * b;
 		if (N < 10) {
-			cout << "Inverse\n" << Ainv << endl;
-			cout << "Solution\n" << x << endl;
-			cout << "RHS\n" << b << endl;
+			std::cout << "Inverse\n" << Ainv << '\n';
+			std::cout << "Solution\n" << x << '\n';
+			std::cout << "RHS\n" << b << '\n';
 		}
 	}
 
@@ -51,7 +50,6 @@ void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 }
 
 void Test1() {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
@@ -67,8 +65,8 @@ void Test1() {
 	};
 
 	auto Ainv = inv(A);
-	cout << Ainv << endl;
-	cout << Ainv * A << endl;
+	std::cout << Ainv << '\n';
+	std::cout << Ainv * A << '\n';
 
 	// A = L + D + U decomposition
 	auto D = diag(diag(A));
@@ -78,13 +76,12 @@ void Test1() {
 	auto I = eye<Scalar>(num_cols(A));
 	L += I;
 	auto Linv = inv(L);
-	cout << Linv << endl;
-	cout << Linv * L << endl << L * Linv << endl;
+	std::cout << Linv << '\n';
+	std::cout << Linv * L << '\n' << L * Linv << '\n';
 }
 
 template<typename Scalar>
 void FiniteDifferenceTest(size_t N) {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
@@ -101,24 +98,23 @@ void FiniteDifferenceTest(size_t N) {
 	BenchmarkGaussJordan(A, x, b);
 
 	if (N < 10) {
-		cout << "Finite Difference Matrix\n" << A << endl;
+		std::cout << "Finite Difference Matrix\n" << A << '\n';
 
 		// visual feedback
 		auto Ainv = inv(A);
-		cout << Ainv << endl;
-		cout << Ainv * A << endl;
+		std::cout << Ainv << '\n';
+		std::cout << Ainv * A << '\n';
 		auto L = tril(A);
-		cout << inv(L) << endl;
+		std::cout << inv(L) << '\n';
 	}
-	cout << "--------------------------------\n\n";
+	std::cout << "--------------------------------\n\n";
 }
 
 template<typename Scalar>
 void TestSingularMatrix() {
-	using namespace std;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
-	cout << "Test Singular matrix\n";
+	std::cout << "Test Singular matrix\n";
 
 	// define a singular matrix
 	Matrix A = {
@@ -126,19 +122,18 @@ void TestSingularMatrix() {
 		{ 4, 5, 6 },
 		{ 7, 8, 9 }
 	};
-	cout << A << endl;
+	std::cout << A << '\n';
 	Matrix B = inv(A);
 	// should report an error
-	cout << "--------------------------------\n\n";
+	std::cout << "--------------------------------\n\n";
 }
 
 template<typename Scalar>
 void TestNearSingular() {
-	using namespace std;
-	cout << "Test Near Singular matrix\n" << endl;
+	std::cout << "Test Near Singular matrix\n\n";
 
-	cout << "Gauss-Jordan inverse test with near-singular matrix\n";
-	cout << "Scalar type: " << typeid(Scalar).name() << '\n';
+	std::cout << "Gauss-Jordan inverse test with near-singular matrix\n";
+	std::cout << "Scalar type: " << typeid(Scalar).name() << '\n';
 
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
@@ -154,30 +149,29 @@ void TestNearSingular() {
 		{ 0, 0, 0 },
 		{ 0, 0, std::numeric_limits<Scalar>::epsilon() }
 	};
-	cout << "eps: " << Aeps(2, 2) << endl;
+	std::cout << "eps: " << Aeps(2, 2) << '\n';
 	Scalar m = 1024;
 	Matrix B = sw::universal::blas::inv(A + m * Aeps);
-	cout << "Test matrix with poor condition number\n" << (A + m * Aeps) << endl;
+	std::cout << "Test matrix with poor condition number\n" << (A + m * Aeps) << '\n';
 	if (num_cols(B) == 0) {
-		cout << "singular matrix\n";
+		std::cout << "singular matrix\n";
 	}
 	else {
-		cout << "Inverse\n" << B << endl;
-		cout << "Validation to Identity matrix\n" << B * (A + m * Aeps) << endl;
+		std::cout << "Inverse\n" << B << '\n';
+		std::cout << "Validation to Identity matrix\n" << B * (A + m * Aeps) << '\n';
 	}
-	cout << "--------------------------------\n\n";
+	std::cout << "--------------------------------\n\n";
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
 	using Scalar = float;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
-	if (argc == 1) cout << argv[0] << '\n';
+	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
 	TestSingularMatrix<float>();
@@ -192,9 +186,9 @@ try {
 	{
 		// generate the inverse of a tridiag matrix, which can be solved without pivoting
 		Matrix A = tridiag<Scalar>(5);
-		cout << "tridiagonal matrix\n" << A << endl;
-		cout << "inverse full-pivoting Gauss-Jordan\n" << inv(A) << endl;
-		cout << "fast inverse no-pivoting Gauss-Jordan\n" << invfast(A) << endl;
+		std::cout << "tridiagonal matrix\n" << A << '\n';
+		std::cout << "inverse full-pivoting Gauss-Jordan\n" << inv(A) << '\n';
+		std::cout << "fast inverse no-pivoting Gauss-Jordan\n" << invfast(A) << '\n';
 	}
 
 

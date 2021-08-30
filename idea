@@ -1,0 +1,9 @@
+counter keep instruction statistics
+error   shaman like
+
+tracer  can you trace out a computational path that has the worst error during a computation? 
+	first problem to solve: how would you represent that path? 
+	Interestingly, in a recurrency you could identify the index space, so there you have the required information!!!
+	so each value would have a predecessor and the final result would have a cumulative error
+	   each intermediate value would need to store its predecessor, value, and error, which is the complete computational graph.
+	   that would not scale to a running application.

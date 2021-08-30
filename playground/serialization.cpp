@@ -12,7 +12,6 @@
 
 int main(int argc, char** argv)
 try {
-    using namespace std;
     using namespace sw::universal;
 
 	// Test reading posit from std::istringstream
@@ -24,37 +23,37 @@ try {
     lnstream.clear();
     lnstream.str(str);                       
     lnstream >> std::ws >> p;
-	cout << "IEEE float/double format, parsed into a posit<32,2>: " << p << endl;
+	std::cout << "IEEE float/double format, parsed into a posit<32,2>: " << p << '\n';
 
 	lnstream.clear();
 	str = "32.2x40000000p";
 	lnstream.str(str);
 	lnstream >> std::ws >> p;
-	cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << endl;
+	std::cout << "posit format: " << std::setw(25) << str << "- parsed into a posit<32,2>: " << p << '\n';
 
 	lnstream.clear();
 	str = "32.2x80000000p";
 	lnstream.str(str);
 	lnstream >> std::ws >> p;
-	cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << endl;
+	std::cout << "posit format: " << std::setw(25) << str << "- parsed into a posit<32,2>: " << p << '\n';
 
 	lnstream.clear();
 	str = "64.3x8000000000000000p";
 	lnstream.str(str);
 	lnstream >> std::ws >> p;  // testing that we are NOT truncating the most significant bits
-	cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << " <---- should have the most significant 32bits of the 64.3 posit" << endl;
-	cout << "pretty posit: " << pretty_print(p) << endl;
+	std::cout << "posit format: " << std::setw(25) << str << "- parsed into a posit<32,2>: " << p << " <---- should have the most significant 32bits of the 64.3 posit\n";
+	std::cout << "pretty posit: " << pretty_print(p) << '\n';
 
-	cout << "Bitblock patterns" << endl;
-	bitblock<1> one; one.set(0, true); str = to_hex(one); cout << "one  : \"" << one << "\"    value : " << str << endl;
-	bitblock<2> two; two.set(1, true); str = to_hex(two); cout << "two  : \"" << two << "\"   value : " << str << endl;
-	bitblock<3> three; three.set(2, true); str = to_hex(three); cout << "three: \"" << three << "\"  value : " << str << endl;
-	bitblock<4> four; four.set(3, true); str = to_hex(four); cout << "four : \"" << four << "\" value : " << str << endl;
+	std::cout << "Bitblock patterns\n";
+	bitblock<1> one; one.set(0, true); str = to_hex(one); std::cout << "one  : \"" << one << "\"    value : " << str << '\n';
+	bitblock<2> two; two.set(1, true); str = to_hex(two); std::cout << "two  : \"" << two << "\"   value : " << str << '\n';
+	bitblock<3> three; three.set(2, true); str = to_hex(three); std::cout << "three: \"" << three << "\"  value : " << str << '\n';
+	bitblock<4> four; four.set(3, true); str = to_hex(four); std::cout << "four : \"" << four << "\" value : " << str << '\n';
 
 	p.setzero();
-	cout << "posit value     0: " << p << endl;
+	std::cout << "posit value     0: " << p << '\n';
 	p.setnar();
-	cout << "posit value   NaR: " << p << endl;
+	std::cout << "posit value   NaR: " << p << '\n';
 
     return EXIT_SUCCESS;
 }

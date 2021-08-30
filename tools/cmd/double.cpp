@@ -9,7 +9,6 @@
 // receive a float and print the components of a double representation
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::internal;
 
 	// double attributes
@@ -17,17 +16,17 @@ try {
 	constexpr int fbits = std::numeric_limits<double>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "double : components of an IEEE double-precision float\n";
-		cerr << "Show the sign/scale/fraction components of an IEEE double.\n";
-		cerr << "Usage: double double_value\n";
-		cerr << "Example: double 0.03124999\n";
-		cerr << "double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)" << endl;
+		std::cerr << "double : components of an IEEE double-precision float\n";
+		std::cerr << "Show the sign/scale/fraction components of an IEEE double.\n";
+		std::cerr << "Usage: double double_value\n";
+		std::cerr << "Example: double 0.03124999\n";
+		std::cerr << "double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)\n";
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
 	double d = atof(argv[1]);
 	value<fbits> v(d);
 
-	cout << "double: " << setprecision(max_digits10) << d << " " << to_triple(v) << endl;
+	std::cout << "double: " << std::setprecision(max_digits10) << d << " " << to_triple(v) << '\n';
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {

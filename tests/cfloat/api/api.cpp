@@ -29,42 +29,102 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "cfloat<> Application Programming Interface tests" << std::endl;
+	std::cout << "cfloat<> Application Programming Interface tests\n";
 
 #if MANUAL_TESTING
 
+	// default behavior
 	{
+		std::cout << "Default cfloat has subnormals, supernormals and is not saturating\n";
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 3;
+		using Real = cfloat<nbits, es>;
+		Real a(1.0f), b(0.5f), c(0.0);
+		c = a + b;
+		std::cout << "c = " << c << std::endl;
+		c = c - a;
+		std::cout << "c = " << c << std::endl;
+		c = c * b;
+		std::cout << "c = " << c << std::endl;
+		std::cout << "---\n";
+	}
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 3;
 		using bt = uint8_t;
-		using Real = cfloat<8, 3, bt>;
-		Real a(1.0f);
-		Real b(1.0f);
-		Real c{ 0 };
-		// emulate addition
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		using Real = cfloat<8, 3, bt, hasSubnormals, hasSupernormals, isSaturating>;
+		CONSTEXPRESSION Real a(1.0f + 0.5f + 0.25f + 0.125f + 0.0625f);
+		Real b(-1.0f - 0.5f - 0.25f - 0.125f - 0.0625f);
 		constexpr size_t fbits = Real::fbits;
-		blocktriple<fbits, bt> _a, _b;
-		a.normalize(_a);
-		b.normalize(_b);
-		std::cout << to_binary(a) << " : " << to_triple(a) << std::endl;
-	}
+		constexpr size_t abits = Real::abits;
+		constexpr size_t mbits = Real::mbits;
+		constexpr size_t divbits = Real::divbits;
+		{
+			// emulate conversion to blocktriple
+			blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt> _a, _b;
+			a.normalize(_a);
+			b.normalize(_b);
+			std::cout << to_binary(a) << " : " << to_triple(_a) << '\n';
+			std::cout << to_binary(b) << " : " << to_triple(_b) << '\n';
+			std::cout << hex_print(a) << '\n';
+			std::cout << "========  end of representation  =========\n\n";
+		}
 
-	{
-		cfloat<16, 4, uint16_t> a(1.0);
-		cfloat<16, 4, uint16_t> b;
-		b = 1.5f;
-		blocktriple<12> bt;
-//		b.normalize(bt);
-		std::cout << to_binary(b) << " : " << b << " : " << to_binary(bt) << std::endl;
-		std::cout << color_print(b) << std::endl;
-		cfloat<16, 4, uint16_t> c;
-		c = a * b;
-	}
+		{
+			Real c = a + b;
+			std::cout << "Result of addition       : " << color_print(c) << '\n';
 
+			// emulate addition
+			blocktriple<abits, BlockTripleOperator::ADD, bt> _a, _b, _c;
+			a.normalizeAddition(_a);
+			b.normalizeAddition(_b);
+			_c.add(_a, _b);
+			std::cout << to_binary(a) << " : " << to_triple(_a) << std::endl;
+			std::cout << to_binary(b) << " : " << to_triple(_b) << std::endl;
+			std::cout << to_binary(c) << " : " << to_triple(_c) << std::endl;
+			std::cout << "+++++++++    end of addition    ++++++++++\n\n";
+		}
+
+		{
+			Real c = a * b;
+			std::cout << "result of multiplication : " << color_print(c) << '\n';
+
+			// emulate multiplication
+			blocktriple<mbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
+			a.normalizeMultiplication(_a);
+			b.normalizeMultiplication(_b);
+			_c.mul(_a, _b);
+			std::cout << to_binary(a) << " : " << to_triple(_a) << std::endl;
+			std::cout << to_binary(b) << " : " << to_triple(_b) << std::endl;
+			std::cout << to_binary(c) << " : " << to_triple(_c) << std::endl;
+			std::cout << "********* end of multiplication **********\n\n";
+		}
+
+		{
+			Real c = a / b;
+			std::cout << "Result of division       : " << color_print(c) << '\n';
+
+			// emulate division
+			blocktriple<divbits, BlockTripleOperator::DIV, bt> _a, _b, _c;
+			a.normalizeDivision(_a);
+			b.normalizeDivision(_b);
+			_c.div(_a, _b);
+			std::cout << to_binary(a) << " : " << to_triple(_a) << std::endl;
+			std::cout << to_binary(b) << " : " << to_triple(_b) << std::endl;
+			std::cout << to_binary(c) << " : " << to_triple(_c) << std::endl;
+			std::cout << "/////////    end of division    //////////\n\n";
+		}
+	}
+	return 0;
 	{
 		using BlockType = uint32_t;
 		float subnormal = std::nextafter(0.0f, 1.0f);
 		cfloat<32, 8, BlockType> a;
 		blockbinary<a.fhbits, BlockType> significant;
-		std::cout << "   cfloat<32,8,uint32_t>         IEEE-754 float\n";
+		std::cout << "   cfloat<32,8,uint32_t>         IEEE-754 float subnormals\n";
 		uint32_t pattern = 0x00000001ul;
 		for (unsigned i = 0; i < 24; ++i) {
 			a.setbits(pattern);
@@ -78,11 +138,13 @@ try {
 		}
 	}
 
+	std::cout << "Subnormal exponent values\n";
+	// we are not using element [0] as es = 0 is not supported in the cfloat spec
 	int exponents[] = {
 		0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022
 	};
 	for (int i = 1; i < 12; ++i) {
-		std::cout << "es = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
+		std::cout << "es = " << i << " = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
 	}
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;

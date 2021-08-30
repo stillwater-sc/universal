@@ -745,10 +745,10 @@ namespace sw::universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a, b, nut, cref;
-		for (size_t i = 0; i < NR_VALUES; i++) {
+		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; j++) {
+			for (size_t j = 0; j < NR_VALUES; ++j) {
 				b.setbits(j);
 				db = double(b);
 				ref = da + db;
@@ -865,12 +865,12 @@ namespace sw::universal {
 	}
 
 	/// <summary>
-/// Enumerate all subtraction cases for a number system configuration.
-/// Uses doubles to create a reference to compare to.
-/// </summary>
-/// <typeparam name="TestType">the number system type to verify</typeparam>
-/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
-/// <returns>nr of failed test cases</returns>
+	/// Enumerate all subtraction cases for a number system configuration.
+	/// Uses doubles to create a reference to compare to.
+	/// </summary>
+	/// <typeparam name="TestType">the number system type to verify</typeparam>
+	/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
+	/// <returns>nr of failed test cases</returns>
 	template<typename TestType>
 	int VerifyCfloatSubtraction(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
@@ -889,10 +889,10 @@ namespace sw::universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a, b, nut, cref;
-		for (size_t i = 0; i < NR_VALUES; i++) {
+		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; j++) {
+			for (size_t j = 0; j < NR_VALUES; ++j) {
 				b.setbits(j);
 				db = double(b);
 				ref = da - db;
@@ -997,7 +997,7 @@ namespace sw::universal {
 #endif
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, nut, cref);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, nut, cref);
 				}
 			}
 			if constexpr (NR_VALUES > 256 * 256) {
@@ -1008,5 +1008,134 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
+	/// <summary>
+	/// Enumerate all multiplication cases for a number system configuration.
+	/// Uses doubles to create a reference to compare to.
+	/// </summary>
+	/// <typeparam name="TestType">the number system type to verify</typeparam>
+	/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
+	/// <returns>nr of failed test cases</returns>
+	template<typename TestType>
+	int VerifyCfloatMultiplication(bool bReportIndividualTestCases) {
+		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es = TestType::es;
+		using BlockType = typename TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+
+		constexpr size_t NR_VALUES = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+
+		// set the saturation clamps
+		Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
+
+		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+		Cfloat a, b, nut, cref;
+		for (size_t i = 0; i < NR_VALUES; ++i) {
+			a.setbits(i); // number system concept requires a member function setbits()
+			da = double(a);
+			for (size_t j = 0; j < NR_VALUES; ++j) {
+				b.setbits(j);
+				db = double(b);
+				ref = da * db;
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+				// catching overflow
+				try {
+					result = a * b;
+				}
+				catch (...) {
+					if (!nut.inrange(ref)) {
+						// correctly caught the overflow exception
+						continue;
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+
+#else
+				nut = a * b;
+				if (a.isnan() || b.isnan()) {
+					// nan-type propagates
+					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
+						cref.setnan(NAN_TYPE_SIGNALLING);
+					}
+					else {
+						cref.setnan(NAN_TYPE_QUIET);
+					}
+				}
+				else if (a.isinf() || b.isinf()) {
+					// a      b  =  ref
+					// +inf +inf = +inf
+					// +inf -inf = -inf
+					// -inf +inf = -inf
+					// -inf -inf = +inf
+					//  0   +inf = snan
+					if (a.isinf()) {
+						if (b.isinf()) {
+							cref.setinf(a.sign() != b.sign());
+						}
+						else {
+							cref.setnan(NAN_TYPE_SIGNALLING);
+						}
+					}
+					else {
+						cref.setnan(NAN_TYPE_SIGNALLING);
+					}
+				}
+				else {
+					if (!nut.inrange(ref)) {
+						// the result of the multiplication is outside of the range
+						// of the NUT (number system under test)
+						if constexpr (isSaturating) {
+							if (ref > 0) cref.maxpos(); else cref.maxneg();
+						}
+						else {
+							cref.setinf(ref < 0);
+						}
+					}
+					else {
+						cref = ref;
+					}
+				}
+
+#endif // THROW_ARITHMETIC_EXCEPTION
+
+				if (nut != cref) {
+					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, nut, cref);
+#ifdef TRACE_ROUNDING
+					blocktriple<TestType::abits, BlockType> bta, btb, btprod;
+					// transform the inputs into (sign,scale,significant) 
+					// triples of the correct width
+					a.normalizeAddition(bta);
+					b.normalizeAddition(btb);
+					btprod.mul(bta, btb);
+					auto oldPrecision = std::cout.precision(15);
+					std::cout << i << ',' << j << '\n';
+					std::cout
+						<< "a    " << to_binary(a) << ' ' << std::setw(20) << a << ' ' << to_binary(float(a)) << ' ' << to_triple(bta) << '\n'
+						<< "b    " << to_binary(b) << ' ' << std::setw(20) << b << ' ' << to_binary(float(b)) << ' ' << to_triple(btb) << '\n'
+						<< "nut  " << to_binary(nut) << ' ' << std::setw(20) << nut << ' ' << to_binary(float(nut)) << ' ' << to_triple(btprod) << '\n'
+						<< "cref " << to_binary(cref) << ' ' << std::setw(20) << cref << ' ' << to_binary(float(cref)) << ' ' << to_triple(cref) << '\n';
+					std::cout.precision(oldPrecision);
+
+					if (nrOfFailedTests > 9) return nrOfFailedTests;
+#endif
+				}
+				else {
+					if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
+				}
+			}
+			if constexpr (NR_VALUES > 256 * 256) {
+				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+			}
+		}
+		//		std::cout << std::endl;
+		return nrOfFailedTests;
+	}
 } // namespace sw::universal
 

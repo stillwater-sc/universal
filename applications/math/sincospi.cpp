@@ -182,7 +182,6 @@ some contexts. – njuffa May 25 '18 at 15:57
 
 int main() 
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 #if MANUAL_TESTING

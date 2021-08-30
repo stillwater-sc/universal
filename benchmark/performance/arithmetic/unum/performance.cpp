@@ -52,8 +52,7 @@ void DivisionWorkload(uint64_t NR_OPS) {
 }
 
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
-	cout << endl << "UNUM Arithmetic operator performance" << endl;
+	std::cout << "\nUNUM Arithmetic operator performance\n";
 
 #if 0
 	uint64_t NR_OPS = 1000000;
@@ -100,7 +99,6 @@ void TestArithmeticOperatorPerformance() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer operator performance benchmarking";
@@ -109,7 +107,7 @@ try {
 
 	TestArithmeticOperatorPerformance();
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else

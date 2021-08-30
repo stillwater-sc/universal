@@ -25,10 +25,9 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 0) { cout << argv[0] << endl; }
+	if (argc > 0) { std::cout << argv[0] << '\n'; }
 
 	constexpr size_t RND_TEST_CASES = 10000;
 
@@ -40,13 +39,13 @@ try {
 	std::string tag = " posit<128,4>";
 
 #if POSIT_FAST_POSIT_128_4
-	cout << "Fast specialization posit<128,4> configuration tests" << endl;
+	std::cout << "Fast specialization posit<128,4> configuration tests\n";
 #else
-	cout << "Standard posit<128,4> configuration tests" << endl;
+	std::cout << "Standard posit<128,4> configuration tests\n";
 #endif
 
 	posit<nbits, es> p;
-	cout << dynamic_range(p) << endl << endl;
+	std::cout << dynamic_range(p) << "\n\n";
 
 	// special cases
 	p = 0;
@@ -63,8 +62,8 @@ try {
 	// TODO: as we don't have a reference floating point implementation to Verify
 	// the arithmetic operations we are going to ignore the failures
 #if STRESS_TESTING
-	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-	cout << "Without an arithmetic reference, test failures can be ignored" << endl;
+	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
+	std::cout << "Without an arithmetic reference, test failures can be ignored\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");

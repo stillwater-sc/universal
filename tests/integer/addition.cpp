@@ -59,18 +59,17 @@ std::string convert_to_string(const std::vector<char>& v) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer Arithmetic tests failed";
 
 #if MANUAL_TESTING
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else
-	std::cout << "Integer Arithmetic verfication" << std::endl;
+	std::cout << "Integer Arithmetic verfication\n";
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

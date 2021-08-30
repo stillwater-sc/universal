@@ -17,11 +17,9 @@
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyMultiplication(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl;
-	cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	std::cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << ">\n";
 
 	bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
@@ -38,17 +36,19 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 			result = a * b;
 			cref = aref * bref;
 
-			if (bReportOverflowCondition) cout << setw(5) << aref << " * " << setw(5) << bref << " = " << setw(5) << cref << " : ";
+			if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " * " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
 			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) cout << "underflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) 
+					<< "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 
+					<< "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
 				++nrOfOverflows;
 			}
 			else {
-				if (bReportOverflowCondition)cout << endl;
+				if (bReportOverflowCondition) std::cout << std::endl;
 			}
 
 			refResult.setbits(static_cast<uint64_t>(cref));
@@ -63,7 +63,8 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 		}
 //		if (i % 1024 == 0) std::cout << '.';
 	}
-	cout << "Total State Space: " << setw(10) << NR_VALUES * NR_VALUES << " Overflows: " << setw(10) << nrOfOverflows << " Underflows " << setw(10) << nrOfUnderflows << endl;
+	std::cout << "Total State Space: " << std::setw(10) << NR_VALUES * NR_VALUES
+		<< " Overflows: " << std::setw(10) << nrOfOverflows << " Underflows " << std::setw(10) << nrOfUnderflows << '\n';
 	return nrOfFailedTests;
 }
 
@@ -99,7 +100,6 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
@@ -182,7 +182,7 @@ try {
 
 #else
 	bool bReportIndividualTestCases = false;
-	cout << "block multiplication validation" << endl;;
+	std::cout << "block multiplication validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint16_t>(bReportIndividualTestCases), "blockbinary<8,uint16>", "multiplication");

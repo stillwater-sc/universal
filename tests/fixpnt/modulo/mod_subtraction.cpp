@@ -44,7 +44,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -77,7 +76,7 @@ try {
 
 #else
 
-	cout << "Fixed-point modular subtraction validation" << endl;
+	std::cout << "Fixed-point modular subtraction validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");

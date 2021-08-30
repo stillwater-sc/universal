@@ -8,7 +8,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::sequences;
 
@@ -18,11 +17,11 @@ try {
 		using Scalar = sw::universal::integer<64>;
 		constexpr unsigned N = 10;
 		auto v = Tribonacci<Scalar>(N);
-		cout << "Tribonacci Sequence: " << v.size() << endl;
+		std::cout << "Tribonacci Sequence: " << v.size() << '\n';
 		// for (auto e: v) { cout << e << '\n'; }
 
 		for (unsigned n = 1; n <= N; ++n) {
-			cout << setw(3) << n << " : " << TribonacciNumber<Scalar>(n) << endl;
+			std::cout << std::setw(3) << n << " : " << TribonacciNumber<Scalar>(n) << '\n';
 		}
 	}
 
@@ -38,13 +37,13 @@ try {
 			tri_n_minus_1 = tri_n;
 			tri_n = TribonacciNumber<Scalar>(++next);
 		}
-		cout << "Largest Tribonacci number that can be represented by " << typeid(Scalar).name() << " is\n";
-		cout << "T(" << next << ") = " << tri_n_minus_1 << endl;
+		std::cout << "Largest Tribonacci number that can be represented by " << typeid(Scalar).name() << " is\n";
+		std::cout << "T(" << next << ") = " << tri_n_minus_1 << '\n';
 		std::string rep = to_string(tri_n_minus_1);
-		cout << "Number of digits: " << rep.size() << "    binary size relates to decimal size as " << N << "/3.3 ~ " << int(float(N)/3.3f) << " digits\n";
-		cout << tri_n << endl;
+		std::cout << "Number of digits: " << rep.size() << "    binary size relates to decimal size as " << N << "/3.3 ~ " << int(float(N)/3.3f) << " digits\n";
+		std::cout << tri_n << '\n';
 		rep = to_string(tri_n);
-		cout << "Number of digits: " << rep.size() << endl;
+		std::cout << "Number of digits: " << rep.size() << '\n';
 	}
 
 	{
@@ -127,17 +126,17 @@ the n'th term of the series expansion of 1/(1-x-x**2) is
 		using Scalar = sw::universal::integer<N, uint32_t>;
 		constexpr unsigned MaxT = 80;
 		auto v = Tribonacci<Scalar>(MaxT);  // T(294) is biggest Tribonacci number for int256
-		for (const Scalar& e : v) { cout << e << '\n'; }
-		streamsize precision = cout.precision();
-		cout << setprecision(30);
-		cout << "oracle : 1.8392867552141611325518525646532866004241787460975922467787586394042032220819\n";
+		for (const Scalar& e : v) { std::cout << e << '\n'; }
+		std::streamsize precision = std::cout.precision();
+		std::cout << std::setprecision(30);
+		std::cout << "oracle : 1.8392867552141611325518525646532866004241787460975922467787586394042032220819\n";
 		for (unsigned i = MaxT-10; i < MaxT; ++i) {
 			double Tn = double(v[i]);
 			double Tn1 = double(v[i - 1]);
-			cout << Tn << " : double(" << v[i] << ")\n";
+			std::cout << Tn << " : double(" << v[i] << ")\n";
 			//cout << Tn1 << endl;
 			double phi = Tn / Tn1;
-			cout << setw(6) << i << " : " << setw(30) << phi << endl;
+			std::cout << std::setw(6) << i << " : " << std::setw(30) << phi << '\n';
 		}
 		// TODO: there is a bug in the conversion of intteger to double
 		// 72 : 1.83928675521416118421313967701
@@ -148,7 +147,7 @@ the n'th term of the series expansion of 1/(1-x-x**2) is
 		// 77 : 1.2784071172071358457600354086
 		// 78 : 0.961820366834929441068879896193
 		// 79 : 0.0146916049436009929496371739788
-		cout << setprecision(precision);
+		std::cout << std::setprecision(precision);
 	}
 
 

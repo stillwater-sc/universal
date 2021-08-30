@@ -10,7 +10,6 @@
 
 template<typename cfloatConfiguration, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	constexpr size_t nbits = cfloatConfiguration::nbits;
 	cfloatConfiguration a, b, sum, ref;
 	a = _a;
 	b = _b;
@@ -20,7 +19,8 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	ref = reference;
 
 	std::cout << std::setprecision(10);
-	//	std::cout << "native: " << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << reference << std::endl;
+	// constexpr size_t WIDTH = 10;
+	// std::cout << "native: " << std::setw(WIDTH) << _a << " + " << std::setw(WIDTH) << _b << " = " << std::setw(WIDTH) << reference << std::endl;
 	Ty _c{ reference };
 	std::cout << sw::universal::to_binary(_a) << " : " << _a << '\n';
 	std::cout << sw::universal::to_binary(_b) << " : " << _b << '\n';
@@ -74,7 +74,6 @@ void Sample(cfloatConfiguration start, cfloatConfiguration stop, Real sample) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 

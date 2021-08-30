@@ -15,23 +15,21 @@
 
 template<size_t nbits, typename BlockType>
 void MeasureLCM(const std::vector<sw::universal::integer<nbits, BlockType>>& v) {
-	using namespace std;
-	chrono::steady_clock::time_point begin, end;
-	begin = chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point begin, end;
+	begin = std::chrono::steady_clock::now();
 	using Integer = sw::universal::integer<nbits, BlockType>;
 	Integer least_common_multple = lcm(v);
-	end = chrono::steady_clock::now();
+	end = std::chrono::steady_clock::now();
 	using TimeReal = float;
-	chrono::duration<TimeReal> time_span = chrono::duration_cast<chrono::duration<TimeReal >> (end - begin);
+	std::chrono::duration<TimeReal> time_span = std::chrono::duration_cast<std::chrono::duration<TimeReal >> (end - begin);
 	TimeReal elapsed = time_span.count();
 
-	cout << "In " << elapsed << " seconds calculated LCM of " << v.size() << " elements of type " << typeid(Integer).name()
-		<< " to be\n" << least_common_multple << endl;
+	std::cout << "In " << elapsed << " seconds calculated LCM of " << v.size() << " elements of type " << typeid(Integer).name()
+		<< " to be\n" << least_common_multple << '\n';
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -42,11 +40,11 @@ try {
 		Integer factor;
 
 		// use random_device to generate a seed for Mersenne twister engine
-		random_device rd{};
-		mt19937 engine{ rd() };
-		uniform_real_distribution<long double> dist{0.0, 1000000000000.0l };
+		std::random_device rd{};
+		std::mt19937 engine{ rd() };
+		std::uniform_real_distribution<long double> dist{0.0, 1000000000000.0l };
 
-		vector<Integer> v;
+		std::vector<Integer> v;
 		for (int i = 0; i < 10; ++i) {
 			factor = dist(engine);
 			if (factor.iseven()) ++factor;
@@ -57,12 +55,12 @@ try {
 			MeasureLCM(v);
 		}
 		catch (const integer_overflow& e) {
-			cerr << e.what() << endl;
-			cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
-			ofstream out;
+			std::cerr << e.what() << '\n';
+			std::cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
+			std::ofstream out;
 			out.open("lcm_dataset_1.txt");
 			for (size_t i = 0; i < v.size(); ++i) {
-				out << v[i] << endl;
+				out << v[i] << '\n';
 			}
 			out.close();
 		}
@@ -73,11 +71,11 @@ try {
 		using Integer = integer<nbits, uint32_t>;
 		Integer factor;
 
-		random_device rd{};
-		mt19937 engine{ rd() };
-		uniform_real_distribution<long double> dist{0.0, 1000000.0 };
+		std::random_device rd{};
+		std::mt19937 engine{ rd() };
+		std::uniform_real_distribution<long double> dist{0.0, 1000000.0 };
 
-		vector<Integer> v;
+		std::vector<Integer> v;
 		for (int i = 0; i < 100; ++i) {
 			factor = dist(engine);
 			if (factor.iseven()) ++factor;
@@ -87,12 +85,12 @@ try {
 			MeasureLCM(v);
 		}
 		catch (const integer_overflow& e) {
-			cerr << e.what() << endl;
-			cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
-			ofstream out;
+			std::cerr << e.what() << '\n';
+			std::cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
+			std::ofstream out;
 			out.open("lcm_dataset_2.txt");
 			for (size_t i = 0; i < v.size(); ++i) {
-				out << v[i] << endl;
+				out << v[i] << '\n';
 			}
 			out.close();
 		}
@@ -103,11 +101,11 @@ try {
 		using Integer = integer<nbits, uint32_t>;
 		Integer factor;
 
-		random_device rd{};
-		mt19937 engine{ rd() };
-		uniform_real_distribution<long double> dist{0.0, 1000.0 };
+		std::random_device rd{};
+		std::mt19937 engine{ rd() };
+		std::uniform_real_distribution<long double> dist{0.0, 1000.0 };
 
-		vector<Integer> v;
+		std::vector<Integer> v;
 		for (int i = 0; i < 1000; ++i) {
 			factor = dist(engine);
 			if (factor.iseven()) ++factor;
@@ -117,12 +115,12 @@ try {
 			MeasureLCM(v);
 		}
 		catch (const integer_overflow& e) {
-			cerr << e.what() << endl;
-			cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
-			ofstream out;
+			std::cerr << e.what() << '\n';
+			std::cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
+			std::ofstream out;
 			out.open("lcm_dataset_3.txt");
 			for (size_t i = 0; i < v.size(); ++i) {
-				out << v[i] << endl;
+				out << v[i] << '\n';
 			}
 			out.close();
 		}

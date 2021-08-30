@@ -15,10 +15,9 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "classic floating-point decrement operator validation" << endl;
+	std::cout << "classic floating-point decrement operator validation\n";
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING

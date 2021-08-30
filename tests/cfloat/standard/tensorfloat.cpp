@@ -12,7 +12,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -25,11 +24,11 @@ try {
 	int nrOfFailedTestCases = 0;
 	std::string tag = " cfloat<19,8>";
 
-	cout << "Standard NVIDIA TensorFloat, which is equivalent to a cfloat<19,8> configuration tests" << endl;
+	std::cout << "Standard NVIDIA TensorFloat, which is equivalent to a cfloat<19,8> configuration tests\n";
 
 	tensorfloat r;
 	r = 1.2345;
-	cout << r << endl;
+	std::cout << r << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

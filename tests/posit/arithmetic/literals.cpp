@@ -171,7 +171,6 @@ void GenerateTestCase(Ty a, Ty b) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -201,7 +200,7 @@ try {
 
 #else
 
-	cout << "Posit addition validation" << endl;
+	std::cout << "Posit addition validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "addition with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "addition with literal");

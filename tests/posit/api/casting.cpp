@@ -42,17 +42,16 @@ void GenerateTestCase(double input, double reference, const sw::universal::posit
 }
 
 void TestCase1() {
-	using namespace std;
 	using namespace sw::universal;
 
 	posit<64, 1> p;
 	p.setbits(0x7B32352A00000013);
 
-	cout << color_print(p) << " " << p << endl;
+	std::cout << color_print(p) << " " << p << '\n';
 
 	unsigned long ul = 0x80000000;
 	posit<32, 2> p32_2 = ul;
-	cout << color_print(p32_2) << " " << pretty_print(p32_2) << " " << hex_print(p32_2) << endl;
+	std::cout << color_print(p32_2) << " " << pretty_print(p32_2) << " " << hex_print(p32_2) << '\n';
 
 	// Posit = 0x7B32352A00000013
 	// Stillwater’s result = 0x434C8D4A
@@ -63,15 +62,15 @@ void TestCase1() {
 	//	long double ld = (long double)(p);
 
 	p = f;
-	cout << color_print(p) << " " << p << endl;
+	std::cout << color_print(p) << " " << p << '\n';
 
 	uint32_t fh = *(uint32_t*)&f;
 	uint64_t dh = *(uint64_t*)&d;
-	cout << "SP Float = " << hexfloat << f << " " << defaultfloat << f << " " << fixed << f << " " << hex << fh << endl;
-	cout << "DP Float = " << hexfloat << d << " " << defaultfloat << d << " " << hex << dh << endl;
+	std::cout << "SP Float = " << std::hexfloat << f << " " << std::defaultfloat << f << " " << std::fixed << f << " " << std::hex << fh << '\n';
+	std::cout << "DP Float = " << std::hexfloat << d << " " << std::defaultfloat << d << " " << std::hex << dh << '\n';
 
 	f = float(d);
-	cout << "SP Float = " << hexfloat << f << " " << defaultfloat << f << " " << fixed << f << " " << hex << fh << endl;
+	std::cout << "SP Float = " << std::hexfloat << f << " " << std::defaultfloat << f << " " << std::fixed << f << " " << std::hex << fh << '\n';
 
 	// s rrrrr e ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'f
 	// 0 11110 1 1001'1001'0001'1010'1001'0101'0000'0000'0000'0000'0000'0000'0000'1001'1 +204.552
@@ -82,7 +81,6 @@ void TestCase1() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 
@@ -97,8 +95,8 @@ try {
 	using T = sw::universal::posit<64, 3>;
 	auto val = T(9.01);
 	auto product = val * std::numeric_limits<T>::min();
-	cout << "val     : " << color_print(val) << " : " << val << endl;
-	cout << "product : " << color_print(product) << " : " << product << endl;
+	std::cout << "val     : " << color_print(val) << " : " << val << '\n';
+	std::cout << "product : " << color_print(product) << " : " << product << '\n';
 
 	return EXIT_SUCCESS;
 

@@ -24,10 +24,9 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "high-precision constants " << endl;
+	std::cout << "high-precision constants\n";
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1300)
 	std::cout << "Microsoft Visual C++: " << _MSC_VER << '\n';
@@ -108,7 +107,7 @@ try {
 
 	// check difficult midpoint and lerp operations on different number systems
 
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 
@@ -124,8 +123,8 @@ try {
                    << std::boolalpha << (a == std::lerp(a,b,0.0f)) << '\n';
 #endif
 
-	cout << setprecision(precision);
-	cout << endl;
+	 std::cout << std::setprecision(precision);
+	 std::cout << std::endl;
 	
 	return EXIT_SUCCESS;
 }

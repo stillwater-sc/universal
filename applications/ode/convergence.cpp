@@ -137,7 +137,6 @@ void GRKSpanDemo(Scalar b_table[5][5],
 }
 
 int main() {
-    using namespace std;
     using namespace sw::universal;
     using Scalar = double;
 

@@ -37,7 +37,6 @@ void GenerateTestCase(Ty a) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -83,7 +82,7 @@ try {
 
 #else
 
-	cout << "Posit exponential function validation" << endl;
+	std::cout << "Posit exponential function validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<2, 0>(bReportIndividualTestCases), "posit<2,0>", "exp");
 

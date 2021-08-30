@@ -244,7 +244,6 @@ std::string convert_to_string(const std::vector<char>& v) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer Logic Operator tests failed";
@@ -258,11 +257,11 @@ try {
 	ReportTestResult(VerifyGreaterThan<4>("manual test", true), "integer<4>", ">");
 	ReportTestResult(VerifyGreaterOrEqualThan<4>("manual test", true), "integer<4>", ">=");
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else
-	std::cout << "Integer Logic Operator verfication" << std::endl;
+	std::cout << "Integer Logic Operator verfication\n";
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

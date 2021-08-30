@@ -15,7 +15,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	return EXIT_SUCCESS;

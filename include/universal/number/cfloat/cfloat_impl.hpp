@@ -16,6 +16,8 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 // cfloat exception structure
 #include <universal/number/cfloat/exceptions.hpp>
+// cfloat tracing options
+#include <universal/number/cfloat/trace_constants.hpp>
 // composition types used by cfloat
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
@@ -28,8 +30,6 @@
 #endif
 
 namespace sw::universal {
-
-constexpr bool _trace_cfloat_add = false;  // TODO consolidate in a trace include file
 
 /*
  * classic floats have denorms, but no gradual overflow, and 
@@ -84,20 +84,23 @@ int scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturati
 /// <returns></returns>
 template<size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> parse(const std::string& str) {
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
+parse(const std::string& str) {
 	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	cfloatType a{ 0 };
-	if (str[0] == 'b') {
-		size_t index = nbits;
-		for (size_t i = 1; i < str.size(); ++i) {
-			if (str[i] == '1') {
-				a.setbit(--index, true);
-			}
-			else if (str[i] == '0') {
-				a.setbit(--index, false);
-			}
-			else if (str[i] == '.' || str[i] == '\'') {
-				// ignore annotation
+	if (str.length() > 2) {
+		if (str[0] == '0' && str[1] == 'b') {
+			size_t index = nbits;
+			for (size_t i = 1; i < str.size(); ++i) {
+				if (str[i] == '1') {
+					a.setbit(--index, true);
+				}
+				else if (str[i] == '0') {
+					a.setbit(--index, false);
+				}
+				else if (str[i] == '.' || str[i] == '\'') {
+					// ignore annotation
+				}
 			}
 		}
 	}
@@ -107,16 +110,27 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> parse(const 
 	return a;
 }
 
-// convert a blocktriple to a cfloat
-template<size_t srcbits, size_t nbits, size_t es, typename bt,
+/// <summary>
+/// convert a blocktriple to a cfloat. blocktriples come out of the arithmetic
+/// engine in the form bb.ff...ff and a scale. The conversion must take this
+/// denormalized form into account during conversion.
+/// 
+/// The blocktriple must be in this form to round correctly, as all the bits
+/// after an arithmetic operation must be taken into account.
+/// </summary>
+/// <typeparam name="bt"></typeparam>
+/// <param name="src"></param>
+/// <param name="tgt"></param>
+template<size_t srcbits, BlockTripleOperator op, size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, 
+inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, 
 	                              cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& tgt) {
 //	std::cout << "convert: " << to_binary(src) << std::endl;
+	using btType = blocktriple<srcbits, op, bt>;
 	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	// test special cases
 	if (src.isnan()) {
-		tgt.setnan(src.sign());
+		tgt.setnan(src.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
 	}
 	else	if (src.isinf()) {
 		tgt.setinf(src.sign());
@@ -126,19 +140,14 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 		tgt.setsign(src.sign()); // preserve sign
 	}
 	else {
-		int64_t scale   = src.scale();
-		if (scale < cfloatType::MIN_EXP_SUBNORMAL) {
+		int scale = src.scale() + src.significantscale();
+		if (scale < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
 			tgt.setzero();
 			return;
 		}
 		if (scale > cfloatType::MAX_EXP) {
 			if constexpr (isSaturating) {
-				if (src.sign()) {
-					tgt.maxneg();
-				}
-				else {
-					tgt.maxpos();
-				}
+				if (src.sign()) tgt.maxneg(); else tgt.maxpos();
 			}
 			else {
 				tgt.setinf(src.sign());
@@ -155,16 +164,26 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 				// resulting cfloat will be a subnormal number: all exponent bits are 0
 				raw <<= cfloatType::fbits;
 				int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(scale);
-				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit explicitely as it will shift into the msb of the denorm
-				//uint64_t fracbits = src.fraction_ull();
-				fracbits >>= rightShift + (srcbits - cfloatType::fbits);
-				raw |= fracbits;
+				if constexpr (srcbits < 64) {
+					uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit explicitely as it will shift into the msb of the denorm
+					//uint64_t fracbits = src.fraction_ull();
+					fracbits >>= rightShift + (srcbits - cfloatType::fbits);
+					raw |= fracbits;
+				}
+				else {
+					//static_assert(srcbits < 65, "trouble");
+					std::cerr << "srcbits >= 64  : srcbits == " << srcbits << '\n';
+				}
 				tgt.setbits(raw);
 			}
 			else {
 				// resulting cfloat will be a normal number
-				uint64_t fracbits = src.fraction_ull();
-				constexpr size_t shift = srcbits - cfloatType::fbits;
+				// uint64_t fracbits = src.fraction_ull();
+				uint64_t fracbits = src.get_ull();
+				// null the top bit to remove the hidden bit of a denormalized form
+				fracbits &= btType::normalFormMask;
+
+				size_t shift = btType::radix - cfloatType::fbits + src.significantscale();
 
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
@@ -177,7 +196,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src,
 				bool guard = fracbits & mask;
 				mask >>= 1;
 				bool round = fracbits & mask;
-				mask = 0xFFFF'FFFF'FFFF'FFFF << (shift - 2);
+				if (shift < 2) {
+					mask = 0xFFFF'FFFF'FFFF'FFFFull;
+				}
+				else {
+					mask = 0xFFFF'FFFF'FFFF'FFFFull << (shift - 2);
+				}
 				mask = ~mask;
 //				std::cout << to_binary(fracbits) << std::endl;
 //				std::cout << to_binary(mask) << std::endl;
@@ -243,13 +267,14 @@ public:
 	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
 	static constexpr size_t abits = 2 * fhbits;            // size of the addend
-	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
+	static constexpr size_t mbits = 2ull * fbits + 1ull;   // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
 	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
-	static constexpr uint64_t ALL_ONES_FR = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - fbits)); // special case for nbits <= 64
+	static constexpr uint64_t topfbits = fbits % 64;
+	static constexpr uint64_t ALL_ONES_FR = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - topfbits)); // special case for nbits <= 64
 	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
@@ -263,8 +288,8 @@ public:
 
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
-	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull -es)) : 0);
+	static constexpr bool MSU_CAPTURES_EXP = (1ull + es) <= bitsInMSU;
+	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_EXP ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull -es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
@@ -333,9 +358,9 @@ public:
 	constexpr cfloat(unsigned int iv)       noexcept : _block{ 0 } { *this = iv; }
 	constexpr cfloat(unsigned long iv)      noexcept : _block{ 0 } { *this = iv; }
 	constexpr cfloat(unsigned long long iv) noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(float iv)              noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(double iv)             noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(long double iv)        noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(float iv)        noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(double iv)       noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
 	constexpr cfloat& operator=(signed char rhs) { return convert_signed_integer(rhs); }
@@ -363,7 +388,7 @@ public:
 	}
 
 	cfloat& operator+=(const cfloat& rhs) {
-		if constexpr (_trace_cfloat_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		if constexpr (cfloat_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -412,7 +437,7 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<abits, bt> a, b, sum;
+		blocktriple<abits, BlockTripleOperator::ADD, bt> a, b, sum;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
@@ -428,6 +453,7 @@ public:
 		return *this += cfloat(rhs);
 	}
 	cfloat& operator-=(const cfloat& rhs) {
+		if constexpr (cfloat_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 		if (rhs.isnan()) 
 			return *this += rhs;
 		else 
@@ -437,12 +463,72 @@ public:
 		return *this -= cfloat(rhs);
 	}
 	cfloat& operator*=(const cfloat& rhs) {
+		if constexpr (cfloat_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+		// special case handling of the inputs
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
+			throw cfloat_operand_is_nan{};
+		}
+#else
+		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
+			setnan(NAN_TYPE_SIGNALLING);
+			return *this;
+		}
+		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+			setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
+#endif
+		//  inf * inf = inf
+		//  inf * -inf = -inf
+		// -inf * inf = -inf
+		// -inf * -inf = inf
+		//	0 * inf = -nan(ind)
+		bool resultSign = sign() != rhs.sign();
+		if (isinf()) {
+			if (rhs.isinf()) {
+				setsign(resultSign);
+				return *this;
+			}
+			else {
+				setnan(NAN_TYPE_SIGNALLING);
+				return *this;
+			}
+		}
+		else {
+			if (rhs.isinf()) {
+				setnan(NAN_TYPE_SIGNALLING);
+				return *this;
+			}
+		}
+
+		if (iszero() || rhs.iszero()) {			
+			setzero();
+			setsign(resultSign); // deal with negative 0
+			return *this;
+		}
+
+		// arithmetic operation
+		blocktriple<mbits, BlockTripleOperator::MUL, bt> a, b, product;
+
+		// transform the inputs into (sign,scale,significant) 
+		// triples of the correct width
+		normalizeMultiplication(a);
+		rhs.normalizeMultiplication(b);
+		product.mul(a, b);
+
+		convert(product, *this);
+
+		if constexpr (cfloat_trace_mul) {
+			std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(product) << '\n';
+		}
 		return *this;
 	}
 	cfloat& operator*=(double rhs) {
 		return *this *= cfloat(rhs);
 	}
 	cfloat& operator/=(const cfloat& rhs) {
+		if constexpr (cfloat_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 		return *this;
 	}
 	cfloat& operator/=(double rhs) {
@@ -932,7 +1018,7 @@ public:
 		return *this;
 	}
 	/// <summary>
-	/// assign the value of the string representation of a scientific number to the cfloat
+	/// assign the value of the string representation to the cfloat
 	/// </summary>
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
@@ -945,7 +1031,7 @@ public:
 	inline constexpr bool sign() const noexcept { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
 	inline constexpr int  scale() const noexcept {
 		int e{ 0 };
-		if constexpr (MSU_CAPTURES_E) {
+		if constexpr (MSU_CAPTURES_EXP) {
 			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
 			if (e == 0) {
 				// subnormal scale is determined by fraction
@@ -1174,7 +1260,7 @@ public:
 		std::cout << "MSU MASK          : " << to_binary(MSU_MASK, 0, true) << '\n';
 		std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, 0, true) << '\n';
 		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, 0, true) << '\n';
-		std::cout << "MSU CAPTURES E    : " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
+		std::cout << "MSU CAPTURES_EXP  : " << (MSU_CAPTURES_EXP ? "yes\n" : "no\n");
 		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
 		std::cout << "MSU EXP MASK      : " << to_binary(MSU_EXP_MASK, 0, true) << '\n';
 		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
@@ -1199,7 +1285,7 @@ public:
 			e.setbits(uint64_t(ebits >> EXP_SHIFT));
 		}
 		else if constexpr (nrBlocks > 1) {
-			if (MSU_CAPTURES_E) {
+			if (MSU_CAPTURES_EXP) {
 				bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
 				e.setbits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
@@ -1339,6 +1425,14 @@ public:
 				v = exponentiation * f;
 			}
 			else {
+				if (ebits.isallones()) {
+					if constexpr (hasSupernormals == false) {
+						// supernormals are mapped to quiet NaNs
+						v = std::numeric_limits<TargetFloat>::quiet_NaN();
+						return v;
+					}
+				}
+
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 				if (-64 < exponent && exponent < 64) {
@@ -1349,6 +1443,7 @@ public:
 					double exponentiation = ipow(exponent);
 					v = TargetFloat(exponentiation * (1.0 + f));
 				}
+
 			}
 			v = sign() ? -v : v;
 		}
@@ -1362,25 +1457,13 @@ public:
 	explicit operator double() const { return to_native<double>(); }
 	explicit operator float() const { return to_native<float>(); }
 
-#ifdef NEVER
-	// normalize a non-special cfloat, that is, not a zero, inf, or nan, into a blocktriple
-	template<size_t tgtSize>
-	void generate_add_input(blocktriple<tgtSize, bt>& v) const {
-		bool _sign = sign();
-		int  _scale = scale();
-		// fraction bits are the bottom fbits in the raw encoding
-		// normal    encoding : 1.fffff
-		// subnormal encoding : 0.fffff
-	}
-#endif
-
-	// convert a cfloat to a blocktriple with the fraction format 01.ffffeeee
+	// convert a cfloat to a blocktriple with the fraction format 1.ffff
 	// we are using the same block type so that we can use block copies to move bits around.
 	// Since we tend to have at least two exponent bits, this will lead to
 	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
 	// The relationship between the source cfloat and target blocktriple is not
-	// arbitrary, enforce it: blocktriple fbits = cfloat (nbits - es - 1)
-	constexpr void normalize(blocktriple<fbits, bt>& tgt) const {
+	// arbitrary, enforce it by setting the blocktriple fbits to the cfloat's (nbits - es - 1)
+	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -1473,8 +1556,13 @@ public:
 		}
 	}
 
-	// normalize a cfloat to a blocktriple used in add/sub
-	constexpr void normalizeAddition(blocktriple<abits, bt>& tgt) const {
+	// normalize a cfloat to a blocktriple used in add/sub, which has the form 00h.fffff
+	// that is 3 + fbits, the 3 extra bits are required to be able to use 2's complement 
+	// and capture the largest value of an addition/subtraction.
+	// TODO: currently abits = 2*fhbits as the worst case input argument size to
+	// capture the smallest normal value in aligned form. There is a faster/smaller
+	// implementation where the input is constrainted to just the round, guard, and sticky bits.
+	constexpr void normalizeAddition(blocktriple<abits, BlockTripleOperator::ADD, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -1568,6 +1656,199 @@ public:
 		}
 	}
 
+	// normalize a cfloat to a blocktriple used in mul, which has the form 0'00001.fffff
+	// that is 2*fbits, plus 1 overflow bit, and the radix set at <fbits>.
+	// the result radix will go to 2*fbits after multiplication.
+	constexpr void normalizeMultiplication(blocktriple<mbits, BlockTripleOperator::MUL, bt>& tgt) const {
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal(); // a blocktriple is always normalized
+			int scale = this->scale();
+			tgt.setsign(sign());
+			tgt.setscale(scale);
+			tgt.setradix(fbits);
+			// set significant
+			// we are going to unify to the format 01.ffffeeee
+			// where 'f' is a fraction bit, and 'e' is an extension bit
+			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
+			if (isnormal()) {
+				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
+				}
+			}
+			else { // it is a subnormal encoding in this target cfloat
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scale;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
+				}
+			}
+		}
+	}
+
+	// normalize a cfloat to a blocktriple used in div, which has the form 0'00000'00001.fffff
+	// that is 3*fbits, plus 1 overflow bit, and the radix set at <fbits>.
+	// the result radix will go to 2*fbits after multiplication.
+	// TODO: needs implementation
+	constexpr void normalizeDivision(blocktriple<divbits, BlockTripleOperator::DIV, bt>& tgt) const {
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal(); // a blocktriple is always normalized
+			int scale = this->scale();
+			tgt.setsign(sign());
+			tgt.setscale(scale);
+			// set significant
+			// we are going to unify to the format 01.ffffeeee
+			// where 'f' is a fraction bit, and 'e' is an extension bit
+			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
+			if (isnormal()) {
+				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
+				}
+			}
+			else { // it is a subnormal encoding in this target cfloat
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scale;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
+				}
+			}
+		}
+	}
 
 protected:
 	// HELPER methods
@@ -1709,6 +1990,7 @@ public:
 			// For the rounding cusps, we go through the rounding logic, and then clean up
 			// after rounding using the observation that no conversion from a value can ever
 			// yield the NaN encoding.
+			//
 			// The rounding logic will correctly sort between maxpos and inf, and we clean
 			// up any NaN encodings by projecting back to the configuration's saturation rule.
 			//
@@ -1724,12 +2006,13 @@ public:
 				}
 				return *this;
 			}
-			if (exponent < MIN_EXP_SUBNORMAL - 1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
+			if (exponent < MIN_EXP_SUBNORMAL - 1) { 
+				// map to +-0 any values that have a scale less than (MIN_EXP_SUBMORNAL - 1)
 				this->setbit(nbits - 1, s);
 				return *this;
 			}
 			/////////////////  
-			/// end of special case processing, move on to value projection and rounding
+			/// end of special case processing, move on to value sampling and rounding
 
 #if TRACE_CONVERSION
 			std::cout << '\n';
@@ -1753,8 +2036,8 @@ public:
 			// input fbits >= cfloat fbits                 <-- need to round
 			// input fbits < cfloat fbits                  <-- no need to round
 
-			if constexpr (ieee754_parameter<Real>::fbits > fbits) {
-				// this is the common case for cfloats that are smaller than single and double precision IEEE-754
+			if constexpr (fbits < ieee754_parameter<Real>::fbits) {
+				// this is the common case for cfloats that are smaller in size compared to single and double precision IEEE-754
 				constexpr int shiftRight = ieee754_parameter<Real>::fbits - fbits; // this is the bit shift to get the MSB of the src to the MSB of the tgt
 				uint32_t biasedExponent{ 0 };
 				int adjustment{ 0 };
@@ -1960,7 +2243,8 @@ public:
 						// finally, set the sign bit
 						setsign(s);
 					}
-					else { // rhs is a subnormal
+					else { 
+						// rhs is a subnormal
 	//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
 					}
 				}
@@ -2336,7 +2620,7 @@ inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = true) {
 	std::stringstream s;
-	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, bt> triple;
+	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, BlockTripleOperator::REPRESENTATION, bt> triple;
 	number.normalize(triple);
 	s << to_triple(triple, nibbleMarker);
 	return s.str();

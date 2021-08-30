@@ -294,7 +294,6 @@ int MeasureAdditionPerformance(int &positives, int &negatives) {
 // receive a float and print the components of a double representation
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace std::chrono;
 	int positives, negatives;
@@ -341,9 +340,9 @@ try {
 	time_span = duration_cast<duration<double>>(end - begin);
 	elapsed = time_span.count();
 	float pops = float((positives + negatives) / elapsed);
-	cout << "Performance = " << pops << "POPS" << std::endl;
-	cout << elapsed << endl;
-	cout << positives << " " << negatives << endl;
+	std::cout << "Performance = " << pops << "POPS\n";
+	std::cout << elapsed << '\n';
+	std::cout << positives << " " << negatives << '\n';
 
 	GenerateLookupTable<8, 1>(SQRT);
 

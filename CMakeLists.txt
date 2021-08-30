@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 32)
+  set(UNIVERSAL_VERSION_MINOR 33)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -74,7 +74,7 @@ option(USE_AVX                           "Build code with AVX ISA support"      
 option(USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
 # control which projects get enabled
 # Continuous Integration override to build all
-option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
+option(BUILD_ALL                         "Set to ON to build all components"                   OFF)
 # or subsets of the components
 option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
 option(BUILD_NUMERICAL_CHECKS            "Set to ON to build all the numerical components"     OFF)
@@ -481,7 +481,7 @@ install(FILES
 install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
-if(BUILD_CI_CHECK)
+if(BUILD_ALL)
 	# set the grouped components to build (will trigger builds when tested)
 	set(BUILD_DEMONSTRATION ON)
 	set(BUILD_NUMERICAL_CHECKS ON)
@@ -502,7 +502,7 @@ if(BUILD_CI_CHECK)
 
 	# build the HW validation environment
 	set(BUILD_VALIDATION_HW ON)
-endif(BUILD_CI_CHECK)
+endif(BUILD_ALL)
 
 if(BUILD_DEMONSTRATION)
 	# core demonstration example applications that use the library
@@ -682,15 +682,8 @@ endif(BUILD_CMD_LINE_TOOLS)
 # educational examples
 if(BUILD_EDUCATION)
 add_subdirectory("education/tables")
-add_subdirectory("education/integer")
-add_subdirectory("education/fixpnt")
-add_subdirectory("education/bfloat")
-add_subdirectory("education/areal")
-add_subdirectory("education/unum")
-add_subdirectory("education/posit")
+add_subdirectory("education/number")
 add_subdirectory("education/quire")
-add_subdirectory("education/valid")
-add_subdirectory("education/lns")
 endif(BUILD_EDUCATION)
 
 # application examples

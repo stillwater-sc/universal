@@ -86,7 +86,6 @@ void show_fe_exceptions()
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// compare bits of different real number representations
@@ -95,9 +94,9 @@ try {
 	double d        = 1.0e10;
 	long double ld  = 1.0e10;
 
-	cout << "single precision float     : " << color_print(f) << endl;
-	cout << "double precision float     : " << color_print(d) << endl;
-	cout << "long double precision float: " << color_print(ld) << endl;
+	std::cout << "single precision float     : " << color_print(f) << '\n';
+	std::cout << "double precision float     : " << color_print(d) << '\n';
+	std::cout << "long double precision float: " << color_print(ld) << '\n';
 
 	// special values
 	f = nan("NaN");

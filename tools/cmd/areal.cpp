@@ -40,15 +40,14 @@ void attributes(const Real& v) {
 // receive a float and print its components
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc != 2) {
-		cerr << "areal : areal components" << endl;
-		cerr << "Show the sign/scale/fraction components of an areal." << endl;
-	    cerr << "Usage: areal float_value" << endl;
-		cerr << "Example: areal -1.123456789" << endl;
-		cerr <<  msg << endl;
+		std::cerr << "areal : areal components\n";
+		std::cerr << "Show the sign/scale/fraction components of an areal.\n";
+		std::cerr << "Usage: areal float_value\n";
+		std::cerr << "Example: areal -1.123456789\n";
+		std::cerr <<  msg << '\n';
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	double d = atof(argv[1]);

@@ -36,7 +36,6 @@ int VerifyFloor(bool bReportIndividualTestCases) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -53,7 +52,7 @@ try {
 
 #else
 
-	cout << "cfloat truncation function validation" << endl;
+	std::cout << "classic floating-point cfloat truncation function validation\n";
 
 
 #if STRESS_TESTING

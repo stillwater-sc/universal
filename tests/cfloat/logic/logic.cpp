@@ -245,7 +245,6 @@ namespace sw::universal {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -261,14 +260,14 @@ try {
 	nrOfFailedTestCases = 0;
 
 #else
-	cout << "AREAL logic operator validation" << endl;
+	std::cout << "classic floating-point logic operator validation\n";
 
 	//bool bReportIndividualTestCases = false;
 	std::string tag = "Comparison failed: ";
 
 	cfloat<16, 1> a;
 
-	cout << "Logic: operator==()" << endl;
+	std::cout << "Logic: operator==()\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 4, 1> >(), "cfloat< 4,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 5, 1> >(), "cfloat< 5,1>", "==");
@@ -303,7 +302,7 @@ try {
 		ReportTestResult(0, "cfloat<16,1> == 0.0l", "== long double literal");
 	}
 	
-	cout << "Logic: operator!=()" << endl;
+	std::cout << "Logic: operator!=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 4, 1> >(), "cfloat< 4,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 5, 1> >(), "cfloat< 5,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 6, 1> >(), "cfloat< 6,1>", "!=");

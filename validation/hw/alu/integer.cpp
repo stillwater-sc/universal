@@ -12,7 +12,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc != 4) {
@@ -20,10 +19,10 @@ try {
 		std::cerr << "Example: hw_int add 1.5 -1.5\n";
 		return EXIT_SUCCESS;  // needed for regression test success
 	}
-	string op = argv[1];
+	std::string op = argv[1];
 	float fa = atof(argv[2]);
 	float fb = atof(argv[3]);
-	cout << op << " " << fa << " and " << fb << '\n';
+	std::cout << op << " " << fa << " and " << fb << '\n';
 
 	integer<8> a, b, c;
 	a = fa;
@@ -34,32 +33,32 @@ try {
 	if (op == "add") {
 		alu_op = ALU_OPS::ADD;
 		c = ArithmeticLogicUnit(alu_op, a, b);
-		cout << a << " + " << b << " = " << c << '\n';
-		cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
+		std::cout << a << " + " << b << " = " << c << '\n';
+		std::cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 	}
 	else if (op == "sub") {
 		alu_op = ALU_OPS::SUB;
 		c = ArithmeticLogicUnit(alu_op, a, b);
-		cout << a << " - " << b << " = " << c << '\n';
-		cout << to_binary(a, true) << " - " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
+		std::cout << a << " - " << b << " = " << c << '\n';
+		std::cout << to_binary(a, true) << " - " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 	}
 	else if (op == "mul") {
 		alu_op = ALU_OPS::MUL;
 		c = ArithmeticLogicUnit(alu_op, a, b);
-		cout << a << " * " << b << " = " << c << '\n';
-		cout << to_binary(a, true) << " * " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
+		std::cout << a << " * " << b << " = " << c << '\n';
+		std::cout << to_binary(a, true) << " * " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 	}
 	else if (op == "div") {
 		alu_op = ALU_OPS::DIV;
 		c = ArithmeticLogicUnit(alu_op, a, b);
-		cout << a << " / " << b << " = " << c << '\n';
-		cout << to_binary(a, true) << " / " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
+		std::cout << a << " / " << b << " = " << c << '\n';
+		std::cout << to_binary(a, true) << " / " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 	}
 	else if (op == "sqrt") {
 		alu_op = ALU_OPS::SQRT;
 		c = ArithmeticLogicUnit(alu_op, a, b);
-		cout << "sqrt(" << a << ") = " << c << '\n';
-		cout << "sqrt(" << to_binary(a) << " = " << to_binary(c) << '\n';
+		std::cout << "sqrt(" << a << ") = " << c << '\n';
+		std::cout << "sqrt(" << to_binary(a) << " = " << to_binary(c) << '\n';
 	}
 
 	return EXIT_SUCCESS;

@@ -19,7 +19,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -44,7 +43,7 @@ try {
 	GenerateLogicPatternsForDebug<8, 0>();
 	GenerateLogicPatternsForDebug<8, 1>();
 	GenerateLogicPatternsForDebug<8, 2>();
-	cout << "----------------\n";
+	std::cout << "----------------\n";
 #endif
 
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(tag, true), "valid<3,0>", "conversion");
@@ -74,7 +73,7 @@ try {
 
 #else
 
-	cout << "VALID conversion validation" << endl;
+	std::cout << "VALID conversion validation\n";
 
 #if 0
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(tag, bReportIndividualTestCases), "valid<3,0>", "conversion");

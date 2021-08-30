@@ -175,13 +175,13 @@ namespace special {
 
 int main() 
 try {
-	using namespace std;
+	using namespace std; // needed for the imagenary literals
 	using namespace sw::universal;
 
 #if MANUAL_TESTING
 
 	std::complex<double> c = 0.25 + 0.5i;
-	cout << "complex variable: " << c << '\n';
+	std::cout << "complex variable: " << c << '\n';
 
 	TestComplexConjugate<float>();
 //	TestComplexConjugate<fixpnt<4, 3> >();

@@ -36,22 +36,21 @@ The minimum positive(subnormal) value is 2−149 ≈ 1.4 × 10−45.
 
 template<size_t nbits, size_t rbits>
 void TestDenormalizedNumberConversions() {
-	using namespace std;
 	using namespace sw::universal;
 
 	// minimum positive normal value of a single precision float == 2^-126
 	float minpos_normal = 1.1754943508222875079687365372222e-38;
-	cout << to_binary(minpos_normal) << endl;
+	std::cout << to_binary(minpos_normal) << '\n';
 	float minpos_subnormal = 1.4012984643248170709237295832899e-45;
-	cout << to_binary(minpos_subnormal) << endl;
+	std::cout << to_binary(minpos_subnormal) << '\n';
 
 	fixpnt<nbits, rbits> a;
 	float f = minpos_normal;
 	for (int i = 0; i < 16; ++i) {
 		f *= 0.5f;
 		a = 1;
-		cout << to_float(a) << endl;
-//		cout << setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << endl;
+		std::cout << to_float(a) << '\n';
+//		std::cout << setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << '\n';
 	}
 }
 
@@ -100,7 +99,6 @@ void DoubleGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// bool bReportIndividualTestCases = false;
@@ -114,15 +112,15 @@ try {
 	for (int i = 0; i < 149 - 127; ++i) {
 		multiplier *= 2.0f;
 	}
-	std::cout << to_binary(multiplier) << std::endl;
+	std::cout << to_binary(multiplier) << '\n';
 	float minpos_normal = 1.1754943508222875079687365372222e-38;
-	std::cout << to_binary(minpos_normal) << std::endl;
+	std::cout << to_binary(minpos_normal) << '\n';
 
 	// minimum positive normal value of a double precision float == 2^-1022
 	double dbl_minpos_normal = 2.2250738585072013830902327173324e-308;
-	cout << to_binary(dbl_minpos_normal) << endl;
+	std::cout << to_binary(dbl_minpos_normal) << '\n';
 	double dbl_minpos_subnormal = 4.940656458412465441765687928622e-324;
-	cout << to_binary(dbl_minpos_subnormal) << endl;
+	std::cout << to_binary(dbl_minpos_subnormal) << '\n';
 
 	//FloatGenerateFixedPointValues<8, 4>();
 	//DoubleGenerateFixedPointValues<8, 4>();
@@ -138,7 +136,7 @@ try {
 #endif
 
 #else
-	cout << "Fixed-point modular assignment validation" << endl;
+	std::cout << "Fixed-point modular subnormal conversion validation\n";
 
 
 #if STRESS_TESTING

@@ -16,74 +16,74 @@
 
 // test construction peformance
 void TestBlockPerformanceOnConstruction() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Construction performance" << endl;
+	std::cout << "\nConstruction performance\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull + 1;
+	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blockfraction<8>    construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16>   construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32>   construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64>   construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<64, uint64_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<128>  construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<256>  construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<512>  construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<1024> construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockfraction<8>    construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<8, uint8_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<16>   construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<16, uint16_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<32>   construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<32, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<64>   construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<64, uint64_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<128>  construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<128, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<256>  construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<256, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<512>  construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<512, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<1024> construction  ", ConstructionPerformanceWorkload< sw::universal::blockfraction<1024, uint32_t, flex> >, NR_OPS);
 }
 
 // test performance of shift operator on blockfraction<> class
 void TestShiftOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Logical shift operator performance" << endl;
+	std::cout << "\nLogical shift operator performance\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
+	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blockfraction<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<16, uint16_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<32, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<64, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<128, uint32_t, flex> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<256, uint32_t, flex> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<512, uint32_t, flex> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint32_t, flex> >, NR_OPS / 16);
 }
 
 void TestBlockPerformanceOnShift() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Block size performance on logical shift operators" << endl;
+	std::cout << "\nBlock size performance on logical shift operators\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
+	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blockfraction<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockfraction<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<8, uint8_t, flex> >, NR_OPS);
 
-	PerformanceRunner("blockfraction<16,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<16, uint8_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<16, uint16_t, flex> >, NR_OPS);
 
-	PerformanceRunner("blockfraction<32,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<32, uint8_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<32, uint16_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<32, uint32_t, flex> >, NR_OPS);
 
-	PerformanceRunner("blockfraction<64,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<64, uint8_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<64, uint16_t, flex> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<64, uint32_t, flex> >, NR_OPS);
 
-	PerformanceRunner("blockfraction<128,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<128, uint8_t, flex> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<128, uint16_t, flex> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<128, uint32_t, flex> >, NR_OPS / 2);
 
-	PerformanceRunner("blockfraction<256,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<256, uint8_t, flex> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<256, uint16_t, flex> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<256, uint32_t, flex> >, NR_OPS / 4);
 
-	PerformanceRunner("blockfraction<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint8_t, flex> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint16_t, flex> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint32_t, flex> >, NR_OPS / 8);
 
-	PerformanceRunner("blockfraction<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockfraction<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint16_t> >, NR_OPS /16);
-	PerformanceRunner("blockfraction<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint8_t, flex> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint16_t, flex> >, NR_OPS /16);
+	PerformanceRunner("blockfraction<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::universal::blockfraction<1024, uint32_t, flex> >, NR_OPS / 16);
 }
 
 // Generic set of adds and subtracts for a given number system type
@@ -91,8 +91,10 @@ template<typename Scalar>
 void BFAdditionWorkload(uint64_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	sw::universal::blockfraction<nbits, bt> a, b, c, d;
-	a.setbits(0xFFFFFFFFFFFFFFFFull);
+	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
+	sw::universal::blockfraction<nbits, bt, encoding> a, b, c, d;
+	a.setradix(nbits);
+	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.add(a, b);
@@ -104,8 +106,10 @@ template<typename Scalar>
 void BFSubtractionWorkload(uint64_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	sw::universal::blockfraction<nbits, bt> a, b, c, d;
-	a.setbits(0xFFFFFFFFFFFFFFFFull);
+	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
+	sw::universal::blockfraction<nbits, bt, encoding> a, b, c, d;
+	a.setradix(nbits);
+	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.sub(a, b);
@@ -117,9 +121,11 @@ template<typename Scalar>
 void BFMultiplicationWorkload(uint64_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	sw::universal::blockfraction<nbits, bt> a, b;
+	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
+	sw::universal::blockfraction<nbits, bt, encoding> a, b;
+	a.setradix(nbits);
 	Scalar c, d;
-	a.setbits(0xFFFFFFFFFFFFFFFFull);
+	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.mul(a, b);
@@ -132,9 +138,11 @@ template<typename Scalar>
 void BFDivisionWorkload(uint64_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	sw::universal::blockfraction<nbits, bt> a, b;
+	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
+	sw::universal::blockfraction<nbits, bt, encoding> a, b;
+	a.setradix(nbits);
 	Scalar c, d;
-	a.setbits(0xFFFFFFFFFFFFFFFFull);
+	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.div(a, b);
@@ -144,176 +152,180 @@ void BFDivisionWorkload(uint64_t NR_OPS) {
 }
 
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Arithmetic operator performance" << endl;
+	std::cout << "\nArithmetic operator performance\n";
 
 	size_t NR_OPS = 1024ull * 1024ull * 2ull;
+	constexpr BitEncoding ones = BitEncoding::Ones;
+	constexpr BitEncoding twos = BitEncoding::Twos;
 
-	PerformanceRunner("blockfraction<16>   add           ", BFAdditionWorkload< sw::universal::blockfraction<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32>   add           ", BFAdditionWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64>   add           ", BFAdditionWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<128>  add           ", BFAdditionWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<256>  add           ", BFAdditionWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512>  add           ", BFAdditionWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<1024> add           ", BFAdditionWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<16>   add           ", BFAdditionWorkload< sw::universal::blockfraction<16, uint32_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<32>   add           ", BFAdditionWorkload< sw::universal::blockfraction<32, uint32_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<64>   add           ", BFAdditionWorkload< sw::universal::blockfraction<64, uint32_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<128>  add           ", BFAdditionWorkload< sw::universal::blockfraction<128, uint32_t, twos> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<256>  add           ", BFAdditionWorkload< sw::universal::blockfraction<256, uint32_t, twos> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512>  add           ", BFAdditionWorkload< sw::universal::blockfraction<512, uint32_t, twos> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<1024> add           ", BFAdditionWorkload< sw::universal::blockfraction<1024, uint32_t, twos> >, NR_OPS / 16);
 
-	PerformanceRunner("blockfraction<16>       subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32>       subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64>       subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<128>      subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<256>      subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512>      subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<1024>     subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<16>       subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<16, uint32_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<32>       subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<32, uint32_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<64>       subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<64, uint32_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<128>      subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<128, uint32_t, twos> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<256>      subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<256, uint32_t, twos> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512>      subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<512, uint32_t, twos> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<1024>     subtract  ", BFSubtractionWorkload< sw::universal::blockfraction<1024, uint32_t, twos> >, NR_OPS / 16);
 
 	NR_OPS = 1024ull * 1024ull;
-	PerformanceRunner("blockfraction<16>   multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32>   multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<64>   multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<128>  multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 64);
-	PerformanceRunner("blockfraction<512>  multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 512);     // TODO: why is this so slow?
-	PerformanceRunner("blockfraction<1024> multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 1024);   // TODO: why is this so slow?
+	PerformanceRunner("blockfraction<16>   multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<16, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32>   multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<32, uint32_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<64>   multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<64, uint32_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<128>  multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<128, uint32_t, ones> >, NR_OPS / 64);
+	PerformanceRunner("blockfraction<512>  multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<512, uint32_t, ones> >, NR_OPS / 512);     // TODO: why is this so slow?
+	PerformanceRunner("blockfraction<1024> multiplication", BFMultiplicationWorkload< sw::universal::blockfraction<1024, uint32_t, ones> >, NR_OPS / 1024);   // TODO: why is this so slow?
 
 	NR_OPS = 1024ull * 512ull;
-	PerformanceRunner("blockfraction<16>   division      ", BFDivisionWorkload< sw::universal::blockfraction<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32>   division      ", BFDivisionWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64>   division      ", BFDivisionWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128>  division      ", BFDivisionWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512>  division      ", BFDivisionWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<1024> division      ", BFDivisionWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<16>   division      ", BFDivisionWorkload< sw::universal::blockfraction<16, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32>   division      ", BFDivisionWorkload< sw::universal::blockfraction<32, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64>   division      ", BFDivisionWorkload< sw::universal::blockfraction<64, uint32_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128>  division      ", BFDivisionWorkload< sw::universal::blockfraction<128, uint32_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512>  division      ", BFDivisionWorkload< sw::universal::blockfraction<512, uint32_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<1024> division      ", BFDivisionWorkload< sw::universal::blockfraction<1024, uint32_t, ones> >, NR_OPS / 16);
 
 #ifdef FRACTION_REMAINDER
 	NR_OPS = 1024ull * 512ull;
-	PerformanceRunner("blockfraction<16>   remainder     ", RemainderWorkload< sw::universal::blockfraction<16, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32>   remainder     ", RemainderWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64>   remainder     ", RemainderWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128>  remainder     ", RemainderWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512>  remainder     ", RemainderWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<1024> remainder     ", RemainderWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<16>   remainder     ", RemainderWorkload< sw::universal::blockfraction<16, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32>   remainder     ", RemainderWorkload< sw::universal::blockfraction<32, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64>   remainder     ", RemainderWorkload< sw::universal::blockfraction<64, uint32_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128>  remainder     ", RemainderWorkload< sw::universal::blockfraction<128, uint32_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512>  remainder     ", RemainderWorkload< sw::universal::blockfraction<512, uint32_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<1024> remainder     ", RemainderWorkload< sw::universal::blockfraction<1024, uint32_t, ones> >, NR_OPS / 16);
 #endif
 }
 
 void TestBlockPerformanceOnAdd() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "ADDITION: blockfraction arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nADDITION: blockfraction arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 2ull * 1024ull * 1024ull;
+	constexpr BitEncoding twos = BitEncoding::Twos;
 
-	PerformanceRunner("blockfraction<4,uint8>      add   ", BFAdditionWorkload< sw::universal::blockfraction<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<8,uint8>      add   ", BFAdditionWorkload< sw::universal::blockfraction<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint8>     add   ", BFAdditionWorkload< sw::universal::blockfraction<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint16>    add   ", BFAdditionWorkload< sw::universal::blockfraction<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint8>     add   ", BFAdditionWorkload< sw::universal::blockfraction<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint16>    add   ", BFAdditionWorkload< sw::universal::blockfraction<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint32>    add   ", BFAdditionWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint8>     add   ", BFAdditionWorkload< sw::universal::blockfraction<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint16>    add   ", BFAdditionWorkload< sw::universal::blockfraction<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint32>    add   ", BFAdditionWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<128,uint8>    add   ", BFAdditionWorkload< sw::universal::blockfraction<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint16>   add   ", BFAdditionWorkload< sw::universal::blockfraction<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint32>   add   ", BFAdditionWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<256,uint8>    add   ", BFAdditionWorkload< sw::universal::blockfraction<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<256,uint16>   add   ", BFAdditionWorkload< sw::universal::blockfraction<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<256,uint32>   add   ", BFAdditionWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512,uint8>    add   ", BFAdditionWorkload< sw::universal::blockfraction<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<512,uint16>   add   ", BFAdditionWorkload< sw::universal::blockfraction<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<512,uint32>   add   ", BFAdditionWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<1024,uint8>   add   ", BFAdditionWorkload< sw::universal::blockfraction<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockfraction<1024,uint16>  add   ", BFAdditionWorkload< sw::universal::blockfraction<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blockfraction<1024,uint32>  add   ", BFAdditionWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<4,uint8>      add   ", BFAdditionWorkload< sw::universal::blockfraction<4, uint8_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<8,uint8>      add   ", BFAdditionWorkload< sw::universal::blockfraction<8, uint8_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint8>     add   ", BFAdditionWorkload< sw::universal::blockfraction<16, uint8_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint16>    add   ", BFAdditionWorkload< sw::universal::blockfraction<16, uint16_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint8>     add   ", BFAdditionWorkload< sw::universal::blockfraction<32, uint8_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint16>    add   ", BFAdditionWorkload< sw::universal::blockfraction<32, uint16_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint32>    add   ", BFAdditionWorkload< sw::universal::blockfraction<32, uint32_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint8>     add   ", BFAdditionWorkload< sw::universal::blockfraction<64, uint8_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint16>    add   ", BFAdditionWorkload< sw::universal::blockfraction<64, uint16_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint32>    add   ", BFAdditionWorkload< sw::universal::blockfraction<64, uint32_t, twos> >, NR_OPS);
+	PerformanceRunner("blockfraction<128,uint8>    add   ", BFAdditionWorkload< sw::universal::blockfraction<128, uint8_t, twos> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint16>   add   ", BFAdditionWorkload< sw::universal::blockfraction<128, uint16_t, twos> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint32>   add   ", BFAdditionWorkload< sw::universal::blockfraction<128, uint32_t, twos> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<256,uint8>    add   ", BFAdditionWorkload< sw::universal::blockfraction<256, uint8_t, twos> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint16>   add   ", BFAdditionWorkload< sw::universal::blockfraction<256, uint16_t, twos> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint32>   add   ", BFAdditionWorkload< sw::universal::blockfraction<256, uint32_t, twos> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512,uint8>    add   ", BFAdditionWorkload< sw::universal::blockfraction<512, uint8_t, twos> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint16>   add   ", BFAdditionWorkload< sw::universal::blockfraction<512, uint16_t, twos> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint32>   add   ", BFAdditionWorkload< sw::universal::blockfraction<512, uint32_t, twos> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<1024,uint8>   add   ", BFAdditionWorkload< sw::universal::blockfraction<1024, uint8_t, twos> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<1024,uint16>  add   ", BFAdditionWorkload< sw::universal::blockfraction<1024, uint16_t, twos> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<1024,uint32>  add   ", BFAdditionWorkload< sw::universal::blockfraction<1024, uint32_t, twos> >, NR_OPS / 16);
 }
 
 void TestBlockPerformanceOnDiv() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "DIVISION: blockfraction arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nDIVISION: blockfraction arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024;
-	PerformanceRunner("blockfraction<4,uint8>      div   ", BFDivisionWorkload< sw::universal::blockfraction<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<8,uint8>      div   ", BFDivisionWorkload< sw::universal::blockfraction<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint8>     div   ", BFDivisionWorkload< sw::universal::blockfraction<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint16>    div   ", BFDivisionWorkload< sw::universal::blockfraction<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint8>     div   ", BFDivisionWorkload< sw::universal::blockfraction<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint16>    div   ", BFDivisionWorkload< sw::universal::blockfraction<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint32>    div   ", BFDivisionWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint8>     div   ", BFDivisionWorkload< sw::universal::blockfraction<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint16>    div   ", BFDivisionWorkload< sw::universal::blockfraction<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint32>    div   ", BFDivisionWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<128,uint8>    div   ", BFDivisionWorkload< sw::universal::blockfraction<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint16>   div   ", BFDivisionWorkload< sw::universal::blockfraction<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint32>   div   ", BFDivisionWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<256,uint8>    div   ", BFDivisionWorkload< sw::universal::blockfraction<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<256,uint16>   div   ", BFDivisionWorkload< sw::universal::blockfraction<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<256,uint32>   div   ", BFDivisionWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512,uint8>    div   ", BFDivisionWorkload< sw::universal::blockfraction<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<512,uint16>   div   ", BFDivisionWorkload< sw::universal::blockfraction<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<512,uint32>   div   ", BFDivisionWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<1024,uint8>   div   ", BFDivisionWorkload< sw::universal::blockfraction<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockfraction<1024,uint16>  div   ", BFDivisionWorkload< sw::universal::blockfraction<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blockfraction<1024,uint32>  div   ", BFDivisionWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	constexpr BitEncoding ones = BitEncoding::Ones;
+
+	PerformanceRunner("blockfraction<4,uint8>      div   ", BFDivisionWorkload< sw::universal::blockfraction<4, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<8,uint8>      div   ", BFDivisionWorkload< sw::universal::blockfraction<8, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint8>     div   ", BFDivisionWorkload< sw::universal::blockfraction<16, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint16>    div   ", BFDivisionWorkload< sw::universal::blockfraction<16, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint8>     div   ", BFDivisionWorkload< sw::universal::blockfraction<32, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint16>    div   ", BFDivisionWorkload< sw::universal::blockfraction<32, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint32>    div   ", BFDivisionWorkload< sw::universal::blockfraction<32, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint8>     div   ", BFDivisionWorkload< sw::universal::blockfraction<64, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint16>    div   ", BFDivisionWorkload< sw::universal::blockfraction<64, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint32>    div   ", BFDivisionWorkload< sw::universal::blockfraction<64, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<128,uint8>    div   ", BFDivisionWorkload< sw::universal::blockfraction<128, uint8_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint16>   div   ", BFDivisionWorkload< sw::universal::blockfraction<128, uint16_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint32>   div   ", BFDivisionWorkload< sw::universal::blockfraction<128, uint32_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<256,uint8>    div   ", BFDivisionWorkload< sw::universal::blockfraction<256, uint8_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint16>   div   ", BFDivisionWorkload< sw::universal::blockfraction<256, uint16_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint32>   div   ", BFDivisionWorkload< sw::universal::blockfraction<256, uint32_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512,uint8>    div   ", BFDivisionWorkload< sw::universal::blockfraction<512, uint8_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint16>   div   ", BFDivisionWorkload< sw::universal::blockfraction<512, uint16_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint32>   div   ", BFDivisionWorkload< sw::universal::blockfraction<512, uint32_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<1024,uint8>   div   ", BFDivisionWorkload< sw::universal::blockfraction<1024, uint8_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<1024,uint16>  div   ", BFDivisionWorkload< sw::universal::blockfraction<1024, uint16_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<1024,uint32>  div   ", BFDivisionWorkload< sw::universal::blockfraction<1024, uint32_t, ones> >, NR_OPS / 16);
 }
 
 #if FRACTION_REMAINDER
 void TestBlockPerformanceOnRem() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "REMAINDER: blockfraction arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nREMAINDER: blockfraction arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024;
-	PerformanceRunner("blockfraction<4,uint8>      rem   ", RemainderWorkload< sw::universal::blockfraction<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<8,uint8>      rem   ", RemainderWorkload< sw::universal::blockfraction<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint8>     rem   ", RemainderWorkload< sw::universal::blockfraction<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint16>    rem   ", RemainderWorkload< sw::universal::blockfraction<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint8>     rem   ", RemainderWorkload< sw::universal::blockfraction<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint16>    rem   ", RemainderWorkload< sw::universal::blockfraction<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint32>    rem   ", RemainderWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint8>     rem   ", RemainderWorkload< sw::universal::blockfraction<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint16>    rem   ", RemainderWorkload< sw::universal::blockfraction<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint32>    rem   ", RemainderWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<128,uint8>    rem   ", RemainderWorkload< sw::universal::blockfraction<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint16>   rem   ", RemainderWorkload< sw::universal::blockfraction<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint32>   rem   ", RemainderWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<256,uint8>    rem   ", RemainderWorkload< sw::universal::blockfraction<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<256,uint16>   rem   ", RemainderWorkload< sw::universal::blockfraction<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<256,uint32>   rem   ", RemainderWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512,uint8>    rem   ", RemainderWorkload< sw::universal::blockfraction<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<512,uint16>   rem   ", RemainderWorkload< sw::universal::blockfraction<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<512,uint32>   rem   ", RemainderWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<1024,uint8>   rem   ", RemainderWorkload< sw::universal::blockfraction<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockfraction<1024,uint16>  rem   ", RemainderWorkload< sw::universal::blockfraction<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blockfraction<1024,uint32>  rem   ", RemainderWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 16);
+	constexpr BitEncoding ones = BitEncoding::Ones;
+
+	PerformanceRunner("blockfraction<4,uint8>      rem   ", RemainderWorkload< sw::universal::blockfraction<4, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<8,uint8>      rem   ", RemainderWorkload< sw::universal::blockfraction<8, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint8>     rem   ", RemainderWorkload< sw::universal::blockfraction<16, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint16>    rem   ", RemainderWorkload< sw::universal::blockfraction<16, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint8>     rem   ", RemainderWorkload< sw::universal::blockfraction<32, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint16>    rem   ", RemainderWorkload< sw::universal::blockfraction<32, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint32>    rem   ", RemainderWorkload< sw::universal::blockfraction<32, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint8>     rem   ", RemainderWorkload< sw::universal::blockfraction<64, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint16>    rem   ", RemainderWorkload< sw::universal::blockfraction<64, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint32>    rem   ", RemainderWorkload< sw::universal::blockfraction<64, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<128,uint8>    rem   ", RemainderWorkload< sw::universal::blockfraction<128, uint8_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint16>   rem   ", RemainderWorkload< sw::universal::blockfraction<128, uint16_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint32>   rem   ", RemainderWorkload< sw::universal::blockfraction<128, uint32_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<256,uint8>    rem   ", RemainderWorkload< sw::universal::blockfraction<256, uint8_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint16>   rem   ", RemainderWorkload< sw::universal::blockfraction<256, uint16_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<256,uint32>   rem   ", RemainderWorkload< sw::universal::blockfraction<256, uint32_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512,uint8>    rem   ", RemainderWorkload< sw::universal::blockfraction<512, uint8_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint16>   rem   ", RemainderWorkload< sw::universal::blockfraction<512, uint16_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<512,uint32>   rem   ", RemainderWorkload< sw::universal::blockfraction<512, uint32_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<1024,uint8>   rem   ", RemainderWorkload< sw::universal::blockfraction<1024, uint8_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<1024,uint16>  rem   ", RemainderWorkload< sw::universal::blockfraction<1024, uint16_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<1024,uint32>  rem   ", RemainderWorkload< sw::universal::blockfraction<1024, uint32_t, ones> >, NR_OPS / 16);
 }
 #endif
 
 void TestBlockPerformanceOnMul() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "MULTIPLICATION: blockfraction arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nMULTIPLICATION: blockfraction arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 512ull * 1024;
-	PerformanceRunner("blockfraction<4,uint8>      mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<8,uint8>      mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<16,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<32,uint32>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<64,uint32>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockfraction<128,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<128,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockfraction<256,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<256, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockfraction<256,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<256, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockfraction<256,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockfraction<512,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<512, uint8_t> >, NR_OPS / 512);
-	PerformanceRunner("blockfraction<512,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<512, uint16_t> >, NR_OPS / 256);
-	PerformanceRunner("blockfraction<512,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<512, uint32_t> >, NR_OPS / 128);
-	PerformanceRunner("blockfraction<1024,uint8>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<1024, uint8_t> >, NR_OPS / 1024);
-	PerformanceRunner("blockfraction<1024,uint16>  mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<1024, uint16_t> >, NR_OPS / 512);
-	PerformanceRunner("blockfraction<1024,uint32>  mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<1024, uint32_t> >, NR_OPS / 256);
+	constexpr BitEncoding ones = BitEncoding::Ones;
+
+	PerformanceRunner("blockfraction<4,uint8>      mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<4, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<8,uint8>      mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<8, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<16, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<16,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<16, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<32, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<32, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<32,uint32>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<32, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<64, uint8_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<64, uint16_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<64,uint32>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<64, uint32_t, ones> >, NR_OPS);
+	PerformanceRunner("blockfraction<128,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<128, uint8_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<128, uint16_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<128,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<128, uint32_t, ones> >, NR_OPS / 2);
+	PerformanceRunner("blockfraction<256,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<256, uint8_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blockfraction<256,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<256, uint16_t, ones> >, NR_OPS / 8);
+	PerformanceRunner("blockfraction<256,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<256, uint32_t, ones> >, NR_OPS / 4);
+	PerformanceRunner("blockfraction<512,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<512, uint8_t, ones> >, NR_OPS / 512);
+	PerformanceRunner("blockfraction<512,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<512, uint16_t, ones> >, NR_OPS / 256);
+	PerformanceRunner("blockfraction<512,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<512, uint32_t, ones> >, NR_OPS / 128);
+	PerformanceRunner("blockfraction<1024,uint8>   mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<1024, uint8_t, ones> >, NR_OPS / 1024);
+	PerformanceRunner("blockfraction<1024,uint16>  mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<1024, uint16_t, ones> >, NR_OPS / 512);
+	PerformanceRunner("blockfraction<1024,uint32>  mul   ", BFMultiplicationWorkload< sw::universal::blockfraction<1024, uint32_t, ones> >, NR_OPS / 256);
 
 }
 
@@ -322,7 +334,6 @@ void TestBlockPerformanceOnMul() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockfraction operator performance benchmarking";
@@ -334,7 +345,7 @@ try {
 
 	ShiftPerformanceWorkload< sw::universal::blockfraction<8, uint8_t> >(1);
 	
-	cout << "done" << endl;
+	std::cout << "done\n";
 
 	return EXIT_SUCCESS;
 #else

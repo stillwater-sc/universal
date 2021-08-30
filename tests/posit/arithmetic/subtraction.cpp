@@ -47,7 +47,6 @@ void GenerateTestCase(Ty a, Ty b) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -78,8 +77,8 @@ try {
 	posit<48, 2> pdiff = pa - pb;
 	cout << pdiff.get() << endl;
 	bitblock<48> ba = pa.get();
-	cout << a << endl;
-	cout << ba << endl;
+	std::cout << a << '\n';
+	std::cout << ba << '\n';
 	//nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<48, 2>(tag, true, OPCODE_SUB, 1000), "posit<48,2>", "subtraction");
 
 

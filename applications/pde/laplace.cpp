@@ -91,7 +91,6 @@ but ran out of time. My manuscript was six months late as it was!
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
@@ -104,11 +103,11 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	Scalar p(pi);
-	cout << "PI = " << p << " " << hex_format(p) << endl;
+	std::cout << "PI = " << p << " " << hex_format(p) << '\n';
 
 	Matrix A;
 	laplace2D(A, 5, 5);
-	cout << A << endl;
+	std::cout << A << std::endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -105,14 +105,13 @@ void TestConstexprSpecificValues() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "cfloat constexpr tests" << endl;
+	std::cout << "cfloat constexpr tests\n";
 	
 	using Real = cfloat<12, 2>;
 	Real a;
@@ -123,10 +122,10 @@ try {
 	TestConstexprSpecificValues<Real>();
 
 	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
+		std::cout << "FAIL\n";
 	}
 	else {
-		cout << "PASS" << endl;
+		std::cout << "PASS\n";
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

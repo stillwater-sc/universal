@@ -72,17 +72,16 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	// Arithmetic tests for value class
-	cout << endl << "value addition arithmetic tests" << endl;
-	cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases" << endl;
+	std::cout << "\nvalue addition arithmetic tests\n";
+	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
 

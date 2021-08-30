@@ -74,40 +74,39 @@ Scalar bisection(Scalar& a, Scalar& b, Scalar (*f)(const Scalar&), const Scalar&
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	{
 		using Scalar = posit<16, 1>;
 		Scalar a = -10;
 		Scalar b = 20;
-		cout << "The function used is x ^ 3 - 2x ^ 2 + 3\n";
-		cout << "a = " << a << '\n';
-		cout << "b = " << b << '\n';
-		Scalar root = bisection(a, b, &fnctn, numeric_limits<Scalar>::epsilon());
-		cout << "root = " << root << endl;
+		std::cout << "The function used is x ^ 3 - 2x ^ 2 + 3\n";
+		std::cout << "a = " << a << '\n';
+		std::cout << "b = " << b << '\n';
+		Scalar root = bisection(a, b, &fnctn, std::numeric_limits<Scalar>::epsilon());
+		std::cout << "root = " << root << std::endl;
 	}
 
 	{
 		using Scalar = posit<32, 2>;
 		Scalar a = -10;
 		Scalar b = 20;
-		cout << "The function used is x ^ 3 - 2x ^ 2 + 3\n";
-		cout << "a = " << a << '\n';
-		cout << "b = " << b << '\n';
-		Scalar root = bisection(a, b, &fnctn, numeric_limits<Scalar>::epsilon());
-		cout << "root = " << root << endl;
+		std::cout << "The function used is x ^ 3 - 2x ^ 2 + 3\n";
+		std::cout << "a = " << a << '\n';
+		std::cout << "b = " << b << '\n';
+		Scalar root = bisection(a, b, &fnctn, std::numeric_limits<Scalar>::epsilon());
+		std::cout << "root = " << root << std::endl;
 	}
 
 	{
 		using Scalar = posit<64, 3>;
 		Scalar a = -10;
 		Scalar b = 20;
-		cout << "The function used is x ^ 3 - 2x ^ 2 + 3\n";
-		cout << "a = " << a << '\n';
-		cout << "b = " << b << '\n';
-		Scalar root = bisection(a, b, &fnctn, numeric_limits<Scalar>::epsilon());
-		cout << "root = " << root << endl;
+		std::cout << "The function used is x ^ 3 - 2x ^ 2 + 3\n";
+		std::cout << "a = " << a << '\n';
+		std::cout << "b = " << b << '\n';
+		Scalar root = bisection(a, b, &fnctn, std::numeric_limits<Scalar>::epsilon());
+		std::cout << "root = " << root << std::endl;
 	}
 
 	return EXIT_SUCCESS;

@@ -7,24 +7,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/lns/lns_impl.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
-
-// generate specific test case that you can trace with the trace conditions in areal.hpp
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename Ty>
-void GenerateTestCase(Ty a, Ty b) {
-	Ty ref;
-	sw::universal::lns<nbits> pa, pb, pref, psum;
-	pa = a;
-	pb = b;
-	ref = a * b;
-	pref = ref;
-	psum = pa + pb;
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " * " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " * " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
-	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(5);
-}
+#include <universal/verification/test_case.hpp>
 
 template<size_t nbits> 
 int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
@@ -38,7 +21,6 @@ int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCas
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -46,23 +28,23 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, double>(INFINITY, INFINITY);
-	GenerateTestCase<8, float>(0.5f, -0.5f);
+	TestCase<lns<16, uint8_t>, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
+	TestCase<lns<8, uint8_t>, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
 	constexpr double e = 2.71828182845904523536;
 	lns<16> a, b, c;
-	a = 0.5; cout << a << endl;
-	a = e; cout << a << endl;
+	a = 0.5; std::cout << a << '\n';
+	a = e; std::cout << a << '\n';
 	b = 1.0 / e;
 	c = a * b;
-	cout << c.to_long_double() << endl;
+	std::cout << c.to_long_double() << '\n';
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", true), "lns<8>", "multiplication");
 
 	nrOfFailedTestCases = 0;  // in manual testing mode, we ignore any failures
 #else
-	cout << "Arbitrary LNS multiplication validation" << endl;
+	std::cout << "Arbitrary LNS multiplication validation\n";
 
 	bool bReportIndividualTestCases = false;
 	std::string tag = "multiplication failed: ";

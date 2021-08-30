@@ -46,18 +46,15 @@ void PrintProducts(const Vector& a, const Vector& b) {
 
 template<typename ResultScalar, typename RefScalar>
 void reportOnCatastrophicCancellation(const std::string& type, const ResultScalar& v, const RefScalar& ref) {
-	using namespace std;
-
 	constexpr size_t COLUMN_WIDTH = 15;
-	cout << type << setw(COLUMN_WIDTH) << v << (v == ref ? " <----- PASS" : " <-----      FAIL") << endl;
+	std::cout << type << std::setw(COLUMN_WIDTH) << v << (v == ref ? " <----- PASS" : " <-----      FAIL") << '\n';
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc == 1) cout << argv[0] << endl;
+	if (argc == 1) std::cout << argv[0] << '\n';
 
 	// generate an interesting vector x with 0.5 ULP round-off errors in each product
 	// that the fused-dot product will be able to resolve
@@ -67,8 +64,8 @@ try {
 	//float epsminus = 1.0f - eps;
 	//float epsplus  = 1.0f + eps;
 
-	std::streamsize prec = cout.precision();
-	cout << setprecision(17);
+	std::streamsize prec = std::cout.precision();
+	std::cout << std::setprecision(17);
 	
 	{
 		using Scalar = float;
@@ -78,10 +75,10 @@ try {
 		Vector a = { a1, a2, a3, a4 };
 		Vector b = { b1, b2, b3, b4 };
 
-		cout << "a: " << a << '\n';
-		cout << "b: " << b << '\n';
+		std::cout << "a: " << a << '\n';
+		std::cout << "b: " << b << '\n';
 
-		cout << "\n\n";
+		std::cout << "\n\n";
 		reportOnCatastrophicCancellation("IEEE float   BLAS dot(x,y)  : ", dot(a,b), 2);
 	}
 
@@ -133,59 +130,59 @@ try {
 #endif
 		{
 			using Scalar = posit<16, 1>;
-			vector<Scalar> x = { a1, a2, a3, a4 };
-			vector<Scalar> y = { b1, b2, b3, b4 };
+			std::vector<Scalar> x = { a1, a2, a3, a4 };
+			std::vector<Scalar> y = { b1, b2, b3, b4 };
 
 			reportOnCatastrophicCancellation("posit<16,1> fused dot(x,y)  : " , fdp(x, y), 2);
 		}
 		{
 			using Scalar = posit<16, 2>;
-			vector<Scalar> x = { a1, a2, a3, a4 };
-			vector<Scalar> y = { b1, b2, b3, b4 };
+			std::vector<Scalar> x = { a1, a2, a3, a4 };
+			std::vector<Scalar> y = { b1, b2, b3, b4 };
 
 			reportOnCatastrophicCancellation("posit<16,2> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
 		{
 			using Scalar = posit<32, 2>;
-			vector<Scalar> x = { a1, a2, a3, a4 };
-			vector<Scalar> y = { b1, b2, b3, b4 };
+			std::vector<Scalar> x = { a1, a2, a3, a4 };
+			std::vector<Scalar> y = { b1, b2, b3, b4 };
 
 			reportOnCatastrophicCancellation("posit<32,2> fused dot(x,y)  : ", fdp(x, y), 2);
 			//PrintProducts(x, y);
 		}
 		{
 			using Scalar = posit<64, 1>;
-			vector<Scalar> x = { a1, a2, a3, a4 };
-			vector<Scalar> y = { b1, b2, b3, b4 };
+			std::vector<Scalar> x = { a1, a2, a3, a4 };
+			std::vector<Scalar> y = { b1, b2, b3, b4 };
 
 			reportOnCatastrophicCancellation("posit<64,1> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
 		{
 			using Scalar = posit<64, 0>;
-			vector<Scalar> x = { a1, a2, a3, a4 };
-			vector<Scalar> y = { b1, b2, b3, b4 };
+			std::vector<Scalar> x = { a1, a2, a3, a4 };
+			std::vector<Scalar> y = { b1, b2, b3, b4 };
 
 			reportOnCatastrophicCancellation("posit<64,0> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
 
 		{
 			using Scalar = posit<32, 1>;
-			vector<Scalar> x = { a1, a2, a3, a4 };
-			vector<Scalar> y = { b1, b2, b3, b4 };
+			std::vector<Scalar> x = { a1, a2, a3, a4 };
+			std::vector<Scalar> y = { b1, b2, b3, b4 };
 
 			reportOnCatastrophicCancellation("posit<32,1> fused dot(x,y)  : ", fdp(x, y), 2);
 
-			cout << "Reason why posit<32,1> fails\n";
+			std::cout << "Reason why posit<32,1> fails\n";
 			PrintProducts(x, y);
-			cout << "Cannot represent integer value " << a1 << " != " << x[0] << endl;
-//			cout << "Cannot represent integer value " << b1 << " != " << y[0] << endl;
-			cout << "Product is " << a1*b1 << " but quire_mul approximation yields " << quire_mul(x[0],y[0]) << endl;
-			cout << "Cannot represent integer value " << a4 << " != " << x[3] << endl;
-			cout << "Cannot represent integer value " << b4 << " != " << y[3] << endl;
-			cout << "Product is " << a4*b4 << " but quire_mul approximation yields " << quire_mul(x[3],y[3]) << endl;
+			std::cout << "Cannot represent integer value " << a1 << " != " << x[0] << '\n';
+//			std::cout << "Cannot represent integer value " << b1 << " != " << y[0] << endl;
+			std::cout << "Product is " << a1*b1 << " but quire_mul approximation yields " << quire_mul(x[0],y[0]) << '\n';
+			std::cout << "Cannot represent integer value " << a4 << " != " << x[3] << '\n';
+			std::cout << "Cannot represent integer value " << b4 << " != " << y[3] << '\n';
+			std::cout << "Product is " << a4*b4 << " but quire_mul approximation yields " << quire_mul(x[3],y[3]) << '\n';
 		}
 
-		cout << setprecision(prec);
+		std::cout << std::setprecision(prec);
 	}
 
 	return EXIT_SUCCESS;

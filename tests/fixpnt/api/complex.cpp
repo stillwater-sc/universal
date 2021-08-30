@@ -57,10 +57,10 @@ namespace sw::universal {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
+	using namespace std; // needed to get imaginary literals
 	using namespace sw::universal;
 
-	if (argc > 0) { cout << argv[0] << endl; }
+	if (argc > 0) { std::cout << argv[0] << std::endl; }
 
 	int nrOfFailedTestCases = 0;
 

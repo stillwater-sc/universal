@@ -32,25 +32,24 @@ namespace sw {
 // receive a float and print its components
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// lns attributes
 	constexpr int max_digits10 = std::numeric_limits<double>::max_digits10;
 
 	if (argc != 2) {
-		cerr << "lns : components of a logarithmic number\n";
-		cerr << "Show the sign/scale/fraction components of a logarithmic number.\n";
-		cerr << "Usage: lns float_value\n";
-		cerr << "Example: lns 0.03124999\n";
-		cerr << "TBD" << endl;
+		std::cerr << "lns : components of a logarithmic number\n";
+		std::cerr << "Show the sign/scale/fraction components of a logarithmic number.\n";
+		std::cerr << "Usage: lns float_value\n";
+		std::cerr << "Example: lns 0.03124999\n";
+		std::cerr << "TBD" << '\n';
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
-	string arg = argv[1];
+	std::string arg = argv[1];
 	lns<32, uint32_t> v;
 
 	constexpr size_t columnWidth = 50;
-	cout << setw(columnWidth) << left << typeid(v).name() << ": " << setprecision(max_digits10) << right << v << " " << to_triple(v) << endl;
+	std::cout << std::setw(columnWidth) << std::left << typeid(v).name() << ": " << std::setprecision(max_digits10) << std::right << v << " " << to_triple(v) << '\n';
 
 	return EXIT_SUCCESS;
 }

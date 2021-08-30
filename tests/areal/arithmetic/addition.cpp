@@ -11,34 +11,14 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/areal/areal_impl.hpp>
 #include <universal/verification/test_status.hpp>
+#include <universal/verification/test_case.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-
-// generate specific test case that you can trace with the trace conditions in areal.hpp
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::areal<nbits, es> a, b, sum, ref;
-	a = _a;
-	b = _b;
-	sum = a + b;
-	// generate the reference
-	Ty reference = _a + _b;
-	ref = reference;
-
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << reference << std::endl;
-	std::cout << a << " + " << b << " = " << sum << " (reference: " << ref << ")   ";
-	std::cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(sum, true) << " (reference: " << to_binary(ref, true) << ")   ";
-	std::cout << (ref == sum ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(5);
-}
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 1) {
@@ -52,8 +32,8 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 8, double>(INFINITY, INFINITY);
-	GenerateTestCase<8, 4, float>(0.5f, -0.5f);
+	TestCase<areal<16, 8, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+	TestCase<areal<8, 4, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 
 	// manual exhaustive test
 	//nrOfFailedTestCases += ReportTestResult(VerifyAddition< areal<8, 2, uint8_t> >("Manual Testing", true), "areal<8,2,uint8_t>", "addition");

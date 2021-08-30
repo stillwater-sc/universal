@@ -105,3 +105,15 @@ inline int scale(long double v) {
 #include <universal/native/nonconstexpr754.hpp>
 #endif
 
+
+// print representations of an IEEE-754 floating-point
+template<typename Real>
+void valueRepresentations(Real value) {
+	using namespace sw::universal;
+	std::cout << "hex    : " << to_hex(value) << '\n';
+	std::cout << "binary : " << to_binary(value) << '\n';
+	std::cout << "triple : " << to_triple(value) << '\n';
+	std::cout << "base2  : " << to_base2_scientific(value) << '\n';
+	std::cout << "base10 : " << value << '\n';
+	std::cout << "color  : " << color_print(value) << '\n';
+}

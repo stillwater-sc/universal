@@ -28,12 +28,9 @@ int Verify() {
 	return nrOfFailedTests;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
-
-	if (argc > 0) { cout << argv[0] << endl; }
 
 	constexpr size_t RND_TEST_CASES = 500000;
 
@@ -45,17 +42,17 @@ try {
 	std::string tag = " quire<32,2>";
 
 #if POSIT_FAST_POSIT_32_2
-	cout << "Fast specialization quire<32,2> configuration tests" << endl;
+	std::cout << "Fast specialization quire<32,2> configuration tests\n";
 #else
-	cout << "Standard quire<32,2> configuration tests" << endl;
+	std::cout << "Standard quire<32,2> configuration tests\n";
 #endif
 
 	quire<nbits, es> q;
-	cout << dynamic_range<nbits,es>() << endl << endl;
+	std::cout << dynamic_range<nbits,es>() << "\n\n";
 
 	// special cases
-	cout << "Special case tests " << endl;
-	string test = "Initialize to zero: ";
+	std::cout << "Special case tests\n";
+	std::string test = "Initialize to zero: ";
 	q = 0;
 	nrOfFailedTestCases += ReportCheck(tag, test, q.iszero());
 
@@ -64,12 +61,12 @@ try {
 //	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==          (native)  ");
 
 	// conversion tests
-	cout << "Assignment/conversion tests " << endl;
+	std::cout << "Assignment/conversion tests\n";
 	posit<nbits, es> p(SpecificValue::minpos);
 	q = p;
 
 	// arithmetic tests
-	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
+	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
 

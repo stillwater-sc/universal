@@ -42,10 +42,9 @@ integer<nbits, BlockType> ipow(integer<nbits, BlockType> base, integer<nbits, Bl
 }*/
 
 void TestSizeof() {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl << "TestSizeof" << endl;
+	std::cout << "\nTestSizeof\n";
 	bool pass = true;
 	using int8 = integer<8, uint8_t>;
 	using int64 = integer<64, uint32_t>;
@@ -58,23 +57,22 @@ void TestSizeof() {
 	int1024 o;
 
 	constexpr int WIDTH = 30;
-	cout << setw(WIDTH) << typeid(a).name() << "  size in bytes " << a.nrBytes << endl;
-	cout << setw(WIDTH) << typeid(k).name() << "  size in bytes " << k.nrBytes << endl;
-	cout << setw(WIDTH) << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
-	cout << setw(WIDTH) << typeid(o).name() << "  size in bytes " << o.nrBytes << endl;
+	std::cout << std::setw(WIDTH) << typeid(a).name() << "  size in bytes " << a.nrBytes << '\n';
+	std::cout << std::setw(WIDTH) << typeid(k).name() << "  size in bytes " << k.nrBytes << '\n';
+	std::cout << std::setw(WIDTH) << typeid(m).name() << "  size in bytes " << m.nrBytes << '\n';
+	std::cout << std::setw(WIDTH) << typeid(o).name() << "  size in bytes " << o.nrBytes << '\n';
 	if (a.nrBytes != sizeof(a)) pass = false;
 	if (k.nrBytes != sizeof(k)) pass = false;
 	if (m.nrBytes != sizeof(m)) pass = false;
 	if (o.nrBytes != sizeof(o)) pass = false;
 
-	cout << (pass ? "PASS" : "FAIL") << endl;
+	std::cout << (pass ? "PASS" : "FAIL") << '\n';
 }
 
 void TestConversion() {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl << "TestConversion" << endl;
+	std::cout << "\nTestConversion\n";
 
 	integer<128, uint32_t> i1, i2, i3;
 
@@ -82,31 +80,30 @@ void TestConversion() {
 	constexpr int iconst = 123456789;
 	i1 = iconst;
 	int64_t ll = int64_t(i1);
-	cout << "integer  " << i1 << endl;
+	std::cout << "integer  " << i1 << '\n';
 	if (iconst != ll) pass = false;
 	i2 = 1.23456789e8;
-	cout << "double   " << i2 << " TBD " << endl;
+	std::cout << "double   " << i2 << " TBD\n";
 	//i3.parse("123456789");
 
-	cout << (pass ? "PASS" : "FAIL") << endl;
+	std::cout << (pass ? "PASS\n" : "FAIL\n");
 }
 
 void TestFindMsb() {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl << "TestFindMsb" << endl;
+	std::cout << "\nTestFindMsb\n";
 	bool pass = true;
 	integer<32, uint32_t> a = 0xD5555555;
 	int golden_ref[] = { 31, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0, -1 };
 	for (int i = 0; i < int(sizeof(golden_ref)/sizeof(int)); ++i) {
 		int msb = findMsb(a);
-		cout << "msb of " << to_binary(a) << " is " << msb << endl;
+		std::cout << "msb of " << to_binary(a) << " is " << msb << '\n';
 		if (msb >= 0) a.setbit(msb, false);
 		if (msb != golden_ref[i]) pass = false;
 	}
 
-	cout << (pass ? "PASS" : "FAIL") << endl;
+	std::cout << (pass ? "PASS\n" : "FAIL\n");
 }
 
 // enumerate a couple ratios to test representability
@@ -123,7 +120,6 @@ void ReproducibilityTestSuite() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Miscellaneous integer tests failed";
@@ -137,26 +133,26 @@ try {
 	a = 1024;
 	b = 2;
 	c = a * a * a;
-	cout << "1K ^ 2 = " << ipow(a, b) << " reference : " << 1024 * 1024 << endl;
+	std::cout << "1K ^ 2 = " << ipow(a, b) << " reference : " << 1024 * 1024 << '\n';
 	long long oneK = 1024;
 	long long oneM = oneK * oneK;
 	long long oneG = oneK * oneM;
-	cout << "1G ^ 2 = " << ipow(c, b) << " reference : " << (oneG * oneG) << " diff : " << (ipow(c, b) - (oneG * oneG)) << endl;
-	cout << "1G  = " << c << endl;
-	cout << "2G  = " <<  2 * c << endl;
-	cout << "4G  = " <<  4 * c << endl;
-	cout << "8G  = " <<  8 * c << endl;
-	cout << "16G = " << 16 * c << endl;
+	std::cout << "1G ^ 2 = " << ipow(c, b) << " reference : " << (oneG * oneG) << " diff : " << (ipow(c, b) - (oneG * oneG)) << '\n';
+	std::cout << "1G  = " << c << '\n';
+	std::cout << "2G  = " <<  2 * c << '\n';
+	std::cout << "4G  = " <<  4 * c << '\n';
+	std::cout << "8G  = " <<  8 * c << '\n';
+	std::cout << "16G = " << 16 * c << '\n';
 
-	cout << endl;
+	std::cout << '\n';
 
-	cout << "a fast zero value: " << zero << endl;
+	std::cout << "a fast zero value: " << zero << '\n';
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 #else // !MANUAL_TESTING
 
-	std::cout << "Miscellaneous integer function verfication" << std::endl;
+	std::cout << "Miscellaneous integer function verfication\n";
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -175,7 +171,7 @@ try {
 #endif // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

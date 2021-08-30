@@ -62,13 +62,11 @@ size_t fdTest(size_t DoF) {
 #define MANUAL 1
 #define STRESS 1
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL
@@ -97,10 +95,10 @@ try {
 	b2 = A * ones;
 
 	if (DoF < 10) {
-		cout << "M^-1:\n" << M << endl;  // it is customary to talk about the preconditioner M while understanding that it really is the inverse M^-1
-		cout << "A:\n" << A << endl;
-		cout << "x:\n" << ones << endl;
-		cout << "b:\n" << b << endl;
+		std::cout << "M^-1:\n" << M << '\n';  // it is customary to talk about the preconditioner M while understanding that it really is the inverse M^-1
+		std::cout << "A:\n" << A << '\n';
+		std::cout << "x:\n" << ones << '\n';
+		std::cout << "b:\n" << b << '\n';
 	}
 	/*
 	* for second order elliptical PDEs, the resulting coefficient matrix exhibits
@@ -116,7 +114,7 @@ try {
 	std::cout << "solution is " << x << '\n';
 	std::cout << "final residual is " << residuals[size(residuals) - 1] << '\n';
 	std::cout << "validation\n" << A * x << " = " << b << '\n';
-	std::cout << "residuals \"" << typeid(Scalar).name() << "\" " << residuals << std::endl;
+	std::cout << "residuals \"" << typeid(Scalar).name() << "\" " << residuals << '\n';
 	if (itr == MAX_ITERATIONS) {
 		std::cerr << "Solution failed to converge\n";
 		++nrOfFailedTestCases;

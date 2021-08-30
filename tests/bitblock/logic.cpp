@@ -152,7 +152,6 @@ int VerifyBitsetLogicGreaterOrEqualThan() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
@@ -166,8 +165,7 @@ try {
 
 	bool gt = a > b; 
 	bool let = a <= b;
-	std::cout << gt << " " << let << endl;
-
+	std::cout << gt << " " << let << '\n';
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<3>(), "bitblock<3>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<3>(), "bitblock<3>", "!=");
@@ -178,7 +176,7 @@ try {
 
 #else
 
-	cout << "Logic: operator==()" << endl;
+	std::cout << "Logic: operator==()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<3>(), "bitblock<3>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<4>(), "bitblock<4>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<5>(), "bitblock<5>", "==");
@@ -186,7 +184,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<7>(), "bitblock<7>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<8>(), "bitblock<8>", "==");
 
-	cout << "Logic: operator!=()" << endl;
+	std::cout << "Logic: operator!=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<3>(), "bitblock<3>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<4>(), "bitblock<4>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<5>(), "bitblock<5>", "!=");
@@ -194,7 +192,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<7>(), "bitblock<7>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<8>(), "bitblock<8>", "!=");
 
-	std::cout << "Logic: operator<()" << endl;
+	std::cout << "Logic: operator<()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<3>(), "bitblock<3>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<4>(), "bitblock<4>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<5>(), "bitblock<5>", "<");
@@ -202,7 +200,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<7>(), "bitblock<7>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<8>(), "bitblock<8>", "<");
 
-	std::cout << "Logic: operator<=()" << endl;
+	std::cout << "Logic: operator<=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<3>(), "bitblock<3>", "<=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<4>(), "bitblock<4>", "<=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<5>(), "bitblock<5>", "<=");
@@ -210,7 +208,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<7>(), "bitblock<7>", "<=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<8>(), "bitblock<8>", "<=");
 
-	std::cout << "Logic: operator>()" << endl;
+	std::cout << "Logic: operator>()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<3>(), "bitblock<3>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<4>(), "bitblock<4>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<5>(), "bitblock<5>", ">");
@@ -218,7 +216,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<7>(), "bitblock<7>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<8>(), "bitblock<8>", ">");
 
-	std::cout << "Logic: operator>=()" << endl;
+	std::cout << "Logic: operator>=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<3>(), "bitblock<3>", ">=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<4>(), "bitblock<4>", ">=");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<5>(), "bitblock<5>", ">=");

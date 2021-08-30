@@ -20,7 +20,6 @@
 
 int main(int argc, char* argv[])
 try {
-	using namespace std;
 	using namespace sw::universal::blas;
 
 	{
@@ -30,10 +29,10 @@ try {
 		Matrix B(A);
 		A.transpose().transpose();
 		if (A != B) {
-			cout << "transpose FAIL\n";
+			std::cout << "transpose FAIL\n";
 		}
 		else {
-			cout << "transpose PASS\n";
+			std::cout << "transpose PASS\n";
 		}
 	}
 
@@ -44,10 +43,10 @@ try {
 		Matrix B(A);
 		A.transpose().transpose();
 		if (A != B) {
-			cout << "transpose FAIL\n";
+			std::cout << "transpose FAIL\n";
 		}
 		else {
-			cout << "transpose PASS\n";
+			std::cout << "transpose PASS\n";
 		}
 	}
 
@@ -58,10 +57,10 @@ try {
 		Matrix B(A);
 		A.transpose().transpose();
 		if (A != B) {
-			cout << "transpose FAIL\n";
+			std::cout << "transpose FAIL\n";
 		}
 		else {
-			cout << "transpose PASS\n";
+			std::cout << "transpose PASS\n";
 		}
 	}
 

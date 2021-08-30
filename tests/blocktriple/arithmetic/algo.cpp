@@ -14,7 +14,7 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value.hpp>
 #define BLOCKTRIPLE_VERBOSE_OUTPUT 1
-#define BLOCKTRIPLE_TRACE_ADD 1
+#define BLOCKTRIPLE_TRACE_ALL
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 // #include <universal/verification/test_reporters.hpp>
@@ -26,7 +26,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -46,13 +45,13 @@ try {
 		internal::value<fbits> a,b;
 		a = 1.0f;
 		b = 1.0f;
-		cout << to_triple(a) << " : " << a << '\n';
-		cout << to_triple(b) << " : " << b << '\n';
+		std::cout << to_triple(a) << " : " << a << '\n';
+		std::cout << to_triple(b) << " : " << b << '\n';
 		// add is adding 3 bits to the mantissa to 
 		// have all rounding bits available after alignment
 		internal::value<sumbits> c;
 		internal::module_add<fbits, abits>(a, b, c);  // this API is too confusing: caused by the <abits + 1> argument
-		cout << to_triple(c) << " : " << c << '\n';
+		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
 	// blocktriple stores the significant as you need the hidden bit in any
@@ -60,7 +59,7 @@ try {
 
 	// to support the quire (Kulisch superaccumulator):
 	// - operators add/sub/mul need to produce unrounded results
-	// - oprarators div/sqrt are rounded as part of the conversion iteration
+	// - operators div/sqrt are rounded as part of the conversion iteration
 	
 	// for a significant of nbits, the add/sub input size is nbits + 3
 	// The extra 3 bits, are the guard, round, and stick bits that need
@@ -70,13 +69,13 @@ try {
 	{
 		constexpr size_t nbits = 8;  // hidden + fraction bits
 
-		blocktriple<nbits, uint32_t> a, b, c;
+		blocktriple<nbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
 		a = 1.0f;
 		b = 1.0f;
-		cout << to_triple(a) << " : " << a << '\n';
-		cout << to_triple(b) << " : " << b << '\n';
+		std::cout << to_triple(a) << " : " << a << '\n';
+		std::cout << to_triple(b) << " : " << b << '\n';
 		c.add(a, b);
-		cout << to_triple(c) << " : " << c << '\n';
+		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
 #if STRESS_TESTING

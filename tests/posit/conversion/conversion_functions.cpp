@@ -260,11 +260,10 @@ BitXor[s * (2^nbits - 1), ptt] + s]
  */
 template<size_t nbits, size_t es>
 void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
-	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
+	std::cout << "convert to posit<" << nbits << "," << es << ">\n";
 	// obtain the sign/scale/fraction representation of a float
 	constexpr int nrfbits = std::numeric_limits<float>::digits - 1;
 	internal::value<nrfbits> v(x);
@@ -272,7 +271,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	//bool sign = v.sign();
 	int scale = v.scale();
 	bitblock<nrfbits> bits = v.fraction();
-	cout << v << " = " << to_triple(v) << endl;
+	std::cout << v << " = " << to_triple(v) << '\n';
 
 	float minpos = (float)posit<nbits, es>(SpecificValue::minpos);
 	float maxpos = (float)posit<nbits, es>(SpecificValue::maxpos);
@@ -285,44 +284,44 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	internal::bitblock<pt_len> sticky_bit;
 
 	bool s = (x < 0);
-	if (bPrintIntermediateSteps) cout << "s        = " << (s ? "negative" : "positive") << endl;
-	if (bPrintIntermediateSteps) cout << "x        = " << (float)x << endl;
-	if (bPrintIntermediateSteps) cout << "Abs(x)   = " << (float)std::abs(x) << endl;
+	if (bPrintIntermediateSteps) std::cout << "s        = " << (s ? "negative" : "positive") << '\n';
+	if (bPrintIntermediateSteps) std::cout << "x        = " << (float)x << '\n';
+	if (bPrintIntermediateSteps) std::cout << "Abs(x)   = " << (float)std::abs(x) << '\n';
 	float y = std::max<float>(minpos, std::min<float>(maxpos, (float)std::abs(x)));
-	if (bPrintIntermediateSteps) cout << "y        = " << y << endl;
+	if (bPrintIntermediateSteps) std::cout << "y        = " << y << '\n';
 	bool r = (y >= 1.0f);
-	if (bPrintIntermediateSteps) cout << "r        = " << (r ? "1" : "0") << endl;
+	if (bPrintIntermediateSteps) std::cout << "r        = " << (r ? "1" : "0") << '\n';
 #if (defined(__SUNPRO_C) || defined(__SUNPRO_CC)) && ((__SUNPRO_C < 0x5150) || (__SUNPRO_CC < 0x5150))
 	float e = std::floor(log2f(y));
 #else
 	float e = std::floor(std::log2(y));
 #endif
-	if (bPrintIntermediateSteps) cout << "e        = " << e << endl;
+	if (bPrintIntermediateSteps) std::cout << "e        = " << e << '\n';
 	float f = y / float(pow(2.0, scale)) - 1.0f;
-	if (bPrintIntermediateSteps) cout << "f        = " << f << endl;
-	if (bPrintIntermediateSteps) cout << "bits     = " << bits << endl;
+	if (bPrintIntermediateSteps) std::cout << "f        = " << f << '\n';
+	if (bPrintIntermediateSteps) std::cout << "bits     = " << bits << '\n';
 	int run = (int)std::abs(std::floor(e / pow(2, es))) + r;
-	if (bPrintIntermediateSteps) cout << "run      = " << run << endl;
+	if (bPrintIntermediateSteps) std::cout << "run      = " << run << '\n';
 	unsigned _run = (r ? 1 + (scale >> es) : -(scale >> es));
-	if (bPrintIntermediateSteps) cout << "_run     = " << _run << endl;
+	if (bPrintIntermediateSteps) std::cout << "_run     = " << _run << '\n';
 	// reg   = BitOr[BitShiftLeft[r * (2^run - 1), 1], BitXor[1, r]];
 	regime.set(0, 1 ^ r);
 	for (int i = 1; i <= run; i++) regime.set(i, r);
-	if (bPrintIntermediateSteps) cout << "reg      = " << LowerSegment(regime,run) << endl;
+	if (bPrintIntermediateSteps) std::cout << "reg      = " << LowerSegment(regime,run) << '\n';
 	sw::universal::regime<nbits, es> _reg; _reg.assign(scale);
-	if (bPrintIntermediateSteps) cout << "_reg     = " << _reg << endl;
+	if (bPrintIntermediateSteps) std::cout << "_reg     = " << _reg << '\n';
 	unsigned esval = scale % (uint32_t(1) << es);
-	if (bPrintIntermediateSteps) cout << "esval    = " << esval << endl;
+	if (bPrintIntermediateSteps) std::cout << "esval    = " << esval << '\n';
 	exponent = _convert_to_bitblock<pt_len>(esval);
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
-	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
+	if (bPrintIntermediateSteps) std::cout << "nf       = " << nf << '\n';
 	// copy the most significant nf fraction bits into fraction
 	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - nf + i];
-	if (bPrintIntermediateSteps) cout << "fraction = " << fraction << endl;
+	if (bPrintIntermediateSteps) std::cout << "fraction = " << fraction << '\n';
 	float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
-	if (bPrintIntermediateSteps) cout << "fv       = " << fv << endl;
+	if (bPrintIntermediateSteps) std::cout << "fv       = " << fv << '\n';
 	bool sb = ((f * (unsigned(1) << nf)) > fv);
-	if (bPrintIntermediateSteps) cout << "sb       = " << (sb ? "1" : "0") << endl;
+	if (bPrintIntermediateSteps) std::cout << "sb       = " << (sb ? "1" : "0") << '\n';
 
 	// construct the bigger posit
 	// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
@@ -332,51 +331,50 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	sticky_bit.set(0, sb);
 
 	if (bPrintIntermediateSteps) {
-		cout << "regime   = " << regime << endl;
-		cout << "exponent = " << exponent << endl;
-		cout << "fraction = " << fraction << endl;
-		cout << "sticky   = " << sticky_bit << endl;
+		std::cout << "regime   = " << regime << '\n';
+		std::cout << "exponent = " << exponent << '\n';
+		std::cout << "fraction = " << fraction << '\n';
+		std::cout << "sticky   = " << sticky_bit << '\n';
 	}
 	pt_bits |= regime;
 	pt_bits |= exponent;
 	pt_bits |= fraction;
 	pt_bits |= sticky_bit;
 
-	if (bPrintIntermediateSteps) cout << "pt bits  = " << pt_bits << endl;
-	if (bPrintIntermediateSteps) cout << "pt bits  = " << LowerSegment(pt_bits, 2 + run + es) << endl;
+	if (bPrintIntermediateSteps) std::cout << "pt bits  = " << pt_bits << '\n';
+	if (bPrintIntermediateSteps) std::cout << "pt bits  = " << LowerSegment(pt_bits, 2 + run + es) << '\n';
 	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
-	if (bPrintIntermediateSteps) cout << "pt_len   = " << pt_len << endl;
-	if (bPrintIntermediateSteps) cout << "len      = " << len << endl;
-	if (bPrintIntermediateSteps) cout << "blast at = " << len - nbits << endl;
+	if (bPrintIntermediateSteps) std::cout << "pt_len   = " << pt_len << '\n';
+	if (bPrintIntermediateSteps) std::cout << "len      = " << len << '\n';
+	if (bPrintIntermediateSteps) std::cout << "blast at = " << len - nbits << '\n';
 	bool blast = pt_bits.test(len - nbits);
 	bool bafter = pt_bits.test(len - nbits - 1);
 	bool bsticky = _anyAfter(pt_bits, len - nbits - 1 - 1);
-	if (bPrintIntermediateSteps) cout << "blast    = " << blast << endl;
-	if (bPrintIntermediateSteps) cout << "bafter   = " << bafter << endl;
-	if (bPrintIntermediateSteps) cout << "bsticky  = " << bsticky << endl;
+	if (bPrintIntermediateSteps) std::cout << "blast    = " << blast << '\n';
+	if (bPrintIntermediateSteps) std::cout << "bafter   = " << bafter << '\n';
+	if (bPrintIntermediateSteps) std::cout << "bsticky  = " << bsticky << '\n';
 
 	bool rb = (blast & bafter) | (bafter & bsticky);
-	cout << "rb       = " << rb << endl;
+	std::cout << "rb       = " << rb << '\n';
 	internal::bitblock<pt_len> ptt = pt_bits;
 	ptt >>= (len - nbits);
-	if (bPrintIntermediateSteps) cout << "ptt      = " << ptt << endl;
+	if (bPrintIntermediateSteps) std::cout << "ptt      = " << ptt << '\n';
 	if (rb) increment_bitblock(ptt);
 	if (s) ptt = _twos_complement(ptt);
-	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits-1) << endl;
+	std::cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits-1) << '\n';
 
 	internal::bitblock<nbits> ptt_t;
 	CopyLowerSegment(ptt, ptt_t);
 	posit<nbits, es> p;
 	p.setbits(ptt_t.to_ullong());
-	cout << "p = " << components(p) << endl;
+	std::cout << "p = " << components(p) << '\n';
 }
 
 template<size_t nbits, size_t es, size_t nrfbits>
 sw::universal::posit<nbits, es> convert_to_posit(sw::universal::value<nrfbits> v, bool bPrintIntermediateSteps = false) {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
+	std::cout << "convert to posit<" << nbits << "," << es << ">\n";
 	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
 	bitblock<nrfbits> bits = v.fraction();
 
@@ -420,7 +418,7 @@ sw::universal::posit<nbits, es> convert_to_posit(sw::universal::value<nrfbits> v
 	pt_bits |= exponent;
 	pt_bits |= fraction;
 	pt_bits |= sticky_bit;
-	cout << "pt_bits  = " << pt_bits << endl;
+	std::cout << "pt_bits  = " << pt_bits << '\n';
 
 	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
 	bool blast = pt_bits.test(len - nbits);
@@ -432,41 +430,41 @@ sw::universal::posit<nbits, es> convert_to_posit(sw::universal::value<nrfbits> v
 	pt_bits <<= pt_len - len;
 	bitblock<nbits> ptt;
 	truncate(pt_bits, ptt);
-	cout << "ptt      = " << ptt << endl;
+	std::cout << "ptt      = " << ptt << '\n';
 	//ptt >>= (len - nbits);
 	if (rb) increment_bitblock(ptt);
 	if (s) ptt = twos_complement(ptt);
 	if (bPrintIntermediateSteps) {
-		cout << "s        = " << (s ? "1" : "0") << endl;
-		cout << "e        = " << e << endl;
-		cout << "r        = " << (r ? "1" : "0") << endl;
-		cout << "run      = " << run << endl;
-		cout << "reg      = " << regime << endl;
-		cout << "esval    = " << esval << endl;
-		cout << "nf       = " << nf << endl;
-		cout << "bits     = " << bits << endl;
-		cout << "fraction = " << fraction << endl;
-		cout << "sb       = " << sb << endl;
-		cout << "pt_len   = " << pt_len << endl;
-		cout << "len      = " << len << endl;
-		cout << "blast at = " << len - nbits << endl;
-		cout << "regime   = " << regime << endl;
-		cout << "exponent = " << exponent << endl;
-		cout << "fraction = " << fraction << endl;
-		cout << "sticky   = " << sticky_bit << endl;
-		cout << "pt_bits  = " << pt_bits << endl;
-		cout << "blast    = " << blast << endl;
-		cout << "bafter   = " << bafter << endl;
-		cout << "bsticky  = " << bsticky << endl;
-		cout << "rb       = " << rb << endl;
+		std::cout << "s        = " << (s ? "1" : "0") << '\n';
+		std::cout << "e        = " << e << '\n';
+		std::cout << "r        = " << (r ? "1" : "0") << '\n';
+		std::cout << "run      = " << run << '\n';
+		std::cout << "reg      = " << regime << '\n';
+		std::cout << "esval    = " << esval << '\n';
+		std::cout << "nf       = " << nf << '\n';
+		std::cout << "bits     = " << bits << '\n';
+		std::cout << "fraction = " << fraction << '\n';
+		std::cout << "sb       = " << sb << '\n';
+		std::cout << "pt_len   = " << pt_len << '\n';
+		std::cout << "len      = " << len << '\n';
+		std::cout << "blast at = " << len - nbits << '\n';
+		std::cout << "regime   = " << regime << '\n';
+		std::cout << "exponent = " << exponent << '\n';
+		std::cout << "fraction = " << fraction << '\n';
+		std::cout << "sticky   = " << sticky_bit << '\n';
+		std::cout << "pt_bits  = " << pt_bits << '\n';
+		std::cout << "blast    = " << blast << '\n';
+		std::cout << "bafter   = " << bafter << '\n';
+		std::cout << "bsticky  = " << bsticky << '\n';
+		std::cout << "rb       = " << rb << '\n';
 
-		cout << "ptt      = " << ptt << endl;
+		std::cout << "ptt      = " << ptt << '\n';
 	}
-	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits - 1) << endl;
+	std::cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits - 1) << '\n';
 	
 	sw::universal::posit<nbits, es> p;
 	p.set(ptt);
-	cout << "p = " << p.to_float() << endl;
+	std::cout << "p = " << p.to_float() << '\n';
 	return p;
 }
 
@@ -561,13 +559,12 @@ constexpr int SW_QUANDRANT = 3;
 
 template<size_t nbits, size_t es>
 void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
-	using namespace std;
 	using namespace sw::universal;
 
 	posit<nbits, es> p;
-	cout << endl << endl << "-------------------------------------------" << endl;
-	cout << dynamic_range(p) << endl;
-	cout << components_to_string(p) << endl;
+	std::cout << "\n\n-------------------------------------------\n";
+	std::cout << dynamic_range(p) << '\n';
+	std::cout << components_to_string(p) << '\n';
 
 	int index;
 	float sign_factor = 1.0;
@@ -587,9 +584,9 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 		sign_factor = -1.0;
 		break;
 	}
-	p.setbits(index);		cout << components_to_string(p) << endl; 	float f1 = p.to_float();
-	p.setbits(index+1);	cout << components_to_string(p) << endl;	float f2 = p.to_float();
-	p.setbits(index+2);	cout << components_to_string(p) << endl;	float f3 = p.to_float();
+	p.setbits(index);	std::cout << components_to_string(p) << '\n'; 	float f1 = p.to_float();
+	p.setbits(index+1);	std::cout << components_to_string(p) << '\n';	float f2 = p.to_float();
+	p.setbits(index+2);	std::cout << components_to_string(p) << '\n';	float f3 = p.to_float();
 
 	float eps = float(f1 / 100000.0);
 	float f_mineps, f, f_pluseps;
@@ -608,9 +605,9 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 	internal::value<23> v_mineps(f_mineps);
 	internal::value<23> v(f);
 	internal::value<23> v_pluseps(f_pluseps);
-	cout << roundingType << " mean - eps: " << f_mineps  << " " << to_triple(v_mineps) << endl;
-	cout << roundingType << " mean      : " << f         << " " << to_triple(v) << endl;
-	cout << roundingType << " mean + eps: " << f_pluseps << " " << to_triple(v_pluseps) << endl;
+	std::cout << roundingType << " mean - eps: " << f_mineps  << " " << to_triple(v_mineps) << '\n';
+	std::cout << roundingType << " mean      : " << f         << " " << to_triple(v) << '\n';
+	std::cout << roundingType << " mean + eps: " << f_pluseps << " " << to_triple(v_pluseps) << '\n';
 	convert_to_posit<nbits, es>(f_mineps, bPrintIntermediateSteps);
 	posit_component_conversion<nbits, es>(f_mineps, bPrintIntermediateSteps);
 	convert_to_posit<nbits, es>(f, bPrintIntermediateSteps);
@@ -619,9 +616,9 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 	posit_component_conversion<nbits, es>(f_pluseps, bPrintIntermediateSteps);
 
 	posit<nbits, es> p1(f1), p2(f2), p3(f3);
-	cout << components_to_string(p1) << endl;
-	cout << components_to_string(p2) << endl;
-	cout << components_to_string(p3) << endl;
+	std::cout << components_to_string(p1) << '\n';
+	std::cout << components_to_string(p2) << '\n';
+	std::cout << components_to_string(p3) << '\n';
 }
 
 #define MANUAL_TESTING 1
@@ -629,7 +626,6 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;

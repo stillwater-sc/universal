@@ -9,7 +9,6 @@
 // receive a float and print the components of a long double representation
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::internal;
 
 	// long double attributes
@@ -17,17 +16,17 @@ try {
 	constexpr int fbits = std::numeric_limits<long double>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "longdouble: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V\n";
-		cerr << "Show the sign/scale/fraction components of an IEEE long double.\n";
-		cerr << "Usage: longdouble long_double_value\n";
-		cerr << "Example: compld 0.03124999\n";
-		cerr << "long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)" << endl;
+		std::cerr << "longdouble: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V\n";
+		std::cerr << "Show the sign/scale/fraction components of an IEEE long double.\n";
+		std::cerr << "Usage: longdouble long_double_value\n";
+		std::cerr << "Example: compld 0.03124999\n";
+		std::cerr << "long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)\n";
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
 	long double q = atof(argv[1]);
 	value<fbits> v(q);
 
-	cout << "long double: " << setprecision(max_digits10) << q << " " << to_triple(v) << endl;
+	std::cout << "long double: " << std::setprecision(max_digits10) << q << " " << to_triple(v) << '\n';
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {

@@ -14,7 +14,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;

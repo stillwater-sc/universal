@@ -14,32 +14,30 @@
 
 template<typename Scalar>
 void TestRangeGeneration() {
-	using namespace std;
 	using namespace sw::universal::blas;
 	using std::pow;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	Vector v = linspace<Scalar>(0, 10, 5);
-	cout << "linspace = " << v << endl;
+	std::cout << "linspace = " << v << '\n';
 	v = linspace<Scalar>(0, 10, 5, false);
-	cout << "linspace = " << v << endl;
+	std::cout << "linspace = " << v << '\n';
 
 	v = logspace<Scalar>(0, 10, 5);
-	cout << "logspace = " << v << endl;
+	std::cout << "logspace = " << v << '\n';
 	v = logspace<Scalar>(0, 10, 5, false);
-	cout << "logspace = " << v << endl;
+	std::cout << "logspace = " << v << '\n';
 
 	Scalar x{ 10 }, y{ 1.5 };
-	cout << "x^y = " << pow(x, y) << endl;
+	std::cout << "x^y = " << pow(x, y) << '\n';
 
 	v = geomspace<Scalar>(0, 10, 5);
-	cout << "geomspace = " << v << endl;
+	std::cout << "geomspace = " << v << '\n';
 	v = geomspace<Scalar>(0, 10, 5, false);
-	cout << "geomspace = " << v << endl;
+	std::cout << "geomspace = " << v << '\n';
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::blas;
 
 	int nrOfFailedTestCases = 0;

@@ -12,9 +12,8 @@
 
 int main()
 try {
-	using namespace std;
 
-	cout << "ISO Constants\n";
+	std::cout << "ISO Constants\n";
 
     
 	return EXIT_SUCCESS;

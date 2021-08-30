@@ -9,49 +9,48 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 
-	numberTraits<int16_t>(cout);
-	numberTraits<float>(cout);
-	numberTraits<posit<32, 2>>(cout);
+	numberTraits<int16_t>(std::cout);
+	numberTraits<float>(std::cout);
+	numberTraits<posit<32, 2>>(std::cout);
 
-	cout << minmax_range<float>() << endl;
-	cout << minmax_range<posit<32, 2>>() << endl;
+	std::cout << minmax_range<float>() << '\n';
+	std::cout << minmax_range<posit<32, 2>>() << '\n';
 
-	cout << dynamic_range<float>() << endl;
-	cout << dynamic_range<posit<32, 2>>() << endl;
+	std::cout << dynamic_range<float>() << '\n';
+	std::cout << dynamic_range<posit<32, 2>>() << '\n';
 
-	cout << symmetry<float>() << endl;
-	cout << symmetry<posit<32, 2>>() << endl;
+	std::cout << symmetry<float>() << '\n';
+	std::cout << symmetry<posit<32, 2>>() << '\n';
 
 	using Float = float;
 	using Posit = sw::universal::posit<32, 2>;
-	compareNumberTraits<Float, Posit>(cout);
+	compareNumberTraits<Float, Posit>(std::cout);
 
-	cout << endl;
-	cout << "std::numeric_limits<T>::min():\n"
+	std::cout << std::endl;
+	std::cout << "std::numeric_limits<T>::min():\n"
 		<< "\tfloat: " << std::numeric_limits<float>::min()
 		<< " or " << std::hexfloat << std::numeric_limits<float>::min() << '\n'
 		<< "\tdouble: " << std::defaultfloat << std::numeric_limits<double>::min()
 		<< " or " << std::hexfloat << std::numeric_limits<double>::min() << '\n';
-	cout << "std::numeric_limits<T>::lowest():\n"
+	std::cout << "std::numeric_limits<T>::lowest():\n"
 		<< "\tfloat: " << std::defaultfloat << std::numeric_limits<float>::lowest()
 		<< " or " << std::hexfloat << std::numeric_limits<float>::lowest() << '\n'
 		<< "\tdouble: " << std::defaultfloat << std::numeric_limits<double>::lowest()
 		<< " or " << std::hexfloat << std::numeric_limits<double>::lowest() << '\n';
-	cout << "std::numeric_limits<T>::max():\n"
+	std::cout << "std::numeric_limits<T>::max():\n"
 		<< "\tfloat: " << std::defaultfloat << std::numeric_limits<float>::max()
 		<< " or " << std::hexfloat << std::numeric_limits<float>::max() << '\n'
 		<< "\tdouble: " << std::defaultfloat << std::numeric_limits<double>::max()
 		<< " or " << std::hexfloat << std::numeric_limits<double>::max() << '\n';
 
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

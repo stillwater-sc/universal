@@ -95,7 +95,6 @@ faithfully rounded.
 */
 void my_sincospif(float a, float *sp, float *cp)
 {
-	using namespace std;
 	float az, t, c, r, s;
 	int32_t i;
 
@@ -188,7 +187,6 @@ void GenerateTestCase(Ty a) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
@@ -205,17 +203,15 @@ try {
 //	GenerateTestCase<128, 4, float>(m_pi);
 //	GenerateTestCase<256, 5, float>(m_pi);
 
-	cout << "Standard sin(pi/2) : " << std::sin(m_pi*0.5) << " vs sinpi(0.5): " << sinpi(0.5) << endl;
-	cout << "Standard sin(pi)   : " << std::sin(m_pi)     << " vs sinpi(1.0): " << sinpi(1.0) << endl;
-	cout << "Standard sin(3pi/2): " << std::sin(m_pi*1.5) << " vs sinpi(1.5): " << sinpi(1.5) << endl;
-	cout << "Standard sin(2pi)  : " << std::sin(m_pi*2)   << " vs sinpi(2.0): " << sinpi(2.0) << endl;
+	std::cout << "Standard sin(pi/2) : " << std::sin(m_pi*0.5) << " vs sinpi(0.5): " << sinpi(0.5) << '\n';
+	std::cout << "Standard sin(pi)   : " << std::sin(m_pi)     << " vs sinpi(1.0): " << sinpi(1.0) << '\n';
+	std::cout << "Standard sin(3pi/2): " << std::sin(m_pi*1.5) << " vs sinpi(1.5): " << sinpi(1.5) << '\n';
+	std::cout << "Standard sin(2pi)  : " << std::sin(m_pi*2)   << " vs sinpi(2.0): " << sinpi(2.0) << '\n';
 
-	cout << "haversine(0.0, 0.0, 90.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 90.0, 0.0, 1.0) << endl;
-	cout << "haversine(0.0, 0.0, 180.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 180, 0.0, 1.0) << endl;
+	std::cout << "haversine(0.0, 0.0, 90.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 90.0, 0.0, 1.0) << '\n';
+	std::cout << "haversine(0.0, 0.0, 180.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 180, 0.0, 1.0) << '\n';
 
 	GenerateTestCase<16, 1, double>(m_pi_2);
-
-	cout << endl;
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifySine<2, 0>(true), "posit<2,0>", "sin");

@@ -47,8 +47,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
-	using namespace sw::universal;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -64,9 +62,9 @@ try {
 		b.set_raw_bits(0x80);
 		blockbinary<16> c;
 		c = urmul2(a, b);
-		cout << a << " * " << b << " = " << c << " : " << (long long)c << endl;
+		std::cout << a << " * " << b << " = " << c << " : " << (long long)c << '\n';
 		c = urmul2(b, a);
-		cout << b << " * " << a << " = " << c << " : " << (long long)c << endl;
+		std::cout << b << " * " << a << " = " << c << " : " << (long long)c << '\n';
 	}
 
 	float fa = -8.0f;
@@ -104,7 +102,7 @@ try {
 	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
 #else
 
-	cout << "Fixed-point modular multiplication validation" << endl;
+	std::cout << "Fixed-point modular multiplication validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "multiplication");

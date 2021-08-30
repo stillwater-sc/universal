@@ -85,7 +85,6 @@ int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCase
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -140,7 +139,7 @@ try {
 
 	std::cout << "square root integer function verfication" << std::endl;
 
-	cout << "floor(sqrt(x)) tests\n";
+	std::cout << "floor(sqrt(x)) tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8,uint8_t>", "floor_sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10,uint8_t>", "floor_sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12,uint16_t>", "floor_sqrt");
@@ -149,7 +148,7 @@ try {
 	// you can use uint64_t as BlockType for types <= 64bits
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint64_t>(tag, bReportIndividualTestCases), "integer<16,uint64_t>", "floor_sqrt");
 
-	cout << "ceil(sqrt(x)) tests\n";
+	std::cout << "ceil(sqrt(x)) tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8,uint8_t>", "ceil_sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10,uint8_t>", "ceil_sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12,uint16_t>", "ceil_sqrt");

@@ -32,7 +32,6 @@ void VerifyToBinary() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
@@ -49,7 +48,7 @@ try {
 
 #else
 
-	cout << "Posit serialization validation" << endl;
+	std::cout << "Posit serialization validation\n";
 
 
 #if STRESS_TESTING

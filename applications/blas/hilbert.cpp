@@ -28,41 +28,39 @@
 
 template<typename Scalar>
 void HilbertMatrixTest(size_t N = 5) {
-	using namespace std;
 	using namespace sw::universal::blas;
 //	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 	Matrix H(N, N), Hscale(N, N), Hinv(N, N), Hscaleinv(N, N);
 
-	cout << "HilbertMatrixTest for type: " << typeid(Scalar).name() << endl;
+	std::cout << "HilbertMatrixTest for type: " << typeid(Scalar).name() << '\n';
 	// first a non-scaled Hilbert matrix that suffers from representational error
 	// as 1/3, 1/6, 1/7, etc cannot be represented in binary arithmetic
 	GenerateHilbertMatrix<Scalar>(H, false);
 	GenerateHilbertMatrixInverse<Scalar>(Hinv);
-	cout << "Hilbert matrix\n" << H << endl;
-	cout << "Hilbert inverse\n" << Hinv << endl;
-	cout << "Validation: Hinv * H => I\n" << Hinv * H << endl;
+	std::cout << "Hilbert matrix\n" << H << '\n';
+	std::cout << "Hilbert inverse\n" << Hinv << '\n';
+	std::cout << "Validation: Hinv * H => I\n" << Hinv * H << '\n';
 
 	Scalar lcm = (Scalar)GenerateHilbertMatrix<Scalar>(Hscale, true); // scale the Hilbert matrix entries to be binary representable
 	GenerateHilbertMatrixInverse(Hscaleinv, lcm); // <-- scale the inverse
-	cout << "Scaled Hilbert matrix: lcm = " << lcm << "\n" << Hscale << endl;
-	cout << "Scaled Hilbert inverse\n" << Hscaleinv << endl;
-	cout << "Validation: Hinv * H => I\n" << Hscaleinv * Hscale << endl;
-	cout << "Rescaled with lcm = " << lcm << '\n' << (Hscaleinv * Hscale) / lcm << endl;
+	std::cout << "Scaled Hilbert matrix: lcm = " << lcm << "\n" << Hscale << '\n';
+	std::cout << "Scaled Hilbert inverse\n" << Hscaleinv << '\n';
+	std::cout << "Validation: Hinv * H => I\n" << Hscaleinv * Hscale << '\n';
+	std::cout << "Rescaled with lcm = " << lcm << '\n' << (Hscaleinv * Hscale) / lcm << '\n';
 
-	cout << "Computing a Hilbert matrix inverse through Gauss-Jordan\n";
+	std::cout << "Computing a Hilbert matrix inverse through Gauss-Jordan\n";
 	auto Hinvcomputed = inv(H);
-	cout << "Hilbert inverse computed with Gauss-Jordan\n" << Hinvcomputed << endl;
-	cout << "Validation: Hinv * H => I\n" << Hinvcomputed * H << endl;
-	cout << "------------------------------------------------------\n";
+	std::cout << "Hilbert inverse computed with Gauss-Jordan\n" << Hinvcomputed << '\n';
+	std::cout << "Validation: Hinv * H => I\n" << Hinvcomputed * H << '\n';
+	std::cout << "------------------------------------------------------\n";
 }
 
 int main(int argc, char* argv[])
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc == 1) cout << argv[0] << endl;
+	if (argc == 1) std::cout << argv[0] << '\n';
 
 	HilbertMatrixTest<float>();
 	HilbertMatrixTest< posit<32, 2> >();

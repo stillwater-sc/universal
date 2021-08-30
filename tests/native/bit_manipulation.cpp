@@ -33,7 +33,6 @@ inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleM
 
 int main()
 {
-	using namespace std;
 
 	// create a float with the following layout
 	// b1.00001111.00011001011010001001001"
@@ -42,10 +41,10 @@ int main()
 	decoder.parts.exponent = 0b0000'0001;
 	decoder.parts.sign = 0b1;
 
-	cout << decoder.f << endl;
+	std::cout << decoder.f << '\n';
 #ifdef BIT_CAST_SUPPORT
 	uint32_t bc = std::bit_cast<uint32_t, float>(decoder.f);
-	cout << to_binary(bc, 32) << endl;
+	std::cout << to_binary(bc, 32) << '\n';
 #endif
 
 	return EXIT_SUCCESS;

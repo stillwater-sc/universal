@@ -34,7 +34,6 @@ void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
@@ -46,7 +45,7 @@ try {
 
 	constexpr size_t vectorSize = SIZE_32K + 2;
 	Vector a(vectorSize), b(vectorSize);
-	Scalar epsilon = numeric_limits<Scalar>::epsilon();
+	Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
 	for (size_t i = 1; i < vectorSize-1; ++i) {
 		a[i] = 1;
 		b[i] = epsilon;
@@ -54,8 +53,8 @@ try {
 	a[0] = a[vectorSize - 1] = posit<nbits, es>(SpecificValue::maxpos);
 	b[0] = -1;  b[vectorSize - 1] = 1;
 	if (vectorSize < 10) {
-		cout << a << endl;
-		cout << b << endl;
+		std::cout << a << '\n';
+		std::cout << b << '\n';
 		PrintProducts(a, b);
 	}
 	
@@ -67,14 +66,14 @@ try {
 	//  fdp will calculate the sum of products correctly
 	// dot: 0
 	// fdp: 0.000244141
-	cout << "\naccumulation of 32k epsilons (" << hex_format(epsilon) << " = " << epsilon << ") for a " << typeid(Scalar).name() << " yields:\n";
-	cout << "dot            : " << dot(a, b)  << " : " << hex_format(dot(a,b)) << '\n';
-	cout << "fdp            : " << fdp(a, b)  << " : " << hex_format(fdp(a,b)) << '\n';
+	std::cout << "\naccumulation of 32k epsilons (" << hex_format(epsilon) << " = " << epsilon << ") for a " << typeid(Scalar).name() << " yields:\n";
+	std::cout << "dot            : " << dot(a, b)  << " : " << hex_format(dot(a,b)) << '\n';
+	std::cout << "fdp            : " << fdp(a, b)  << " : " << hex_format(fdp(a,b)) << '\n';
 	Scalar validation = (vectorSize - 2) * epsilon;
-	cout << "32k * epsilon  : " << validation << " : " << hex_format(validation) << '\n';
+	std::cout << "32k * epsilon  : " << validation << " : " << hex_format(validation) << '\n';
 
 	// scale a vector
-	cout << "\nscaling a vector\n";
+	std::cout << "\nscaling a vector\n";
 	for (size_t i = 0; i < vectorSize; ++i) {
 		a[i] = 1;
 		b[i] = epsilon;
@@ -83,20 +82,20 @@ try {
 	bool success = true;
 	for (size_t i = 0; i < size(a); ++i) {
 		if (a[i] != b[i]) {
-			cout << a[i] << " != " << b[i] << '\n';
+			std::cout << a[i] << " != " << b[i] << '\n';
 			success = false;
 			break;
 		}
 	}
 	if (success) {
-		cout << "PASS: scaling vector a by epsilon yielded vector b\n";
+		std::cout << "PASS: scaling vector a by epsilon yielded vector b\n";
 	}
 	else {
-		cout << "FAIL: scaling vector a by epsilon failed to yield vector b\n";
+		std::cout << "FAIL: scaling vector a by epsilon failed to yield vector b\n";
 	}
 
 	// normalize a vector
-	cout << "\nnormalizing a vector\n";
+	std::cout << "\nnormalizing a vector\n";
 	for (size_t i = 0; i < vectorSize; ++i) {
 		a[i] = 1;
 	}
@@ -104,19 +103,18 @@ try {
 	success = true;
 	for (size_t i = 0; i < size(a); ++i) {
 		if (a[i] != b[i]) {
-			cout << a[i] << " != " << b[i] << '\n';
+			std::cout << a[i] << " != " << b[i] << '\n';
 			success = false;
 			break;
 		}
 	}
 	if (success) {
-		cout << "PASS: normalizing vector b by epsilon yielded vector a\n";
+		std::cout << "PASS: normalizing vector b by epsilon yielded vector a\n";
 	}
 	else {
-		cout << "FAIL: scaling vector b by epsilon failed to yield vector a\n";
+		std::cout << "FAIL: scaling vector b by epsilon failed to yield vector a\n";
 	}
 
-	cout << endl;
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

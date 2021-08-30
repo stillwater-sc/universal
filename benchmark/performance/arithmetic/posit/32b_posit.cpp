@@ -14,7 +14,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
@@ -22,8 +21,8 @@ try {
 	posit<nbits, es> number;
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport(number, perfReport);
-	cout << ReportPerformance(number, perfReport);
-	cout << endl;
+	std::cout << ReportPerformance(number, perfReport);
+	std::cout << std::endl;
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
