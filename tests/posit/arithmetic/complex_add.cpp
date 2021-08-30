@@ -23,25 +23,6 @@
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 
-// generate specific test case that you can trace with the trace conditions in posit.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCase(Ty a, Ty b) {
-	Ty ref;
-	sw::universal::posit<nbits, es> pa, pb, pref, psum;
-	pa = a;
-	pb = b;
-	ref = a + b;
-	pref = ref;
-	psum = pa + pb;
-	std::streamsize oldPrecision = std::cout.precision();
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
-	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::dec << std::setprecision(oldPrecision);
-}
-
 #define FLOAT_TABLE_WIDTH 10
 
 template<size_t nbits, size_t es>

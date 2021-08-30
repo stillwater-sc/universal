@@ -1,5 +1,5 @@
 #pragma once
-// hypot.hpp: hypotenuse functions for classic floating-point cfloats
+// hypot.hpp: hypotenuse functions for fixed-points
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -40,19 +40,19 @@ hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN
 
 namespace sw::universal {
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypot(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypot(double(x),double(y)));
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+fixpnt<nbits, rbits, arithmetic, bt> hypot(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
+	return fixpnt<nbits, rbits, arithmetic, bt>(std::hypot(double(x),double(y)));
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypotf(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypotf(float(x),float(y)));
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+fixpnt<nbits, rbits, arithmetic, bt> hypotf(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
+	return fixpnt<nbits, rbits, arithmetic, bt>(std::hypotf(float(x),float(y)));
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypotl(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypotl((long double)(x),(long double)(y)));
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+fixpnt<nbits, rbits, arithmetic, bt> hypotl(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
+	return fixpnt<nbits, rbits, arithmetic, bt>(std::hypotl((long double)(x),(long double)(y)));
 }
 
 }  // namespace sw::universal

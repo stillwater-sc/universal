@@ -11,39 +11,39 @@ namespace sw::universal {
 // One radian is equivalent to 180/PI degrees
 
 // hyperbolic sine of an angle of x radians
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> sinh(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::sinh(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sinh(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::sinh(double(x)));
 }
 
 // hyperbolic cosine of an angle of x radians
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> cosh(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::cosh(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> cosh(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::cosh(double(x)));
 }
 
 // hyperbolic tangent of an angle of x radians
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> tanh(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::tanh(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> tanh(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::tanh(double(x)));
 }
 
 // hyperbolic cotangent of an angle of x radians
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> atanh(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::atanh(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> atanh(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::atanh(double(x)));
 }
 
 // hyperbolic cosecant of an angle of x radians
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> acosh(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::acosh(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> acosh(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::acosh(double(x)));
 }
 
 // hyperbolic secant of an angle of x radians
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> asinh(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::asinh(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> asinh(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::asinh(double(x)));
 }
 
 
