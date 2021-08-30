@@ -24,7 +24,7 @@ Return Value
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-fixpnt<nbits, es, arithmetic, bt> nextafter(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> target) {
+fixpnt<nbits, rbits, arithmetic, bt> nextafter(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> target) {
 	if (x == target) return target;
 	if (target.isnan()) {
 		if (x.isneg()) {
@@ -46,7 +46,7 @@ fixpnt<nbits, es, arithmetic, bt> nextafter(fixpnt<nbits, rbits, arithmetic, bt>
 }
 		
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-fixpnt<nbits, es, arithmetic, bt> nexttoward(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> target) {
+fixpnt<nbits, rbits, arithmetic, bt> nexttoward(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> target) {
 	if (x == target) return x;
 	if (target.isnar()) {
 		if (x.isneg()) {

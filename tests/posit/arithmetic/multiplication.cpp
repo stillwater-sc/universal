@@ -19,7 +19,7 @@
 #include <universal/number/posit/numeric_limits.hpp>
 #include <universal/number/posit/specializations.hpp>
 #include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 

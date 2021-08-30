@@ -2626,7 +2626,7 @@ inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 	return s.str();
 }
 
-/// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
+// Magnitude of a cfloat (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
 abs(const cfloat<nbits,es,bt, hasSubnormals, hasSupernormals, isSaturating>& v) {

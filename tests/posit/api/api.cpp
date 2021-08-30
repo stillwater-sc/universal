@@ -16,7 +16,7 @@
 #include <universal/number/posit/posit_impl.hpp>
 // type manipulators such as pretty printers
 #include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 
 // conditional compile flags
 #define MANUAL_TESTING 0

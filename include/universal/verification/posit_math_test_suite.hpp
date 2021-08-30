@@ -12,7 +12,7 @@
 #include <limits>
 
 // mathematical function definitions and implementations
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 

@@ -14,7 +14,7 @@
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 // fixed-point type manipulators such as pretty printers
 #include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/math_functions.hpp>
+#include <universal/number/fixpnt/mathlib.hpp>
 
 // conditional compile flags
 #define MANUAL_TESTING 0
@@ -209,10 +209,10 @@ try {
 		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
-		maxpos<nbits, rbits, arithmetic, blocktype>(a);
-		maxneg<nbits, rbits, arithmetic, blocktype>(b);
-		minpos<nbits, rbits, arithmetic, blocktype>(c);
-		minneg<nbits, rbits, arithmetic, blocktype>(d);
+		a.maxpos();
+		b.maxneg();
+		c.minpos();
+		d.minneg();
 		if ((c + d) != 0) ++nrOfFailedTestCases;
 
 		if ((a + c) != b) ++nrOfFailedTestCases;

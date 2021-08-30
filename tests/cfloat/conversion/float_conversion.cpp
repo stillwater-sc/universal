@@ -17,7 +17,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/math_functions.hpp>
+#include <universal/number/cfloat/mathlib.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 //#include <universal/number/cfloat/table.hpp> // only used for value table generation

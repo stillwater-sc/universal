@@ -9,13 +9,13 @@ namespace sw::universal {
 
 // Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-fixpnt<nbits, es, arithmetic, bt> erf(fixpnt<nbits, rbits, arithmetic, bt> x) {
+fixpnt<nbits, rbits, arithmetic, bt> erf(fixpnt<nbits, rbits, arithmetic, bt> x) {
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::erf(double(x)));
 }
 
 // Compute the complementary error function: 1 - erf(x)
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-fixpnt<nbits, es, arithmetic, bt> erfc(fixpnt<nbits, rbits, arithmetic, bt> x) {
+fixpnt<nbits, rbits, arithmetic, bt> erfc(fixpnt<nbits, rbits, arithmetic, bt> x) {
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::erfc(double(x)));
 }
 

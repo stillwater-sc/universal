@@ -16,16 +16,16 @@ public:
 	using FixedPoint = sw::universal::fixpnt<nbits, rbits, arithmetic, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr FixedPoint  min() {  // return minimum value
-		FixedPoint fpminpos;
-		return minpos(fpminpos);
+		FixedPoint minpos(SpecificValue::minpos);
+		return minpos;
 	}
 	static constexpr FixedPoint  max() {  // return maximum value
-		FixedPoint fpmaxpos;
-		return maxpos(fpmaxpos);
+		FixedPoint maxpos(SpecificValue::maxpos);
+		return maxpos;
 	}
 	static constexpr FixedPoint  lowest() { // return most negative value
-		FixedPoint fpmaxneg;
-		return maxpos(fpmaxneg);
+		FixedPoint maxneg(SpecificValue::maxneg);
+		return maxneg;
 	} 
 	static constexpr FixedPoint  epsilon() { // return smallest effective increment from 1.0
 		FixedPoint eps(0);

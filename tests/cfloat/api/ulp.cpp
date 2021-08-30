@@ -17,7 +17,7 @@
 #include <universal/number/cfloat/numeric_limits.hpp>
 // type manipulators such as pretty printers
 #include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/math_functions.hpp>
+#include <universal/number/cfloat/mathlib.hpp>
 
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 void TestULP() 

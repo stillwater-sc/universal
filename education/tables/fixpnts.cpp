@@ -17,7 +17,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/math_functions.hpp>
+#include <universal/number/fixpnt/mathlib.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/fixpnt_test_suite.hpp>
 

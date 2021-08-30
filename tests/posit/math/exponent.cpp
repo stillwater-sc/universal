@@ -11,7 +11,7 @@
 
 // use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h

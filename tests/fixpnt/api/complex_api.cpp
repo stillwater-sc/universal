@@ -1,4 +1,4 @@
-// complex.cpp: api to use fixpnt type in complex arithmetic operations
+// complex_api.cpp: api to use fixpnt type in complex arithmetic operations
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -16,7 +16,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/math_functions.hpp>
+#include <universal/number/fixpnt/mathlib.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 namespace sw::universal::complex_literals {
@@ -33,23 +33,6 @@ namespace sw::universal::complex_literals {
 
 } // namespace sw::universal::complex_literals
 
-
-namespace sw::universal {
-
-	template<typename FixedPoint>
-	bool isnan(std::complex<FixedPoint> x) {
-		return (isnan(x.real()) || isnan(x.imag()));
-	}
-	template<typename FixedPoint>
-	bool isinf(std::complex<FixedPoint> x) {
-		return (isinf(x.real()) || isinf(x.imag()));
-	}
-	template<typename FixedPoint>
-	std::complex<FixedPoint> copysign(std::complex<FixedPoint> x, std::complex<FixedPoint> y) {
-		return std::complex<FixedPoint>(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
-	}
-
-}
 
 // conditional compile flags
 #define MANUAL_TESTING 1
