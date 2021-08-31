@@ -5,15 +5,14 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default library configuration
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/cfloat_math_test_suite.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/manipulators.hpp>
+#include <universal/verification/fixpnt_math_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in cfloat.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCaseSinh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es, uint8_t> a, aref, asinh;
+	sw::universal::fixpnt<nbits, rbits, arithmetic, uint8_t> a, aref, asinh;
 	a = v;
 	ref = std::sinh(v);
 	aref = ref;
@@ -25,10 +24,10 @@ void GenerateTestCaseSinh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename Ty>
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCaseCosh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> a, aref, acosh;
+	sw::universal::fixpnt<nbits, rbits, arithmetic> a, aref, acosh;
 	a = v;
 	ref = std::cosh(v);
 	aref = ref;
@@ -40,10 +39,10 @@ void GenerateTestCaseCosh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename Ty>
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCaseTanh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> a, aref, atanh;
+	sw::universal::fixpnt<nbits, rbits, arithmetic> a, aref, atanh;
 	a = v;
 	ref = std::tanh(v);
 	aref = ref;
@@ -54,10 +53,10 @@ void GenerateTestCaseTanh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename Ty>
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCaseAsinh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> a, aref, aasinh;
+	sw::universal::fixpnt<nbits, rbits, arithmetic> a, aref, aasinh;
 	a = v;
 	ref = std::asinh(v);
 	aref = ref;
@@ -69,10 +68,10 @@ void GenerateTestCaseAsinh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename Ty>
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCaseAcosh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> a, aref, aacosh;
+	sw::universal::fixpnt<nbits, rbits, arithmetic> a, aref, aacosh;
 	a = v;
 	ref = std::acosh(v);
 	aref = ref;
@@ -84,10 +83,10 @@ void GenerateTestCaseAcosh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es, typename Ty>
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCaseAtanh(Ty v) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> a, aref, aatanh;
+	sw::universal::fixpnt<nbits, rbits, arithmetic> a, aref, aatanh;
 	a = v;
 	ref = std::atanh(v);
 	aref = ref;
@@ -112,34 +111,33 @@ try {
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "fixpnt hyperbolic trigonometry failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCaseSinh<16, 1, double>(pi / 4.0);
-	GenerateTestCaseCosh<16, 1, double>(pi / 4.0);
-	GenerateTestCaseTanh<16, 1, double>(pi / 4.0);
-	GenerateTestCaseAsinh<16, 1, double>(pi / 2.0);
-	GenerateTestCaseAcosh<16, 1, double>(pi / 2.0);
-	GenerateTestCaseAtanh<16, 1, double>(pi / 4.0);
+	GenerateTestCaseSinh<16, 8, Saturating, uint8_t, double>(pi / 4.0);
+	GenerateTestCaseCosh<16, 8, Saturating, uint8_t, double>(pi / 4.0);
+	GenerateTestCaseTanh<16, 8, Saturating, uint8_t, double>(pi / 4.0);
+	GenerateTestCaseAsinh<16, 8, Saturating, uint8_t, double>(pi / 2.0);
+	GenerateTestCaseAcosh<16, 8, Saturating, uint8_t, double>(pi / 2.0);
+	GenerateTestCaseAtanh<16, 8, Saturating, uint8_t, double>(pi / 4.0);
 
 	std::cout << '\n';
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySinh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "asinh");
+	using FixedPoint = fixpnt<8, 4, Saturating, uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag<FixedPoint>(), "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag<FixedPoint>(), "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag<FixedPoint>(), "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<FixedPoint>(true), type_tag<FixedPoint>(), "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<FixedPoint>(true), type_tag<FixedPoint>(), "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<FixedPoint>(true), type_tag<FixedPoint>(), "asinh");
 #else
 
-	std::cout << "cfloat hyperbolic sine/cosine/tangent function validation\n";
+	std::cout << "fixpnt hyperbolic trigonometry function validation\n";
 
 
 #if STRESS_TESTING
-	// nbits=64 requires long double compiler support
-	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "cfloat<64,2>", "sinh");
 
 	
 #endif  // STRESS_TESTING
@@ -152,16 +150,16 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
+	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_quire_exception& err) {
-	std::cerr << "Uncaught cfloat quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::cfloat_internal_exception& err) {
-	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
+//catch (const sw::universal::fixpnt_quire_exception& err) {
+//	std::cerr << "Uncaught fixpnt quire exception: " << err.what() << std::endl;
+//	return EXIT_FAILURE;
+//}
+catch (const sw::universal::fixpnt_internal_exception& err) {
+	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

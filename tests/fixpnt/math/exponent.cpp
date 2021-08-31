@@ -5,13 +5,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// when you define cfloat_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define CFLOAT_VERBOSE_OUTPUT
-#define CFLOAT_TRACE_POW
-
 // use default number system library configuration
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/cfloat_math_test_suite.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/verification/fixpnt_math_test_suite.hpp>
 
 // Background: http://numbers.computation.free.fr/Constants/E/e.html
 //
@@ -33,12 +29,11 @@ void GenerateEulersNumber() {
 	std::cout << std::endl;
 }
 
-// generate specific test case that you can trace with the trace conditions in cfloat.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
+// generate specific test case
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, pexp;
+	sw::universal::fixpnt<nbits, rbits, arithmetic, bt> pa, pref, pexp;
 	pa = a;
 	ref = std::exp(a);
 	pref = ref;
@@ -63,11 +58,11 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "cfloat exp() failed: ";
+	std::string tag = "fixpnt exp() failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 1, float>(4.0f);
+	GenerateTestCase<16, 1, Saturating, uint8_t, float>(4.0f);
 
 #if GENERATE_EXPONENT_TABLES
 
@@ -78,43 +73,31 @@ try {
 	GenerateExponentTable<6, 3>();
 #endif
 
-	cfloat<8, 2> a, aexp2, aref;
-	a.setbits(0xFF);
-	aexp2 = sw::universal::exp2(a);
-	// generate reference
-	double da = double(a);
-	double dref = std::exp2(da);
-	aref = dref;
-	cout << to_binary(aref) << " : " << aref << " : " << to_binary(dref) << endl;
-	cout << to_binary(ieee754_parameter<double>::fmask) << endl;
-	cout << to_binary(ieee754_parameter<double>::snanmask) << endl;
-
-	cout << endl;
-
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 4, uint8_t> >(bReportIndividualTestCases), "cfloat<8,4>", "exp2");
+	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<FixedPoint>(bReportIndividualTestCases), type_tag(FixedPoint), "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<FixedPoint>(bReportIndividualTestCases), type_tag(FixedPoint) "exp2");
 
 #else
 
-	std::cout << "classic floating-point cfloat exponential function validation\n";
+	std::cout << "fixpnt exponential function validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 8, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<8,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 9, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<9,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<10, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<10,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<10, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<10,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<12, 4, uint8_t> >(bReportIndividualTestCases), "cfloat<12,4>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<16, 5, uint8_t> >(bReportIndividualTestCases), "cfloat<16,5>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<8,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 3, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<8,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 9, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<9,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<10,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 3, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<10,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<12, 4, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<12,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<16, 5, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<16,5>", "exp");
 
 	// base-2 exponent testing
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<8,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<9, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<9,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<10, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<10,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<10, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<10,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<12, 4, uint8_t> >(bReportIndividualTestCases), "cfloat<12,4>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<16, 5, uint8_t> >(bReportIndividualTestCases), "cfloat<16,5>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<8,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 3, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<8,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<9, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<9,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<10,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 3, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<10,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<12, 4, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<12,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<16, 5, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<16,5>", "exp2");
 
 
 #if STRESS_TESTING
@@ -129,16 +112,16 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
+	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::cfloat_internal_exception& err) {
-	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
+//catch (const sw::universal::fixpnt_quire_exception& err) {
+//	std::cerr << "Uncaught fixpnt quire exception: " << err.what() << std::endl;
+//	return EXIT_FAILURE;
+//}
+catch (const sw::universal::fixpnt_internal_exception& err) {
+	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

@@ -5,15 +5,15 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default library configuration
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/cfloat_math_test_suite.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/manipulators.hpp>
+#include <universal/verification/fixpnt_math_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in cfloat.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
+// generate specific test case 
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, plog;
+	sw::universal::fixpnt<nbits, rbits, arithmetic, bt> pa, pref, plog;
 	pa = a;
 	ref = std::log(a);
 	pref = ref;
@@ -33,14 +33,14 @@ int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "cfloat log() failed: ";
+	std::string tag = "fixpnt log() function failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 1, float>(4.0f);
+	GenerateTestCase<16, 1, Saturating, uint8_t, float>(4.0f);
 
 #if GENERATE_LOG_TABLES
 	GenerateLogarithmTable<3, 0>();
@@ -57,26 +57,37 @@ try {
 #endif
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyLog< cfloat<8, 4, uint8_t> >(true), "cfloat<8,4>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog2< cfloat<8, 4, uint8_t> >(true), "cfloat<8,4>", "log2");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog10< cfloat <8, 4, uint8_t > >(true), "cfloat<8,4>", "log10");
+	using FixedPoint = fixpnt<10, 5, Saturating, uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(bReportIndividualTestCases), type_tag<FixedPoint>(), "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(bReportIndividualTestCases), type_tag<FixedPoint>(), "log2");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(bReportIndividualTestCases), type_tag<FixedPoint>(), "log10");
 
 #else
 
-	std::cout << "classic floating-point cfloat log validation\n";
+	std::cout << "fixpnt log() function validation\n";
 
 
 #if STRESS_TESTING
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "cfloat<64,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "cfloat<64,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "cfloat<64,4>", "log");
 
-
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 1>(bReportIndividualTestCases), "cfloat<10,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 1>(bReportIndividualTestCases), "cfloat<12,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<14, 1>(bReportIndividualTestCases), "cfloat<14,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 1>(bReportIndividualTestCases), "cfloat<16,1>", "log");
+	{
+		using FixedPoint = fixpnt<10, 5, Saturating, uint8_t>;
+		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(bReportIndividualTestCases), type_tag(FixedPoint()), "log");
+		nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(bReportIndividualTestCases), type_tag(FixedPoint()), "log2");
+		nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(bReportIndividualTestCases), type_tag(FixedPoint()), "log10");
+	}
+	{
+		using FixedPoint = fixpnt<12, 6, Saturating, uint8_t>;
+		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(bReportIndividualTestCases), type_tag(FixedPoint), "log");
+	}
+	{
+		using FixedPoint = fixpnt<14, 7, Saturating, uint8_t>;
+		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(bReportIndividualTestCases), type_tag(FixedPoint), "log");
+	}
+	{
+		using FixedPoint = fixpnt<16, 8, Saturating, uint8_t>;
+		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(bReportIndividualTestCases), type_tag(FixedPoint), "log");
+	}
 	
 #endif  // STRESS_TESTING
 
@@ -88,16 +99,16 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
+	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_quire_exception& err) {
-	std::cerr << "Uncaught cfloat quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::cfloat_internal_exception& err) {
-	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
+//catch (const sw::universal::fixpnt_quire_exception& err) {
+//	std::cerr << "Uncaught fixpnt quire exception: " << err.what() << std::endl;
+//	return EXIT_FAILURE;
+//}
+catch (const sw::universal::fixpnt_internal_exception& err) {
+	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

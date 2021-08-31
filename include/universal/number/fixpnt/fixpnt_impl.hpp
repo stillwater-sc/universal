@@ -134,12 +134,14 @@ inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert_unsigned(uint64_t
 }
 
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
-template<size_t _nbits, size_t _rbits, bool arithmetic = Modulo, typename bt = uint8_t>
+template<size_t _nbits, size_t _rbits, bool _arithmetic = Modulo, typename bt = uint8_t>
 class fixpnt {
 public:
 	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t rbits = _rbits;
+	static constexpr bool   arithmetic = _arithmetic;
+	typedef bt BlockType;
 	static constexpr size_t bitsInChar = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInChar;
 	static constexpr size_t nrBlocks = (1 + ((nbits - 1) / bitsInBlock));

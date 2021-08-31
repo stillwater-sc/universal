@@ -5,8 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default number system library configuration
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/cfloat_math_test_suite.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/verification/fixpnt_math_test_suite.hpp>
 
 
 #define MANUAL_TESTING 1
@@ -46,13 +46,13 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor< cfloat<8, 2, uint8_t> >(bReportIndividualTestCases), "floor", "cfloat<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< fixpnt<8, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "floor", "fixpnt<8,2,Saturating,uint8_t>");
 
 	nrOfFailedTestCases = 0; // nullify accumulated test failures in manual testing
 
 #else
 
-	std::cout << "classic floating-point cfloat truncation function validation\n";
+	std::cout << "classic floating-point fixpnt truncation function validation\n";
 
 
 #if STRESS_TESTING
@@ -67,16 +67,16 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
+	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_quire_exception& err) {
-	std::cerr << "Uncaught cfloat quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::cfloat_internal_exception& err) {
-	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
+//catch (const sw::universal::fixpnt_quire_exception& err) {
+//	std::cerr << "Uncaught fixpnt quire exception: " << err.what() << std::endl;
+//	return EXIT_FAILURE;
+//}
+catch (const sw::universal::fixpnt_internal_exception& err) {
+	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

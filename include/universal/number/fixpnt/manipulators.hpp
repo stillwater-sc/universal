@@ -6,37 +6,33 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <exception>
 
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
 namespace sw::universal {
 
+// Generate a type tag for this fixpnt
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+std::string type_tag(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
+	std::stringstream s;
+	s << "fixpnt<"
+		<< nbits << ", "
+		<< rbits << ", "
+		<< (arithmetic ? "Modulo, " : "Saturating, ")
+		<< typeid(bt).name() << "> = " << v;
+	return s.str();
+}
 
+// Generate a type tag for this fixpnt
+template<typename FixedPoint>
+std::string type_tag() {
+	constexpr size_t nbits = FixedPoint::nbits;
+	constexpr size_t rbits = FixedPoint::rbits;
+	using bt = FixedPoint::BlockType;
+	constexpr bool arithmetic = FixedPoint::arithmetic;
+	std::stringstream s;
+	s << "fixpnt<"
+		<< nbits << ", "
+		<< rbits << ", "
+		<< (arithmetic ? "Modulo, " : "Saturating, ")
+		<< typeid(bt).name() << '>';
+	return s.str();
+}
 } // namespace sw::universal

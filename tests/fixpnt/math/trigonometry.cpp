@@ -5,8 +5,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default library configuration
-#include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/cfloat_math_test_suite.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/manipulators.hpp>
+#include <universal/verification/fixpnt_math_test_suite.hpp>
 
 /* 
 Writes result sine result sin(πa) to the location pointed to by sp
@@ -61,7 +62,7 @@ void my_sincospi(double a, double *sp, double *cp)
 		s = c;
 		c = t;
 	}
-	/* IEEE-754: sinPi(+n) is +0 and sinPi(-n) is -0 for cfloative integers n */
+	/* IEEE-754: sinPi(+n) is +0 and sinPi(-n) is -0 for native integers n */
 	if (a == floor(a)) s = az;
 	*sp = s;
 	*cp = c;
@@ -122,7 +123,7 @@ void my_sincospif(float a, float *sp, float *cp)
 		s = c;
 		c = t;
 	}
-	/* IEEE-754: sinPi(+n) is +0 and sinPi(-n) is -0 for cfloative integers n */
+	/* IEEE-754: sinPi(+n) is +0 and sinPi(-n) is -0 for native integers n */
 	if (a == floorf(a)) s = az;
 	*sp = s;
 	*cp = c;
@@ -159,12 +160,11 @@ double haversine(double lat1, double lon1, double lat2, double lon2, double radi
 	return radius * c;
 }
 
-// generate specific test case that you can trace with the trace conditions in cfloat.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
+// generate specific test case 
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, psin;
+	sw::universal::fixpnt<nbits, rbits, arithmetic, bt> pa, pref, psin;
 	pa = a;
 	ref = std::sin(a);
 	pref = ref;
@@ -187,16 +187,16 @@ try {
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "fixpnt trig function failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-//	GenerateTestCase<8, 0, double>(m_pi);
-//	GenerateTestCase<16, 1, double>(m_pi);
-//	GenerateTestCase<32, 2, double>(m_pi);
-//	GenerateTestCase<64, 3, float>(m_pi);
-//	GenerateTestCase<128, 4, float>(m_pi);
-//	GenerateTestCase<256, 5, float>(m_pi);
+//	GenerateTestCase<8, 0, Saturating, uint8_t, double>(m_pi);
+//	GenerateTestCase<16, 1, Saturating, uint8_t, double>(m_pi);
+//	GenerateTestCase<32, 2, Saturating, uint8_t, double>(m_pi);
+//	GenerateTestCase<64, 3, Saturating, uint8_t, float>(m_pi);
+//	GenerateTestCase<128, 4, Saturating, uint8_t, float>(m_pi);
+//	GenerateTestCase<256, 5, Saturating, uint8_t, float>(m_pi);
 
 	std::cout << "Standard sin(pi/2) : " << std::sin(m_pi*0.5) << " vs sinpi(0.5): " << sinpi(0.5) << '\n';
 	std::cout << "Standard sin(pi)   : " << std::sin(m_pi)     << " vs sinpi(1.0): " << sinpi(1.0) << '\n';
@@ -206,29 +206,23 @@ try {
 	std::cout << "haversine(0.0, 0.0, 90.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 90.0, 0.0, 1.0) << '\n';
 	std::cout << "haversine(0.0, 0.0, 180.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 180, 0.0, 1.0) << '\n';
 
-	GenerateTestCase<16, 1, double>(m_pi_2);
+	GenerateTestCase<16, 1, Saturating, uint8_t, double>(m_pi_2);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySine< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "asin");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "acos");
+	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag<FixedPoint>(), "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag<FixedPoint>(), "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent<FixedPoint >(true), type_tag<FixedPoint>(), "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan<   FixedPoint >(true), type_tag<FixedPoint>(), "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin<   FixedPoint >(true), type_tag<FixedPoint>(), "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos<   FixedPoint >(true), type_tag<FixedPoint>(), "acos");
 #else
 
-	std::cout << "cfloat sine function validation\n";
+	std::cout << "fixpnt sine function validation\n";
 
 
 #if STRESS_TESTING
-	// nbits=64 requires long double compiler support
-	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "cfloat<64,2>", "sin");
 
-
-	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(bReportIndividualTestCases), "cfloat<10,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 1>(bReportIndividualTestCases), "cfloat<12,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<14, 1>(bReportIndividualTestCases), "cfloat<14,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(bReportIndividualTestCases), "cfloat<16,1>", "sin");
 	
 #endif  // STRESS_TESTING
 
@@ -240,16 +234,16 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
+	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_quire_exception& err) {
-	std::cerr << "Uncaught cfloat quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::cfloat_internal_exception& err) {
-	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
+//catch (const sw::universal::fixpnt_quire_exception& err) {
+//	std::cerr << "Uncaught fixpnt quire exception: " << err.what() << std::endl;
+//	return EXIT_FAILURE;
+//}
+catch (const sw::universal::fixpnt_internal_exception& err) {
+	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
