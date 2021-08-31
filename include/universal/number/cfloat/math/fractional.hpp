@@ -1,5 +1,5 @@
 #pragma once
-// math_frac.hpp: fractional functions for classic floating-point cfloats
+// fractional.hpp: fractional functions for classic floating-point cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -7,19 +7,19 @@
 
 namespace sw::universal {
 
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> fmod(cfloat<nbits,es,bt> x, cfloat<nbits,es,bt> y) {
-	return cfloat<nbits,es,bt>(std::fmod(double(x), double(y)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> fmod(cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
+	return cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::fmod(double(x), double(y)));
 }
 
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> remainder(cfloat<nbits,es,bt> x, cfloat<nbits,es,bt> y) {
-	return cfloat<nbits,es,bt>(std::remainder(double(x), double(y)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> remainder(cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
+	return cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::remainder(double(x), double(y)));
 }
 
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> frac(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(double(x)-long(x));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> frac(cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating>(double(x)-long(x));
 }
 
 

@@ -17,7 +17,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/math_functions.hpp>
+#include <universal/number/fixpnt/mathlib.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
@@ -45,13 +45,10 @@ int VerifyComplexSubtraction(const std::string& tag, bool bReportIndividualTestC
 	using namespace sw::universal;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	FixedPoint fpmaxpos, fpmaxneg;
-	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
-	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-	int nrOfFailedTests = 0;
+	FixedPoint maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	FixedPoint ar, ai, br, bi;
 	std::complex<FixedPoint> a, b, result, ref;
-
+	int nrOfFailedTests = 0;
 	std::complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		ar.setbits(i);
@@ -76,8 +73,8 @@ int VerifyComplexSubtraction(const std::string& tag, bool bReportIndividualTestC
 						result = a - b;
 					}
 					catch (...) {
-						if (ref.real() > fpmaxpos || ref.imag() > fpmaxpos ||
-							ref.real() < fpmaxneg || ref.imag() < fpmaxneg) {
+						if (ref.real() > maxpos || ref.imag() > maxpos ||
+							ref.real() < maxneg || ref.imag() < maxneg) {
 							// correctly caught the overflow exception
 							continue;
 						}

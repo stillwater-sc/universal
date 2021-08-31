@@ -14,7 +14,7 @@
 
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/math_functions.hpp>
+#include <universal/number/cfloat/mathlib.hpp>
 
 #if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an cfloat

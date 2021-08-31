@@ -20,7 +20,7 @@
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/numeric_limits.hpp>
 #include <universal/number/posit/specializations.hpp>
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 #include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 //#include <universal/verification/posit_test_suite.hpp>

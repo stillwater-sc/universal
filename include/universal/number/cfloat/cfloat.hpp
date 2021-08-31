@@ -43,7 +43,7 @@
 #include <universal/number/cfloat/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// math functions
-#include <universal/number/cfloat/math_functions.hpp>
+/// elementary math functions library
+#include <universal/number/cfloat/mathlib.hpp>
 
 #endif

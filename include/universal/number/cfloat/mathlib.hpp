@@ -1,5 +1,5 @@
 #pragma once
-// math_functions.hpp: definition of mathematical functions for the classic cfloats
+// mathlib.hpp: definition of mathematical functions for the classic cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

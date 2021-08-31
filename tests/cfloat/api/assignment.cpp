@@ -16,7 +16,7 @@
 
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/math_functions.hpp>
+#include <universal/number/cfloat/mathlib.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // print the constexpr values of the cfloat class

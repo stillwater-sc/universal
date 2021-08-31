@@ -80,11 +80,11 @@ inline internal::bitblock<rbits> extract_fraction(const fixpnt<nbits, rbits, ari
 
 // clang <complex> implementation is calling these functions so we need implementations for fixpnt
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool isnan(const fixpnt<nbits, rbits, arithmetic, bt>& p) { return false; }
+//template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+//inline bool isnan(const fixpnt<nbits, rbits, arithmetic, bt>& p) { return false; }
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool isinf(const fixpnt<nbits, rbits, arithmetic, bt>& p) { return false; }
+//template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+//inline bool isinf(const fixpnt<nbits, rbits, arithmetic, bt>& p) { return false; }
 
 // copysign returns a value with the magnitude of a, and the sign of b
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>

@@ -17,7 +17,7 @@
 #include <universal/number/posit/numeric_limits.hpp>
 // type manipulators such as pretty printers
 #include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 
 template<size_t nbits, size_t es>
 void TestULP() 

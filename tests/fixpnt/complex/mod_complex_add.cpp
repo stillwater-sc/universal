@@ -17,27 +17,8 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/math_functions.hpp>
+#include <universal/number/fixpnt/mathlib.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
-
-// generate specific test case that you can trace with the trace conditions in fixed_point.hpp
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, typename Ty>
-void GenerateTestCase(Ty _a, Ty _b) {
-	Ty ref;
-	sw::universal::fixpnt<nbits, rbits> a, b, cref, result;
-	a = _a;
-	b = _b;
-	result = a + b;
-	ref = _a + _b;
-	cref = ref;
-	std::streamsize oldPrecision = std::cout.precision();
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
-	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::dec << std::setprecision(oldPrecision);
-}
 
 // enumerate all complex addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
@@ -45,9 +26,7 @@ int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCase
 	using namespace sw::universal;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	FixedPoint fpmaxpos, fpmaxneg;
-	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
-	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
+	FixedPoint maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	int nrOfFailedTests = 0;
 	FixedPoint ar, ai, br, bi;
 	std::complex<FixedPoint> a, b, result, ref;
@@ -76,8 +55,8 @@ int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCase
 						result = a + b;
 					}
 					catch (...) {
-						if (ref.real() > fpmaxpos || ref.imag() > fpmaxpos ||
-							ref.real() < fpmaxneg || ref.imag() < fpmaxneg) {
+						if (ref.real() > maxpos || ref.imag() > maxpos ||
+							ref.real() < maxneg || ref.imag() < maxneg) {
 							// correctly caught the overflow exception
 							continue;
 						}
@@ -107,7 +86,7 @@ int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCase
 	return nrOfFailedTests;
 }
 
-namespace sw { namespace universal { namespace complex_literals {
+namespace sw::universal::complex_literals {
 
 	std::complex<fixpnt<8, 4>> operator""_i(long double _Val)
 	{	// return imaginary _Val
@@ -118,9 +97,7 @@ namespace sw { namespace universal { namespace complex_literals {
 	{	// return imaginary _Val
 		return (std::complex<fixpnt<8, 4>>(0.0, static_cast<fixpnt<8, 4>>(_Val)));
 	}
-} // namespace complex_literals
-} // namespace universal
-} // namespace sw
+} // namespace sw::universal::complex_literals
 
 
 // conditional compile flags
@@ -171,8 +148,8 @@ try {
 //	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,2,Modulo,uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,3,Modulo,uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 6, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,5,Modulo,uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 6, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,6,Modulo,uint8_t>", "addition");
 
 #if STRESS_TESTING
 
