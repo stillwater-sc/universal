@@ -492,7 +492,7 @@ public:
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
 			biggerbb c = uradd(bb, rhs.bb);  // c = a + b
-			fixpnt<nbits, rbits, arithmetic, bt> fp, maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 			biggerbb saturation = maxpos.getbb();		
 			if (c >= saturation) {
 				bb = saturation;
@@ -514,7 +514,7 @@ public:
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
 			biggerbb c = ursub(bb, rhs.getbb());  // c = a - b
-			fixpnt<nbits, rbits, arithmetic, bt> fp, maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 			biggerbb saturation = maxpos.getbb();
 			if (c >= saturation) {
 				bb = saturation;
@@ -540,7 +540,7 @@ public:
 		}
 		else {
 			blockbinary<2 * nbits, bt> c = urmul2(this->bb, rhs.bb);
-			fixpnt<nbits, rbits, arithmetic, bt> fp, maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 			blockbinary<2 * nbits, bt> saturation = maxpos.getbb();
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;

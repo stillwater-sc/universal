@@ -70,7 +70,7 @@ try {
 		float fb = -0.5f; // 7.625f; // 0.0625f; 3.9375f; 
 
 		using Cfloat = cfloat < 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating >;
-		Cfloat a, b, c, cref;
+		Cfloat a, b, c;
 		a.constexprClassParameters();
 		a = fa;
 		b = fb;

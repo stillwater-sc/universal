@@ -42,7 +42,7 @@ try {
 
 #if MANUAL_TESTING
 
-	bool bReportIndividualTestCases = true;
+	// bool bReportIndividualTestCases = true;
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = true;

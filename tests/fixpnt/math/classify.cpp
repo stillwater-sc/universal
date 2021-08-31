@@ -35,7 +35,7 @@ try {
 	Number nan; // nan.setnan();
 	Number inf; // inf.setinf();
 	Number zero(0);
-	Number minpos(SpecificValue::minpos);
+	//Number minpos(SpecificValue::minpos);
 	Number dblmin(MY_DBL_MIN);
 	Number one(1);
 

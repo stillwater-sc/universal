@@ -54,7 +54,7 @@ namespace sw::universal {
 		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
 		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
 		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-		constexpr size_t fbits = CfloatConfiguration::fbits;
+		//constexpr size_t fbits = CfloatConfiguration::fbits;
 		constexpr size_t abits = CfloatConfiguration::abits;
 
 		int nrOfTestFailures{ 0 };

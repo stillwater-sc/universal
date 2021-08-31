@@ -69,7 +69,7 @@ try {
 	constexpr bool noSubnormals = false;
 	constexpr bool hasSupernormals = true;
 	constexpr bool noSupernormals = false;
-	constexpr bool isSaturating = true;
+//	constexpr bool isSaturating = true;
 	constexpr bool notSaturating = false;
 
 #if MANUAL_TESTING

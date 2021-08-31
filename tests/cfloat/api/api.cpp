@@ -38,7 +38,11 @@ try {
 		std::cout << "Default cfloat has subnormals, supernormals and is not saturating\n";
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
-		using Real = cfloat<nbits, es>;
+		using bt = uint8_t;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 		Real a(1.0f), b(0.5f), c(0.0);
 		c = a + b;
 		std::cout << "c = " << c << std::endl;
@@ -55,7 +59,7 @@ try {
 		constexpr bool hasSubnormals = true;
 		constexpr bool hasSupernormals = true;
 		constexpr bool isSaturating = false;
-		using Real = cfloat<8, 3, bt, hasSubnormals, hasSupernormals, isSaturating>;
+		using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 		CONSTEXPRESSION Real a(1.0f + 0.5f + 0.25f + 0.125f + 0.0625f);
 		Real b(-1.0f - 0.5f - 0.25f - 0.125f - 0.0625f);
 		constexpr size_t fbits = Real::fbits;

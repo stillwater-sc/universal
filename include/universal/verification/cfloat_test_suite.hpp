@@ -607,9 +607,7 @@ namespace sw::universal {
 		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
 		Cfloat minneg(SpecificValue::minneg);
-		Cfloat maxneg(SpecificValue::maxneg);
 		Cfloat minpos(SpecificValue::minpos);
-		Cfloat maxpos(SpecificValue::maxpos);
 
 		int nrOfFailedTestCases = 0;
 
@@ -651,6 +649,9 @@ namespace sw::universal {
 		
 		// special case of saturing arithmetic: sequences will terminate at maxneg and maxpos
 		if constexpr (isSaturating) {
+
+			// Cfloat maxneg(SpecificValue::maxneg);
+			// Cfloat maxpos(SpecificValue::maxpos);
 
 		}
 		return nrOfFailedTestCases;
@@ -741,7 +742,7 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 
 		// set the saturation clamps
-		Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
+		// Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a, b, nut, cref;
@@ -885,7 +886,7 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 
 		// set the saturation clamps
-		Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
+		// Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a, b, nut, cref;
@@ -1029,7 +1030,7 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 
 		// set the saturation clamps
-		Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
+		// Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a, b, nut, cref;

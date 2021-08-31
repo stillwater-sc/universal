@@ -15,7 +15,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "fixpnt complex failed: ";

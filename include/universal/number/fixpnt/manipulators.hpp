@@ -25,7 +25,7 @@ template<typename FixedPoint>
 std::string type_tag() {
 	constexpr size_t nbits = FixedPoint::nbits;
 	constexpr size_t rbits = FixedPoint::rbits;
-	using bt = FixedPoint::BlockType;
+	using bt = typename FixedPoint::BlockType;
 	constexpr bool arithmetic = FixedPoint::arithmetic;
 	std::stringstream s;
 	s << "fixpnt<"
@@ -35,4 +35,5 @@ std::string type_tag() {
 		<< typeid(bt).name() << '>';
 	return s.str();
 }
+
 } // namespace sw::universal
