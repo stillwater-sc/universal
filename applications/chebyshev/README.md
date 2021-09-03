@@ -18,7 +18,7 @@ monic polynomials of degree n. (Burden & Faires, 2011).
 ```linscale(x,c,d)``` linearly scales and shifts data points x to [c,d]
 
 
-```meandistance(x)``` returns Geometric mean of the differences of x_i with x_j 
+```meandistance(x)``` returns Geometric mean of the differences of $ x_i$ with x_j 
 \forall j \ne i.  
 
 
