@@ -9,7 +9,7 @@ namespace sw::universal {
 
 	// special number system values
 	enum class SpecificValue {
-		maxpos, minpos, zero, minneg, maxneg
+		maxpos, minpos, zero, minneg, maxneg, infpos, infneg, qnan, snan, nar
 	};
 
 } // namespace sw::universal

@@ -341,6 +341,19 @@ public:
 		case SpecificValue::maxneg:
 			maxneg();
 			break;
+		case SpecificValue::infpos:
+			setinf(false);
+			break;
+		case SpecificValue::infneg:
+			setinf(true);
+			break;
+		case SpecificValue::nar: // approximation as cfloats don't have a NaR
+		case SpecificValue::qnan:
+			setnan(NAN_TYPE_QUIET);
+			break;
+		case SpecificValue::snan:
+			setnan(NAN_TYPE_SIGNALLING);
+			break;
 		}
 	}
 

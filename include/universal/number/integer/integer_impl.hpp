@@ -863,7 +863,7 @@ void sub(decimal& lhs, const decimal& rhs) {
 	}
 	decimal::iterator lit = lhs.begin();
 	decimal::iterator rit = _rhs.begin();
-	uint8_t borrow = 0;
+	uint8_t borrow = 0u;
 	for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
 		if (*rit > *lit - borrow) {
 			*lit = 10u + *lit - borrow - *rit;
@@ -891,9 +891,9 @@ void mul(decimal& lhs, const decimal& rhs) {
 			decimal partial_sum;
 			partial_sum.insert(partial_sum.end(), r + position, 0);
 			decimal::iterator pit = partial_sum.begin() + position;
-			uint8_t carry = 0;
+			uint8_t carry = 0u;
 			for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
-				uint8_t digit = *sit * *bit + carry;
+				uint8_t digit = static_cast<uint8_t>(*sit * *bit + carry);
 				*pit = digit % 10u;
 				carry = digit / 10u;
 			}

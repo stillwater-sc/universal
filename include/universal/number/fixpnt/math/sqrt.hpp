@@ -7,8 +7,8 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/number/fixpnt/math/sqrt_tables.hpp>
 
-#ifndef CFLOAT_NATIVE_SQRT
-#define CFLOAT_NATIVE_SQRT 0
+#ifndef FIXPNT_NATIVE_SQRT
+#define FIXPNT_NATIVE_SQRT 0
 #endif
 
 namespace sw::universal {

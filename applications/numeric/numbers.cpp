@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <limits>
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
@@ -13,6 +14,7 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/areal/areal.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 
@@ -89,7 +91,7 @@ inline
 std::ostream&
 operator<<(std::ostream& os, static_string const& s)
 {
-	return os.write(s.data(), s.size());
+	return os.write(s.data(), static_cast<std::streamsize>(s.size()));
 }
 
 template <class T>
@@ -114,7 +116,7 @@ type_name()
 }
 
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -122,27 +124,6 @@ try {
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1300)
 	std::cout << "Microsoft Visual C++: " << _MSC_VER << '\n';
-	/*
-	MSVC++ 10.0  _MSC_VER == 1600 (Visual Studio 2010 version 10.0)
-	MSVC++ 11.0  _MSC_VER == 1700 (Visual Studio 2012 version 11.0)
-	MSVC++ 12.0  _MSC_VER == 1800 (Visual Studio 2013 version 12.0)
-	MSVC++ 14.0  _MSC_VER == 1900 (Visual Studio 2015 version 14.0)
-	MSVC++ 14.1  _MSC_VER == 1910 (Visual Studio 2017 version 15.0)
-	MSVC++ 14.11 _MSC_VER == 1911 (Visual Studio 2017 version 15.3)
-	MSVC++ 14.12 _MSC_VER == 1912 (Visual Studio 2017 version 15.5)
-	MSVC++ 14.13 _MSC_VER == 1913 (Visual Studio 2017 version 15.6)
-	MSVC++ 14.14 _MSC_VER == 1914 (Visual Studio 2017 version 15.7)
-	MSVC++ 14.15 _MSC_VER == 1915 (Visual Studio 2017 version 15.8)
-	MSVC++ 14.16 _MSC_VER == 1916 (Visual Studio 2017 version 15.9)
-	MSVC++ 14.2  _MSC_VER == 1920 (Visual Studio 2019 Version 16.0)
-	MSVC++ 14.21 _MSC_VER == 1921 (Visual Studio 2019 Version 16.1)
-	MSVC++ 14.22 _MSC_VER == 1922 (Visual Studio 2019 Version 16.2)
-	MSVC++ 14.23 _MSC_VER == 1923 (Visual Studio 2019 Version 16.3)
-	MSVC++ 14.24 _MSC_VER == 1924 (Visual Studio 2019 Version 16.4)
-	MSVC++ 14.25 _MSC_VER == 1925 (Visual Studio 2019 Version 16.5)
-	MSVC++ 14.26 _MSC_VER == 1926 (Visual Studio 2019 Version 16.6)
-	MSVC++ 14.27 _MSC_VER == 1927 (Visual Studio 2019 Version 16.7)
-	*/
 	if (_MSC_VER == 1600) std::cout << "(Visual Studio 2010 version 10.0)\n";
 	else if (_MSC_VER == 1700) std::cout << "(Visual Studio 2012 version 11.0)\n";
 	else if (_MSC_VER == 1800) std::cout << "(Visual Studio 2013 version 12.0)\n";
@@ -162,7 +143,9 @@ try {
 	else if (_MSC_VER == 1925) std::cout << "(Visual Studio 2019 Version 16.5)\n";
 	else if (_MSC_VER == 1926) std::cout << "(Visual Studio 2019 Version 16.6)\n";
 	else if (_MSC_VER == 1927) std::cout << "(Visual Studio 2019 Version 16.7)\n";
-	else std::cout << "Microsoft Visual C++: " << _MSC_VER << '\n';
+	else if (_MSC_VER == 1928) std::cout << "(Visual Studio 2019 Version 16.9)\n";
+	else if (_MSC_VER == 1929) std::cout << "(Visual Studio 2019 Version 16.11)\n";
+	else std::cout << "unknown Microsoft Visual C++: " << _MSC_VER << '\n';
 
 	std::cout << "__cplusplus: " << __cplusplus << '\n';
 
@@ -177,7 +160,8 @@ try {
 	 */
 	if (_MSVC_LANG == 201402l)      std::cout << "/std:c++14\n";
 	else if (_MSVC_LANG == 201703l) std::cout << "/std:c++17\n";
-	else if (_MSVC_LANG == 201704l) std::cout << "/std:c++latest\n";
+	else if (_MSVC_LANG == 202004) std::cout << "/std:c++20\n";
+	else if (_MSVC_LANG == 202004) std::cout << "/std:c++latest\n";
 	else  std::cout << "_MSVC_LANG: " << _MSVC_LANG << '\n';
 
 #else
@@ -192,6 +176,7 @@ try {
 	using int32    = integer<32>;
 	using fixpnt32 = fixpnt<32,16>;
 	using posit32  = posit<32,2>;
+	using cfloat32 = cfloat<32, 8,uint8_t>;
 	using areal32  = areal<32,8,uint32_t>; // should use a uint32_t for efficiency
 	using lns32    = lns<32>;
 
@@ -203,6 +188,7 @@ try {
 	numberTraits<int32, columnWidth>(std::cout);
 	numberTraits<fixpnt32, columnWidth>(std::cout);
 	numberTraits<float, columnWidth>(std::cout);
+	numberTraits<cfloat32, columnWidth>(std::cout);
 	numberTraits<areal32, columnWidth>(std::cout);
 	numberTraits<posit32, columnWidth>(std::cout);
 	numberTraits<lns32, columnWidth>(std::cout);
@@ -221,7 +207,7 @@ try {
 	std::cout << symmetry<posit32>() << '\n';
 	std::cout << symmetry<lns32>() << '\n';
 
-	compareNumberTraits<float, areal32>(std::cout);
+	compareNumberTraits<float, cfloat32>(std::cout);
 	compareNumberTraits<float, posit32>(std::cout);
 	compareNumberTraits<float, lns32>(std::cout);
 

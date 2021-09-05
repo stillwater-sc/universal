@@ -29,16 +29,18 @@ public:
 		return Cfloat(0.5f);
 	}
 	static constexpr Cfloat denorm_min() {  // return minimum denormalized value
-		return Cfloat(1.0f);
+		Cfloat dmin;
+		++dmin;
+		return dmin;
 	}
 	static constexpr Cfloat infinity() { // return positive infinity
-		return Cfloat(INFINITY);
+		return Cfloat(sw::universal::SpecificValue::infpos);
 	}
 	static constexpr Cfloat quiet_NaN() { // return non-signaling NaN
-		return Cfloat(NAN);
+		return Cfloat(sw::universal::SpecificValue::qnan);
 	}
 	static constexpr Cfloat signaling_NaN() { // return signaling NaN
-		return Cfloat(NAN);
+		return Cfloat(sw::universal::SpecificValue::snan);
 	}
 
 	static constexpr int digits       = nbits - 1 - es + 1;
