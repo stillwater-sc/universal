@@ -98,7 +98,7 @@ namespace sw::universal {
 
 		if (bReportIndividualTestCases) a.constexprClassParameters();
 
-		{ // testing conversion of normalization for add and subtract
+		{ // testing conversion of normalization for multiplication
 			blocktriple<mbits, BlockTripleOperator::MUL, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
 			for (size_t i = 0; i < NR_VALUES; ++i) {
 				a.setbits(i);
@@ -115,8 +115,8 @@ namespace sw::universal {
 		return nrOfTestFailures;
 	}
 
-	template<typename CfloatConfiguration>
-	int VerifyAddBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
+	template<typename CfloatConfiguration, BlockTripleOperator op>
+	int VerifyBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
 		using namespace sw::universal;
 		constexpr size_t nbits = CfloatConfiguration::nbits;
 		constexpr size_t es = CfloatConfiguration::es;
@@ -127,71 +127,63 @@ namespace sw::universal {
 		constexpr size_t fbits = CfloatConfiguration::fbits;
 
 		int nrOfTestFailures{ 0 };
-		constexpr size_t NR_VALUES = (1ull << nbits);
+
 		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
 
 		if (bReportIndividualTestCases) a.constexprClassParameters();
 
-		{ // testing conversion of add and subtract outputs to cfloat
-			blocktriple<fbits, BlockTripleOperator::ADD, bt> b; // blocktriple type that comes out of an addition or subtraction operation
+		/// blocktriple addition and subtraction is done in a 2's complement format 0ii.fffff.
+		/// blocktriple multiplication is done in a 1's complement format of ii.fffff
+		/// blocktriple division is done in a ?'s complement format of ???????
+		/// 
+		/// blocktriples can be in overflow configuration, but not in denormalized form
+		/// 
+		/// BlockTripleOperator::ADD  blocktriple type that comes out of an addition or subtraction operation
+		/// BlockTripleOperator::MUL  blocktriple type that comes out of a multiplication operation
+ 		/// BlockTripleOperator::DIV  blocktriple type that comes out of a division operation
 
-			for (size_t i = 0; i < NR_VALUES; ++i) {
-				a.setbits(i);
-				b = float(a); // we use a float as this verification test is only intended to be used for small cfloats and floats are easier to print and inspect
-				convert(b, nut);
-//				std::cout << "cfloat in  : " << to_binary(a) << " : " << a << '\n';
-//				std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
-				if (a != nut) {
-					std::cout << "cfloat in  : " << to_binary(a) << " : " << a << '\n';
-					std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+		{
+			blocktriple<fbits, op, bt> b; // what is the radix point set at?
+			// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
+			// if MUL, patterns is  ii.fffff, without  00.fffff
+			// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
+			size_t fractionBits{ 0 };
+			size_t integerSet{ 0 };
+			if constexpr (op == BlockTripleOperator::ADD) {
+				fractionBits = fbits; // make it explicit for ease of understanding
+				integerSet = 4;
+			}
+			if constexpr (op == BlockTripleOperator::MUL) {
+				fractionBits = 2 * fbits;
+				integerSet = 4;
+			}
+			size_t NR_VALUES = (1ull << fractionBits);
+			for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
+				size_t integerBits = i * NR_VALUES;
+				for (size_t f = 0; f < NR_VALUES; ++f) {
+					b.setbits(integerBits + f);
 
-					if (a.isnan() && b.isnan()) continue;
-					if (a.isinf() && b.isinf()) continue;
+//					std::cout << "blocktriple: " << to_binary(b) << " : " << b << '\n';
 
-					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+					convert(b, nut);
+
+					// get the reference by marshalling the blocktriple value through a double value and assigning it to the cfloat
+					a = double(b);
+					if (a != nut) {
+						std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+
+						if (a.isnan() && b.isnan()) continue;
+						if (a.isinf() && b.isinf()) continue;
+
+						++nrOfTestFailures;
+						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+					}
 				}
 			}
 		}
 		return nrOfTestFailures;
 	}
 
-	template<typename CfloatConfiguration>
-	int VerifyMulBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
-		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfiguration::nbits;
-		constexpr size_t es = CfloatConfiguration::es;
-		using bt = typename CfloatConfiguration::BlockType;
-		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
-		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-		constexpr size_t fbits = CfloatConfiguration::fbits;
-
-		int nrOfTestFailures{ 0 };
-		constexpr size_t NR_VALUES = (1ull << nbits);
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
-
-		if (bReportIndividualTestCases) a.constexprClassParameters();
-
-		{ // testing conversion of add and subtract outputs to cfloat
-			blocktriple<fbits, BlockTripleOperator::MUL, bt> b; // blocktriple type that comes out of a multiplication operation
-
-			for (size_t i = 0; i < NR_VALUES; ++i) {
-				a.setbits(i);
-				b = float(a); // we use a float as this verification test is only intended to be used for small cfloats and floats are easier to print and inspect
-				convert(b, nut);
-				//				cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
-				if (a != nut) {
-					if (a.isnan() && b.isnan()) continue;
-					if (a.isinf() && b.isinf()) continue;
-
-					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
-				}
-			}
-		}
-		return nrOfTestFailures;
-	}
 }
 
 /*
@@ -205,58 +197,20 @@ Use the cfloat operator=() to round. That is your reference. This assumes that c
 Use convert() to convert to a cfloat.
 Compare the operator=() and convert() cfloat patterns to check correctness
  */
-template<typename CfloatConfiguration>
-int VerifyMulConvert(bool bReportIndividualTestCases) {
-	using namespace sw::universal;
-	constexpr size_t nbits = CfloatConfiguration::nbits;
-	constexpr size_t es = CfloatConfiguration::es;
-	using bt = typename CfloatConfiguration::BlockType;
-	constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
-	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
-	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-	constexpr size_t fbits = CfloatConfiguration::fbits;
-	constexpr size_t mbits = CfloatConfiguration::mbits;
-
-	int nrOfTestFailures{ 0 };
-	constexpr size_t NR_VALUES = (1ull << (mbits+1)); // the state space of the output of the MUL operator given fbits-szied operands
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
-
-	if (bReportIndividualTestCases) a.constexprClassParameters();
-
-	{ // testing conversion of add and subtract outputs to cfloat
-		blocktriple<fbits, BlockTripleOperator::MUL, bt> b; // blocktriple type that comes out of an addition or subtraction operation
-		for (size_t i = 0; i < NR_VALUES; ++i) {
-			if (i > 0) {
-				b.setnormal();
-			}
-			b.setbits(i);
-			a = float(b);
-			convert(b, nut);
-			if (a != nut) {
-				if (a.isnan() && b.isnan()) continue;
-				if (a.isinf() && b.isinf()) continue;
-
-				++nrOfTestFailures;
-				if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " : " << nut << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
-			}
-			else {
-				if (bReportIndividualTestCases) std::cout << "PASS: " << to_binary(a) << " == " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
-			}
-		}
-	}
-	return nrOfTestFailures;
-}
 
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = false;
 
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = "cfloat <-> blocktriple conversion: ";
 
@@ -269,9 +223,7 @@ try {
 	std::cerr << std::setprecision(8);
 
 	{
-		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
-		constexpr bool isSaturating = false;
+
 		using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 
 		// how do you round a non-normalized blocktriple?
@@ -294,13 +246,13 @@ try {
 			std::cout << "cfloat ref : " << to_binary(ref) << " : " << ref << '\n';
 		}
 
-		nrOfFailedTestCases += VerifyMulConvert<Cfloat>(true);
+		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToAddBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,1> -> blocktriple ADD");
+		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToAddBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2> -> blocktriple ADD");
+		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,1> -> blocktriple MUL");
+		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2> -> blocktriple MUL");
 
-//		nrOfFailedTestCases += VerifyCfloatToAddBlocktripleConversion<Cfloat>(true);
-//		nrOfFailedTestCases += VerifyCfloatToMulBlocktripleConversion<Cfloat>(true);
-//		nrOfFailedTestCases += VerifyAddBlocktripleToCfloatConversion<Cfloat>(true);
-//		nrOfFailedTestCases += VerifyMulBlocktripleToCfloatConversion<Cfloat>(true);
-
+		nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "blocktriple ADD->cfloat<5,2>");
+		nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "blocktriple MUL->cfloat<5,2>");
 
 	}
 	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
@@ -313,90 +265,90 @@ try {
 #endif
 
 #else  // !MANUAL_TESTING
-	bool bReportIndividualTestCases = false;
+
 	std::cout << "cfloat to blocktriple conversion validation" << '\n';
 
 	// es = 1
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 3, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 3,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 4,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<16,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 1, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,1>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 3,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 7, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 9, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<10, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<10,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<12, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<12,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<16, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<16,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<18, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<18,1>");   // 3 blocks
 
 
 	// es = 2
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 4,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<16,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,2>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 5,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 6,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 7, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 7,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<10,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<12,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<14, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<14,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<16, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<16,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<18, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<18,2>");   // 3 blocks
 
 
 	// es = 3
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 5,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 3, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,3>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 5,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 6, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 6,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 7, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 7,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 8,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<10,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<12,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<14,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<18, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<18,3>");   // 3 blocks
 
 
 	// es = 4
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 6,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 4, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,4>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 6, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 6,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 7, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 7,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 8,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<10, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<10,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<12, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<12,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<14,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<18, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<18,4>");   // 3 blocks
 
 
 	// es = 5
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 7,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 5, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<18,5>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 7, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 7,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 8,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<10, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<10,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<12, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<12,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<14,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<18, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<18,5>");   // 3 blocks
 
 
 	// es = 6
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 8,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 6, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 8,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 9, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 9,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<10, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<10,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<12, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<12,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<14, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<14,6>");
 
 
 	// es = 7
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat< 9,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<10,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 7, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 9, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 9,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<10, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<10,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<12, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<12,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<14, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<14,7>");
 
 	// still failing
 	// es = 8
-//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<11, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<11,8>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<12,8>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 8, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<14,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<11,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<12,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat<14,8>");
 
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<25, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<25,2>");   // 4 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat<25, 2, uint8_t> >(bReportIndividualTestCases), tag, "cfloat<25,2>");   // 4 blocks
 
 #endif  // STRESS_TESTING
 

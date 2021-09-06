@@ -249,7 +249,7 @@ public:
 	inline constexpr int  significantscale() const noexcept {
 		int sigScale = 0;
 		for (int i = bfbits - 1; i >= radix; --i) {
-			if (_significant.at(i)) {
+			if (_significant.at(static_cast<size_t>(i))) {
 				sigScale = i - radix;
 				break;
 			}

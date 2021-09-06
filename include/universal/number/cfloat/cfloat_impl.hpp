@@ -140,7 +140,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		tgt.setsign(src.sign()); // preserve sign
 	}
 	else {
-		int scale = src.scale() + src.significantscale();
+		int significantScale = src.significantscale();
+		int scale = src.scale() + significantScale;
 		if (scale < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
 			tgt.setzero();
 			return;
@@ -178,12 +179,11 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			}
 			else {
 				// resulting cfloat will be a normal number
-				// uint64_t fracbits = src.fraction_ull();
-				uint64_t fracbits = src.get_ull();
-				// null the top bit to remove the hidden bit of a denormalized form
-				fracbits &= btType::normalFormMask;
-
-				size_t shift = btType::radix - cfloatType::fbits + src.significantscale();
+//				std::cout << "cfloat will be a normal\n";
+//				std::cout << "incoming blocktriple: " << to_binary(src) << '\n';
+				uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
+				// find the shift that gets us to the lsb
+				size_t shift = btType::radix - cfloatType::fbits + significantScale;
 
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
@@ -203,27 +203,36 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 					mask = 0xFFFF'FFFF'FFFF'FFFFull << (shift - 2);
 				}
 				mask = ~mask;
-//				std::cout << to_binary(fracbits) << std::endl;
-//				std::cout << to_binary(mask) << std::endl;
+//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
+//				std::cout << "sticky mask : " << to_binary(mask) << std::endl;
 				bool sticky = fracbits & mask;
 				bool roundup = (guard && (lsb || (round || sticky)));
 //				std::cout << (roundup ? "rounding up\n" : "rounding down\n");
 				fracbits >>= shift;
+//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
 				fracbits += (roundup ? 1ull : 0ull);
-				if (fracbits != (1ull << cfloatType::fbits)) { // check for overflow
-					raw |= scale + cfloatType::EXP_BIAS;  // this is guaranteed to be a value that can be unsigned encoded
+//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
+				if (fracbits != (2ull << cfloatType::fbits)) { // check for overflow
+					raw |= static_cast<size_t>(scale + cfloatType::EXP_BIAS);  // this is guaranteed to be a value that can be encoded with an unsigned
 					raw <<= cfloatType::fbits;
+//					std::cout << "raw w/o frac: " << to_binary(raw) << std::endl;
+					fracbits &= cfloatType::ALL_ONES_FR; // remove integer bits
 					raw |= fracbits;
+//					std::cout << "raw w frac  : " << to_binary(raw) << std::endl;
 					tgt.setbits(raw);
 					tgt.post_process();
 				}
 				else {
 					// rounding made the fraction overflow
 					if (scale < cfloatType::MAX_EXP) {
-						++scale;
-						raw |= scale + cfloatType::EXP_BIAS;
+						++scale;				
+						fracbits &= cfloatType::ALL_ONES_FR; // remove integer bits
+						raw |= static_cast<size_t>(scale + cfloatType::EXP_BIAS);
+//						std::cout << "raw exp     : " << to_binary(raw) << std::endl;
 						raw <<= cfloatType::fbits;
-						raw |= (fracbits & cfloatType::ALL_ONES_FR); // reset the overflow bit
+//						std::cout << "raw w/o frac: " << to_binary(raw) << std::endl;
+						raw |= fracbits;
+//						std::cout << "raw         : " << to_binary(raw) << std::endl;
 						tgt.setbits(raw);
 					}
 					else {
