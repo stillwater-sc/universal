@@ -275,8 +275,9 @@ public:
 
 	/// <summary>
 	/// add two fixed-point numbers with fbits fraction bits 
-	/// yielding an unrounded sum. This sum can overflow,
-	/// be normal, or denormal. Since we are not rounding
+	/// yielding an unrounded sum of 3+fbits. (currently we generate a 3+(2*fbits) result as we haven't implemented the sticky bit optimization)
+	/// This sum can overflow, be normal, or denormal. 
+	/// Since we are not rounding
 	/// we cannot act on overflow as we would potentially shift
 	/// rounding state out, and thus the output must be processed
 	/// by the calling environment. We can act on denormalized
@@ -325,15 +326,6 @@ public:
 				_sign = true;
 			}
 			_scale = scale_of_result;
-#ifdef BUG
-			if (_significant.test(bfbits-2)) { // test for carry
-				_scale += 1;
-				_significant >>= 1; // TODO: do we need to round on bits shifted away?
-			}
-			else if (_significant.test(bfbits - 3)) { // check for the hidden bit
-				// ready to go
-			}
-#endif
 			// leave 01#.ffff to output processing: this is an overflow condition
 			// 001.ffff is a perfect normalized format
 			// fix 000.#### denormalized state to normalized
@@ -362,12 +354,21 @@ public:
 	}
 
 	/// <summary>
-	/// multiply two real numbers with <fbits> fraction bits yielding an <fbits> unrounded product
-	/// To avoid fraction bit copies, the input requirements are pushed to the
-	/// calling environment to prepare the correct storage
-	/// </summary>
-	/// <param name="lhs">ephemeral blocktriple<mbits> that may get modified</param>
-	/// <param name="rhs">ephemeral blocktriple<mbits> that may get modified</param>
+	/// multiply two real numbers with fbits fraction bits 
+	/// yielding an 2*(1+fbits) unrounded product.
+	/// 
+	/// This product can overflow, be normal, or denormal. 
+	/// Since we are not rounding
+	/// we cannot act on overflow as we would potentially shift
+	/// rounding state out, and thus the output must be processed
+	/// by the calling environment. We can act on denormalized
+	/// encodings, so these are processed in this function.
+	/// To avoid fraction bit copies, the input arguments
+	/// must be prepared by the calling environment, and 
+	/// this function only manipulates the bits.	
+	/// /// </summary>
+	/// <param name="lhs">ephemeral blocktriple that may get modified</param>
+	/// <param name="rhs">ephemeral blocktriple that may get modified</param>
 	/// <param name="result">unrounded sum</param>
 	void mul(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
