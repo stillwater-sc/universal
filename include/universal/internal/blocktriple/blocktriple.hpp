@@ -218,11 +218,13 @@ public:
 		// However, blocktriple uses extra state to encode the special values,
 		// and the test can't use this interface to set that. 
 		// Thus the caller (typically the test suite) must manage this special state.
-		// Here we just check for 0
-		_nan = false;
-		_inf = false;
-		_scale = 0;
+		// _scale must be set by caller, so that the same raw bit pattern can 
+		// span different scales
+		// 		
+		// blocktriple non-special values are always in normalized form
+		_nan = false; _inf = false;
 		_significant.setradix(radix);
+		// Here we just check for 0 special case
 		if (raw == 0) {
 			_zero = true;
 			_significant.clear();
@@ -272,12 +274,19 @@ public:
 	// ALU operators
 
 	/// <summary>
-	/// add two real numbers with <fbits> fraction bits yielding an <fbits> unrounded sum
-	/// To avoid fraction bit copies, the input requirements are pushed to the
-	/// calling environment to prepare the correct storage
+	/// add two fixed-point numbers with fbits fraction bits 
+	/// yielding an unrounded sum. This sum can overflow,
+	/// be normal, or denormal. Since we are not rounding
+	/// we cannot act on overflow as we would potentially shift
+	/// rounding state out, and thus the output must be processed
+	/// by the calling environment. We can act on denormalized
+	/// encodings, so these are processed in this function.
+	/// To avoid fraction bit copies, the input arguments
+	/// must be prepared by the calling environment, and 
+	/// this function only manipulates the bits.
 	/// </summary>
-	/// <param name="lhs">ephemeral blocktriple<abits> that may get modified</param>
-	/// <param name="rhs">ephemeral blocktriple<abits> that may get modified</param>
+	/// <param name="lhs">ephemeral blocktriple that may get modified</param>
+	/// <param name="rhs">ephemeral blocktriple that may get modified</param>
 	/// <param name="result">unrounded sum</param>
 	void add(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
@@ -311,11 +320,12 @@ public:
 		}
 		else {
 			_zero = false;
-			if (_significant.test(bfbits-1)) {  // is the result negative
+			if (_significant.test(bfbits-1)) {  // is the result negative?
 				_significant.twosComplement();
 				_sign = true;
 			}
 			_scale = scale_of_result;
+#ifdef BUG
 			if (_significant.test(bfbits-2)) { // test for carry
 				_scale += 1;
 				_significant >>= 1; // TODO: do we need to round on bits shifted away?
@@ -323,8 +333,12 @@ public:
 			else if (_significant.test(bfbits - 3)) { // check for the hidden bit
 				// ready to go
 			}
-			else {
-				// found a denormalized form, thus need to normalize: find MSB
+#endif
+			// leave 01#.ffff to output processing: this is an overflow condition
+			// 001.ffff is a perfect normalized format
+			// fix 000.#### denormalized state to normalized
+			if (!_significant.test(bfbits-2) && !_significant.test(bfbits-3)) {
+				// found a denormalized form to normalize: find MSB
 				int msb = _significant.msb(); // zero case has been taken care off above
 //				std::cout << "sum : " << to_binary(*this) << std::endl;
 //				std::cout << "msb : " << msb << std::endl;

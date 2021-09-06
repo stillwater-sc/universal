@@ -23,9 +23,10 @@
 /*
    DESIGN and IMPLEMENTATION HISTORY
 
-   The first floating-point back-end design using value<> had a fraction 
+   The first floating-point back-end design, value<fbits>, had a fraction 
    bit parameter to select  among different normalizations for 
-   addition, multiplication, and division.
+   addition, multiplication, and division. Inside, these operators
+   we would expand and align the operands as needed, requiring a copy.
    
    But the normalization is NOT a generic op, it is very specific for 
    add, mul, div, or sqrt, thus having a fully parameterized interface 

@@ -15,39 +15,39 @@ namespace sw::universal {
 	template<typename Number, typename Ty>
 	void TestCase(TestCaseOperator _operator, Ty _a, Ty _b) {
 		constexpr size_t nbits = Number::nbits;
-		Number result(0);
+		Number c(0);
 		Ty _c(0);
 		std::string op, opName;
 		Number a = _a;
 		Number b = _b;
 		switch (_operator) {
 		case TestCaseOperator::ADD:
-			result = a + b;
+			c = a + b;
 			_c = _a + _b;
 			op     = " + ";
 			opName = "ADD";
 			break;
 		case TestCaseOperator::SUB:
-			result = a - b;
+			c = a - b;
 			_c = _a - _b;
 			op = " - ";
 			opName = "SUB";
 			break;
 		case TestCaseOperator::MUL:
-			result = a * b;
+			c = a * b;
 			_c = _a * _b;
 			op = " * ";
 			opName = "MUL";
 			break;
 		case TestCaseOperator::DIV:
-			result = a / b;
+			c = a / b;
 			_c = _a / _b;
 			op = " / ";
 			opName = "DIV";
 			break;
 			/*
 		case TestCaseOperator::REM:
-			result = a % b;
+			c = a % b;
 			_c = _a % _b;
 			op     = " % ";
 			opName = "REM";
@@ -68,9 +68,9 @@ namespace sw::universal {
 		std::cout << sw::universal::to_binary(_b) << " : " << _b << '\n';
 		std::cout << sw::universal::to_binary(_c) << " : " << _c << '\n';
 		std::cout << "+--------\ntarget number : " << typeid(Number).name() << '\n';
-		std::cout << a << op << b << " = " << result << " (reference: " << reference << ")\n";
-		std::cout << to_binary(a, true) << op << to_binary(b, true) << " = " << to_binary(result, true) << " (reference: " << to_binary(reference, true) << ")   ";
-		std::cout << (reference == result ? "PASS" : "FAIL");
+		std::cout << a << op << b << " = " << c << " (reference: " << reference << ")\n";
+		std::cout << to_binary(a, true) << op << to_binary(b, true) << " = " << to_binary(c, true) << " (reference: " << to_binary(reference, true) << ")   ";
+		std::cout << (reference == c ? "PASS" : "FAIL");
 		std::cout << "\n+--------  Test Case: Done\n";
 		std::cout << std::setprecision(oldprecision);
 	}
