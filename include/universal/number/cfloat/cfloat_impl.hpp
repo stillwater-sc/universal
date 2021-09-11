@@ -112,15 +112,30 @@ parse(const std::string& str) {
 
 /// <summary>
 /// convert a blocktriple to a cfloat. blocktriples come out of the arithmetic
-/// engine in the form bb.ff...ff and a scale. The conversion must take this
+/// engine in the form ii.ff...ff and a scale. The conversion must take this
 /// denormalized form into account during conversion.
 /// 
 /// The blocktriple must be in this form to round correctly, as all the bits
 /// after an arithmetic operation must be taken into account.
+/// 
+/// Transformation:
+///    ii.ff...ff  transform to    s.eee.fffff
+/// All number systems that depend on blocktriple will need to have
+/// the rounding decision answered, so that functionality can be
+/// reused if we locate it inside blocktriple.
+/// 
+/// if (srcbits > fbits) // we need to round
+///     if (ii.00..00 > 1) 
+///         mask is at srcbits - fbits + 1
+///     else 
+///		    mask is at srcbits - fbits
+/// }
+/// else {               // no need to round
+/// }
 /// </summary>
-/// <typeparam name="bt"></typeparam>
-/// <param name="src"></param>
-/// <param name="tgt"></param>
+/// <typeparam name="bt">type of the block used for cfloat storage</typeparam>
+/// <param name="src">the blocktriple to be converted</param>
+/// <param name="tgt">the resulting cfloat</param>
 template<size_t srcbits, BlockTripleOperator op, size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, 
@@ -155,9 +170,15 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			}
 			return;
 		}
+		// get the rounding direction
+		std::pair<bool, size_t> alignment = src.roundingDecision();
+		bool roundup = alignment.first;
+		size_t shift = alignment.second;
 
 		// tgt.clear();
-		if constexpr (nbits < 65) {
+		if constexpr (btType::bfbits < 65) {
+			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
+
 			// we can use a uint64_t to construct the cfloat
 			uint64_t raw = (src.sign() ? 1ull : 0ull);
 			raw <<= es; // shift left to make room for the exponent bits
@@ -165,49 +186,15 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 				// resulting cfloat will be a subnormal number: all exponent bits are 0
 				raw <<= cfloatType::fbits;
 				int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(scale);
-				if constexpr (srcbits < 64) {
-					uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit explicitely as it will shift into the msb of the denorm
-					//uint64_t fracbits = src.fraction_ull();
-					fracbits >>= rightShift + (srcbits - cfloatType::fbits);
-					raw |= fracbits;
-				}
-				else {
-					//static_assert(srcbits < 65, "trouble");
-					std::cerr << "srcbits >= 64  : srcbits == " << srcbits << '\n';
-				}
+				fracbits >>= rightShift + (srcbits - cfloatType::fbits);
+				raw |= fracbits;
 				tgt.setbits(raw);
 			}
 			else {
 				// resulting cfloat will be a normal number
 //				std::cout << "cfloat will be a normal\n";
 //				std::cout << "incoming blocktriple: " << to_binary(src) << '\n';
-				uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
-				// find the shift that gets us to the lsb
-				size_t shift = btType::radix - cfloatType::fbits + significantScale;
 
-				//  ... lsb | guard  round sticky   round
-				//       x     0       x     x       down
-				//       0     1       0     0       down  round to even
-				//       1     1       0     0        up   round to even
-				//       x     1       0     1        up
-				uint64_t mask = (1ull << shift);
-				bool lsb = fracbits & mask;
-				mask >>= 1;
-				bool guard = fracbits & mask;
-				mask >>= 1;
-				bool round = fracbits & mask;
-				if (shift < 2) {
-					mask = 0xFFFF'FFFF'FFFF'FFFFull;
-				}
-				else {
-					mask = 0xFFFF'FFFF'FFFF'FFFFull << (shift - 2);
-				}
-				mask = ~mask;
-//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
-//				std::cout << "sticky mask : " << to_binary(mask) << std::endl;
-				bool sticky = fracbits & mask;
-				bool roundup = (guard && (lsb || (round || sticky)));
-//				std::cout << (roundup ? "rounding up\n" : "rounding down\n");
 				fracbits >>= shift;
 //				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
 				fracbits += (roundup ? 1ull : 0ull);
@@ -825,7 +812,7 @@ public:
 			}
 			else {
 				// TODO: optimize
-				uint32_t exponentBits = scale + EXP_BIAS;
+				uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
 				uint32_t mask = (1ul << (es - 1));
 				for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
 					setbit(i, (mask & exponentBits));
@@ -835,7 +822,7 @@ public:
 		}
 		else {
 			// TODO: optimize
-			uint32_t exponentBits = scale + EXP_BIAS;
+			uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
 			uint32_t mask = (1ul << (es - 1));
 			for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
 				setbit(i, (mask & exponentBits));
@@ -1081,7 +1068,7 @@ public:
 				}
 			}
 			else {
-				e = unsigned(ebits) - EXP_BIAS;
+				e = int(ebits) - EXP_BIAS;
 			}
 		}
 		return e;

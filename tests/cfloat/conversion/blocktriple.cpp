@@ -1,4 +1,4 @@
-// normalization.cpp: test suite runner for conversion tests between classic cfloats and blocktriples
+// to_blocktriple.cpp: test suite runner for conversion tests between classic cfloats and blocktriples
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -142,8 +142,10 @@ namespace sw::universal {
 		/// BlockTripleOperator::MUL  blocktriple type that comes out of a multiplication operation
  		/// BlockTripleOperator::DIV  blocktriple type that comes out of a division operation
 
-		{
-			blocktriple<fbits, op, bt> b; // what is the radix point set at?
+		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
+		BlockTripleConfiguration b;
+		std::cout << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << '\n';
+		for (int scale = -1; scale < 2; ++scale) {
 			// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
 			// if MUL, patterns is  ii.fffff, without  00.fffff
 			// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
@@ -158,6 +160,7 @@ namespace sw::universal {
 				integerSet = 4;
 			}
 			size_t NR_VALUES = (1ull << fractionBits);
+			b.setscale(scale);
 			for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
 				size_t integerBits = i * NR_VALUES;
 				for (size_t f = 0; f < NR_VALUES; ++f) {
@@ -212,7 +215,7 @@ try {
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-	std::string tag = "cfloat <-> blocktriple conversion: ";
+	std::string tag = "conversion: ";
 
 #if MANUAL_TESTING
 
@@ -224,14 +227,30 @@ try {
 
 	{
 
-		using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-
 		// how do you round a non-normalized blocktriple?
 		// you would need to modify the lsb/guard/round/sticky bit masks
 		// so that you use all info to make the rounding decision,
 		// then normalize (basically shift to the right) and apply
 		// the rounding decision.
 		{
+			using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			constexpr size_t fbits = Cfloat::fbits;
+			typedef Cfloat::BlockType bt;
+			blocktriple<fbits, BlockTripleOperator::ADD, bt> b;
+			// 0b001.1  == 0.75, scale = -1
+			b.setbits(0x03);
+			b.setscale(-1);
+			float v = float(b);
+			Cfloat nut, ref;
+			convert(b, nut);
+			ref = v;
+			std::cout << "blocktriple: " << to_binary(b) << " : " << float(b) << '\n';
+			std::cout << "cfloat     : " << to_binary(nut) << " : " << nut << '\n';
+			std::cout << "cfloat ref : " << to_binary(ref) << " : " << ref << '\n';
+		}
+
+		{
+			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			constexpr size_t fbits = Cfloat::fbits;
 			typedef Cfloat::BlockType bt;
 			blocktriple<fbits, BlockTripleOperator::MUL, bt> b; // blocktriple type that comes out of a multiplication operation
@@ -246,13 +265,22 @@ try {
 			std::cout << "cfloat ref : " << to_binary(ref) << " : " << ref << '\n';
 		}
 
-		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToAddBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,1> -> blocktriple ADD");
-		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToAddBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2> -> blocktriple ADD");
-		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,1> -> blocktriple MUL");
-		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2> -> blocktriple MUL");
+//		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToAddBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,1> -> blocktriple ADD");
+//		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToAddBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2> -> blocktriple ADD");
+		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), tag, "cfloat< 4,1> -> blocktriple MUL");
+//		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2> -> blocktriple MUL");
 
-		nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "blocktriple ADD->cfloat<5,2>");
-		nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "blocktriple MUL->cfloat<5,2>");
+		return 0;
+		{
+			using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "blocktriple ADD->cfloat<4,2>");
+			nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "blocktriple MUL->cfloat<4,2>");
+		}
+		{
+			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "blocktriple ADD->cfloat<5,2>");
+			nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "blocktriple MUL->cfloat<5,2>");
+		}
 
 	}
 	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';

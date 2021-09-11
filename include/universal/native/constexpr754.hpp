@@ -18,7 +18,12 @@ namespace sw::universal {
 
 template<typename Real>
 inline constexpr void extractFields(Real value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
-	// empty general case
+	if (value == 0) {
+		s = false;
+		rawExponentBits = 0ull;
+		rawFractionBits = 0ull;
+	}
+	if (value < 0) s = true;
 }
 template<>
 inline constexpr void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {

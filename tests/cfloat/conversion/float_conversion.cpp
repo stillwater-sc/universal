@@ -46,13 +46,15 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	// bit cast
 	uint64_t bc = std::bit_cast<uint32_t, float>(f);
 	std::cout << "float    : " << to_binary(f) << '\n';
-	std::cout << "emask    : " << to_binary(ieee754_parameter<float>::emask, 32, false) << std::endl;
-	std::cout << "raw bits : " << to_binary(bc, 32, false) << std::endl;
-	std::cout << "fmask    : " << to_binary(ieee754_parameter<float>::fmask, 32, false) << std::endl;
-	std::cout << "emask+bc : " << to_binary((ieee754_parameter<float>::emask & bc), 32, false) << std::endl;
+	std::cout << "emask    : " << to_binary(ieee754_parameter<float>::emask, 32, false) << '\n';
+	std::cout << "raw bits : " << to_binary(bc, 32, false) << '\n';
+	std::cout << "fmask    : " << to_binary(ieee754_parameter<float>::fmask, 32, false) << '\n';
+	std::cout << "emask+bc : " << to_binary((ieee754_parameter<float>::emask & bc), 32, false) << '\n';
 	bool s = (ieee754_parameter<float>::smask & bc);
 	uint64_t rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
 	uint64_t rawFractionBits = (ieee754_parameter<float>::fmask & bc);
+	std::cout << "raw exp  : " << to_binary(rawExponentBits) << '\n';
+	std::cout << "raw frac : " << to_binary(rawFractionBits) << '\n';
 }
 #endif // BIT_CAST_SUPPORT
 

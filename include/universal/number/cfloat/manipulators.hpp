@@ -16,7 +16,7 @@
 
 namespace sw::universal {
 
-// Generate a type tag for this cfloat, for example, cfloat<8,1, class uint8_t>
+// Generate a type tag for this cfloat, for example, cfloat<8,1, unsigned char, hasSubnormals, noSupernormals, notSaturating>
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	std::stringstream s;
@@ -27,6 +27,7 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 		<< (hasSubnormals ? "hasSubnormals, " : "noSubnormals, ")
 		<< (hasSupernormals ? "hasSupernormals, " : "noSupernormals, ")
 		<< (isSaturating ? "Saturating>" : "notSaturating>");
+	if (v.iszero()) s << ' ';
 	return s.str();
 }
 
@@ -70,9 +71,9 @@ void subnormals() {
 
 // report dynamic range of a type, specialized for a cfloat
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string dynamic_range(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b) {
+std::string dynamic_range(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
 	std::stringstream s;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
 	s << type_tag(c) << ": ";
 	s << "minpos scale " << std::setw(10) << c.minpos().scale() << "     ";
 	s << "maxpos scale " << std::setw(10) << c.maxpos().scale() << '\n';

@@ -64,8 +64,50 @@ blocktriple<fbits, op, bt>& convert(unsigned long long uint, blocktriple<fbits, 
 	return tgt;
 }
 
+// Generate a type tag for this type: blocktriple<fbits, operator, unsigned int>
+template<size_t fbits, BlockTripleOperator op, typename bt>
+std::string type_tag(const blocktriple<fbits, op, bt>& v) {
+	std::stringstream s;
+	s << "blocktriple<"
+		<< fbits << ", ";
+	switch (op) {
+	case BlockTripleOperator::REPRESENTATION:
+		s << "BlockTripleOperator::REPRESENTATION, ";
+		break;
+	case BlockTripleOperator::ADD:
+		s << "BlockTripleOperator::ADD, ";
+		break;
+	case BlockTripleOperator::MUL:
+		s << "BlockTripleOperator::MUL, ";
+		break;
+	case BlockTripleOperator::DIV:
+		s << "BlockTripleOperator::DIV, ";
+		break;
+	case BlockTripleOperator::SQRT:
+		s << "BlockTripleOperator::SQRT, ";
+		break;
+	default:
+		s << "unknown operator, ";
+	}
+	s << typeid(bt).name() << '>';
+	if (v.iszero()) s << ' ';
+	return s.str();
+}
+
 /// <summary>
 /// Generalized blocktriple representing a (sign, scale, significant) with unrounded arithmetic
+/// 
+/// For addition and subtraction, blocktriple uses a 2's complement representation of the form iii.fffff.
+/// The 3 integer bits are required to capture the negative overflow condition.
+/// 
+/// For multiplication, blocktriple uses a 1's complement representation of the form ii.fffff.
+/// The 2 integer bits are required to capture the overflow condition.
+/// 
+/// Blocktriple does not normalize the output of ADD/SUB/MUL so that all bits are
+/// available for the rounding decision. Number systems that use blocktriple as
+/// their general floating-point engine can use the roundUp(targetFbits) method to
+/// obtain the rounding direction, and the alignmentShift(targetFbits) method to 
+/// obtain the shift required to normalize the fraction bits.
 /// </summary>
 /// <typeparam name="fractionbits">number of fraction bits in the significant</typeparam>
 /// <typeparam name="bt">block type: one of [uint8_t, uint16_t, uint32_t, uint64_t]</typeparam>
@@ -159,12 +201,64 @@ public:
 	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_double(rhs); }
 	constexpr blocktriple& operator=(long double rhs)        noexcept { return *this = double(rhs); };
 	
-	// align the blocktriple
-	inline constexpr void align(int rightShift) noexcept {
+	constexpr blocktriple& operator<<=(int leftShift) noexcept {
+		if (leftShift == 0) return *this;
+		if (leftShift < 0) return operator>>=(-leftShift);
+		_scale -= leftShift;
+		_significant <<= leftShift;
+		return *this;
+	}
+	constexpr blocktriple& operator>>=(int rightShift) noexcept {
+		if (rightShift == 0) return *this;
+		if (rightShift < 0) return operator<<=(-rightShift);
 		_scale += rightShift;
 		_significant >>= rightShift;
+		return *this;
 	}
 
+	/// <summary>
+	/// roundingDecision returns a pair<bool, size_t> to direct the rounding and right shift
+	/// </summary>
+	/// <returns>std::pair<bool, size_t> of rounding direction (up is true, down is false), and the right shift</returns>
+	constexpr std::pair<bool, size_t> roundingDecision() const noexcept {
+		// preconditions: blocktriple is in 1's complement form, and not a denorm
+		// this implies that the scale of the significant is 0 or 1
+		size_t significantScale = static_cast<size_t>(significantscale());
+		// find the shift that gets us to the lsb
+		size_t shift = significantScale + static_cast<size_t>(radix) - fbits;
+#ifdef PERFORMANCE_OPTIMIZATION
+		if constexpr (bfbits < 65) {
+			uint64_t fracbits = _significant.get_ull(); // get all the bits, including the integer bits
+			//  ... lsb | guard  round sticky   round
+			//       x     0       x     x       down
+			//       0     1       0     0       down  round to even
+			//       1     1       0     0        up   round to even
+			//       x     1       0     1        up
+			uint64_t mask = (1ull << shift);
+			bool lsb = fracbits & mask;
+			mask >>= 1;
+			bool guard = fracbits & mask;
+			mask >>= 1;
+			bool round = fracbits & mask;
+			if (shift < 2) {
+				mask = 0xFFFF'FFFF'FFFF'FFFFull;
+			}
+			else {
+				mask = 0xFFFF'FFFF'FFFF'FFFFull << (shift - 2);
+			}
+			mask = ~mask;
+			//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
+			//				std::cout << "sticky mask : " << to_binary(mask) << std::endl;
+			bool sticky = fracbits & mask;
+			roundup = (guard && (lsb || (round || sticky)));
+		}
+		else {
+			roundup = _significant.roundingMode(shift);
+		}
+#endif
+		bool roundup = _significant.roundingMode(shift);
+		return std::pair<bool, size_t>(roundup, shift);
+	}
 	// apply a 2's complement recoding of the fraction bits
 	inline constexpr blocktriple& twosComplement() noexcept {
 		_significant.twosComplement();
@@ -205,7 +299,7 @@ public:
 	}
 	constexpr void setsign(bool s) noexcept { _sign = s; }
 	constexpr void setscale(int scale) noexcept { _scale = scale; }
-	constexpr void setradix(int radix) noexcept { _significant.setradix(radix); }
+	constexpr void setradix(int _radix) noexcept { _significant.setradix(_radix); }
 	constexpr void setbit(size_t index, bool v = true) noexcept { _significant.setbit(index, v); }
 	/// <summary>
 	/// set the bits of the significant, given raw fraction bits. only works for bfbits < 64
@@ -297,10 +391,10 @@ public:
 		// avoid copy by directly manipulating the fraction bits of the arguments
 		int expDiff = lhs_scale - rhs_scale;
 		if (expDiff < 0) {
-			lhs.align(-expDiff);
+			lhs >>= -expDiff;
 		}
 		else if (expDiff > 0) {
-			rhs.align(expDiff);
+			rhs >>= expDiff;
 		}
 		if (lhs.isneg()) lhs._significant.twosComplement();
 		if (rhs.isneg()) rhs._significant.twosComplement();
