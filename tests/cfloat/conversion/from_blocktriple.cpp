@@ -1,4 +1,4 @@
-// to_blocktriple.cpp: test suite runner for conversion tests between classic cfloats and blocktriples
+// from_blocktriple.cpp: test suite runner for conversion tests between blocktriple and cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -41,82 +41,13 @@
 namespace sw::universal {
 
 	/// <summary>
-	/// verify that normalization represents the same value
+	/// convert a blocktriple to a cfloat
 	/// </summary>
-	/// <typeparam name="bt">block storage type of representation</typeparam>
-	/// <param name="bReportIndividualTestCases">if true print individual test cases</param>
+	/// <typeparam name="CfloatConfiguration"></typeparam>
+	/// <param name="bReportIndividualTestCases"></param>
 	/// <returns></returns>
-	template<typename CfloatConfiguration>
-	int VerifyCfloatToAddBlocktripleConversion(bool bReportIndividualTestCases) {
-		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfiguration::nbits;
-		constexpr size_t es = CfloatConfiguration::es;
-		using bt = typename CfloatConfiguration::BlockType;
-		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
-		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-		//constexpr size_t fbits = CfloatConfiguration::fbits;
-		constexpr size_t abits = CfloatConfiguration::abits;
-
-		int nrOfTestFailures{ 0 };
-		constexpr size_t NR_VALUES = (1u << nbits);
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
-
-		if (bReportIndividualTestCases) a.constexprClassParameters();
-
-		{ // testing conversion of normalization for add and subtract
-			blocktriple<abits, BlockTripleOperator::ADD, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-			for (size_t i = 0; i < NR_VALUES; ++i) {
-				a.setbits(i);
-				a.normalizeAddition(b);
-				if (double(a) != double(b)) {
-					if (a.isnan() && b.isnan()) continue;
-					if (a.isinf() && b.isinf()) continue;
-
-					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
-				}
-			}
-		}
-		return nrOfTestFailures;
-	}
-
-	template<typename CfloatConfiguration>
-	int VerifyCfloatToMulBlocktripleConversion(bool bReportIndividualTestCases) {
-		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfiguration::nbits;
-		constexpr size_t es = CfloatConfiguration::es;
-		using bt = typename CfloatConfiguration::BlockType;
-		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
-		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-		constexpr size_t mbits = CfloatConfiguration::mbits;
-
-		int nrOfTestFailures{ 0 };
-		constexpr size_t NR_VALUES = (1u << nbits);
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
-
-		if (bReportIndividualTestCases) a.constexprClassParameters();
-
-		{ // testing conversion of normalization for multiplication
-			blocktriple<mbits, BlockTripleOperator::MUL, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-			for (size_t i = 0; i < NR_VALUES; ++i) {
-				a.setbits(i);
-				a.normalizeMultiplication(b);
-				if (double(a) != double(b)) {
-					if (a.isnan() && b.isnan()) continue;
-					if (a.isinf() && b.isinf()) continue;
-
-					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
-				}
-			}
-		}
-		return nrOfTestFailures;
-	}
-
 	template<typename CfloatConfiguration, BlockTripleOperator op>
-	int VerifyBlocktripleToCfloatConversion(bool bReportIndividualTestCases) {
+	int VerifyCfloatFromBlocktripleConversion(bool bReportIndividualTestCases) {
 		using namespace sw::universal;
 		constexpr size_t nbits = CfloatConfiguration::nbits;
 		constexpr size_t es = CfloatConfiguration::es;
@@ -130,8 +61,6 @@ namespace sw::universal {
 
 		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
 
-		if (bReportIndividualTestCases) a.constexprClassParameters();
-
 		/// blocktriple addition and subtraction is done in a 2's complement format 0ii.fffff.
 		/// blocktriple multiplication is done in a 1's complement format of ii.fffff
 		/// blocktriple division is done in a ?'s complement format of ???????
@@ -144,8 +73,8 @@ namespace sw::universal {
 
 		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
 		BlockTripleConfiguration b;
-		std::cout << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << '\n';
-		for (int scale = -1; scale < 2; ++scale) {
+		std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << '\n';
+		for (int scale = -8; scale < 8; ++scale) {
 			// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
 			// if MUL, patterns is  ii.fffff, without  00.fffff
 			// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
@@ -173,13 +102,18 @@ namespace sw::universal {
 					// get the reference by marshalling the blocktriple value through a double value and assigning it to the cfloat
 					a = double(b);
 					if (a != nut) {
-						std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+//						std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
 
 						if (a.isnan() && b.isnan()) continue;
 						if (a.isinf() && b.isinf()) continue;
 
 						++nrOfTestFailures;
-						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_binary(nut) << " blocktriple value marshalled: " << to_triple(b) << " : " << b << '\n';
+						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
+					}
+					else {
+#ifndef VERBOSE_POSITIVITY
+						if (bReportIndividualTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+#endif
 					}
 				}
 			}
@@ -213,20 +147,21 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
 
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
-	std::string tag = "conversion: ";
+	std::string tag = "conversion ";
 
 #if MANUAL_TESTING
 
 	// cfloat<> is a linear floating-point
+
+	std::cout << "Conversion from blocktriple to cfloat\n\n";
 
 	// to track conversion in more detail
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
 	{
-
 		// how do you round a non-normalized blocktriple?
 		// you would need to modify the lsb/guard/round/sticky bit masks
 		// so that you use all info to make the rounding decision,
@@ -265,21 +200,59 @@ try {
 			std::cout << "cfloat ref : " << to_binary(ref) << " : " << ref << '\n';
 		}
 
-//		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToAddBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,1> -> blocktriple ADD");
-//		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToAddBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2> -> blocktriple ADD");
-		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), tag, "cfloat< 4,1> -> blocktriple MUL");
-//		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToMulBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), tag, "cfloat< 4,2> -> blocktriple MUL");
-
-		return 0;
+#ifdef BLA
+		{
+			using Cfloat = cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<3,1> from blocktriple ADD");
+		}
 		{
 			using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-			nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "blocktriple ADD->cfloat<4,2>");
-			nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "blocktriple MUL->cfloat<4,2>");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<4,2> from blocktriple ADD");
 		}
 		{
 			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-			nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "blocktriple ADD->cfloat<5,2>");
-			nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleToCfloatConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "blocktriple MUL->cfloat<5,2>");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<5,2> from blocktriple ADD");
+		}
+		{
+			using Cfloat = cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,1> from blocktriple ADD");
+		}
+		{
+			using Cfloat = cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,2> from blocktriple ADD");
+		}
+#endif
+		{
+			using Cfloat = cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,3> from blocktriple ADD");
+		}
+		return 0;
+		{
+			using Cfloat = cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,4> from blocktriple ADD");
+		}
+		{
+			using Cfloat = cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,5> from blocktriple ADD");
+		}
+		{
+			using Cfloat = cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,6> from blocktriple ADD");
+		}
+
+		// Multiplication
+		{
+			using Cfloat = cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<3,1> from blocktriple MUL");
+		}
+		{
+			using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<4,2> from blocktriple MUL");
+		}
+		{
+			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<5,2> from blocktriple MUL");
 		}
 
 	}
