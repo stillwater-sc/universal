@@ -185,6 +185,16 @@ try {
 		}
 
 		{
+			// checking the other side of the exponential adjustments with cfloats
+			// that expand on the dynamic range of IEEE-754
+			using Cfloat = cfloat<80, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			Cfloat a;
+			a = -1.0f;
+			std::cout << type_tag(a) << '\n' << to_binary(a) << " : " << a << '\n';
+			a.constexprClassParameters();
+		}
+		return 0; 
+		{
 			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			constexpr size_t fbits = Cfloat::fbits;
 			typedef Cfloat::BlockType bt;

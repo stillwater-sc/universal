@@ -270,7 +270,8 @@ public:
 	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
 	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
 	static constexpr uint64_t topfbits = fbits % 64;
-	static constexpr uint64_t ALL_ONES_FR = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - topfbits)); // special case for nbits <= 64
+	static constexpr uint64_t FR_SHIFT = (topfbits > 0 ? (64 - topfbits) : 0);
+	static constexpr uint64_t ALL_ONES_FR = (topfbits > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> FR_SHIFT) : 0ull); // special case for nbits <= 64
 	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
@@ -285,13 +286,13 @@ public:
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_EXP = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_EXP ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull -es)) : 0);
+	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_EXP ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
 	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
-	static constexpr bt BLOCK_MASK = bt(-1);
+	static constexpr bt BLOCK_MASK = bt(~0);
 
 	static constexpr bool hasSubnormals   = _hasSubnormals;
 	static constexpr bool hasSupernormals = _hasSupernormals;
@@ -1272,6 +1273,7 @@ public:
 		std::cout << "MSU CAPTURES_EXP  : " << (MSU_CAPTURES_EXP ? "yes\n" : "no\n");
 		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
 		std::cout << "MSU EXP MASK      : " << to_binary(MSU_EXP_MASK, 0, true) << '\n';
+		std::cout << "ALL_ONE_MASK_ES   : " << to_binary(ALL_ONES_ES) << '\n';
 		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
 		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
 		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
@@ -1280,6 +1282,8 @@ public:
 		std::cout << "bits in FSU       : " << bitsInFSU << '\n';
 		std::cout << "FSU               : " << FSU << '\n';
 		std::cout << "FSU MASK          : " << to_binary(FSU_MASK, 0, true) << '\n';
+		std::cout << "topfbits          : " << topfbits << '\n';
+		std::cout << "ALL_ONE_MASK_FR   : " << to_binary(ALL_ONES_FR) << '\n';
 	}
 	// extract the sign field from the encoding
 	inline constexpr void sign(bool& s) const {
