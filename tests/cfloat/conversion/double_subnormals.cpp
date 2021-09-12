@@ -28,7 +28,7 @@ try {
 	subnormals<cfloat<32, 8, uint8_t>>(); // 4 blocks
 	subnormals<cfloat<48, 11, uint16_t>>(); // 3 blocks
 	subnormals<cfloat<64, 11, uint16_t>>(); // 4 blocks
-	subnormals<cfloat<80, 11, uint16_t>>(); // 5 blocks
+	subnormals<cfloat<80, 15, uint16_t>>(); // 5 blocks
 	
 	nrOfFailedTestCases = 0;
 

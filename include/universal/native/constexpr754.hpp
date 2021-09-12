@@ -180,25 +180,25 @@ inline std::string color_print(Real number) {
 	Color def(ColorCode::FG_DEFAULT);
 
 	// print sign bit
-	s << red << (sign ? '1' : '0') << '.';
+	s << red << (sign ? '1' : '0'); // << '.';
 
 	// print exponent bits
 	{
 		uint64_t mask = (1 << (ieee754_parameter<Real>::ebits - 1));
 		for (int i = (ieee754_parameter<Real>::ebits - 1); i >= 0; --i) {
 			s << cyan << ((rawExponent & mask) ? '1' : '0');
-			if (i > 0 && i % 4 == 0) s << cyan << '\'';
+//			if (i > 0 && i % 4 == 0) s << cyan << '\'';
 			mask >>= 1;
 		}
 	}
 
-	s << '.';
+//	s << '.';
 
 	// print fraction bits
 	uint64_t mask = (uint64_t(1) << (ieee754_parameter<Real>::fbits - 1));
 	for (int i = (ieee754_parameter<Real>::fbits - 1); i >= 0; --i) {
 		s << magenta << ((rawFraction & mask) ? '1' : '0');
-		if (i > 0 && i % 4 == 0) s << magenta << '\'';
+//		if (i > 0 && i % 4 == 0) s << magenta << '\'';
 		mask >>= 1;
 	}
 

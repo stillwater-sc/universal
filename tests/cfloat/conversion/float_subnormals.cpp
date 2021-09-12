@@ -36,10 +36,34 @@ try {
 	subnormals<cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 4 blocks
 	subnormals<cfloat<48, 11, uint16_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 3 blocks
 	subnormals<cfloat<64, 11, uint16_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 4 blocks
-	subnormals<cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 5 blocks
-	subnormals<cfloat<96, 11, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 3 blocks
-	subnormals<cfloat<112, 11, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 3 blocks
-	subnormals<cfloat<128, 11, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 4 blocks
+	subnormals<cfloat<80, 15, uint16_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 5 blocks
+	subnormals<cfloat<96, 15, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 3 blocks
+	subnormals<cfloat<112, 15, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 3 blocks
+	subnormals<cfloat<128, 15, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 4 blocks
+//	subnormals<cfloat<256, 19, uint32_t, hasSubnormals, hasSupernormals, !isSaturating>>(); // 8 blocks
+
+	{
+		constexpr size_t nbits = 28;
+		constexpr size_t es = 8;
+		using bt = uint32_t;
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 }, b;
+		++a;
+		for (int i = 0; i < 19; ++i) {
+			float f = float(a);
+			b = f;
+			std::cout << to_binary(f) << " : " << color_print(f) << " : " << f << '\n';
+			std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
+			std::cout << to_binary(b) << " : " << color_print(b) << " : " << b << '\n';
+			// when we have mul
+			// a *= 2.0f;
+			uint64_t fraction = a.fraction_ull();
+			fraction <<= 1;
+			a.setfraction(fraction);
+		}
+
+		a = 1.0e25f;
+		std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
+	}
 
 	nrOfFailedTestCases = 0;
 

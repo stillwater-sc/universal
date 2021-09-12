@@ -86,8 +86,8 @@ try {
 	}
 
 	{
-		float fa = std::numeric_limits<float>::infinity();
-		float fb = -fa;
+		constexpr float fa = std::numeric_limits<float>::infinity();
+		constexpr float fb = -fa;
 		std::cout << fa << " + " << fa << " = " << (fa + fa) << '\n';
 		std::cout << fa << " + " << fb << " = " << (fa + fb) << '\n';
 		std::cout << fb << " + " << fa << " = " << (fb + fa) << '\n';
@@ -98,8 +98,6 @@ try {
 	// generate individual testcases to hand trace/debug
 	TestCase< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
 	TestCase< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-
-
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatAddition< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<4,1,uint8_t, t,t,f>", "addition");

@@ -204,4 +204,3 @@ std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorma
 
 
 }  // namespace sw::universal
-

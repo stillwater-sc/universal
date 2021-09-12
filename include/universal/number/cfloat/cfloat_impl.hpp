@@ -86,29 +86,9 @@ int scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturati
 template<size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
-parse(const std::string& str) {
-	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
-	cfloatType a{ 0 };
-	if (str.length() > 2) {
-		if (str[0] == '0' && str[1] == 'b') {
-			size_t index = nbits;
-			for (size_t i = 1; i < str.size(); ++i) {
-				if (str[i] == '1') {
-					a.setbit(--index, true);
-				}
-				else if (str[i] == '0') {
-					a.setbit(--index, false);
-				}
-				else if (str[i] == '.' || str[i] == '\'') {
-					// ignore annotation
-				}
-			}
-		}
-	}
-	else {
-		std::cerr << "parse currently only parses binary string formats\n";
-	}
-	return a;
+parse(const std::string& stringRep) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
+	return a.assign(stringRep);
 }
 
 /// <summary>
@@ -157,77 +137,69 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 	}
 	else {
 		int significantScale = src.significantscale();
-		int scale = src.scale() + significantScale;
-		if (scale < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
-			tgt.setzero();
-			return;
+		int exponent = src.scale() + significantScale;
+		// special case of underflow
+		if constexpr (hasSubnormals) {
+			if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
+				tgt.setzero();
+				return;
+			}
 		}
-		if (scale > cfloatType::MAX_EXP) {
-			if constexpr (isSaturating) {
+		else {
+			if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
+				tgt.setzero();
+				return;
+			}
+		}
+		// special case of overflow
+		if constexpr (isSaturating) {
+			if (exponent > cfloatType::MAX_EXP) {
 				if (src.sign()) tgt.maxneg(); else tgt.maxpos();
+				return;
 			}
-			else {
-				tgt.setinf(src.sign());
-			}
-			return;
 		}
-		// get the rounding direction
-		std::pair<bool, size_t> alignment = src.roundingDecision();
-		bool roundup = alignment.first;
-		size_t shift = alignment.second;
+		else {
+			if (exponent > cfloatType::MAX_EXP) {
+				tgt.setinf(src.sign());
+				return;
+			}
+		}
 
 		// tgt.clear();
-		if constexpr (btType::bfbits < 65) {
-			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
-
+		int adjustment{ 0 }; 
+		if constexpr (btType::bfbits < 65) {			
 			// we can use a uint64_t to construct the cfloat
-			uint64_t raw = (src.sign() ? 1ull : 0ull);
-			raw <<= es; // shift left to make room for the exponent bits
-			if (scale >= cfloatType::MIN_EXP_SUBNORMAL && scale < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
-				// resulting cfloat will be a subnormal number: all exponent bits are 0
-				raw <<= cfloatType::fbits;
-				int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(scale);
-				fracbits >>= rightShift + (srcbits - cfloatType::fbits);
-				raw |= fracbits;
-				tgt.setbits(raw);
-			}
-			else {
-				// resulting cfloat will be a normal number
-//				std::cout << "cfloat will be a normal\n";
-//				std::cout << "incoming blocktriple: " << to_binary(src) << '\n';
+			if constexpr (hasSubnormals) {
+				if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
+					// the value is in the subnormal range of the cfloat
 
-				fracbits >>= shift;
-//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
-				fracbits += (roundup ? 1ull : 0ull);
-//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
-				if (fracbits != (2ull << cfloatType::fbits)) { // check for overflow
-					raw |= static_cast<size_t>(scale + cfloatType::EXP_BIAS);  // this is guaranteed to be a value that can be encoded with an unsigned
-					raw <<= cfloatType::fbits;
-//					std::cout << "raw w/o frac: " << to_binary(raw) << std::endl;
-					fracbits &= cfloatType::ALL_ONES_FR; // remove integer bits
-					raw |= fracbits;
-//					std::cout << "raw w frac  : " << to_binary(raw) << std::endl;
-					tgt.setbits(raw);
-					tgt.post_process();
+					// -exponent because we are right shifting and exponent in this range is negative
+					adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+					// this is the right shift adjustment required for subnormal representation due 
+					// to the scale of the input number, i.e. the exponent of 2^-adjustment
 				}
 				else {
-					// rounding made the fraction overflow
-					if (scale < cfloatType::MAX_EXP) {
-						++scale;				
-						fracbits &= cfloatType::ALL_ONES_FR; // remove integer bits
-						raw |= static_cast<size_t>(scale + cfloatType::EXP_BIAS);
-//						std::cout << "raw exp     : " << to_binary(raw) << std::endl;
-						raw <<= cfloatType::fbits;
-//						std::cout << "raw w/o frac: " << to_binary(raw) << std::endl;
-						raw |= fracbits;
-//						std::cout << "raw         : " << to_binary(raw) << std::endl;
-						tgt.setbits(raw);
-					}
-					else {
-						tgt.setinf(src.sign());
-					}
+					// the value is in the normal range of the cfloat
 				}
 			}
+			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
+			uint64_t raw = (src.sign() ? 1ull : 0ull);
+			raw <<= es; // shift left to make room for the exponent bits
+
+			// get the rounding direction and the LSB right shift: 
+			// TODO: do we want to support arbitrary blocktriples instead of the ALU output versions?
+			std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
+			bool roundup = alignment.first;
+			size_t shift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
+
+
+			raw <<= cfloatType::fbits;
+			int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(exponent);
+			fracbits >>= rightShift + (srcbits - cfloatType::fbits);
+			raw |= fracbits;
+			tgt.setbits(raw);
+
+
 		}
 		else {
 			// compose the segments
@@ -251,7 +223,7 @@ template<size_t _nbits, size_t _es, typename bt = uint8_t,
 class cfloat {
 public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
-	static_assert(_es < 2147483647ull, "my God that is a big number, are you trying to break the Interweb?");
+	static_assert(_es < 21ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a classic floating point number");
 	// how do you assert on the condition that if es == 1 then subnormals and supernormals bust be true?
 //	static_assert(_es == 1 && _hasSubnormals && _hasSupernormals, "when es == 1, cfloat must have both sub and supernormals");
@@ -310,7 +282,9 @@ public:
 	constexpr cfloat& operator=(cfloat&&) noexcept = default;
 
 	// decorated/converting constructors
-
+	constexpr cfloat(const std::string& stringRep) {
+		assign(stringRep);
+	}
 	/// <summary>
 	/// construct an cfloat from another, block type bt must be the same
 	/// </summary>
@@ -1033,13 +1007,49 @@ public:
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
+
 	/// <summary>
 	/// assign the value of the string representation to the cfloat
 	/// </summary>
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
-	inline cfloat& assign(const std::string& stringRep) {
-		std::cout << "assign TBD\n";
+	inline constexpr cfloat& assign(const std::string& str) noexcept {
+		int field(0);
+		int exponentBits(-1); // we start the field with a '.'
+		clear();
+		if (str.length() > 2) {
+			if (str[0] == '0' && str[1] == 'b') {
+				// binary string needs to be at least nbits+4
+				if (str.size() != (nbits + 4)) {
+					std::cerr << "provided binary string representation does not contain " << nbits << " bits. Reset to 0\n";
+					return *this;
+				}
+				size_t index = nbits;
+				for (size_t i = 1; i < str.size(); ++i) {
+					if (str[i] == '1') {
+						setbit(--index, true);
+					}
+					else if (str[i] == '0') {
+						setbit(--index, false);
+					}
+					else if (str[i] == '.' || str[i] == '\'') {
+						++field;
+						if (field == 2) { // just finished parsing exponent field: we can now check the number of exponent bits
+							if (exponentBits != es) {
+								std::cerr << "provided binary string representation does not contain " << es << " exponent bits. Found " << exponentBits << ". Reset to 0\n";
+								return *this;
+							}
+						}
+					}
+					if (field == 1) { // exponent field
+						++exponentBits;
+					}
+				}
+			}
+		}
+		else {
+			std::cerr << "parse/assign currently only parse binary string formats that start with 0b\n";
+		}
 		return *this;
 	}
 
@@ -2220,7 +2230,8 @@ public:
 						// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
 						adjustment = 0;
 					}
-					if constexpr (rightShift > 0) {		// if true we need to round
+					if constexpr (rightShift > 0) {
+						// if true we need to round
 						// round-to-even logic
 						//  ... lsb | guard  round sticky   round
 						//       x     0       x     x       down
@@ -2230,6 +2241,7 @@ public:
 						//       x     1       1     0        up
 						//       x     1       1     1        up
 						// collect lsb, guard, round, and sticky bits
+//						std::cout << "shift to LSB " << (rightShift + adjustment) << " adjustment = " << adjustment << '\n';
 						mask = (1ull << (rightShift + adjustment)); // bit mask for the lsb bit
 						bool lsb = (mask & rawFraction);
 						mask >>= 1;
@@ -2296,6 +2308,12 @@ public:
 					// f = 1.ffff  2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 					// -exponent because we are right shifting and exponent in this range is negative
 					adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
+					
+					std::cout << "source is subnormal: TBD\n";
+					std::cout << "shift to LSB    " << (rightShift + adjustment) << '\n';
+					std::cout << "adjustment      " << adjustment << '\n';
+					std::cout << "exponent        " << exponent << '\n';
+					std::cout << "subnormal shift " << subnormal_reciprocal_shift[es] << '\n';
 
 					if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
 						// the value is a subnormal number in this representation
@@ -2389,7 +2407,7 @@ public:
 							fractionBlock[0] <<= bitsToShift;
 						}
 						// OR the bits in
-						for (size_t i = 0; i < MSU; ++i) {
+						for (size_t i = 0; i <= MSU; ++i) {
 							_block[i] |= fractionBlock[i];
 						}
 						// enforce precondition for fast comparison by properly nulling bits that are outside of nbits

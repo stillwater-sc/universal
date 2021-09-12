@@ -219,8 +219,9 @@ public:
 	/// <summary>
 	/// roundingDecision returns a pair<bool, size_t> to direct the rounding and right shift
 	/// </summary>
+	/// <param name="adjustment">adjustment for subnormals </param>
 	/// <returns>std::pair<bool, size_t> of rounding direction (up is true, down is false), and the right shift</returns>
-	constexpr std::pair<bool, size_t> roundingDecision() const noexcept {
+	constexpr std::pair<bool, size_t> roundingDecision(int adjustment = 0) const noexcept {
 		// preconditions: blocktriple is in 1's complement form, and not a denorm
 		// this implies that the scale of the significant is 0 or 1
 		size_t significantScale = static_cast<size_t>(significantscale());
@@ -234,7 +235,7 @@ public:
 			//       0     1       0     0       down  round to even
 			//       1     1       0     0        up   round to even
 			//       x     1       0     1        up
-			uint64_t mask = (1ull << shift);
+			uint64_t mask = (1ull << (shift + adjustment);
 			bool lsb = fracbits & mask;
 			mask >>= 1;
 			bool guard = fracbits & mask;
@@ -256,8 +257,8 @@ public:
 			roundup = _significant.roundingMode(shift);
 		}
 #endif
-		bool roundup = _significant.roundingMode(shift);
-		return std::pair<bool, size_t>(roundup, shift);
+		bool roundup = _significant.roundingMode(shift + adjustment);
+		return std::pair<bool, size_t>(roundup, shift + adjustment);
 	}
 	// apply a 2's complement recoding of the fraction bits
 	inline constexpr blocktriple& twosComplement() noexcept {

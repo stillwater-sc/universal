@@ -421,7 +421,7 @@ namespace sw::universal {
 		// std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		int nrOfFailedTests = 0;
-		cfloat<32, 8, uint32_t> ref; // this is a superset of IEEE-754 float with supernormals
+		cfloat<32, 8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> ref; // this is a superset of IEEE-754 float with supernormals
 		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
 		float refValue{ 0.0f };
 		float testValue{ 0.0f };
@@ -441,7 +441,7 @@ namespace sw::universal {
 				continue;
 			}
 			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
-#ifdef CUSTOM_FEEDBACK
+#ifndef CUSTOM_FEEDBACK
 			if (testValue != refValue) {
 				std::cout << to_binary(nut) << '\n' << to_binary(ref) << std::endl;
 			}
