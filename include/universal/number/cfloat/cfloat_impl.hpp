@@ -372,21 +372,21 @@ public:
 	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
-	constexpr cfloat& operator=(signed char rhs) { return convert_signed_integer(rhs); }
-	constexpr cfloat& operator=(short rhs)       { return convert_signed_integer(rhs); }
-	constexpr cfloat& operator=(int rhs)         { return convert_signed_integer(rhs); }
-	constexpr cfloat& operator=(long rhs)        { return convert_signed_integer(rhs); }
-	constexpr cfloat& operator=(long long rhs)   { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(short rhs)              noexcept { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(int rhs)                noexcept { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(long rhs)               noexcept { return convert_signed_integer(rhs); }
+	constexpr cfloat& operator=(long long rhs)          noexcept { return convert_signed_integer(rhs); }
 
-	constexpr cfloat& operator=(char rhs)               { return convert_unsigned_integer(rhs); }
-	constexpr cfloat& operator=(unsigned short rhs)     { return convert_unsigned_integer(rhs); }
-	constexpr cfloat& operator=(unsigned int rhs)       { return convert_unsigned_integer(rhs); }
-	constexpr cfloat& operator=(unsigned long rhs)      { return convert_unsigned_integer(rhs); }
-	constexpr cfloat& operator=(unsigned long long rhs) { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(char rhs)               noexcept { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(unsigned short rhs)     noexcept { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
+	constexpr cfloat& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
 
-	CONSTEXPRESSION cfloat& operator=(float rhs)        { return convert_ieee754(rhs); }
-	CONSTEXPRESSION cfloat& operator=(double rhs)       { return convert_ieee754(rhs); }
-	CONSTEXPRESSION cfloat& operator=(long double rhs)  { return convert_ieee754(rhs); }
+	CONSTEXPRESSION cfloat& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
+	CONSTEXPRESSION cfloat& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
+	CONSTEXPRESSION cfloat& operator=(long double rhs)  noexcept { return convert_ieee754(rhs); }
 
 	// arithmetic operators
 	// prefix operator
