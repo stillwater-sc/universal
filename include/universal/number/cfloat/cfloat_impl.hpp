@@ -2047,9 +2047,9 @@ public:
 
 			if constexpr (fbits < ieee754_parameter<Real>::fbits) {
 				// this is the common case for cfloats that are smaller in size compared to single and double precision IEEE-754
-				constexpr int shiftRight = ieee754_parameter<Real>::fbits - fbits; // this is the bit shift to get the MSB of the src to the MSB of the tgt
+				constexpr int rightShift = ieee754_parameter<Real>::fbits - fbits; // this is the bit shift to get the MSB of the src to the MSB of the tgt
 				uint32_t biasedExponent{ 0 };
-				int adjustment{ 0 };
+				int adjustment{ 0 }; // right shift adjustment for subnormal representation
 				uint64_t mask;
 				if (rawExponent != 0) {
 					// the source real is a normal number, 
@@ -2075,7 +2075,7 @@ public:
 						// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
 						adjustment = 0;
 					}
-					if constexpr (shiftRight > 0) {		// if true we need to round
+					if constexpr (rightShift > 0) {		// if true we need to round
 						// round-to-even logic
 						//  ... lsb | guard  round sticky   round
 						//       x     0       x     x       down
@@ -2085,21 +2085,21 @@ public:
 						//       x     1       1     0        up
 						//       x     1       1     1        up
 						// collect lsb, guard, round, and sticky bits
-						mask = (1ull << (shiftRight + adjustment)); // bit mask for the lsb bit
+						mask = (1ull << (rightShift + adjustment)); // bit mask for the lsb bit
 						bool lsb = (mask & rawFraction);
 						mask >>= 1;
 						bool guard = (mask & rawFraction);
 						mask >>= 1;
 						bool round = (mask & rawFraction);
-						if constexpr (shiftRight > 1) {
-							mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
+						if constexpr (rightShift > 1) {
+							mask = (0xFFFF'FFFF'FFFF'FFFFull << (rightShift - 2));
 							mask = ~mask;
 						}
 						else {
 							mask = 0;
 						}
 						bool sticky = (mask & rawFraction);
-						rawFraction >>= (static_cast<int64_t>(shiftRight) + static_cast<int64_t>(adjustment));
+						rawFraction >>= (static_cast<int64_t>(rightShift) + static_cast<int64_t>(adjustment));
 
 						// execute rounding operation
 						if (guard) {
@@ -2124,13 +2124,13 @@ public:
 						std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
 #endif
 					}
-					else { // all bits of the float go into this representation and need to be shifted up
+					else { // all bits of the float go into this representation and need to be shifted up, no rounding necessary
 						int shiftLeft = fbits - ieee754_parameter<Real>::fbits;
 						rawFraction <<= shiftLeft;
 					}
 #if TRACE_CONVERSION
 					std::cout << "biased exponent   : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
-					std::cout << "shift             : " << shiftRight << '\n';
+					std::cout << "right shift       : " << rightShift << '\n';
 					std::cout << "adjustment shift  : " << adjustment << '\n';
 					std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << '\n';
 					std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
@@ -2377,12 +2377,12 @@ protected:
 			shift += bitsInBlock;
 		}
 	}
-	void shiftLeft(int bitsToShift) {
-		if (bitsToShift == 0) return;
-		if (bitsToShift < 0) return shiftRight(-bitsToShift);
-		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
-		if (bitsToShift >= long(bitsInBlock)) {
-			int blockShift = bitsToShift / bitsInBlock;
+	void shiftLeft(int leftShift) {
+		if (leftShift == 0) return;
+		if (leftShift < 0) return shiftRight(-leftShift);
+		if (leftShift > long(nbits)) leftShift = nbits; // clip to max
+		if (leftShift >= long(bitsInBlock)) {
+			int blockShift = leftShift / bitsInBlock;
 			for (signed i = signed(MSU); i >= blockShift; --i) {
 				_block[i] = _block[i - blockShift];
 			}
@@ -2390,30 +2390,30 @@ protected:
 				_block[i] = bt(0);
 			}
 			// adjust the shift
-			bitsToShift -= (long)(blockShift * bitsInBlock);
-			if (bitsToShift == 0) return;
+			leftShift -= (long)(blockShift * bitsInBlock);
+			if (leftShift == 0) return;
 		}
 		// construct the mask for the upper bits in the block that need to move to the higher word
-		bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+		bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - leftShift);
 		for (unsigned i = MSU; i > 0; --i) {
-			_block[i] <<= bitsToShift;
+			_block[i] <<= leftShift;
 			// mix in the bits from the right
 			bt bits = (mask & _block[i - 1]);
-			_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+			_block[i] |= (bits >> (bitsInBlock - leftShift));
 		}
-		_block[0] <<= bitsToShift;
+		_block[0] <<= leftShift;
 	}
-	void shiftRight(int bitsToShift) {
-		if (bitsToShift == 0) return;
-		if (bitsToShift < 0) return shiftLeft(-bitsToShift);
-		if (bitsToShift >= long(nbits)) {
+	void shiftRight(int rightShift) {
+		if (rightShift == 0) return;
+		if (rightShift < 0) return shiftLeft(-rightShift);
+		if (rightShift >= long(nbits)) {
 			setzero();
 			return;
 		}
 		bool signext = sign();
 		size_t blockShift = 0;
-		if (bitsToShift >= long(bitsInBlock)) {
-			blockShift = bitsToShift / bitsInBlock;
+		if (rightShift >= long(bitsInBlock)) {
+			blockShift = rightShift / bitsInBlock;
 			if (MSU >= blockShift) {
 				// shift by blocks
 				for (size_t i = 0; i <= MSU - blockShift; ++i) {
@@ -2421,20 +2421,20 @@ protected:
 				}
 			}
 			// adjust the shift
-			bitsToShift -= (long)(blockShift * bitsInBlock);
-			if (bitsToShift == 0) {
+			rightShift -= (long)(blockShift * bitsInBlock);
+			if (rightShift == 0) {
 				// fix up the leading zeros if we have a negative number
 				if (signext) {
-					// bitsToShift is guaranteed to be less than nbits
-					bitsToShift += (long)(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					// rightShift is guaranteed to be less than nbits
+					rightShift += (long)(blockShift * bitsInBlock);
+					for (size_t i = nbits - rightShift; i < nbits; ++i) {
 						this->setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
-					bitsToShift += (long)(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					rightShift += (long)(blockShift * bitsInBlock);
+					for (size_t i = nbits - rightShift; i < nbits; ++i) {
 						this->setbit(i, false);
 					}
 				}
@@ -2442,27 +2442,27 @@ protected:
 		}
 		//bt mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);  // is that shift necessary?
 		bt mask = bt(0xFFFFFFFFFFFFFFFFull);
-		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
+		mask >>= (bitsInBlock - rightShift); // this is a mask for the lower bits in the block that need to move to the lower word
 		for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
-			_block[i] >>= bitsToShift;
+			_block[i] >>= rightShift;
 			// mix in the bits from the left
 			bt bits = (mask & _block[i + 1]);
-			_block[i] |= (bits << (bitsInBlock - bitsToShift));
+			_block[i] |= (bits << (bitsInBlock - rightShift));
 		}
-		_block[MSU] >>= bitsToShift;
+		_block[MSU] >>= rightShift;
 
 		// fix up the leading zeros if we have a negative number
 		if (signext) {
 			// bitsToShift is guaranteed to be less than nbits
-			bitsToShift += (long)(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			rightShift += (long)(blockShift * bitsInBlock);
+			for (size_t i = nbits - rightShift; i < nbits; ++i) {
 				this->setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
-			bitsToShift += (long)(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			rightShift += (long)(blockShift * bitsInBlock);
+			for (size_t i = nbits - rightShift; i < nbits; ++i) {
 				this->setbit(i, false);
 			}
 		}
