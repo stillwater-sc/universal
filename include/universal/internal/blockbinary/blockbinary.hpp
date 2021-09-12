@@ -124,9 +124,12 @@ public:
 	explicit operator unsigned int() const       { return unsigned(to_ull()); }
 	explicit operator unsigned long() const      { return (unsigned long)to_ull(); }
 	explicit operator unsigned long long() const { return to_ull(); }
+	// TODO: these need proper implementations that can convert very large integers to the proper scale afforded by the floating-point formats
 	explicit operator float() const              { return float(to_long_long()); }
 	explicit operator double() const             { return double(to_long_long()); }
+#if LONG_DOUBLE_SUPPORT
 	explicit operator long double() const        { return (long double)to_long_long(); }
+#endif
 
 	// prefix operators
 	blockbinary operator-() const {

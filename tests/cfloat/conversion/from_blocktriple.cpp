@@ -191,9 +191,9 @@ try {
 			Cfloat a;
 			a = -1.0f;
 			std::cout << type_tag(a) << '\n' << to_binary(a) << " : " << a << '\n';
-			a.constexprClassParameters();
+//			a.constexprClassParameters();
 		}
-		return 0; 
+
 		{
 			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			constexpr size_t fbits = Cfloat::fbits;

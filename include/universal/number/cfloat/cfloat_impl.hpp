@@ -4,7 +4,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+// compiler specific configuration for long double support
+#include <universal/utility/long_double.hpp>
 // compiler specific configuration for C++20 bit_cast
 #include <universal/utility/bit_cast.hpp>
 // supporting types and functions
@@ -370,7 +371,6 @@ public:
 	constexpr cfloat(unsigned long long iv) noexcept : _block{ 0 } { *this = iv; }
 	CONSTEXPRESSION cfloat(float iv)        noexcept : _block{ 0 } { *this = iv; }
 	CONSTEXPRESSION cfloat(double iv)       noexcept : _block{ 0 } { *this = iv; }
-	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
 	constexpr cfloat& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
@@ -387,7 +387,13 @@ public:
 
 	CONSTEXPRESSION cfloat& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
 	CONSTEXPRESSION cfloat& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
+
+	// guard long double support to enable ARM and RISC-V embedded environments
+#if LONG_DOUBLE_SUPPORT
+	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{ 0 } { *this = iv; }
 	CONSTEXPRESSION cfloat& operator=(long double rhs)  noexcept { return convert_ieee754(rhs); }
+	explicit operator long double() const { return to_native<long double>(); }
+#endif
 
 	// arithmetic operators
 	// prefix operator
@@ -1466,7 +1472,6 @@ public:
 	// make conversions to native types explicit
 	explicit operator int() const { return to_long_long(); }
 	explicit operator long long() const { return to_long_long(); }
-	explicit operator long double() const { return to_native<long double>(); }
 	explicit operator double() const { return to_native<double>(); }
 	explicit operator float() const { return to_native<float>(); }
 
@@ -2836,6 +2841,7 @@ inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 	return double(lhs) >= rhs;
 }
 
+#if LONG_DOUBLE_SUPPORT
 // cfloat - literal long double logic operators
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline bool operator==(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
@@ -2861,6 +2867,7 @@ template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSuper
 inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long double rhs) {
 	return (long double)(lhs) >= rhs;
 }
+#endif
 
 // cfloat - literal int logic operators
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
