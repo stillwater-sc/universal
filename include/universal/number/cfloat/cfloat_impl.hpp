@@ -1618,6 +1618,40 @@ public:
 						tgt.setblock(2, _block[2]);
 						tgt.setblock(3, _block[3] & FSU_MASK);
 					}
+					else if constexpr (5 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4] & FSU_MASK);
+					}
+					else if constexpr (6 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5] & FSU_MASK);
+					}
+					else if constexpr (7 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5]);
+						tgt.setblock(6, _block[6] & FSU_MASK);
+					}
+					else if constexpr (8 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5]);
+						tgt.setblock(6, _block[6]);
+						tgt.setblock(7, _block[7] & FSU_MASK);
+					}
 					else {
 						for (size_t i = 0; i < FSU; ++i) {
 							tgt.setblock(i, _block[i]);
@@ -1653,6 +1687,40 @@ public:
 						tgt.setblock(1, _block[1]);
 						tgt.setblock(2, _block[2]);
 						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else if constexpr (5 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4] & FSU_MASK);
+					}
+					else if constexpr (6 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5] & FSU_MASK);
+					}
+					else if constexpr (7 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5]);
+						tgt.setblock(6, _block[6] & FSU_MASK);
+					}
+					else if constexpr (8 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5]);
+						tgt.setblock(6, _block[6]);
+						tgt.setblock(7, _block[7] & FSU_MASK);
 					}
 					else {
 						for (size_t i = 0; i < FSU; ++i) {
@@ -1715,6 +1783,40 @@ public:
 						tgt.setblock(2, _block[2]);
 						tgt.setblock(3, _block[3] & FSU_MASK);
 					}
+					else if constexpr (5 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4] & FSU_MASK);
+					}
+					else if constexpr (6 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5] & FSU_MASK);
+					}
+					else if constexpr (7 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5]);
+						tgt.setblock(6, _block[6] & FSU_MASK);
+					}
+					else if constexpr (8 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5]);
+						tgt.setblock(6, _block[6]);
+						tgt.setblock(7, _block[7] & FSU_MASK);
+					}
 					else {
 						for (size_t i = 0; i < FSU; ++i) {
 							tgt.setblock(i, _block[i]);
@@ -1750,6 +1852,40 @@ public:
 						tgt.setblock(1, _block[1]);
 						tgt.setblock(2, _block[2]);
 						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else if constexpr (5 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4] & FSU_MASK);
+					}
+					else if constexpr (6 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5] & FSU_MASK);
+					}
+					else if constexpr (7 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5]);
+						tgt.setblock(6, _block[6] & FSU_MASK);
+					}
+					else if constexpr (8 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3]);
+						tgt.setblock(4, _block[4]);
+						tgt.setblock(5, _block[5]);
+						tgt.setblock(6, _block[6]);
+						tgt.setblock(7, _block[7] & FSU_MASK);
 					}
 					else {
 						for (size_t i = 0; i < FSU; ++i) {
