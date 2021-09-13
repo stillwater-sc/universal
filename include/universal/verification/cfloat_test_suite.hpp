@@ -500,14 +500,18 @@ namespace sw::universal {
 
 	// generate IEEE-754 single precision subnormal values
 	template<typename BlockType>
-	int VerifyFloatSubnormals(bool bReportIndividualTestCases) {
+	int VerifyIeee754FloatSubnormals(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = 32;
 		constexpr size_t es = 8;
-		int nrOfFailedTests = 0;
-		cfloat<nbits, es, BlockType> nut, result;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
 		float f{ 0.0f };
+		int nrOfFailedTests{ 0 };
+
 		// verify the subnormals
 		nut = 0;
 		++nut;
@@ -526,14 +530,18 @@ namespace sw::universal {
 
 	// generate IEEE-754 double precision subnormal values
 	template<typename BlockType>
-	int VerifyDoubleSubnormals(bool bReportIndividualTestCases) {
+	int VerifyIeee754DoubleSubnormals(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = 64;
 		constexpr size_t es = 11;
-		int nrOfFailedTests = 0;
-		cfloat<nbits, es, BlockType> nut, result;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
 		double d{ 0.0f };
+		int nrOfFailedTests{ 0 };
+
 		// verify the subnormals
 		nut = 0;
 		++nut;

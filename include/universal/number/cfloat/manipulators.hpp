@@ -31,20 +31,21 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 	return s.str();
 }
 
-// print subnormals of the cfloat configuration
+// generate and tabulate subnormals of the cfloat configuration
 template<typename cfloatConfiguration>
 void subnormals() {
-	constexpr size_t nbits = cfloatConfiguration::nbits;
-	constexpr size_t es = cfloatConfiguration::es;
-	constexpr size_t fbits = cfloatConfiguration::fbits;
-	using bt = typename cfloatConfiguration::BlockType;
-	constexpr bool hasSubnormals = cfloatConfiguration::hasSubnormals;
+	constexpr size_t nbits         = cfloatConfiguration::nbits;
+	constexpr size_t es            = cfloatConfiguration::es;
+	using bt                       = typename cfloatConfiguration::BlockType;
+	constexpr bool hasSubnormals   = cfloatConfiguration::hasSubnormals;
 	constexpr bool hasSupernormals = cfloatConfiguration::hasSupernormals;
-	constexpr bool isSaturating = cfloatConfiguration::isSaturating;
+	constexpr bool isSaturating    = cfloatConfiguration::isSaturating;
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
 
+	// generate the smallest subnormal with ULP set
 	++a;
 	if constexpr (hasSubnormals) {
+		constexpr size_t fbits = cfloatConfiguration::fbits;
 		std::cout << type_tag(a) << " subnormals\n";
 		if constexpr (nbits < 65) {
 			for (size_t i = 0; i < fbits; ++i) {

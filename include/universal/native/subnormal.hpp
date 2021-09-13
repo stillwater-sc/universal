@@ -1,5 +1,5 @@
 #pragma once
-// subnormal.hpp: definitions of helpful constants to interpret subnormals (IEEE-754, bfloats, areals. etc)
+// subnormal.hpp: definitions of helpful constants to interpret subnormals (IEEE-754, cfloats, areals. etc)
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -42,7 +42,8 @@ namespace sw::universal {
 		262142,               // es = 19 : 2^(2 - 2^(es-1)) = 2^-262142
 		524286                // es = 20 : 2^(2 - 2^(es-1)) = 2^-524286
 	};
-	// es > 11 requires a long double representation, which MSVC does not provide.
+
+	// es > 11 requires a long double representation, which MSVC, ARM, and RISC-V do not provide.
 	static constexpr double subnormal_exponent[] = {
 		0,                    // es = 0 : not a valid value
 		2.0,                  // es = 1 : 2^(2 - 2^(es-1)) = 2^1
@@ -57,7 +58,6 @@ namespace sw::universal {
 		oneOver2p510,         // es = 10 : 2^(2 - 2^(es-1)) = 2^-510
 		oneOver2p1022         // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
 	};
-
 
 	// float subnormals with the last entry being the smallest normal value
 	constexpr float ieee754_float_subnormals[24] = {

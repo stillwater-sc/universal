@@ -92,7 +92,10 @@ void GenerateSinglePrecisionSubnormals()
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 8;
 	using bt = uint32_t;
-	cfloat<nbits, es, bt> a;
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = false;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
 	++a;
 	float f = float(a);
 	std::cout << std::setprecision(16);
@@ -173,7 +176,15 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
 
-	// 0b0.00000100.11110101000111000011111
+#if MANUAL_TESTING
+
+	// cfloat<> is a linear floating-point
+
+	// to track conversion in more detail
+	std::cout << std::setprecision(8);
+	std::cerr << std::setprecision(8);
+
+	// test case harnass
 	{
 		using Cfloat = cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
 		Cfloat a("0b0.01110000100.11110101000111000011111000000000000000000000000000000000000000000000");
@@ -198,39 +209,6 @@ try {
 			std::cout << to_binary(nut) << " : " << nut << '\n';
 		}
 	}
-
-#if MANUAL_TESTING
-
-	// cfloat<> is a linear floating-point
-
-	// to track conversion in more detail
-	std::cout << std::setprecision(8);
-	std::cerr << std::setprecision(8);
-
-#ifdef SETASIDE
-	float f = ieee754_float_subnormals[1];
-	std::cout << to_binary(0.5f*f) << '\n' 
-		<< to_binary(f) << '\n'
-		<< to_binary(2*f) << std::endl;
-
-//	GenerateTable< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(std::cout);
-	f = 1.875f + 0.0625f;
-	compareSmallcfloats<1>(f);
-	compareSmallcfloats<2>(f);
-
-	{
-		cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> a = parse<32, 8, uint8_t>("b1.00111000.00110010001101101000111");
-		f = float(a);
-		std::cout << to_binary(a) << " : " << a << std::endl;
-		std::cout << to_binary(f) << " : " << f << std::endl;
-
-	}
-	cfloat<80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> a, b;
-	//f = 1.5f + 0.125f + 0.03125f;
-	a = f;
-	std::cout << to_binary(a, true) << " : " << a << '\n';
-	std::cout << to_binary(f, true) << " : " << f << std::endl;
-#endif
 	{
 		float f = 2.7500005f;
 		f = 2.5f;
@@ -242,15 +220,12 @@ try {
 	}
 
 	bool bReportIndividualTestCases = true;
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint8_t>(bReportIndividualTestCases), tag, "cfloat<32, 8, uint8_t>");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t>, float >(bReportIndividualTestCases), tag, "cfloat<4,1,uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 2, uint8_t>, float >(bReportIndividualTestCases), tag, "cfloat<6,2,uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 3, uint8_t>, float >(bReportIndividualTestCases), tag, "cfloat<8,3,uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<10, 4, uint8_t>, float >(bReportIndividualTestCases), tag, "cfloat<10,4,uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat<12, 5, uint8_t>, float >(bReportIndividualTestCases), tag, "cfloat<12,5,uint8_t>");
-
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 8, 6, uint8_t>, float >(false), tag, "cfloat<8,6,uint8_t>");
 
 	std::cerr << "                                                     ignoring subnormals for the moment\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases, 1000), tag, "cfloat<80, 11, uint8_t>");
@@ -259,7 +234,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFloat2CfloatConversionRnd< cfloat<128, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases, 1000), tag, "cfloat<128, 11, uint8_t>");
 
 
-	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
+	std::cout << "failed tests: " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
 
 #if STRESS_TESTING
@@ -271,11 +246,6 @@ try {
 #else  // !MANUAL_TESTING
 	bool bReportIndividualTestCases = false;
 	std::cout << "cfloat conversion from float validation\n";
-
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint8_t>(bReportIndividualTestCases), tag, "cfloat<32, 8, uint8_t,1,1,0>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint16_t>(bReportIndividualTestCases), tag, "cfloat<32, 8, uint16_t,1,1,0>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint32_t>(bReportIndividualTestCases), tag, "cfloat<32, 8, uint32_t,1,1,0>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint64_t>(bReportIndividualTestCases), tag, "cfloat<32, 8, uint64_t,1,1,0>");
 
 	std::cerr << "                                                     ignoring subnormals for the moment\n";
 

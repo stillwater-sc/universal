@@ -8,38 +8,68 @@
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>  // for subnormals and color_print
 #include <universal/verification/test_status.hpp>
-#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/cfloat_test_suite.hpp>
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
-
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
-	subnormals<cfloat<8, 2, uint8_t>>();  // 1 block
-	subnormals<cfloat<16, 5, uint8_t>>(); // 2 blocks
-	subnormals<cfloat<32, 8, uint8_t>>(); // 4 blocks
-	subnormals<cfloat<48, 11, uint16_t>>(); // 3 blocks
-	subnormals<cfloat<64, 11, uint16_t>>(); // 4 blocks
-	subnormals<cfloat<80, 15, uint16_t>>(); // 5 blocks
+	// generate individual testcases to hand trace/debug
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = false;
+
+	{
+		constexpr size_t nbits = 56;
+		constexpr size_t es = 11;
+		using bt = uint32_t;
+		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+		constexpr size_t fbits = Cfloat::fbits;
+		Cfloat a{ 0 }, b;
+		++a;
+		for (int i = 0; i < static_cast<int>(fbits); ++i) {
+			double f = double(a);
+			b = f;
+			std::cout << to_binary(f) << " : " << color_print(f) << " : " << f << '\n';
+			std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
+			std::cout << to_binary(b) << " : " << color_print(b) << " : " << b << '\n';
+			// when we have mul
+			// a *= 2.0f;
+			uint64_t fraction = a.fraction_ull();
+			fraction <<= 1;
+			a.setfraction(fraction);
+		}
+	}
+
+	{
+		// convert a normal number
+		constexpr size_t nbits = 28;
+		constexpr size_t es = 8;
+		using bt = uint32_t;
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 }, b;
+		a = 1.0e25f;
+		std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
+	}
 	
 	nrOfFailedTestCases = 0;
 
 #else
-	cout << "subnormal validation" << endl;
+	std::cout << "subnormal validation\n";
 
 	bool bReportIndividualTestCases = false;
-	std::string tag = "double subnormal conversion failed: ";
+	std::string tag = "IEEE-754 double precision subnormal conversion: ";
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "cfloat<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "cfloat<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeee754DoubleSubnormals<uint8_t >(bReportIndividualTestCases), tag, "cfloat<64, 11, uint8_t ,1,1,0>");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeee754DoubleSubnormals<uint16_t>(bReportIndividualTestCases), tag, "cfloat<64, 11, uint16_t,1,1,0>");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeee754DoubleSubnormals<uint32_t>(bReportIndividualTestCases), tag, "cfloat<64, 11, uint32_t,1,1,0>");
+	nrOfFailedTestCases += ReportTestResult(VerifyIeee754DoubleSubnormals<uint64_t>(bReportIndividualTestCases), tag, "cfloat<64, 11, uint64_t,1,1,0>");
 
 #if STRESS_TESTING
 
