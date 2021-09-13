@@ -545,7 +545,7 @@ namespace sw::universal {
 		// verify the subnormals
 		nut = 0;
 		++nut;
-		for (size_t i = 0; i < ieee754_parameter<float>::fbits; ++i) {
+		for (size_t i = 0; i < ieee754_parameter<double>::fbits; ++i) {
 			d = double(nut);
 			result = d;
 			if (result != nut) {
@@ -557,6 +557,47 @@ namespace sw::universal {
 		}
 		return nrOfFailedTests;
 	}
+
+#if LONG_DOUBLE_SUPPORT
+	// generate IEEE-754 long double precision subnormal values
+	template<typename BlockType>
+	int VerifyIeee754LongDoubleSubnormals(bool bReportIndividualTestCases) {
+		using namespace std;
+		using namespace sw::universal;
+		constexpr size_t nbits = 80;
+		constexpr size_t es = 15;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
+		double d{ 0.0f };
+		int nrOfFailedTests{ 0 };
+
+		// long double support tends to be just extended precision support (that implies afbits = 64)
+		constexpr size_t fbits = 64;
+		if constexpr (ieee754_parameter<long double>::fbits == fbits) {
+			// verify the subnormals
+			nut = 0;
+			++nut;
+			for (size_t i = 0; i < fbits; ++i) {
+				d = double(nut);
+				result = d;
+				if (result != nut) {
+					nrOfFailedTests += Compare(d, result, nut, bReportIndividualTestCases);
+				}
+				blockbinary<fbits, BlockType> fraction{ 0 };
+				nut.fraction(fraction);
+				fraction <<= 1;
+				nut.setfraction(fraction);
+			}
+		}
+		else {
+			std::cerr << "long double for this compiler environment is not extended precision\n";
+		}
+
+		return nrOfFailedTests;
+	}
+#endif
 
 	// Generate ordered set in ascending order from [-NaN, -inf, -maxpos, ..., +maxpos, +inf, +NaN] for a particular posit config <nbits, es>
 	template<typename TestType>

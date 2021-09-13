@@ -45,18 +45,27 @@ namespace sw::universal {
 
 	// es > 11 requires a long double representation, which MSVC, ARM, and RISC-V do not provide.
 	static constexpr double subnormal_exponent[] = {
-		0,                    // es = 0 : not a valid value
-		2.0,                  // es = 1 : 2^(2 - 2^(es-1)) = 2^1
-		1.0,                  // es = 2 : 2^(2 - 2^(es-1)) = 2^0
-		0.25,                 // es = 3 : 2^(2 - 2^(es-1)) = 2^-2
-		oneOver2p6,           // es = 4 : 2^(2 - 2^(es-1)) = 2^-6
-		oneOver2p14,          // es = 5 : 2^(2 - 2^(es-1)) = 2^-14
-		oneOver2p30,          // es = 6 : 2^(2 - 2^(es-1)) = 2^-30
-		oneOver2p62,          // es = 7 : 2^(2 - 2^(es-1)) = 2^-62
-		oneOver2p126,         // es = 8 : 2^(2 - 2^(es-1)) = 2^-126
-		oneOver2p254,         // es = 9 : 2^(2 - 2^(es-1)) = 2^-254
+		0,                    // es =  0 : not a valid value
+		2.0,                  // es =  1 : 2^(2 - 2^(es-1)) = 2^1
+		1.0,                  // es =  2 : 2^(2 - 2^(es-1)) = 2^0
+		0.25,                 // es =  3 : 2^(2 - 2^(es-1)) = 2^-2
+		oneOver2p6,           // es =  4 : 2^(2 - 2^(es-1)) = 2^-6
+		oneOver2p14,          // es =  5 : 2^(2 - 2^(es-1)) = 2^-14
+		oneOver2p30,          // es =  6 : 2^(2 - 2^(es-1)) = 2^-30
+		oneOver2p62,          // es =  7 : 2^(2 - 2^(es-1)) = 2^-62
+		oneOver2p126,         // es =  8 : 2^(2 - 2^(es-1)) = 2^-126
+		oneOver2p254,         // es =  9 : 2^(2 - 2^(es-1)) = 2^-254
 		oneOver2p510,         // es = 10 : 2^(2 - 2^(es-1)) = 2^-510
-		oneOver2p1022         // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
+		oneOver2p1022,        // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
+		0.0,                  // es = 12 : 2^(2 - 2^(es-1)) = 2^-2046
+		0.0,                  // es = 13 : 2^(2 - 2^(es-1)) = 2^-4094
+		0.0,                  // es = 14 : 2^(2 - 2^(es-1)) = 2^-8190
+		0.0,                  // es = 15 : 2^(2 - 2^(es-1)) = 2^-16382
+		0.0,                  // es = 16 : 2^(2 - 2^(es-1)) = 2^-32766
+		0.0,                  // es = 17 : 2^(2 - 2^(es-1)) = 2^-65534
+		0.0,                  // es = 18 : 2^(2 - 2^(es-1)) = 2^-131070
+		0.0,                  // es = 19 : 2^(2 - 2^(es-1)) = 2^-262142
+		0.0                   // es = 20 : 2^(2 - 2^(es-1)) = 2^-524286
 	};
 
 	// float subnormals with the last entry being the smallest normal value

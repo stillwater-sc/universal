@@ -1348,7 +1348,7 @@ public:
 			}
 			else if constexpr (3 == nrBlocks) {
 				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & ((uint64_t(_block[2]) << (2*bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]));
+				raw = fbitMask & ((uint64_t(_block[2]) << (2 * bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]));
 			}
 			else if constexpr (4 == nrBlocks) {
 				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
