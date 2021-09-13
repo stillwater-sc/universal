@@ -5,23 +5,43 @@ file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
 file (GLOB STANDARD_SRC "standard/*.cpp")
 file (GLOB MATH_SRC "./math/*.cpp")
 
+# cfloat API test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/api" "${API_SRC}")
+
+# logic test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/logic" "${LOGIC_SRC}")
+
+# conversion test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/conversion" "${CONVERSION_SRC}")
+
+# arithmetic test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic" "${ARITHMETIC_SRC}")
-compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic/non-saturating/no-sub-no-super" "${ARITHMETIC_NONSAT_NONE_SRC}")
-compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic/non-saturating/subnormal" "${ARITHMETIC_NONSAT_SUB_SRC}")
-compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic/non-saturating/supernormal" "${ARITHMETIC_NONSAT_SUPER_SRC}")
-compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/arithmetic/non-saturating/subnormal-supernormal" "${ARITHMETIC_NONSAT_BOTH_SRC}")
+
+# standard formats test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/standard" "${STANDARD_SRC}")
+
+# math library test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/math" "${MATH_SRC}")
 
 # non-saturating variety
+# conversion
+add_subdirectory("conversion/nonsaturating/nosubsuper")
+add_subdirectory("conversion/nonsaturating/subnormal")
+add_subdirectory("conversion/nonsaturating/supernormal")
+add_subdirectory("conversion/nonsaturating/subsuper")
+# arithmetic
 add_subdirectory("arithmetic/nonsaturating/nosubsuper")
 add_subdirectory("arithmetic/nonsaturating/subnormal")
 add_subdirectory("arithmetic/nonsaturating/supernormal")
 add_subdirectory("arithmetic/nonsaturating/subsuper")
+
 # saturating variety
+# conversion
+add_subdirectory("conversion/saturating/nosubsuper")
+add_subdirectory("conversion/saturating/subnormal")
+add_subdirectory("conversion/saturating/supernormal")
+add_subdirectory("conversion/saturating/subsuper")
+# arithmetic
 add_subdirectory("arithmetic/saturating/nosubsuper")
 add_subdirectory("arithmetic/saturating/subnormal")
 add_subdirectory("arithmetic/saturating/supernormal")
