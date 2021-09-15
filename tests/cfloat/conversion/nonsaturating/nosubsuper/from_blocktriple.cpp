@@ -19,6 +19,7 @@
 #include <universal/number/cfloat/mathlib.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
+#include <universal/number/cfloat/table.hpp>
 
 /*
    DESIGN and IMPLEMENTATION HISTORY
@@ -37,91 +38,6 @@
    on this parameterization overkill and create explicit normalization 
    conversions for add, mul, div, and sqrt. 
  */
-
-namespace sw::universal {
-
-	/// <summary>
-	/// convert a blocktriple to a cfloat
-	/// </summary>
-	/// <typeparam name="CfloatConfiguration"></typeparam>
-	/// <param name="bReportIndividualTestCases"></param>
-	/// <returns></returns>
-	template<typename CfloatConfiguration, BlockTripleOperator op>
-	int VerifyCfloatFromBlocktripleConversion(bool bReportIndividualTestCases) {
-		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfiguration::nbits;
-		constexpr size_t es = CfloatConfiguration::es;
-		using bt = typename CfloatConfiguration::BlockType;
-		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
-		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-		constexpr size_t fbits = CfloatConfiguration::fbits;
-
-		int nrOfTestFailures{ 0 };
-
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
-
-		/// blocktriple addition and subtraction is done in a 2's complement format 0ii.fffff.
-		/// blocktriple multiplication is done in a 1's complement format of ii.fffff
-		/// blocktriple division is done in a ?'s complement format of ???????
-		/// 
-		/// blocktriples can be in overflow configuration, but not in denormalized form
-		/// 
-		/// BlockTripleOperator::ADD  blocktriple type that comes out of an addition or subtraction operation
-		/// BlockTripleOperator::MUL  blocktriple type that comes out of a multiplication operation
- 		/// BlockTripleOperator::DIV  blocktriple type that comes out of a division operation
-
-		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
-		BlockTripleConfiguration b;
-		std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << '\n';
-		for (int scale = -8; scale < 8; ++scale) {
-			// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
-			// if MUL, patterns is  ii.fffff, without  00.fffff
-			// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
-			size_t fractionBits{ 0 };
-			size_t integerSet{ 0 };
-			if constexpr (op == BlockTripleOperator::ADD) {
-				fractionBits = fbits; // make it explicit for ease of understanding
-				integerSet = 4;
-			}
-			if constexpr (op == BlockTripleOperator::MUL) {
-				fractionBits = 2 * fbits;
-				integerSet = 4;
-			}
-			size_t NR_VALUES = (1ull << fractionBits);
-			b.setscale(scale);
-			for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
-				size_t integerBits = i * NR_VALUES;
-				for (size_t f = 0; f < NR_VALUES; ++f) {
-					b.setbits(integerBits + f);
-
-//					std::cout << "blocktriple: " << to_binary(b) << " : " << b << '\n';
-
-					convert(b, nut);
-
-					// get the reference by marshalling the blocktriple value through a double value and assigning it to the cfloat
-					a = double(b);
-					if (a != nut) {
-//						std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
-
-						if (a.isnan() && b.isnan()) continue;
-						if (a.isinf() && b.isinf()) continue;
-
-						++nrOfTestFailures;
-						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
-					}
-					else {
-#ifndef VERBOSE_POSITIVITY
-						if (bReportIndividualTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
-#endif
-					}
-				}
-			}
-		}
-		return nrOfTestFailures;
-	}
-
-}
 
 /*
 How do you test the conversion state space of blocktriple to cfloat.
@@ -143,8 +59,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr bool hasSubnormals = true;
-	constexpr bool hasSupernormals = true;
+	// testing cfloat without subnormals, supernormals, or saturation
+	constexpr bool hasSubnormals = false;
+	constexpr bool hasSupernormals = false;
 	constexpr bool isSaturating = false;
 
 	bool bReportIndividualTestCases = false;
@@ -152,8 +69,6 @@ try {
 	std::string tag = "conversion ";
 
 #if MANUAL_TESTING
-
-	// cfloat<> is a linear floating-point
 
 	std::cout << "Conversion from blocktriple to cfloat\n\n";
 
@@ -211,12 +126,12 @@ try {
 		}
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,1> from blocktriple ADD");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,2> from blocktriple ADD");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,3> from blocktriple ADD");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,4> from blocktriple ADD");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,5> from blocktriple ADD");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,6> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,1,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,2,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,3,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,4,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,5,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,6,uint8_t,0,0,0> from blocktriple ADD");
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
@@ -338,14 +253,3 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-
-
-/*
-
-  To generate:
-  	GenerateFixedPointComparisonTable<4, 0>(std::string("-"));
-	GenerateFixedPointComparisonTable<4, 1>(std::string("-"));
-	GenerateFixedPointComparisonTable<4, 2>(std::string("-"));
-	
-
- */

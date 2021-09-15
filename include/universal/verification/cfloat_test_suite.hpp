@@ -406,6 +406,7 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
+
 	// generate random test cases to test conversion from an IEEE-754 float to a cfloat
 	template<typename TestType>
 	int VerifyFloat2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
@@ -598,6 +599,149 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 #endif
+
+	////////////////    cfloat <-> blocktriple
+	
+
+	/// <summary>
+	/// convert a blocktriple to a cfloat
+	/// </summary>
+	/// <typeparam name="CfloatConfiguration"></typeparam>
+	/// <param name="bReportIndividualTestCases"></param>
+	/// <returns></returns>
+	template<typename CfloatConfiguration, BlockTripleOperator op>
+	int VerifyCfloatFromBlocktripleConversion(bool bReportIndividualTestCases) {
+		using namespace sw::universal;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+		constexpr size_t fbits = CfloatConfiguration::fbits;
+
+		int nrOfTestFailures{ 0 };
+
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+
+		/// blocktriple addition and subtraction is done in a 2's complement format 0ii.fffff.
+		/// blocktriple multiplication is done in a 1's complement format of ii.fffff
+		/// blocktriple division is done in a ?'s complement format of ???????
+		/// 
+		/// blocktriples can be in overflow configuration, but not in denormalized form
+		/// 
+		/// BlockTripleOperator::ADD  blocktriple type that comes out of an addition or subtraction operation
+		/// BlockTripleOperator::MUL  blocktriple type that comes out of a multiplication operation
+		/// BlockTripleOperator::DIV  blocktriple type that comes out of a division operation
+
+		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
+		BlockTripleConfiguration b;
+		std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << '\n';
+		for (int scale = -8; scale < 8; ++scale) {
+			// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
+			// if MUL, patterns is  ii.fffff, without  00.fffff
+			// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
+			size_t fractionBits{ 0 };
+			size_t integerSet{ 0 };
+			if constexpr (op == BlockTripleOperator::ADD) {
+				fractionBits = fbits; // make it explicit for ease of understanding
+				integerSet = 4;
+			}
+			if constexpr (op == BlockTripleOperator::MUL) {
+				fractionBits = 2 * fbits;
+				integerSet = 4;
+			}
+			size_t NR_VALUES = (1ull << fractionBits);
+			b.setscale(scale);
+			for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
+				size_t integerBits = i * NR_VALUES;
+				for (size_t f = 0; f < NR_VALUES; ++f) {
+					b.setbits(integerBits + f);
+
+					//					std::cout << "blocktriple: " << to_binary(b) << " : " << b << '\n';
+
+					convert(b, nut);
+
+					// get the reference by marshalling the blocktriple value through a double value and assigning it to the cfloat
+					a = double(b);
+					if (a != nut) {
+						//						std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+
+						if (a.isnan() && b.isnan()) continue;
+						if (a.isinf() && b.isinf()) continue;
+
+						++nrOfTestFailures;
+						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
+					}
+					else {
+#ifndef VERBOSE_POSITIVITY
+						if (bReportIndividualTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+#endif
+					}
+				}
+			}
+		}
+		return nrOfTestFailures;
+	}
+
+	/// <summary>
+/// testing of normalization for different blocktriple operators (ADD, MUL, DIV, SQRT)
+/// </summary>
+/// <typeparam name="CfloatConfiguration"></typeparam>
+/// <param name="bReportIndividualTestCases"></param>
+/// <returns></returns>
+	template<typename CfloatConfiguration, BlockTripleOperator op>
+	int VerifyCfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
+		using namespace sw::universal;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+
+		int nrOfTestFailures{ 0 };
+		constexpr size_t NR_VALUES = (1u << nbits);
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
+
+		// ADD
+		if constexpr (op == BlockTripleOperator::ADD) {
+			constexpr size_t abits = CfloatConfiguration::abits;
+			blocktriple<abits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				a.normalizeAddition(b);
+				if (double(a) != double(b)) {
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
+
+					++nrOfTestFailures;
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+				}
+				else {
+					if (bReportIndividualTestCases) std::cout << "PASS: " << to_binary(a) << " : " << a << " == " << to_triple(b) << " : " << b << '\n';
+				}
+			}
+		}
+
+		// MUL
+		if constexpr (op == BlockTripleOperator::MUL) {
+			constexpr size_t mbits = CfloatConfiguration::mbits;
+			blocktriple<mbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				a.normalizeMultiplication(b);
+				if (double(a) != double(b)) {
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
+
+					++nrOfTestFailures;
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+				}
+			}
+		}
+		return nrOfTestFailures;
+	}
 
 	// Generate ordered set in ascending order from [-NaN, -inf, -maxpos, ..., +maxpos, +inf, +NaN] for a particular posit config <nbits, es>
 	template<typename TestType>

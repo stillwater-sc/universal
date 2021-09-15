@@ -10,7 +10,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()

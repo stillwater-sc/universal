@@ -38,66 +38,7 @@
    conversions for add, mul, div, and sqrt. 
  */
 
-namespace sw::universal {
-
-	/// <summary>
-	/// testing of normalization for different blocktriple operators (ADD, MUL, DIV, SQRT)
-	/// </summary>
-	/// <typeparam name="CfloatConfiguration"></typeparam>
-	/// <param name="bReportIndividualTestCases"></param>
-	/// <returns></returns>
-	template<typename CfloatConfiguration, BlockTripleOperator op>
-	int VerifyCfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
-		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfiguration::nbits;
-		constexpr size_t es = CfloatConfiguration::es;
-		using bt = typename CfloatConfiguration::BlockType;
-		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
-		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-
-		int nrOfTestFailures{ 0 };
-		constexpr size_t NR_VALUES = (1u << nbits);
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
-
-		// ADD
-		if constexpr (op == BlockTripleOperator::ADD) { 
-			constexpr size_t abits = CfloatConfiguration::abits;
-			blocktriple<abits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-			for (size_t i = 0; i < NR_VALUES; ++i) {
-				a.setbits(i);
-				a.normalizeAddition(b);
-				if (double(a) != double(b)) {
-					if (a.isnan() && b.isnan()) continue;
-					if (a.isinf() && b.isinf()) continue;
-
-					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
-				}
-				else {
-					if (bReportIndividualTestCases) std::cout << "PASS: " << to_binary(a) << " : " << a << " == " << to_triple(b) << " : " << b << '\n';
-				}
-			}
-		}
-
-		// MUL
-		if constexpr (op == BlockTripleOperator::MUL) {
-			constexpr size_t mbits = CfloatConfiguration::mbits;
-			blocktriple<mbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-			for (size_t i = 0; i < NR_VALUES; ++i) {
-				a.setbits(i);
-				a.normalizeMultiplication(b);
-				if (double(a) != double(b)) {
-					if (a.isnan() && b.isnan()) continue;
-					if (a.isinf() && b.isinf()) continue;
-
-					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
-				}
-			}
-		}
-		return nrOfTestFailures;
-	}
+namespace sw::deprecated {
 
 	template<typename CfloatConfiguration>
 	int VerifyCfloatToMulBlocktripleConversion(bool bReportIndividualTestCases) {
@@ -155,8 +96,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr bool hasSubnormals = true;
-	constexpr bool hasSupernormals = true;
+	// testing cfloat without subnormals, supernormals, or saturation
+	constexpr bool hasSubnormals = false;
+	constexpr bool hasSupernormals = false;
 	constexpr bool isSaturating = false;
 
 	bool bReportIndividualTestCases = false;
@@ -164,8 +106,6 @@ try {
 	std::string tag = "conversion: ";
 
 #if MANUAL_TESTING
-
-	// cfloat<> is a linear floating-point
 
 	// to track conversion in more detail
 	std::cout << std::setprecision(8);
@@ -180,7 +120,7 @@ try {
 			Cfloat nut;
  			nut.setbits(0x1e);
 			float v = float(nut);
-			blocktriple<2*(fbits+1), BlockTripleOperator::ADD, bt> b, ref; // blocktriple type that comes out of a multiplication operation
+			blocktriple<2*(fbits+1), BlockTripleOperator::ADD, bt> b, ref; // blocktriple type that comes out of an ADD/SUB operation
 			nut.normalizeAddition(b);
 			ref = v;
 			std::cout << "cfloat          : " << to_binary(nut) << " : " << nut << '\n';
@@ -322,14 +262,3 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-
-
-/*
-
-  To generate:
-  	GenerateFixedPointComparisonTable<4, 0>(std::string("-"));
-	GenerateFixedPointComparisonTable<4, 1>(std::string("-"));
-	GenerateFixedPointComparisonTable<4, 2>(std::string("-"));
-	
-
- */

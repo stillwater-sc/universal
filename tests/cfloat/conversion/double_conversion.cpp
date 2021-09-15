@@ -122,8 +122,6 @@ b0.00000000001.0000000000000000000000000000000000000000000000000000 : 2.22507385
 b0.00000000010.0000000000000000000000000000000000000000000000000000 : 4.450147717014403e-308
 */
 
-
-
 double smallest_normal = 2.225073858507201e-308;
 
 void GenerateDoublePrecisionSubnormals()
@@ -150,7 +148,7 @@ void GenerateDoublePrecisionSubnormals()
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -207,38 +205,34 @@ ref : b0.10110101010.0010011001110010111000110101011001101000111101100111
 		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ref = parse<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>("b0.11010111001.0111010010011101001011001010000101110001000011010111");
 		double testValue = double(ref);
 		std::cout << "ref : " << to_binary(ref) << " : " << ref << '\n';
-		std::cout << "test: " << to_binary(testValue) << " : " << testValue << endl;
+		std::cout << "test: " << to_binary(testValue) << " : " << testValue << '\n';
 		cfloat<64, 8, uint8_t> nut;
 		//		a.constexprClassParameters();
 		nut = testValue;
 		double da = double(nut);
 		std::cout << "nut : " << to_binary(nut) << " : " << nut << '\n';
-		std::cout << "da  : " << to_binary(da) << " : " << da << endl;
+		std::cout << "da  : " << to_binary(da) << " : " << da << '\n';
 	}
 
 
 	bool bReportIndividualTestCases = true;
-	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint8_t>(bReportIndividualTestCases), tag, "cfloat<64, 11, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint16_t>(bReportIndividualTestCases), tag, "cfloat<64, 11, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint32_t>(bReportIndividualTestCases), tag, "cfloat<64, 11, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint64_t>(bReportIndividualTestCases), tag, "cfloat<64, 11, uint64_t>");
 
 #ifdef FLOATING_POINT_CONTRACTION_TESTS
 	// double 2 cfloat conversion uses an ieee-754 double value to assign.
 	// a cfloat<64, 8> will have a 8x smaller dynamic range and thus we will have a 7 in 8 change to saturate
 	// as we saturate to maxpos, which is a regularly looking value, it is difficult to recognize this failure mode
-	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 8, uint8_t> >(true, 10), tag, "cfloat<64, 8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 8, uint8_t > >(true, 10), tag, "cfloat<64, 8, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 8, uint16_t> >(true, 10), tag, "cfloat<64, 8, uint16_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 8, uint32_t> >(true, 10), tag, "cfloat<64, 8, uint32_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 8, uint64_t> >(true, 10), tag, "cfloat<64, 8, uint64_t>");
 #endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 11, uint8_t> >(true, 1000), tag, "cfloat<64, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 11, uint8_t > >(true, 1000), tag, "cfloat<64, 11, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 11, uint16_t> >(true, 1000), tag, "cfloat<64, 11, uint16_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 11, uint32_t> >(true, 1000), tag, "cfloat<64, 11, uint32_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<64, 11, uint64_t> >(true, 1000), tag, "cfloat<64, 11, uint64_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<80, 11, uint8_t> >(true, 1000), tag, "cfloat<80, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<80, 11, uint8_t > >(true, 1000), tag, "cfloat<80, 11, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<96, 11, uint8_t> >(true, 1000), tag, "cfloat<96, 11, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<112, 11, uint8_t> >(true, 1000), tag, "cfloat<112, 11, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2CfloatConversionRnd< cfloat<128, 11, uint8_t> >(true, 1000), tag, "cfloat<128, 11, uint8_t>");
@@ -253,7 +247,7 @@ ref : b0.10110101010.0010011001110010111000110101011001101000111101100111
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatConversion< cfloat<10, 1>, double >(bReportIndividualTestCases), tag, "cfloat<10,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatConversion< cfloat<12, 1>, double >(bReportIndividualTestCases), tag, "cfloat<12,1>");
 
-	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
+	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
 
 #if STRESS_TESTING

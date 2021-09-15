@@ -333,18 +333,18 @@ public:
 	/// construct an cfloat from a native type, specialized for size
 	/// </summary>
 	/// <param name="iv">initial value to construct</param>
-	constexpr cfloat(signed char iv)        noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(short iv)              noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(int iv)                noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(long iv)               noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(long long iv)          noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(char iv)               noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned short iv)     noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned int iv)       noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned long iv)      noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned long long iv) noexcept : _block{ 0 } { *this = iv; }
-	CONSTEXPRESSION cfloat(float iv)        noexcept : _block{ 0 } { *this = iv; }
-	CONSTEXPRESSION cfloat(double iv)       noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(signed char iv)                    noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(short iv)                          noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(int iv)                            noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(long iv)                           noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(long long iv)                      noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(char iv)                           noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned short iv)                 noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned int iv)                   noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned long iv)                  noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned long long iv)             noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(float iv)                    noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(double iv)                   noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
 	constexpr cfloat& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
@@ -1014,12 +1014,15 @@ public:
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	inline constexpr cfloat& assign(const std::string& str) noexcept {
-		int field(0);
-		int exponentBits(-1); // we start the field with a '.'
 		clear();
+		if (str.length() == 0) return *this;
+		// TODO: regex based determination of scientific form or binary form
+
 		if (str.length() > 2) {
 			if (str[0] == '0' && str[1] == 'b') {
-				// binary string needs to be at least nbits+4
+				// binary string needs to be at least nbits+4 characters
+				int field(0);
+				int exponentBits(-1); // we start the field with a '.'
 				if (str.size() != (nbits + 4)) {
 					std::cerr << "provided binary string representation does not contain " << nbits << " bits. Reset to 0\n";
 					return *this;
@@ -1420,11 +1423,11 @@ public:
 	// transform an cfloat to a native C++ floating-point. We are using the native
 	// precision to compute, which means that all sub-values need to be representable 
 	// by the native precision.
-	// A more accurate appromation would require an adaptive precision algorithm
+	// A more accurate approximation would require an adaptive precision algorithm
 	// with a final rounding step.
 	template<typename TargetFloat>
 	TargetFloat to_native() const { 
-		TargetFloat v{ 0 };
+		TargetFloat v{ 0.0 };
 		if (iszero()) {
 			if (sign()) { // the optimizer might destroy the sign
 				return -TargetFloat(0);
@@ -1439,7 +1442,7 @@ public:
 		else if (isinf()) {
 			v = sign() ? -INFINITY : INFINITY;
 		}
-		else { // TODO: this approach has catastrophic cancellation when nbits is large and native target float is small
+		else { // TODO: this approach has catastrophic cancellation when nbits is large and native target float is too small
 			TargetFloat f{ 0 };
 			TargetFloat fbit{ 0.5 };
 			for (int i = static_cast<int>(nbits - 2ull - es); i >= 0; --i) {
@@ -1448,20 +1451,24 @@ public:
 			}
 			blockbinary<es, bt> ebits;
 			exponent(ebits);
-			if (ebits.iszero()) {
-				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				TargetFloat exponentiation = TargetFloat(subnormal_exponent[es]); // precomputed values for 2^(2-2^(es-1))
-				v = exponentiation * f;
+			if constexpr (hasSubnormals) {
+				if (ebits.iszero()) {
+					// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
+					TargetFloat exponentiation = TargetFloat(subnormal_exponent[es]); // precomputed values for 2^(2-2^(es-1))
+					v = exponentiation * f;
+				}
 			}
 			else {
-				if (ebits.isallones()) {
-					if constexpr (hasSupernormals == false) {
-						// supernormals are mapped to quiet NaNs
-						v = std::numeric_limits<TargetFloat>::quiet_NaN();
-						return v;
+				if (ebits.iszero()) {
+					if (sign()) { // compiler fast float optimization might destroy the sign
+						return -TargetFloat(0);
+					}
+					else {
+						return TargetFloat(0);
 					}
 				}
-
+			}
+			if constexpr (hasSupernormals) {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 				if (-64 < exponent && exponent < 64) {
@@ -1472,7 +1479,25 @@ public:
 					double exponentiation = ipow(exponent);
 					v = TargetFloat(exponentiation * (1.0 + f));
 				}
-
+			}
+			else {
+				if (ebits.isallones()) {
+					// supernormals are mapped to quiet NaNs
+					v = std::numeric_limits<TargetFloat>::quiet_NaN();
+					return v;
+				}
+				else {
+					// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
+					int exponent = static_cast<int>(unsigned(ebits) - EXP_BIAS);
+					if (-64 < exponent && exponent < 64) {
+						TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
+						v = exponentiation * (TargetFloat(1.0) + f);
+					}
+					else {
+						double exponentiation = ipow(exponent);
+						v = TargetFloat(exponentiation * (1.0 + f));
+					}
+				}
 			}
 			v = sign() ? -v : v;
 		}
@@ -2262,7 +2287,7 @@ public:
 						if (guard) {
 							if (lsb && (!round && !sticky)) ++rawFraction; // round to even
 							if (round || sticky) ++rawFraction;
-							if (rawFraction == (1ul << fbits)) { // overflow
+							if (rawFraction == (1ull << fbits)) { // overflow
 								if (biasedExponent == ALL_ONES_ES) { // overflow to INF == .111..01
 									rawFraction = INF_ENCODING;
 								}

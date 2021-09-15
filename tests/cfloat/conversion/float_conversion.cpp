@@ -162,7 +162,7 @@ void compareSmallcfloats(float f) {
 
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -296,7 +296,7 @@ try {
 
 	// es = 1
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(bReportIndividualTestCases), tag, "cfloat< 4,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(true), tag, "cfloat< 4,1>");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(bReportIndividualTestCases), tag, "cfloat< 5,1>");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(bReportIndividualTestCases), tag, "cfloat< 6,1>");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 7, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(bReportIndividualTestCases), tag, "cfloat< 7,1>");
