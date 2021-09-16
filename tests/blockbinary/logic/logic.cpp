@@ -267,6 +267,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", ">=");
 
+#if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyEqual<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "<");
@@ -274,7 +275,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", ">=");
 
-#if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyEqual<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "<");

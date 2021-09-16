@@ -139,24 +139,24 @@ try {
 
 	std::cout << "blockbinary division validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, uint8_t>(bReportIndividualTestCases), "blockbinary<5,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(bReportIndividualTestCases), "blockbinary<6,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, uint8_t>(bReportIndividualTestCases), "blockbinary<7,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint8_t>(bReportIndividualTestCases), "blockbinary<9,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, uint8_t>(bReportIndividualTestCases), "blockbinary< 4,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 5, uint8_t>(bReportIndividualTestCases), "blockbinary< 5,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, uint8_t>(bReportIndividualTestCases), "blockbinary< 6,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 7, uint8_t>(bReportIndividualTestCases), "blockbinary< 7,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, uint8_t>(bReportIndividualTestCases), "blockbinary< 8,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint8_t>(bReportIndividualTestCases), "blockbinary< 9,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(bReportIndividualTestCases), "blockbinary<10,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint16_t>(bReportIndividualTestCases), "blockbinary<9,uint16_t>", "division");
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t >(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "division");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint16_t>(bReportIndividualTestCases), "blockbinary<9,uint16_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(bReportIndividualTestCases), "blockbinary<13,uint16_t>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32_t>", "division");
 
-#if STRESS_TESTING
-
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(bReportIndividualTestCases), "blockbinary<16,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t >(bReportIndividualTestCases), "blockbinary<16,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "division");
 
 
