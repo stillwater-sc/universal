@@ -11,6 +11,7 @@
 #include <universal/internal/value/value.hpp>
 #include <universal/performance/number_system.hpp>
 
+// right now MANUAL_TESTING represents a quick test. Set to 0 for full test.
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -29,6 +30,19 @@ try {
 	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
+
+	std::cout << "single precision float\n";
+	{
+		constexpr size_t fbits = 22;
+		value<fbits> number{ 1 };
+		OperatorPerformance perfReport;
+		GeneratePerformanceReport(number, perfReport);
+		auto report = ReportPerformance(number, perfReport);
+		std::cout << report << '\n';
+	}
+
+#else
+
 	std::cout << "half precision float\n";
 	{
 		constexpr size_t fbits = 10;
@@ -77,11 +91,7 @@ try {
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
 		std::cout << report << '\n';
-	}
-
-#else
-
-	std::cout << "TBD\n";
+}
 
 #endif // MANUAL_TESTING
 
@@ -178,4 +188,85 @@ Subtraction     : 918 KPOPS
 Multiplication  : 690 KPOPS
 Division        :  22 KPOPS
 Square Root     :   2 MPOPS
+ */
+
+/*
+Benchmarked  9/16/2021 
+Processor : AMD Ryzen
+Memory    : 32GB
+OS        : 64-bit, x64-based processor
+
+Performance benchmarks for value<> class
+ reporting individual testcases
+half precision float
+Performance Report for type: class sw::universal::internal::value<10>
+Conversion int  :  70 MPOPS
+Conversion ieee :  25 MPOPS
+Prefix          :   8 MPOPS
+Postfix         :   7 MPOPS
+Negation        : 168 MPOPS
+Addition        :   9 MPOPS
+Subtraction     :   6 MPOPS
+Multiplication  :   6 MPOPS
+Division        : 980 KPOPS
+Square Root     :   7 MPOPS
+
+
+single precision float
+Performance Report for type: class sw::universal::internal::value<22>
+Conversion int  :  14 MPOPS
+Conversion ieee :   9 MPOPS
+Prefix          :   3 MPOPS
+Postfix         :   3 MPOPS
+Negation        : 222 MPOPS
+Addition        :   2 MPOPS
+Subtraction     :   2 MPOPS
+Multiplication  :   1 MPOPS
+Division        : 258 KPOPS
+Square Root     :   3 MPOPS
+
+
+double precision float
+Performance Report for type: class sw::universal::internal::value<53>
+Conversion int  :   9 MPOPS
+Conversion ieee :   6 MPOPS
+Prefix          :   1 MPOPS
+Postfix         :   1 MPOPS
+Negation        : 209 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  :   1 MPOPS
+Division        :  59 KPOPS
+Square Root     :   2 MPOPS
+
+
+extended precision float
+Performance Report for type: class sw::universal::internal::value<64>
+Conversion int  :   5 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          :   1 MPOPS
+Postfix         :   1 MPOPS
+Negation        : 219 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  : 878 KPOPS
+Division        :  54 KPOPS
+Square Root     :   2 MPOPS
+
+
+quad precision float
+Performance Report for type: class sw::universal::internal::value<112>
+Conversion int  :   6 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          : 859 KPOPS
+Postfix         : 876 KPOPS
+Negation        : 265 MPOPS
+Addition        : 821 KPOPS
+Subtraction     : 679 KPOPS
+Multiplication  : 564 KPOPS
+Division        :  21 KPOPS
+Square Root     :   2 MPOPS
+
+
+PASS
  */
