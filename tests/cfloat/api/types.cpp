@@ -26,7 +26,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 
 	std::cout << "comparison of different cfloat types\n\n";
 
@@ -34,7 +34,7 @@ try {
 	constexpr bool noSubnormals = false;
 	constexpr bool hasSupernormals = true;
 	constexpr bool noSupernormals = false;
-	constexpr bool isSaturating = true;
+	//constexpr bool isSaturating = true;
 	constexpr bool notSaturating = false;
 
 	// if you  have 1 exponent bits, then all encodings are either subnormals or supernormals.

@@ -63,9 +63,9 @@ try {
 		CONSTEXPRESSION Real a(1.0f + 0.5f + 0.25f + 0.125f + 0.0625f);
 		Real b(-1.0f - 0.5f - 0.25f - 0.125f - 0.0625f);
 		constexpr size_t fbits = Real::fbits;
-		constexpr size_t abits = Real::abits;
-		constexpr size_t mbits = Real::mbits;
-		constexpr size_t divbits = Real::divbits;
+		//constexpr size_t abits = Real::abits;
+		//constexpr size_t mbits = Real::mbits;
+		//constexpr size_t divbits = Real::divbits;
 		{
 			// emulate conversion to blocktriple
 			blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt> _a, _b;

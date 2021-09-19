@@ -189,8 +189,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			// get the rounding direction and the LSB right shift: 
 			// TODO: do we want to support arbitrary blocktriples instead of the ALU output versions?
 			std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
-			bool roundup = alignment.first;
-			size_t shift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
+			//bool roundup = alignment.first;
+			//size_t shift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
 
 
 			raw <<= cfloatType::fbits;
@@ -1230,8 +1230,8 @@ public:
 //		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
 		return !e.iszero() && !e.isallones();
 	}
-	// issubnormal returns true if exponent bits are all zero, false otherwise
-	inline constexpr bool issubnormal() const noexcept {
+	// isdenormal returns true if exponent bits are all zero, false otherwise
+	inline constexpr bool isdenormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
 		return e.iszero();
@@ -1724,7 +1724,7 @@ public:
 				}
 			}
 			else {
-				if (issubnormal()) { // it is a subnormal encoding in this target cfloat
+				if (isdenormal()) { // it is a subnormal encoding in this target cfloat
 					if constexpr (hasSubnormals) {
 						if constexpr (fbits < 64) {
 							uint64_t raw = fraction_ull();
@@ -1972,7 +1972,7 @@ public:
 				}
 			}
 			else { 
-				if (issubnormal()) { // it is a subnormal encoding in this target cfloat
+				if (isdenormal()) { // it is a subnormal encoding in this target cfloat
 					if constexpr (hasSubnormals) {
 						if constexpr (fbits < 64) {
 							uint64_t raw = fraction_ull();
