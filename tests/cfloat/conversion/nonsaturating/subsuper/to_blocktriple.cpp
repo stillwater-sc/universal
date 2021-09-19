@@ -40,12 +40,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	// testing cfloat with supernormals, but without subnormals, or saturation
-	constexpr bool hasSubnormals = false;
+	// testing cfloat with subnormals, supernormals, but no saturation
+	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
 
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = "conversion: ";
 

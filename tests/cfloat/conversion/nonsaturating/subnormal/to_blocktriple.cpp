@@ -40,12 +40,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	// testing cfloat with supernormals, but without subnormals, or saturation
-	constexpr bool hasSubnormals = false;
-	constexpr bool hasSupernormals = true;
+	// testing cfloat with subnormals, but without supernormals, or saturation
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = false;
 	constexpr bool isSaturating = false;
 
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = "conversion: ";
 
@@ -75,7 +75,7 @@ try {
 		{
 			using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			//Cfloat a; a.constexprClassParameters();
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<4,2> to blocktriple ADD");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(true), tag, "cfloat<4,2> to blocktriple ADD");
 			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<4,2> to blocktriple MUL");
 		}
 		{
