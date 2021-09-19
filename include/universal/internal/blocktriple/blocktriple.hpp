@@ -184,7 +184,7 @@ public:
 	constexpr blocktriple(unsigned long long iv) noexcept { *this = iv; }
 	constexpr blocktriple(float iv)              noexcept { *this = iv; }
 	constexpr blocktriple(double iv)             noexcept { *this = iv; }
-	constexpr blocktriple(long double iv)        noexcept { *this = iv; }
+
 
 	// conversion operators
 	constexpr blocktriple& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
@@ -199,8 +199,16 @@ public:
 	constexpr blocktriple& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_float(rhs); }
 	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_double(rhs); }
-	constexpr blocktriple& operator=(long double rhs)        noexcept { return *this = double(rhs); };
-	
+
+
+	// guard long double support to enable ARM and RISC-V embedded environments
+#if LONG_DOUBLE_SUPPORT
+	CONSTEXPRESSION blocktriple(long double iv)				noexcept { *this = iv; }
+	CONSTEXPRESSION blocktriple& operator=(long double rhs) noexcept { return *this = (long double)(rhs); };
+	explicit operator long double() const noexcept { return to_native<long double>(); }
+#endif
+
+	// operators
 	constexpr blocktriple& operator<<=(int leftShift) noexcept {
 		if (leftShift == 0) return *this;
 		if (leftShift < 0) return operator>>=(-leftShift);
@@ -361,9 +369,9 @@ public:
 	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }
 
 	// conversion operators
-	explicit operator float()       const noexcept { return to_float(); }
-	explicit operator double()      const noexcept { return to_double(); }
-	explicit operator long double() const noexcept { return to_long_double(); }
+	explicit operator float()       const noexcept { return to_native<float>(); }
+	explicit operator double()      const noexcept { return to_native<double>(); }
+
 
 	/////////////////////////////////////////////////////////////
 	// ALU operators
@@ -858,20 +866,14 @@ private:
 		return *this;
 	}
 
-	float       to_float() const {
-		if (_zero) return 0.0;
-		float v = float(_significant);
-		v *= std::pow(2.0f, float(_scale));
+	template<typename Real>
+	Real to_native() const {
+		if (_nan) if (_sign) return std::numeric_limits<Real>::signaling_NaN(); else return std::numeric_limits<Real>::quiet_NaN();
+		if (_inf) if (_sign) return -std::numeric_limits<Real>::infinity(); else return std::numeric_limits<Real>::infinity();
+		if (_zero) if (_sign) return -Real(0.0f); else return Real(0.0f);
+		Real v = Real(_significant);
+		v *= std::pow(Real(2.0f), Real(_scale));
 		return (_sign ? -v : v);
-	}
-	double      to_double() const {  // TODO: this needs a native, correctly rounded version
-		if (_zero) return 0.0;
-		double v = double(_significant);
-		v *= std::pow(2.0, double(_scale));
-		return (_sign ? -v : v);
-	}
-	long double to_long_double() const {
-		return (long double)(to_double());
 	}
 
 	// template parameters need names different from class template parameters (for gcc and clang)

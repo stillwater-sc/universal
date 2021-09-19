@@ -427,7 +427,7 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<abits, BlockTripleOperator::ADD, bt> a, b, sum;
+		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, sum;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
@@ -499,7 +499,7 @@ public:
 		}
 
 		// arithmetic operation
-		blocktriple<mbits, BlockTripleOperator::MUL, bt> a, b, product;
+		blocktriple<fbits, BlockTripleOperator::MUL, bt> a, b, product;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
@@ -1066,9 +1066,11 @@ public:
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
 				e = (2l - (1l << (es - 1ull))) - 1;
-				for (size_t i = nbits - 2ull - es; i > 0; --i) {
-					if (test(i)) break;
-					--e;
+				if constexpr (nbits > 2 + es) {
+					for (size_t i = nbits - 2ull - es; i > 0; --i) {
+						if (test(i)) break;
+						--e;
+					}
 				}
 			}
 			else {
@@ -1184,43 +1186,61 @@ public:
 	/// <returns>true if the right kind of NaN, false otherwise</returns>
 	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
 		bool isNaN = true;
-		if constexpr (0 == nrBlocks) {
-			return false;
-		}
-		else if constexpr (1 == nrBlocks) {
-		}
-		else if constexpr (2 == nrBlocks) {
-			isNaN = (_block[0] == BLOCK_MASK);
-		}
-		else if constexpr (3 == nrBlocks) {
-			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK);
-		}
-		else if constexpr (4 == nrBlocks) {
-			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && (_block[2] == BLOCK_MASK);
-		}
-		else {
-			for (size_t i = 0; i < nrBlocks - 1; ++i) {
-				if (_block[i] != BLOCK_MASK) {
-					isNaN = false;
-					break;
+		bool isNegNaN = false;
+		bool isPosNaN = false;
+		if constexpr (hasSupernormals) {
+			if constexpr (0 == nrBlocks) {
+				return false;
+			}
+			else if constexpr (1 == nrBlocks) {
+			}
+			else if constexpr (2 == nrBlocks) {
+				isNaN = (_block[0] == BLOCK_MASK);
+			}
+			else if constexpr (3 == nrBlocks) {
+				isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK);
+			}
+			else if constexpr (4 == nrBlocks) {
+				isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && (_block[2] == BLOCK_MASK);
+			}
+			else {
+				for (size_t i = 0; i < nrBlocks - 1; ++i) {
+					if (_block[i] != BLOCK_MASK) {
+						isNaN = false;
+						break;
+					}
 				}
 			}
+			isNegNaN = isNaN && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+			isPosNaN = isNaN && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
-		bool isNegNaN = isNaN && ((_block[MSU] & MSU_MASK) == MSU_MASK);
-		bool isPosNaN = isNaN && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
+		else {
+			if (!issupernormal()) {	isNaN = false; }
+			isNegNaN = isNaN && sign();
+			isPosNaN = isNaN && !sign();
+		}
 		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) : 
 			     (NaNType == NAN_TYPE_SIGNALLING ? isNegNaN : 
 				   (NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
+	// isnormal returns true if exponent bits are not all zero or one, false otherwise
 	inline constexpr bool isnormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
-		return !e.iszero() && !isinf() && !isnan();
+//		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
+		return !e.iszero() && !e.isallones();
 	}
-	inline constexpr bool isdenorm() const noexcept {
+	// issubnormal returns true if exponent bits are all zero, false otherwise
+	inline constexpr bool issubnormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
 		return e.iszero();
+	}
+	// issupernormal returns true if exponent bits are all one, false otherwise
+	inline constexpr bool issupernormal() const noexcept {
+		blockbinary<es, bt> e;
+		exponent(e);
+		return e.isallones();
 	}
 	template<typename NativeReal>
 	inline constexpr bool inrange(NativeReal v) {
@@ -1615,7 +1635,7 @@ public:
 	// TODO: currently abits = 2*fhbits as the worst case input argument size to
 	// capture the smallest normal value in aligned form. There is a faster/smaller
 	// implementation where the input is constrainted to just the round, guard, and sticky bits.
-	constexpr void normalizeAddition(blocktriple<abits, BlockTripleOperator::ADD, bt>& tgt) const {
+	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -1636,10 +1656,9 @@ public:
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
 			if (isnormal()) {
-				if constexpr (abits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
-					raw <<= (abits - fbits);
-					raw |= (1ull << abits); // add the hidden bit
+					raw |= (1ull << fbits); // add the hidden bit
 					tgt.setbits(raw);
 				}
 				else {
@@ -1704,83 +1723,166 @@ public:
 					}
 				}
 			}
-			else { // it is a subnormal encoding in this target cfloat
-				if constexpr (abits < 64) {
-					uint64_t raw = fraction_ull();
-					raw <<= (abits - fbits);
-					int shift = MIN_EXP_NORMAL - scale;
-					raw <<= shift; // shift and do NOT add a hidden bit as MSB of subnormal is shifted in the hidden bit position
-					tgt.setbits(raw);
+			else {
+				if (issubnormal()) { // it is a subnormal encoding in this target cfloat
+					if constexpr (hasSubnormals) {
+						if constexpr (fbits < 64) {
+							uint64_t raw = fraction_ull();
+							raw <<= fbits;
+							int shift = MIN_EXP_NORMAL - scale;
+							raw <<= shift; // shift but do NOT add a hidden bit as the MSB of the subnormal is shifted in the hidden bit position
+							tgt.setbits(raw);
+						}
+						else {
+							// brute force copy of blocks
+							if constexpr (1 == fBlocks) {
+								tgt.setblock(0, _block[0] & FSU_MASK);
+							}
+							else if constexpr (2 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1] & FSU_MASK);
+							}
+							else if constexpr (3 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2] & FSU_MASK);
+							}
+							else if constexpr (4 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3] & FSU_MASK);
+							}
+							else if constexpr (5 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4] & FSU_MASK);
+							}
+							else if constexpr (6 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5] & FSU_MASK);
+							}
+							else if constexpr (7 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5]);
+								tgt.setblock(6, _block[6] & FSU_MASK);
+							}
+							else if constexpr (8 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5]);
+								tgt.setblock(6, _block[6]);
+								tgt.setblock(7, _block[7] & FSU_MASK);
+							}
+							else {
+								for (size_t i = 0; i < FSU; ++i) {
+									tgt.setblock(i, _block[i]);
+								}
+								tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+							}
+						}
+					}
+					else {  // this cfloat has no subnormals
+						tgt.setzero(tgt.sign()); // preserve the sign
+					}
 				}
 				else {
-					// brute force copy of blocks
-					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, _block[0] & FSU_MASK);
-					}
-					else if constexpr (2 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1] & FSU_MASK);
-					}
-					else if constexpr (3 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2] & FSU_MASK);
-					}
-					else if constexpr (4 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3] & FSU_MASK);
-					}
-					else if constexpr (5 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4] & FSU_MASK);
-					}
-					else if constexpr (6 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5] & FSU_MASK);
-					}
-					else if constexpr (7 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, _block[6] & FSU_MASK);
-					}
-					else if constexpr (8 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, _block[6]);
-						tgt.setblock(7, _block[7] & FSU_MASK);
-					}
-					else {
-						for (size_t i = 0; i < FSU; ++i) {
-							tgt.setblock(i, _block[i]);
+					// by design, a cfloat is either normal, subnormal, or supernormal, so this else clause is by deduction covering a supernormal
+//					if (issupernormal()) { // it is a supernormal encoding
+						if constexpr (hasSupernormals) {
+							if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+								uint64_t raw = fraction_ull();
+								raw |= (1ull << fbits); // add the hidden bit
+								tgt.setbits(raw);
+							}
+							else {
+								// brute force copy of blocks
+								if constexpr (1 == fBlocks) {
+									tgt.setblock(0, _block[0] & FSU_MASK);
+								}
+								else if constexpr (2 == fBlocks) {
+									tgt.setblock(0, _block[0]);
+									tgt.setblock(1, _block[1] & FSU_MASK);
+								}
+								else if constexpr (3 == fBlocks) {
+									tgt.setblock(0, _block[0]);
+									tgt.setblock(1, _block[1]);
+									tgt.setblock(2, _block[2] & FSU_MASK);
+								}
+								else if constexpr (4 == fBlocks) {
+									tgt.setblock(0, _block[0]);
+									tgt.setblock(1, _block[1]);
+									tgt.setblock(2, _block[2]);
+									tgt.setblock(3, _block[3] & FSU_MASK);
+								}
+								else if constexpr (5 == fBlocks) {
+									tgt.setblock(0, _block[0]);
+									tgt.setblock(1, _block[1]);
+									tgt.setblock(2, _block[2]);
+									tgt.setblock(3, _block[3]);
+									tgt.setblock(4, _block[4] & FSU_MASK);
+								}
+								else if constexpr (6 == fBlocks) {
+									tgt.setblock(0, _block[0]);
+									tgt.setblock(1, _block[1]);
+									tgt.setblock(2, _block[2]);
+									tgt.setblock(3, _block[3]);
+									tgt.setblock(4, _block[4]);
+									tgt.setblock(5, _block[5] & FSU_MASK);
+								}
+								else if constexpr (7 == fBlocks) {
+									tgt.setblock(0, _block[0]);
+									tgt.setblock(1, _block[1]);
+									tgt.setblock(2, _block[2]);
+									tgt.setblock(3, _block[3]);
+									tgt.setblock(4, _block[4]);
+									tgt.setblock(5, _block[5]);
+									tgt.setblock(6, _block[6] & FSU_MASK);
+								}
+								else if constexpr (8 == fBlocks) {
+									tgt.setblock(0, _block[0]);
+									tgt.setblock(1, _block[1]);
+									tgt.setblock(2, _block[2]);
+									tgt.setblock(3, _block[3]);
+									tgt.setblock(4, _block[4]);
+									tgt.setblock(5, _block[5]);
+									tgt.setblock(6, _block[6]);
+									tgt.setblock(7, _block[7] & FSU_MASK);
+								}
+								else {
+									for (size_t i = 0; i < FSU; ++i) {
+										tgt.setblock(i, _block[i]);
+									}
+									tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+								}
+							}
 						}
-						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
-					}
+						else {  // this cfloat has no supernormals and thus this represents a nan, signalling or quiet determined by the sign
+							tgt.setnan(tgt.sign());
+						}
+//					}				
 				}
 			}
 		}
 	}
 
-	// normalize a cfloat to a blocktriple used in mul, which has the form 0'00001.fffff
+	// Normalize a cfloat to a blocktriple used in mul, which has the form 0'00001.fffff
 	// that is 2*fbits, plus 1 overflow bit, and the radix set at <fbits>.
-	// the result radix will go to 2*fbits after multiplication.
-	constexpr void normalizeMultiplication(blocktriple<mbits, BlockTripleOperator::MUL, bt>& tgt) const {
+	// The result radix will go to 2*fbits after multiplication.
+	constexpr void normalizeMultiplication(blocktriple<fbits, BlockTripleOperator::MUL, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -1869,74 +1971,151 @@ public:
 					}
 				}
 			}
-			else { // it is a subnormal encoding in this target cfloat
-				if constexpr (fbits < 64) {
-					uint64_t raw = fraction_ull();
-					int shift = MIN_EXP_NORMAL - scale;
-					raw <<= shift;
-					raw |= (1ull << fbits);
-					tgt.setbits(raw);
+			else { 
+				if (issubnormal()) { // it is a subnormal encoding in this target cfloat
+					if constexpr (hasSubnormals) {
+						if constexpr (fbits < 64) {
+							uint64_t raw = fraction_ull();
+							int shift = MIN_EXP_NORMAL - scale;
+							raw <<= shift;
+							raw |= (1ull << fbits);
+							tgt.setbits(raw);
+						}
+						else {
+							// brute force copy of blocks
+							if constexpr (1 == fBlocks) {
+								tgt.setblock(0, _block[0] & FSU_MASK);
+							}
+							else if constexpr (2 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1] & FSU_MASK);
+							}
+							else if constexpr (3 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2] & FSU_MASK);
+							}
+							else if constexpr (4 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3] & FSU_MASK);
+							}
+							else if constexpr (5 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4] & FSU_MASK);
+							}
+							else if constexpr (6 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5] & FSU_MASK);
+							}
+							else if constexpr (7 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5]);
+								tgt.setblock(6, _block[6] & FSU_MASK);
+							}
+							else if constexpr (8 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5]);
+								tgt.setblock(6, _block[6]);
+								tgt.setblock(7, _block[7] & FSU_MASK);
+							}
+							else {
+								for (size_t i = 0; i < FSU; ++i) {
+									tgt.setblock(i, _block[i]);
+								}
+								tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+							}
+						}
+					}
+					else { // this cfloat has no subnormals
+						tgt.setzero(tgt.sign()); // preserve the sign
+					}
 				}
 				else {
-					// brute force copy of blocks
-					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, _block[0] & FSU_MASK);
-					}
-					else if constexpr (2 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1] & FSU_MASK);
-					}
-					else if constexpr (3 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2] & FSU_MASK);
-					}
-					else if constexpr (4 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3] & FSU_MASK);
-					}
-					else if constexpr (5 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4] & FSU_MASK);
-					}
-					else if constexpr (6 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5] & FSU_MASK);
-					}
-					else if constexpr (7 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, _block[6] & FSU_MASK);
-					}
-					else if constexpr (8 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, _block[6]);
-						tgt.setblock(7, _block[7] & FSU_MASK);
+					// by design, a cfloat is either normal, subnormal, or supernormal, so this else clause is by deduction covering a supernormal
+					if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+						uint64_t raw = fraction_ull();
+						raw |= (1ull << fbits);
+						tgt.setbits(raw);
 					}
 					else {
-						for (size_t i = 0; i < FSU; ++i) {
-							tgt.setblock(i, _block[i]);
+						// brute force copy of blocks
+						if constexpr (1 == fBlocks) {
+							tgt.setblock(0, _block[0] & FSU_MASK);
 						}
-						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+						else if constexpr (2 == fBlocks) {
+							tgt.setblock(0, _block[0]);
+							tgt.setblock(1, _block[1] & FSU_MASK);
+						}
+						else if constexpr (3 == fBlocks) {
+							tgt.setblock(0, _block[0]);
+							tgt.setblock(1, _block[1]);
+							tgt.setblock(2, _block[2] & FSU_MASK);
+						}
+						else if constexpr (4 == fBlocks) {
+							tgt.setblock(0, _block[0]);
+							tgt.setblock(1, _block[1]);
+							tgt.setblock(2, _block[2]);
+							tgt.setblock(3, _block[3] & FSU_MASK);
+						}
+						else if constexpr (5 == fBlocks) {
+							tgt.setblock(0, _block[0]);
+							tgt.setblock(1, _block[1]);
+							tgt.setblock(2, _block[2]);
+							tgt.setblock(3, _block[3]);
+							tgt.setblock(4, _block[4] & FSU_MASK);
+						}
+						else if constexpr (6 == fBlocks) {
+							tgt.setblock(0, _block[0]);
+							tgt.setblock(1, _block[1]);
+							tgt.setblock(2, _block[2]);
+							tgt.setblock(3, _block[3]);
+							tgt.setblock(4, _block[4]);
+							tgt.setblock(5, _block[5] & FSU_MASK);
+						}
+						else if constexpr (7 == fBlocks) {
+							tgt.setblock(0, _block[0]);
+							tgt.setblock(1, _block[1]);
+							tgt.setblock(2, _block[2]);
+							tgt.setblock(3, _block[3]);
+							tgt.setblock(4, _block[4]);
+							tgt.setblock(5, _block[5]);
+							tgt.setblock(6, _block[6] & FSU_MASK);
+						}
+						else if constexpr (8 == fBlocks) {
+							tgt.setblock(0, _block[0]);
+							tgt.setblock(1, _block[1]);
+							tgt.setblock(2, _block[2]);
+							tgt.setblock(3, _block[3]);
+							tgt.setblock(4, _block[4]);
+							tgt.setblock(5, _block[5]);
+							tgt.setblock(6, _block[6]);
+							tgt.setblock(7, _block[7] & FSU_MASK);
+						}
+						else {
+							for (size_t i = 0; i < FSU; ++i) {
+								tgt.setblock(i, _block[i]);
+							}
+							tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+						}
 					}
+
 				}
 			}
 		}
@@ -1946,7 +2125,7 @@ public:
 	// that is 3*fbits, plus 1 overflow bit, and the radix set at <fbits>.
 	// the result radix will go to 2*fbits after multiplication.
 	// TODO: needs implementation
-	constexpr void normalizeDivision(blocktriple<divbits, BlockTripleOperator::DIV, bt>& tgt) const {
+	constexpr void normalizeDivision(blocktriple<fbits, BlockTripleOperator::DIV, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();

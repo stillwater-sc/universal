@@ -706,8 +706,9 @@ namespace sw::universal {
 
 		// ADD
 		if constexpr (op == BlockTripleOperator::ADD) {
-			constexpr size_t abits = CfloatConfiguration::abits;
-			blocktriple<abits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			//constexpr size_t abits = CfloatConfiguration::abits;
+			constexpr size_t fbits = CfloatConfiguration::fbits;
+			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
 			for (size_t i = 0; i < NR_VALUES; ++i) {
 				a.setbits(i);
 				a.normalizeAddition(b);
@@ -726,12 +727,14 @@ namespace sw::universal {
 
 		// MUL
 		if constexpr (op == BlockTripleOperator::MUL) {
-			constexpr size_t mbits = CfloatConfiguration::mbits;
-			blocktriple<mbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			constexpr size_t fbits = CfloatConfiguration::fbits;
+			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			blocktriple<2 * fbits, BlockTripleOperator::REPRESENTATION, bt> ref;
 			for (size_t i = 0; i < NR_VALUES; ++i) {
 				a.setbits(i);
 				a.normalizeMultiplication(b);
-				if (double(a) != double(b)) {
+				ref = double(b);
+				if (double(ref) != double(b)) {
 					if (a.isnan() && b.isnan()) continue;
 					if (a.isinf() && b.isinf()) continue;
 

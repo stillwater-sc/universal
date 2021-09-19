@@ -82,7 +82,7 @@ try {
 			std::cout << "Result of addition       : " << color_print(c) << '\n';
 
 			// emulate addition
-			blocktriple<abits, BlockTripleOperator::ADD, bt> _a, _b, _c;
+			blocktriple<fbits, BlockTripleOperator::ADD, bt> _a, _b, _c;
 			a.normalizeAddition(_a);
 			b.normalizeAddition(_b);
 			_c.add(_a, _b);
@@ -97,7 +97,7 @@ try {
 			std::cout << "result of multiplication : " << color_print(c) << '\n';
 
 			// emulate multiplication
-			blocktriple<mbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
+			blocktriple<fbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
 			a.normalizeMultiplication(_a);
 			b.normalizeMultiplication(_b);
 			_c.mul(_a, _b);
@@ -112,7 +112,7 @@ try {
 			std::cout << "Result of division       : " << color_print(c) << '\n';
 
 			// emulate division
-			blocktriple<divbits, BlockTripleOperator::DIV, bt> _a, _b, _c;
+			blocktriple<fbits, BlockTripleOperator::DIV, bt> _a, _b, _c;
 			a.normalizeDivision(_a);
 			b.normalizeDivision(_b);
 			_c.div(_a, _b);

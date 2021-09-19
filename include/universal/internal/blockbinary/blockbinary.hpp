@@ -373,22 +373,20 @@ public:
 		return true;
 	}
 	inline constexpr bool isallones() const noexcept {
-		for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != ALL_ONES) return false;
+		if constexpr (nrBlocks > 1) for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != ALL_ONES) return false;
 		if (_block[MSU] != MSU_MASK) return false;
 		return true;
 	}
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool test(size_t bitIndex) const noexcept {
-		return at(bitIndex);
-	}
+	inline constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
 	inline constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		bt word = _block[bitIndex / bitsInBlock];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
-	inline constexpr uint8_t nibble(size_t n) const {
+	inline constexpr uint8_t nibble(size_t n) const { // TODO: convert to noexcept function?
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			size_t nibbleIndexInWord = n % (bitsInBlock >> 2);
@@ -398,8 +396,7 @@ public:
 		}
 		throw "nibble index out of bounds";
 	}
-	// TODO: convert to noexcept function?
-	inline constexpr bt block(size_t b) const {
+	inline constexpr bt block(size_t b) const { // TODO: convert to noexcept function?
 		if (b >= nrBlocks) throw "block index out of bounds";
 		return _block[b];
 	}

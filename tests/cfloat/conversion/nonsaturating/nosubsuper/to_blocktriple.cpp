@@ -120,7 +120,7 @@ try {
 			Cfloat nut;
  			nut.setbits(0x1e);
 			float v = float(nut);
-			blocktriple<2*(fbits+1), BlockTripleOperator::ADD, bt> b, ref; // blocktriple type that comes out of an ADD/SUB operation
+			blocktriple<fbits, BlockTripleOperator::ADD, bt> b, ref; // blocktriple type that comes out of an ADD/SUB operation
 			nut.normalizeAddition(b);
 			ref = v;
 			std::cout << "cfloat          : " << to_binary(nut) << " : " << nut << '\n';
@@ -139,6 +139,13 @@ try {
 			//Cfloat a; a.constexprClassParameters();
 			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<5,2> to blocktriple ADD");
 			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<5,2> to blocktriple MUL");
+		}
+
+		{
+			using Cfloat = cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+			//Cfloat a; a.constexprClassParameters();
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,3> to blocktriple ADD");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<8,3> to blocktriple MUL");
 		}
 
 	}
