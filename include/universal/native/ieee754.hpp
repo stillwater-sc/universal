@@ -52,6 +52,23 @@ inline bool iszero(const Real& a) {
 	return (std::fpclassify(a) == FP_ZERO);
 }
 
+// fast power of 2: 
+template<typename Real, size_t powerOfTwo,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline constexpr Real ipow() {
+	Real base = 2.0f;
+	Real result = 1.0f;
+	size_t exp = powerOfTwo;
+	for (;;) {
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		if (!exp) break;
+		base *= base;
+	}
+	return result;
+}
+
 /// <summary>
 /// return the binary scale ( = 2^scale ) of a float
 /// </summary>
@@ -74,6 +91,8 @@ inline int scale(double v) {
 	if (frac == 0.0) exponent = 0;
 	return exponent;
 }
+
+#if LONG_DOUBLE_SUPPORT
 /// <summary>
 /// return the binary scale ( = 2^scale ) of a long double
 /// </summary>
@@ -85,6 +104,7 @@ inline int scale(long double v) {
 	if (frac == 0.0l) exponent = 0;
 	return exponent;
 }
+#endif
 
 } // namespace sw::universal
 

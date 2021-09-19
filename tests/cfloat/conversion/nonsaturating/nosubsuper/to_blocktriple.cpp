@@ -38,44 +38,6 @@
    conversions for add, mul, div, and sqrt. 
  */
 
-namespace sw::deprecated {
-
-	template<typename CfloatConfiguration>
-	int VerifyCfloatToMulBlocktripleConversion(bool bReportIndividualTestCases) {
-		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfiguration::nbits;
-		constexpr size_t es = CfloatConfiguration::es;
-		using bt = typename CfloatConfiguration::BlockType;
-		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
-		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
-		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-		constexpr size_t mbits = CfloatConfiguration::mbits;
-
-		int nrOfTestFailures{ 0 };
-		constexpr size_t NR_VALUES = (1u << nbits);
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
-
-		if (bReportIndividualTestCases) a.constexprClassParameters();
-
-		{ // testing conversion of normalization for multiplication
-			blocktriple<mbits, BlockTripleOperator::MUL, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-			for (size_t i = 0; i < NR_VALUES; ++i) {
-				a.setbits(i);
-				a.normalizeMultiplication(b);
-				if (double(a) != double(b)) {
-					if (a.isnan() && b.isnan()) continue;
-					if (a.isinf() && b.isinf()) continue;
-
-					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
-				}
-			}
-		}
-		return nrOfTestFailures;
-	}
-
-}
-
 /*
 How do you test the conversion state space of blocktriple to cfloat.
 We need to convert the blocktriple that comes out of an ADD, a MUL, and a DIV operation.
@@ -89,7 +51,7 @@ Compare the operator=() and convert() cfloat patterns to check correctness
  */
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()

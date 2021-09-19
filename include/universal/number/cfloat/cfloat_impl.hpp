@@ -1048,6 +1048,10 @@ public:
 						++exponentBits;
 					}
 				}
+				if (field != 2) {
+					std::cerr << "provided binary string did not contain three fields separated by '.': Reset to 0\n";
+					return *this;
+				}
 			}
 		}
 		else {
@@ -1084,9 +1088,11 @@ public:
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
 				e = (2l - (1l << (es - 1ull))) - 1;
-				for (size_t i = nbits - 2ull - es; i > 0; --i) {
-					if (test(i)) break;
-					--e;
+				if constexpr (nbits > 2 + es) {
+					for (size_t i = nbits - 2ull - es; i > 0; --i) {
+						if (test(i)) break;
+						--e;
+					}
 				}
 			}
 			else {
@@ -1449,18 +1455,14 @@ public:
 	TargetFloat to_native() const { 
 		TargetFloat v{ 0.0 };
 		if (iszero()) {
-			if (sign()) { // the optimizer might destroy the sign
-				return -TargetFloat(0);
-			}
-			else {
-				return TargetFloat(0);
-			}
+			// the optimizer might destroy the sign
+			return sign() ? -TargetFloat(0) : TargetFloat(0);
 		}
 		else if (isnan()) {
 			v = sign() ? std::numeric_limits<TargetFloat>::signaling_NaN() : std::numeric_limits<TargetFloat>::quiet_NaN();
 		}
 		else if (isinf()) {
-			v = sign() ? -INFINITY : INFINITY;
+			v = sign() ? -std::numeric_limits<TargetFloat>::infinity() : std::numeric_limits<TargetFloat>::infinity();
 		}
 		else { // TODO: this approach has catastrophic cancellation when nbits is large and native target float is too small
 			TargetFloat f{ 0 };
@@ -1475,17 +1477,14 @@ public:
 				if (ebits.iszero()) {
 					// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
 					TargetFloat exponentiation = TargetFloat(subnormal_exponent[es]); // precomputed values for 2^(2-2^(es-1))
-					v = exponentiation * f;
+					v = exponentiation * f;  // f is already f/2^fbits
+					return sign() ? -v : v;
 				}
 			}
 			else {
-				if (ebits.iszero()) {
-					if (sign()) { // compiler fast float optimization might destroy the sign
-						return -TargetFloat(0);
-					}
-					else {
-						return TargetFloat(0);
-					}
+				if (ebits.iszero()) { // underflow to 0
+					// compiler fast float optimization might destroy the sign
+					return sign() ? -TargetFloat(0) : TargetFloat(0);
 				}
 			}
 			if constexpr (hasSupernormals) {
@@ -1728,7 +1727,6 @@ public:
 					if constexpr (hasSubnormals) {
 						if constexpr (fbits < 64) {
 							uint64_t raw = fraction_ull();
-							raw <<= fbits;
 							int shift = MIN_EXP_NORMAL - scale;
 							raw <<= shift; // shift but do NOT add a hidden bit as the MSB of the subnormal is shifted in the hidden bit position
 							tgt.setbits(raw);
