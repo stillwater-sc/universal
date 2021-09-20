@@ -72,7 +72,7 @@ inline bool iszero(const Real& a) {
 	return (std::fpclassify(a) == FP_ZERO);
 }
 
-// fast power of 2: 
+// compile time power of 2
 template<typename Real, size_t powerOfTwo,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 >
@@ -80,6 +80,22 @@ inline constexpr Real ipow() {
 	Real base = 2.0f;
 	Real result = 1.0f;
 	size_t exp = powerOfTwo;
+	for (;;) {
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		if (!exp) break;
+		base *= base;
+	}
+	return result;
+}
+
+// fast power of 2
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline constexpr Real ipow(size_t exp) {
+	Real base = 2.0f;
+	Real result = 1.0f;
 	for (;;) {
 		if (exp & 1) result *= base;
 		exp >>= 1;

@@ -23,26 +23,26 @@ compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfl
 # math library test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/math" "${MATH_SRC}")
 
-# non-saturating variety
+# non-saturating varieties
 # conversion
-add_subdirectory("conversion/nonsaturating/nosubsuper")
+add_subdirectory("conversion/nonsaturating/normal")
 add_subdirectory("conversion/nonsaturating/subnormal")
 add_subdirectory("conversion/nonsaturating/supernormal")
 add_subdirectory("conversion/nonsaturating/subsuper")
 # arithmetic
-add_subdirectory("arithmetic/nonsaturating/nosubsuper")
+add_subdirectory("arithmetic/nonsaturating/normal")
 add_subdirectory("arithmetic/nonsaturating/subnormal")
 add_subdirectory("arithmetic/nonsaturating/supernormal")
 add_subdirectory("arithmetic/nonsaturating/subsuper")
 
-# saturating variety
+# saturating varieties
 # conversion
-add_subdirectory("conversion/saturating/nosubsuper")
+add_subdirectory("conversion/saturating/normal")
 add_subdirectory("conversion/saturating/subnormal")
 add_subdirectory("conversion/saturating/supernormal")
 add_subdirectory("conversion/saturating/subsuper")
 # arithmetic
-add_subdirectory("arithmetic/saturating/nosubsuper")
+add_subdirectory("arithmetic/saturating/normal")
 add_subdirectory("arithmetic/saturating/subnormal")
 add_subdirectory("arithmetic/saturating/supernormal")
 add_subdirectory("arithmetic/saturating/subsuper")

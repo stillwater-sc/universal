@@ -50,6 +50,16 @@ try {
 	valueRepresentations(ld);
 #endif
 
+	for (size_t i = 0; i < 333; ++i) {
+		std::cout << std::setw(4) << i << " : " << ipow<double>(i) << '\n';
+	}
+	size_t upper = 333;
+	double big = ipow<double>(upper);
+	for (size_t i = 0; i < upper; ++i) {
+		std::cout << std::setw(4) << upper - i << " : " << to_binary(big) << " : " << big << '\n';
+		big /= 2.0;
+	}
+
 	std::cout << std::endl; // flush the stream
 
 	return EXIT_SUCCESS;

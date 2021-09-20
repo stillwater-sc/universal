@@ -22,24 +22,6 @@
 #include <universal/number/cfloat/table.hpp>
 
 /*
-   DESIGN and IMPLEMENTATION HISTORY
-
-   The first floating-point back-end design, value<fbits>, had a fraction 
-   bit parameter to select  among different normalizations for 
-   addition, multiplication, and division. Inside, these operators
-   we would expand and align the operands as needed, requiring a copy.
-   
-   But the normalization is NOT a generic op, it is very specific for 
-   add, mul, div, or sqrt, thus having a fully parameterized interface 
-   creates a state space for bugs that could get triggered by incorrect 
-   calling of the normalize method. Secondly, no efficient unit test was 
-   feasible as most of the state space would NOT be valid conversions.
-   Given that context of the experience with value<> we decided to clamp down
-   on this parameterization overkill and create explicit normalization 
-   conversions for add, mul, div, and sqrt. 
- */
-
-/*
 How do you test the conversion state space of blocktriple to cfloat.
 We need to convert the blocktriple that comes out of an ADD, a MUL, and a DIV operation.
 The blocktriples have bits that need to be rounded by convert.
@@ -126,21 +108,22 @@ try {
 		}
 	}
 
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<4,1,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(true), tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
+
+#if STRESS_TESTING
+
+	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,1,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,2,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,3,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,4,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,5,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,6,uint8_t,0,0,0> from blocktriple ADD");
+#endif
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
-
-#if STRESS_TESTING
-
-	// manual exhaustive test
-
-#endif
 
 #else  // !MANUAL_TESTING
 
