@@ -42,6 +42,8 @@ try {
 #if LONG_DOUBLE_SUPPORT
 	std::cout << color_print(ld) << " " << ld << '\n';
 #endif
+
+	// show all the different presentations for the different IEEE-754 native formats
 	valueRepresentations(f);
 	valueRepresentations(d);
 #if LONG_DOUBLE_SUPPORT
