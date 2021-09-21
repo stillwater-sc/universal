@@ -267,6 +267,14 @@ try {
 
 	std::cout << "Fixed-point saturating division validation\n";
 
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(true), "fixpnt<4,0,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(true), "fixpnt<4,1,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Saturating, uint8_t>(true), "fixpnt<4,2,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Saturating, uint8_t>(true), "fixpnt<4,3,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Saturating, uint8_t>(true), "fixpnt<4,4,Saturating,uint8_t>", "division");
+
+#if STRESS_TESTING
+
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Saturating,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Saturating,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Saturating,uint8_t>", "division");
@@ -276,8 +284,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,6,Saturating,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,7,Saturating,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Saturating,uint8_t>", "division");
-
-#if STRESS_TESTING
 
 #endif  // STRESS_TESTING
 

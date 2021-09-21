@@ -240,6 +240,8 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,7,Modulo,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,8,Modulo,uint8_t>");
 
+#if STRESS_TESTING
+
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,0,Modulo,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,1,Modulo,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,2,Modulo,uint8_t>");
@@ -258,8 +260,6 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,8,Modulo,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 12, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,12,Modulo,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 16, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,16,Modulo,uint8_t>");
-
-#if STRESS_TESTING
 
 #endif  // STRESS_TESTING
 

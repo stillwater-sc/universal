@@ -86,6 +86,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Saturating,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Saturating,uint8_t>", "addition");
 
+#if STRESS_TESTING
+
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Saturating,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Saturating,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Saturating,uint8_t>", "addition");
@@ -99,8 +101,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<10,3,Saturating,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<10,5,Saturating,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 7, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<10,7,Saturating,uint8_t>", "addition");
-
-#if STRESS_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<11,3,Saturating,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<11,5,Saturating,uint8_t>", "addition");

@@ -118,6 +118,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 5, Modulo, uint8_t>(true), "fixpnt<6,5,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 6, Modulo, uint8_t>(true), "fixpnt<6,6,Modulo,uint8_t>", "multiplication");
 
+#if STRESS_TESTING
+
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1,Modulo,uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2,Modulo,uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "multiplication");
@@ -133,8 +135,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,7,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,8,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 9, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,9,Modulo,uint8_t>", "multiplication");
-
-#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,10, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,10,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,10, Modulo, uint16_t>(bReportIndividualTestCases), "fixpnt<10,10,Modulo,uint16_t>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,0,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,4,Modulo,uint8_t>", "multiplication");
@@ -142,7 +144,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,8,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 9, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,9,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 12, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,12,Modulo,uint8_t>", "multiplication");
-
 
 #endif  // STRESS_TESTING
 

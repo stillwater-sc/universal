@@ -83,6 +83,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<5,4,Saturating,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<5,5,Saturating,uint8_t>", "subtraction");
 
+#if STRESS_TESTING
+
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Saturating,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Saturating,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Saturating,uint8_t>", "subtraction");
@@ -96,8 +98,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<9,3,Saturating,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<9,5,Saturating,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 7, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<9,7,Saturating,uint8_t>", "subtraction");
-
-#if STRESS_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<13,0,Saturating,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<13,5,Saturating,uint8_t>", "subtraction");
