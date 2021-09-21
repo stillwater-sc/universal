@@ -227,7 +227,7 @@ namespace sw::universal {
 		// These larger posits will be at the mid-point between the smaller posit sample values
 		// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
 		// to test the rounding logic of the conversion.
-		constexpr size_t max = nbits > 20 ? 20 : nbits;
+		constexpr size_t max = nbits > 14 ? 14 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << (max + 1));
 		size_t HALF = (size_t(1) << max);
 
@@ -1092,7 +1092,7 @@ namespace sw::universal {
 	// Posit NaR can be checked for equality/inequality
 	template<size_t nbits, size_t es>
 	int VerifyPositLogicEqual() {
-		constexpr size_t max = nbits > 12 ? 12 : nbits;
+		constexpr size_t max = nbits > 10 ? 10 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -1137,7 +1137,7 @@ namespace sw::universal {
 	// Posit NaR can be checked for equality/inequality
 	template<size_t nbits, size_t es>
 	int VerifyPositLogicNotEqual() {
-		constexpr size_t max = nbits > 12 ? 12 : nbits;
+		constexpr size_t max = nbits > 10 ? 10 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {

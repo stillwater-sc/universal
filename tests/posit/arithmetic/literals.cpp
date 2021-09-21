@@ -202,6 +202,15 @@ try {
 
 	std::cout << "Posit addition validation\n";
 
+
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>      (tag, bReportIndividualTestCases), "posit<8,2>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 2>   (tag, bReportIndividualTestCases), "posit<8,2>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>      (tag, bReportIndividualTestCases), "posit<8,2>", "division with literal");
+
+
+#if STRESS_TESTING
+
 	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "addition with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "addition with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "addition with literal");
@@ -229,8 +238,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "division with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "division with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "division with literal");
-
-#if STRESS_TESTING
 
 #endif  // STRESS_TESTING
 

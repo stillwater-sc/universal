@@ -29,7 +29,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 10000;
+	constexpr size_t RND_TEST_CASES = 1000;
 
 	constexpr size_t nbits = 256;
 	constexpr size_t es = 5;

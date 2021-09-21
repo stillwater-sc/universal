@@ -28,7 +28,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 150000;
+	constexpr size_t RND_TEST_CASES = 10000;
 
 	constexpr size_t nbits = 48;
 	constexpr size_t es = 2;

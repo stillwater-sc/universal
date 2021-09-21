@@ -29,7 +29,7 @@ try {
 
 	if (argc > 0) { std::cout << argv[0] << '\n'; }
 
-	constexpr size_t RND_TEST_CASES = 10000;
+	constexpr size_t RND_TEST_CASES = 1024;
 
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
