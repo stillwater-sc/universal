@@ -46,7 +46,7 @@ try {
 		// use random_device to generate a seed for Mersenne twister engine
 		std::random_device rd{};
 		std::mt19937 engine{ rd() };
-		std::uniform_real_distribution<long double> dist{0.0, 1000000000000.0l };
+		std::uniform_real_distribution<double> dist{0.0, 1000000000000.0 };
 
 		std::vector<Integer> v;
 		for (int i = 0; i < 10; ++i) {
@@ -78,7 +78,7 @@ try {
 
 		std::random_device rd{};
 		std::mt19937 engine{ rd() };
-		std::uniform_real_distribution<long double> dist{0.0, 100000.0 };
+		std::uniform_real_distribution<double> dist{0.0, 100000.0 };
 
 		std::vector<Integer> v;
 		for (int i = 0; i < 100; ++i) {
@@ -109,7 +109,7 @@ try {
 
 		std::random_device rd{};
 		std::mt19937 engine{ rd() };
-		std::uniform_real_distribution<long double> dist{0.0, 1000.0 };
+		std::uniform_real_distribution<double> dist{0.0, 1000.0 };
 
 		std::vector<Integer> v;
 		for (int i = 0; i < 1000; ++i) {

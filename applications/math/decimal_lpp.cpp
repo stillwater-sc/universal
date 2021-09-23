@@ -73,9 +73,10 @@ try {
 	LargestPalindromeProduct(nrDigits++);
 	LargestPalindromeProduct(nrDigits++);
 	LargestPalindromeProduct(nrDigits++);
+#ifdef STRESS_TESTING
 	LargestPalindromeProduct(nrDigits++);
 	LargestPalindromeProduct(nrDigits++);
-
+#endif
 	/*
 		9009
 		In step 145 found largest 2-digit palindrome product: 9009

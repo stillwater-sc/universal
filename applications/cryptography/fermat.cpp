@@ -27,6 +27,14 @@ try {
 	{
 		constexpr size_t nbits = 1024;
 		using Integer = integer<nbits, uint32_t>;
+		// some primes to try
+		Integer a = 53;
+//		Integer a = 1049;
+//		Integer a = 9973;
+//		Integer a = 99991;
+//		Integer a = 101737;
+//		Integer a = 999983;
+
 		Integer factor;
 
 		std::random_device rd{};
@@ -34,7 +42,6 @@ try {
 		std::uniform_real_distribution<long double> dist{0.0, 1000000.0 };
 
 		{
-			Integer a = 1049;
 			primefactors<nbits, uint32_t> factors;
 			primeFactorization(a, factors);
 			for (size_t i = 0; i < factors.size(); ++i) {
@@ -43,11 +50,9 @@ try {
 		}
 
 		// test Fermat's method
-		std::cout << "\nFermat's factorization\n";
-
+		std::cout << "\nFermat's factorization: to demonstrate it is much slower\n";
 		try {
 			std::stack<Integer> factors;
-			Integer a = 1049;
 			factors.push(a);
 
 			while (!factors.empty()) {
@@ -74,6 +79,7 @@ try {
 			std::cerr << e.what() << '\n';
 			std::cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
 		}
+
 	}
 
 	return EXIT_SUCCESS;

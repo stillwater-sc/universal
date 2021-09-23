@@ -177,11 +177,11 @@ When implementing addition/subtraction on chuncks the overflow condition must be
 chunk values. The chunks need to be interpreted as unsigned binary segments.
 */
 
-
 // integer is an arbitrary size 2's complement integer
 template<size_t _nbits, typename BlockType = uint8_t>
 class integer {
 public:
+	static constexpr bool FrequencyCount = true;
 	static constexpr size_t nbits = _nbits;
 	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
 	static constexpr unsigned MS_BYTE = nrBytes - 1;
@@ -331,18 +331,11 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(float rhs) {
-		float_assign(rhs);
-		return *this;
-	}
-	integer& operator=(double rhs) {
-		float_assign(rhs);
-		return *this;
-	}
-	integer& operator=(long double rhs) {
-		float_assign(rhs);
-		return *this;
-	}
+	integer& operator=(float rhs) {	return from_native(rhs); }
+	integer& operator=(double rhs) { return from_native(rhs); }
+#if LONG_DOUBLE_SUPPORT
+	integer& operator=(long double rhs) { return from_native(rhs); }
+#endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
 	// POSIT_CONCEPT_GENERALIZATION
@@ -399,10 +392,11 @@ public:
 	explicit operator int() const                { return to_int(); }
 	explicit operator long() const               { return to_long(); }
 	explicit operator long long() const          { return to_long_long(); }
-	explicit operator float() const              { return to_float(); }
-	explicit operator double() const             { return to_double(); }
-	explicit operator long double() const        { return to_long_double(); }
-
+	explicit operator float() const              { return to_native<float>(); }
+	explicit operator double() const             { return to_native<double>(); }
+#if LONG_DOUBLE_SUPPORT
+	explicit operator long double() const        { return to_native<long double>(); }
+#endif
 	// arithmetic operators
 	integer& operator+=(const integer& rhs) {
 		integer<nbits, BlockType> sum;
@@ -706,24 +700,24 @@ protected:
 		}
 		return ull;
 	}
-	float to_float() const { 
-		float f = float((long long)(*this));
-		return f; 
+	
+	template<typename Real>
+	Real to_native() const {
+		Real r = 0.0;
+		Real bitValue = static_cast<Real>(1.0);
+		for (size_t i = 0; i < nbits; ++i) {
+			if (at(i)) r += bitValue;
+			bitValue *= static_cast<Real>(2.0);
+		}
+		return r;
 	}
-	double to_double() const {
-		double d = double((long long)(*this));
-		return d;
-	}
-	long double to_long_double() const {
-		long double ld = (long double)((long long)(*this));
-		return ld;
-	}
-
-	template<typename Ty>
-	void float_assign(Ty& rhs) {
+	// TODO: only supports integer values of 64bits or less
+	template<typename Real>
+	integer& from_native(Real rhs) {
 		clear();
 		long long base = (long long)rhs;
 		*this = base;
+		return *this;
 	}
 
 private:
