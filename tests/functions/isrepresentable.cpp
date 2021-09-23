@@ -5,12 +5,12 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
+#include <universal/utility/long_double.hpp>
 #include <universal/functions/isrepresentable.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/integer/numeric_limits.hpp>
-
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -38,12 +38,14 @@ try {
 		}
 	}
 
+#if LONG_DOUBLE_SUPPORT
 	integer<128> a, b;
 	a = 123456789012;
 	b = 210987654321;
 	std::cout << a << "/" << b << " = " << (long double)(a) / (long double)(b) << " is " << (isRepresentable(a, b) ? "representable\n" : "is not representable\n");
 	b = 210987654323;
 	std::cout << a << "/" << b << " = " << (long double)(a) / (long double)(b) << " is " << (isRepresentable(a, b) ? "representable\n" : "is not representable\n");
+#endif
 
 	std::cout << "done" << std::endl;
 	return EXIT_SUCCESS;

@@ -29,7 +29,7 @@
 
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
-#define LONG_DOUBLE_SUPPORT 1
+#define LONG_DOUBLE_SUPPORT 0
 
 #elif defined(_ARM)
 /* ARM ------------------------------------------------------ */

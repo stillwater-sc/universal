@@ -295,13 +295,15 @@ try {
 	else {
 		ReportTestResult(0, "cfloat<16,1> == 0.0", "== double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (!(a == 0.0l)) {
 		nrOfFailedTestCases += ReportTestResult(1, "cfloat<16,1> == 0.0l", "== long double literal");
 	}
 	else {
 		ReportTestResult(0, "cfloat<16,1> == 0.0l", "== long double literal");
 	}
-	
+#endif
+
 	std::cout << "Logic: operator!=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 4, 1> >(), "cfloat< 4,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 5, 1> >(), "cfloat< 5,1>", "!=");
@@ -330,12 +332,14 @@ try {
 	else {
 		ReportTestResult(0, "cfloat<16,1> != 0.0", "!= double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (a != 0.0l) {
 		nrOfFailedTestCases += ReportTestResult(1, "cfloat<16,1> != 0.0l", "!= long double literal");
 	}
 	else {
 		ReportTestResult(0, "cfloat<16,1> != 0.0l", "!= long double literal");
 	}
+#endif
 
 #ifdef AREAL_SUBTRACT_IS_IMPLEMENTED
 	cout << "Logic: operator<()" << endl;
@@ -367,12 +371,14 @@ try {
 	else {
 		ReportTestResult(0, "cfloat<16,1> < 0.0", "< double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (a < 0.0l) {
 		nrOfFailedTestCases += ReportTestResult(1, "cfloat<16,1> < 0.0l", "< long double literal");
 	}
 	else {
 		ReportTestResult(0, "cfloat<16,1> < 0.0l", "== long double literal");
 	}
+#endif
 
 	cout << "Logic: operator<=()" << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 4, 1> >(), "cfloat< 4,1>", "<");
@@ -402,12 +408,14 @@ try {
 	else {
 		ReportTestResult(0, "cfloat<16,1> < 0.0", "< double literal");
 	}
+#if LONG_DOUBLE_SUPPORT
 	if (a < 0.0l) {
 		nrOfFailedTestCases += ReportTestResult(1, "cfloat<16,1> < 0.0l", "< long double literal");
 	}
 	else {
 		ReportTestResult(0, "cfloat<16,1> < 0.0l", "== long double literal");
 	}
+#endif
 
 #endif //	AREAL_SUBTRACT_IS_IMPLEMENTED
 
