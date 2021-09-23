@@ -176,6 +176,8 @@ allowable range of numbers, and their sum is between them, it must fit as well.
 When implementing addition/subtraction on chuncks the overflow condition must be deduced from the 
 chunk values. The chunks need to be interpreted as unsigned binary segments.
 */
+
+
 // integer is an arbitrary size 2's complement integer
 template<size_t _nbits, typename BlockType = uint8_t>
 class integer {
@@ -198,9 +200,11 @@ public:
 	integer(const integer<srcbits, BlockType>& a) {
 //		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision"); // TODO: do we want this?
 		bitcopy(a);
-		if (a.sign()) { // sign extend
-			for (int i = int(srcbits); i < int(nbits); ++i) {
-				setbit(i);
+		if constexpr (srcbits < nbits) {
+			if (a.sign()) { // sign extend
+				for (size_t i = srcbits; i < nbits; ++i) {
+					setbit(i);
+				}
 			}
 		}
 	}
@@ -447,36 +451,34 @@ public:
 		*this = divresult.rem;
 		return *this;
 	}
-	integer& operator<<=(const signed shift) {
+	integer& operator<<=(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) {
-			operator>>=(-shift);
-			return *this;
+			return operator>>=(-shift);
 		}
 		if (nbits <= unsigned(shift)) {
 			clear();
 			return *this;
 		}
 		integer<nbits, BlockType> target;
-		for (size_t i = shift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
+		for (size_t i = static_cast<size_t>(shift); i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
 			target.setbit(i, at(i - shift));
 		}
 		*this = target;
 		return *this;
 	}
-	integer& operator>>=(const signed shift) {
+	integer& operator>>=(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) {
-			operator<<=(-shift);
-			return *this;
+			return operator<<=(-shift);
 		}
 		if (nbits <= unsigned(shift)) {
 			clear();
 			return *this;
 		}
 		integer<nbits, BlockType> target;
-		for (int i = nbits - 1; i >= int(shift); --i) {  // TODO: inefficient as it works at the bit level
-			target.setbit(i - shift, at(i));
+		for (int i = nbits - 1; i >= shift; --i) {  // TODO: inefficient as it works at the bit level
+			target.setbit(static_cast<size_t>(i) - static_cast<size_t>(shift), at(static_cast<size_t>(i)));
 		}
 		*this = target;
 		return *this;
@@ -1055,6 +1057,7 @@ idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>& _a, const integer
 			divresult.quot.setbit(i, false);
 		}
 		subtractand >>= 1;
+//		std::cout << "i = " << i << " subtractand : " << subtractand << '\n';
 	}
 	if (result_negative) {  // take 2's complement
 		divresult.quot.flip();
