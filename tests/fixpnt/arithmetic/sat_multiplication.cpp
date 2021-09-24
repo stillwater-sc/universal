@@ -129,7 +129,7 @@ try {
 
 	std::cout << "Fixed-point saturating multiplication validation\n";
 
-#if REGRESSION_LEVEL_ 1
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 0,Saturating,uint8_t >", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 1, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 1,Saturating,uint8_t >", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 2, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 2,Saturating,uint8_t >", "multiplication");
