@@ -94,9 +94,17 @@ void DoubleGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	}
 }
 
-// conditional compile flags
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
@@ -126,24 +134,27 @@ try {
 	FloatGenerateFixedPointValues<8, 4>();
 	DoubleGenerateFixedPointValues<8, 4>();
 
-	return 0;
-
 	// can't use the regular exhaustive test suites for these very large fixed-points
 	// nrOfFailedTestCases = ReportTestResult(ValidateAssignment<256, 150, Modular, uint32_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0, Modular, uint32_t>");
 	
-#if STRESS_TESTING
-
-	// manual exhaustive test
-
-#endif
-
 #else
 	std::cout << "Fixed-point saturating subnormal conversion validation\n";
 
+#if REGRESSION_LEVEL_1
 
-#if STRESS_TESTING
+#endif
 
-#endif  // STRESS_TESTING
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+
+#endif
 
 #endif  // MANUAL_TESTING
 

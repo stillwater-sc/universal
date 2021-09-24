@@ -217,9 +217,17 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 	}
 }
 
-// conditional compile flags
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
@@ -249,7 +257,7 @@ try {
 	//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(true), "fixpnt<8,4,Modulo,uint8_t>", "division");
 
 
-#if STRESS_TESTING
+#ifdef STRESS_TESTING
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "division");
@@ -266,26 +274,33 @@ try {
 
 	std::cout << "Fixed-point modular division validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Modulo, uint8_t>(true), "fixpnt<4,2,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Modulo, uint8_t>(true), "fixpnt<4,3,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Modulo, uint8_t>(true), "fixpnt<4,4,Modulo,uint8_t>", "division");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 0,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 1,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 2,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 3,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 4,Modulo,uint8_t>", "division");
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 0,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 1,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 2,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 3,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 4,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 5,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 6,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 7,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 8,Modulo,uint8_t>", "division");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "division");
+#if REGRESSION_LEVEL_3
 
+#endif
 
-#endif  // STRESS_TESTING
+#if REGRESSION_LEVEL_4
+
+#endif
 
 #endif  // MANUAL_TESTING
 

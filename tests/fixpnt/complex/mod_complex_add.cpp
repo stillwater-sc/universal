@@ -100,9 +100,17 @@ namespace sw::universal::complex_literals {
 } // namespace sw::universal::complex_literals
 
 
-// conditional compile flags. When changing fixpnt implementations turn on stress testing
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 #define HARDWARE_ACCELERATION 0
 
 int main(int argc, char** argv)
@@ -119,7 +127,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "addition");
 
 
-#if STRESS_TESTING
+#ifdef STRESS_TESTING
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "addition");
@@ -132,26 +140,16 @@ try {
 
 	std::cout << "Fixed-point complex addition validation\n";
 
-	// 4-bits: 2^16 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", "addition");
-
-	// 5-bits: 2^20 arithmetic combinations
-//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,2,Modulo,uint8_t>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,3,Modulo,uint8_t>", "addition");
-
-#if STRESS_TESTING
-	
+#if REGRESSION_LEVEL_1
 	// 4-bits: 2^16 arithmetic combinations
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", "addition");
+#endif
 
+#if REGRESSION_LEVEL_2
 	// 5-bits: 2^20 arithmetic combinations
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "addition");
@@ -159,7 +157,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "addition");
+#endif
 
+#if REGRESSION_LEVEL_3
 	// 6-bits: 2^24 arithmetic combinations
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,0,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,1,Modulo,uint8_t>", "addition");
@@ -168,9 +168,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,5,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,6,Modulo,uint8_t>", "addition");
+#endif
 
-#endif  // STRESS_TESTING
-
+#if REGRESSION_LEVEL_4
 #if HARDWARE_ACCELERATION
 	// an 8bit base type in complex arithmetic yields 2^16 possibilities
 	// and 2^32 arithmetic combinations
@@ -202,8 +202,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,4,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,8,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 12, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,12,Modulo,uint8_t>", "addition");
-
 #endif  // HARDWARE_ACCELERATION
+#endif
 
 #endif  // MANUAL_TESTING
 
