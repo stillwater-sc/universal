@@ -181,15 +181,24 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setprecision(5);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::cout << "Posit sine function validation\n"; // what about cos/tan and other trigonometry functions?
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
@@ -214,28 +223,27 @@ try {
 	GenerateTestCase<16, 1, double>(m_pi_2);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySine<2, 0>(true), "posit<2,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<2, 0>(bReportIndividualTestCases), "posit<2,0>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 0>(true), "posit<3,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 1>(true), "posit<3,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 0>(bReportIndividualTestCases), "posit<3,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 1>(bReportIndividualTestCases), "posit<3,1>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 0>(true), "posit<4,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 1>(true), "posit<4,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 0>(bReportIndividualTestCases), "posit<4,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 1>(bReportIndividualTestCases), "posit<4,1>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 0>(true), "posit<5,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 1>(true), "posit<5,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 2>(true), "posit<5,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 0>(bReportIndividualTestCases), "posit<5,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 1>(bReportIndividualTestCases), "posit<5,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 2>(bReportIndividualTestCases), "posit<5,2>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 0>(true), "posit<8,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine<8, 0>(true), "posit<8,0>", "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent<8, 0>(true), "posit<8,0>", "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan<8, 0>(true), "posit<8,0>", "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin<8, 0>(true), "posit<8,0>", "asin");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos<8, 0>(true), "posit<8,0>", "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 0>(bReportIndividualTestCases), "posit<8,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine<8, 0>(bReportIndividualTestCases), "posit<8,0>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent<8, 0>(bReportIndividualTestCases), "posit<8,0>", "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan<8, 0>(bReportIndividualTestCases), "posit<8,0>", "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin<8, 0>(bReportIndividualTestCases), "posit<8,0>", "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos<8, 0>(bReportIndividualTestCases), "posit<8,0>", "acos");
 #else
 
-	cout << "Posit sine function validation" << endl;
-
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifySine<2, 0>(bReportIndividualTestCases), "posit<2,0>", "sin");
 
 	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 0>(bReportIndividualTestCases), "posit<3,0>", "sin");
@@ -265,7 +273,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 3>(bReportIndividualTestCases), "posit<8,3>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 4>(bReportIndividualTestCases), "posit<8,4>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 5>(bReportIndividualTestCases), "posit<8,5>", "sin");
+#endif
 
+#if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 0>(bReportIndividualTestCases), "posit<9,0>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 1>(bReportIndividualTestCases), "posit<9,1>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 2>(bReportIndividualTestCases), "posit<9,2>", "sin");
@@ -273,7 +283,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 4>(bReportIndividualTestCases), "posit<9,4>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 5>(bReportIndividualTestCases), "posit<9,5>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 6>(bReportIndividualTestCases), "posit<9,6>", "sin");
-	
+#endif
+
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 0>(bReportIndividualTestCases), "posit<10,0>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(bReportIndividualTestCases), "posit<10,1>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 2>(bReportIndividualTestCases), "posit<10,2>", "sin");
@@ -286,19 +298,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 0>(bReportIndividualTestCases), "posit<16,0>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(bReportIndividualTestCases), "posit<16,1>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 2>(bReportIndividualTestCases), "posit<16,2>", "sin");
+#endif
 
-
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
-	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sin");
-
+	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_SIN, 1000), "posit<64,2>", "sin");
 
 	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(bReportIndividualTestCases), "posit<10,1>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 1>(bReportIndividualTestCases), "posit<12,1>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<14, 1>(bReportIndividualTestCases), "posit<14,1>", "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(bReportIndividualTestCases), "posit<16,1>", "sin");
-	
-#endif  // STRESS_TESTING
+#endif
 
 #endif  // MANUAL_TESTING
 

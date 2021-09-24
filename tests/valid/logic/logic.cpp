@@ -12,8 +12,17 @@
 //#include <universal/number/valid/math/classify.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {;
@@ -57,6 +66,7 @@ try {;
 #else
 	valid<16, 1> p;
 
+#if REGRESSION_LEVEL_1
 	cout << "Logic: operator==()" << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicEqual<3, 0>(), "valid<3,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicEqual<4, 0>(), "valid<4,0>", "==");
@@ -323,17 +333,24 @@ try {;
 	else {
 		ReportTestResult(0, "valid<16,1> >= 0.0", ">= long double literal");
 	}
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
 
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicEqual<16, 1>(), "valid<16,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicNotEqual<16, 1>(), "valid<16,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicLessThan<16, 1>(), "valid<16,1>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicLessOrEqualThan<16, 1>(), "valid<16,1>", "<=");
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicGreaterThan<16, 1>(), "valid<16,1>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicGreaterOrEqualThan<16, 1>(), "valid<16,1>", ">=");
-
-#endif // STRESS_TESTING
+#endif
 
 #endif // MANUAL_TESTING
 #endif // LATER

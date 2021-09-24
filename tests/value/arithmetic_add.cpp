@@ -69,8 +69,17 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 	return nrOfFailedTestCases;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -102,9 +111,21 @@ try {
 
 #else
 
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 3>("FAIL", bReportIndividualTestCases), "value<3>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8>", "addition");
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5>", "addition");
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8>", "addition");
+#endif
 
 #endif // MANUAL_TESTING
 

@@ -11,9 +11,17 @@
 #include <universal/internal/value/value.hpp>
 #include <universal/performance/number_system.hpp>
 
-// right now MANUAL_TESTING represents a quick test. Set to 0 for full test.
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
@@ -43,6 +51,7 @@ try {
 
 #else
 
+#if REGRESSION_LEVEL_1
 	std::cout << "half precision float\n";
 	{
 		constexpr size_t fbits = 10;
@@ -52,7 +61,9 @@ try {
 		auto report = ReportPerformance(number, perfReport);
 		std::cout << report << '\n';
 	}
+#endif
 
+#if REGRESSION_LEVEL_2
 	std::cout << "single precision float\n";
 	{
 		constexpr size_t fbits = 22;
@@ -62,7 +73,9 @@ try {
 		auto report = ReportPerformance(number, perfReport);
 		std::cout << report << '\n';
 	}
+#endif
 
+#if REGRESSION_LEVEL_3
 	std::cout << "double precision float\n";
 	{
 		constexpr size_t fbits = 53;
@@ -82,7 +95,9 @@ try {
 		auto report = ReportPerformance(number, perfReport);
 		std::cout << report << '\n';
 	}
+#endif
 
+#if REGRESSION_LEVEL_4
 	std::cout << "quad precision float\n";
 	{
 		constexpr size_t fbits = 112;
@@ -91,13 +106,14 @@ try {
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
 		std::cout << report << '\n';
-}
+	}
+#endif
 
 #endif // MANUAL_TESTING
 
-	if (nrOfFailedTestCases > 0) std::cout << "FAIL"; else std::cout << "PASS";
-
+	std::cout << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL");
 	std::cout.flush();
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

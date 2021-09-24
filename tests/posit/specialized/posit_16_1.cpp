@@ -22,8 +22,17 @@
 
 // Standard posit with nbits = 16 have es = 1 exponent bit.
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -96,6 +105,7 @@ try {
 	posit<nbits, es> p;
 	std::cout << dynamic_range(p) << "\n\n";
 
+#if REGRESSION_LEVEL_1
 	// special cases
 	std::cout << "Special case tests\n";
 	std::string test = "Initialize to zero: ";
@@ -117,7 +127,9 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+#endif
 
+#if REGRESSION_LEVEL_2
 	// logic tests
 	std::cout << "Logic operator tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         (native)  ");
@@ -126,7 +138,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >          (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         (native)  ");
+#endif
 
+#if REGRESSION_LEVEL_3
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(bReportIndividualTestCases), tag, "integer assign (native)  ");
@@ -146,7 +160,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPM, RND_TEST_CASES), tag, "*=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=             (native)  ");
+#endif
 
+#if REGRESSION_LEVEL_4
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifySqrt                        <nbits, es>(bReportIndividualTestCases), tag, "sqrt           (native)  ");
@@ -170,6 +186,8 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction               <nbits, es>(bReportIndividualTestCases), tag, "pow                      ");
 #endif
+
+#endif // MANUAL_TESTING
 	std::cout << std::flush;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -19,18 +19,25 @@
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 
-/*
-Standard posits with nbits = 256 have 5 exponent bits.
-*/
+// Standard posits with nbits = 256 have 5 exponent bits.
 
-#define STRESS_TESTING 1
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
 	constexpr size_t RND_TEST_CASES = 1000;
-
 	constexpr size_t nbits = 256;
 	constexpr size_t es = 5;
 
@@ -44,9 +51,14 @@ try {
 	std::cout << "Standard posit<256,5> configuration tests\n";
 #endif
 
+#if MANUAL_TESTING
+
+
+#else
 	posit<nbits, es> p;
 	std::cout << dynamic_range(p) << "\n\n";
 
+#if REGRESSION_LEVEL_1
 	// special cases
 	std::cout << "Special case tests\n";
 	std::string test = "Initialize to zero: ";
@@ -69,17 +81,30 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
 	// TODO: as we don't have a reference floating point implementation to Verify
 	// the arithmetic operations we are going to ignore the failures
-#if STRESS_TESTING
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	std::cout << "Without an arithmetic reference, test failures can be ignored\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
-#endif
 	nrOfFailedTestCases = 0;
+#endif
+
+#endif // MANUAL_TESTING
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

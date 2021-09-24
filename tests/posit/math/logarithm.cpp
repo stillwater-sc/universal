@@ -31,15 +31,25 @@ void GenerateTestCase(Ty a) {
 }
 
 #define GENERATE_LOG_TABLES 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 
 int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::cout << "Posit log validation\n";
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
@@ -63,7 +73,7 @@ try {
 #endif
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<2, 0>(true), "posit<2,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<2, 0>(bReportIndividualTestCases), "posit<2,0>", "log");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 0>(true), "posit<3,0>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 1>(true), "posit<3,1>", "log");
@@ -81,8 +91,7 @@ try {
 
 #else
 
-	cout << "Posit log validation" << endl;
-
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<2, 0>(bReportIndividualTestCases), "posit<2,0>", "log");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 0>(bReportIndividualTestCases), "posit<3,0>", "log");
@@ -112,7 +121,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 3>(bReportIndividualTestCases), "posit<8,3>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 4>(bReportIndividualTestCases), "posit<8,4>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 5>(bReportIndividualTestCases), "posit<8,5>", "log");
+#endif
 
+#if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 0>(bReportIndividualTestCases), "posit<9,0>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 1>(bReportIndividualTestCases), "posit<9,1>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 2>(bReportIndividualTestCases), "posit<9,2>", "log");
@@ -125,7 +136,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 1>(bReportIndividualTestCases), "posit<10,1>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 2>(bReportIndividualTestCases), "posit<10,2>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 7>(bReportIndividualTestCases), "posit<10,7>", "log");
+#endif
 
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 0>(bReportIndividualTestCases), "posit<12,0>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 1>(bReportIndividualTestCases), "posit<12,1>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 2>(bReportIndividualTestCases), "posit<12,2>", "log");
@@ -133,9 +146,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 0>(bReportIndividualTestCases), "posit<16,0>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 1>(bReportIndividualTestCases), "posit<16,1>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 2>(bReportIndividualTestCases), "posit<16,2>", "log");
+#endif
 
-
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
 	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,3>", "log");
@@ -146,8 +159,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 1>(bReportIndividualTestCases), "posit<12,1>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<14, 1>(bReportIndividualTestCases), "posit<14,1>", "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 1>(bReportIndividualTestCases), "posit<16,1>", "log");
-	
-#endif  // STRESS_TESTING
+#endif
 
 #endif  // MANUAL_TESTING
 

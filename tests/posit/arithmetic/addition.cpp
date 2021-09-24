@@ -42,8 +42,17 @@ void GenerateTestCase(Ty a, Ty b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
@@ -74,6 +83,7 @@ try {
 
 	std::cout << "Posit addition validation\n";
 
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<2, 0>(bReportIndividualTestCases), "posit<2,0>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 0>(bReportIndividualTestCases), "posit<3,0>", "addition");
@@ -108,13 +118,22 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 4>(bReportIndividualTestCases), "posit<8,4>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 5>(bReportIndividualTestCases), "posit<8,5>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 6>(bReportIndividualTestCases), "posit<8,6>", "addition");
+#endif
 
+#if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 1>(bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
+#endif
+
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<20, 1>(bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<20,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<28, 1>(bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<28,1>", "addition");
+
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 	// nbits=48 also shows failures
 	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<48, 2>(bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<48,2>", "addition");
 
@@ -128,7 +147,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, 1>(bReportIndividualTestCases), "posit<12,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<14, 1>(bReportIndividualTestCases), "posit<14,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16, 1>(bReportIndividualTestCases), "posit<16,1>", "addition");
-#endif  // STRESS_TESTING
+#endif
 
 #endif  // MANUAL_TESTING
 

@@ -21,16 +21,23 @@
 
 /// Standard posits with nbits = 128 have 4 exponent bits.
 
-#define STRESS_TESTING 1
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	if (argc > 0) { std::cout << argv[0] << '\n'; }
-
 	constexpr size_t RND_TEST_CASES = 1024;
-
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
 
@@ -47,6 +54,12 @@ try {
 	posit<nbits, es> p;
 	std::cout << dynamic_range(p) << "\n\n";
 
+#if MANUAL_TESTING
+
+	nrOfFailedTestCases = 0;
+#else
+
+#if REGRESSION_LEVEL_1
 	// special cases
 	p = 0;
 	if (!p.iszero()) ++nrOfFailedTestCases;
@@ -59,17 +72,31 @@ try {
 	p = +1.0f;
 	if (p.sign()) ++nrOfFailedTestCases;
 
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
 	// TODO: as we don't have a reference floating point implementation to Verify
 	// the arithmetic operations we are going to ignore the failures
-#if STRESS_TESTING
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	std::cout << "Without an arithmetic reference, test failures can be ignored\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
-#endif
+
 	nrOfFailedTestCases = 0;
+#endif
+
+#endif // MANUAL_TESTING
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
