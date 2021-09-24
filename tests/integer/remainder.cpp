@@ -35,8 +35,16 @@ void ExamplePattern() {
 	GenerateDivTest<sw::universal::integer<16> >(2, 16, z);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 int main()
 try {
@@ -63,22 +71,32 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	// samples of number systems
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4, uint8_t>(tag, bReportIndividualTestCases), "integer<4, uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6, uint8_t>(tag, bReportIndividualTestCases), "integer<6, uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8, uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10, uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "remainder");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 4, uint8_t >(bReportIndividualTestCases), "integer< 4, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 6, uint8_t >(bReportIndividualTestCases), "integer< 6, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 8, uint8_t >(bReportIndividualTestCases), "integer< 8, uint8_t >", "remainder");
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t >(bReportIndividualTestCases), "integer<10, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint16_t>(bReportIndividualTestCases), "integer<10, uint16_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t >(bReportIndividualTestCases), "integer<12, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint16_t>(bReportIndividualTestCases), "integer<12, uint16_t>", "remainder");
+#endif
 
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<14, uint8_t >(bReportIndividualTestCases), "integer<14, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<14, uint8_t >(bReportIndividualTestCases), "integer<14, uint16_t>", "remainder");
+#endif
+
+#if REGRESSION_LEVEL_4
 	// VerifyShortRemainder compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
+#endif
 
-#endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING

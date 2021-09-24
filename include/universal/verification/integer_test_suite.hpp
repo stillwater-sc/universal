@@ -20,7 +20,7 @@ namespace sw::universal {
 
 	// enumerate all addition cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
-	int VerifyShortAddition(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyShortAddition(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -68,7 +68,7 @@ namespace sw::universal {
 	}
 	// enumerate all subtraction cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
-	int VerifyShortSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyShortSubtraction(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -116,7 +116,7 @@ namespace sw::universal {
 	}
 	// enumerate all multiplication cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
-	int VerifyShortMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyShortMultiplication(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -164,7 +164,7 @@ namespace sw::universal {
 	}
 	// enumerate all division cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
-	int VerifyShortDivision(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyShortDivision(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -225,7 +225,7 @@ namespace sw::universal {
 	}
 	// enumerate all remainder cases for an integer<16> configuration compared against native short
 	template<typename BlockType = uint8_t>
-	int VerifyShortRemainder(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyShortRemainder(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -273,7 +273,7 @@ namespace sw::universal {
 
 	// enumerate all addition cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyAddition(bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;
@@ -319,7 +319,7 @@ namespace sw::universal {
 	}
 	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifySubtraction(bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;
@@ -366,7 +366,7 @@ namespace sw::universal {
 
 	// enumerate all multiplication cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyMultiplication(bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;
@@ -413,7 +413,7 @@ namespace sw::universal {
 
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyDivision(bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;
@@ -473,7 +473,7 @@ namespace sw::universal {
 
 	// enumerate all remainder cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyRemainder(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyRemainder(bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;

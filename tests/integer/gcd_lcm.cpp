@@ -14,13 +14,23 @@ sw::universal::integer<nbits, BlockType> greatest_common_divisor(const sw::unive
 	return b.iszero() ? a : greatest_common_divisor(b, a % b);
 }
 
-// conditional compilation
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 int main() 
 try {
 	using namespace sw::universal;
+
+	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
@@ -95,15 +105,42 @@ try {
 
 	// GCD of three numbers is
 	// gcd(a, b, c) == gcd(a, gcd(b, c)) == gcd(gcd(a, b), c) == gcd(b, gcd(a, c))
+#if REGRESSION_LEVEL_1
+	{
+		using Integer = integer<1024, uint32_t>;
+		Integer a, b, c;
 
+		a = 252;
+		b = 105;
+		c = a * b;
+		if (gcd(a, b) != 21) ++nrOfFailedTestCases;
+		if (gcd(a, c) != 252) ++nrOfFailedTestCases;
+		if (gcd(b, c) != 105) ++nrOfFailedTestCases;
+	}
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
+	{
+		using Integer = integer<1024, uint32_t>;
+		Integer a, b, c;
+		a = 1234567890500;
+		b = 92875085904958;
+		c = a * b * 10;
+		if (gcd(a, c) != 1234567890500) ++nrOfFailedTestCases;
+		if (gcd(b, c) != 92875085904958) ++nrOfFailedTestCases;
+	}
+#endif
 
-#endif // STRESS_TESTING
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
 #endif // MANUAL_TESTING
 
-
-	return EXIT_SUCCESS;
+	std::cout << "gcd and lcm: " << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL");
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

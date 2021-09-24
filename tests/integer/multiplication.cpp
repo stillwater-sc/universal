@@ -35,9 +35,17 @@ void ExamplePattern() {
 	GenerateMulTest<sw::universal::integer<16> >(2, 16, z);
 }
 
-// set STRESS_TESTING to 0 to expand regression suite
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 int main()
 try {
@@ -57,33 +65,41 @@ try {
 
 	std::endl; cout << "done" << std::endl; endl;
 
-	ReportTestResult(VerifyMultiplication<4, uint8_t>(tag, true), "integer<4, uint8_t>", "multiplication");
+	ReportTestResult(VerifyMultiplication<4, uint8_t>(true), "integer<4, uint8_t>", "multiplication");
 
 
 #else
-	std::cout << "Integer Arithmetic verfication\n";
+	std::cout << "Integer Multiplication Arithmetic verfication\n";
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, uint8_t >(tag, bReportIndividualTestCases), "integer< 4, uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, uint8_t >(tag, bReportIndividualTestCases), "integer< 6, uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, uint8_t >(tag, bReportIndividualTestCases), "integer< 8, uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint8_t >(tag, bReportIndividualTestCases), "integer<10, uint8_t >", "multiplication");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, uint8_t >(bReportIndividualTestCases), "integer< 4, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, uint8_t >(bReportIndividualTestCases), "integer< 6, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, uint8_t >(bReportIndividualTestCases), "integer< 8, uint8_t >", "multiplication");
+#endif
 
-#if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint8_t >(tag, bReportIndividualTestCases), "integer<12, uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12, uint16_t>", "multiplication");
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint8_t >(bReportIndividualTestCases), "integer<10, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint16_t>(bReportIndividualTestCases), "integer<10, uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint8_t >(bReportIndividualTestCases), "integer<12, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint16_t>(bReportIndividualTestCases), "integer<12, uint16_t>", "multiplication");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, uint8_t >(tag, bReportIndividualTestCases), "integer<14, uint8_t >", "multiplication");
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, uint8_t >(bReportIndividualTestCases), "integer<14, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, uint16_t>(bReportIndividualTestCases), "integer<14, uint16_t>", "multiplication");
+#endif
 
+#if REGRESSION_LEVEL_4
 	// VerifyShortMultiplication compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint8_t >(tag, bReportIndividualTestCases), "integer<16, uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "multiplication");
 	// this is a 'standard' comparision against a native int64_t which will not have overflow conditions
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, uint8_t >(tag, bReportIndividualTestCases), "integer<16, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "multiplication");
+#endif 
 
-#endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING

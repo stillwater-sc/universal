@@ -37,7 +37,7 @@ inline double babylonian(double v) {
 }
 
 template<size_t nbits, typename BlockType>
-int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyIntegerFloorSqrt(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits-1));
 	using Integer = sw::universal::integer<nbits, BlockType>;
 
@@ -51,7 +51,7 @@ int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCas
 //		std::cout << "sqrt of " << a << " " << result << " vs " << ref << " vs " << Integer(ref) << std::endl;
 		if (result != ref) {
 			++nrOfTestFailures;
-			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "sqrt", a, result, Integer(ref));
+			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "floor_sqrt", a, result, Integer(ref));
 		}
 		if (nrOfTestFailures > 24) return nrOfTestFailures;
 	}
@@ -59,7 +59,7 @@ int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCas
 }
 
 template<size_t nbits, typename BlockType>
-int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyIntegerCeilSqrt(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits - 1));
 	using Integer = sw::universal::integer<nbits, BlockType>;
 
@@ -80,8 +80,17 @@ int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCase
 	return nrOfTestFailures;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -124,14 +133,14 @@ try {
 	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
 
 	// quick big test
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8,uint8_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8,uint8_t>", "ceil_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<8, uint8_t>(bReportIndividualTestCases), "integer<8,uint8_t>", "floor_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<8, uint8_t>(bReportIndividualTestCases), "integer<8,uint8_t>", "ceil_sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10,uint8_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10,uint8_t>", "ceil_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<10, uint8_t>(bReportIndividualTestCases), "integer<10,uint8_t>", "floor_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<10, uint8_t>(bReportIndividualTestCases), "integer<10,uint8_t>", "ceil_sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12,uint16_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12,uint16_t>", "ceil_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<12, uint16_t>(bReportIndividualTestCases), "integer<12,uint16_t>", "floor_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<12, uint16_t>(bReportIndividualTestCases), "integer<12,uint16_t>", "ceil_sqrt");
 
 	nrOfFailedTestCases = 0; // nullify in manual testing
 
@@ -140,30 +149,52 @@ try {
 	std::cout << "square root integer function verfication" << std::endl;
 
 	std::cout << "floor(sqrt(x)) tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8,uint8_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10,uint8_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12,uint16_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<14, uint8_t>(tag, bReportIndividualTestCases), "integer<14,uint8_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint16_t>(tag, bReportIndividualTestCases), "integer<16,uint16_t>", "floor_sqrt");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt< 8, uint8_t >(bReportIndividualTestCases), "integer< 8,uint8_t >", "floor_sqrt");
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<10, uint8_t >(bReportIndividualTestCases), "integer<10,uint8_t >", "floor_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<12, uint16_t>(bReportIndividualTestCases), "integer<12,uint16_t>", "floor_sqrt");
+#endif
+
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<14, uint8_t >(bReportIndividualTestCases), "integer<14,uint8_t >", "floor_sqrt");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint16_t>(bReportIndividualTestCases), "integer<16,uint16_t>", "floor_sqrt");
 	// you can use uint64_t as BlockType for types <= 64bits
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint64_t>(tag, bReportIndividualTestCases), "integer<16,uint64_t>", "floor_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint64_t>(bReportIndividualTestCases), "integer<16,uint64_t>", "floor_sqrt");
+#endif
+
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint8_t >(bReportIndividualTestCases), "integer<20,uint8_t >", "floor_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint16_t>(bReportIndividualTestCases), "integer<20,uint16_t>", "floor_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint32_t>(bReportIndividualTestCases), "integer<20,uint32_t>", "floor_sqrt");
+#endif
 
 	std::cout << "ceil(sqrt(x)) tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8,uint8_t>", "ceil_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10,uint8_t>", "ceil_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12,uint16_t>", "ceil_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<14, uint8_t>(tag, bReportIndividualTestCases), "integer<14,uint8_t>", "ceil_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<16, uint16_t>(tag, bReportIndividualTestCases), "integer<16,uint16_t>", "ceil_sqrt");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt< 8, uint8_t >(bReportIndividualTestCases), "integer< 8,uint8_t >", "ceil_sqrt");
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<10, uint8_t >(bReportIndividualTestCases), "integer<10,uint8_t >", "ceil_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<12, uint16_t>(bReportIndividualTestCases), "integer<12,uint16_t>", "ceil_sqrt");
+#endif
+
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<14, uint8_t >(bReportIndividualTestCases), "integer<14,uint8_t >", "ceil_sqrt");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<16, uint16_t>(bReportIndividualTestCases), "integer<16,uint16_t>", "ceil_sqrt");
 	// you can use uint64_t as BlockType for types <= 64bits
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<16, uint64_t>(tag, bReportIndividualTestCases), "integer<16,uint64_t>", "ceil_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<16, uint64_t>(bReportIndividualTestCases), "integer<16,uint64_t>", "ceil_sqrt");
+#endif
 
-
-#if STRESS_TESTING
-
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint8_t>(tag, bReportIndividualTestCases), "integer<20,uint8_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint16_t>(tag, bReportIndividualTestCases), "integer<20,uint16_t>", "floor_sqrt");
-
-#endif // STRESS_TESTING
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<20, uint8_t >(bReportIndividualTestCases), "integer<20,uint8_t >", "ceil_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<20, uint16_t>(bReportIndividualTestCases), "integer<20,uint16_t>", "ceil_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<20, uint32_t>(bReportIndividualTestCases), "integer<20,uint32_t>", "ceil_sqrt");
+#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
