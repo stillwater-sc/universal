@@ -295,7 +295,8 @@ public:
 	}
 
 	// specific value constructor
-	constexpr cfloat(const SpecificValue code) : _block{ 0 } {
+	constexpr cfloat(const SpecificValue code) noexcept
+		: _block{ 0 } {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();

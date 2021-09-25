@@ -53,8 +53,8 @@ void ReproducibilityTestSuite() {
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
 std::string convert_to_string(const std::vector<char>& v) {
@@ -69,18 +69,24 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "Integer Arithmetic tests failed";
+	std::cout << "Integer Arithmetic Addition verfication\n";
+	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
+//	std::string tag = "Integer Arithmetic tests failed";
 
 #if MANUAL_TESTING
 
+	using Integer = integer<16>;
+	Integer a(SpecificValue::maxpos), b(SpecificValue::maxneg);
+	Integer c;
+	c = a + b;
+	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 4, uint8_t>(bReportIndividualTestCases), "integer< 4, uint8_t >", "addition");
 	std::cout << "done" << std::endl;
 
-	return EXIT_SUCCESS;
 #else
-	std::cout << "Integer Arithmetic verfication\n";
 
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 4, uint8_t>(bReportIndividualTestCases), "integer< 4, uint8_t >", "addition");
@@ -109,9 +115,9 @@ try {
 
 #endif
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
 #endif // MANUAL_TESTING
+
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

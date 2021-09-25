@@ -720,14 +720,21 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 
@@ -743,11 +750,11 @@ try {
 
 	{
 		cfloat<8, 2> a;
-		std::cout << "maxpos : " << maxpos(a) << " : " << scale(a) << '\n';
-		std::cout << "minpos : " << minpos(a) << " : " << scale(a) << '\n';
-		std::cout << "zero   : " << zero(a) << " : " << scale(a) << '\n';
-		std::cout << "minneg : " << minneg(a) << " : " << scale(a) << '\n';
-		std::cout << "maxneg : " << maxneg(a) << " : " << scale(a) << '\n';
+		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
+		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
+		std::cout << "zero   : " << a.zero() << " : " << scale(a) << '\n';
+		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
+		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
 		std::cout << dynamic_range(a) << std::endl;
 	}
 
@@ -762,8 +769,8 @@ try {
 
 #endif // MANUAL_TESTING
 
-	std::cout << "\nCFLOAT special cases test suite : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
-
+	std::cout << "\nCFLOAT special cases test suite : " << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL");
+	std::cout << std::flush;
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
