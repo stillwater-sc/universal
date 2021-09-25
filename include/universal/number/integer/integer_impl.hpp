@@ -337,27 +337,27 @@ public:
 	// modifiers
 	inline constexpr void clear() noexcept { std::memset(&b, 0, nrBytes); }
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr integer& maxpos() {
+	inline constexpr integer& maxpos() noexcept {
 		clear();
 		setbit(nbits - 1ull, true);
 		flip();
 		return *this;
 	}
-	inline constexpr integer& minpos() {
+	inline constexpr integer& minpos() noexcept {
 		clear();
 		setbit(0, true);
 		return *this;
 	}
-	inline constexpr integer& zero() {
+	inline constexpr integer& zero() noexcept {
 		clear();
 		return *this;
 	}
-	inline constexpr integer& minneg() {
+	inline constexpr integer& minneg() noexcept {
 		clear();
 		flip();
 		return *this;
 	}
-	inline constexpr integer& maxneg() {
+	inline constexpr integer& maxneg() noexcept {
 		clear();
 		setbit(nbits - 1ull, true);
 		return *this;

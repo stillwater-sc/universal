@@ -21,8 +21,9 @@ try {
 	using Integer = integer<nbits, bt>;
 	Integer i1, i2, i3, i4, i5, i6;
 
-	/* constexpr */ Integer minpos{ 1 };
-	/* constexpr */ Integer maxpos = max_int<nbits, bt>();
+	// TODO: enable constexpr
+	/* constexpr */ Integer minpos(SpecificValue::minpos); // this would simply be the value '1'
+	/* constexpr */ Integer maxpos(SpecificValue::maxpos);
 
 	// the two special cases of a posit configuration: 0 and NaR
 	i1 =  0;       checkSpecialCases(i1);
@@ -43,13 +44,13 @@ try {
 	std::cout << "i5 = i2 * i4: " << std::setw(3) << i5 << '\n';
 	std::cout << "i6 = i5 / i4: " << std::setw(3) << i6 << '\n';
 
-	std::cout << "minpos      : " << minpos << '\n';
-	std::cout << "maxpos      : " << maxpos << '\n';
+	std::cout << "minpos      : " << std::setw(10) << minpos << " : " << to_binary(minpos) << '\n';
+	std::cout << "maxpos      : " << std::setw(10) << maxpos << " : " << to_binary(maxpos) << '\n';
 
-	i1 = 0; ++i1;         // another way to get to minpos
-	i2 = maxpos; --i2;  // another way to get to maxpos
-	std::cout << "minpos      : " << to_binary(i1) << '\n';
-	std::cout << "maxpos      : " << to_binary(i2) << '\n';
+	i1 = 0; ++i1;            // another way to get to minpos
+	i2 = 0; --i2; i2 >>= 1;  // another way to get to maxpos
+	std::cout << "minpos      : " << std::setw(10) << i1 << " : " << to_binary(i1) << '\n';
+	std::cout << "maxpos      : " << std::setw(10) << i2 << " : " << to_binary(i2) << '\n';
 
 	std::cout << std::endl;
 
