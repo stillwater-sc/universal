@@ -44,7 +44,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 // enumerate all complex multiplication cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyComplexMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyComplexMultiplication(bool bReportIndividualTestCases) {
 	using namespace sw::universal;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
@@ -109,14 +109,24 @@ int VerifyComplexMultiplication(const std::string& tag, bool bReportIndividualTe
 	return nrOfFailedTests;
 }
 
-// conditional compile flags
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+#define HARDWARE_ACCELERATION 0
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::cout << "Fixed-point complex modulo multiplication validation\n";
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -155,64 +165,65 @@ try {
 	GenerateTestCase<8, 1>(-64.0f, -63.0f);
 	GenerateTestCase<8, 1>(-64.0f, -62.5f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "multiplication");
 
-#if STRESS_TESTING
+#ifdef STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 2, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 3, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 2, Modulo, uint8_t>(true), "fixpnt<4,2,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 3, Modulo, uint8_t>(true), "fixpnt<4,3,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 4, Modulo, uint8_t>(true), "fixpnt<4,4,Modulo,uint8_t>", "multiplication");
 #endif
 
 	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
 #else
 
-	std::cout << "Fixed-point complex modulo multiplication validation\n";
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 0,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 1,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 2,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 3,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 4,Modulo,uint8_t>", "multiplication");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 0, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 1, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 2, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 3, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 4, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", "multiplication");
+#if REGRESSION_LEVEL_2
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 6, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 0,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 6, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 1,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 6, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 2,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 6, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 3,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 6, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 4,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 6, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 5,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 6, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 6,Modulo,uint8_t>", "multiplication");
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_3
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 0,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 1,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 2,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 3,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 4,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 5,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 6,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 7,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication< 8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 8,Modulo,uint8_t>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<6, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<6,0,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<6, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<6,1,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<6, 2, Modulo, uint8_t>("Manual Testing", true), "fixpnt<6,2,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<6, 3, Modulo, uint8_t>("Manual Testing", true), "fixpnt<6,3,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<6, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<6,4,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<6, 5, Modulo, uint8_t>("Manual Testing", true), "fixpnt<6,5,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<6, 6, Modulo, uint8_t>("Manual Testing", true), "fixpnt<6,6,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10, 0,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10, 4,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10, 7,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10, 8,Modulo,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 9, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10, 9,Modulo,uint8_t>", "multiplication");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 1,Modulo,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 2,Modulo,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 3,Modulo,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 4,Modulo,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 5,Modulo,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 6,Modulo,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 7,Modulo,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<8, 8,Modulo,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,0,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,4,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,7,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,8,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<10, 9, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,9,Modulo,uint8_t>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,0,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,4,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,7,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,8,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 9, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,9,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 12, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,12,Modulo,uint8_t>", "multiplication");
-
-
-#endif  // STRESS_TESTING
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12, 0,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12, 4,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12, 7,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12, 8,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12, 9, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12, 9,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<12,12, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,12,Modulo,uint8_t>", "multiplication");
+#endif
 
 #endif  // MANUAL_TESTING
 

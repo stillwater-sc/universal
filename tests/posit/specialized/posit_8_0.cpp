@@ -19,9 +19,18 @@
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
-
+// 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -63,6 +72,8 @@ try {
 	nrOfFailedTestCases = 0;  // ignore failures in manual testing
 
 #else
+
+#if REGRESSION_LEVEL_1
 	// special cases
 	std::cout << "Special case tests\n";
 	std::string test = "Initialize to zero: ";
@@ -84,7 +95,9 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+#endif
 
+#if REGRESSION_LEVEL_2
 	// logic tests
 	std::cout << "Logic operator tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         (native)  ");
@@ -98,7 +111,9 @@ try {
 	std::cout << "Assignment/conversion tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   (native)  ");
+#endif
 
+#if REGRESSION_LEVEL_3
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyAddition           <nbits, es>(bReportIndividualTestCases), tag,    "add            (native)  ");
@@ -111,7 +126,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyInPlaceDivision    <nbits, es>(bReportIndividualTestCases), tag,    "/=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyNegation           <nbits, es>(bReportIndividualTestCases), tag,    "negate         (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyReciprocation      <nbits, es>(bReportIndividualTestCases), tag,    "reciprocate    (native)  ");
+#endif
 
+#if REGRESSION_LEVEL_4
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifySqrt             <nbits, es>(bReportIndividualTestCases), tag, "sqrt           (native)  ");
@@ -134,6 +151,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyAsinh            <nbits, es>(bReportIndividualTestCases), tag, "asinh                    ");
 
 	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <nbits, es>(bReportIndividualTestCases), tag, "pow                      ");
+#endif
 
 #endif
 

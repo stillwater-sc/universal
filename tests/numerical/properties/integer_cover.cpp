@@ -106,6 +106,9 @@ std::string CalculateIntegerCover() {
 	return ss.str();
 }
 
+// set by the build process to modulate the number of test cases
+#define _FULL_REGRESSION
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -162,6 +165,7 @@ try {
 	std::cout << "posit<32,1>: 2^16 integer cover is : " << CalculateIntegerCover<32, 1, 16>() << "\n";
 	std::cout << "posit<32,2>: 2^16 integer cover is : " << CalculateIntegerCover<32, 2, 16>() << "\n";
 
+#ifdef FULL_REGRESSION
 	std::cout << "posit sample coverage of 20-bit unsigned integer\n";
 	std::cout << "posit<20,1>: 2^20 integer cover is : " << CalculateIntegerCover<20, 1, 20>() << "\n";
 	std::cout << "posit<26,1>: 2^20 integer cover is : " << CalculateIntegerCover<26, 1, 20>() << "\n";
@@ -178,6 +182,7 @@ try {
 	std::cout << "posit<40,2>: 2^32 integer cover is : " << CalculateIntegerCover<40, 2, 32>() << "\n";
 	*/
 
+#endif
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);
 

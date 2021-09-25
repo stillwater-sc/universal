@@ -105,10 +105,13 @@ try {
 			CONSTEXPRESSION blocktriple<32> a(1.0625);   // double
 			std::cout << "constexpr constructor for type 'double'              " << a << '\n';
 		}
+#if LONG_DOUBLE_SUPPORT
 		{
 			CONSTEXPRESSION blocktriple<32> a(1.03125l);  // long double
 			std::cout << "constexpr constructor for type 'long double'         " << a << '\n';
 		}
+#endif
+
 #endif // BIT_CAST_SUPPORT
 	}
 
@@ -131,10 +134,13 @@ try {
 			CONSTEXPRESSION blocktriple<32> a = 1.0;   // double
 			std::cout << a << '\n';
 		}
+#if LONG_DOUBLE_SUPPORT
 		{
 			CONSTEXPRESSION blocktriple<32> a = 1.0l;  // long double
 			std::cout << a << '\n';
 		}
+#endif
+
 #endif // BIT_CAST_SUPPORT
 	}
 

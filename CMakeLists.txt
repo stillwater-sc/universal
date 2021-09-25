@@ -33,10 +33,10 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 34)
+  set(UNIVERSAL_VERSION_MINOR 40)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 2)
+  set(UNIVERSAL_VERSION_PATCH 1)
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
@@ -141,6 +141,17 @@ option(BUILD_MIXEDPRECISION_CONJUGATE    "Set to ON to build mixed-precision CG"
 option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
 option(BUILD_VALIDATION_HW               "Set to ON to build hw validation testbenches"        OFF)
 
+# regression test intensity
+# sanity is level 1 (=min) regression testing
+option(BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"         ON)
+# stress is level 4 (= max) regression testing
+option(BUILD_REGRESSION_STRESS           "Set to ON to enable regression level stress"         OFF)
+# four levels of intensity
+option(BUILD_REGRESSION_LEVEL_1          "Set to ON to enable regression level 1"              OFF)
+option(BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regression level 2"              OFF)
+option(BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
+option(BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
+
 # documentation
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
@@ -191,6 +202,27 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++20 has been enabled by default: but bit_cast<> requires gcc 11")
 endif()
+
+# enable the regression testing level of the build
+if(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_1)
+endif(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
+if(BUILD_REGRESSION_LEVEL_2)
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_2)
+endif(BUILD_REGRESSION_LEVEL_2)
+if(BUILD_REGRESSION_LEVEL_3)
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_3)
+endif(BUILD_REGRESSION_LEVEL_3)
+if(BUILD_REGRESSION_STRESS OR BUILD_REGRESSION_LEVEL_4)
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_1)
+	add_definitions(-D REGRESSION_LEVEL_2)
+	add_definitions(-D REGRESSION_LEVEL_3)
+	add_definitions(-D REGRESSION_LEVEL_4)
+endif(BUILD_REGRESSION_STRESS OR BUILD_REGRESSION_LEVEL_4)
 
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -354,21 +386,6 @@ endif()
 
 ####
 # Set UNIVERSAL include directory that contains all the different number systems
-# universal/native
-# universal/bitblock
-# universal/blockbin
-# universal/integer
-# universal/decimal
-# universal/fixpnt
-# universal/cfloat
-# universal/areal
-# universal/unum
-# universal/unum2
-# universal/posit
-# universal/valid
-# universal/lns
-# universal/adaptiveint
-# universal/adaptivefloat
 include_directories("./include")
 
 ####

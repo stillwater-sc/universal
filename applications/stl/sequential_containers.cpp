@@ -81,8 +81,8 @@ void TimedAccumulate(Container& X, const std::string& legend) {
 
 	// report
 	std::cout << legend << std::endl;
-	std::cout << "time : " << last.count() << std::endl;
-	std::cout << "total: " << totalSum << std::endl;
+	std::cout << "time    : " << last.count() << std::endl;
+	std::cout << "totalSum: " << totalSum << std::endl;
 	std::cout << std::endl;
 }
 
@@ -103,7 +103,7 @@ void TimedExperiment(std::vector<Ty>& data) {
 
 int main()
 try {
-#ifdef NDEBUG
+#ifdef STRESS_TESTING
 	constexpr size_t NR_SAMPLES = 1'000'000;
 #else
 	constexpr size_t NR_SAMPLES = 1000;

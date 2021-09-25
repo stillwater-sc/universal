@@ -62,13 +62,25 @@ namespace sw::universal::internal {
 		}
 	}
 
+	void TestSmallArithmeticOperatorPerformance() {
+		using namespace sw::universal;
+		std::cout << "\nArithmetic operator performance\n";
+
+		size_t NR_OPS = 1024ull * 1024ull * 4ull;
+		PerformanceRunner("blocktriple<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
+		PerformanceRunner("blocktriple<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<32, sw::universal::BlockTripleOperator::MUL, uint32_t> >, NR_OPS);
+
+		NR_OPS = 1024ull * 1024ull;
+		PerformanceRunner("blocktriple<16>   multiplication", MultiplicationWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
+		PerformanceRunner("blocktriple<32>   multiplication", MultiplicationWorkload< sw::universal::blocktriple<32, sw::universal::BlockTripleOperator::MUL, uint32_t> >, NR_OPS / 2);
+
+	}
 
 	void TestArithmeticOperatorPerformance() {
 		using namespace sw::universal;
 		std::cout << "\nArithmetic operator performance\n";
 
 		size_t NR_OPS = 1024ull * 1024ull * 4ull;
-
 		PerformanceRunner("blocktriple<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<32, sw::universal::BlockTripleOperator::MUL, uint32_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<64, sw::universal::BlockTripleOperator::MUL, uint64_t> >, NR_OPS);
@@ -198,7 +210,8 @@ namespace sw::universal::internal {
 	}
 }
 
-#define MANUAL_TESTING 0
+// to generate a test report, set MANUAL_TESTING to 0 and STRESS_TESTING to 1
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -209,10 +222,7 @@ try {
 
 #if MANUAL_TESTING
 
-	TestShiftOperatorPerformance();
-	TestArithmeticOperatorPerformance();
-
-	ShiftPerformanceWorkload< sw::universal::blocktriple<8> >(1);
+	TestSmallArithmeticOperatorPerformance();
 	
 	std::cout << "done" << std::endl;
 
@@ -224,13 +234,14 @@ try {
 
 	TestArithmeticOperatorPerformance();
 
+#if STRESS_TESTING
+
 	TestBlockPerformanceOnAdd();
 	TestBlockPerformanceOnMul();
 	TestBlockPerformanceOnDiv();
 
-#if STRESS_TESTING
-
 #endif // STRESS_TESTING
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING

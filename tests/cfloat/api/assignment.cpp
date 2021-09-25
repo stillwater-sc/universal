@@ -516,7 +516,9 @@ try {
 	using Real = sw::universal::cfloat<8, 2>;
 	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->cfloat special cases", bReportIndividualTestCases);
 	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->cfloat special cases", bReportIndividualTestCases);
+#if LONG_DOUBLE_SUPPORT
 	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->cfloat special cases", bReportIndividualTestCases);
+#endif
 
 	std::cout << "Single block representations\n--------------------------------------------- es = 1 encodings\n";
 	nrOfFailedTestCases += TestSingleBlockRepresentations<1, float>("=float", bReportIndividualTestCases, bVerbose);

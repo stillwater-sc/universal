@@ -16,7 +16,7 @@
 
 namespace sw::universal {
 
-// Generate a type tag for this cfloat, for example, cfloat<8,1, class uint8_t>
+// Generate a type tag for this cfloat, for example, cfloat<8,1, unsigned char, hasSubnormals, noSupernormals, notSaturating>
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	std::stringstream s;
@@ -27,23 +27,25 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 		<< (hasSubnormals ? "hasSubnormals, " : "noSubnormals, ")
 		<< (hasSupernormals ? "hasSupernormals, " : "noSupernormals, ")
 		<< (isSaturating ? "Saturating>" : "notSaturating>");
+	if (v.iszero()) s << ' ';
 	return s.str();
 }
 
-// print subnormals of the cfloat configuration
+// generate and tabulate subnormals of the cfloat configuration
 template<typename cfloatConfiguration>
 void subnormals() {
-	constexpr size_t nbits = cfloatConfiguration::nbits;
-	constexpr size_t es = cfloatConfiguration::es;
-	constexpr size_t fbits = cfloatConfiguration::fbits;
-	using bt = typename cfloatConfiguration::BlockType;
-	constexpr bool hasSubnormals = cfloatConfiguration::hasSubnormals;
+	constexpr size_t nbits         = cfloatConfiguration::nbits;
+	constexpr size_t es            = cfloatConfiguration::es;
+	using bt                       = typename cfloatConfiguration::BlockType;
+	constexpr bool hasSubnormals   = cfloatConfiguration::hasSubnormals;
 	constexpr bool hasSupernormals = cfloatConfiguration::hasSupernormals;
-	constexpr bool isSaturating = cfloatConfiguration::isSaturating;
+	constexpr bool isSaturating    = cfloatConfiguration::isSaturating;
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
 
+	// generate the smallest subnormal with ULP set
 	++a;
 	if constexpr (hasSubnormals) {
+		constexpr size_t fbits = cfloatConfiguration::fbits;
 		std::cout << type_tag(a) << " subnormals\n";
 		if constexpr (nbits < 65) {
 			for (size_t i = 0; i < fbits; ++i) {
@@ -70,9 +72,9 @@ void subnormals() {
 
 // report dynamic range of a type, specialized for a cfloat
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string dynamic_range(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b) {
+std::string dynamic_range(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
 	std::stringstream s;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
 	s << type_tag(c) << ": ";
 	s << "minpos scale " << std::setw(10) << c.minpos().scale() << "     ";
 	s << "maxpos scale " << std::setw(10) << c.maxpos().scale() << '\n';
@@ -203,4 +205,3 @@ std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorma
 
 
 }  // namespace sw::universal
-

@@ -166,9 +166,18 @@ void GenerateFixedPointRangeTable() {
 	ReportFixedPointRanges<20, 20, Modulo>(cout);
 }
 */
-// conditional compile flags
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
@@ -222,46 +231,52 @@ try {
 
 #else  // !MANUAL_TESTING
 
-	std::cout << "Fixed-point conversion validation\n";
+	std::cout << "Fixed-point Modulo conversion validation\n";
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<4,0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<4,1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<4,2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<4,3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<4,4,Modulo,uint8_t>");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 4,Modulo,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,5,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,6,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,7,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,8,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 5,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 6,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 7,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 8,Modulo,uint8_t>");
+#endif
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 6, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,6,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,8,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 10, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,10,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 12, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,12,Modulo,uint8_t>");
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 6, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 6,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 8,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,10, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,10,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,12, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,12,Modulo,uint8_t>");
+#endif
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,8,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 12, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,12,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 16, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,16,Modulo,uint8_t>");
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 8,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,12, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,12,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,16, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,16,Modulo,uint8_t>");
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 
-#endif  // STRESS_TESTING
+#endif
 
 #endif  // MANUAL_TESTING
 

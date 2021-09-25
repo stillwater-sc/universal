@@ -103,7 +103,8 @@ void GenerateCfloatExponentBounds()
 		std::setw(WIDTH) << "MIN_EXP_NORMAL" <<
 		std::setw(WIDTH) << "MIN_NORMAL"
 		<< '\n';
-	for (size_t es = 1; es < 20; ++es) {
+	size_t nrSubnormals = sizeof(subnormal_reciprocal_shift)/sizeof(subnormal_reciprocal_shift[0]);
+	for (size_t es = 1; es < nrSubnormals; ++es) {
 		int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 		int RAW_MAX_EXP = (es == 1) ? 1 : ((1l << es) - 1);
 		int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);

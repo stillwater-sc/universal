@@ -63,9 +63,9 @@ try {
 		CONSTEXPRESSION Real a(1.0f + 0.5f + 0.25f + 0.125f + 0.0625f);
 		Real b(-1.0f - 0.5f - 0.25f - 0.125f - 0.0625f);
 		constexpr size_t fbits = Real::fbits;
-		constexpr size_t abits = Real::abits;
-		constexpr size_t mbits = Real::mbits;
-		constexpr size_t divbits = Real::divbits;
+		//constexpr size_t abits = Real::abits;
+		//constexpr size_t mbits = Real::mbits;
+		//constexpr size_t divbits = Real::divbits;
 		{
 			// emulate conversion to blocktriple
 			blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt> _a, _b;
@@ -82,7 +82,7 @@ try {
 			std::cout << "Result of addition       : " << color_print(c) << '\n';
 
 			// emulate addition
-			blocktriple<abits, BlockTripleOperator::ADD, bt> _a, _b, _c;
+			blocktriple<fbits, BlockTripleOperator::ADD, bt> _a, _b, _c;
 			a.normalizeAddition(_a);
 			b.normalizeAddition(_b);
 			_c.add(_a, _b);
@@ -97,7 +97,7 @@ try {
 			std::cout << "result of multiplication : " << color_print(c) << '\n';
 
 			// emulate multiplication
-			blocktriple<mbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
+			blocktriple<fbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
 			a.normalizeMultiplication(_a);
 			b.normalizeMultiplication(_b);
 			_c.mul(_a, _b);
@@ -112,7 +112,7 @@ try {
 			std::cout << "Result of division       : " << color_print(c) << '\n';
 
 			// emulate division
-			blocktriple<divbits, BlockTripleOperator::DIV, bt> _a, _b, _c;
+			blocktriple<fbits, BlockTripleOperator::DIV, bt> _a, _b, _c;
 			a.normalizeDivision(_a);
 			b.normalizeDivision(_b);
 			_c.div(_a, _b);

@@ -122,24 +122,24 @@ try {
 
 	std::cout << "blockbinary remainder validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<5, uint8_t>(bReportIndividualTestCases), "blockbinary<5,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6, uint8_t>(bReportIndividualTestCases), "blockbinary<6,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<7, uint8_t>(bReportIndividualTestCases), "blockbinary<7,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<9, uint8_t>(bReportIndividualTestCases), "blockbinary<9,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 4, uint8_t>(bReportIndividualTestCases), "blockbinary< 4,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 5, uint8_t>(bReportIndividualTestCases), "blockbinary< 5,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 6, uint8_t>(bReportIndividualTestCases), "blockbinary< 6,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 7, uint8_t>(bReportIndividualTestCases), "blockbinary< 7,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 8, uint8_t>(bReportIndividualTestCases), "blockbinary< 8,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 9, uint8_t>(bReportIndividualTestCases), "blockbinary< 9,uint8_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t>(bReportIndividualTestCases), "blockbinary<10,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "remainder");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<9, uint16_t>(bReportIndividualTestCases), "blockbinary<9,uint16_t>", "remainder");
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t >(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "remainder");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 9, uint16_t>(bReportIndividualTestCases), "blockbinary< 9,uint16_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<13, uint16_t>(bReportIndividualTestCases), "blockbinary<13,uint16_t>", "remainder");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32_t>", "remainder");
 
-#if STRESS_TESTING
-
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(bReportIndividualTestCases), "blockbinary<16,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t >(bReportIndividualTestCases), "blockbinary<16,uint8_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "remainder");
 
 

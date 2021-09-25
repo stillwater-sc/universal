@@ -13,36 +13,7 @@
 #include <map>
 
 #include <universal/number/integer/exceptions.hpp>
-
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
+#include <universal/number/shared/specific_value_encoding.hpp>
 
 namespace sw::universal {
 
@@ -52,54 +23,6 @@ template<size_t nbits, typename BlockType> integer<nbits, BlockType> max_int();
 template<size_t nbits, typename BlockType> integer<nbits, BlockType> min_int();
 template<size_t nbits, typename BlockType> struct idiv_t;
 template<size_t nbits, typename BlockType> idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>&, const integer<nbits, BlockType>&b);
-
-// create the largest integer value
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> max_int() {
-	// two's complement max is 01111111
-	integer<nbits, BlockType> mx;
-	mx.setbit(nbits - 1, true);
-	mx.flip();
-	return mx;
-}
-// create the smallest integer value
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> min_int() {
-	// two's complement min is 10000000
-	integer<nbits, BlockType> mn;
-	mn.set(nbits - 1, true);
-	return mn;
-}
-
-// fill an integer with the maximum positive value, which is of course 0111.1111
-template<size_t nbits, typename BlockType>
-constexpr inline integer<nbits, BlockType>& maxpos(integer<nbits, BlockType>& i) {
-	i.clear();
-	i.mx.set(nbits - 1ull, true);
-	i.flip();
-	return i;
-}
-// fill an integer with the minimum positive value, which is of course simply 1
-template<size_t nbits, typename BlockType>
-constexpr inline integer<nbits, BlockType>& minpos(integer<nbits, BlockType>& i) {
-	i.clear();
-	i.mx.set(0, true);
-	return i;
-}
-// fill an integer with the minimum negative value, which is of course simply all 1's
-template<size_t nbits, typename BlockType>
-constexpr inline integer<nbits, BlockType>& minneg(integer<nbits, BlockType>& i) {
-	i.clear();
-	i.flip();
-	return i;
-}
-// fill an integer with the maximum negative value, which is of course simply 1000...000
-template<size_t nbits, typename BlockType>
-constexpr inline integer<nbits, BlockType>& maxneg(integer<nbits, BlockType>& i) {
-	i.clear();
-	i.mx.set(nbits - 1ull, true);
-	return i;
-}
 
 // scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
 template<size_t nbits, typename BlockType>
@@ -120,33 +43,12 @@ inline long scale(const integer<nbits, BlockType>& i) {
 	return scale;
 }
 
+// signed integer conversion
 template<size_t nbits, typename BlockType>
-inline void convert(int64_t v, integer<nbits, BlockType>& result) {
-	constexpr uint64_t mask = 0x1;
-	bool negative = (v < 0 ? true : false);
-	result.clear();
-	unsigned upper = (nbits <= 64 ? nbits : 64);
-	for (unsigned i = 0; i < upper && v != 0; ++i) {
-		if (v & mask) result.setbit(i);
-		v >>= 1;
-	}
-	if (nbits > 64 && negative) {
-		// sign extend
-		for (unsigned i = upper; i < nbits; ++i) {
-			result.setbit(i);
-		}
-	}
-}
+inline constexpr integer<nbits, BlockType>& convert(int64_t v, integer<nbits, BlockType>& result) {	return result.convert(v); }
+// unsigned integer conversion
 template<size_t nbits, typename BlockType>
-inline void convert_unsigned(uint64_t v, integer<nbits, BlockType>& result) {
-	constexpr uint64_t mask = 0x1;
-	result.clear();
-	unsigned upper = (nbits <= 64 ? nbits : 64);
-	for (unsigned i = 0; i < upper; ++i) {
-		if (v & mask) result.setbit(i);
-		v >>= 1;
-	}
-}
+inline constexpr integer<nbits, BlockType>& convert(uint64_t v, integer<nbits, BlockType>& result) { return result.convert(v); }
 
 template<size_t nbits, typename BlockType>
 bool parse(const std::string& number, integer<nbits, BlockType>& v);
@@ -176,49 +78,76 @@ allowable range of numbers, and their sum is between them, it must fit as well.
 When implementing addition/subtraction on chuncks the overflow condition must be deduced from the 
 chunk values. The chunks need to be interpreted as unsigned binary segments.
 */
+
 // integer is an arbitrary size 2's complement integer
 template<size_t _nbits, typename BlockType = uint8_t>
 class integer {
 public:
+	static constexpr bool FrequencyCount = true;
 	static constexpr size_t nbits = _nbits;
 	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
 	static constexpr unsigned MS_BYTE = nrBytes - 1;
 	static constexpr uint8_t MS_BYTE_MASK = (0xFF >> (nrBytes * 8 - nbits));
 
-	integer() { setzero(); }
+	constexpr integer() noexcept : b{ 0 } {};
 
-	integer(const integer&) = default;
-	integer(integer&&) = default;
+	constexpr integer(const integer&) noexcept = default;
+	constexpr integer(integer&&) noexcept = default;
 
-	integer& operator=(const integer&) = default;
-	integer& operator=(integer&&) = default;
+	constexpr integer& operator=(const integer&) noexcept = default;
+	constexpr integer& operator=(integer&&) noexcept = default;
 
 	/// Construct a new integer from another, sign extend when necessary, BlockTypes must be the same
 	template<size_t srcbits>
 	integer(const integer<srcbits, BlockType>& a) {
 //		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision"); // TODO: do we want this?
 		bitcopy(a);
-		if (a.sign()) { // sign extend
-			for (int i = int(srcbits); i < int(nbits); ++i) {
-				setbit(i);
+		if constexpr (srcbits < nbits) {
+			if (a.sign()) { // sign extend
+				for (size_t i = srcbits; i < nbits; ++i) {
+					setbit(i);
+				}
 			}
 		}
 	}
 
 	// initializers for native types
-	integer(signed char initial_value)        { *this = initial_value; }
-	integer(short initial_value)              { *this = initial_value; }
-	integer(int initial_value)                { *this = initial_value; }
-	integer(long initial_value)               { *this = initial_value; }
-	integer(long long initial_value)          { *this = initial_value; }
-	integer(char initial_value)               { *this = initial_value; }
-	integer(unsigned short initial_value)     { *this = initial_value; }
-	integer(unsigned int initial_value)       { *this = initial_value; }
-	integer(unsigned long initial_value)      { *this = initial_value; }
-	integer(unsigned long long initial_value) { *this = initial_value; }
-	integer(float initial_value)              { *this = initial_value; }
-	integer(double initial_value)             { *this = initial_value; }
-	integer(long double initial_value)        { *this = initial_value; }
+	constexpr integer(signed char initial_value)        { *this = initial_value; }
+	constexpr integer(short initial_value)              { *this = initial_value; }
+	constexpr integer(int initial_value)                { *this = initial_value; }
+	constexpr integer(long initial_value)               { *this = initial_value; }
+	constexpr integer(long long initial_value)          { *this = initial_value; }
+	constexpr integer(char initial_value)               { *this = initial_value; }
+	constexpr integer(unsigned short initial_value)     { *this = initial_value; }
+	constexpr integer(unsigned int initial_value)       { *this = initial_value; }
+	constexpr integer(unsigned long initial_value)      { *this = initial_value; }
+	constexpr integer(unsigned long long initial_value) { *this = initial_value; }
+	constexpr integer(float initial_value)              { *this = initial_value; }
+	constexpr integer(double initial_value)             { *this = initial_value; }
+	constexpr integer(long double initial_value)        { *this = initial_value; }
+
+	// specific value constructor
+	constexpr integer(const SpecificValue code) noexcept
+		: b{ 0 } {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::zero:
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
+	}
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -227,118 +156,21 @@ public:
 	// simpler interface for now, using at(i) and set(i)/reset(i)
 
 	// assignment operators for native types
-	integer& operator=(signed char rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(short rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(int rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(long long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(char rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(unsigned short rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(unsigned int rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(unsigned long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(unsigned long long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	integer& operator=(float rhs) {
-		float_assign(rhs);
-		return *this;
-	}
-	integer& operator=(double rhs) {
-		float_assign(rhs);
-		return *this;
-	}
-	integer& operator=(long double rhs) {
-		float_assign(rhs);
-		return *this;
-	}
+	constexpr integer& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(float rhs)              noexcept { return convert_ieee(rhs); }
+	constexpr integer& operator=(double rhs)             noexcept { return convert_ieee(rhs); }
+#if LONG_DOUBLE_SUPPORT
+	constexpr integer& operator=(long double rhs)        noexcept { return convert_ieee(rhs); }
+#endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
 	// POSIT_CONCEPT_GENERALIZATION
@@ -351,36 +183,36 @@ public:
 #endif // ADAPTER_POSIT_AND_INTEGER
 
 	// prefix operators
-	integer operator-() const {
+	constexpr integer operator-() const {
 		integer<nbits, BlockType> negated(*this);
 		negated.flip();
 		negated += 1;
 		return negated;
 	}
 	// one's complement
-	integer operator~() const { 
+	constexpr integer operator~() const {
 		integer<nbits, BlockType> complement(*this);
 		complement.flip(); 
 		return complement;
 	}
 	// increment
-	integer operator++(int) {
+	constexpr integer operator++(int) {
 		integer<nbits, BlockType> tmp(*this);
 		operator++();
 		return tmp;
 	}
-	integer& operator++() {
+	constexpr integer& operator++() {
 		*this += integer<nbits, BlockType>(1);
 		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// decrement
-	integer operator--(int) {
+	constexpr integer operator--(int) {
 		integer<nbits, BlockType> tmp(*this);
 		operator--();
 		return tmp;
 	}
-	integer& operator--() {
+	constexpr integer& operator--() {
 		*this -= integer<nbits, BlockType>(1);
 		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
@@ -395,10 +227,11 @@ public:
 	explicit operator int() const                { return to_int(); }
 	explicit operator long() const               { return to_long(); }
 	explicit operator long long() const          { return to_long_long(); }
-	explicit operator float() const              { return to_float(); }
-	explicit operator double() const             { return to_double(); }
-	explicit operator long double() const        { return to_long_double(); }
-
+	explicit operator float() const              { return to_native<float>(); }
+	explicit operator double() const             { return to_native<double>(); }
+#if LONG_DOUBLE_SUPPORT
+	explicit operator long double() const        { return to_native<long double>(); }
+#endif
 	// arithmetic operators
 	integer& operator+=(const integer& rhs) {
 		integer<nbits, BlockType> sum;
@@ -447,36 +280,34 @@ public:
 		*this = divresult.rem;
 		return *this;
 	}
-	integer& operator<<=(const signed shift) {
+	integer& operator<<=(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) {
-			operator>>=(-shift);
-			return *this;
+			return operator>>=(-shift);
 		}
 		if (nbits <= unsigned(shift)) {
 			clear();
 			return *this;
 		}
 		integer<nbits, BlockType> target;
-		for (size_t i = shift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
+		for (size_t i = static_cast<size_t>(shift); i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
 			target.setbit(i, at(i - shift));
 		}
 		*this = target;
 		return *this;
 	}
-	integer& operator>>=(const signed shift) {
+	integer& operator>>=(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) {
-			operator<<=(-shift);
-			return *this;
+			return operator<<=(-shift);
 		}
 		if (nbits <= unsigned(shift)) {
 			clear();
 			return *this;
 		}
 		integer<nbits, BlockType> target;
-		for (int i = nbits - 1; i >= int(shift); --i) {  // TODO: inefficient as it works at the bit level
-			target.setbit(i - shift, at(i));
+		for (int i = nbits - 1; i >= shift; --i) {  // TODO: inefficient as it works at the bit level
+			target.setbit(static_cast<size_t>(i) - static_cast<size_t>(shift), at(static_cast<size_t>(i)));
 		}
 		*this = target;
 		return *this;
@@ -504,10 +335,34 @@ public:
 	}
 
 	// modifiers
-	inline void clear() noexcept { std::memset(&b, 0, nrBytes); }
-	inline void setzero() noexcept { clear(); }
-
-	inline void setbit(size_t i, bool v = true) {
+	inline constexpr void clear() noexcept { std::memset(&b, 0, nrBytes); }
+	inline constexpr void setzero() noexcept { clear(); }
+	inline constexpr integer& maxpos() noexcept {
+		clear();
+		setbit(nbits - 1ull, true);
+		flip();
+		return *this;
+	}
+	inline constexpr integer& minpos() noexcept {
+		clear();
+		setbit(0, true);
+		return *this;
+	}
+	inline constexpr integer& zero() noexcept {
+		clear();
+		return *this;
+	}
+	inline constexpr integer& minneg() noexcept {
+		clear();
+		flip();
+		return *this;
+	}
+	inline constexpr integer& maxneg() noexcept {
+		clear();
+		setbit(nbits - 1ull, true);
+		return *this;
+	}
+	inline constexpr void setbit(size_t i, bool v = true) {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t null = ~(1 << (i % 8));
@@ -518,12 +373,12 @@ public:
 		}
 		throw "integer<nbits, BlockType> bit index out of bounds";
 	}
-	inline void setbyte(size_t i, uint8_t value) {
+	inline constexpr void setbyte(size_t i, uint8_t value) {
 		if (i < nrBytes) { b[i] = value; return; }
 		throw integer_byte_index_out_of_bounds{};
 	}
 	// use un-interpreted raw bits to set the bits of the integer
-	inline void setbits(unsigned long long value) {
+	inline constexpr void setbits(unsigned long long value) {
 		clear();
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = value & 0xFF;
@@ -532,7 +387,7 @@ public:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
 	}
-	inline integer& assign(const std::string& txt) {
+	inline constexpr integer& assign(const std::string& txt) {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
@@ -542,7 +397,7 @@ public:
 	}
 	// pure bit copy of source integer, no sign extension
 	template<size_t src_nbits>
-	inline void bitcopy(const integer<src_nbits, BlockType>& src) {
+	inline constexpr void bitcopy(const integer<src_nbits, BlockType>& src) {
 		int lastByte = (nrBytes < src.nrBytes ? nrBytes : src.nrBytes);
 		clear();
 		for (int i = 0; i < lastByte; ++i) {
@@ -551,7 +406,7 @@ public:
 		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 	}
 	// in-place one's complement
-	inline integer& flip() {
+	inline constexpr integer& flip() {
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = ~b[i];
 		}
@@ -560,15 +415,15 @@ public:
 	}
 
 	// selectors
-	inline bool iszero() const {
+	inline constexpr bool iszero() const {
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			if (b[i] != 0x00) return false;
 		}
 		return true;
 	}
-	inline bool ispos() const { return *this > 0; }
-	inline bool isneg() const {	return *this < 0; }
-	inline bool isone() const {
+	inline constexpr bool ispos() const { return *this > 0; }
+	inline constexpr bool isneg() const {	return *this < 0; }
+	inline constexpr bool isone() const {
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			if (i == 0) {
 				if (b[0] != 0x01) return false;
@@ -579,14 +434,14 @@ public:
 		}
 		return true;
 	}
-	inline bool isodd() const {
+	inline constexpr bool isodd() const {
 		return (b[0] & 0x01) ? true : false;
 	}
-	inline bool iseven() const {
+	inline constexpr bool iseven() const {
 		return !isodd();
 	}
-	inline bool sign() const { return at(nbits - 1); }
-	inline bool at(size_t i) const {
+	inline constexpr bool sign() const { return at(nbits - 1); }
+	inline constexpr bool at(size_t i) const {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t mask = 1 << (i % 8);
@@ -594,9 +449,55 @@ public:
 		}
 		throw "bit index out of bounds";
 	}
-	inline uint8_t byte(unsigned int i) const {
+	inline constexpr uint8_t byte(unsigned int i) const {
 		if (i < nrBytes) return b[i];
 		throw integer_byte_index_out_of_bounds{};
+	}
+
+	// signed integer conversion
+	template<typename SignedInt>
+	inline constexpr integer& convert_signed(SignedInt rhs) noexcept {
+		clear();
+		if (0 == rhs) return *this;
+		uint64_t v = rhs;
+		bool negative = (v < 0 ? true : false);
+		constexpr size_t argbits = sizeof(rhs);
+		unsigned upper = (nbits <= _nbits ? nbits : argbits);
+		for (unsigned i = 0; i < upper && v != 0; ++i) {
+			if (v & 0x1ull) setbit(i);
+			v >>= 1;
+		}
+		if (nbits > 64 && negative) {
+			// sign extend
+			for (unsigned i = upper; i < nbits; ++i) {
+				setbit(i);
+			}
+		}
+		return *this;
+	}
+	// unsigned integer conversion
+	template<typename UnsignedInt>
+	inline constexpr integer& convert_unsigned(UnsignedInt rhs) noexcept {
+		clear();
+		if (0 == rhs) return *this;
+		uint64_t v = rhs;
+		constexpr size_t argbits = sizeof(rhs);
+		unsigned upper = (nbits <= _nbits ? nbits : argbits);
+		for (unsigned i = 0; i < upper; ++i) {
+			if (v & 0x1ull) setbit(i);
+			v >>= 1;
+		}
+		return *this;
+	}
+
+	// native IEEE-754 conversion
+	// TODO: currently only supports integer values of 64bits or less
+	template<typename Real>
+	constexpr integer& convert_ieee(Real rhs) noexcept {
+		clear();
+		long long base = static_cast<long long>(rhs);
+		*this = base;
+		return *this;
 	}
 
 protected:
@@ -704,24 +605,16 @@ protected:
 		}
 		return ull;
 	}
-	float to_float() const { 
-		float f = float((long long)(*this));
-		return f; 
-	}
-	double to_double() const {
-		double d = double((long long)(*this));
-		return d;
-	}
-	long double to_long_double() const {
-		long double ld = (long double)((long long)(*this));
-		return ld;
-	}
-
-	template<typename Ty>
-	void float_assign(Ty& rhs) {
-		clear();
-		long long base = (long long)rhs;
-		*this = base;
+	
+	template<typename Real>
+	constexpr Real to_native() const noexcept {
+		Real r = 0.0;
+		Real bitValue = static_cast<Real>(1.0);
+		for (size_t i = 0; i < nbits; ++i) {
+			if (at(i)) r += bitValue;
+			bitValue *= static_cast<Real>(2.0);
+		}
+		return r;
 	}
 
 private:
@@ -1055,6 +948,7 @@ idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>& _a, const integer
 			divresult.quot.setbit(i, false);
 		}
 		subtractand >>= 1;
+//		std::cout << "i = " << i << " subtractand : " << subtractand << '\n';
 	}
 	if (result_negative) {  // take 2's complement
 		divresult.quot.flip();

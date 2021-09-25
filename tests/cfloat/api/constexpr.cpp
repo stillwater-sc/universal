@@ -41,10 +41,12 @@ void TestConstexprConstruction() {
 		CONSTEXPRESSION Real a(pi);   // double
 		std::cout << a << '\n';
 	}
+#if LONG_DOUBLE_SUPPORT
 	{
 		CONSTEXPRESSION Real a(1.0l);  // long double
 		std::cout << a << '\n';
 	}
+#endif
 #endif // BIT_CAST_SUPPORT
 }
 
@@ -68,10 +70,13 @@ void TestConstexprAssignment() {
 		CONSTEXPRESSION Real a = pi;   // double
 		std::cout << a << '\n';
 	}
+#if LONG_DOUBLE_SUPPORT
 	{
 		CONSTEXPRESSION Real a = 1.0l;  // long double
 		std::cout << a << '\n';
 	}
+#endif
+
 #endif // BIT_CAST_SUPPORT
 }
 

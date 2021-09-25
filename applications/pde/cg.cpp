@@ -49,8 +49,8 @@ size_t Experiment(size_t DoF) {
 	return itr;
 }
 
-#define MANUAL 0
-#define STRESS 1
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
@@ -60,7 +60,7 @@ try {
 	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
-#if MANUAL
+#if MANUAL_TESTING
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = posit<nbits, es>;
@@ -114,9 +114,7 @@ try {
 	Experiment<posit<24, 1>>(64);
 	Experiment<posit<28, 1>>(64);
 	Experiment<posit<32,2>>(64);
-	Experiment<posit<64,3>>(64);
-	Experiment<posit<128,4>>(64);
-	Experiment<posit<256,5>>(64);
+
 
 /* results
 * Native IEEE floating point
@@ -148,9 +146,11 @@ solution in 33 iterations
 The posit with nbits = 28 is a functional replacement for IEEE single precision floats
 */
 
-#if STRESS
-
-#endif // STRESS
+#if STRESS_TESTING
+	Experiment<posit<64,3>>(64);
+	Experiment<posit<128,4>>(64);
+	Experiment<posit<256,5>>(64);
+#endif // STRESS_TESTING
 
 #endif // MANUAL
 

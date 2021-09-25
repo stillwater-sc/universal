@@ -20,6 +20,10 @@ std::string type_tag(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	return s.str();
 }
 
+// TODO: you need to guard this with a fixpnt type
+// as right now this type_tag() design matches any type
+// and is thus ambiguous
+
 // Generate a type tag for this fixpnt
 template<typename FixedPoint>
 std::string type_tag() {

@@ -406,6 +406,7 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
+
 	// generate random test cases to test conversion from an IEEE-754 float to a cfloat
 	template<typename TestType>
 	int VerifyFloat2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
@@ -421,7 +422,7 @@ namespace sw::universal {
 		// std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		int nrOfFailedTests = 0;
-		cfloat<32, 8, uint32_t> ref; // this is a superset of IEEE-754 float with supernormals
+		cfloat<32, 8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> ref; // this is a superset of IEEE-754 float with supernormals
 		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
 		float refValue{ 0.0f };
 		float testValue{ 0.0f };
@@ -441,7 +442,7 @@ namespace sw::universal {
 				continue;
 			}
 			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
-#ifdef CUSTOM_FEEDBACK
+#ifndef CUSTOM_FEEDBACK
 			if (testValue != refValue) {
 				std::cout << to_binary(nut) << '\n' << to_binary(ref) << std::endl;
 			}
@@ -500,14 +501,18 @@ namespace sw::universal {
 
 	// generate IEEE-754 single precision subnormal values
 	template<typename BlockType>
-	int VerifyFloatSubnormals(bool bReportIndividualTestCases) {
+	int VerifyIeee754FloatSubnormals(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = 32;
 		constexpr size_t es = 8;
-		int nrOfFailedTests = 0;
-		cfloat<nbits, es, BlockType> nut, result;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
 		float f{ 0.0f };
+		int nrOfFailedTests{ 0 };
+
 		// verify the subnormals
 		nut = 0;
 		++nut;
@@ -526,18 +531,22 @@ namespace sw::universal {
 
 	// generate IEEE-754 double precision subnormal values
 	template<typename BlockType>
-	int VerifyDoubleSubnormals(bool bReportIndividualTestCases) {
+	int VerifyIeee754DoubleSubnormals(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = 64;
 		constexpr size_t es = 11;
-		int nrOfFailedTests = 0;
-		cfloat<nbits, es, BlockType> nut, result;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
 		double d{ 0.0f };
+		int nrOfFailedTests{ 0 };
+
 		// verify the subnormals
 		nut = 0;
 		++nut;
-		for (size_t i = 0; i < ieee754_parameter<float>::fbits; ++i) {
+		for (size_t i = 0; i < ieee754_parameter<double>::fbits; ++i) {
 			d = double(nut);
 			result = d;
 			if (result != nut) {
@@ -548,6 +557,193 @@ namespace sw::universal {
 			nut.setfraction(fraction);
 		}
 		return nrOfFailedTests;
+	}
+
+#if LONG_DOUBLE_SUPPORT
+	// generate IEEE-754 long double precision subnormal values
+	template<typename BlockType>
+	int VerifyIeee754LongDoubleSubnormals(bool bReportIndividualTestCases) {
+		using namespace std;
+		using namespace sw::universal;
+		constexpr size_t nbits = 80;
+		constexpr size_t es = 15;
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating = false;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
+		double d{ 0.0f };
+		int nrOfFailedTests{ 0 };
+
+		// long double support tends to be just extended precision support (that implies afbits = 64)
+		constexpr size_t fbits = 64;
+		if constexpr (ieee754_parameter<long double>::fbits == fbits) {
+			// verify the subnormals
+			nut = 0;
+			++nut;
+			for (size_t i = 0; i < fbits; ++i) {
+				d = double(nut);
+				result = d;
+				if (result != nut) {
+					nrOfFailedTests += Compare(d, result, nut, bReportIndividualTestCases);
+				}
+				blockbinary<fbits, BlockType> fraction{ 0 };
+				nut.fraction(fraction);
+				fraction <<= 1;
+				nut.setfraction(fraction);
+			}
+		}
+		else {
+			std::cerr << "long double for this compiler environment is not extended precision\n";
+		}
+
+		return nrOfFailedTests;
+	}
+#endif
+
+	////////////////    cfloat <-> blocktriple
+	
+
+	/// <summary>
+	/// convert a blocktriple to a cfloat
+	/// </summary>
+	/// <typeparam name="CfloatConfiguration"></typeparam>
+	/// <param name="bReportIndividualTestCases"></param>
+	/// <returns></returns>
+	template<typename CfloatConfiguration, BlockTripleOperator op>
+	int VerifyCfloatFromBlocktripleConversion(bool bReportIndividualTestCases) {
+		using namespace sw::universal;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+		constexpr size_t fbits = CfloatConfiguration::fbits;
+
+		int nrOfTestFailures{ 0 };
+
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+
+		/// blocktriple addition and subtraction is done in a 2's complement format 0ii.fffff.
+		/// blocktriple multiplication is done in a 1's complement format of ii.fffff
+		/// blocktriple division is done in a ?'s complement format of ???????
+		/// 
+		/// blocktriples can be in overflow configuration, but not in denormalized form
+		/// 
+		/// BlockTripleOperator::ADD  blocktriple type that comes out of an addition or subtraction operation
+		/// BlockTripleOperator::MUL  blocktriple type that comes out of a multiplication operation
+		/// BlockTripleOperator::DIV  blocktriple type that comes out of a division operation
+
+		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
+		BlockTripleConfiguration b;
+		std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << '\n';
+		for (int scale = -8; scale < 8; ++scale) {
+			// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
+			// if MUL, patterns is  ii.fffff, without  00.fffff
+			// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
+			size_t fractionBits{ 0 };
+			size_t integerSet{ 0 };
+			if constexpr (op == BlockTripleOperator::ADD) {
+				fractionBits = fbits; // make it explicit for ease of understanding
+				integerSet = 4;
+			}
+			if constexpr (op == BlockTripleOperator::MUL) {
+				fractionBits = 2 * fbits;
+				integerSet = 4;
+			}
+			size_t NR_VALUES = (1ull << fractionBits);
+			b.setscale(scale);
+			for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
+				size_t integerBits = i * NR_VALUES;
+				for (size_t f = 0; f < NR_VALUES; ++f) {
+					b.setbits(integerBits + f);
+
+					//					std::cout << "blocktriple: " << to_binary(b) << " : " << b << '\n';
+
+					convert(b, nut);
+
+					// get the reference by marshalling the blocktriple value through a double value and assigning it to the cfloat
+					a = double(b);
+					if (a != nut) {
+						//						std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+
+						if (a.isnan() && b.isnan()) continue;
+						if (a.isinf() && b.isinf()) continue;
+
+						++nrOfTestFailures;
+						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
+					}
+					else {
+#ifndef VERBOSE_POSITIVITY
+						if (bReportIndividualTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+#endif
+					}
+				}
+			}
+		}
+		return nrOfTestFailures;
+	}
+
+	/// <summary>
+/// testing of normalization for different blocktriple operators (ADD, MUL, DIV, SQRT)
+/// </summary>
+/// <typeparam name="CfloatConfiguration"></typeparam>
+/// <param name="bReportIndividualTestCases"></param>
+/// <returns></returns>
+	template<typename CfloatConfiguration, BlockTripleOperator op>
+	int VerifyCfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
+		using namespace sw::universal;
+		constexpr size_t nbits = CfloatConfiguration::nbits;
+		constexpr size_t es = CfloatConfiguration::es;
+		using bt = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+
+		int nrOfTestFailures{ 0 };
+		constexpr size_t NR_VALUES = (1u << nbits);
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
+
+		// ADD
+		if constexpr (op == BlockTripleOperator::ADD) {
+			//constexpr size_t abits = CfloatConfiguration::abits;
+			constexpr size_t fbits = CfloatConfiguration::fbits;
+			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				a.normalizeAddition(b);
+				if (double(a) != double(b)) {
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
+
+					++nrOfTestFailures;
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+				}
+				else {
+					if (bReportIndividualTestCases) std::cout << "PASS: " << to_binary(a) << " : " << a << " == " << to_triple(b) << " : " << b << '\n';
+				}
+			}
+		}
+
+		// MUL
+		if constexpr (op == BlockTripleOperator::MUL) {
+			constexpr size_t fbits = CfloatConfiguration::fbits;
+			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			blocktriple<2 * fbits, BlockTripleOperator::REPRESENTATION, bt> ref;
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				a.normalizeMultiplication(b);
+				ref = double(b);
+				if (double(ref) != double(b)) {
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
+
+					++nrOfTestFailures;
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+				}
+			}
+		}
+		return nrOfTestFailures;
 	}
 
 	// Generate ordered set in ascending order from [-NaN, -inf, -maxpos, ..., +maxpos, +inf, +NaN] for a particular posit config <nbits, es>

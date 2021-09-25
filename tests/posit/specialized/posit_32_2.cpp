@@ -55,17 +55,26 @@ void CheckAddition() {
 	}
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 500000;
-
+	constexpr size_t RND_TEST_CASES = 5000;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
+
 #if POSIT_FAST_POSIT_32_2
 	std::cout << "Fast specialization posit<32,2> configuration tests\n";
 #else
@@ -140,8 +149,10 @@ try {
 		}
 	}
 #endif
+
 #else
 
+#if REGRESSION_LEVEL_1
 	// special cases
 	std::cout << "Special case tests\n";
 	std::string test = "Initialize to zero: ";
@@ -164,6 +175,9 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
+#endif
+
+#if REGRESSION_LEVEL_2
 	// logic tests
 	std::cout << "Logic operator tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==          (native) ");
@@ -180,6 +194,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyUintConversion              <nbits, es>(bReportIndividualTestCases), tag, "uint32 assign   (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(bReportIndividualTestCases), tag, "float assign    (native)  ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
+#endif
+
+#if REGRESSION_LEVEL_3
 
 	// arithmetic tests
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
@@ -191,6 +208,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "-=              (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "*=              (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "/=              (native)  ");
+#endif
+
+#if REGRESSION_LEVEL_4
 
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
@@ -216,7 +236,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_ATANH, RND_TEST_CASES, dminpos), tag, "atanh                     ");
 	// elementary functions with two operands
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_POW, RND_TEST_CASES),   tag, "pow                       ");
+
 #endif
+
+#endif // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

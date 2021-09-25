@@ -19,23 +19,46 @@ try {
 	
 	float f         = 1.0e1;
 	double d        = 1.0e10;
+#if LONG_DOUBLE_SUPPORT
 	long double ld  = 1.0e100;
+#else
+	std::cout << "This environment does not support a native long double format\n";
+#endif
 
 	std::cout << "scale of " << f << " is 2^" << scale(f) << " ~ 10^" << int(scale(f)/ 3.3) << '\n';
 	std::cout << "scale of " << d << " is 2^" << scale(d) << " ~ 10^" << int(scale(d) / 3.3) << '\n';
+#if LONG_DOUBLE_SUPPORT
 	std::cout << "scale of " << ld << " is 2^" << scale(ld) << " ~ 10^" << int(scale(ld) / 3.3) << '\n';
+#endif
 
 	std::cout << to_binary(f, true) << " " << f << '\n';
 	std::cout << to_binary(d, true) << " " << d << '\n';
+#if LONG_DOUBLE_SUPPORT
 	std::cout << to_binary(ld, true) << " " << ld << '\n';
+#endif
 
 	std::cout << color_print(f) << " " << f << '\n';
 	std::cout << color_print(d) << " " << d << '\n';
+#if LONG_DOUBLE_SUPPORT
 	std::cout << color_print(ld) << " " << ld << '\n';
+#endif
 
+	// show all the different presentations for the different IEEE-754 native formats
 	valueRepresentations(f);
 	valueRepresentations(d);
+#if LONG_DOUBLE_SUPPORT
 	valueRepresentations(ld);
+#endif
+
+	for (size_t i = 0; i < 333; ++i) {
+		std::cout << std::setw(4) << i << " : " << ipow<double>(i) << '\n';
+	}
+	size_t upper = 333;
+	double big = ipow<double>(upper);
+	for (size_t i = 0; i < upper; ++i) {
+		std::cout << std::setw(4) << upper - i << " : " << to_binary(big) << " : " << big << '\n';
+		big /= 2.0;
+	}
 
 	std::cout << std::endl; // flush the stream
 

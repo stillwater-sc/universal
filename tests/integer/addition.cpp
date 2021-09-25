@@ -45,9 +45,17 @@ void ReproducibilityTestSuite() {
 	}
 }
 
-
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 std::string convert_to_string(const std::vector<char>& v) {
 	std::stringstream ss;
@@ -61,44 +69,54 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "Integer Arithmetic tests failed";
+	std::cout << "Integer Arithmetic Addition verfication\n";
+	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
+//	std::string tag = "Integer Arithmetic tests failed";
 
 #if MANUAL_TESTING
 
+	using Integer = integer<16>;
+	Integer a(SpecificValue::maxpos), b(SpecificValue::maxneg);
+	Integer c;
+	c = a + b;
+	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 4, uint8_t>(bReportIndividualTestCases), "integer< 4, uint8_t >", "addition");
 	std::cout << "done" << std::endl;
 
-	return EXIT_SUCCESS;
 #else
-	std::cout << "Integer Arithmetic verfication\n";
-
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
-
-	// allocation is the only functionality of integer<N> at this time
-
-	// sample tests
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>(tag, bReportIndividualTestCases), "integer<4, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, uint8_t>(tag, bReportIndividualTestCases), "integer<6, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12, uint16_t>", "addition");
 
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 4, uint8_t>(bReportIndividualTestCases), "integer< 4, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 6, uint8_t>(bReportIndividualTestCases), "integer< 6, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 8, uint8_t>(bReportIndividualTestCases), "integer< 8, uint8_t >", "addition");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<14, uint8_t>(tag, bReportIndividualTestCases), "integer<14, uint8_t>", "addition");
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 9, uint8_t >(bReportIndividualTestCases), "integer< 9, uint8_t >", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 9, uint16_t>(bReportIndividualTestCases), "integer< 9, uint16_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint8_t >(bReportIndividualTestCases), "integer<11, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint16_t>(bReportIndividualTestCases), "integer<11, uint16_t>", "addition");
+#endif
 
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t >(bReportIndividualTestCases), "integer<12, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(bReportIndividualTestCases), "integer<12, uint16_t>", "addition");
+#endif
+
+#if	REGRESSION_LEVEL_4
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint16_t>(bReportIndividualTestCases), "integer<16, uint8_t >", "addition");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16, uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
-
-#endif // STRESS_TESTING
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16, uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
+#endif
 
 #endif // MANUAL_TESTING
+
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

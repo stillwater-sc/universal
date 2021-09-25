@@ -88,7 +88,8 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
 		<< '\n'
-		<< " result " << to_binary(result) << " vs ref " << to_binary(ref)
+		<< " result " << to_binary(result) 
+		<< "\n vs ref " << to_binary(ref)
 		<< '\n'
 		<< to_binary(lhs)
 		<< " " << op << " "

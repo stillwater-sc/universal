@@ -28,7 +28,11 @@ void MeasureLCM(const std::vector<sw::universal::integer<nbits, BlockType>>& v) 
 		<< " to be\n" << least_common_multple << '\n';
 }
 
-int main(int argc, char** argv)
+#define STRESS_TESTING 0
+
+// Warning	C6262	Function uses '16448' bytes of stack : exceeds / analyze : stacksize '16384'.Consider moving some data to heap.crypto_large_lcm	C : \Users\tomtz\Documents\dev\clones\universal\applications\cryptography\large_lcm.cpp	31
+// TODO: what gets allocated on the stack? Integer factor, but that is max 256bytes
+int main()
 try {
 	using namespace sw::universal;
 
@@ -42,7 +46,7 @@ try {
 		// use random_device to generate a seed for Mersenne twister engine
 		std::random_device rd{};
 		std::mt19937 engine{ rd() };
-		std::uniform_real_distribution<long double> dist{0.0, 1000000000000.0l };
+		std::uniform_real_distribution<double> dist{0.0, 1000000000000.0 };
 
 		std::vector<Integer> v;
 		for (int i = 0; i < 10; ++i) {
@@ -66,6 +70,7 @@ try {
 		}
 	}
 
+	// this triggers the integer_overflow exception
 	{
 		constexpr size_t nbits = 1024;
 		using Integer = integer<nbits, uint32_t>;
@@ -73,7 +78,7 @@ try {
 
 		std::random_device rd{};
 		std::mt19937 engine{ rd() };
-		std::uniform_real_distribution<long double> dist{0.0, 1000000.0 };
+		std::uniform_real_distribution<double> dist{0.0, 100000.0 };
 
 		std::vector<Integer> v;
 		for (int i = 0; i < 100; ++i) {
@@ -96,6 +101,7 @@ try {
 		}
 	}
 
+#if STRESS_TESTING
 	{
 		constexpr size_t nbits = 2048;
 		using Integer = integer<nbits, uint32_t>;
@@ -103,7 +109,7 @@ try {
 
 		std::random_device rd{};
 		std::mt19937 engine{ rd() };
-		std::uniform_real_distribution<long double> dist{0.0, 1000.0 };
+		std::uniform_real_distribution<double> dist{0.0, 1000.0 };
 
 		std::vector<Integer> v;
 		for (int i = 0; i < 1000; ++i) {
@@ -125,6 +131,7 @@ try {
 			out.close();
 		}
 	}
+#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

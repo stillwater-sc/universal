@@ -46,6 +46,7 @@ try {
 
 	std::cout << "posit ULP tests\n";
 
+#if MANUAL_TESTING
 	TestULP<8, 0>();
 	TestULP<16, 1>();
 	TestULP<32, 2>();
@@ -55,7 +56,25 @@ try {
 	{
 		posit<64, 3> a(1.0);
 	}
+#else 
 
+#if REGRESSION_LEVEL_1
+	TestULP<8, 0>();
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+	TestULP<64, 3>();
+#endif
+
+#endif // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

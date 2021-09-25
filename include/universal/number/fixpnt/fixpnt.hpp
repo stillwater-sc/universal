@@ -29,6 +29,7 @@
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/numeric_limits.hpp>
 #include <universal/number/fixpnt/exceptions.hpp>
+#include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
