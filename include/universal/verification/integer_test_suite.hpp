@@ -19,10 +19,10 @@
 namespace sw::universal {
 
 	// enumerate all addition cases for an integer<16> configuration compared against native short
-	template<typename BlockType>
+	template<typename BlockType, size_t testBits = 12>
 	int VerifyShortAddition(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16; 
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
@@ -68,10 +68,10 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all subtraction cases for an integer<16> configuration compared against native short
-	template<typename BlockType>
+	template<typename BlockType, size_t testBits = 12>
 	int VerifyShortSubtraction(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
@@ -117,10 +117,10 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all multiplication cases for an integer<16> configuration compared against native short
-	template<typename BlockType>
+	template<typename BlockType, size_t testBits = 12>
 	int VerifyShortMultiplication(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
@@ -166,10 +166,10 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all division cases for an integer<16> configuration compared against native short
-	template<typename BlockType>
+	template<typename BlockType, size_t testBits = 10>
 	int VerifyShortDivision(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
@@ -228,10 +228,10 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all remainder cases for an integer<16> configuration compared against native short
-	template<typename BlockType = uint8_t>
+	template<typename BlockType, size_t testBits = 10>
 	int VerifyShortRemainder(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;

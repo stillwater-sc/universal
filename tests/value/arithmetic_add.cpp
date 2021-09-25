@@ -28,14 +28,14 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 			for (size_t afrac = 0; afrac < max_fract; ++afrac) {
 				afraction = convert_to_bitblock<fbits>(afrac);
 				a.set(sign == 1, scale, afraction, false, false);
-				std::cout << to_triple(a) << std::endl;
+				// std::cout << to_triple(a) << std::endl;
 				for (size_t sign = 0; sign < 2; ++sign) {
 					for (int scale = scale_lb; scale < scale_ub; ++scale) {
 						for (size_t bfrac = 0; bfrac < max_fract; ++bfrac) {
 							bfraction = convert_to_bitblock<fbits>(bfrac);
 							b.set(sign == 1, scale, bfraction, false, false);
 							module_add<fbits, abits>(a, b, sum);
-							std::cout << to_triple(a) << " + " << to_triple(b) << " = " << to_triple(sum) << std::endl;
+							//std::cout << to_triple(a) << " + " << to_triple(b) << " = " << to_triple(sum) << std::endl;
 
 							double dsum = sum.to_double();
 							ref = dsum;
@@ -112,19 +112,19 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 3>("FAIL", bReportIndividualTestCases), "value<3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 3>("FAIL", bReportIndividualTestCases), "value<3> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 4>("FAIL", bReportIndividualTestCases), "value<4> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_3
-
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 5>("FAIL", bReportIndividualTestCases), "value<5> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8> scale 2^3", "addition");
 #endif
 
 #endif // MANUAL_TESTING

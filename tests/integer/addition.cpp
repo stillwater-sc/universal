@@ -95,24 +95,23 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint8_t >(bReportIndividualTestCases), "integer<10, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint16_t>(bReportIndividualTestCases), "integer<10, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 9, uint8_t >(bReportIndividualTestCases), "integer< 9, uint8_t >", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 9, uint16_t>(bReportIndividualTestCases), "integer< 9, uint16_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint8_t >(bReportIndividualTestCases), "integer<11, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint16_t>(bReportIndividualTestCases), "integer<11, uint16_t>", "addition");
+#endif
+
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t >(bReportIndividualTestCases), "integer<12, uint8_t >", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(bReportIndividualTestCases), "integer<12, uint16_t>", "addition");
 #endif
 
-#if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<14, uint8_t >(bReportIndividualTestCases), "integer<14, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<14, uint16_t>(bReportIndividualTestCases), "integer<14, uint16_t>", "addition");
-#endif
-
 #if	REGRESSION_LEVEL_4
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint16_t>(bReportIndividualTestCases), "integer<16, uint8_t >", "addition");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16, uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
-
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16, uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
 #endif
 
 #endif // MANUAL_TESTING

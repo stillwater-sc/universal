@@ -161,15 +161,15 @@ try {
 #if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<14, uint8_t >(bReportIndividualTestCases), "integer<14,uint8_t >", "floor_sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint16_t>(bReportIndividualTestCases), "integer<16,uint16_t>", "floor_sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint16_t>(bReportIndividualTestCases), "integer<16,uint16_t>", "floor_sqrt");
 	// you can use uint64_t as BlockType for types <= 64bits
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint64_t>(bReportIndividualTestCases), "integer<16,uint64_t>", "floor_sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<16, uint64_t>(bReportIndividualTestCases), "integer<16,uint64_t>", "floor_sqrt");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint8_t >(bReportIndividualTestCases), "integer<20,uint8_t >", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint16_t>(bReportIndividualTestCases), "integer<20,uint16_t>", "floor_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint32_t>(bReportIndividualTestCases), "integer<20,uint32_t>", "floor_sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint8_t >(bReportIndividualTestCases), "integer<20,uint8_t >", "floor_sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<20, uint16_t>(bReportIndividualTestCases), "integer<20,uint16_t>", "floor_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<18, uint32_t>(bReportIndividualTestCases), "integer<18,uint32_t>", "floor_sqrt");
 #endif
 
 	std::cout << "ceil(sqrt(x)) tests\n";
@@ -183,17 +183,17 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<14, uint8_t >(bReportIndividualTestCases), "integer<14,uint8_t >", "ceil_sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<14, uint8_t >(bReportIndividualTestCases), "integer<14,uint8_t >", "ceil_sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<16, uint16_t>(bReportIndividualTestCases), "integer<16,uint16_t>", "ceil_sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<16, uint16_t>(bReportIndividualTestCases), "integer<16,uint16_t>", "ceil_sqrt");
 	// you can use uint64_t as BlockType for types <= 64bits
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<16, uint64_t>(bReportIndividualTestCases), "integer<16,uint64_t>", "ceil_sqrt");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<20, uint8_t >(bReportIndividualTestCases), "integer<20,uint8_t >", "ceil_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<20, uint16_t>(bReportIndividualTestCases), "integer<20,uint16_t>", "ceil_sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<20, uint32_t>(bReportIndividualTestCases), "integer<20,uint32_t>", "ceil_sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<20, uint8_t >(bReportIndividualTestCases), "integer<20,uint8_t >", "ceil_sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<20, uint16_t>(bReportIndividualTestCases), "integer<20,uint16_t>", "ceil_sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerCeilSqrt<18, uint32_t>(bReportIndividualTestCases), "integer<18,uint32_t>", "ceil_sqrt");
 #endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

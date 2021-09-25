@@ -91,10 +91,10 @@ try {
 
 #if REGRESSION_LEVEL_4
 	// VerifyShortRemainder compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
+//	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
 #endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

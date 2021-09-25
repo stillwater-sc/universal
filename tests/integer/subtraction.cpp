@@ -68,23 +68,23 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, uint8_t >(bReportIndividualTestCases), "integer<10, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint8_t >(bReportIndividualTestCases), "integer< 7, uint8_t >", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint16_t>(bReportIndividualTestCases), "integer< 7, uint16_t>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, uint8_t >(bReportIndividualTestCases), "integer<10, uint8_t >", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, uint16_t>(bReportIndividualTestCases), "integer<10, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t >(bReportIndividualTestCases), "integer<12, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>(bReportIndividualTestCases), "integer<12, uint16_t>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, uint8_t >(bReportIndividualTestCases), "integer<13, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<11, uint8_t >(bReportIndividualTestCases), "integer<11, uint8_t >", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, uint16_t>(bReportIndividualTestCases), "integer<13, uint16_t>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "subtraction");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "subtraction");
 #endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

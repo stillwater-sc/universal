@@ -262,10 +262,10 @@ try {
 
 #if REGRESSION_LEVEL_4
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "division");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "division");
 #endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

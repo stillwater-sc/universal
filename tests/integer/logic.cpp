@@ -309,13 +309,13 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<16>(bReportIndividualTestCases), "integer<16>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<16>(bReportIndividualTestCases), "integer<16>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<16>(bReportIndividualTestCases), "integer<16>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<16>(bReportIndividualTestCases), "integer<16>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<16>(bReportIndividualTestCases), "integer<16>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<16>(bReportIndividualTestCases), "integer<16>", ">=");
-#endif // REGRESSION_4th_QUARTILE
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<13>(bReportIndividualTestCases), "integer<13>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<13>(bReportIndividualTestCases), "integer<13>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<13>(bReportIndividualTestCases), "integer<13>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<13>(bReportIndividualTestCases), "integer<13>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<13>(bReportIndividualTestCases), "integer<13>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<13>(bReportIndividualTestCases), "integer<13>", ">=");
+#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 

@@ -81,23 +81,23 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint8_t >(bReportIndividualTestCases), "integer<10, uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint16_t>(bReportIndividualTestCases), "integer<10, uint16_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint8_t >(bReportIndividualTestCases), "integer<12, uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint16_t>(bReportIndividualTestCases), "integer<12, uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 7, uint8_t >(bReportIndividualTestCases), "integer< 7, uint8_t >", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 7, uint16_t>(bReportIndividualTestCases), "integer< 7, uint16_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 9, uint8_t >(bReportIndividualTestCases), "integer< 9, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 9, uint16_t>(bReportIndividualTestCases), "integer< 9, uint16_t>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, uint8_t >(bReportIndividualTestCases), "integer<14, uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, uint16_t>(bReportIndividualTestCases), "integer<14, uint16_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint8_t >(bReportIndividualTestCases), "integer<12, uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint16_t>(bReportIndividualTestCases), "integer<12, uint16_t>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// VerifyShortMultiplication compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "multiplication");
 	// this is a 'standard' comparision against a native int64_t which will not have overflow conditions
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "multiplication");
 #endif 
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
