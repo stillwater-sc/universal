@@ -156,20 +156,20 @@ public:
 	// simpler interface for now, using at(i) and set(i)/reset(i)
 
 	// assignment operators for native types
-	constexpr integer& operator=(signed char rhs)        noexcept { return convert(rhs); }
-	constexpr integer& operator=(short rhs)              noexcept { return convert(rhs); }
-	constexpr integer& operator=(int rhs)                noexcept { return convert(rhs); }
-	constexpr integer& operator=(long rhs)               noexcept { return convert(rhs); }
-	constexpr integer& operator=(long long rhs)          noexcept { return convert(rhs); }
-	constexpr integer& operator=(char rhs)               noexcept { return convert(rhs); }
-	constexpr integer& operator=(unsigned short rhs)     noexcept { return convert(rhs); }
-	constexpr integer& operator=(unsigned int rhs)       noexcept { return convert(rhs); }
-	constexpr integer& operator=(unsigned long rhs)      noexcept { return convert(rhs); }
-	constexpr integer& operator=(unsigned long long rhs) noexcept { return convert(rhs); }
-	constexpr integer& operator=(float rhs)              noexcept { return convert(rhs); }
-	constexpr integer& operator=(double rhs)             noexcept { return convert(rhs); }
+	constexpr integer& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr integer& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	constexpr integer& operator=(float rhs)              noexcept { return convert_ieee(rhs); }
+	constexpr integer& operator=(double rhs)             noexcept { return convert_ieee(rhs); }
 #if LONG_DOUBLE_SUPPORT
-	constexpr integer& operator=(long double rhs)        noexcept { return convert(rhs); }
+	constexpr integer& operator=(long double rhs)        noexcept { return convert_ieee(rhs); }
 #endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
@@ -455,14 +455,16 @@ public:
 	}
 
 	// signed integer conversion
-	inline constexpr integer& convert(int64_t v) noexcept {
+	template<typename SignedInt>
+	inline constexpr integer& convert_signed(SignedInt rhs) noexcept {
 		clear();
-		if (0 == v) return *this;
-		constexpr uint64_t mask = 0x1;
+		if (0 == rhs) return *this;
+		uint64_t v = rhs;
 		bool negative = (v < 0 ? true : false);
-		unsigned upper = (nbits <= 64 ? nbits : 64);
+		constexpr size_t argbits = sizeof(rhs);
+		unsigned upper = (nbits <= _nbits ? nbits : argbits);
 		for (unsigned i = 0; i < upper && v != 0; ++i) {
-			if (v & mask) setbit(i);
+			if (v & 0x1ull) setbit(i);
 			v >>= 1;
 		}
 		if (nbits > 64 && negative) {
@@ -474,13 +476,15 @@ public:
 		return *this;
 	}
 	// unsigned integer conversion
-	inline constexpr integer& convert(uint64_t v) noexcept {
+	template<typename UnsignedInt>
+	inline constexpr integer& convert_unsigned(UnsignedInt rhs) noexcept {
 		clear();
-		if (0 == v) return *this;
-		constexpr uint64_t mask = 0x1;
-		unsigned upper = (nbits <= 64 ? nbits : 64);
+		if (0 == rhs) return *this;
+		uint64_t v = rhs;
+		constexpr size_t argbits = sizeof(rhs);
+		unsigned upper = (nbits <= _nbits ? nbits : argbits);
 		for (unsigned i = 0; i < upper; ++i) {
-			if (v & mask) setbit(i);
+			if (v & 0x1ull) setbit(i);
 			v >>= 1;
 		}
 		return *this;
@@ -489,9 +493,9 @@ public:
 	// native IEEE-754 conversion
 	// TODO: currently only supports integer values of 64bits or less
 	template<typename Real>
-	constexpr integer& convert(Real rhs) noexcept {
+	constexpr integer& convert_ieee(Real rhs) noexcept {
 		clear();
-		long long base = (long long)rhs;
+		long long base = static_cast<long long>(rhs);
 		*this = base;
 		return *this;
 	}
