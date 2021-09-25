@@ -24,26 +24,6 @@ template<size_t nbits, typename BlockType> integer<nbits, BlockType> min_int();
 template<size_t nbits, typename BlockType> struct idiv_t;
 template<size_t nbits, typename BlockType> idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>&, const integer<nbits, BlockType>&b);
 
-// create the largest integer value
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> max_int() {
-	// two's complement max is 01111111
-	integer<nbits, BlockType> mx;
-	mx.setbit(nbits - 1, true);
-	mx.flip();
-	return mx;
-}
-// create the smallest integer value
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> min_int_() {
-	// two's complement min is 10000000
-	integer<nbits, BlockType> mn;
-	mn.setbit(nbits - 1, true);
-	return mn;
-}
-
-
-
 // scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
 template<size_t nbits, typename BlockType>
 inline long scale(const integer<nbits, BlockType>& i) {
@@ -65,14 +45,10 @@ inline long scale(const integer<nbits, BlockType>& i) {
 
 // signed integer conversion
 template<size_t nbits, typename BlockType>
-inline constexpr integer<nbits, BlockType>& convert(int64_t v, integer<nbits, BlockType>& result) {
-	return result.convert(v);
-}
+inline constexpr integer<nbits, BlockType>& convert(int64_t v, integer<nbits, BlockType>& result) {	return result.convert(v); }
 // unsigned integer conversion
 template<size_t nbits, typename BlockType>
-inline constexpr integer<nbits, BlockType>& convert(uint64_t v, integer<nbits, BlockType>& result) {
-	return result.convert(v);
-}
+inline constexpr integer<nbits, BlockType>& convert(uint64_t v, integer<nbits, BlockType>& result) { return result.convert(v); }
 
 template<size_t nbits, typename BlockType>
 bool parse(const std::string& number, integer<nbits, BlockType>& v);

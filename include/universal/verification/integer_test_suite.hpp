@@ -274,9 +274,11 @@ namespace sw::universal {
 	// enumerate all addition cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
 	int VerifyAddition(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -291,7 +293,7 @@ namespace sw::universal {
 					iresult = ia + ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 	
 					}
@@ -320,9 +322,11 @@ namespace sw::universal {
 	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
 	int VerifySubtraction(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -337,7 +341,7 @@ namespace sw::universal {
 					iresult = ia - ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 
 					}
@@ -367,9 +371,11 @@ namespace sw::universal {
 	// enumerate all multiplication cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
 	int VerifyMultiplication(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -384,7 +390,7 @@ namespace sw::universal {
 					iresult = ia * ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 
 					}
@@ -414,9 +420,10 @@ namespace sw::universal {
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
 	int VerifyDivision(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
+		Integer ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -474,9 +481,10 @@ namespace sw::universal {
 	// enumerate all remainder cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
 	int VerifyRemainder(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
+		Integer ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
