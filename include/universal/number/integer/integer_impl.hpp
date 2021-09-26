@@ -83,8 +83,11 @@ chunk values. The chunks need to be interpreted as unsigned binary segments.
 template<size_t _nbits, typename BlockType = uint8_t>
 class integer {
 public:
-	static constexpr bool FrequencyCount = true;
+	using bt = uint8_t;        // TODO: need to generate to parameterized BlockType
 	static constexpr size_t nbits = _nbits;
+	static constexpr size_t bitsInByte = 8ull;
+	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
 	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
 	static constexpr unsigned MS_BYTE = nrBytes - 1;
 	static constexpr uint8_t MS_BYTE_MASK = (0xFF >> (nrBytes * 8 - nbits));
@@ -184,36 +187,36 @@ public:
 
 	// prefix operators
 	constexpr integer operator-() const {
-		integer<nbits, BlockType> negated(*this);
+		integer negated(*this);
 		negated.flip();
 		negated += 1;
 		return negated;
 	}
 	// one's complement
 	constexpr integer operator~() const {
-		integer<nbits, BlockType> complement(*this);
+		integer complement(*this);
 		complement.flip(); 
 		return complement;
 	}
 	// increment
 	constexpr integer operator++(int) {
-		integer<nbits, BlockType> tmp(*this);
+		integer tmp(*this);
 		operator++();
 		return tmp;
 	}
 	constexpr integer& operator++() {
-		*this += integer<nbits, BlockType>(1);
+		*this += integer(1);
 		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// decrement
 	constexpr integer operator--(int) {
-		integer<nbits, BlockType> tmp(*this);
+		integer tmp(*this);
 		operator--();
 		return tmp;
 	}
 	constexpr integer& operator--() {
-		*this -= integer<nbits, BlockType>(1);
+		*this -= integer(1);
 		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
@@ -335,7 +338,68 @@ public:
 	}
 
 	// modifiers
-	inline constexpr void clear() noexcept { std::memset(&b, 0, nrBytes); }
+	inline constexpr void clear() noexcept { 
+		if constexpr (0 == nrBlocks) {
+			return;
+		}
+		else if constexpr (1 == nrBlocks) {
+			b[0] = bt(0);
+		}
+		else if constexpr (2 == nrBlocks) {
+			b[0] = bt(0);
+			b[1] = bt(0);
+		}
+		else if constexpr (3 == nrBlocks) {
+			b[0] = bt(0);
+			b[1] = bt(0);
+			b[2] = bt(0);
+		}
+		else if constexpr (4 == nrBlocks) {
+			b[0] = bt(0);
+			b[1] = bt(0);
+			b[2] = bt(0);
+			b[3] = bt(0);
+		}
+		else if constexpr (5 == nrBlocks) {
+			b[0] = bt(0);
+			b[1] = bt(0);
+			b[2] = bt(0);
+			b[3] = bt(0);
+			b[4] = bt(0);
+		}
+		else if constexpr (6 == nrBlocks) {
+			b[0] = bt(0);
+			b[1] = bt(0);
+			b[2] = bt(0);
+			b[3] = bt(0);
+			b[4] = bt(0);
+			b[5] = bt(0);
+		}
+		else if constexpr (7 == nrBlocks) {
+			b[0] = bt(0);
+			b[1] = bt(0);
+			b[2] = bt(0);
+			b[3] = bt(0);
+			b[4] = bt(0);
+			b[5] = bt(0);
+			b[6] = bt(0);
+		}
+		else if constexpr (8 == nrBlocks) {
+			b[0] = bt(0);
+			b[1] = bt(0);
+			b[2] = bt(0);
+			b[3] = bt(0);
+			b[4] = bt(0);
+			b[5] = bt(0);
+			b[6] = bt(0);
+			b[7] = bt(0);
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks; ++i) {
+				b[i] = bt(0);
+			}
+		}
+	}
 	inline constexpr void setzero() noexcept { clear(); }
 	inline constexpr integer& maxpos() noexcept {
 		clear();

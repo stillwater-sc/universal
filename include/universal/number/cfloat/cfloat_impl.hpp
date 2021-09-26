@@ -698,8 +698,65 @@ public:
 	/// </summary>
 	/// <returns>void</returns>
 	inline constexpr void clear() noexcept {
-		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = bt(0);
+		if constexpr (0 == nrBlocks) {
+			return;
+		}
+		else if constexpr (1 == nrBlocks) {
+			_block[0] = bt(0);
+		}
+		else if constexpr (2 == nrBlocks) {
+			_block[0] = bt(0);
+			_block[1] = bt(0);
+		}
+		else if constexpr (3 == nrBlocks) {
+			_block[0] = bt(0);
+			_block[1] = bt(0);
+			_block[2] = bt(0);
+		}
+		else if constexpr (4 == nrBlocks) {
+			_block[0] = bt(0);
+			_block[1] = bt(0);
+			_block[2] = bt(0);
+			_block[3] = bt(0);
+		}
+		else if constexpr (5 == nrBlocks) {
+			_block[0] = bt(0);
+			_block[1] = bt(0);
+			_block[2] = bt(0);
+			_block[3] = bt(0);
+			_block[4] = bt(0);
+		}
+		else if constexpr (6 == nrBlocks) {
+			_block[0] = bt(0);
+			_block[1] = bt(0);
+			_block[2] = bt(0);
+			_block[3] = bt(0);
+			_block[4] = bt(0);
+			_block[5] = bt(0);
+		}
+		else if constexpr (7 == nrBlocks) {
+			_block[0] = bt(0);
+			_block[1] = bt(0);
+			_block[2] = bt(0);
+			_block[3] = bt(0);
+			_block[4] = bt(0);
+			_block[5] = bt(0);
+			_block[6] = bt(0);
+		}
+		else if constexpr (8 == nrBlocks) {
+			_block[0] = bt(0);
+			_block[1] = bt(0);
+			_block[2] = bt(0);
+			_block[3] = bt(0);
+			_block[4] = bt(0);
+			_block[5] = bt(0);
+			_block[6] = bt(0);
+			_block[7] = bt(0);
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks; ++i) {
+				_block[i] = bt(0);
+			}
 		}
 	}
 	/// <summary>
@@ -734,6 +791,40 @@ public:
 			_block[2] = BLOCK_MASK;
 			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 		}
+		else if constexpr (5 == nrBlocks) {
+			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[2] = BLOCK_MASK;
+			_block[3] = BLOCK_MASK;
+			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
+		}
+		else if constexpr (6 == nrBlocks) {
+			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[2] = BLOCK_MASK;
+			_block[3] = BLOCK_MASK;
+			_block[4] = BLOCK_MASK;
+			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
+		}
+		else if constexpr (7 == nrBlocks) {
+			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[2] = BLOCK_MASK;
+			_block[3] = BLOCK_MASK;
+			_block[4] = BLOCK_MASK;
+			_block[5] = BLOCK_MASK;
+			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
+		}
+		else if constexpr (8 == nrBlocks) {
+			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[2] = BLOCK_MASK;
+			_block[3] = BLOCK_MASK;
+			_block[4] = BLOCK_MASK;
+			_block[5] = BLOCK_MASK;
+			_block[6] = BLOCK_MASK;
+			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
+		}
 		else {
 			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
 			for (size_t i = 1; i < nrBlocks - 1; ++i) {
@@ -765,6 +856,36 @@ public:
 			_block[0] = BLOCK_MASK;
 			_block[1] = BLOCK_MASK;
 			_block[2] = BLOCK_MASK;
+		}
+		else if constexpr (5 == nrBlocks) {
+			_block[0] = BLOCK_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[2] = BLOCK_MASK;
+			_block[3] = BLOCK_MASK;
+		}
+		else if constexpr (6 == nrBlocks) {
+			_block[0] = BLOCK_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[2] = BLOCK_MASK;
+			_block[3] = BLOCK_MASK;
+			_block[4] = BLOCK_MASK;
+		}
+		else if constexpr (7 == nrBlocks) {
+			_block[0] = BLOCK_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[2] = BLOCK_MASK;
+			_block[3] = BLOCK_MASK;
+			_block[4] = BLOCK_MASK;
+			_block[5] = BLOCK_MASK;
+		}
+		else if constexpr (8 == nrBlocks) {
+			_block[0] = BLOCK_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[2] = BLOCK_MASK;
+			_block[3] = BLOCK_MASK;
+			_block[4] = BLOCK_MASK;
+			_block[5] = BLOCK_MASK;
+			_block[6] = BLOCK_MASK;
 		}
 		else {
 			for (size_t i = 0; i < nrBlocks - 1; ++i) {
