@@ -35,9 +35,5 @@ template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 bool isinf(std::complex< fixpnt<nbits, rbits, arithmetic, bt> > x) {
 	return (isinf(x.real()) || isinf(x.imag()));
 }
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-std::complex< fixpnt<nbits, rbits, arithmetic, bt> > copysign(std::complex< fixpnt<nbits, rbits, arithmetic, bt> > x, std::complex< fixpnt<nbits, rbits, arithmetic, bt> > y) {
-	return std::complex< fixpnt<nbits, rbits, arithmetic, bt> >(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
-}
 
 }  // namespace sw::universal

@@ -6,7 +6,7 @@
 #include <universal/utility/directives.hpp>
 
 // use default number system library configuration
-#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/posit/posit.hpp>
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -15,10 +15,11 @@ int main()
 try {
 	using namespace sw::universal;
 
+	std::cout << "posit complex function validation\n";
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "fixpnt complex failed: ";
+	std::string tag = "posit complex failed: ";
 
 #if MANUAL_TESTING
 
@@ -37,13 +38,11 @@ try {
 	}
 #else
 
-	std::cout << "fixpnt complex function validation\n";
 
-	constexpr size_t nbits = 4;
-	constexpr size_t rbits = 3;
-	constexpr bool arithmetic = Saturating;
+	constexpr size_t nbits = 10;
+	constexpr size_t es = 0;
 	using bt = uint8_t;
-	using Real = fixpnt<nbits, rbits, arithmetic, bt>;
+	using Real = posit<nbits, es>;
 	std::complex<Real> x, y;
 	auto bla = std::complex<Real>(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
 
@@ -57,12 +56,12 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::fixpnt_arithmetic_exception& err) {
-	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::posit_arithmetic_exception& err) {
+	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::fixpnt_internal_exception& err) {
-	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
+catch (const sw::universal::posit_internal_exception& err) {
+	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
