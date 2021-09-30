@@ -41,7 +41,6 @@ try {
 
 	constexpr size_t nbits = 10;
 	constexpr size_t es = 0;
-	using bt = uint8_t;
 	using Real = posit<nbits, es>;
 	std::complex<Real> x, y;
 	auto bla = std::complex<Real>(copysign(x.real(), y.real()), copysign(x.real(), y.real()));

@@ -57,6 +57,7 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::cout << "Fixed-point modular multiplication validation\n";
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
@@ -98,34 +99,31 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "multiplication");
 
-#if STRESS_TESTING
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2, Modulo, uint8_t>(true), "fixpnt<4,2,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3, Modulo, uint8_t>(true), "fixpnt<4,3,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4, Modulo, uint8_t>(true), "fixpnt<4,4,Modulo,uint8_t>", "multiplication");
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", "multiplication");
 #endif
 
 	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
 #else
 
-	std::cout << "Fixed-point modular multiplication validation\n";
-
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 0, Modulo, uint8_t>(true), "fixpnt< 4, 0,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 1, Modulo, uint8_t>(true), "fixpnt< 4, 1,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 2, Modulo, uint8_t>(true), "fixpnt< 4, 2,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 3, Modulo, uint8_t>(true), "fixpnt< 4, 3,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 4, Modulo, uint8_t>(true), "fixpnt< 4, 4,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 0,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 1,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 2,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 3,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 4,Modulo,uint8_t >", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 0, Modulo, uint8_t>(true), "fixpnt< 6, 0,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 1, Modulo, uint8_t>(true), "fixpnt< 6, 1,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 2, Modulo, uint8_t>(true), "fixpnt< 6, 2,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 3, Modulo, uint8_t>(true), "fixpnt< 6, 3,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 4, Modulo, uint8_t>(true), "fixpnt< 6, 4,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 5, Modulo, uint8_t>(true), "fixpnt< 6, 5,Modulo,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 6, Modulo, uint8_t>(true), "fixpnt< 6, 6,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 0,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 1,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 2,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 3,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 4,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 5,Modulo,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 6,Modulo,uint8_t >", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_2

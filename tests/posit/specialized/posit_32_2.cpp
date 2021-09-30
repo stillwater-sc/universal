@@ -71,7 +71,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 5000;
+	// configure a posit<32,2>
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 
@@ -84,10 +84,12 @@ try {
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<32,2>";
+	size_t RND_TEST_CASES = 5000;
+
 
 	using Scalar = posit<nbits, es>;
 	Scalar p;
+	std::string tag = type_tag(p);
 	std::cout << dynamic_range(p) << "\n\n";
 
 #if MANUAL_TESTING
@@ -175,6 +177,12 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
+	RND_TEST_CASES = 5000;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -197,8 +205,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_3
-
 	// arithmetic tests
+	RND_TEST_CASES = 1024 * 1024;
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction     (native)  ");

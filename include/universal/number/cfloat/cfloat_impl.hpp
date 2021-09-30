@@ -188,7 +188,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 
 			// get the rounding direction and the LSB right shift: 
 			// TODO: do we want to support arbitrary blocktriples instead of the ALU output versions?
-			std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
+			// std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
 			//bool roundup = alignment.first;
 			//size_t shift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
 

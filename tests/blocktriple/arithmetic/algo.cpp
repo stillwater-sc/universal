@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/utility/bitcast.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <iostream>
 #include <iomanip>
 

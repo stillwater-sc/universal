@@ -36,14 +36,18 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 10000;
-
+	// configuring a posit<48,2>
 	constexpr size_t nbits = 48;
 	constexpr size_t es = 2;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<48,2>";
+	size_t RND_TEST_CASES = 10000;
+
+	using Scalar = posit<nbits, es>;
+	Scalar p;
+	std::cout << dynamic_range(p) << "\n\n";
+	std::string tag = type_tag(p);
 
 #if POSIT_FAST_POSIT_48_2
 	std::cout << "Fast specialization posit<48,2> configuration tests\n";
@@ -55,8 +59,7 @@ try {
 
 #else
 
-	posit<nbits, es> p;
-	std::cout << dynamic_range(p) << "\n\n";
+
 
 #if REGRESSION_LEVEL_1
 	// special cases
@@ -81,6 +84,12 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
+	RND_TEST_CASES = 1024;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -94,7 +103,7 @@ try {
 #if REGRESSION_LEVEL_4
 	// TODO: as we don't have a reference floating point implementation to Verify
 	// the arithmetic operations we are going to ignore the failures
-
+	RND_TEST_CASES = 1024 * 16;
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	std::cout << "Without an arithmetic reference, test failures can be ignored\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
