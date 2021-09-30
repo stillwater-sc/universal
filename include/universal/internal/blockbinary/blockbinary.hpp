@@ -325,16 +325,15 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setbit(size_t i, bool v = true) {
+	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
 			_block[i / bitsInBlock] = bt((block & null) | mask);
-			return;
 		}
-		throw "blockbinary<nbits, bt>.setbit(index): bit index out of bounds";
+		// nop if i is out of range
 	}
 	inline constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
@@ -348,10 +347,10 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	inline constexpr void setblock(size_t b, const bt& block) {
-		if (b >= nrBlocks) throw "block index out of bounds";
-		_block[b] = block;
-	}	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
+	inline constexpr void setblock(size_t b, const bt& block) noexcept {
+		if (b < nrBlocks) _block[b] = block; // nop if b is out of range
+	}	
+	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}		
@@ -386,19 +385,23 @@ public:
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
-	inline constexpr uint8_t nibble(size_t n) const { // TODO: convert to noexcept function?
+	inline constexpr uint8_t nibble(size_t n) const noexcept {
+		uint8_t retval;
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			size_t nibbleIndexInWord = n % (bitsInBlock >> 2);
 			bt mask = static_cast<bt>(0x0Fu << (nibbleIndexInWord*4));
 			bt nibblebits = static_cast<bt>(mask & word);
-			return static_cast<uint8_t>(nibblebits >> static_cast<bt>(nibbleIndexInWord*4));
+			retval = static_cast<uint8_t>(nibblebits >> static_cast<bt>(nibbleIndexInWord*4));
 		}
-		throw "nibble index out of bounds";
+		else { // nop when nibble index out of bounds
+			retval = 0;
+		}
+		return retval;
 	}
-	inline constexpr bt block(size_t b) const { // TODO: convert to noexcept function?
-		if (b >= nrBlocks) throw "block index out of bounds";
-		return _block[b];
+	inline constexpr bt block(size_t b) const noexcept { // TODO: convert to noexcept function?
+		if (b < nrBlocks) return _block[b]; 
+		return bt(0); // return 0 when block index out of bounds
 	}
 
 	// copy a value over from one blockbinary to this blockbinary
