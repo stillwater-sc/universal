@@ -57,7 +57,8 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = true;
+	std::cout << "Fixed-point saturating multiplication validation\n";
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular multiplication failed: ";
@@ -115,19 +116,16 @@ try {
 	GenerateTestCase<10,9>(0.251953125f, 0.994140625f);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,9, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<10,9,Saturating,uint8_t>", "multiplication");
 
-#ifdef STRESS_TESTING
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Saturating, uint8_t>(true), "fixpnt<4,0,Saturating,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Saturating, uint8_t>(true), "fixpnt<4,1,Saturating,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2, Saturating, uint8_t>(true), "fixpnt<4,2,Saturating,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3, Saturating, uint8_t>(true), "fixpnt<4,3,Saturating,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4, Saturating, uint8_t>(true), "fixpnt<4,4,Saturating,uint8_t>", "multiplication");
+#ifdef REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Saturating,uint8_t>", "multiplication");
 #endif
 
 	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
 #else
-
-	std::cout << "Fixed-point saturating multiplication validation\n";
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 0,Saturating,uint8_t >", "multiplication");

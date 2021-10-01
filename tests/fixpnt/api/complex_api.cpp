@@ -16,6 +16,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/manipulators.hpp>
+#include <universal/number/fixpnt/attributes.hpp>
 #include <universal/number/fixpnt/mathlib.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
@@ -172,7 +173,7 @@ try {
 		std::cout << "z3 : " << z3 << '\n';
 		fp = copysign(one, minus_one);
 		std::cout << "copysign(0.875, -1) : " << fp << '\n';
-		z3 = copysign(z1, z2);
+		z3 = copysign(z1.real(), z2.imag());
 		std::cout << "z3 : " << z3 << '\n';
 	}
 

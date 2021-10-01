@@ -43,15 +43,17 @@ try {
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<8,0>";
 
 #if POSIT_FAST_POSIT_8_0
 	std::cout << "Fast specialization posit<8,0> configuration tests\n";
 #else
 	std::cout << "Standard posit<8,0> configuration tests\n";
 #endif
-	posit<nbits, es> p;
+
+	using Scalar = posit<nbits, es>;
+	Scalar p;
 	std::cout << dynamic_range(p) << "\n\n";
+	std::string tag = type_tag(p);
 
 #if MANUAL_TESTING
 
@@ -95,6 +97,11 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition           <nbits, es>(bReportIndividualTestCases), tag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication     <nbits, es>(bReportIndividualTestCases), tag, "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision           <nbits, es>(bReportIndividualTestCases), tag, "divide         (native)  ");
+
 #endif
 
 #if REGRESSION_LEVEL_2

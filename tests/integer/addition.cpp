@@ -46,7 +46,7 @@ void ReproducibilityTestSuite() {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -76,8 +76,8 @@ try {
 
 #if MANUAL_TESTING
 
-	using Integer = integer<16>;
-	Integer a(SpecificValue::maxpos), b(SpecificValue::maxneg);
+	using Integer = integer<16, uint16_t>;
+	constexpr Integer a(SpecificValue::maxpos), b(SpecificValue::maxneg);
 	Integer c;
 	c = a + b;
 	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';

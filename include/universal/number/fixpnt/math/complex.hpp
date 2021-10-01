@@ -11,19 +11,19 @@ namespace sw::universal {
 // Real component of a complex fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> real(std::complex< fixpnt<nbits, rbits, arithmetic, bt> > x) {
-	return fixpnt<nbits, rbits, arithmetic, bt>(std::real(x));
+  return fixpnt<nbits, rbits, arithmetic, bt>(x.real());
 }
 
 // Imaginary component of a complex fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> imag(std::complex< fixpnt<nbits, rbits, arithmetic, bt> > x) {
-	return fixpnt<nbits, rbits, arithmetic, bt>(std::imag(x));
+  return fixpnt<nbits, rbits, arithmetic, bt>(x.imag());
 }
 
 // Conjucate of a complex fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 std::complex< fixpnt<nbits, rbits, arithmetic, bt> > conj(std::complex< fixpnt<nbits, rbits, arithmetic, bt> > x) {
-	return fixpnt<nbits, rbits, arithmetic, bt>(std::conj(x));
+  return std::complex< fixpnt<nbits, rbits, arithmetic, bt> >(x.real(), -x.imag());
 }
 
 // modifies the classify functions as well
@@ -34,10 +34,6 @@ bool isnan(std::complex< fixpnt<nbits, rbits, arithmetic, bt> > x) {
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 bool isinf(std::complex< fixpnt<nbits, rbits, arithmetic, bt> > x) {
 	return (isinf(x.real()) || isinf(x.imag()));
-}
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-std::complex< fixpnt<nbits, rbits, arithmetic, bt> > copysign(std::complex< fixpnt<nbits, rbits, arithmetic, bt> > x, std::complex< fixpnt<nbits, rbits, arithmetic, bt> > y) {
-	return std::complex< fixpnt<nbits, rbits, arithmetic, bt> >(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
 }
 
 }  // namespace sw::universal

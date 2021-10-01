@@ -54,6 +54,7 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::cout << "Fixed-point modular addition validation\n";
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -94,8 +95,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "addition");
 
 
-#ifdef STRESS_TESTING
-	// manual exhaustive test
+#ifdef REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "addition");
@@ -104,8 +104,6 @@ try {
 #endif
 
 #else
-
-	std::cout << "Fixed-point modular addition validation\n";
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 0,Modulo,uint8_t>", "addition");

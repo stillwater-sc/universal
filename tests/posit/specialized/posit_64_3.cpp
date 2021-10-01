@@ -36,14 +36,13 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 1000;
-
+	// configure a posit<64,3>
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<64,3>";
+	size_t RND_TEST_CASES = 1000;
 
 #if POSIT_FAST_POSIT_64_3
 	std::cout << "Fast specialization posit<64,3> configuration tests\n";
@@ -54,6 +53,7 @@ try {
 	using Scalar = posit<nbits, es>;
 	Scalar p;
 	std::cout << dynamic_range(p) << "\n\n";
+	std::string tag = type_tag(p);
 
 #if MANUAL_TESTING
 
@@ -81,6 +81,12 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+
+	RND_TEST_CASES = 1024;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
 
 #endif
 

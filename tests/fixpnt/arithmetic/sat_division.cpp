@@ -234,6 +234,8 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::cout << "Fixed-point saturating division validation\n";
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "saturating division: ";
@@ -253,34 +255,29 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(3.0f, 1.5f); 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(true), "fixpnt<4,0,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(true), "fixpnt<4,1,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "division");
 	//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Saturating, uint8_t>(true), "fixpnt<8,4,Saturating,uint8_t>", "division");
 
 
-#ifdef STRESS_TESTING
-
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(true), "fixpnt<4,0,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(true), "fixpnt<4,1,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Saturating, uint8_t>(true), "fixpnt<4,2,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Saturating, uint8_t>(true), "fixpnt<4,3,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Saturating, uint8_t>(true), "fixpnt<4,4,Saturating,uint8_t>", "division");
+#ifdef REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Saturating,uint8_t>", "division");
 
 #endif
 
 	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
 #else
-	bool bReportIndividualTestCases = false;
-
-	std::cout << "Fixed-point saturating division validation\n";
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 0, Saturating, uint8_t>(true), "fixpnt< 4, 0,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 1, Saturating, uint8_t>(true), "fixpnt< 4, 1,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 2, Saturating, uint8_t>(true), "fixpnt< 4, 2,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 3, Saturating, uint8_t>(true), "fixpnt< 4, 3,Saturating,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 4, Saturating, uint8_t>(true), "fixpnt< 4, 4,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 0,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 1,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 2,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 3,Saturating,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt< 4, 4,Saturating,uint8_t>", "division");
 #endif
 
 #if REGRESSION_LEVEL_2

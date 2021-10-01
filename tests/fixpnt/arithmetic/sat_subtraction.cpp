@@ -54,6 +54,7 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::cout << "Fixed-point saturating subtraction validation\n";
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -71,18 +72,15 @@ try {
 	bReportIndividualTestCases = true;
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "subtraction");
 
-#if STRESS_TESTING
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Saturating, uint8_t>(true), "fixpnt<4,0,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Saturating, uint8_t>(true), "fixpnt<4,1,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2, Saturating, uint8_t>(true), "fixpnt<4,2,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 3, Saturating, uint8_t>(true), "fixpnt<4,3,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 4, Saturating, uint8_t>(true), "fixpnt<4,4,Saturating,uint8_t>", "subtraction");
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Saturating,uint8_t>", "subtraction");
 #endif
 
 #else
-
-	std::cout << "Fixed-point saturating subtraction validation\n";
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt< 5, 0,Saturating,uint8_t>", "subtraction");

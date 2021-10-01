@@ -38,20 +38,24 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 10000; // 2 * 1024 * 1024;
-
+	// configure a posit<16,1>
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<16,1>";
+	size_t RND_TEST_CASES = 10000;
 
 #if POSIT_FAST_POSIT_16_1
 	std::cout << "Fast specialization posit<16,1> configuration tests\n";
 #else
 	std::cout << "Standard posit<16,1> configuration tests\n";
 #endif
+
+	using Scalar = posit<nbits, es>;
+	Scalar p;
+	std::cout << dynamic_range(p) << "\n\n";
+	std::string tag = type_tag(p);
 
 #if MANUAL_TESTING
 	float fa, fb;
@@ -102,8 +106,6 @@ try {
 
 	nrOfFailedTestCases = 0;  // ignore failures in manual testing
 #else
-	posit<nbits, es> p;
-	std::cout << dynamic_range(p) << "\n\n";
 
 #if REGRESSION_LEVEL_1
 	// special cases
@@ -127,6 +129,13 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+
+	RND_TEST_CASES = 1024;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -149,6 +158,7 @@ try {
 	// posit<16, 1> float assign(native)   FAIL 2 failed test cases
 	// nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(true), tag, "float assign   (native)  ");
 
+	RND_TEST_CASES = 1024 * 1024;
 	// arithmetic tests
 	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";

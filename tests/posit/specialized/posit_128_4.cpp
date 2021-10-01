@@ -37,13 +37,13 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 1024;
+	// posit<128,4>
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<128,4>";
+	size_t RND_TEST_CASES = 1024;
 
 #if POSIT_FAST_POSIT_128_4
 	std::cout << "Fast specialization posit<128,4> configuration tests\n";
@@ -51,30 +51,51 @@ try {
 	std::cout << "Standard posit<128,4> configuration tests\n";
 #endif
 
-	posit<nbits, es> p;
+	using Scalar = posit<nbits, es>;
+	Scalar p;
 	std::cout << dynamic_range(p) << "\n\n";
+	std::string tag = type_tag(p);
 
 #if MANUAL_TESTING
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 
 	nrOfFailedTestCases = 0;
 #else
 
 #if REGRESSION_LEVEL_1
 	// special cases
+	std::cout << "Special case tests\n";
+	std::string test = "Initialize to zero: ";
 	p = 0;
-	if (!p.iszero()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	test = "Initialize to NAN";
 	p = NAN;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "Initialize to INFINITY";
 	p = INFINITY;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "sign is true";
 	p = -1.0f;
-	if (!p.sign()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	test = "is negative";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	test = "sign is false";
 	p = +1.0f;
-	if (p.sign()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	test = "is positive";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+
+	RND_TEST_CASES = 1024;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
 
 #endif
 
 #if REGRESSION_LEVEL_2
+	RND_TEST_CASES = 1024*16;
 
 #endif
 
@@ -85,6 +106,8 @@ try {
 #if REGRESSION_LEVEL_4
 	// TODO: as we don't have a reference floating point implementation to Verify
 	// the arithmetic operations we are going to ignore the failures
+
+	RND_TEST_CASES = 1024 * 1024;
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	std::cout << "Without an arithmetic reference, test failures can be ignored\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
