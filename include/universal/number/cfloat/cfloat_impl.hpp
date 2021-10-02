@@ -1187,7 +1187,7 @@ public:
 	inline constexpr int  scale() const noexcept {
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_EXP) {
-			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
+			e = static_cast<int>((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
 			if (e == 0) {
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
@@ -1218,7 +1218,7 @@ public:
 				}
 			}
 			else {
-				e = int(ebits) - EXP_BIAS;
+				e = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 			}
 		}
 		return e;

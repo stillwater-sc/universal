@@ -416,7 +416,8 @@ endmacro (compile_all)
 ####
 # Setup the cmake config files
 string(REGEX REPLACE "_" "" PROJECT_NAME_NOSPACES ${PROJECT_NAME})
-message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_NOSPACES}")
+# in case the project name changes
+# message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_NOSPACES}")
 set(cmake_conf_file         "${PROJECT_NAME_NOSPACES}-config.cmake")
 set(cmake_conf_version_file "${PROJECT_NAME_NOSPACES}-config-version.cmake")
 set(cmake_targets_file      "${PROJECT_NAME_NOSPACES}-targets.cmake")
@@ -463,16 +464,19 @@ add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
 
 set(PROJECT_VERSION "${PROJECT_VERSION}.${GIT_COMMIT_HASH}")
 
-message(STATUS "include_install_dir         = ${include_install_dir}")
-message(STATUS "include_install_dir_full    = ${include_install_dir_full}")
-message(STATUS "config_install_dir          = ${config_install_dir}")
-message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
+message(STATUS "")
+message(STATUS "PROJECT_NAME                = ${PROJECT_NAME}")
+message(STATUS "PROJECT_NAME_NOSPACES       = ${PROJECT_NAME_NOSPACES}")
 message(STATUS "PROJECT_SOURCE_DIR          = ${PROJECT_SOURCE_DIR}")
 message(STATUS "PROJECT_VERSION             = ${PROJECT_VERSION}")
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR    = ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "CMAKE_CURRENT_BINARY_DIR    = ${CMAKE_CURRENT_BINARY_DIR}")
 message(STATUS "GIT_COMMIT_HASH             = ${GIT_COMMIT_HASH}")
 message(STATUS "GIT_BRANCH                  = ${GIT_BRANCH}")
+message(STATUS "include_install_dir         = ${include_install_dir}")
+message(STATUS "include_install_dir_full    = ${include_install_dir_full}")
+message(STATUS "config_install_dir          = ${config_install_dir}")
+message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
 
 # configure the library target
 target_include_directories(${project_library_target_name} 
