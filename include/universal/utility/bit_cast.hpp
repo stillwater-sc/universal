@@ -45,8 +45,10 @@
 
 #ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
-#define CONSTEXPRESSION constexpr
 #include <bit>
+#ifndef CONSTEXPRESSION
+#define CONSTEXPRESSION constexpr
+#endif
 #endif
 
 // if you are not controlling BIT_CAST_SUPPORT

@@ -3,45 +3,11 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/utility/directives.hpp>
-#include <iostream>
-#include <iomanip>
 #include <fstream>
-#include <typeinfo>
-
-// BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-#define BIT_CAST_SUPPORT 1
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
+#include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
+#include <universal/utility/bit_cast.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 // minimum set of include files to reflect source code dependencies
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
@@ -84,9 +50,10 @@
 */
 
 template<typename Real>
-void TestConversionRounding(Real f = 511.5f)
+void TestConversionRounding()
 {
 	using namespace sw::universal;
+	constexpr Real f = Real(511.5f);
 	std::cout << "\n " << typeid(Real).name() << " conversion use case and result\n";
 	std::cout << to_binary(f, true) << " : " << f << '\n';
 	CONSTEXPRESSION blocktriple<6, BlockTripleOperator::ADD, uint8_t> a = f;
@@ -101,16 +68,24 @@ void TestConversionRounding(Real f = 511.5f)
 	std::cout << to_triple(e) << " : " << e << '\n';
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
-
-	std::cout << "blocktriple<> class interface tests\n";
+	std::string test_suite = "blocktriple<> class interface test suite: ";
+	std::cout << test_suite << '\n';
 
 	int nrOfFailedTestCases = 0;
 
@@ -130,8 +105,8 @@ try {
 	}
 
 	// pick a value that rounds up to even between 6 to 10 bits of fraction
-	TestConversionRounding(511.5f);
-	TestConversionRounding(511.5);
+	TestConversionRounding<float>();
+	TestConversionRounding<double>();
 
 	{
 		std::cout << "\nblocktriple add\n";
@@ -172,7 +147,7 @@ try {
 
 #endif // MANUAL_TESTING
 
-	std::cout << "\nblocktriple API test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
+	std::cout << test_suite << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

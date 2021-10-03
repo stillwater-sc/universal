@@ -17,6 +17,11 @@ namespace sw::universal {
 
 #define NUMBER_COLUMN_WIDTH 20
 
+// ReportTestSuiteResult prints to std::cerr whether or not the test suite passed or failed
+void ReportTestSuiteResults(const std::string& test_suite, int nrOfFailedTestCases) {
+	std::cerr << test_suite <<  (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << '\n';
+}
+
 template<typename TestType>
 void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const TestType& result) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits

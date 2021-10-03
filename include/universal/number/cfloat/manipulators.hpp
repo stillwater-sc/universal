@@ -89,6 +89,24 @@ std::string dynamic_range(const cfloat<nbits, es, bt, hasSubnormals, hasSupernor
 	return s.str();
 }
 
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+int minpos_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
+	return c.minpos().scale();
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+int maxpos_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
+	return c.maxpos().scale();
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+int max_negative_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
+	return c.maxneg().scale();
+}
+
 // Generate a string representing the cfloat components: sign, exponent, faction and value
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string components(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {

@@ -645,12 +645,17 @@ public:
 		return (long double)to_double();
 	}
 
-	// determine the rounding mode: result needs to be rounded up if true
+	// determine the rounding mode: up if true, down if false
+	// fraction bits:    bbbbbbbbbbb
+	// target LSB   :         |
+	// guard        :          |
+	// round        :           |
+	// sticky       :            ---
 	bool roundingMode(size_t targetLsb) const {
-		bool lsb = at(targetLsb);
-		bool guard = (targetLsb == 0 ? false : at(targetLsb - 1));
-		bool round = (targetLsb > 1 ? at(targetLsb - 2) : false);
-		bool sticky =(targetLsb < 3 ? false : any(targetLsb - 3));
+		bool lsb    = at(targetLsb);
+		bool guard  = (targetLsb == 0 ? false : at(targetLsb - 1));
+		bool round  = (targetLsb <= 1 ? false : at(targetLsb - 2));
+		bool sticky = (targetLsb <= 2 ? false : any(targetLsb - 3));
 		bool tie = guard && !round && !sticky;
 		return (lsb && tie) || (guard && !tie);
 	}
