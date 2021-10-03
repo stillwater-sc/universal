@@ -143,7 +143,7 @@ try {
 		// FAIL: (+, -1, 0b011.1) :   1.75  -> 0b0.11.1 != ref 0b0.10.0 or nan != 2
 		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 		// FAIL: (+, -1, 0b001.1) :   0.75  -> 0b0.00.1 != ref 0b0.01.0 or 0 != 1
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0x03ull, -1);
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0x03ull, -1);
 	}
 
 	{

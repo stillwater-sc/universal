@@ -68,7 +68,7 @@ namespace sw::universal {
 		Cfloat nut, ref;
 		std::cout << type_tag(nut) << '\n';
 		constexpr size_t fbits = Cfloat::fbits;
-		typedef Cfloat::BlockType bt;
+		using bt = typename Cfloat::BlockType;
 		blocktriple<fbits, op, bt> b;
 		// set the bits and scale
 		b.setbits(rawBits);
