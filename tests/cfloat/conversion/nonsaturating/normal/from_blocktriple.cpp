@@ -113,7 +113,7 @@ try {
 	std::string test_suite = "Conversion from blocktriple to cfloat: ";
 	std::string test_tag   = "conversion ";
 	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
@@ -155,15 +155,17 @@ try {
 	}
 
 	{
-		using Cfloat = cfloat<5, 2, uint8_t, true, hasSupernormals, isSaturating>;
-		//FAIL: (+,  -2, 0b0'10.10) :           0.625 -> 0b0.00.01 != ref 0b0.00.10 or 0 != 0
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0x0a, -2);
-		//FAIL: (+,  -1, 0b0'01.01) :           0.625 -> 0b0.00.01 != ref 0b0.00.10 or 0 != 0
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0x05, -1);
+		using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		Cfloat a; a.constexprClassParameters();
+		std::cout << dynamic_range(a) << '\n';
+		std::cout << a.maxpos() << '\n';
+		//FAIL: (+,   1, 0b0'10.00) :               4 -> 0b0.11.00 != ref 0b0.11.10 or nan != nan
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0x08, 1);
+		//FAIL: (+,   2, 0b0'01.00) :               4 -> 0b0.11.00 != ref 0b0.11.10 or nan != nan
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0x04, 2);
 	}
 
 	return 0;
-
 	{
 		// checking the other side of the exponential adjustments with cfloats
 		// that expand on the dynamic range of IEEE-754
@@ -175,16 +177,15 @@ try {
 	}
 
 
+	// es = 1 is invalid as a configuration when you do not have subnormals or supernormals as ALL values will be subnormals or supernormals
+	// how do you deal with this?
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), test_tag, "cfloat<4,1,uint8_t,0,0,0> from blocktriple ADD");
 //	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), test_tag, "cfloat<5,1,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), test_tag, "cfloat<5,2,uint8_t,0,0,0> from blocktriple ADD");
 
 
 #define STRESS_TESTING 0
 #if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,1,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,2,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,3,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,4,uint8_t,0,0,0> from blocktriple ADD");
@@ -198,7 +199,9 @@ try {
 #else  // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
-	// es = 1
+
+	// es = 1 is invalid for this cfloat configuration
+	/*
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat< 3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat< 3,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat< 4,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat< 5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat< 5,1>");
@@ -210,7 +213,7 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat<12, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat<12,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat<16, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat<16,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat<18, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat<18,1>");   // 3 blocks
-
+	*/
 
 	// es = 2
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat< 4,2>");

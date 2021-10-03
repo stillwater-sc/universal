@@ -40,9 +40,9 @@ try {
 	// if you  have 1 exponent bits, then all encodings are either subnormals or supernormals.
 	// In the following set of cfloat<5,1> types, the last type with subnormals and supernormals 
 	// is the only type that has non-trivial values for its encodings.
-	GenerateTable<cfloat<5, 1, uint8_t, noSubnormals , noSupernormals , notSaturating> >(std::cout);
-	GenerateTable<cfloat<5, 1, uint8_t, hasSubnormals, noSupernormals , notSaturating> >(std::cout);
-	GenerateTable<cfloat<5, 1, uint8_t, noSubnormals , hasSupernormals, notSaturating> >(std::cout);
+//	GenerateTable<cfloat<5, 1, uint8_t, noSubnormals , noSupernormals , notSaturating> >(std::cout); // invalid
+//	GenerateTable<cfloat<5, 1, uint8_t, hasSubnormals, noSupernormals , notSaturating> >(std::cout); // invalid
+//	GenerateTable<cfloat<5, 1, uint8_t, noSubnormals , hasSupernormals, notSaturating> >(std::cout); // invalid
 	GenerateTable<cfloat<5, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout); // <---- only interesting encoding interpretation for es=1
 
 	GenerateTable<cfloat<5, 2, uint8_t, noSubnormals , noSupernormals , notSaturating> >(std::cout);

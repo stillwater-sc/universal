@@ -261,8 +261,10 @@ public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
 	static_assert(_es < 21ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a classic floating point number");
-	// how do you assert on the condition that if es == 1 then subnormals and supernormals bust be true?
-//	static_assert(_es == 1 && _hasSubnormals && _hasSupernormals, "when es == 1, cfloat must have both sub and supernormals");
+	// how do you assert on the condition that if es == 1 then subnormals and supernormals must be true?
+	static constexpr bool subsuper = (_hasSubnormals && _hasSupernormals);
+	static constexpr bool special = (subsuper ? true : (_es > 1));
+	static_assert(special, "when es == 1, cfloat must have both subnormals and supernormals");
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
@@ -1002,13 +1004,9 @@ public:
 			// maximum positive value has this bit pattern: 0-1...0-111...111, that is, sign = 0, e = 11..10, f = 111...111
 			clear();
 			flip();
-			blockbinary<es, bt> scale;
-			exponent(scale);
-			--scale;
-			setexponent(int(scale));
-			setbit(nbits - 1ull, false);
+			setbit(fbits, false); // set least significant exponent bit to 0b0
+			setbit(nbits - 1ull, false); // set sign to 0b0
 		}
-
 		return *this;
 	}
 	inline constexpr cfloat& minpos() noexcept {

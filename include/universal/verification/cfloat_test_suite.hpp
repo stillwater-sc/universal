@@ -649,6 +649,7 @@ namespace sw::universal {
 		int nrOfTestFailures{ 0 };
 
 		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+		std::cout << dynamic_range(a) << '\n';
 		int minposScale = minpos_scale(a);
 		int maxposScale = maxpos_scale(a);
 

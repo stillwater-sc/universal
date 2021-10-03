@@ -101,17 +101,17 @@ try {
 		d = float(c);
 		++d;
 		std::cout << to_binary(d) << " : " << d << '\n';
-
-		{
-			cfloat<8,2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> c(SpecificValue::maxneg);
-			cfloat<9,2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> d;
-			d = double(c);
-			std::cout << to_binary(d) << " : " << d << '\n';
-			--d;
-			std::cout << to_binary(d) << " : " << d << '\n';
-
-		}
 	}
+
+	{
+		cfloat<8,2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> c(SpecificValue::maxneg);
+		cfloat<9,2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> d;
+		d = double(c);
+		std::cout << to_binary(d) << " : " << d << '\n';
+		--d;
+		std::cout << to_binary(d) << " : " << d << '\n';
+	}
+
 
 	// generate individual testcases to hand trace/debug
 	TestCase< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
