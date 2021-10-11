@@ -58,6 +58,32 @@ namespace sw::universal {
 		return fail;
 	}
 
+
+	////////////////////////////////  generate individual test cases //////////////////////// 
+
+	// Generate a conversion test given raw bits and a scale
+	template<typename Cfloat, sw::universal::BlockTripleOperator op>
+	void GenerateConversionTest(uint64_t rawBits, int scale) {
+		using namespace sw::universal;
+		Cfloat nut, ref;
+		std::cout << type_tag(nut) << '\n';
+		constexpr size_t fbits = Cfloat::fbits;
+		using bt = typename Cfloat::BlockType;
+		blocktriple<fbits, op, bt> b;
+		// set the bits and scale
+		b.setbits(rawBits);
+		b.setscale(scale);
+		convert(b, nut);
+		float v = float(b);
+		ref = v; // set the reference through a conversion value
+		std::cout << "blocktriple: " << to_binary(b) << " : " << float(b) << '\n';
+		std::cout << "cfloat     : " << to_binary(nut) << " : " << nut << '\n';
+		std::cout << "cfloat ref : " << to_binary(ref) << " : " << ref << '\n';
+
+		// range of possible values
+		//GenerateTable<Cfloat>(std::cout);
+	}
+
 	/////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 	/*
@@ -623,6 +649,9 @@ namespace sw::universal {
 		int nrOfTestFailures{ 0 };
 
 		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+		std::cout << dynamic_range(a) << '\n';
+		int minposScale = minpos_scale(a);
+		int maxposScale = maxpos_scale(a);
 
 		/// blocktriple addition and subtraction is done in a 2's complement format 0ii.fffff.
 		/// blocktriple multiplication is done in a 1's complement format of ii.fffff
@@ -636,8 +665,8 @@ namespace sw::universal {
 
 		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
 		BlockTripleConfiguration b;
-		std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << '\n';
-		for (int scale = -8; scale < 8; ++scale) {
+		std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << ", smallest scale = " << minposScale << ", largest scale = " << maxposScale << '\n';
+		for (int scale = minposScale; scale <= maxposScale; ++scale) {
 			// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
 			// if MUL, patterns is  ii.fffff, without  00.fffff
 			// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
@@ -671,11 +700,11 @@ namespace sw::universal {
 						if (a.isinf() && b.isinf()) continue;
 
 						++nrOfTestFailures;
-						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
+						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 					}
 					else {
 #ifndef VERBOSE_POSITIVITY
-						if (bReportIndividualTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(10) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+						if (bReportIndividualTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
 #endif
 					}
 				}

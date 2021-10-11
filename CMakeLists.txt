@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 41)
+  set(UNIVERSAL_VERSION_MINOR 42)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -416,7 +416,8 @@ endmacro (compile_all)
 ####
 # Setup the cmake config files
 string(REGEX REPLACE "_" "" PROJECT_NAME_NOSPACES ${PROJECT_NAME})
-message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_NOSPACES}")
+# in case the project name changes
+# message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_NOSPACES}")
 set(cmake_conf_file         "${PROJECT_NAME_NOSPACES}-config.cmake")
 set(cmake_conf_version_file "${PROJECT_NAME_NOSPACES}-config-version.cmake")
 set(cmake_targets_file      "${PROJECT_NAME_NOSPACES}-targets.cmake")
@@ -440,14 +441,42 @@ else()
     message(FATAL_ERROR "Not supported system type. Options: UNIX or WIN32.")
 endif()
 
-message(STATUS "include_install_dir         = ${include_install_dir}")
-message(STATUS "include_install_dir_full    = ${include_install_dir_full}")
-message(STATUS "config_install_dir          = ${config_install_dir}")
-message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
+#####  Gather git repo related information
+# Get the current working branch
+execute_process(
+  COMMAND git rev-parse --abbrev-ref HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest abbreviated commit hash of the working branch
+execute_process(
+  COMMAND git log -1 --format=%h
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# propagate the git information to any executables that might want to use it
+add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
+add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
+
+set(PROJECT_VERSION "${PROJECT_VERSION}.${GIT_COMMIT_HASH}")
+
+message(STATUS "")
+message(STATUS "PROJECT_NAME                = ${PROJECT_NAME}")
+message(STATUS "PROJECT_NAME_NOSPACES       = ${PROJECT_NAME_NOSPACES}")
 message(STATUS "PROJECT_SOURCE_DIR          = ${PROJECT_SOURCE_DIR}")
 message(STATUS "PROJECT_VERSION             = ${PROJECT_VERSION}")
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR    = ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "CMAKE_CURRENT_BINARY_DIR    = ${CMAKE_CURRENT_BINARY_DIR}")
+message(STATUS "GIT_COMMIT_HASH             = ${GIT_COMMIT_HASH}")
+message(STATUS "GIT_BRANCH                  = ${GIT_BRANCH}")
+message(STATUS "include_install_dir         = ${include_install_dir}")
+message(STATUS "include_install_dir_full    = ${include_install_dir_full}")
+message(STATUS "config_install_dir          = ${config_install_dir}")
+message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
 
 # configure the library target
 target_include_directories(${project_library_target_name} 

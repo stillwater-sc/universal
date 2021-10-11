@@ -140,32 +140,54 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		int exponent = src.scale() + significantScale;
 		// special case of underflow
 		if constexpr (hasSubnormals) {
+//			std::cout << "exponent = " << exponent << " bias = " << cfloatType::EXP_BIAS << " exp subnormal = " << cfloatType::MIN_EXP_SUBNORMAL << '\n';
+			//if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1) || exponent + cfloatType::EXP_BIAS < 0) { // this culls subnormal values too much
 			if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
+
 				tgt.setzero();
 				return;
 			}
 		}
 		else {
-			if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
+			if (exponent < (cfloatType::MIN_EXP_NORMAL - 1) || exponent + cfloatType::EXP_BIAS < 0) {
+			//if (exponent < (cfloatType::MIN_EXP_NORMAL - 1)) {
 				tgt.setzero();
 				return;
 			}
 		}
 		// special case of overflow
-		if constexpr (isSaturating) {
-			if (exponent > cfloatType::MAX_EXP) {
-				if (src.sign()) tgt.maxneg(); else tgt.maxpos();
-				return;
+		if constexpr (hasSupernormals) {
+			if constexpr (isSaturating) {
+				if (exponent > cfloatType::MAX_EXP) {
+					if (src.sign()) tgt.maxneg(); else tgt.maxpos();
+					return;
+				}
+			}
+			else {
+				if (exponent > cfloatType::MAX_EXP) {
+					tgt.setinf(src.sign());
+					return;
+				}
 			}
 		}
-		else {
-			if (exponent > cfloatType::MAX_EXP) {
-				tgt.setinf(src.sign());
-				return;
+		else {  // no supernormals will saturate at a different encoding: TODO can we hide it all in maxpos?
+			if constexpr (isSaturating) {
+				if (exponent > cfloatType::MAX_EXP) {
+					if (src.sign()) tgt.maxneg(); else tgt.maxpos();
+					return;
+				}
+			}
+			else {
+				if (exponent > cfloatType::MAX_EXP) {
+					tgt.setinf(src.sign());
+					return;
+				}
 			}
 		}
 
-		// tgt.clear();
+		// our value needs to go through rounding to be correctly interpreted
+		// 
+		// tgt.clear();  // no need as all bits are going to be set by the code below
 		int adjustment{ 0 }; 
 		if constexpr (btType::bfbits < 65) {			
 			// we can use a uint64_t to construct the cfloat
@@ -182,26 +204,40 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 					// the value is in the normal range of the cfloat
 				}
 			}
-			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
-			uint64_t raw = (src.sign() ? 1ull : 0ull);
-			raw <<= es; // shift left to make room for the exponent bits
 
+
+			// process sign
+			uint64_t raw = (src.sign() ? 1ull : 0ull);
+//			std::cout << "raw bits (sign)  " << to_binary(raw) << '\n';
 			// get the rounding direction and the LSB right shift: 
 			// TODO: do we want to support arbitrary blocktriples instead of the ALU output versions?
-			// std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
-			//bool roundup = alignment.first;
-			//size_t shift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
+			std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
+			bool roundup = alignment.first;
+			size_t rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
+//			std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
+//			std::cout << "rightShift       " << rightShift << '\n';
+			// process exponent
 
-
+			uint64_t expBits = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
+			raw <<= es; // shift sign to make room for the exponent bits
+			raw |= (roundup ? (expBits+1) : expBits);
+//			std::cout << "raw bits (exp)   " << to_binary(raw) << '\n';
+			// process fraction bits
+			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
+//			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
 			raw <<= cfloatType::fbits;
-			int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(exponent);
-			fracbits >>= rightShift + (srcbits - cfloatType::fbits);
+//			int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(exponent) + (srcbits - cfloatType::fbits);
+//			std::cout << "right shift      " << rightShift << '\n';
+			fracbits >>= rightShift;
+//			std::cout << "fracbits shifted " << to_binary(fracbits) << '\n';
+			fracbits &= cfloatType::ALL_ONES_FR;
+//			std::cout << "fracbits masked  " << to_binary(fracbits) << '\n';
 			raw |= fracbits;
 			tgt.setbits(raw);
-
-
+//			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';
 		}
 		else {
+			// TODO
 			// compose the segments
 			tgt.setsign(src.sign());
 			tgt.setexponent(src.scale());
@@ -225,8 +261,10 @@ public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
 	static_assert(_es < 21ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a classic floating point number");
-	// how do you assert on the condition that if es == 1 then subnormals and supernormals bust be true?
-//	static_assert(_es == 1 && _hasSubnormals && _hasSupernormals, "when es == 1, cfloat must have both sub and supernormals");
+	// how do you assert on the condition that if es == 1 then subnormals and supernormals must be true?
+	static constexpr bool subsuper = (_hasSubnormals && _hasSupernormals);
+	static constexpr bool special = (subsuper ? true : (_es > 1));
+	static_assert(special, "when es == 1, cfloat must have both subnormals and supernormals");
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
@@ -966,13 +1004,9 @@ public:
 			// maximum positive value has this bit pattern: 0-1...0-111...111, that is, sign = 0, e = 11..10, f = 111...111
 			clear();
 			flip();
-			blockbinary<es, bt> scale;
-			exponent(scale);
-			--scale;
-			setexponent(int(scale));
-			setbit(nbits - 1ull, false);
+			setbit(fbits, false); // set least significant exponent bit to 0b0
+			setbit(nbits - 1ull, false); // set sign to 0b0
 		}
-
 		return *this;
 	}
 	inline constexpr cfloat& minpos() noexcept {
@@ -1187,7 +1221,7 @@ public:
 	inline constexpr int  scale() const noexcept {
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_EXP) {
-			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
+			e = static_cast<int>((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
 			if (e == 0) {
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
@@ -1218,7 +1252,7 @@ public:
 				}
 			}
 			else {
-				e = int(ebits) - EXP_BIAS;
+				e = static_cast<int>(unsigned(ebits) - EXP_BIAS);
 			}
 		}
 		return e;
@@ -2494,11 +2528,21 @@ public:
 				}
 				return *this;
 			}
-			if (exponent < MIN_EXP_SUBNORMAL - 1) { 
-				// map to +-0 any values that have a scale less than (MIN_EXP_SUBMORNAL - 1)
-				this->setbit(nbits - 1, s);
-				return *this;
+			if constexpr (hasSubnormals) {
+				if (exponent < MIN_EXP_SUBNORMAL - 1) { 
+					// map to +-0 any values that have a scale less than (MIN_EXP_SUBMORNAL - 1)
+					this->setbit(nbits - 1, s);
+					return *this;
+				}
 			}
+			else {
+				if (exponent < MIN_EXP_NORMAL - 1) {
+					// map to +-0 any values that have a scale less than (MIN_EXP_MORNAL - 1)
+					this->setbit(nbits - 1, s);
+					return *this;
+				}
+			}
+
 			/////////////////  
 			/// end of special case processing, move on to value sampling and rounding
 
@@ -2725,7 +2769,7 @@ public:
 							for (size_t i = MSU; i > 0; --i) {
 								fractionBlock[i] <<= bitsToShift;
 								// mix in the bits from the right
-								bt bits = (bitsToMoveMask & fractionBlock[i - 1]);
+								bt bits = static_cast<bt>(bitsToMoveMask & fractionBlock[i - 1]); // operator & yields an int
 								fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
 							}
 							fractionBlock[0] <<= bitsToShift;
@@ -2869,7 +2913,7 @@ protected:
 		if (leftShift < 0) return shiftRight(-leftShift);
 		if (leftShift > long(nbits)) leftShift = nbits; // clip to max
 		if (leftShift >= long(bitsInBlock)) {
-			int blockShift = leftShift / bitsInBlock;
+			int blockShift = leftShift / static_cast<int>(bitsInBlock);
 			for (signed i = signed(MSU); i >= blockShift; --i) {
 				_block[i] = _block[i - blockShift];
 			}
@@ -2881,11 +2925,13 @@ protected:
 			if (leftShift == 0) return;
 		}
 		// construct the mask for the upper bits in the block that need to move to the higher word
-		bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - leftShift);
+//		bt mask = static_cast<bt>(0xFFFFFFFFFFFFFFFFull << (bitsInBlock - leftShift));
+		bt mask = ALL_ONES;
+		mask <<= (bitsInBlock - leftShift);
 		for (unsigned i = MSU; i > 0; --i) {
 			_block[i] <<= leftShift;
 			// mix in the bits from the right
-			bt bits = (mask & _block[i - 1]);
+			bt bits = static_cast<bt>(mask & _block[i - 1]);
 			_block[i] |= (bits >> (bitsInBlock - leftShift));
 		}
 		_block[0] <<= leftShift;
@@ -2927,13 +2973,13 @@ protected:
 				}
 			}
 		}
-		//bt mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);  // is that shift necessary?
-		bt mask = bt(0xFFFFFFFFFFFFFFFFull);
+
+		bt mask = ALL_ONES;
 		mask >>= (bitsInBlock - rightShift); // this is a mask for the lower bits in the block that need to move to the lower word
 		for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
 			_block[i] >>= rightShift;
 			// mix in the bits from the left
-			bt bits = (mask & _block[i + 1]);
+			bt bits = static_cast<bt>(mask & _block[i + 1]); // & operator returns an int
 			_block[i] |= (bits << (bitsInBlock - rightShift));
 		}
 		_block[MSU] >>= rightShift;

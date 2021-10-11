@@ -737,7 +737,7 @@ private:
 		return *this;
 	}
 
-	CONSTEXPRESSION inline blocktriple& convert_float(float rhs) noexcept {   // TODO: deal with subnormals and inf
+	inline CONSTEXPRESSION blocktriple& convert_float(float rhs) noexcept {   // TODO: deal with subnormals and inf
 #if BIT_CAST_SUPPORT
 		// normal number
 		uint32_t bc = std::bit_cast<uint32_t>(rhs);
@@ -803,7 +803,7 @@ private:
 		return *this;
 	}
 
-	CONSTEXPRESSION inline blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
+	inline CONSTEXPRESSION blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
 #if BIT_CAST_SUPPORT
 		uint64_t bc = std::bit_cast<uint64_t>(rhs);
 		bool s = (0x8000'0000'0000'0000ull & bc);
@@ -867,7 +867,7 @@ private:
 	}
 
 	template<typename Real>
-	Real to_native() const {
+	constexpr Real to_native() const noexcept {
 		if (_nan) { if (_sign) return std::numeric_limits<Real>::signaling_NaN(); else return std::numeric_limits<Real>::quiet_NaN(); }
 		if (_inf) { if (_sign) return -std::numeric_limits<Real>::infinity(); else return std::numeric_limits<Real>::infinity(); }
 		if (_zero) { if (_sign) return -Real(0.0f); else return Real(0.0f); }

@@ -33,9 +33,17 @@ Use convert() to convert to a cfloat.
 Compare the operator=() and convert() cfloat patterns to check correctness
  */
 
-// conditional compile flags
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -46,13 +54,14 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
 
+	std::string test_suite = "Conversion from blocktriple to cfloat: ";
+	std::string test_tag   = "conversion ";
+	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-	std::string tag = "conversion ";
+
 
 #if MANUAL_TESTING
-
-	std::cout << "Conversion from blocktriple to cfloat\n\n";
 
 	// to track conversion in more detail
 	std::cout << std::setprecision(8);
@@ -108,12 +117,11 @@ try {
 		}
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<4,1,uint8_t,0,0,0> from blocktriple ADD");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(true), tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), test_tag, "cfloat<4,1,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(true), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
 
+#define STRESS_TESTING 0
 #if STRESS_TESTING
-
-	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,1,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,2,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,3,uint8_t,0,0,0> from blocktriple ADD");
@@ -122,13 +130,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,6,uint8_t,0,0,0> from blocktriple ADD");
 #endif
 
-	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
 
 #else  // !MANUAL_TESTING
 
-	std::cout << "cfloat from blocktriple conversion validation" << '\n';
-
+#if REGRESSION_LEVEL_1
 	// es = 1
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat< 3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat< 3,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat< 4,1>");
@@ -205,13 +212,24 @@ try {
 //	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat<11,8>");
 //	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat<12,8>");
 //	nrOfFailedTestCases = ReportTestResult(VerifyCfloatFromBlocktripleConversion< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat<14,8>");
+#endif
+
+#if REGRESSION_LEVEL_2
 
 
-#if STRESS_TESTING
+#endif
+
+#if REGRESSION_LEVEL_3
 
 
-#endif  // STRESS_TESTING
+#endif
 
+#if REGRESSION_LEVEL_4
+
+
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 #endif  // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

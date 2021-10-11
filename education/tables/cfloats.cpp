@@ -23,27 +23,33 @@ template<bool hasSubnormals, bool hasSupernormals, bool isSaturating, typename b
 void GenerateCfloatTables(std::ostream& ostr, bool csv) {
 	using namespace sw::universal;
 
-	GenerateTable< cfloat<3, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr(hasSubnormals && hasSupernormals)
+		GenerateTable< cfloat<3, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 
-	GenerateTable< cfloat<4, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasSupernormals)
+		GenerateTable< cfloat<4, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<4, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 
-	GenerateTable< cfloat<5, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasSupernormals)
+		GenerateTable< cfloat<5, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<5, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<5, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 
-	GenerateTable< cfloat<6, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasSupernormals)
+		GenerateTable< cfloat<6, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<6, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<6, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<6, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 
-	GenerateTable< cfloat<7, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasSupernormals)
+		GenerateTable< cfloat<7, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<7, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<7, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<7, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<7, 5, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 
-	GenerateTable< cfloat<8, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
+	if constexpr (hasSubnormals && hasSupernormals)
+		GenerateTable< cfloat<8, 1, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<8, 2, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<8, 3, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
 	GenerateTable< cfloat<8, 4, bt, hasSubnormals, hasSupernormals, isSaturating> >(ostr, csv);
