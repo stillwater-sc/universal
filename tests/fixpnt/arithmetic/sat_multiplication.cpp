@@ -53,15 +53,14 @@ void GenerateTestCase(Ty _a, Ty _b) {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "Fixed-point saturating multiplication validation\n";
+	std::string test_suite = "fixed-point saturating multiplication ";
+	std::string test_tag = "saturating multiplication";
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "modular multiplication failed: ";
 
 #if MANUAL_TESTING
 
@@ -88,96 +87,97 @@ try {
 	GenerateTestCase<4, 1>(-0.5f, -3.5f);
 	GenerateTestCase<4, 1>(-3.5f, -0.5f);
 	GenerateTestCase<4, 1>( 1.5f,  2.5f);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", test_tag);
 
 	cout << endl;
 
 	// fixpnt<6,2>
 	GenerateTestCase<6, 2>(0.25f, -8.0f);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<6,2,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<6,2,Saturating,uint8_t>", test_tag);
 
 	cout << endl;
 
 	// fixpnt<6,5>
 	GenerateTestCase<6, 5>(0.03125f, -1.0f);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<6,5,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<6,5,Saturating,uint8_t>", test_tag);
 
 	cout << endl;
 
 	// fixpnt<8,4>
 	GenerateTestCase<8, 4>(1.125f, -7.0625f);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Saturating,uint8_t>", test_tag);
 
 	// fixpnt<8,8>
 	GenerateTestCase<8, 8>(0.01171875f, 0.3359375f);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 8, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 8, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Saturating,uint8_t>", test_tag);
 
 	// fixpnt<10,9>
 	GenerateTestCase<10,9>(0.251953125f, 0.994140625f);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,9, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<10,9,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,9, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<10,9,Saturating,uint8_t>", test_tag);
 
 #ifdef REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Saturating,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Saturating,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Saturating,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Saturating,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Saturating,uint8_t>", test_tag);
 #endif
 
-	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 0,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 1, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 1,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 2, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 2,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 3, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 3,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 4,Saturating,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 0,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 1, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 1,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 2, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 2,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 3, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 3,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 4, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 4, 4,Saturating,uint8_t >", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 0,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 1, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 1,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 2, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 2,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 3, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 3,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 4,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 5, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 5,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 6, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 6,Saturating,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 0,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 1, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 1,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 2, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 2,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 3, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 3,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 4,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 5, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 5,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 6, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 6, 6,Saturating,uint8_t >", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 0,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 1, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 1,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 2, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 2,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 3, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 3,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 4,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 5, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 5,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 6, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 6,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 7, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 7,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 8, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 8,Saturating,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 0,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 1, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 1,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 2, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 2,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 3, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 3,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 4,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 5, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 5,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 6, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 6,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 7, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 7,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 8, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt< 8, 8,Saturating,uint8_t >", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 0,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 3, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 3,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 4,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 7, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 7,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 8, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 8,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 9, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 9,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,10, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10,10,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,10, Saturating, uint16_t>(bReportIndividualTestCases), "fixpnt<10,10,Saturating,uint16_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 0,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 3, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 3,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 4,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 7, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 7,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 8, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 8,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 9, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10, 9,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,10, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<10,10,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10,10, Saturating, uint16_t>(bReportIndividualTestCases), "fixpnt<10,10,Saturating,uint16_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,0,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,4,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 7, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,7,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 8, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,8,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 9, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,9,Saturating,uint8_t >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12,12, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,12,Saturating,uint8_t >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 0, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,0,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 4, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,4,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 7, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,7,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 8, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,8,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 9, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,9,Saturating,uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12,12, Saturating, uint8_t >(bReportIndividualTestCases), "fixpnt<12,12,Saturating,uint8_t >", test_tag);
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

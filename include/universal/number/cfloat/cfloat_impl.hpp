@@ -4,10 +4,10 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-// compiler specific configuration for long double support
-#include <universal/utility/long_double.hpp>
-// compiler specific configuration for C++20 bit_cast
-#include <universal/utility/bit_cast.hpp>
+
+// compiler specific environment has been delegated to be handled by the
+// number system include file <universal/number/cfloat.hpp>
+// 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>

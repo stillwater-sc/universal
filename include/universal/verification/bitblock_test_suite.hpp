@@ -50,7 +50,7 @@ int VerifyBitsetAddition(bool bReportIndividualTestCases = false) {
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 			b = convert_to_bitblock<nbits, unsigned>(j);
 			ref = static_cast<int>(i + j);
-			bref = convert_to_bitblock<nbits + 1, unsigned>(ref);
+			bref = convert_to_bitblock<nbits + 1, unsigned>(static_cast<unsigned>(ref));
 			carry = add_unsigned(a, b, bsum);
 			if (carry) {
 				int maxNr = (int(1) << (nbits-1));
@@ -83,7 +83,7 @@ int VerifyBitsetSubtraction(bool bReportIndividualTestCases = false) {
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 			b = convert_to_bitblock<nbits, unsigned>(j);
 			ref = static_cast<int>(i - j);
-			bref = convert_to_bitblock<nbits + 1, unsigned>(ref);
+			bref = convert_to_bitblock<nbits + 1, unsigned>(static_cast<unsigned>(ref));
 			borrow = subtract_unsigned(a, b, bsub);
 			if (borrow) {
 				if (a >= b) ReportBinaryArithmeticError("FAIL", "-", a, b, bref, bsub);
@@ -115,7 +115,7 @@ int VerifyBitsetMultiplication(bool bReportIndividualTestCases = false) {
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 			b = convert_to_bitblock<nbits, unsigned>(j);
 			ref = static_cast<int>(i * j);
-			bref = convert_to_bitblock<rbits, unsigned>(ref);
+			bref = convert_to_bitblock<rbits, unsigned>(static_cast<unsigned>(ref));
 			multiply_unsigned(a, b, bmul);
 			if (bref != bmul) {
 				nrOfFailedTestCases++;
@@ -137,7 +137,7 @@ int VerifyBitsetDivision(bool bReportIndividualTestCases = false) {
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bitblock<rbits> bdiv, bref;
-	int ref;
+	unsigned ref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 		a = convert_to_bitblock<nbits, unsigned>(i);

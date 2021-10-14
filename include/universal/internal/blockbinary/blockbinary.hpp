@@ -8,6 +8,12 @@
 #include <string>
 #include <sstream>
 
+// should be defined by calling environment, just catching it here just in case it is not
+#ifndef LONG_DOUBLE_SUPPORT
+#pragma message("LONG_DOUBLE_SUPPORT is not defined")
+#define LONG_DOUBLE_SUPPORT 0
+#endif
+
 namespace sw::universal {
 
 // forward references
@@ -386,7 +392,7 @@ public:
 		return (word & mask);
 	}
 	inline constexpr uint8_t nibble(size_t n) const noexcept {
-		uint8_t retval;
+		uint8_t retval{ 0 };
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			size_t nibbleIndexInWord = n % (bitsInBlock >> 2);

@@ -238,9 +238,9 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+//	std::cout << std::endl;
 	return nrOfFailedTests;
 }
 
@@ -290,9 +290,9 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+//	std::cout << std::endl;
 	return nrOfFailedTests;
 }
 
@@ -342,9 +342,9 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+//	std::cout << std::endl;
 	return nrOfFailedTests;
 }
 
@@ -398,15 +398,14 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+//	std::cout << std::endl;
 	return nrOfFailedTests;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // enumeration utility functions
-
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 void GenerateFixedPointValues(std::ostream& ostr = std::cout) {

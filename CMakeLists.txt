@@ -253,7 +253,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	#set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 	#set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
 
-	#set(EXTRA_CXX_FLAGS "-std=c++20") # isn't this done by CMAKE_CXX_STANDARD?
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3)
@@ -276,8 +275,8 @@ elseif(MSVC)
 
 	# include code quality flags
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /MP")
-	add_definitions(-D _CRT_SECURE_NO_WARNINGS)
-	add_definitions(-D _SCL_SECURE_NO_WARNINGS)
+#	add_definitions(-D _CRT_SECURE_NO_WARNINGS)
+#	add_definitions(-D _SCL_SECURE_NO_WARNINGS)
 
 	# specific flags for debug and release builds
 
@@ -345,7 +344,7 @@ elseif(MSVC)
 	# The Spectre-mitigated libraries for Visual Studio 2017 and later can be downloaded 
 	# in the Visual Studio Installer. They're found in the Individual Components tab under 
 	# Compilers, build tools, and runtimes, and have "Libs for Spectre" in the name.
-	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Qspectre")
+	# set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Qspectre")
 	# /Qspectre is very noise, so do not include it for debug builds
 	# set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
 
