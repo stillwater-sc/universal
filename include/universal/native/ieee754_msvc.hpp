@@ -15,22 +15,22 @@ namespace sw::universal {
 template<>
 class ieee754_parameter<float> {
 public:
-	static constexpr int      nbits     = 32;
-	static constexpr uint64_t smask     = 0x8000'0000ull;
-	static constexpr int      ebits     = 8;
-	static constexpr int      bias      = 127;
-	static constexpr uint64_t emask     = 0x7F80'0000ull;
-	static constexpr uint64_t eallset   = 0xFFull;
-	static constexpr int      fbits     = 23;
-	static constexpr uint64_t hmask     = 0x0080'0000ull;
-	static constexpr uint64_t fmask     = 0x007F'FFFFull;
-	static constexpr uint64_t hfmask    = 0x00FF'FFFFull;
-	static constexpr uint64_t fmsb      = 0x0040'0000ull;
-	static constexpr uint64_t qnanmask  = 0x7FC0'0000ull;
-	static constexpr uint64_t snanmask  = 0x7FC0'0001ull;
-	static constexpr float    minNormal    = 1.1754943508222875079687365372222e-38f; // == 2^-126
-	static constexpr float    minSubnormal = 1.4012984643248170709237295832899e-45f; // == 2^-149
-	static constexpr int      minNormalExp = -126;
+	static constexpr int      nbits           = 32;
+	static constexpr uint64_t smask           = 0x8000'0000ull;
+	static constexpr int      ebits           = 8;
+	static constexpr int      bias            = 127;
+	static constexpr uint64_t emask           = 0x7F80'0000ull;
+	static constexpr uint64_t eallset         = 0xFFull;
+	static constexpr int      fbits           = 23;
+	static constexpr uint64_t hmask           = 0x0080'0000ull;
+	static constexpr uint64_t fmask           = 0x007F'FFFFull;
+	static constexpr uint64_t hfmask          = 0x00FF'FFFFull;
+	static constexpr uint64_t fmsb            = 0x0040'0000ull;
+	static constexpr uint64_t qnanmask        = 0x7FC0'0000ull;
+	static constexpr uint64_t snanmask        = 0x7FC0'0001ull;
+	static constexpr float    minNormal       = 1.1754943508222875079687365372222e-38f; // == 2^-126
+	static constexpr float    minSubnormal    = 1.4012984643248170709237295832899e-45f; // == 2^-149
+	static constexpr int      minNormalExp    = -126;
 	static constexpr int      minSubnormalExp = -149;
 };
 template<>
