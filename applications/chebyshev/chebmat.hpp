@@ -4,6 +4,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // Author: James Quinlan
+// Modified: 2021-10-15
 
 #pragma once
 
@@ -16,13 +17,17 @@ namespace chebyshev {
 	template<typename Scalar>
 	blas::matrix<Scalar> chebmat(size_t n)
 	{
-		if (n < 1) return matrix<Scalar>{};
-        
+		if (n < 1) return blas::matrix<Scalar>{};
+		blas::matrix<Scalar> T = 1;
         for(size_t i = 1;i < n+1; ++i){
                 for(size_t j = 2;j < i; ++j){
-                    T(i,j) = 
+                    T(i,j) = 1;
                 }
         }   
 		return T;
 	}
 }
+// End Notes
+/*
+In practice, FFT is used to determine the coefficients a_0, a_1, ...
+*/

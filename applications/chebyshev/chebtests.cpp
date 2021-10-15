@@ -43,6 +43,7 @@ log_e(10)		M_LN10		2.30258509299404568402
 #include "rpad.hpp"
 #include "chebpoly.hpp"
 #include "chebfun.hpp"
+#include "chebmat.hpp"
 
 int main()
 try {
@@ -145,8 +146,11 @@ try {
 
 	// 13.
 	
-	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
+//	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
 //	auto f = chebyshev::chebfun<float>(std::sin);
+	auto M = chebyshev::chebmat(5);
+	std::cout << M << std::endl;
+
 
 
 
