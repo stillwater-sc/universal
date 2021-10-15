@@ -10,6 +10,11 @@
 #include <limits>
 
 // check on required compilation guards
+// should be defined by calling environment, just catching it here just in case it is not
+#ifndef LONG_DOUBLE_SUPPORT
+#pragma message("LONG_DOUBLE_SUPPORT is not defined")
+#define LONG_DOUBLE_SUPPORT 0
+#endif
 #if !defined(BIT_CAST_SUPPORT)
 #pragma message("BIT_CAST_SUPPORT is not defined")
 #define BIT_CAST_SUPPORT 0

@@ -13,10 +13,7 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt_impl.hpp>
-#include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/mathlib.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 /*
@@ -105,14 +102,14 @@ void DoubleGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	// bool bReportIndividualTestCases = false;
+	std::string test_suite = "fixed-point modular subnormal conversion ";
+	std::string test_tag = "conversion of IEEE-754 subnormals";
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "conversion of IEEE-754 subnormals: ";
 
 #if MANUAL_TESTING
 	// minpos_subnormal value
@@ -133,13 +130,14 @@ try {
 	//FloatGenerateFixedPointValues<8, 4>();
 	//DoubleGenerateFixedPointValues<8, 4>();
 
-	// can't use the regular exhaustive test suites for these very large fixed-points
-	// nrOfFailedTestCases = ReportTestResult(VerifyAssignment<256, 150, Modular, uint32_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0, Modular, uint32_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,1, Modulo, uint32_t>");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << "Fixed-point modular subnormal conversion validation\n";
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,1, Modulo, uint32_t>");
 
 #endif
 
@@ -155,9 +153,9 @@ try {
 
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

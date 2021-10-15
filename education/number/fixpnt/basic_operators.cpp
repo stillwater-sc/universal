@@ -3,12 +3,13 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 
-// quick helper to report on a posit's specialness
+// quick helper to report on a fixpnt's specialness
 template<size_t nbits, size_t rbits>
-void checkSpecialCases(sw::universal::fixpnt<nbits, rbits> p) {
-	std::cout << "fixpnt is " << (p.iszero() ? "zero " : "non-zero ") << (p.ispos() ? "positive " : "negative ") << std::endl;
+void checkSpecialCases(sw::universal::fixpnt<nbits, rbits> fp) {
+	std::cout << "fixpnt is " << (fp.iszero() ? "zero " : "non-zero ") << (fp.ispos() ? "positive " : "negative ") << std::endl;
 }
 
 // Demonstrate basic arithmetic with fixpnt numbers

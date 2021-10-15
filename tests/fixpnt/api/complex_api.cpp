@@ -24,7 +24,7 @@ namespace sw::universal::complex_literals {
 
 	std::complex<fixpnt<8, 4>> operator""_i(long double _Val)
 	{	// return imaginary _Val
-		return (std::complex<fixpnt<8, 4>>(0.0, static_cast<fixpnt<8, 4>>(_Val)));
+		return (std::complex<fixpnt<8, 4>>(0.0, static_cast<fixpnt<8, 4>>(double(_Val))));
 	}
 
 	std::complex<fixpnt<8, 4>> operator""_i(unsigned long long _Val)

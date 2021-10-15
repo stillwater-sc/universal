@@ -18,10 +18,7 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal_impl.hpp>
-#include <universal/number/areal/manipulators.hpp>
-#include <universal/number/areal/math_functions.hpp>
+#include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/areal_test_suite.hpp>
 #include <universal/number/areal/table.hpp> // only used for value table generation

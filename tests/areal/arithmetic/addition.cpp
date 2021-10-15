@@ -8,8 +8,8 @@
 #pragma warning(disable : 4710)  // function is not inlined
 #pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal_impl.hpp>
+
+#include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_case.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>

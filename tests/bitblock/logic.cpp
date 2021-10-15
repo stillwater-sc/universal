@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
 #undef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO
 #undef BITBLOCK_ROUND_TIES_TO_ZERO

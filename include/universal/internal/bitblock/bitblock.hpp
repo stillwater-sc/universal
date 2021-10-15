@@ -441,11 +441,13 @@ void integer_divide_unsigned(const bitblock<operand_size>& a, const bitblock<ope
 #endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 	}
 	else {
-		int shift = operand_size - msb - 1;
+		int shift = static_cast<int>(operand_size) - msb - 1;
 		// prepare the subtractand
 		subtractand = b;
-		subtractand <<= shift;
-		for (int i = operand_size - msb - 1; i >= 0; --i) {
+		subtractand <<= static_cast<size_t>(shift);
+//		for (int i = operand_size - msb - 1; i >= 0; --i) {
+		for (int i = shift; i >= 0; --i) {
+
 			if (subtractand <= accumulator) {
 #ifdef DEBUG
 				bool borrow = subtract(accumulator, subtractand);
@@ -453,12 +455,12 @@ void integer_divide_unsigned(const bitblock<operand_size>& a, const bitblock<ope
 #else
 				subtract(accumulator, subtractand);
 #endif
-				result.set(i);
+				result.set(static_cast<size_t>(i));
 			}
 			else {
-				result.reset(i);
+				result.reset(static_cast<size_t>(i));
 			}
-			subtractand >>= 1;
+			subtractand >>= 1ull;
 		}
 	}
 }

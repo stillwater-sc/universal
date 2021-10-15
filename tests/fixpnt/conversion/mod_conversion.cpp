@@ -13,10 +13,7 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt_impl.hpp>
-#include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/mathlib.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
@@ -40,7 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 
 template<size_t nbits, size_t rbits>
-void GenerateFixedPointComparisonTable(std::string& tag) {
+void GenerateFixedPointComparisonTable() {
 	using namespace sw::universal;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	fixpnt<nbits, rbits> fp;
@@ -55,118 +52,6 @@ void GenerateFixedPointComparisonTable(std::string& tag) {
 	}
 }
 
-/*
-void GenerateFixedPointRangeTable() {
-	using namespace sw::universal;
-	std::cout << "fixpnt<4,#> ranges\n";
-	ReportFixedPointRanges<4, 0, Modulo>(cout);
-	ReportFixedPointRanges<4, 1, Modulo>(cout);
-	ReportFixedPointRanges<4, 2, Modulo>(cout);
-	ReportFixedPointRanges<4, 3, Modulo>(cout);
-	ReportFixedPointRanges<4, 4, Modulo>(cout);
-	std::cout << "fixpnt<6,#> ranges\n";
-	ReportFixedPointRanges<6, 0, Modulo>(cout);
-	ReportFixedPointRanges<6, 1, Modulo>(cout);
-	ReportFixedPointRanges<6, 2, Modulo>(cout);
-	ReportFixedPointRanges<6, 3, Modulo>(cout);
-	ReportFixedPointRanges<6, 4, Modulo>(cout);
-	ReportFixedPointRanges<6, 5, Modulo>(cout);
-	ReportFixedPointRanges<6, 6, Modulo>(cout);
-	std::cout << "fixpnt<8,#> ranges\n";
-	ReportFixedPointRanges<8, 0, Modulo>(cout);
-	ReportFixedPointRanges<8, 1, Modulo>(cout);
-	ReportFixedPointRanges<8, 2, Modulo>(cout);
-	ReportFixedPointRanges<8, 3, Modulo>(cout);
-	ReportFixedPointRanges<8, 4, Modulo>(cout);
-	ReportFixedPointRanges<8, 5, Modulo>(cout);
-	ReportFixedPointRanges<8, 6, Modulo>(cout);
-	ReportFixedPointRanges<8, 7, Modulo>(cout);
-	ReportFixedPointRanges<8, 8, Modulo>(cout);
-	std::cout << "fixpnt<10,#> ranges\n";
-	ReportFixedPointRanges<10, 0, Modulo>(cout);
-	ReportFixedPointRanges<10, 1, Modulo>(cout);
-	ReportFixedPointRanges<10, 2, Modulo>(cout);
-	ReportFixedPointRanges<10, 3, Modulo>(cout);
-	ReportFixedPointRanges<10, 4, Modulo>(cout);
-	ReportFixedPointRanges<10, 5, Modulo>(cout);
-	ReportFixedPointRanges<10, 6, Modulo>(cout);
-	ReportFixedPointRanges<10, 7, Modulo>(cout);
-	ReportFixedPointRanges<10, 8, Modulo>(cout);
-	ReportFixedPointRanges<10, 9, Modulo>(cout);
-	ReportFixedPointRanges<10, 10, Modulo>(cout);
-	std::cout << "fixpnt<12,#> ranges\n";
-	ReportFixedPointRanges<12, 0, Modulo>(cout);
-	ReportFixedPointRanges<12, 1, Modulo>(cout);
-	ReportFixedPointRanges<12, 2, Modulo>(cout);
-	ReportFixedPointRanges<12, 3, Modulo>(cout);
-	ReportFixedPointRanges<12, 4, Modulo>(cout);
-	ReportFixedPointRanges<12, 5, Modulo>(cout);
-	ReportFixedPointRanges<12, 6, Modulo>(cout);
-	ReportFixedPointRanges<12, 7, Modulo>(cout);
-	ReportFixedPointRanges<12, 8, Modulo>(cout);
-	ReportFixedPointRanges<12, 9, Modulo>(cout);
-	ReportFixedPointRanges<12, 10, Modulo>(cout);
-	ReportFixedPointRanges<12, 11, Modulo>(cout);
-	ReportFixedPointRanges<12, 12, Modulo>(cout);
-	std::cout << "fixpnt<14,#> ranges\n";
-	ReportFixedPointRanges<14, 0, Modulo>(cout);
-	ReportFixedPointRanges<14, 1, Modulo>(cout);
-	ReportFixedPointRanges<14, 2, Modulo>(cout);
-	ReportFixedPointRanges<14, 3, Modulo>(cout);
-	ReportFixedPointRanges<14, 4, Modulo>(cout);
-	ReportFixedPointRanges<14, 5, Modulo>(cout);
-	ReportFixedPointRanges<14, 6, Modulo>(cout);
-	ReportFixedPointRanges<14, 7, Modulo>(cout);
-	ReportFixedPointRanges<14, 8, Modulo>(cout);
-	ReportFixedPointRanges<14, 9, Modulo>(cout);
-	ReportFixedPointRanges<14, 10, Modulo>(cout);
-	ReportFixedPointRanges<14, 11, Modulo>(cout);
-	ReportFixedPointRanges<14, 12, Modulo>(cout);
-	ReportFixedPointRanges<14, 13, Modulo>(cout);
-	ReportFixedPointRanges<14, 14, Modulo>(cout);
-	std::cout << "fixpnt<16,#> ranges\n";
-	ReportFixedPointRanges<16, 0, Modulo>(cout);
-	ReportFixedPointRanges<16, 1, Modulo>(cout);
-	ReportFixedPointRanges<16, 2, Modulo>(cout);
-	ReportFixedPointRanges<16, 3, Modulo>(cout);
-	ReportFixedPointRanges<16, 4, Modulo>(cout);
-	ReportFixedPointRanges<16, 5, Modulo>(cout);
-	ReportFixedPointRanges<16, 6, Modulo>(cout);
-	ReportFixedPointRanges<16, 7, Modulo>(cout);
-	ReportFixedPointRanges<16, 8, Modulo>(cout);
-	ReportFixedPointRanges<16, 9, Modulo>(cout);
-	ReportFixedPointRanges<16, 10, Modulo>(cout);
-	ReportFixedPointRanges<16, 11, Modulo>(cout);
-	ReportFixedPointRanges<16, 12, Modulo>(cout);
-	ReportFixedPointRanges<16, 13, Modulo>(cout);
-	ReportFixedPointRanges<16, 14, Modulo>(cout);
-	ReportFixedPointRanges<16, 15, Modulo>(cout);
-	ReportFixedPointRanges<16, 16, Modulo>(cout);
-	std::cout << "fixpnt<20,#> ranges\n";
-	ReportFixedPointRanges<20, 0, Modulo>(cout);
-	ReportFixedPointRanges<20, 1, Modulo>(cout);
-	ReportFixedPointRanges<20, 2, Modulo>(cout);
-	ReportFixedPointRanges<20, 3, Modulo>(cout);
-	ReportFixedPointRanges<20, 4, Modulo>(cout);
-	ReportFixedPointRanges<20, 5, Modulo>(cout);
-	ReportFixedPointRanges<20, 6, Modulo>(cout);
-	ReportFixedPointRanges<20, 7, Modulo>(cout);
-	ReportFixedPointRanges<20, 8, Modulo>(cout);
-	ReportFixedPointRanges<20, 9, Modulo>(cout);
-	ReportFixedPointRanges<20, 10, Modulo>(cout);
-	ReportFixedPointRanges<20, 11, Modulo>(cout);
-	ReportFixedPointRanges<20, 12, Modulo>(cout);
-	ReportFixedPointRanges<20, 13, Modulo>(cout);
-	ReportFixedPointRanges<20, 14, Modulo>(cout);
-	ReportFixedPointRanges<20, 15, Modulo>(cout);
-	ReportFixedPointRanges<20, 16, Modulo>(cout);
-	ReportFixedPointRanges<20, 17, Modulo>(cout);
-	ReportFixedPointRanges<20, 18, Modulo>(cout);
-	ReportFixedPointRanges<20, 19, Modulo>(cout);
-	ReportFixedPointRanges<20, 20, Modulo>(cout);
-}
-*/
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -179,108 +64,81 @@ void GenerateFixedPointRangeTable() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite = "fixed-point modulo conversion ";
+	std::string test_tag = "conversion";
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "conversion: ";
-
 #if MANUAL_TESTING
 
-	ReportFixedPointRanges<12, 0, Modulo>(cout);
+	fixpnt<4, 1, Modulo, uint8_t> f;
+	f = 0.25f;
+	std::cout << to_binary(f) << " : " << f << std::endl;
 
-	//ReportFixedPointRanges<12, 1, Modulo>(cout);
-	//GenerateFixedPointValues<12, 1>();
-	
-	//GenerateFixedPointRangeTable();
+	ReportFixedPointRanges(std::cout, fixpnt< 4, 0, Modulo, uint16_t>());
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t>");
+	ReportFixedPointRanges(std::cout, fixpnt< 4, 1, Modulo, uint16_t>());
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t>");
 
-	//cout << "quire<512,240>\n";
-	//ReportFixedPointRanges<512, 240, Modulo>(cout);
 
-	GenerateFixedPointValues<4, 2>();
+//	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 4,Modulo,uint8_t>");
 
-	/*
-	GenerateFixedPointValues<4, 0>();
-	GenerateFixedPointValues<4, 1>();
-	GenerateFixedPointValues<4, 2>();
-	GenerateFixedPointValues<4, 3>();
-	GenerateFixedPointValues<4, 4>();
-
-	GenerateFixedPointValues<5, 4>();
-	GenerateFixedPointValues<5, 5>();
-
-	GenerateFixedPointValues<8, 8>();
-
-	GenerateFixedPointValues<16, 8>();
-    */
-
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4>(bReportIndividualTestCases), tag, "fixpnt<4,4>");
-
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8>(bReportIndividualTestCases), tag, "fixpnt<8,8>");
-
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1>(bReportIndividualTestCases), tag, "fixpnt<12,1>");
-
-#if STRESS_TESTING
-
-	// manual exhaustive test
-
-#endif
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else  // !MANUAL_TESTING
 
-	std::cout << "Fixed-point Modulo conversion validation\n";
-
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 4,Modulo,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 5,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 6,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 7,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 8,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 5,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 6,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 7,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 8,Modulo,uint8_t>");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 6, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 6,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 8,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,10, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,10,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,12, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,12,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 6, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 6,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 8,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,10, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,10,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,12, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,12,Modulo,uint8_t>");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 0, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 1, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 2, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 3, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 8,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,12, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,12,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,16, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,16,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 8,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,12, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16,12,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,16, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16,16,Modulo,uint8_t>");
 #endif
 
 #if REGRESSION_LEVEL_4
 
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

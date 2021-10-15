@@ -8,6 +8,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+
+// compiler specific configuration for long double support
+#include <universal/utility/long_double.hpp>
+// compiler specific configuration for C++20 bit_cast
 #include <universal/utility/bit_cast.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////

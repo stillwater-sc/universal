@@ -523,9 +523,9 @@ public:
 	inline constexpr integer& convert_signed(SignedInt rhs) noexcept {
 		clear();
 		if (0 == rhs) return *this;
-		uint64_t v = rhs;
-		bool negative = (v < 0 ? true : false);
 		constexpr size_t argbits = sizeof(rhs);
+		bool negative = (rhs < 0 ? true : false);
+		int64_t v = rhs;
 		unsigned upper = (nbits <= _nbits ? nbits : argbits);
 		for (unsigned i = 0; i < upper && v != 0; ++i) {
 			if (v & 0x1ull) setbit(i);

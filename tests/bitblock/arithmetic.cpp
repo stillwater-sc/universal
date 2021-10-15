@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
 #undef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO
 #undef BITBLOCK_ROUND_TIES_TO_ZERO
@@ -69,7 +70,7 @@ int IncrementRightAdjustedBitset() {
 		r1.set(nbits - 1 - i, true);
 		carry = false;
 		std::cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- input" << std::endl;
-		carry = increment_unsigned(r1, int(i));
+		carry = increment_unsigned(r1, i);
 		std::cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- result" << std::endl;
 	}
 
@@ -113,7 +114,7 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;

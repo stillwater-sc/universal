@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 // configure the posit arithmetic
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>

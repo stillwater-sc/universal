@@ -9,10 +9,10 @@
 #include <universal/adapters/adapt_integer_and_posit.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/integer/integer>
+#include <universal/number/integer/integer.hpp>
 // configure the posit arithmetic class
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 
 // is representable
@@ -61,7 +61,7 @@ int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividual
 	constexpr size_t NR_INTEGERS = (1 << ibits);
 	//for (integer<ibits> i = min_int<ibits>(); i <= max_int<ibits>(); ++i) {  // this doesn't work for signed integers
 	for (size_t pattern = 0; pattern < NR_INTEGERS; ++pattern) {
-		i.set_raw_bits(pattern);
+		i.setbits(pattern);
 		p = i; 
 		// p = i requires ADAPTER_POSIT_AND_INTEGER to be set which is accomplished by
 		// #include <universal/adapters/adapt_integer_and_posit.hpp>
@@ -82,7 +82,7 @@ int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividual
 	integer<ibits> i;
 	constexpr size_t NR_POSITS = (1 << pbits);
 	for (size_t pattern = 0; pattern < NR_POSITS; ++pattern) {
-		p.set_raw_bits(pattern);
+		p.setbits(pattern);
 		long diff;
 		if (p.isnar()) {
 			i = 0;

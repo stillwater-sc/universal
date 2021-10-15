@@ -14,18 +14,23 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
-#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 

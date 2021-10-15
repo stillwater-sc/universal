@@ -31,18 +31,17 @@ int scale_minpos_fixpnt() {
 
 // generate the maxneg through maxpos value range of a fixed-point configuration
 // the type of arithmetic, Modulo or Saturating, does not affect the range
-template<size_t nbits, size_t rbits>
-void ReportFixedPointRanges(std::ostream& ostr = std::cout) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+void ReportFixedPointRanges(std::ostream& ostr, const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	using namespace std;
-	using FixedPoint = fixpnt<nbits, rbits, sw::universal::Saturating, uint32_t>;
+	using FixedPoint = fixpnt<nbits, rbits, arithmetic, bt>;
 	FixedPoint fp;
-	ostr << "fixpnt<" << nbits << ", " << rbits << "> : "
-		<< maxneg(fp) << " "
-		<< minneg(fp) << " "
+	ostr << std::setw(40) << type_tag(v) << " : [ "
+		<< fp.maxneg() << " ... "
+		<< fp.minneg() << " "
 		<< "0 "
-		<< minpos(fp) << " "
-		<< maxpos(fp)
-		<< endl;
+		<< fp.minpos() << " ... "
+		<< fp.maxpos() << " ]\n";
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>

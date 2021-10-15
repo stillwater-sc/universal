@@ -13,10 +13,7 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 
-// minimum set of include files to reflect source code dependencies
-#include "universal/number/fixpnt/fixpnt_impl.hpp"
-#include "universal/number/fixpnt/manipulators.hpp"
-#include "universal/number/fixpnt/mathlib.hpp"
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
@@ -40,7 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 
 template<size_t nbits, size_t rbits>
-void GenerateFixedPointComparisonTable(std::string& tag) {
+void GenerateFixedPointComparisonTable() {
 	using namespace sw::universal;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	fixpnt<nbits, rbits> fp;
@@ -55,118 +52,6 @@ void GenerateFixedPointComparisonTable(std::string& tag) {
 	}
 }
 
-/*
-void GenerateFixedPointRangeTable() {
-	using namespace sw::universal;
-	std::cout << "fixpnt<4,#> ranges\n";
-	ReportFixedPointRanges<4, 0, Saturating>(cout);
-	ReportFixedPointRanges<4, 1, Saturating>(cout);
-	ReportFixedPointRanges<4, 2, Saturating>(cout);
-	ReportFixedPointRanges<4, 3, Saturating>(cout);
-	ReportFixedPointRanges<4, 4, Saturating>(cout);
-	std::cout << "fixpnt<6,#> ranges\n";
-	ReportFixedPointRanges<6, 0, Saturating>(cout);
-	ReportFixedPointRanges<6, 1, Saturating>(cout);
-	ReportFixedPointRanges<6, 2, Saturating>(cout);
-	ReportFixedPointRanges<6, 3, Saturating>(cout);
-	ReportFixedPointRanges<6, 4, Saturating>(cout);
-	ReportFixedPointRanges<6, 5, Saturating>(cout);
-	ReportFixedPointRanges<6, 6, Saturating>(cout);
-	std::cout << "fixpnt<8,#> ranges\n";
-	ReportFixedPointRanges<8, 0, Saturating>(cout);
-	ReportFixedPointRanges<8, 1, Saturating>(cout);
-	ReportFixedPointRanges<8, 2, Saturating>(cout);
-	ReportFixedPointRanges<8, 3, Saturating>(cout);
-	ReportFixedPointRanges<8, 4, Saturating>(cout);
-	ReportFixedPointRanges<8, 5, Saturating>(cout);
-	ReportFixedPointRanges<8, 6, Saturating>(cout);
-	ReportFixedPointRanges<8, 7, Saturating>(cout);
-	ReportFixedPointRanges<8, 8, Saturating>(cout);
-	std::cout << "fixpnt<10,#> ranges\n";
-	ReportFixedPointRanges<10, 0, Saturating>(cout);
-	ReportFixedPointRanges<10, 1, Saturating>(cout);
-	ReportFixedPointRanges<10, 2, Saturating>(cout);
-	ReportFixedPointRanges<10, 3, Saturating>(cout);
-	ReportFixedPointRanges<10, 4, Saturating>(cout);
-	ReportFixedPointRanges<10, 5, Saturating>(cout);
-	ReportFixedPointRanges<10, 6, Saturating>(cout);
-	ReportFixedPointRanges<10, 7, Saturating>(cout);
-	ReportFixedPointRanges<10, 8, Saturating>(cout);
-	ReportFixedPointRanges<10, 9, Saturating>(cout);
-	ReportFixedPointRanges<10, 10, Saturating>(cout);
-	std::cout << "fixpnt<12,#> ranges\n";
-	ReportFixedPointRanges<12, 0, Saturating>(cout);
-	ReportFixedPointRanges<12, 1, Saturating>(cout);
-	ReportFixedPointRanges<12, 2, Saturating>(cout);
-	ReportFixedPointRanges<12, 3, Saturating>(cout);
-	ReportFixedPointRanges<12, 4, Saturating>(cout);
-	ReportFixedPointRanges<12, 5, Saturating>(cout);
-	ReportFixedPointRanges<12, 6, Saturating>(cout);
-	ReportFixedPointRanges<12, 7, Saturating>(cout);
-	ReportFixedPointRanges<12, 8, Saturating>(cout);
-	ReportFixedPointRanges<12, 9, Saturating>(cout);
-	ReportFixedPointRanges<12, 10, Saturating>(cout);
-	ReportFixedPointRanges<12, 11, Saturating>(cout);
-	ReportFixedPointRanges<12, 12, Saturating>(cout);
-	std::cout << "fixpnt<14,#> ranges\n";
-	ReportFixedPointRanges<14, 0, Saturating>(cout);
-	ReportFixedPointRanges<14, 1, Saturating>(cout);
-	ReportFixedPointRanges<14, 2, Saturating>(cout);
-	ReportFixedPointRanges<14, 3, Saturating>(cout);
-	ReportFixedPointRanges<14, 4, Saturating>(cout);
-	ReportFixedPointRanges<14, 5, Saturating>(cout);
-	ReportFixedPointRanges<14, 6, Saturating>(cout);
-	ReportFixedPointRanges<14, 7, Saturating>(cout);
-	ReportFixedPointRanges<14, 8, Saturating>(cout);
-	ReportFixedPointRanges<14, 9, Saturating>(cout);
-	ReportFixedPointRanges<14, 10, Saturating>(cout);
-	ReportFixedPointRanges<14, 11, Saturating>(cout);
-	ReportFixedPointRanges<14, 12, Saturating>(cout);
-	ReportFixedPointRanges<14, 13, Saturating>(cout);
-	ReportFixedPointRanges<14, 14, Saturating>(cout);
-	std::cout << "fixpnt<16,#> ranges\n";
-	ReportFixedPointRanges<16, 0, Saturating>(cout);
-	ReportFixedPointRanges<16, 1, Saturating>(cout);
-	ReportFixedPointRanges<16, 2, Saturating>(cout);
-	ReportFixedPointRanges<16, 3, Saturating>(cout);
-	ReportFixedPointRanges<16, 4, Saturating>(cout);
-	ReportFixedPointRanges<16, 5, Saturating>(cout);
-	ReportFixedPointRanges<16, 6, Saturating>(cout);
-	ReportFixedPointRanges<16, 7, Saturating>(cout);
-	ReportFixedPointRanges<16, 8, Saturating>(cout);
-	ReportFixedPointRanges<16, 9, Saturating>(cout);
-	ReportFixedPointRanges<16, 10, Saturating>(cout);
-	ReportFixedPointRanges<16, 11, Saturating>(cout);
-	ReportFixedPointRanges<16, 12, Saturating>(cout);
-	ReportFixedPointRanges<16, 13, Saturating>(cout);
-	ReportFixedPointRanges<16, 14, Saturating>(cout);
-	ReportFixedPointRanges<16, 15, Saturating>(cout);
-	ReportFixedPointRanges<16, 16, Saturating>(cout);
-	std::cout << "fixpnt<20,#> ranges\n";
-	ReportFixedPointRanges<20, 0, Saturating>(cout);
-	ReportFixedPointRanges<20, 1, Saturating>(cout);
-	ReportFixedPointRanges<20, 2, Saturating>(cout);
-	ReportFixedPointRanges<20, 3, Saturating>(cout);
-	ReportFixedPointRanges<20, 4, Saturating>(cout);
-	ReportFixedPointRanges<20, 5, Saturating>(cout);
-	ReportFixedPointRanges<20, 6, Saturating>(cout);
-	ReportFixedPointRanges<20, 7, Saturating>(cout);
-	ReportFixedPointRanges<20, 8, Saturating>(cout);
-	ReportFixedPointRanges<20, 9, Saturating>(cout);
-	ReportFixedPointRanges<20, 10, Saturating>(cout);
-	ReportFixedPointRanges<20, 11, Saturating>(cout);
-	ReportFixedPointRanges<20, 12, Saturating>(cout);
-	ReportFixedPointRanges<20, 13, Saturating>(cout);
-	ReportFixedPointRanges<20, 14, Saturating>(cout);
-	ReportFixedPointRanges<20, 15, Saturating>(cout);
-	ReportFixedPointRanges<20, 16, Saturating>(cout);
-	ReportFixedPointRanges<20, 17, Saturating>(cout);
-	ReportFixedPointRanges<20, 18, Saturating>(cout);
-	ReportFixedPointRanges<20, 19, Saturating>(cout);
-	ReportFixedPointRanges<20, 20, Saturating>(cout);
-}
-*/
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -179,14 +64,14 @@ void GenerateFixedPointRangeTable() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite = "fixed-point saturating conversion ";
+	std::string test_tag = "conversion IEEE-754 normals";
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "conversion: ";
 
 #if MANUAL_TESTING
 
@@ -198,70 +83,64 @@ try {
 	//cout << "quire<512,240>\n";
 	//ReportFixedPointRanges<512, 240>(cout);
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<4,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<4,4,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<8,8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<8,8,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,1,Saturating,uint8_t>");
 
-#if STRESS_TESTING
-
-	// manual exhaustive test
-
-#endif
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else  // !MANUAL_TESTING
 
-	std::cout << "Fixed-point Saturating conversion validation\n";
-
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 0,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 1,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 2, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 3, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 3,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 2, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 3, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 4,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 0, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 0,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 1, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 1,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 2, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 3, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 3,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 4, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 4,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 5, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 5,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 6, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 6,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 7,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 8, 8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 0, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 1, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 2, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 3, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 4, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 5, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 5,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 6, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 6,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 7,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 8,Saturating,uint8_t>");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 0,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 1,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 3, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 3,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 4, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 4,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 6, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 6,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 8, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12, 8,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,10, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,10,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,12, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<12,12,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 3, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 4, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 6, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 6,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 8, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,10, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,10,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,12, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,12,Saturating,uint8_t>");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 0, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 0,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 1, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 1,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 2, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 3, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 3,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 4, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 4,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16, 8,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,12, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,12,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,16, Saturating, uint8_t>(bReportIndividualTestCases), tag, "fixpnt<16,16,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 0, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 1, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 2, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 3, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 4, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,12, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16,12,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,16, Saturating, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16,16,Saturating,uint8_t>");
 #endif
 
 #if REGRESSION_LEVEL_4
 
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
