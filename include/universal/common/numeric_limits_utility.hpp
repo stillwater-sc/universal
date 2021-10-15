@@ -8,7 +8,7 @@
 namespace sw::universal {
 
 // a standard table format for numeric_limits<> of type Scalar
-template<typename Scalar, size_t ColumnWidth = 20>
+template<typename Scalar, size_t ColumnWidth = 40>
 void numberTraits(std::ostream& ostr) {
 	using namespace std;
 
@@ -29,7 +29,7 @@ void numberTraits(std::ostream& ostr) {
 }
 
 // compare numeric_limits of two Real types
-template<typename Type1, typename Type2, size_t ColumnWidth = 20>
+template<typename Type1, typename Type2, size_t ColumnWidth = 30>
 void compareNumberTraits(std::ostream& ostr) {
 	using namespace std;
 
