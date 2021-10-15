@@ -11,6 +11,7 @@
 #include <limits>
 
 #include <universal/math/stub/classify.hpp> // fpclassify, isnormal, issubnormal, isinf, isnan
+#include <universal/verification/test_reporters.hpp> 
 
 namespace sw::universal {
 
@@ -171,7 +172,7 @@ namespace sw::universal {
 					std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
 					std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
 					std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
-					std::cout << "delta   : " << delta << " : " << to_binary(delta, true) << std::endl;
+					std::cout << "delta   : " << delta << " : " << to_binary(delta) << std::endl;
 				}
 				// da - delta = (prev,current) == previous + ubit = previous interval value
 				testValue = da - delta;
@@ -191,7 +192,7 @@ namespace sw::universal {
 					std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
 					std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
 					std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
-					std::cout << "delta   : " << delta << " : " << to_binary(delta, true) << std::endl;
+					std::cout << "delta   : " << delta << " : " << to_binary(delta) << std::endl;
 				}
 
 			}

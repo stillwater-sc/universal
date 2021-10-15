@@ -14,16 +14,11 @@
 // second: enable/disable areal arithmetic exceptions
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 1
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal_impl.hpp>
-// fixed-point type manipulators such as pretty printers
-#include <universal/number/areal/manipulators.hpp>
-#include <universal/number/areal/math_functions.hpp>
+#include <universal/number/areal/areal.hpp>
+#include <universal/verification/test_reporters.hpp> 
 
-#if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an areal
 constexpr double pi = 3.14159265358979323846;
-#endif // BIT_CAST_SUPPORT
 
 template<typename Real>
 void TestConstexprConstruction() {
@@ -112,9 +107,9 @@ int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite = "areal constexpr ";
+	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
-
-	std::cout << "AREAL constexpr tests\n";
 	
 	using Real = areal<12, 2>;
 	Real a;
@@ -124,12 +119,7 @@ try {
 	TestConstexprAssignment<Real>();
 	TestConstexprSpecificValues<Real>();
 
-	if (nrOfFailedTestCases > 0) {
-		std::cout << "FAIL\n";
-	}
-	else {
-		std::cout << "PASS\n";
-	}
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

@@ -10,6 +10,7 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/verification/test_reporters.hpp> 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -29,9 +30,11 @@ try {
 
 	if (argc > 0) { std::cout << argv[0] << std::endl; }
 
+	std::string test_suite = "fixed-point class interface ";
+	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "fixed-point class interface tests\n";
+
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR fixed-point (the default)
@@ -368,12 +371,7 @@ try {
 	}
 #endif // LATER
 
-	if (nrOfFailedTestCases > 0) {
-		std::cout << "FAIL\n";
-	}
-	else {
-		std::cout << "PASS\n";
-	}
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

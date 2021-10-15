@@ -5,37 +5,15 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <iomanip>
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/cfloat/cfloat_impl.hpp>
+
+#include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	//const size_t RND_TEST_CASES = 500000;
-
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 15;
-
 	int nrOfFailedTestCases = 0;
-	std::string tag = " areal<128,15>";
-
-	std::cout << "Standard quad-precision cfloat<128,15> configuration tests\n";
-
-	cfloat<nbits, es> r;
-	r = 1.2345;
-	std::cout << r << '\n';
-
-#if 0
-	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << std::endl;
-	bool bReportIndividualTestCases = false;
-
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
-#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
@@ -43,11 +21,11 @@ catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_arithmetic_exception& err) {
+catch (const sw::universal::areal_arithmetic_exception& err) {
 	std::cerr << "Uncaught real arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_internal_exception& err) {
+catch (const sw::universal::areal_internal_exception& err) {
 	std::cerr << "Uncaught real internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

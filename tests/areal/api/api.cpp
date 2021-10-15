@@ -12,26 +12,20 @@
 #include <iomanip>
 #include <fstream>
 #include <typeinfo>
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal_impl.hpp>
-#include <universal/number/areal/manipulators.hpp>  // hex_print and the like
+
+#include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	if (argc > 0) {
-		std::cout << argv[0] << std::endl;
-	}
-	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
-
+	std::cout << "areal<> Application Programming Interface tests" << std::endl;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "areal<> Application Programming Interface tests" << std::endl;
 
 #if MANUAL_TESTING
 
