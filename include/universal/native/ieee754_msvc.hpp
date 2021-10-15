@@ -75,8 +75,8 @@ public:
 	static constexpr uint64_t snanmask = 0x7FF0'0000'0000'0001ull;
 	static constexpr long double minNormal = 2.2250738585072013830902327173324e-308; // == 2^-1022
 	static constexpr long double minSubnormal = 4.9406564584124654417656879286220e-324; // == 2^-1074
-	static constexpr int      minNormalExp    = -1022;
-	static constexpr int      minSubnormalExp = -1074;
+	static constexpr int         minNormalExp    = -1022;
+	static constexpr int         minSubnormalExp = -1074;
 };
 
 } // namespace sw::universal
