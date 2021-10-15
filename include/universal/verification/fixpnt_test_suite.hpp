@@ -408,14 +408,14 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 // enumeration utility functions
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
+void GenerateFixedPointValues(std::ostream& ostr, const fixpnt<nbits, rbits, arithmetic, BlockType>& v) {
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 	fixpnt<nbits, rbits, arithmetic, BlockType> a;
-	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
+	ostr << type_tag(v) << '\n';
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		float f = float(a);
-		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << std::endl;
+		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << '\n';
 	}
 }
 

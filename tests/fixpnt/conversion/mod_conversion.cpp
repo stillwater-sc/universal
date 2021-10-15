@@ -13,10 +13,7 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt_impl.hpp>
-#include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/mathlib.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
@@ -168,7 +165,7 @@ void GenerateFixedPointRangeTable() {
 */
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -179,7 +176,7 @@ void GenerateFixedPointRangeTable() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -190,38 +187,16 @@ try {
 
 #if MANUAL_TESTING
 
-	ReportFixedPointRanges<12, 0, Modulo>(cout);
+	ReportFixedPointRanges(std::cout, fixpnt< 4, 0, Modulo, uint16_t>());
+	ReportFixedPointRanges(std::cout, fixpnt< 8, 0, Modulo, uint16_t>());
+	ReportFixedPointRanges(std::cout, fixpnt<12, 0, Modulo, uint16_t>());
+	ReportFixedPointRanges(std::cout, fixpnt<16, 0, Modulo, uint16_t>());
+	ReportFixedPointRanges(std::cout, fixpnt<20, 0, Modulo, uint16_t>());
 
-	//ReportFixedPointRanges<12, 1, Modulo>(cout);
-	//GenerateFixedPointValues<12, 1>();
-	
-	//GenerateFixedPointRangeTable();
+	// a super accumulator for single precision posits: quire<512,240>\n";
+	//	ReportFixedPointRanges(std::cout, fixpnt<512, 240, Modulo, uint32_t>());
 
-	//cout << "quire<512,240>\n";
-	//ReportFixedPointRanges<512, 240, Modulo>(cout);
-
-	GenerateFixedPointValues<4, 2>();
-
-	/*
-	GenerateFixedPointValues<4, 0>();
-	GenerateFixedPointValues<4, 1>();
-	GenerateFixedPointValues<4, 2>();
-	GenerateFixedPointValues<4, 3>();
-	GenerateFixedPointValues<4, 4>();
-
-	GenerateFixedPointValues<5, 4>();
-	GenerateFixedPointValues<5, 5>();
-
-	GenerateFixedPointValues<8, 8>();
-
-	GenerateFixedPointValues<16, 8>();
-    */
-
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4>(bReportIndividualTestCases), tag, "fixpnt<4,4>");
-
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8>(bReportIndividualTestCases), tag, "fixpnt<8,8>");
-
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1>(bReportIndividualTestCases), tag, "fixpnt<12,1>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), tag, "fixpnt< 4, 4,Modulo,uint8_t>");
 
 #if STRESS_TESTING
 

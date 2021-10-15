@@ -12,11 +12,13 @@ namespace sw::universal {
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 std::string type_tag(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	std::stringstream s;
+	if (v.iszero()) s << ' '; // remove 'unreferenced formal parameter warning from compilation log
 	s << "fixpnt<"
-		<< nbits << ", "
-		<< rbits << ", "
-		<< (arithmetic ? "Modulo, " : "Saturating, ")
-		<< typeid(bt).name() << "> = " << v;
+		<< std::setw(3) << nbits << ", "
+		<< std::setw(3) << rbits << ", "
+		<< (arithmetic ? "    Modulo, " : 
+			             "Saturating, ")
+		<< typeid(bt).name() << '>';
 	return s.str();
 }
 
@@ -29,15 +31,9 @@ template<typename FixedPoint>
 std::string type_tag() {
 	constexpr size_t nbits = FixedPoint::nbits;
 	constexpr size_t rbits = FixedPoint::rbits;
-	using bt = typename FixedPoint::BlockType;
 	constexpr bool arithmetic = FixedPoint::arithmetic;
-	std::stringstream s;
-	s << "fixpnt<"
-		<< nbits << ", "
-		<< rbits << ", "
-		<< (arithmetic ? "Modulo, " : "Saturating, ")
-		<< typeid(bt).name() << '>';
-	return s.str();
+	using bt = typename FixedPoint::BlockType;
+	return type_tag(fixpnt<nbits, rbits, arithmetic, bt>());
 }
 
 } // namespace sw::universal

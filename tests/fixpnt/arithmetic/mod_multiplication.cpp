@@ -39,7 +39,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -63,8 +63,8 @@ try {
 
 	{
 		blockbinary<8> a, b;
-		a.set_raw_bits(0x02);
-		b.set_raw_bits(0x80);
+		a.setbits(0x02);
+		b.setbits(0x80);
 		blockbinary<16> c;
 		c = urmul2(a, b);
 		std::cout << a << " * " << b << " = " << c << " : " << (long long)c << '\n';
@@ -78,6 +78,9 @@ try {
 	GenerateTestCase<8, 4>(fb, fa);
 
 	// generate individual testcases to hand trace/debug
+	GenerateTestCase<4, 0>(0.5f, 1.5f); 
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag); 
+	return 0;
 	GenerateTestCase<4, 1>(-0.5f, -3.5f);
 	GenerateTestCase<4, 1>(-3.5f, -0.5f);
 
