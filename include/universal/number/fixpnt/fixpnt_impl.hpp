@@ -83,7 +83,7 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 	}
 	// calculate scale
 	long scale = 0;
-	if (nbits > rbits + 1) {  // subtle bug: in fixpnt numbers with only 1 bit before the radix point, '1' is maxneg, and thus while (v > 1) never completes
+	if constexpr (nbits > rbits + 1) {  // subtle bug: in fixpnt numbers with only 1 bit before the radix point, '1' is maxneg, and thus while (v > 1) never completes
 		v >>= rbits;
 		while (v > 1) {
 			++scale;
@@ -226,7 +226,7 @@ public:
 	fixpnt(unsigned long initial_value)      noexcept { *this = initial_value; }
 	fixpnt(unsigned long long initial_value) noexcept { *this = initial_value; }
 	fixpnt(float initial_value)              noexcept { *this = initial_value; }
-	fixpnt(double initial_value)   noexcept { *this = initial_value; }
+	fixpnt(double initial_value)             noexcept { *this = initial_value; }
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -478,14 +478,14 @@ public:
 	}
 	// conversion operators
 // Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator unsigned short() const     { return to_ushort(); }
-	explicit operator unsigned int() const       { return to_uint(); }
-	explicit operator unsigned long() const      { return to_ulong(); }
-	explicit operator unsigned long long() const { return to_ulong_long(); }
-	explicit operator short() const              { return convert_signed<short>(); }
-	explicit operator int() const                { return convert_signed<int>(); }
-	explicit operator long() const               { return convert_signed<long>(); }
-	explicit operator long long() const          { return convert_signed<long long>(); }
+	explicit operator unsigned short() const     { return to_unsigned<unsigned short>(); }
+	explicit operator unsigned int() const       { return to_unsigned<unsigned int>(); }
+	explicit operator unsigned long() const      { return to_unsigned<unsigned long>(); }
+	explicit operator unsigned long long() const { return to_unsigned<unsigned long long>(); }
+	explicit operator short() const              { return to_signed<short>(); }
+	explicit operator int() const                { return to_signed<int>(); }
+	explicit operator long() const               { return to_signed<long>(); }
+	explicit operator long long() const          { return to_signed<long long>(); }
 	explicit operator float() const              { return to_native<float>(); }
 	explicit constexpr operator double() const   { return to_native<double>(); }
 
@@ -715,12 +715,12 @@ protected:
 			// we only have a guard bit and no round and/or sticky bits
 			// because the mask logic will make round and sticky both 0
 			// so no need to special case it
-			uint32_t mask = (1ul << (shiftRight - 1));
+			uint64_t mask = (1ull << (shiftRight - 1));
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
 			if (shiftRight > 1) {
-				mask = (0xFFFF'FFFFul << (shiftRight - 2));
+				mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
 				mask = ~mask;
 			}
 			else {
@@ -748,14 +748,15 @@ protected:
 	}
 
 	// conversion functions
-	// from fixed-point to native
-	template<typename Integer>
-	typename std::enable_if< std::is_integral<Integer>::value && std::is_signed<Integer>::value,
-	                Integer>::type convert_signed() const {
+
+	// from fixed-point to native signed integer
+	template<typename NativeInt>
+	typename std::enable_if< std::is_integral<NativeInt>::value && std::is_signed<NativeInt>::value,
+		NativeInt>::type to_signed() const {
 		if constexpr (nbits <= rbits) return 0;
-		constexpr unsigned sizeOfInteger = 8 * sizeof(Integer);
-		Integer ll = 0;
-		Integer mask = 1;
+		constexpr unsigned sizeOfInteger = 8 * sizeof(NativeInt);
+		NativeInt ll = 0;
+		NativeInt mask = 1;
 		unsigned upper = (nbits < sizeOfInteger ? nbits : sizeOfInteger);
 		for (unsigned i = rbits; i < upper; ++i) {
 			ll |= at(i) ? mask : 0;
@@ -769,17 +770,12 @@ protected:
 		}
 		return ll;
 	}
-	unsigned short to_ushort() const {
-		return static_cast<unsigned short>(to_ulong_long());
-	}
-	unsigned int to_uint() const {
-		return static_cast<unsigned int>(to_ulong_long());
-	}
-	unsigned long to_ulong() const {
-		return static_cast<unsigned long>(to_ulong_long());
-	}
-	unsigned long long to_ulong_long() const {
-		return static_cast<unsigned long long>(bb.to_long_long());
+	
+	// from fixed-point to native unsigned integer
+	template<typename NativeInt>
+	typename std::enable_if< std::is_integral<NativeInt>::value&& std::is_unsigned<NativeInt>::value,
+		NativeInt>::type to_unsigned() const {
+		return NativeInt(bb.to_long_long());
 	}
 
 	template<typename TargetFloat>
@@ -812,7 +808,22 @@ protected:
 		}
 		return (sign() ? -value : value);
 	}
+
 #ifdef DEPRECATED
+
+	unsigned short to_ushort() const {
+		return static_cast<unsigned short>(to_ulong_long());
+	}
+	unsigned int to_uint() const {
+		return static_cast<unsigned int>(to_ulong_long());
+	}
+	unsigned long to_ulong() const {
+		return static_cast<unsigned long>(to_ulong_long());
+	}
+	unsigned long long to_ulong_long() const {
+		return static_cast<unsigned long long>(bb.to_long_long());
+	}
+
 	float to_float() const {
 		// minimum positive normal value of a single precision float == 2^-126
 		// float minpos_normal = 1.1754943508222875079687365372222e-38
@@ -877,12 +888,12 @@ protected:
 	long double to_long_double() const {  // TODO : this is not a valid implementation
 		return (long double)to_double();
 	}
-#endif
+
 	// from native to fixed-point
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
-		if (arithmetic == Saturating) {
+		if constexpr (arithmetic == Saturating) {
 			// we are implementing saturation for values that are outside of the fixed-point's range
 			// check if we are in the representable range
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
@@ -905,6 +916,7 @@ protected:
 		Ty tmp = rhs * one;
 		*this = uint64_t(tmp);
 	}
+#endif
 
 private:
 	blockbinary<nbits, bt> bb;

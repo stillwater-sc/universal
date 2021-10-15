@@ -14,11 +14,7 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt_impl.hpp>
-#include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/mathlib.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // generate a full binary representation table for a given posit configuration
@@ -80,7 +76,6 @@ try {
 		if (std::string(argv[1]) == std::string("-csv")) csv = true;
 	}
 	std::cout << "Generate value tables for fixpnt configurations\n";
-
 
 	GenerateFixedPointTable<4, 0>(std::cout, csv);
 	GenerateFixedPointTable<4, 1>(std::cout, csv);

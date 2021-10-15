@@ -49,6 +49,11 @@ try {
 	ReportFixedPointRanges(std::cout, fixpnt<32, 32, Modulo, uint16_t>());
 	std::cout << '\n';
 
+
+	// a super accumulator for single precision posits: quire<512,240>\n";
+	// unfortunately, this does not produce a readable range spec, :-(
+    // ReportFixedPointRanges(std::cout, fixpnt<512, 240, Modulo, uint32_t>());
+
 	std::cout.flush();
 	return EXIT_SUCCESS;
 }

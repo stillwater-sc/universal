@@ -26,15 +26,16 @@ template<typename TestType>
 void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const TestType& result) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	auto old_precision = std::cerr.precision();
+	std::cerr << std::setprecision(10);
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << input
 		<< " did not convert to "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << reference << " instead it yielded  "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << double(result)
-		<< "  raw " << std::setw(nbits) << to_binary(result)
-		<< std::setprecision(old_precision)
-		<< std::endl;
+		<< "  raw " << std::setw(nbits) << to_binary(result);
+	std::cerr << '\n';
+	std::cerr << std::setprecision(old_precision);
 }
 
 template<typename TestType>
@@ -47,7 +48,7 @@ void ReportConversionSuccess(const std::string& test_case, const std::string& op
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << reference
 		<< "  raw " << std::setw(nbits) << to_binary(result)
-		<< std::endl;
+		<< '\n';
 }
 
 template<typename TestType>
@@ -62,7 +63,7 @@ void ReportUnaryArithmeticError(const std::string& test_case, const std::string&
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result
 		<< " " << to_binary(ref) << " vs " << to_binary(result)
 		<< std::setprecision(old_precision)
-		<< std::endl;
+		<< '\n';
 }
 
 template<typename TestType>
@@ -76,7 +77,7 @@ void ReportUnaryArithmeticSucces(const std::string& test_case, const std::string
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " reference value is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
 		<< std::setprecision(old_precision)
-		<< std::endl;
+		<< '\n';
 }
 
 template<typename InputType, typename ResultType, typename RefType>
@@ -100,7 +101,7 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< " " << op << " "
 		<< to_binary(rhs)
 		<< std::setprecision(old_precision)
-		<< std::endl;
+		<< '\n';
 }
 
 template<typename TestType, typename ResultType, typename RefType>
@@ -116,7 +117,7 @@ void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::stri
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
 		<< " " << to_binary(result) << " vs " << to_binary(ref)
 		<< std::setprecision(old_precision)
-		<< std::endl;
+		<< '\n';
 }
 
 /// <summary>
@@ -138,7 +139,7 @@ void ReportAssignmentError(const std::string& test_case, const std::string& op, 
 		<< " != "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref) << std::endl;
+		<< " " << to_binary(result) << " vs " << to_binary(ref) << '\n';
 }
 
 /// <summary>
@@ -160,7 +161,7 @@ void ReportAssignmentSuccess(const std::string& test_case, const std::string& op
 		<< " == "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " reference value is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< "               bit pattern " << to_binary(result) << std::endl;
+		<< "               bit pattern " << to_binary(result) << '\n';
 }
 
 template<typename TestType>
@@ -171,7 +172,7 @@ void ReportOneInputFunctionError(const std::string& test_case, const std::string
 		<< " != "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << reference << " instead it yielded "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result
-		<< " " << to_binary(reference) << " vs " << to_binary(result) << std::endl;
+		<< " " << to_binary(reference) << " vs " << to_binary(result) << '\n';
 }
 
 template<typename TestType>
@@ -182,7 +183,7 @@ void ReportOneInputFunctionSuccess(const std::string& test_case, const std::stri
 		<< " == "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " reference value is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << reference
-		<< " " << components_to_string(result) << std::endl;
+		<< " " << components_to_string(result) << '\n';
 }
 
 template<typename TestType>
@@ -198,7 +199,7 @@ void ReportTwoInputFunctionError(const std::string& test_case, const std::string
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result
 		<< " " << reference << " vs " << result
 		<< std::setprecision(precision)
-		<< std::endl;
+		<< '\n';
 }
 
 template<typename TestType>
@@ -214,7 +215,7 @@ void ReportTwoInputFunctionSuccess(const std::string& test_case, const std::stri
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result
 		<< " " << reference << " vs " << result
 		<< std::setprecision(precision)
-		<< std::endl;
+		<< '\n';
 }
 
 } // namespace sw::universal
