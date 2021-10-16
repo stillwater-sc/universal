@@ -4,10 +4,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
 #include <iostream>
 #include <iomanip>
 
-// minimum set of include files to reflect source code dependencies
 #include <universal/native/integers.hpp> // for to_binary(int)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp>
@@ -87,16 +87,15 @@ void GenerateMaxValues() {
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	if (argc > 1) std::cout << argv[0] << std::endl; 
 	
+	std::string test_suite = "blockbinary subtraction";
+	std::string test_tag = "subtraction";
+	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "modular subtraction failed: ";
 
 #if MANUAL_TESTING
 
@@ -108,10 +107,10 @@ try {
 	b = twosComplement(a);
 	std::cout << to_hex(a) << ' ' << to_hex(b) << ' ' << to_hex(twosComplement(b)) << '\n';
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint8_t>(true), "uint8_t<4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint16_t>(true), "uint16_t<4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint32_t>(true), "uint32_t<4>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint64_t>(true), "uint64_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint8_t>(true), "uint8_t<4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint16_t>(true), "uint16_t<4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint32_t>(true), "uint32_t<4>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint64_t>(true), "uint64_t<4>", test_tag);
 
 	nrOfFailedTestCases = (bReportIndividualTestCases ? 0 : -1);
 
@@ -123,13 +122,13 @@ try {
 
 	std::cout << "block subtraction validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>(bReportIndividualTestCases), "uint8_t<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint16_t>(bReportIndividualTestCases), "uint16_t<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint32_t>(bReportIndividualTestCases), "uint32_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>(bReportIndividualTestCases), "uint8_t<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint16_t>(bReportIndividualTestCases), "uint16_t<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint32_t>(bReportIndividualTestCases), "uint32_t<8>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t>(bReportIndividualTestCases), "uint8_t<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>(bReportIndividualTestCases), "uint16_t<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint32_t>(bReportIndividualTestCases), "uint32_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t>(bReportIndividualTestCases), "uint8_t<12>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>(bReportIndividualTestCases), "uint16_t<12>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint32_t>(bReportIndividualTestCases), "uint32_t<12>", test_tag);
 
 #if STRESS_TESTING
 
