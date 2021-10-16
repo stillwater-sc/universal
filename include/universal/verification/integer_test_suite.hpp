@@ -182,6 +182,7 @@ namespace sw::universal {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
 				short i16b = short(ib);
+				if (j > 0) iref = i16a / i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				if (j == 0) {
 					try {
@@ -195,7 +196,6 @@ namespace sw::universal {
 						nrOfFailedTests++;
 					}
 				}
-				iref = i16a / i16b; // protected by the continue above
 				if (iref > max_int || iref < min_int) {
 					try {
 						iresult = ia / ib;
@@ -244,6 +244,7 @@ namespace sw::universal {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
 				short i16b = short(ib);
+				if (j > 0) iref = i16a % i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia % ib;
@@ -260,7 +261,6 @@ namespace sw::universal {
 #else
 				iresult = ia % ib;
 #endif
-				iref = i16a % i16b;
 				if (iresult != iref) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
