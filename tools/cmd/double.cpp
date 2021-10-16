@@ -26,26 +26,31 @@ try {
 		std::cerr << "Show the sign/scale/fraction components of an IEEE double.\n";
 		std::cerr << "Usage: double double_value\n";
 		std::cerr << "Example: double 0.03124999\n";
-		std::cerr << "double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)\n";
+		std::cerr << "double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)\n\n";
+
+		using Scalar = double;
+
+		std::cout << "Number Traits of IEEE-754 double\n";
+		numberTraits<Scalar>(std::cout);
+
+		std::cout << "smallest normal number\n";
+		std::cout << to_binary(std::numeric_limits<double>::min()) << '\n';
+		std::cout << "smallest denormalized number\n";
+		std::cout << to_binary(std::numeric_limits<double>::denorm_min()) << '\n';
+
+		std::cout << '\n';
+		std::cout << "Universal parameterization of IEEE-754 fields\n";
+		std::cout << ieee754_parameter<Scalar>() << '\n';
+		std::cout.flush();
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
 	double d = atof(argv[1]);
 	value<fbits> v(d);
 
-	std::cout << "double: " << std::setprecision(max_digits10) << d << " " << to_triple(v) << '\n';
-
-	using Scalar = double;
-
-	std::cout << "Universal parameterization of IEEE-754 fields\n";
-	std::cout << ieee754_parameter<Scalar>() << '\n';
-
-	std::cout << "Number Traits of IEEE-754 double\n";
-	numberTraits<Scalar>(std::cout);
-	
-	std::cout << "smallest normal number\n";
-	std::cout << to_binary(std::numeric_limits<double>::min()) << '\n';
-	std::cout << "smallest denormalized number\n";
-	std::cout << to_binary(std::numeric_limits<double>::denorm_min()) << '\n';
+	std::cout << "double value : " << std::setprecision(max_digits10) << d << '\n';
+	std::cout << "triple form  : " << to_triple(v) << '\n';
+	std::cout << "binary form  : " << to_binary(d, true) << '\n';
+	std::cout << "color coded  : " << color_print(d) << '\n';
 
 	std::cout.flush();
 	return EXIT_SUCCESS;
