@@ -46,26 +46,23 @@ void PrintProducts(const Vector& a, const Vector& b) {
 
 template<typename ResultScalar, typename RefScalar>
 void reportOnCatastrophicCancellation(const std::string& type, const ResultScalar& v, const RefScalar& ref) {
-	using namespace std;
-
 	constexpr size_t COLUMN_WIDTH = 15;
-	cout << type << setw(COLUMN_WIDTH) << v << (v == ref ? " <----- PASS" : " <-----      FAIL") << endl;
+	std::cout << type << std::setw(COLUMN_WIDTH) << v << (v == ref ? " <----- PASS" : " <-----      FAIL") << '\n';
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc == 1) cout << argv[0] << endl;
+	if (argc == 1) std::cout << argv[0] << '\n';
 
 	using Scalar = posit<16, 2>;
 	// generate an interesting vector
 	blas::vector<Scalar> v = { 1.0, 2.0, 3.0, 4.0, 5.0 };
 	for (int p = 1; p < 10; ++p) {
-		cout << "L" << p << "-norm            : " << norm(v, p) << endl;
+		std::cout << "L" << p << "-norm            : " << norm(v, p) << '\n';
 	}
-	cout << "Linf-norm          : " << normLinf(v) << endl;
+	std::cout << "Linf-norm          : " << normLinf(v) << '\n';
 
 	return EXIT_SUCCESS;
 }

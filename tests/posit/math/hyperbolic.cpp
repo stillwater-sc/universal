@@ -106,17 +106,26 @@ void GenerateTestCaseAtanh(Ty a) {
 }
 
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 const double pi = 3.14159265358979323846;
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::cout << "Posit hyperbolic sine/cosine/tangent function validation\n";
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
@@ -130,10 +139,8 @@ try {
 	GenerateTestCaseAcosh<16, 1, double>(pi / 2.0);
 	GenerateTestCaseAtanh<16, 1, double>(pi / 4.0);
 
-	cout << endl;
-
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>(true), "posit<2,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>(bReportIndividualTestCases), "posit<2,0>", "sinh");
 
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 0>(true), "posit<3,0>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 1>(true), "posit<3,1>", "sinh");
@@ -153,8 +160,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<8, 0>(true), "posit<8,0>", "asinh");
 #else
 
-	cout << "Posit hyperbolic sine/cosine/tangent function validation" << endl;
-
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "sinh");
 
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "sinh");
@@ -184,7 +190,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "sinh");
+#endif
 
+#if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "sinh");
@@ -197,7 +205,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "sinh");
+#endif
 
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "sinh");
@@ -205,19 +215,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "sinh");
+#endif
 
-
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
 	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sinh");
-
 
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sinh");
-	
-#endif  // STRESS_TESTING
+#endif
 
 #endif  // MANUAL_TESTING
 

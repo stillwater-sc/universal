@@ -26,18 +26,16 @@ sw::universal::decimal convert(std::string& palindrome) {
 }
 
 bool isPalindrome(const sw::universal::decimal& suspectedPalindrome) {
-	using namespace std;
-	string s1 = to_string(suspectedPalindrome);
-	string s2(s1);
-	reverse(s2.begin(), s2.end());
+	std::string s1 = to_string(suspectedPalindrome);
+	std::string s2(s1);
+	std::reverse(s2.begin(), s2.end());
 	return (s1 == s2);
 }
 
 bool LargestPalindromeProduct(const sw::universal::decimal& nrDigits) {
-	using namespace std;
 	using namespace sw::universal;
 
-	stringstream ss;
+	std::stringstream ss;
 	for (long i = 0; i < long(nrDigits); ++i) {
 		ss << '9';
 	}
@@ -53,20 +51,19 @@ bool LargestPalindromeProduct(const sw::universal::decimal& nrDigits) {
 			if (isPalindrome(possiblePalindrome)) {
 				if (largestPalindrome < possiblePalindrome) {
 					largestPalindrome = possiblePalindrome;
-					cout << possiblePalindrome << endl;
+					std::cout << possiblePalindrome << '\n';
 				}
 			}
 			if (possiblePalindrome < largestPalindrome) break;
 		}
 	}
-	cout << "In step " << nrOfSteps << " found largest " << nrDigits << "-digit palindrome product: " << largestPalindrome << endl;
+	std::cout << "In step " << nrOfSteps << " found largest " << nrDigits << "-digit palindrome product: " << largestPalindrome << std::endl;
 
 	return false;
 }
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Decimal = decimal;
@@ -76,9 +73,10 @@ try {
 	LargestPalindromeProduct(nrDigits++);
 	LargestPalindromeProduct(nrDigits++);
 	LargestPalindromeProduct(nrDigits++);
+#ifdef STRESS_TESTING
 	LargestPalindromeProduct(nrDigits++);
 	LargestPalindromeProduct(nrDigits++);
-
+#endif
 	/*
 		9009
 		In step 145 found largest 2-digit palindrome product: 9009

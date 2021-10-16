@@ -81,33 +81,29 @@ void TimedAccumulate(Container& X, const std::string& legend) {
 
 	// report
 	std::cout << legend << std::endl;
-	std::cout << "time : " << last.count() << std::endl;
-	std::cout << "total: " << totalSum << std::endl;
+	std::cout << "time    : " << last.count() << std::endl;
+	std::cout << "totalSum: " << totalSum << std::endl;
 	std::cout << std::endl;
 }
 
 template<typename Ty>
 void TimedExperiment(std::vector<Ty>& data) {
-	using namespace std;
-
-	vector<Ty> myVector(data.begin(), data.end());
+	std::vector<Ty> myVector(data.begin(), data.end());
 	TimedAccumulate(myVector, "std::vector");
 
-	deque<Ty> myDeque(data.begin(), data.end());
+	std::deque<Ty> myDeque(data.begin(), data.end());
 	TimedAccumulate(myDeque, "std::deque");
 
-	list<Ty> myList(data.begin(), data.end());
+	std::list<Ty> myList(data.begin(), data.end());
 	TimedAccumulate(myList, "std::list");
 
-	forward_list<Ty> mySingleLinkedList(data.begin(), data.end());
+	std::forward_list<Ty> mySingleLinkedList(data.begin(), data.end());
 	TimedAccumulate(mySingleLinkedList, "std::forward_list");
 }
 
 int main()
 try {
-	using namespace std;
-
-#ifdef NDEBUG
+#ifdef STRESS_TESTING
 	constexpr size_t NR_SAMPLES = 1'000'000;
 #else
 	constexpr size_t NR_SAMPLES = 1000;
@@ -115,7 +111,7 @@ try {
 	{
 		using value_type = int;
 
-		vector<value_type> data;
+		std::vector<value_type> data;
 		GenerateData(NR_SAMPLES, data);
 		TimedExperiment(data);
 	}
@@ -126,7 +122,7 @@ try {
 		constexpr size_t es = 1;
 		using value_type = posit<nbits,es>;
 
-		vector<value_type> data;
+		std::vector<value_type> data;
 		GenerateData(NR_SAMPLES, data); 
 		TimedExperiment(data);
 	}

@@ -32,17 +32,27 @@ void GenerateTestCase(Ty a, Ty b) {
 	std::cout << std::setprecision(5);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
+	std::cout << "Posit Power function validation\n";
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "pow() failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -65,40 +75,39 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>("Manual Testing", true), "posit<2,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(bReportIndividualTestCases), "posit<2,0>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>("Manual Testing", true), "posit<3,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>("Manual Testing", true), "posit<3,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(bReportIndividualTestCases), "posit<3,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(bReportIndividualTestCases), "posit<3,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>("Manual Testing", true), "posit<4,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>("Manual Testing", true), "posit<4,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(bReportIndividualTestCases), "posit<4,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(bReportIndividualTestCases), "posit<4,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>("Manual Testing", true), "posit<5,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>("Manual Testing", true), "posit<5,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>("Manual Testing", true), "posit<5,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(bReportIndividualTestCases), "posit<5,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(bReportIndividualTestCases), "posit<5,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(bReportIndividualTestCases), "posit<5,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>("Manual Testing", true), "posit<8,0>", "pow");	
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>("Manual Testing", true), "posit<8,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>("Manual Testing", true), "posit<8,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(bReportIndividualTestCases), "posit<8,0>", "pow");	
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(bReportIndividualTestCases), "posit<8,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(bReportIndividualTestCases), "posit<8,4>", "pow");
 
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", true), "posit<16,1>", "pow");
+	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(bReportIndividualTestCases), "posit<16,1>", "pow");
 
 #else
-	bool bReportIndividualTestCases = false;
 
-	cout << "Integer power function\n";
+
+	std::cout << "Integer power function\n";
 	int a = 2;
 	unsigned int b = 32;
-	cout << "2 ^ 32   = " << ipow(a, b) << endl;
-	cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << endl;
+	std::cout << "2 ^ 32   = " << ipow(a, b) << '\n';
+	std::cout << "2 ^ 32   = " << fastipow(a, uint8_t(b)) << '\n';
 
 	int64_t c = 1024;
 	uint8_t d = 2;
-	cout << "1024 ^ 2 = " << ipow(c, unsigned(d)) << endl;
-	cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << endl;
+	std::cout << "1024 ^ 2 = " << ipow(c, unsigned(d)) << '\n';
+	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
 
-	cout << "Posit Power function validation\n";
-
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(bReportIndividualTestCases), "posit<2,0>", "pow");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(bReportIndividualTestCases), "posit<3,0>", "pow");
@@ -128,7 +137,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 3>(bReportIndividualTestCases), "posit<8,3>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(bReportIndividualTestCases), "posit<8,4>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 5>(bReportIndividualTestCases), "posit<8,5>", "pow");
+#endif
 
+#if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 0>(bReportIndividualTestCases), "posit<9,0>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 1>(bReportIndividualTestCases), "posit<9,1>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 2>(bReportIndividualTestCases), "posit<9,2>", "pow");
@@ -142,19 +153,19 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 2>(bReportIndividualTestCases), "posit<10,2>", "pow");
 	// fails due to regime representation not being able to be represented by double
 	// nrOfFailedTestCases += ReportTestResult(VerifyPowMethod<10, 7>(bReportIndividualTestCases), "posit<10,7>", "pow");
+#endif
 
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 0>(bReportIndividualTestCases), "posit<12,0>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 1>(bReportIndividualTestCases), "posit<12,1>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 2>(bReportIndividualTestCases), "posit<12,2>", "pow");
+#endif
 
+#if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 0>(bReportIndividualTestCases), "posit<16,0>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(bReportIndividualTestCases), "posit<16,1>", "pow");
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 2>(bReportIndividualTestCases), "posit<16,2>", "pow");
-
-
-#if STRESS_TESTING
-	
-#endif  // STRESS_TESTING
+#endif
 
 #endif  // MANUAL_TESTING
 

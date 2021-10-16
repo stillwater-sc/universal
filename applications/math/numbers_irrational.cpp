@@ -37,7 +37,6 @@ void GoldenRatioTerms(unsigned terms) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -45,20 +44,20 @@ try {
 	using int128 = sw::universal::integer<128>;
 	auto v = sw::sequences::Fibonacci<int128>(10);
 	for (auto e : v) {
-		cout << e << ' ';
+		std::cout << e << ' ';
 	}
-	cout << endl;
+	std::cout << std::endl;
 	for (unsigned t = 2; t < 10; ++t) {
 		auto p = sw::sequences::GoldenRatio<int128>(t);
-		cout << p.first << " " << p.second << endl;
+		std::cout << p.first << " " << p.second << '\n';
 	}
 
 	std::string phi = "1.618033988749894848204586834365638117720309179805762862135448622705260462818902449707207204189391137484754088075";
 
 	// use an adaptive precision floating point oracle as reference
-	cout << "oracle                       : " << phi << endl;
-	cout << "posit<128,4>     golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<128, 4> >(100) << endl;
-	cout << "posit<256,5>     golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<256, 5> >(100) << endl;
+	std::cout << "oracle                       : " << phi << '\n';
+	std::cout << "posit<128,4>     golden ratio: " << std::setprecision(27) << PhiThroughFibonacciSequence< posit<128, 4> >(100) << '\n';
+	std::cout << "posit<256,5>     golden ratio: " << std::setprecision(27) << PhiThroughFibonacciSequence< posit<256, 5> >(100) << '\n';
 	
 	GoldenRatioTerms<sw::universal::integer<256>>(100);
 	GoldenRatioTerms<sw::universal::posit<128,4>>(100);
@@ -66,19 +65,19 @@ try {
 	GoldenRatioTerms<sw::universal::posit<256,5>>(200);
 	GoldenRatioTerms<sw::universal::posit<512,6>>(300);
 
-	cout << "\n\nEnumerating increasingly accurate approximations\n";
+	std::cout << "\n\nEnumerating increasingly accurate approximations\n";
 	using int256 = sw::universal::integer<256>;
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 	for (unsigned i = 40; i < 50; i++) {
 		auto p = sw::sequences::GoldenRatio<int256>(i);
-		cout << "Using " << p.first << " " << p.second << endl;
-		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< float >(i) << endl;
-		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< double >(i) << endl;
-		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<32, 2> >(i) << endl;
-		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<64, 3> >(i) << endl;
-		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<128, 4> >(i) << endl;
+		std::cout << "Using " << p.first << " " << p.second << '\n';
+		std::cout << "approximation to golden ratio: " << std::setprecision(27) << PhiThroughFibonacciSequence< float >(i) << '\n';
+		std::cout << "approximation to golden ratio: " << std::setprecision(27) << PhiThroughFibonacciSequence< double >(i) << '\n';
+		std::cout << "approximation to golden ratio: " << std::setprecision(27) << PhiThroughFibonacciSequence< posit<32, 2> >(i) << '\n';
+		std::cout << "approximation to golden ratio: " << std::setprecision(27) << PhiThroughFibonacciSequence< posit<64, 3> >(i) << '\n';
+		std::cout << "approximation to golden ratio: " << std::setprecision(27) << PhiThroughFibonacciSequence< posit<128, 4> >(i) << '\n';
 	}
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

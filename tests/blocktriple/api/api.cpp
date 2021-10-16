@@ -3,49 +3,15 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/utility/directives.hpp>
-#include <iostream>
-#include <iomanip>
 #include <fstream>
-#include <typeinfo>
-
-// BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-#define BIT_CAST_SUPPORT 0
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-#define BIT_CAST_SUPPORT 1
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
+#include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
+#include <universal/utility/bit_cast.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 // minimum set of include files to reflect source code dependencies
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
-#define BLOCKTRIPLE_TRACE_ADD 1
+#define BLOCKTRIPLE_TRACE_ALL
 #include <universal/internal/blocktriple/blocktriple.hpp>
 
 /*
@@ -66,9 +32,13 @@
 
  The input step is a normalization from number system to a triple.
  A triple is (sign, scale, significant).
- The blocktriple uses a 2's complement encoded significant, that is,
- the fraction bits including the hidden bit, and additionally extended
- for the specific use case, such as inputs to ALUs or Special Function Units (SFU).
+ The blocktriple uses a 2's complement encoded significant for addition and subtraction.
+ The format is bit-extended so that it can capture the largest value,
+ which leads to the format: 00h.ff...ff. We need to two extra positions
+ to capture a negative overflow.
+
+ For multiplication, the blocktriple is encoded as a signed magnitude number
+ and the radix adapts after the multiply.
 
  TODO: is there an optimization that can be applied that makes this
  even faster? What about moves? Need to ping Peter Gottschling.
@@ -80,35 +50,42 @@
 */
 
 template<typename Real>
-void TestConversionRounding(Real f = 511.5f)
+void TestConversionRounding()
 {
-	using namespace std;
 	using namespace sw::universal;
-	cout << "\n " << typeid(Real).name() << " conversion use case and result\n";
-	cout << to_binary(f, true) << '\n';
-	CONSTEXPRESSION blocktriple<6> a = f;
-	cout << to_triple(a) << " : " << a << '\n';
-	CONSTEXPRESSION blocktriple<7> b = f;
-	cout << to_triple(b) << " : " << b << '\n';
-	CONSTEXPRESSION blocktriple<8> c = f;
-	cout << to_triple(c) << " : " << c << '\n';
-	CONSTEXPRESSION blocktriple<9> d = f;
-	cout << to_triple(d) << " : " << d << '\n';
-	CONSTEXPRESSION blocktriple<10> e = f;
-	cout << to_triple(e) << " : " << e << '\n';
+	constexpr Real f = Real(511.5f);
+	std::cout << "\n " << typeid(Real).name() << " conversion use case and result\n";
+	std::cout << to_binary(f, true) << " : " << f << '\n';
+	CONSTEXPRESSION blocktriple<6, BlockTripleOperator::ADD, uint8_t> a = f;
+	std::cout << to_triple(a) << " : " << a << '\n';
+	CONSTEXPRESSION blocktriple<7, BlockTripleOperator::ADD, uint8_t> b = f;
+	std::cout << to_triple(b) << " : " << b << '\n';
+	CONSTEXPRESSION blocktriple<8, BlockTripleOperator::ADD, uint8_t> c = f;
+	std::cout << to_triple(c) << " : " << c << '\n';
+	CONSTEXPRESSION blocktriple<9, BlockTripleOperator::ADD, uint8_t> d = f;
+	std::cout << to_triple(d) << " : " << d << '\n';
+	CONSTEXPRESSION blocktriple<10, BlockTripleOperator::ADD, uint8_t> e = f;
+	std::cout << to_triple(e) << " : " << e << '\n';
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
-
-	std::cout << "blocktriple<> class interface tests" << std::endl;
+	std::string test_suite = "blocktriple<> class interface test suite: ";
+	std::cout << test_suite << '\n';
 
 	int nrOfFailedTestCases = 0;
 
@@ -116,30 +93,52 @@ try {
 
 	// relationship between native float/double and blocktriple
 	{
-		blocktriple<8, uint8_t> a;
+		blocktriple<8, BlockTripleOperator::ADD, uint8_t> a;
 		a = 1.5f;
-		cout << "IEEE-754 float  : " << to_binary(1.5f, true) << endl;
-		cout << "IEEE-754 float  : " << to_triple(1.5f, true) << endl;
-		cout << "blocktriple<8>  : " << to_triple(a) << endl;
+		std::cout << "IEEE-754 float  : " << to_binary(1.5f, true) << '\n';
+		std::cout << "IEEE-754 float  : " << to_triple(1.5f, true) << '\n';
+		std::cout << "blocktriple<8>  : " << to_triple(a) << '\n';
 		a = 1.5;
-		cout << "IEEE-754 double : " << to_binary(1.5, true) << endl;
-		cout << "IEEE-754 double : " << to_triple(1.5, true) << endl;
-		cout << "blocktriple<8>  : " << to_triple(a) << endl;
+		std::cout << "IEEE-754 double : " << to_binary(1.5, true) << '\n';
+		std::cout << "IEEE-754 double : " << to_triple(1.5, true) << '\n';
+		std::cout << "blocktriple<8>  : " << to_triple(a) << '\n';
 	}
 
 	// pick a value that rounds up to even between 6 to 10 bits of fraction
-	TestConversionRounding(511.5f);
-	TestConversionRounding(511.5);
+	TestConversionRounding<float>();
+	TestConversionRounding<double>();
 
 	{
-		cout << "\nblocktriple add\n";
-		constexpr size_t abits = 7;
-		blocktriple<abits> a, b, c;
+		std::cout << "\nblocktriple add\n";
+		constexpr size_t fbits = 7;
+		blocktriple<fbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
 		a = 1.03125f;
 		b = -1.03125f;
-		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		std::cout << to_triple(a) << '\n' << to_triple(b) << '\n';
 		c.add(a, b);
-		cout << to_triple(c) << " : " << c << '\n';
+		std::cout << to_triple(c) << " : " << c << '\n';
+	}
+
+	{
+		std::cout << "\nblocktriple sub\n";
+		constexpr size_t fbits = 7;
+		blocktriple<fbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
+		a = 1.03125f;
+		b = 1.03125f;
+		std::cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		c.sub(a, b);
+		std::cout << to_triple(c) << " : " << c << '\n';
+	}
+
+	{
+		std::cout << "\nblocktriple mul\n";
+		constexpr size_t fbits = 8;
+		blocktriple<fbits, BlockTripleOperator::MUL, uint32_t> a, b, c;
+		a = 2.0f;
+		b = -0.5f;
+		std::cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		c.mul(a, b);
+		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
 #else // !MANUAL_TESTING
@@ -148,7 +147,7 @@ try {
 
 #endif // MANUAL_TESTING
 
-	std::cout << "\nblocktriple API test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
+	std::cout << test_suite << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

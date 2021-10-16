@@ -3,13 +3,18 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <limits>
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/native/ieee754.hpp>
+#include <universal/common/numeric_limits_utility.hpp>
 #include <universal/internal/value/value>
 
 // receive a float and print the components of a long double representation
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::internal;
 
 	// long double attributes
@@ -17,17 +22,31 @@ try {
 	constexpr int fbits = std::numeric_limits<long double>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "longdouble: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V\n";
-		cerr << "Show the sign/scale/fraction components of an IEEE long double.\n";
-		cerr << "Usage: longdouble long_double_value\n";
-		cerr << "Example: compld 0.03124999\n";
-		cerr << "long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)" << endl;
+		std::cerr << "longdouble: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V\n";
+		std::cerr << "Show the sign/scale/fraction components of an IEEE long double.\n";
+		std::cerr << "Usage: longdouble long_double_value\n";
+		std::cerr << "Example: longdouble 0.03124999\n";
+		std::cerr << "long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)\n";
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
 	long double q = atof(argv[1]);
 	value<fbits> v(q);
 
-	cout << "long double: " << setprecision(max_digits10) << q << " " << to_triple(v) << endl;
+	std::cout << "long double: " << std::setprecision(max_digits10) << q << " " << to_triple(v) << '\n';
+
+	using Scalar = long double;
+
+	std::cout << "Universal parameterization of IEEE-754 fields\n";
+	std::cout << ieee754_parameter<Scalar>() << '\n';
+
+	std::cout << "Number Traits of IEEE-754 long double\n";
+	numberTraits<Scalar>(std::cout);
+
+	std::cout << "smallest normal number\n";
+	std::cout << to_binary(std::numeric_limits<long double>::min()) << '\n';
+	std::cout << "smallest denormalized number\n";
+	std::cout << to_binary(std::numeric_limits<long double>::denorm_min()) << '\n';
+
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {

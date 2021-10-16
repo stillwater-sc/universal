@@ -15,35 +15,32 @@
 
 template<typename Scalar>
 bool TestPosit() {
-	using namespace std;
 	bool isPosit = false;
 	if (sw::universal::is_posit<Scalar>) {
-		cout << "type is a posit: " << typeid(Scalar).name() << "  ";
+		std::cout << "type is a posit: " << typeid(Scalar).name() << "  ";
 		isPosit = true;
 	}
 	else {
-		cout << "type is not a posit: " << typeid(Scalar).name() << "  ";
+		std::cout << "type is not a posit: " << typeid(Scalar).name() << "  ";
 	}
 	return isPosit;
 }
 
 template<typename Scalar>
 bool TestFixpnt() {
-	using namespace std;
 	bool isFixpnt = false;
 	if (sw::universal::is_fixpnt<Scalar>) {
-		cout << "type is a fixed-point: " << typeid(Scalar).name() << "  ";
+		std::cout << "type is a fixed-point: " << typeid(Scalar).name() << "  ";
 		isFixpnt = true;
 	}
 	else {
-		cout << "type is not a fixed-point: " << typeid(Scalar).name() << "  ";
+		std::cout << "type is not a fixed-point: " << typeid(Scalar).name() << "  ";
 	}
 	return isFixpnt;
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
@@ -54,13 +51,13 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
-	static_assert( !is_integral< sw::universal::posit<nbits,es> >(), "a posit<nbits,es> is not an integral type");
-	static_assert( !is_floating_point< sw::universal::posit<nbits, es> >(), "a posit<nbits,es> is a floating point type");
-	static_assert( !is_arithmetic< sw::universal::posit<nbits, es> >(), "a posit<nbits,es> is not an arithmetic type");
-	static_assert( !is_arithmetic< Scalar >(), "This Scalar is not an arithmetic type");
+	static_assert( !std::is_integral< sw::universal::posit<nbits,es> >(), "a posit<nbits,es> is not an integral type");
+	static_assert( !std::is_floating_point< sw::universal::posit<nbits, es> >(), "a posit<nbits,es> is a floating point type");
+	static_assert( !std::is_arithmetic< sw::universal::posit<nbits, es> >(), "a posit<nbits,es> is not an arithmetic type");
+	static_assert( !std::is_arithmetic< Scalar >(), "This Scalar is not an arithmetic type");
 
 	static_assert( is_posit< sw::universal::posit<nbits, es> >, "a posit<nbits,es> is a posit type");
 	static_assert( is_posit_trait< Scalar >(), "This Scalar is a posit type");
@@ -70,15 +67,15 @@ try {
 	static_assert( is_fixpnt< fixpnt<nbits, rbits> >, "a fixpnt<nbits,rbits> is a fixed-point type");
 	static_assert( is_fixpnt_trait< Fixpnt >(), "This Scalar is a fixed-point type");
 
-	cout << (TestPosit<long double>() ?  "FAIL\n"  : "PASS\n");
-	cout << (TestPosit<posit<1024, 7>>() ? "PASS\n" : "FAIL\n");
-	cout << (TestPosit<fixpnt<32, 16>>() ? "FAIL\n" : "PASS\n");
-	cout << (TestFixpnt<long double>() ? "FAIL\n" : "PASS\n");
-	cout << (TestFixpnt<posit<1024, 7>>() ? "FAIL\n" : "PASS\n");
-	cout << (TestFixpnt<fixpnt<32, 16>>() ? "PASS\n" : "FAIL\n");
+	std::cout << (TestPosit<long double>() ?  "FAIL\n"  : "PASS\n");
+	std::cout << (TestPosit<posit<1024, 7>>() ? "PASS\n" : "FAIL\n");
+	std::cout << (TestPosit<fixpnt<32, 16>>() ? "FAIL\n" : "PASS\n");
+	std::cout << (TestFixpnt<long double>() ? "FAIL\n" : "PASS\n");
+	std::cout << (TestFixpnt<posit<1024, 7>>() ? "FAIL\n" : "PASS\n");
+	std::cout << (TestFixpnt<fixpnt<32, 16>>() ? "PASS\n" : "FAIL\n");
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

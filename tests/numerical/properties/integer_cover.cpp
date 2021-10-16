@@ -106,81 +106,85 @@ std::string CalculateIntegerCover() {
 	return ss.str();
 }
 
+// set by the build process to modulate the number of test cases
+#define _FULL_REGRESSION
+
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
-	cout << "Posit Integer Cover" << endl;
+	std::cout << "Posit Integer Cover\n";
 
-	cout << "posit sample coverage of 8-bit unsigned integer\n";
-	cout << "posit<12,0>: 2^8  integer cover is : " << CalculateIntegerCover<12, 0, 8>() << "\n";
-	cout << "posit<12,1>: 2^8  integer cover is : " << CalculateIntegerCover<12, 1, 8>() << "\n";
-	cout << "posit<12,2>: 2^8  integer cover is : " << CalculateIntegerCover<12, 2, 8>() << "\n";
+	std::cout << "posit sample coverage of 8-bit unsigned integer\n";
+	std::cout << "posit<12,0>: 2^8  integer cover is : " << CalculateIntegerCover<12, 0, 8>() << "\n";
+	std::cout << "posit<12,1>: 2^8  integer cover is : " << CalculateIntegerCover<12, 1, 8>() << "\n";
+	std::cout << "posit<12,2>: 2^8  integer cover is : " << CalculateIntegerCover<12, 2, 8>() << "\n";
 
-	cout << "posit<13,0>: 2^8  integer cover is : " << CalculateIntegerCover<13, 0, 8>() << "\n";
-	cout << "posit<13,1>: 2^8  integer cover is : " << CalculateIntegerCover<13, 1, 8>() << "\n";
-	cout << "posit<13,2>: 2^8  integer cover is : " << CalculateIntegerCover<13, 2, 8>() << "\n";
+	std::cout << "posit<13,0>: 2^8  integer cover is : " << CalculateIntegerCover<13, 0, 8>() << "\n";
+	std::cout << "posit<13,1>: 2^8  integer cover is : " << CalculateIntegerCover<13, 1, 8>() << "\n";
+	std::cout << "posit<13,2>: 2^8  integer cover is : " << CalculateIntegerCover<13, 2, 8>() << "\n";
 
-	cout << "posit<14,0>: 2^8  integer cover is : " << CalculateIntegerCover<14, 0, 8>() << "\n";
-	cout << "posit<14,1>: 2^8  integer cover is : " << CalculateIntegerCover<14, 1, 8>() << "\n";
-	cout << "posit<14,1>: 2^8  integer cover is : " << CalculateIntegerCover<14, 2, 8>() << "\n";
+	std::cout << "posit<14,0>: 2^8  integer cover is : " << CalculateIntegerCover<14, 0, 8>() << "\n";
+	std::cout << "posit<14,1>: 2^8  integer cover is : " << CalculateIntegerCover<14, 1, 8>() << "\n";
+	std::cout << "posit<14,1>: 2^8  integer cover is : " << CalculateIntegerCover<14, 2, 8>() << "\n";
 
-	cout << "posit<15,0>: 2^8  integer cover is : " << CalculateIntegerCover<15, 0, 8>() << "\n";
-	cout << "posit<15,1>: 2^8  integer cover is : " << CalculateIntegerCover<15, 1, 8>() << "\n";	
-	cout << "posit<15,2>: 2^8  integer cover is : " << CalculateIntegerCover<15, 2, 8>() << "\n";
+	std::cout << "posit<15,0>: 2^8  integer cover is : " << CalculateIntegerCover<15, 0, 8>() << "\n";
+	std::cout << "posit<15,1>: 2^8  integer cover is : " << CalculateIntegerCover<15, 1, 8>() << "\n";	
+	std::cout << "posit<15,2>: 2^8  integer cover is : " << CalculateIntegerCover<15, 2, 8>() << "\n";
 
-	cout << "posit<16,0>: 2^8  integer cover is : " << CalculateIntegerCover<16, 0, 8>() << "\n";
-	cout << "posit<16,1>: 2^8  integer cover is : " << CalculateIntegerCover<16, 1, 8>() << "\n";
+	std::cout << "posit<16,0>: 2^8  integer cover is : " << CalculateIntegerCover<16, 0, 8>() << "\n";
+	std::cout << "posit<16,1>: 2^8  integer cover is : " << CalculateIntegerCover<16, 1, 8>() << "\n";
 
-	cout << "posit sample coverage of 10-bit unsigned integer\n";
-	cout << "posit<16,1>: 2^10 integer cover is : " << CalculateIntegerCover<16, 1, 10>() << "\n";
-	cout << "posit<17,1>: 2^10 integer cover is : " << CalculateIntegerCover<17, 1, 10>() << "\n";
-	cout << "posit<18,1>: 2^12 integer cover is : " << CalculateIntegerCover<18, 1, 10>() << "\n";
-	cout << "posit<15,2>: 2^10 integer cover is : " << CalculateIntegerCover<15, 2, 10>() << "\n";
-	cout << "posit<16,2>: 2^10 integer cover is : " << CalculateIntegerCover<16, 2, 10>() << "\n";
-	cout << "posit<17,2>: 2^10 integer cover is : " << CalculateIntegerCover<17, 2, 10>() << "\n";
-	cout << "posit<18,2>: 2^10 integer cover is : " << CalculateIntegerCover<18, 2, 10>() << "\n";
+	std::cout << "posit sample coverage of 10-bit unsigned integer\n";
+	std::cout << "posit<16,1>: 2^10 integer cover is : " << CalculateIntegerCover<16, 1, 10>() << "\n";
+	std::cout << "posit<17,1>: 2^10 integer cover is : " << CalculateIntegerCover<17, 1, 10>() << "\n";
+	std::cout << "posit<18,1>: 2^12 integer cover is : " << CalculateIntegerCover<18, 1, 10>() << "\n";
+	std::cout << "posit<15,2>: 2^10 integer cover is : " << CalculateIntegerCover<15, 2, 10>() << "\n";
+	std::cout << "posit<16,2>: 2^10 integer cover is : " << CalculateIntegerCover<16, 2, 10>() << "\n";
+	std::cout << "posit<17,2>: 2^10 integer cover is : " << CalculateIntegerCover<17, 2, 10>() << "\n";
+	std::cout << "posit<18,2>: 2^10 integer cover is : " << CalculateIntegerCover<18, 2, 10>() << "\n";
 
-	cout << "posit sample coverage of 12-bit unsigned integer\n";
-	cout << "posit<18,1>: 2^12 integer cover is : " << CalculateIntegerCover<18, 1, 12>() << "\n";
-	cout << "posit<19,1>: 2^12 integer cover is : " << CalculateIntegerCover<19, 1, 12>() << "\n";
-	cout << "posit<20,1>: 2^12 integer cover is : " << CalculateIntegerCover<20, 1, 12>() << "\n";
+	std::cout << "posit sample coverage of 12-bit unsigned integer\n";
+	std::cout << "posit<18,1>: 2^12 integer cover is : " << CalculateIntegerCover<18, 1, 12>() << "\n";
+	std::cout << "posit<19,1>: 2^12 integer cover is : " << CalculateIntegerCover<19, 1, 12>() << "\n";
+	std::cout << "posit<20,1>: 2^12 integer cover is : " << CalculateIntegerCover<20, 1, 12>() << "\n";
 
-	cout << "posit sample coverage of 14-bit unsigned integer\n";
-	cout << "posit<20,2>: 2^14 integer cover is : " << CalculateIntegerCover<20, 2, 14>() << "\n";
-	cout << "posit<24,1>: 2^14 integer cover is : " << CalculateIntegerCover<24, 1, 14>() << "\n";
-	cout << "posit<28,1>: 2^14 integer cover is : " << CalculateIntegerCover<28, 1, 14>() << "\n";
+	std::cout << "posit sample coverage of 14-bit unsigned integer\n";
+	std::cout << "posit<20,2>: 2^14 integer cover is : " << CalculateIntegerCover<20, 2, 14>() << "\n";
+	std::cout << "posit<24,1>: 2^14 integer cover is : " << CalculateIntegerCover<24, 1, 14>() << "\n";
+	std::cout << "posit<28,1>: 2^14 integer cover is : " << CalculateIntegerCover<28, 1, 14>() << "\n";
 
-	cout << "posit sample coverage of 16-bit unsigned integer\n";
-	cout << "posit<20,1>: 2^16 integer cover is : " << CalculateIntegerCover<20, 1, 16>() << "\n";
-	cout << "posit<24,1>: 2^16 integer cover is : " << CalculateIntegerCover<24, 1, 16>() << "\n";
-	cout << "posit<28,1>: 2^16 integer cover is : " << CalculateIntegerCover<28, 1, 16>() << "\n";
-	cout << "posit<32,1>: 2^16 integer cover is : " << CalculateIntegerCover<32, 1, 16>() << "\n";
-	cout << "posit<32,2>: 2^16 integer cover is : " << CalculateIntegerCover<32, 2, 16>() << "\n";
+	std::cout << "posit sample coverage of 16-bit unsigned integer\n";
+	std::cout << "posit<20,1>: 2^16 integer cover is : " << CalculateIntegerCover<20, 1, 16>() << "\n";
+	std::cout << "posit<24,1>: 2^16 integer cover is : " << CalculateIntegerCover<24, 1, 16>() << "\n";
+	std::cout << "posit<28,1>: 2^16 integer cover is : " << CalculateIntegerCover<28, 1, 16>() << "\n";
+	std::cout << "posit<32,1>: 2^16 integer cover is : " << CalculateIntegerCover<32, 1, 16>() << "\n";
+	std::cout << "posit<32,2>: 2^16 integer cover is : " << CalculateIntegerCover<32, 2, 16>() << "\n";
 
-	cout << "posit sample coverage of 20-bit unsigned integer\n";
-	cout << "posit<20,1>: 2^20 integer cover is : " << CalculateIntegerCover<20, 1, 20>() << "\n";
-	cout << "posit<26,1>: 2^20 integer cover is : " << CalculateIntegerCover<26, 1, 20>() << "\n";
-	cout << "posit<32,2>: 2^20 integer cover is : " << CalculateIntegerCover<32, 2, 20>() << "\n";
+#ifdef FULL_REGRESSION
+	std::cout << "posit sample coverage of 20-bit unsigned integer\n";
+	std::cout << "posit<20,1>: 2^20 integer cover is : " << CalculateIntegerCover<20, 1, 20>() << "\n";
+	std::cout << "posit<26,1>: 2^20 integer cover is : " << CalculateIntegerCover<26, 1, 20>() << "\n";
+	std::cout << "posit<32,2>: 2^20 integer cover is : " << CalculateIntegerCover<32, 2, 20>() << "\n";
 
-	cout << "posit sample coverage of 24-bit unsigned integer\n";
-	cout << "posit<26,1>: 2^24 integer cover is : " << CalculateIntegerCover<26, 1, 24>() << "\n";
-	cout << "posit<32,2>: 2^24 integer cover is : " << CalculateIntegerCover<32, 2, 24>() << "\n";
-	cout << "posit<34,2>: 2^24 integer cover is : " << CalculateIntegerCover<34, 2, 24>() << "\n";
+	std::cout << "posit sample coverage of 24-bit unsigned integer\n";
+	std::cout << "posit<26,1>: 2^24 integer cover is : " << CalculateIntegerCover<26, 1, 24>() << "\n";
+	std::cout << "posit<32,2>: 2^24 integer cover is : " << CalculateIntegerCover<32, 2, 24>() << "\n";
+	std::cout << "posit<34,2>: 2^24 integer cover is : " << CalculateIntegerCover<34, 2, 24>() << "\n";
 
 	/*
-	cout << "posit sample coverage of 32-bit unsigned integer\n";
-	cout << "posit<32,2>: 2^32 integer cover is : " << CalculateIntegerCover<32, 2, 32>() << "\n";
-	cout << "posit<40,2>: 2^32 integer cover is : " << CalculateIntegerCover<40, 2, 32>() << "\n";
+	std::cout << "posit sample coverage of 32-bit unsigned integer\n";
+	std::cout << "posit<32,2>: 2^32 integer cover is : " << CalculateIntegerCover<32, 2, 32>() << "\n";
+	std::cout << "posit<40,2>: 2^32 integer cover is : " << CalculateIntegerCover<40, 2, 32>() << "\n";
 	*/
 
+#endif
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

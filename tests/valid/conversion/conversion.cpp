@@ -14,14 +14,23 @@
 #include <universal/number/valid/manipulators.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
+	std::cout << "VALID conversion validation\n";
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Conversion test";
@@ -44,7 +53,7 @@ try {
 	GenerateLogicPatternsForDebug<8, 0>();
 	GenerateLogicPatternsForDebug<8, 1>();
 	GenerateLogicPatternsForDebug<8, 2>();
-	cout << "----------------\n";
+	std::cout << "----------------\n";
 #endif
 
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(tag, true), "valid<3,0>", "conversion");
@@ -74,9 +83,9 @@ try {
 
 #else
 
-	cout << "VALID conversion validation" << endl;
 
 #if 0
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(tag, bReportIndividualTestCases), "valid<3,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0>(tag, bReportIndividualTestCases), "valid<4,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<5, 0>(tag, bReportIndividualTestCases), "valid<5,0>", "conversion");
@@ -92,14 +101,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 0>(tag, bReportIndividualTestCases), "valid<7,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 0>(tag, bReportIndividualTestCases), "valid<8,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 0>(tag, bReportIndividualTestCases), "valid<9,0>", "conversion");
+#endif
 
+#if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 1>(tag, bReportIndividualTestCases), "valid<4,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 1>(tag, bReportIndividualTestCases), "valid<5,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 1>(tag, bReportIndividualTestCases), "valid<6,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 1>(tag, bReportIndividualTestCases), "valid<7,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 1>(tag, bReportIndividualTestCases), "valid<8,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 1>(tag, bReportIndividualTestCases), "valid<9,1>", "conversion");
+#endif
 
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 2>(tag, bReportIndividualTestCases), "valid<5,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 2>(tag, bReportIndividualTestCases), "valid<6,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 2>(tag, bReportIndividualTestCases), "valid<7,2>", "conversion");
@@ -110,9 +123,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 3>(tag, bReportIndividualTestCases), "valid<7,3>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 3>(tag, bReportIndividualTestCases), "valid<8,3>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 3>(tag, bReportIndividualTestCases), "valid<9,3>", "conversion");
+#endif
 
-
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 0>(tag, bReportIndividualTestCases), "valid<10,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 1>(tag, bReportIndividualTestCases), "valid<10,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 2>(tag, bReportIndividualTestCases), "valid<10,2>", "conversion");
@@ -133,7 +146,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 2>(tag, bReportIndividualTestCases), "valid<16,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 3>(tag, bReportIndividualTestCases), "valid<16,3>", "conversion");
 
-#endif // STRESS_TESTING
+#endif
 
 #endif // 0 till we got the valid conversion test suite written
 

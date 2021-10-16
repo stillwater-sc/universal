@@ -11,12 +11,20 @@
 #include <universal/internal/value/value.hpp>
 #include <universal/performance/number_system.hpp>
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
@@ -26,69 +34,86 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// Performance benchmarks for value class
-	cout << endl << "Performance benchmarks for value<> class" << endl;
-	cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases" << endl;
+	std::cout << "\nPerformance benchmarks for value<> class\n";
+	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
-	cout << "half precision float\n";
-	{
-		constexpr size_t fbits = 10;
-		value<fbits> number{ 1 };
-		OperatorPerformance perfReport;
-		GeneratePerformanceReport(number, perfReport);
-		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
-	}
 
-	cout << "single precision float\n";
+	std::cout << "single precision float\n";
 	{
 		constexpr size_t fbits = 22;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
 
-	cout << "double precision float\n";
+#else
+
+#if REGRESSION_LEVEL_1
+	std::cout << "half precision float\n";
+	{
+		constexpr size_t fbits = 10;
+		value<fbits> number{ 1 };
+		OperatorPerformance perfReport;
+		GeneratePerformanceReport(number, perfReport);
+		auto report = ReportPerformance(number, perfReport);
+		std::cout << report << '\n';
+	}
+#endif
+
+#if REGRESSION_LEVEL_2
+	std::cout << "single precision float\n";
+	{
+		constexpr size_t fbits = 22;
+		value<fbits> number{ 1 };
+		OperatorPerformance perfReport;
+		GeneratePerformanceReport(number, perfReport);
+		auto report = ReportPerformance(number, perfReport);
+		std::cout << report << '\n';
+	}
+#endif
+
+#if REGRESSION_LEVEL_3
+	std::cout << "double precision float\n";
 	{
 		constexpr size_t fbits = 53;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
 
-	cout << "extended precision float\n";
+	std::cout << "extended precision float\n";
 	{
 		constexpr size_t fbits = 64;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
+#endif
 
-	cout << "quad precision float\n";
+#if REGRESSION_LEVEL_4
+	std::cout << "quad precision float\n";
 	{
 		constexpr size_t fbits = 112;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
 		auto report = ReportPerformance(number, perfReport);
-		cout << report << endl;
+		std::cout << report << '\n';
 	}
-
-#else
-
-	cout << "TBD" << endl;
+#endif
 
 #endif // MANUAL_TESTING
 
-	if (nrOfFailedTestCases > 0) cout << "FAIL"; else cout << "PASS";
+	std::cout << (nrOfFailedTestCases == 0 ? "PASS" : "FAIL");
+	std::cout.flush();
 
-	cout.flush();
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
@@ -179,4 +204,85 @@ Subtraction     : 918 KPOPS
 Multiplication  : 690 KPOPS
 Division        :  22 KPOPS
 Square Root     :   2 MPOPS
+ */
+
+/*
+Benchmarked  9/16/2021 
+Processor : AMD Ryzen
+Memory    : 32GB
+OS        : 64-bit, x64-based processor
+
+Performance benchmarks for value<> class
+ reporting individual testcases
+half precision float
+Performance Report for type: class sw::universal::internal::value<10>
+Conversion int  :  70 MPOPS
+Conversion ieee :  25 MPOPS
+Prefix          :   8 MPOPS
+Postfix         :   7 MPOPS
+Negation        : 168 MPOPS
+Addition        :   9 MPOPS
+Subtraction     :   6 MPOPS
+Multiplication  :   6 MPOPS
+Division        : 980 KPOPS
+Square Root     :   7 MPOPS
+
+
+single precision float
+Performance Report for type: class sw::universal::internal::value<22>
+Conversion int  :  14 MPOPS
+Conversion ieee :   9 MPOPS
+Prefix          :   3 MPOPS
+Postfix         :   3 MPOPS
+Negation        : 222 MPOPS
+Addition        :   2 MPOPS
+Subtraction     :   2 MPOPS
+Multiplication  :   1 MPOPS
+Division        : 258 KPOPS
+Square Root     :   3 MPOPS
+
+
+double precision float
+Performance Report for type: class sw::universal::internal::value<53>
+Conversion int  :   9 MPOPS
+Conversion ieee :   6 MPOPS
+Prefix          :   1 MPOPS
+Postfix         :   1 MPOPS
+Negation        : 209 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  :   1 MPOPS
+Division        :  59 KPOPS
+Square Root     :   2 MPOPS
+
+
+extended precision float
+Performance Report for type: class sw::universal::internal::value<64>
+Conversion int  :   5 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          :   1 MPOPS
+Postfix         :   1 MPOPS
+Negation        : 219 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  : 878 KPOPS
+Division        :  54 KPOPS
+Square Root     :   2 MPOPS
+
+
+quad precision float
+Performance Report for type: class sw::universal::internal::value<112>
+Conversion int  :   6 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          : 859 KPOPS
+Postfix         : 876 KPOPS
+Negation        : 265 MPOPS
+Addition        : 821 KPOPS
+Subtraction     : 679 KPOPS
+Multiplication  : 564 KPOPS
+Division        :  21 KPOPS
+Square Root     :   2 MPOPS
+
+
+PASS
  */

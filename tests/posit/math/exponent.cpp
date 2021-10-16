@@ -11,7 +11,7 @@
 
 // use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -37,7 +37,6 @@ void GenerateTestCase(Ty a) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
@@ -83,7 +82,7 @@ try {
 
 #else
 
-	cout << "Posit exponential function validation" << endl;
+	std::cout << "Posit exponential function validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<2, 0>(bReportIndividualTestCases), "posit<2,0>", "exp");
 

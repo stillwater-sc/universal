@@ -15,11 +15,8 @@
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
 // enabling tracing
 #define TRACE_CONVERSION 0
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal_impl.hpp>
-// fixed-point type manipulators such as pretty printers
-#include <universal/number/areal/manipulators.hpp>
-#include <universal/number/areal/math_functions.hpp>
+
+#include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/number/areal/table.hpp>
 
@@ -436,13 +433,13 @@ double      s-eee'eeee'eeee-ffff'...'ffff  (52 fraction bits, 1 hidden bit
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
+	std::string test_suite = "areal assignment";
+	std::string test_tag = "assignment";
+	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "AREAL assignment: ";
 
 #if MANUAL_TESTING
 
@@ -504,7 +501,6 @@ try {
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else
-	cout << "AREAL assignment validation" << endl;
 
 	bool bVerbose = false;
 
@@ -515,34 +511,34 @@ try {
 	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->areal special cases");
 
 	std::cout << "Single block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<1, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<1, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<1, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<1, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 2 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<2, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<2, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 3 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<3, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<3, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 4 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<4, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<4, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 
 	std::cout << "Double block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 2 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 3 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 4 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 
 	std::cout << "Triple block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestTripleBlockRepresentations<1, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestTripleBlockRepresentations<1, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestTripleBlockRepresentations<1, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestTripleBlockRepresentations<1, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
 
 
 	/*

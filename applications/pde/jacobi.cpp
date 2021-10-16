@@ -35,7 +35,6 @@ Scalar normL1(const sw::universal::blas::vector<float>& v) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
@@ -46,7 +45,7 @@ try {
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 	using Vector = sw::universal::blas::vector<Scalar>;
 
-	if (argc == 1) cout << argv[0] << '\n';
+	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
 	// Initialize 'A' 'b' & intial guess 'x' * _
@@ -58,12 +57,12 @@ try {
 	Vector b = { -1, 2, 3, 0.5 };
 	Vector x = {  0, 0, 0, 0 };
 
-	cout << A << endl;
-	cout << b << endl;
+	std::cout << A << '\n';
+	std::cout << b << '\n';
 	size_t iterations = Jacobi(A, b, x);
-	cout << "solution in " << iterations << " iterations" << endl;
-	cout << "solution is " << x << '\n';
-	cout << A * x << " = " << b << endl;
+	std::cout << "solution in " << iterations << " iterations\n";
+	std::cout << "solution is " << x << '\n';
+	std::cout << A * x << " = " << b << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

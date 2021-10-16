@@ -5,6 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
+#include <limits>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 
@@ -23,14 +24,19 @@ void ReproducibilityTestSuite() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "failed";
 
 	ReproducibilityTestSuite();
 
-	cout << "done" << endl;
+#if LONG_DOUBLE_SUPPORT
+	constexpr long double denorm_min = std::numeric_limits<long double>::denorm_min();
+	std::cout << "smallest long double: " << to_binary(denorm_min) << " : " << denorm_min << '/n';
+#endif
+	constexpr long double denorm_min = std::numeric_limits<long double>::denorm_min();
+	std::cout << "smallest long double: " << denorm_min << '/n';
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 

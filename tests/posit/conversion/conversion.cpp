@@ -176,11 +176,10 @@ void GenerateTestCase(double input, double reference, const sw::universal::posit
 }
 
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 1
+#define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -229,7 +228,7 @@ try {
 
 #else
 
-	cout << "Posit conversion validation" << endl;
+	std::cout << "Posit conversion validation\n";
 
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(bReportIndividualTestCases), "posit<3,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0>(bReportIndividualTestCases), "posit<4,0>", "conversion");
@@ -267,6 +266,7 @@ try {
 
 
 #if STRESS_TESTING
+
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 0>(bReportIndividualTestCases), "posit<10,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 1>(bReportIndividualTestCases), "posit<10,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 2>(bReportIndividualTestCases), "posit<10,2>", "conversion");
@@ -282,7 +282,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 2>(bReportIndividualTestCases), "posit<14,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 3>(bReportIndividualTestCases), "posit<14,3>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 0>(bReportIndividualTestCases), "posit<16,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 0>(true), "posit<16,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 1>(bReportIndividualTestCases), "posit<16,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 2>(bReportIndividualTestCases), "posit<16,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 3>(bReportIndividualTestCases), "posit<16,3>", "conversion");

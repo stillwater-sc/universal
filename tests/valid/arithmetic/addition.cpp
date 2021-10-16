@@ -22,19 +22,27 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = "Addition failed: ";
 
-	cout << "Valid addition validation" << endl;
+	std::cout << "Valid addition validation\n";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -43,21 +51,22 @@ try {
 	valid<nbits, es> v1, v2;
 
 	v1.clear();
-	cout << v1 << endl;
+	std::cout << v1 << '\n';
 
 	v2.setinclusive();
-	cout << v2 << endl;
+	std::cout << v2 << '\n';
 
 	v1 = 1;
-	cout << v1 << endl;
+	std::cout << v1 << '\n';
 
 	posit<nbits, es> lb(1.25f), ub(1.375f);
 	v2.setlb(lb, false);
 	v2.setub(ub, true);
-	cout << v2 << endl;
+	std::cout << v2 << '\n';
 
 #else
 
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>(tag, bReportIndividualTestCases), "valid<3,0>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 0>(tag, bReportIndividualTestCases), "valid<4,0>", "addition");
@@ -84,14 +93,20 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 3>(tag, bReportIndividualTestCases), "valid<8,3>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "valid<8,4>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 5>(tag, bReportIndividualTestCases), "valid<8,5>", "addition");
+#endif
 
+#if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<16,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<24,1>", "addition");
+#endif
+
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<32,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<32,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<48, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<48,2>", "addition");
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<64,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<64,3>", "addition");
@@ -102,7 +117,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<12, 1>(tag, bReportIndividualTestCases), "valid<12,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<14, 1>(tag, bReportIndividualTestCases), "valid<14,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 1>(tag, bReportIndividualTestCases), "valid<16,1>", "addition");
-#endif  // STRESS_TESTING
+#endif
 
 #endif  // MANUAL_TESTING
 

@@ -14,7 +14,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
@@ -30,12 +29,16 @@ try {
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 8;
 	using bt = uint32_t;
-	cfloat<nbits, es, bt> cnan; cnan.setnan();
-	cfloat<nbits, es, bt> cinf; cinf.setinf();
-	cfloat<nbits, es, bt> czero(0);
-	cfloat<nbits, es, bt> minpos(SpecificValue::minpos);
-	cfloat<nbits, es, bt> dblmin(MY_DBL_MIN);
-	cfloat<nbits, es, bt> cone(1);
+	constexpr bool hasSubnormals = true;
+	constexpr bool hasSupernormals = true;
+	constexpr bool isSaturating = false;
+	using Number = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Number cnan; cnan.setnan();
+	Number cinf; cinf.setinf();
+	Number czero(0);
+	// Number minpos(SpecificValue::minpos);
+	Number dblmin(MY_DBL_MIN);
+	Number cone(1);
 
 	std::cout << std::boolalpha
 		<< "isnormal(NaN) = " << std::isnormal(NAN) << '\n'

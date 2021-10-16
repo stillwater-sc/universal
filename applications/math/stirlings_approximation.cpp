@@ -89,7 +89,6 @@ Scalar StirlingsApproximation(size_t n) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Real = posit<256,2>;
@@ -97,65 +96,65 @@ try {
 
 	constexpr size_t FIRST_COLUMN = 10;
 	constexpr size_t COLUMN_WIDTH = 40;
-	cout << setw(FIRST_COLUMN) << "factorial"
-		<< setw(COLUMN_WIDTH) << "Stirling's Approximation"
-		<< setw(COLUMN_WIDTH) << "Real Approximation"
-		<< setw(COLUMN_WIDTH) << "Actual Factorial"
-		<< setw(COLUMN_WIDTH) << "Relative Error\n";
+	std::cout << std::setw(FIRST_COLUMN) << "factorial"
+		<< std::setw(COLUMN_WIDTH) << "Stirling's Approximation"
+		<< std::setw(COLUMN_WIDTH) << "Real Approximation"
+		<< std::setw(COLUMN_WIDTH) << "Actual Factorial"
+		<< std::setw(COLUMN_WIDTH) << "Relative Error\n";
 	for (size_t i = 1; i < 31; i += 1) {
 		Real approximation = StirlingsApproximation<Real>(i);
 		Real actual        = sw::function::factorial<Real>(i);
 		Integer oracle     = sw::function::factorial<Integer>(i);
-		cout << setw(FIRST_COLUMN) << i << "! = "
-			<< setw(COLUMN_WIDTH) << approximation << '\t'
-			<< setw(COLUMN_WIDTH) << actual << '\t'
-			<< setw(COLUMN_WIDTH) << oracle << '\t'
-			<< setw(COLUMN_WIDTH) << RelativeError(approximation, actual) << endl;
+		std::cout << std::setw(FIRST_COLUMN) << i << "! = "
+			<< std::setw(COLUMN_WIDTH) << approximation << '\t'
+			<< std::setw(COLUMN_WIDTH) << actual << '\t'
+			<< std::setw(COLUMN_WIDTH) << oracle << '\t'
+			<< std::setw(COLUMN_WIDTH) << RelativeError(approximation, actual) << '\n';
 	}
-	cout << endl;
+	std::cout << std::endl;
 	{
-		string ref = "815915283247897734345611269596115894272000000000";
+		std::string ref = "815915283247897734345611269596115894272000000000";
 		double ld = sw::function::factorial<double>(40);
 		double ldr = sw::function::factoriali<double>(40);
 		decimal d = sw::function::factorial<decimal>(40);
 		double ad = double(d);
-		auto precision = cout.precision();
+		auto precision = std::cout.precision();
 		auto digits = std::numeric_limits<double>::max_digits10;
-		cout << setprecision(digits);
-		cout << "factorial(40) calculated with double and decimal oracle rounded to double\n";
-		cout << ref << '\n';
-		cout << d << '\n';
-		cout << setw(digits + 5ll) << ld << '\n';
-		cout << setw(digits + 5ll) << ldr << '\n';
-		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation" << endl;
-		cout << "scale of 40! is " << scale(ld) << endl;
+		std::cout << std::setprecision(digits);
+		std::cout << "factorial(40) calculated with double and decimal oracle rounded to double\n";
+		std::cout << ref << '\n';
+		std::cout << d << '\n';
+		std::cout << std::setw(digits + 5ll) << ld << '\n';
+		std::cout << std::setw(digits + 5ll) << ldr << '\n';
+		std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation\n";
+		std::cout << "scale of 40! is " << scale(ld) << '\n';
 
-		cout << "factorial(50) calculated with double and decimal oracle rounded to double\n";
+		std::cout << "factorial(50) calculated with double and decimal oracle rounded to double\n";
 		ref = "30414093201713378043612608166064768844377641568960512000000000000";
 		ld = sw::function::factorial<double>(50);
 		ldr = sw::function::factoriali<double>(50);
 		d = sw::function::factorial<decimal>(50);
 		ad = double(d);
-		cout << ref << '\n';
-		cout << d << '\n';
-		cout << setw(digits + 5ll) << ld << '\n';
-		cout << setw(digits + 5ll) << ldr << '\n';
-		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation" << endl;
-		cout << "scale of 50! is " << scale(ld) << endl;
+		std::cout << ref << '\n';
+		std::cout << d << '\n';
+		std::cout << std::setw(digits + 5ll) << ld << '\n';
+		std::cout << std::setw(digits + 5ll) << ldr << '\n';
+		std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation\n";
+		std::cout << "scale of 50! is " << scale(ld) << '\n';
 
-		cout << "factorial(60) calculated with double and decimal oracle rounded to double\n";
+		std::cout << "factorial(60) calculated with double and decimal oracle rounded to double\n";
 		ref = "8320987112741390144276341183223364380754172606361245952449277696409600000000000000";
 		ld = sw::function::factorial<double>(60);
 		ldr = sw::function::factoriali<double>(60);
 		d = sw::function::factorial<decimal>(60);
 		ad = double(d);
-		cout << ref << '\n';
-		cout << d << '\n';
-		cout << setw(digits + 5ll) << ld << '\n';
-		cout << setw(digits + 5ll) << ldr << '\n';
-		cout << setw(digits + 5ll) << ad << "   TODO: explain why the two methods show the same error" << endl;
-		cout << "scale of 60! is " << scale(ld) << endl;
-		cout << setprecision(precision);
+		std::cout << ref << '\n';
+		std::cout << d << '\n';
+		std::cout << std::setw(digits + 5ll) << ld << '\n';
+		std::cout << std::setw(digits + 5ll) << ldr << '\n';
+		std::cout << std::setw(digits + 5ll) << ad << "   TODO: explain why the two methods show the same error\n";
+		std::cout << "scale of 60! is " << scale(ld) << '\n';
+		std::cout << std::setprecision(precision);
 
 		
 	}

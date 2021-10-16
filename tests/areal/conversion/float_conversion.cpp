@@ -18,10 +18,7 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal_impl.hpp>
-#include <universal/number/areal/manipulators.hpp>
-#include <universal/number/areal/math_functions.hpp>
+#include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/areal_test_suite.hpp>
 #include <universal/number/areal/table.hpp> // only used for value table generation
@@ -32,7 +29,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 0) {
@@ -72,7 +68,7 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8, uint8_t>, float >(tag, true), tag, "areal<11,8,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8, uint16_t>, float >(tag, false), tag, "areal<11,8,uint16_t>");
 
-	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
+	std::cout << "failed tests: " << nrOfFailedTestCases << std::endl;
 
 #if STRESS_TESTING
 
@@ -82,7 +78,7 @@ try {
 
 #else  // !MANUAL_TESTING
 	bool bReportIndividualTestCases = false;
-	cout << "AREAL conversion from float validation" << endl;
+	std::cout << "AREAL conversion from float validation\n";
 
 	// es = 1
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<4, 1>, float >(tag, bReportIndividualTestCases), tag, "areal<4,1>");

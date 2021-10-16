@@ -14,7 +14,7 @@
 
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/math_functions.hpp>
+#include <universal/number/cfloat/mathlib.hpp>
 
 #if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an cfloat
@@ -41,10 +41,12 @@ void TestConstexprConstruction() {
 		CONSTEXPRESSION Real a(pi);   // double
 		std::cout << a << '\n';
 	}
+#if LONG_DOUBLE_SUPPORT
 	{
 		CONSTEXPRESSION Real a(1.0l);  // long double
 		std::cout << a << '\n';
 	}
+#endif
 #endif // BIT_CAST_SUPPORT
 }
 
@@ -68,10 +70,13 @@ void TestConstexprAssignment() {
 		CONSTEXPRESSION Real a = pi;   // double
 		std::cout << a << '\n';
 	}
+#if LONG_DOUBLE_SUPPORT
 	{
 		CONSTEXPRESSION Real a = 1.0l;  // long double
 		std::cout << a << '\n';
 	}
+#endif
+
 #endif // BIT_CAST_SUPPORT
 }
 
@@ -105,14 +110,13 @@ void TestConstexprSpecificValues() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "cfloat constexpr tests" << endl;
+	std::cout << "cfloat constexpr tests\n";
 	
 	using Real = cfloat<12, 2>;
 	Real a;
@@ -123,10 +127,10 @@ try {
 	TestConstexprSpecificValues<Real>();
 
 	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
+		std::cout << "FAIL\n";
 	}
 	else {
-		cout << "PASS" << endl;
+		std::cout << "PASS\n";
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

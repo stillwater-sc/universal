@@ -14,22 +14,21 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 4;
 	constexpr size_t es = 0;
 
 #if defined(POSIT_FAST_POSIT_4_0)
-	cout << "Fast specialization posit<4,0> configuration performance tests" << endl;
+	std::cout << "Fast specialization posit<4,0> configuration performance tests\n";
 #else
-	cout << "Reference posit<4,0> configuration performance tests" << endl;
+	std::cout << "Reference posit<4,0> configuration performance tests\n";
 #endif
 	posit<nbits, es> number;
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport(number, perfReport);
-	cout << ReportPerformance(number, perfReport);
-	cout << endl;
+	std::cout << ReportPerformance(number, perfReport);
+	std::cout << std::endl;
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

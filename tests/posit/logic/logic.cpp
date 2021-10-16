@@ -18,7 +18,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -59,7 +58,7 @@ try {
 #else
 	posit<16, 1> p;
 
-	cout << "Logic: operator==()" << endl;
+	std::cout << "Logic: operator==()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<3, 0>(), "posit<3,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<4, 0>(), "posit<4,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<4, 1>(), "posit<4,1>", "==");
@@ -106,7 +105,7 @@ try {
 		ReportTestResult(0, "posit<16,1> == 0.0", "== long double literal");
 	}
 	
-	cout << "Logic: operator!=()" << endl;
+	std::cout << "Logic: operator!=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<4, 0>(), "posit<4,0>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<4, 1>(), "posit<4,1>", "!=");
@@ -150,7 +149,7 @@ try {
 		ReportTestResult(0, "posit<16,1> != 0.0", "!= long double literal");
 	}
 
-	std::cout << "Logic: operator<()" << endl;
+	std::cout << "Logic: operator<()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<3, 0>(), "posit<3,0>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<4, 0>(), "posit<4,0>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<4, 1>(), "posit<4,1>", "<");
@@ -194,7 +193,7 @@ try {
 		ReportTestResult(0, "posit<16,1> < 0.0", "< long double literal");
 	}
 
-	std::cout << "Logic: operator<=()" << endl;
+	std::cout << "Logic: operator<=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<3, 0>(), "posit<3,0>", "<=");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<4, 0>(), "posit<4,0>", "<=");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<4, 1>(), "posit<4,1>", "<=");
@@ -238,7 +237,7 @@ try {
 		ReportTestResult(0, "posit<16,1> <= 0.0", "<= long double literal");
 	}
 
-	std::cout << "Logic: operator>()" << endl;
+	std::cout << "Logic: operator>()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<3, 0>(), "posit<3,0>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<4, 0>(), "posit<4,0>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<4, 1>(), "posit<4,1>", ">");
@@ -282,7 +281,7 @@ try {
 		ReportTestResult(0, "posit<16,1> > 0.0", "> long double literal");
 	}
 
-	std::cout << "Logic: operator>=()" << endl;
+	std::cout << "Logic: operator>=()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<4, 0>(), "posit<4,0>", ">=");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<4, 1>(), "posit<4,1>", ">=");

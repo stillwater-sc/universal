@@ -22,33 +22,37 @@ bool miller_rabin(const sw::universal::integer<nbits, BlockType>& a, int reps) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	{
 		constexpr size_t nbits = 1024;
 		using Integer = integer<nbits, uint32_t>;
+		// some primes to try
+		Integer a = 53;
+//		Integer a = 1049;
+//		Integer a = 9973;
+//		Integer a = 99991;
+//		Integer a = 101737;
+//		Integer a = 999983;
+
 		Integer factor;
 
-		random_device rd{};
-		mt19937 engine{ rd() };
-		uniform_real_distribution<long double> dist{0.0, 1000000.0 };
+		std::random_device rd{};
+		std::mt19937 engine{ rd() };
+		std::uniform_real_distribution<long double> dist{0.0, 1000000.0 };
 
 		{
-			Integer a = 1049;
 			primefactors<nbits, uint32_t> factors;
 			primeFactorization(a, factors);
 			for (size_t i = 0; i < factors.size(); ++i) {
-				cout << " factor " << factors[i].first << " exponent " << factors[i].second << endl;
+				std::cout << " factor " << factors[i].first << " exponent " << factors[i].second << '\n';
 			}
 		}
 
 		// test Fermat's method
-		cout << "\nFermat's factorization\n";
-
+		std::cout << "\nFermat's factorization: to demonstrate it is much slower\n";
 		try {
-			stack<Integer> factors;
-			Integer a = 1049;
+			std::stack<Integer> factors;
 			factors.push(a);
 
 			while (!factors.empty()) {
@@ -63,7 +67,7 @@ try {
 				*/
 				Integer result = fermatFactorization(factor);
 				if (result == 1) {
-					cout << "factor " << factor << " exponent " << result << endl;
+					std::cout << "factor " << factor << " exponent " << result << '\n';
 					continue;
 				}
 				factors.push(result);
@@ -72,9 +76,10 @@ try {
 
 		}
 		catch (const integer_overflow& e) {
-			cerr << e.what() << endl;
-			cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
+			std::cerr << e.what() << '\n';
+			std::cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
 		}
+
 	}
 
 	return EXIT_SUCCESS;

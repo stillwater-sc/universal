@@ -20,7 +20,6 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	/*
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace std;
 	using namespace sw::universal;
 
 	cout << endl;
@@ -71,15 +70,14 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
-template<size_t nbits, typename BlockType = uint8_t>
+template<size_t nbits, typename BlockType, sw::universal::BitEncoding encoding>
 void TestMostSignificantBit() {
-	using namespace std;
 	using namespace sw::universal;
-	blockfraction<nbits, BlockType> a;
-	cout << to_binary(a) << ' ' << a.msb() << endl;
-	a = 1;
+	blockfraction<nbits, BlockType, encoding> a;
+	std::cout << to_binary(a) << ' ' << a.msb() << '\n';
+	a.setbits(0x01ull);
 	for (size_t i = 0; i < nbits; ++i) {
-		cout << to_binary(a) << ' ' << a.msb() << endl;
+		std::cout << to_binary(a) << ' ' << a.msb() << '\n';
 		a <<= 1;
 	}
 }
@@ -90,7 +88,6 @@ void TestMostSignificantBit() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
@@ -101,9 +98,9 @@ try {
 
 #if MANUAL_TESTING
 
-//	TestMostSignificantBit<27, uint8_t>();
-//	TestMostSignificantBit<27, uint16_t>();
-//	TestMostSignificantBit<33, uint32_t>();
+	TestMostSignificantBit<27, uint8_t, BitEncoding::Ones>();
+	TestMostSignificantBit<27, uint16_t, BitEncoding::Twos>();
+	TestMostSignificantBit<33, uint32_t, BitEncoding::Twos>();
 
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockfraction<4>", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockfraction<8>", "division");

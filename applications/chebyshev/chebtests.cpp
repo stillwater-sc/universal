@@ -47,7 +47,6 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 	using namespace chebyshev;

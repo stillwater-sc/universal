@@ -59,13 +59,20 @@ void Binomials(Scalar n) {
 	}
 }
 
-// conditional compilation
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main() 
 try {
-	using namespace std;
 	using namespace sw::function;
 
 #if MANUAL_TESTING
@@ -82,19 +89,23 @@ try {
 	using int128_t = sw::universal::integer<128>;
 	using posit = sw::universal::posit<32, 2>;
 
+#if REGRESSION_LEVEL_1
 	PascalsTriangle(int128_t(15));
 	PascalsTriangle(posit(15));
+#endif
 
+#if REGRESSION_LEVEL_2
 	Binomials(10);
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 	PascalsTriangle(long(20));
 	PascalsTriangle(int128_t(20));
 	PascalsTriangle(posit(20));
 
 	Binomials(posit(21));
+#endif
 
-#endif // STRESS_TESTING
 #endif // MANUAL_TESTING
 
 

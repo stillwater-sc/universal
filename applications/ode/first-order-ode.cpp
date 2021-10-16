@@ -84,7 +84,6 @@ Scalar myFunc(const Scalar& x, const Scalar& y) {
 
 template<typename Scalar>
 void rk4(Scalar (*f)(const Scalar&, const Scalar&), int n, Scalar& h, Scalar& x, Scalar& y) {
-	using namespace std;
 	const Scalar x0 = x;
 	for (int i = 0; i < n + 1; i++) {
 		x = x0 + i*h;
@@ -93,14 +92,13 @@ void rk4(Scalar (*f)(const Scalar&, const Scalar&), int n, Scalar& h, Scalar& x,
 		auto f3 = h*f(x + h/2, y + f2/2);
 		auto f4 = h*f(x + h, y + f3);
 		y = y + (f1 + 2*f2 + 2*f3 + f4)/6;
-		cout << "y(" << x << ") ~= " << y << std::endl;
+		std::cout << "y(" << x << ") ~= " << y << std::endl;
 	}
 	return;
 }
 
 int main() 
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	{	

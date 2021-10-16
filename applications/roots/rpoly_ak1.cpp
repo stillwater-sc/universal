@@ -33,8 +33,6 @@
 #include <cmath>
 #include <cfloat>
 
-using namespace std;
-
 #define MAXDEGREE 100
 #define MDP1 MAXDEGREE+1
 
@@ -63,7 +61,7 @@ const double cosr = cos(94.0*RADFAC); // = -0.069756474
 const double sinr = sin(94.0*RADFAC); // = 0.99756405
 
 if ((*Degree) > MAXDEGREE) {
-    cout << "\nThe entered Degree is greater than MAXDEGREE. Exiting rpoly. No further action taken.\n";
+    std::cout << "\nThe entered Degree is greater than MAXDEGREE. Exiting rpoly. No further action taken.\n";
     *Degree = -1;
     return;
 } // End ((*Degree) > MAXDEGREE)
@@ -257,7 +255,7 @@ while (N >= 1){ // Main loop
     // Return with failure if no convergence with 20 shifts
 
     if (jj > 20) {
-        cout << "\nFailure. No convergence after 20 shifts. Program terminated.\n";
+        std::cout << "\nFailure. No convergence after 20 shifts. Program terminated.\n";
         *Degree -= N;
         break;
     } // End if (jj > 20)
@@ -266,7 +264,7 @@ while (N >= 1){ // Main loop
 
 } // End if op[0] != 0
 else { // else op[0] == 0
-    cout << "\nThe leading coefficient is zero. No further action taken. Program terminated.\n";
+    std::cout << "\nThe leading coefficient is zero. No further action taken. Program terminated.\n";
     *Degree = 0;
 } // End else op[0] == 0
 
@@ -797,67 +795,69 @@ return;
 } // End Quad_ak1
 
 int main()
-{char rflag = 0; //Readiness flag
+{
+    char rflag = 0; //Readiness flag
 
-cout << "                                           rpoly_ak1 (27 May 2014)\n";
-cout << "=========================================================================== \n";
-cout << "This program calculates the roots of a polynomial of real coefficients:\n";
-cout << "\nop[0]*x^N + op[1]*x^(N-1) + op[2]*x^(N-2) + . . . + op[N]*x^0 = 0 \n";
-cout << "\n--------------------------------------------------------------------------- \n";
-cout << "\nThis program can accept polynomials of degree 100 or less, specified by the\n";
-cout << "constant MAXDEGREE. If a higher order polynomial is to be input, redefine\n";
-cout << "MAXDEGREE and re-compile the program.\n";
-cout << "\n--------------------------------------------------------------------------- \n";
-cout << "\nAll relevant data for the polynomial whose roots will be sought should have\n";
-cout << "been saved beforehand in a file named rpoly_ak1dat.txt.\n";
-cout << "rpoly_ak1dat.txt should be in the same folder as the rpoly_ak1 executable. \n";
-cout << "--------------------------------------------------------------------------- \n";
-cout << "\nThe first entry of this file must be the degree, N, of the polynomial for\n";
-cout << "which the roots are to be calculated.\n";
-cout << "Entries for the coefficients of the polynomial should follow, starting with\n";
-cout << "the coefficient for the highest power of x and working down to the coefficient\n";
-cout << "for the x^0 term.\n";
-cout << "\nThe data is assumed to be of type double. Variables used within this program\n";
-cout << "are type double.\n";
-cout << "\n--------------------------------------------------------------------------- \n";
-cout << "\nThe output is written to the file rpoly_ak1out.txt.\n";
-cout << "\nNote the returned value of the variable Degree.\n";
-cout << "If Degree > 0, it specifies the number of zeros found.\n";
-cout << "If Degree = 0, the leading coefficient of the input polynomial was 0.\n";
-cout << "If Degree = -1, the input value of Degree was greater than MAXDEGREE.\n";
-cout << "\n--------------------------------------------------------------------------- \n";
-cout << "\nAdditional information is posted at the following URL:\n";
-cout << "http://www.akiti.ca/rpoly_ak1_Intro.html\n";
-cout << "--------------------------------------------------------------------------- \n";
+    std::cout << \
+        "                                           rpoly_ak1 (27 May 2014)\n" \
+        "=========================================================================== \n"\
+        "This program calculates the roots of a polynomial of real coefficients:\n" \
+        "\nop[0]*x^N + op[1]*x^(N-1) + op[2]*x^(N-2) + . . . + op[N]*x^0 = 0 \n" \
+        "\n--------------------------------------------------------------------------- \n" \
+        "\nThis program can accept polynomials of degree 100 or less, specified by the\n" \
+        "constant MAXDEGREE. If a higher order polynomial is to be input, redefine\n" \
+        "MAXDEGREE and re-compile the program.\n" \
+        "\n--------------------------------------------------------------------------- \n" \
+        "\nAll relevant data for the polynomial whose roots will be sought should have\n" \
+        "been saved beforehand in a file named rpoly_ak1dat.txt.\n" \
+        "rpoly_ak1dat.txt should be in the same folder as the rpoly_ak1 executable. \n" \
+        "--------------------------------------------------------------------------- \n" \
+        "\nThe first entry of this file must be the degree, N, of the polynomial for\n" \
+        "which the roots are to be calculated.\n" \
+        "Entries for the coefficients of the polynomial should follow, starting with\n" \
+        "the coefficient for the highest power of x and working down to the coefficient\n" \
+        "for the x^0 term.\n" \
+        "\nThe data is assumed to be of type double. Variables used within this program\n" \
+        "are type double.\n" \
+        "\n--------------------------------------------------------------------------- \n" \
+        "\nThe output is written to the file rpoly_ak1out.txt.\n" \
+        "\nNote the returned value of the variable Degree.\n" \
+        "If Degree > 0, it specifies the number of zeros found.\n" \
+        "If Degree = 0, the leading coefficient of the input polynomial was 0.\n" \
+        "If Degree = -1, the input value of Degree was greater than MAXDEGREE.\n" \
+        "\n--------------------------------------------------------------------------- \n" \
+        "\nAdditional information is posted at the following URL:\n" \
+        "http://www.akiti.ca/rpoly_ak1_Intro.html\n" \
+        "--------------------------------------------------------------------------- \n";
 
 bool bInteractive = false;
 if (bInteractive) {
-	cout << "\nIs everything ready (are you ready to continue?)? If yes, Enter y. \n";
-	cout << "Otherwise Enter any other key. \n";
-	cin >> rflag;
+    std::cout << "\nIs everything ready (are you ready to continue?)? If yes, Enter y. \n";
+    std::cout << "Otherwise Enter any other key. \n";
+    std::cin >> rflag;
 	rflag = 'Y';
 	if (toupper(rflag) == 'Y') {
 
 		int Degree; // The degree of the polynomial to be solved
-		cout << "Appear to be ready. \n";
+        std::cout << "Appear to be ready. \n";
 
-		ifstream in("rpoly_ak1dat.txt", ios::in);
+        std::ifstream in("rpoly_ak1dat.txt", std::ios::in);
 
 		if (!in) {
-			cout << "Cannot open the input file.\n";
+            std::cout << "Cannot open the input file.\n";
 			return 0;
 		}
 
 		in >> Degree; //Input the polynomial degree from the file
 		if (Degree < 0) {
-			cout << "Invalid polynomial degree entered. Program terminated. \n";
+            std::cout << "Invalid polynomial degree entered. Program terminated. \n";
 			in.close(); //Close the input file before terminating
 			return 0;
 		}
 
-		ofstream out("rpoly_ak1out.txt", ios::out);
+        std::ofstream out("rpoly_ak1out.txt", std::ios::out);
 		if (!out) {
-			cout << "Cannot open the output file. Program terminated.\n";
+            std::cout << "Cannot open the output file. Program terminated.\n";
 			in.close(); //Close the input file before terminating
 			return 0;
 		}
@@ -878,7 +878,7 @@ if (bInteractive) {
 		out << "\n";
 
 		if (Degree <= 0){
-			cout << "\nReturned from rpoly_ak1 and Degree had a value <= 0.\n";
+            std::cout << "\nReturned from rpoly_ak1 and Degree had a value <= 0.\n";
 		} // End if (Degree <= 0)
 		else { // else Degree > 0
 			out.precision(DBL_DIG);
@@ -891,9 +891,9 @@ if (bInteractive) {
 
 		out.close(); // Close the output file
 	} //End if rflag = 'Y'
-	else cout << "\nNot ready. Try again when ready with information. \n";
-	cout << "\nEnter any key to continue. \n";
-	cin >> rflag;
+	else std::cout << "\nNot ready. Try again when ready with information. \n";
+    std::cout << "\nEnter any key to continue. \n";
+    std::cin >> rflag;
 }
 else {
 	int Degree = 4;
@@ -907,18 +907,17 @@ else {
 
 	rpoly_ak1(op, &Degree, zeror, zeroi);
 
-	cout << "Degree = " << Degree << ".\n";
-	cout << "\n";
+    std::cout << "Degree = " << Degree << ".\n\n";
 
 	if (Degree <= 0) {
-		cout << "\nReturned from rpoly_ak1 and Degree had a value <= 0.\n";
+        std::cout << "\nReturned from rpoly_ak1 and Degree had a value <= 0.\n";
 	}
 	else { // else Degree > 0
-		cout.precision(DBL_DIG);
-		cout << "The roots follow:\n";
-		cout << "\n";
+        std::cout.precision(DBL_DIG);
+        std::cout << "The roots follow:\n";
+        std::cout << "\n";
 		for (i = 0; i < Degree; i++) {
-			cout << zeror[i] << " + " << zeroi[i] << "i" << " \n";
+            std::cout << zeror[i] << " + " << zeroi[i] << "i" << " \n";
 		}
 	}
 }

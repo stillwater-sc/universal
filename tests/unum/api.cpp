@@ -17,18 +17,25 @@
 #include <universal/number/unum/manipulators.hpp>
 #include <universal/number/unum/math_functions.hpp>
 
-// conditional compile flags
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "unum class interface tests" << endl;
+	std::cout << "unum class interface tests\n";
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR unum Type 1 (the default)
@@ -42,7 +49,7 @@ try {
 //		if (a != (c + d)) ++nrOfFailedTestCases;
 //		if (a != (b - c)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << endl;
+			std::cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
 	}
 
@@ -372,10 +379,10 @@ try {
 #endif // LATER
 
 	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
+		std::cout << "FAIL\n";
 	}
 	else {
-		cout << "PASS" << endl;
+		std::cout << "PASS\n";
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

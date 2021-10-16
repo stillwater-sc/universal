@@ -8,6 +8,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+
+// compiler specific configuration for long double support
+#include <universal/utility/long_double.hpp>
+// compiler specific configuration for C++20 bit_cast
 #include <universal/utility/bit_cast.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -43,7 +47,7 @@
 #include <universal/number/cfloat/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// math functions
-#include <universal/number/cfloat/math_functions.hpp>
+/// elementary math functions library
+#include <universal/number/cfloat/mathlib.hpp>
 
 #endif

@@ -24,8 +24,7 @@ std::string conditional_fdp(const sw::universal::blas::vector< Scalar >& a, cons
 }
 template<size_t nbits, size_t es>
 std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& a, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
-	using namespace std;
-	stringstream ss;
+	std::stringstream ss;
 	ss << sw::universal::fdp(a, b);
 	return ss.str();
 }
@@ -40,21 +39,20 @@ sw::universal::occurrence<sw::universal::decimal> sw::universal::decimal::ops;
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::blas;
 
-	using Scalar = decimal;
+	using Scalar = sw::universal::decimal;
 	using Matrix = matrix<Scalar>;
 
 	constexpr size_t N = 5;
 
 	Matrix A = eye<Scalar>(N);
 	Matrix B = frank<Scalar>(N);
-	decimal proxy;
+	sw::universal::decimal proxy;
 	proxy.resetStats();
 	Matrix C = A * B;
-	cout << C << endl;
-	proxy.printStats(cout);
+	std::cout << C << std::endl;
+	proxy.printStats(std::cout);
 
 	return EXIT_SUCCESS;
 }

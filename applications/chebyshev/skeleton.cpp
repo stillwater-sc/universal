@@ -14,21 +14,20 @@
 // skeleton environment to experiment with Chebyshev polynomials and approximations
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal::blas;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "Chebyshev polynomial test skeleton" << endl;
+	std::cout << "Chebyshev polynomial test skeleton\n";
 
 //	using Scalar = sw::universal::fixpnt<32,16, Modulo, uint32_t>;
 	using Scalar = sw::universal::posit<32, 2>;
 	Scalar PI{ 3.14159265358979323846 };  // best practice for C++
 	constexpr int N = 12;
 	auto k = arange<Scalar>(0, N);
-	cout << "k       = " << k << endl;
+	std::cout << "k       = " << k << '\n';
 	auto cosines = -cos(k * PI / N);
-	cout << "cosines = " << cosines << endl;
+	std::cout << "cosines = " << cosines << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

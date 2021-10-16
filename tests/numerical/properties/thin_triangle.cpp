@@ -114,7 +114,6 @@ Background references on the thin triangle problem: as previously mentioned this
 // Naive application of Heron's Formula without any regard of rounding error
 template<typename Scalar>
 Scalar HeronFormulaNaive(const Scalar& a, const Scalar& b, const Scalar& c, bool verbose = false) {
-	using namespace std;
 	using namespace sw::universal;
 
 	Scalar s = (a + b + c) / 2;
@@ -122,22 +121,22 @@ Scalar HeronFormulaNaive(const Scalar& a, const Scalar& b, const Scalar& c, bool
 
 	if (verbose) {
 		std::cout << "Thin triangle area calculation using Heran's formula\n";
-		std::cout << "    a  = " << to_binary(a) << " " << to_base2_scientific(a) << " : " << std::showpos << a << std::noshowpos << std::endl;
-		std::cout << "    b  = " << to_binary(b) << " " << to_base2_scientific(b) << " : " << std::showpos << std::setprecision(8) << b << std::noshowpos << std::endl;
-		std::cout << "    c  = " << to_binary(c) << " " << to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << std::endl;
-		std::cout << "    s  = " << to_binary(s) << " " << to_base2_scientific(s) << " : " << std::showpos << s << std::noshowpos << std::endl;
-		std::cout << "    A  = " << to_binary(A) << " " << to_base2_scientific(A) << " : " << std::showpos << A << std::noshowpos << std::endl;
+		std::cout << "    a  = " << to_binary(a) << " " << to_base2_scientific(a) << " : " << std::showpos << a << std::noshowpos << '\n';
+		std::cout << "    b  = " << to_binary(b) << " " << to_base2_scientific(b) << " : " << std::showpos << std::setprecision(8) << b << std::noshowpos << '\n';
+		std::cout << "    c  = " << to_binary(c) << " " << to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << '\n';
+		std::cout << "    s  = " << to_binary(s) << " " << to_base2_scientific(s) << " : " << std::showpos << s << std::noshowpos << '\n';
+		std::cout << "    A  = " << to_binary(A) << " " << to_base2_scientific(A) << " : " << std::showpos << A << std::noshowpos << '\n';
 
 		Scalar p1, p2, p3;
 		p1 = (s - a);
 		p2 = (s - b);
 		p3 = (s - c);
-		std::cout << "    s      = " << to_binary(s) << std::endl;
-		std::cout << "        a  = " << to_binary(a) << std::endl;
-		std::cout << "   (s - a) = " << to_binary(p1) << std::endl;
-		std::cout << "   (s - a) = " << to_base2_scientific(p1) << std::endl;
-		std::cout << "   (s - b) = " << to_base2_scientific(p2) << std::endl;
-		std::cout << "   (s - c) = " << to_base2_scientific(p3) << std::endl;
+		std::cout << "    s      = " << to_binary(s) << '\n';
+		std::cout << "        a  = " << to_binary(a) << '\n';
+		std::cout << "   (s - a) = " << to_binary(p1) << '\n';
+		std::cout << "   (s - a) = " << to_base2_scientific(p1) << '\n';
+		std::cout << "   (s - b) = " << to_base2_scientific(p2) << '\n';
+		std::cout << "   (s - c) = " << to_base2_scientific(p3) << '\n';
 	}
 
 	return A;
@@ -161,7 +160,6 @@ The real cost is the ordering requirement in the cases where it’s not known no
 */
 template<typename Scalar>
 Scalar HeronFormulaKahanRewrite(const Scalar& a, const Scalar& b, const Scalar& c, bool verbose = false) {
-	using namespace std;
 	using namespace sw::universal;
 
 	// requires: a >= b >= c && a <= b+c && a <= 0x1.0p255
@@ -170,21 +168,21 @@ Scalar HeronFormulaKahanRewrite(const Scalar& a, const Scalar& b, const Scalar& 
 
 	if (verbose) {
 		std::cout << "Thin triangle area calculation using Kahan rewrite\n";
-		std::cout << "    a  = " << to_binary(a) << " " << to_base2_scientific(a) << " : " << std::showpos << a << std::noshowpos << std::endl;
-		std::cout << "    b  = " << to_binary(b) << " " << to_base2_scientific(b) << " : " << std::showpos << b << std::noshowpos << std::endl;
-		std::cout << "    c  = " << to_binary(c) << " " << to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << std::endl;
-		std::cout << "    s  = " << to_binary(s) << " " << to_base2_scientific(s) << " : " << std::showpos << s << std::noshowpos << std::endl;
-		std::cout << "    A  = " << to_binary(A) << " " << to_base2_scientific(A) << " : " << std::showpos << A << std::noshowpos << std::endl;
+		std::cout << "    a  = " << to_binary(a) << " " << to_base2_scientific(a) << " : " << std::showpos << a << std::noshowpos << '\n';
+		std::cout << "    b  = " << to_binary(b) << " " << to_base2_scientific(b) << " : " << std::showpos << b << std::noshowpos << '\n';
+		std::cout << "    c  = " << to_binary(c) << " " << to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << '\n';
+		std::cout << "    s  = " << to_binary(s) << " " << to_base2_scientific(s) << " : " << std::showpos << s << std::noshowpos << '\n';
+		std::cout << "    A  = " << to_binary(A) << " " << to_base2_scientific(A) << " : " << std::showpos << A << std::noshowpos << '\n';
 
 		Scalar p1, p2, p3, p4;
 		p1 = a + (b + c);
 		p2 = a + (b - c);
 		p3 = c + (a - b);
 		p4 = c - (a - b);
-		std::cout << "(a + (b + c)) = " << to_base2_scientific(p1) << std::endl;
-		std::cout << "(a + (b - c)) = " << to_base2_scientific(p2) << std::endl;
-		std::cout << "(c + (a - b)) = " << to_base2_scientific(p3) << std::endl;
-		std::cout << "(c - (a - b)) = " << to_base2_scientific(p4) << std::endl;
+		std::cout << "(a + (b + c)) = " << to_base2_scientific(p1) << '\n';
+		std::cout << "(a + (b - c)) = " << to_base2_scientific(p2) << '\n';
+		std::cout << "(c + (a - b)) = " << to_base2_scientific(p3) << '\n';
+		std::cout << "(c - (a - b)) = " << to_base2_scientific(p4) << '\n';
 	}
 
 	return A;
@@ -222,51 +220,50 @@ Scalar HeronFormulaKarlsruheAccurateArithmetic(const Scalar& a, const Scalar& b,
 
 template<typename Scalar>
 void printTriangleConfiguration(std::ostream& ostr, const Scalar& a, const Scalar& b, const Scalar& c) {
-	ostr << "    a  = " << sw::universal::to_binary(a) << " " << sw::universal::to_base2_scientific(a) << " : " << std::showpos << a << std::noshowpos << std::endl;
-	ostr << "    b  = " << sw::universal::to_binary(b) << " " << sw::universal::to_base2_scientific(b) << " : " << std::showpos << b << std::noshowpos << std::endl;
-	ostr << "    c  = " << sw::universal::to_binary(c) << " " << sw::universal::to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << std::endl;
+	ostr << "    a  = " << sw::universal::to_binary(a) << " " << sw::universal::to_base2_scientific(a) << " : " << std::showpos << a << std::noshowpos << '\n';
+	ostr << "    b  = " << sw::universal::to_binary(b) << " " << sw::universal::to_base2_scientific(b) << " : " << std::showpos << b << std::noshowpos << '\n';
+	ostr << "    c  = " << sw::universal::to_binary(c) << " " << sw::universal::to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << '\n';
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	/*
 	{
 		// single precision floats
-		cout << "0.125f = " << to_base2_scientific(0.125f) << endl;
-		cout << "0.25f  = " << to_base2_scientific(0.25f) << endl;
-		cout << "0.5f   = " << to_base2_scientific(0.5f) << endl;
-		cout << "1.0f   = " << to_base2_scientific(1.0f) << endl;
-		cout << "2.0f   = " << to_base2_scientific(2.0f) << endl;
-		cout << "4.0f   = " << to_base2_scientific(4.0f) << endl;
-		cout << "8.0f   = " << to_base2_scientific(8.0f) << endl;
+		std::cout << "0.125f = " << to_base2_scientific(0.125f) << '\n';
+		std::cout << "0.25f  = " << to_base2_scientific(0.25f) << '\n';
+		std::cout << "0.5f   = " << to_base2_scientific(0.5f) << '\n';
+		std::cout << "1.0f   = " << to_base2_scientific(1.0f) << '\n';
+		std::cout << "2.0f   = " << to_base2_scientific(2.0f) << '\n';
+		std::cout << "4.0f   = " << to_base2_scientific(4.0f) << '\n';
+		std::cout << "8.0f   = " << to_base2_scientific(8.0f) << '\n';
 
-		cout << "ulp(1) = " << to_base2_scientific(ulp(1.0f)) << endl;
+		std::cout << "ulp(1) = " << to_base2_scientific(ulp(1.0f)) << '\n';
 	}
 
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 1;
-		cout << "0.0625 = " << to_base2_scientific(posit<nbits, es>(0.0625f)) << endl;
-		cout << "0.125f = " << to_base2_scientific(posit<nbits, es>(0.125f)) << endl;
-		cout << "0.25f  = " << to_base2_scientific(posit<nbits, es>(0.25f)) << endl;
-		cout << "0.5f   = " << to_base2_scientific(posit<nbits, es>(0.5f)) << endl;
-		cout << "1.0f   = " << to_base2_scientific(posit<nbits, es>(1.0f)) << endl;
-		cout << "2.0f   = " << to_base2_scientific(posit<nbits, es>(2.0f)) << endl;
-		cout << "4.0f   = " << to_base2_scientific(posit<nbits, es>(4.0f)) << endl;
-		cout << "8.0f   = " << to_base2_scientific(posit<nbits, es>(8.0f)) << endl;
-		cout << "16.0f  = " << to_base2_scientific(posit<nbits, es>(16.0f)) << endl;
-		cout << "32.0f  = " << to_base2_scientific(posit<nbits, es>(32.0f)) << endl;
-		cout << "64.0f  = " << to_base2_scientific(posit<nbits, es>(64.0f)) << endl;
-		cout << "ulp(1) = " << to_base2_scientific(ulp(posit<nbits, es>(1.0f))) << endl;
-		cout << "       = " << to_binary(posit<nbits, es>(1.0f)) << endl;
+		std::cout << "0.0625 = " << to_base2_scientific(posit<nbits, es>(0.0625f)) << '\n';
+		std::cout << "0.125f = " << to_base2_scientific(posit<nbits, es>(0.125f)) << '\n';
+		std::cout << "0.25f  = " << to_base2_scientific(posit<nbits, es>(0.25f)) << '\n';
+		std::cout << "0.5f   = " << to_base2_scientific(posit<nbits, es>(0.5f)) << '\n';
+		std::cout << "1.0f   = " << to_base2_scientific(posit<nbits, es>(1.0f)) << '\n';
+		std::cout << "2.0f   = " << to_base2_scientific(posit<nbits, es>(2.0f)) << '\n';
+		std::cout << "4.0f   = " << to_base2_scientific(posit<nbits, es>(4.0f)) << '\n';
+		std::cout << "8.0f   = " << to_base2_scientific(posit<nbits, es>(8.0f)) << '\n';
+		std::cout << "16.0f  = " << to_base2_scientific(posit<nbits, es>(16.0f)) << '\n';
+		std::cout << "32.0f  = " << to_base2_scientific(posit<nbits, es>(32.0f)) << '\n';
+		std::cout << "64.0f  = " << to_base2_scientific(posit<nbits, es>(64.0f)) << '\n';
+		std::cout << "ulp(1) = " << to_base2_scientific(ulp(posit<nbits, es>(1.0f))) << '\n';
+		std::cout << "       = " << to_binary(posit<nbits, es>(1.0f)) << '\n';
 
 	}
 */
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -287,42 +284,41 @@ try {
 	b = 0.5 * (a + 3.0 * delta);
 	c = b;
 	if (verbose) {
-		printTriangleConfiguration<float>(cout, float(a), float(b), float(c));
-		printTriangleConfiguration<Posit>(cout, a, b, c);
+		printTriangleConfiguration<float>(std::cout, float(a), float(b), float(c));
+		printTriangleConfiguration<Posit>(std::cout, a, b, c);
 	}
 
 
 	// demonstrate the rounding issues of calculating the area of this thin triangle
-	cout << "Area calculation of a thin triangle\n";
+	std::cout << "Area calculation of a thin triangle\n";
 	Aexact = HeronFormulaKahanRewrite(a, b, c);	
 
-	cout << "Using Heron's Formula with disregard to catastrophic cancellation\n";
-	cout << "exact                 = " << showpos << Aexact << noshowpos << endl;
+	std::cout << "Using Heron's Formula with disregard to catastrophic cancellation\n";
+	std::cout << "exact                 = " << std::showpos << Aexact << std::noshowpos << '\n';
 	Aieee32b = HeronFormulaNaive<float>(float(a), float(b), float(c));
-	cout << "IEEE single precision = " << showpos << Aieee32b << noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << endl;
+	std::cout << "IEEE single precision = " << std::showpos << Aieee32b << std::noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << '\n';
 	Aposit32 = HeronFormulaNaive<Posit>(Posit(a), Posit(b), Posit(c));
-	cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << endl;	
+	std::cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';	
 
-	cout << endl;
+	std::cout << '\n';
 
-	cout << "Using Kahan rewrite to avoid catastrophic cancellation\n";
-	cout << "exact                 = " << showpos << Aexact << noshowpos << endl;
+	std::cout << "Using Kahan rewrite to avoid catastrophic cancellation\n";
+	std::cout << "exact                 = " << std::showpos << Aexact << std::noshowpos << '\n';
 	Aieee32b = HeronFormulaKahanRewrite<float>(float(a), float(b), float(c));
-	cout << "IEEE single precision = " << showpos << Aieee32b << noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << endl;
+	std::cout << "IEEE single precision = " << std::showpos << Aieee32b << std::noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << '\n';
 	Aposit32 = HeronFormulaKahanRewrite<Posit>(Posit(a), Posit(b), Posit(c));
-	cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << endl;
+	std::cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';
 
-	cout << endl;
+	std::cout << '\n';
 
-	cout << "Using Karlsruhe Accurate Arithmetic\n";
-	cout << "exact                 = " << showpos << Aexact << noshowpos << endl;
+	std::cout << "Using Karlsruhe Accurate Arithmetic\n";
+	std::cout << "exact                 = " << std::showpos << Aexact << std::noshowpos << '\n';
 //	Aieee32b = HeronFormulaKahanRewrite<float>(float(a), float(b), float(c));
-//	cout << "IEEE single precision = " << showpos << Aieee32b << noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << endl;
+//	std::cout << "IEEE single precision = " << std::showpos << Aieee32b << std::noshowpos << "  relative error : " << abs(Aexact - Aieee32b) << '\n';
 	Aposit32 = HeronFormulaKarlsruheAccurateArithmetic<Posit>(Posit(a), Posit(b), Posit(c));
-	cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << endl;
+	std::cout << Aposit32.cfg() << "          = " << Aposit32 << "  relative error : " << abs(Aexact - double(Aposit32)) << '\n';
 
-
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

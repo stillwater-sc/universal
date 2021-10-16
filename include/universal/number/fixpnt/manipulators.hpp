@@ -6,37 +6,34 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <exception>
 
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
 namespace sw::universal {
 
+// Generate a type tag for this fixpnt
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+std::string type_tag(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
+	std::stringstream s;
+	if (v.iszero()) s << ' '; // remove 'unreferenced formal parameter warning from compilation log
+	s << "fixpnt<"
+		<< std::setw(3) << nbits << ", "
+		<< std::setw(3) << rbits << ", "
+		<< (arithmetic ? "    Modulo, " : 
+			             "Saturating, ")
+		<< typeid(bt).name() << '>';
+	return s.str();
+}
+
+// TODO: you need to guard this with a fixpnt type
+// as right now this type_tag() design matches any type
+// and is thus ambiguous
+
+// Generate a type tag for this fixpnt
+template<typename FixedPoint>
+std::string type_tag() {
+	constexpr size_t nbits = FixedPoint::nbits;
+	constexpr size_t rbits = FixedPoint::rbits;
+	constexpr bool arithmetic = FixedPoint::arithmetic;
+	using bt = typename FixedPoint::BlockType;
+	return type_tag(fixpnt<nbits, rbits, arithmetic, bt>());
+}
 
 } // namespace sw::universal

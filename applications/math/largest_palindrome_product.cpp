@@ -18,11 +18,10 @@
 
 template<size_t nbits>
 bool Largest2DigitPalindromeProduct() {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
-	using Real = long double;
+	using Real = double;
 
 	int nrOfSteps = 0;
 	// construct palindromes starting from the largest descending to the smallest
@@ -32,14 +31,14 @@ bool Largest2DigitPalindromeProduct() {
 			Integer palindrome = (i * 1000) + (j * 100) + (j * 10) + i;
 //			cout << palindrome << endl;
 			// generate guidance on the scale of the product terms
-			Real squareRoot = std::sqrt((long double)palindrome);
+			Real squareRoot = std::sqrt(double(palindrome));
 //			cout << "sqrt guidance is " << squareRoot << endl;
 			Integer a, b, c;
 			a = squareRoot;
 			while (a < 100) {
 				b = palindrome / a;
 				if ((palindrome % a) == 0 && b < 100) {
-					cout << "In step " << nrOfSteps << " found largest 2-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
+					std::cout << "In step " << nrOfSteps << " found largest 2-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << '\n';
 					return true;
 				}
 				else {
@@ -54,11 +53,10 @@ bool Largest2DigitPalindromeProduct() {
 
 template<size_t nbits>
 bool Largest3DigitPalindromeProduct() {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
-	using Real = long double;
+	using Real = double;
 
 	int nrOfSteps = 0;
 	// construct palindromes starting from the largest descending to the smallest
@@ -69,14 +67,14 @@ bool Largest3DigitPalindromeProduct() {
 				Integer palindrome = (i * 100000) + (j * 10000) + (k * 1000) + (k * 100) + (j * 10) + i;
 // 				cout << palindrome << endl;
 				// generate guidance on the scale of the product terms
-				Real squareRoot = std::sqrt((long double)palindrome);
+				Real squareRoot = std::sqrt(double(palindrome));
 //				cout << "sqrt guidance is " << squareRoot << endl;
 				Integer a, b, c;
 				a = squareRoot;
 				while (a < 1000) {
 					b = palindrome / a;
 					if ((palindrome % a) == 0 && b < 1000) {
-						cout << "In step " << nrOfSteps << " found largest 3-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
+						std::cout << "In step " << nrOfSteps << " found largest 3-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << '\n';
 						return true;
 					}
 					else {
@@ -92,11 +90,10 @@ bool Largest3DigitPalindromeProduct() {
 
 template<size_t nbits>
 bool Largest4DigitPalindromeProduct() {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
-	using Real = long double;
+	using Real = double;
 
 	int nrOfSteps = 0;
 	// construct palindromes starting from the largest descending to the smallest
@@ -108,14 +105,14 @@ bool Largest4DigitPalindromeProduct() {
 					Integer palindrome = (i * 10000000) + (j * 1000000) + (k * 100000) + (m * 10000) + (m * 1000) + (k * 100) + (j * 10) + i;
 					// cout << palindrome << endl;
 					// generate guidance on the scale of the product terms
-					Real squareRoot = std::sqrt((long double)palindrome);
+					Real squareRoot = std::sqrt(double(palindrome));
 					// cout << "sqrt guidance is " << squareRoot << endl;
 					Integer a, b;
 					a = squareRoot;
 					while (a < 10000) {
 						b = palindrome / a;
 						if ((palindrome % a) == 0 && b < 10000) {
-							cout << "In step " << nrOfSteps << " found largest 4-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
+							std::cout << "In step " << nrOfSteps << " found largest 4-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << '\n';
 							return true;
 						}
 						else {
@@ -132,11 +129,10 @@ bool Largest4DigitPalindromeProduct() {
 
 template<size_t nbits>
 bool Largest5DigitPalindromeProduct() {
-	using namespace std;
 	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
-	using Real = long double;
+	using Real = double;
 
 	int nrOfSteps = 0;
 	// construct palindromes starting from the largest descending to the smallest
@@ -149,14 +145,14 @@ bool Largest5DigitPalindromeProduct() {
 						Integer palindrome = (i * 1000000000) + (j * 100000000) + (k * 10000000) + (m * 1000000) + (n * 100000) + (n * 10000) + (m * 1000) + (k * 100) + (j * 10) + i;
 						// cout << palindrome << endl;
 						// generate guidance on the scale of the product terms
-						Real squareRoot = std::sqrt((long double)palindrome);
+						Real squareRoot = std::sqrt(double(palindrome));
 						// cout << "sqrt guidance is " << squareRoot << endl;
 						Integer a, b;
 						a = squareRoot;
 						while (a < 100000) {
 							b = palindrome / a;
 							if ((palindrome % a) == 0 && b < 100000) {
-								cout << "In step " << nrOfSteps << " found largest 5-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
+								std::cout << "In step " << nrOfSteps << " found largest 5-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << '\n';
 								return true;
 							}
 							else {
@@ -174,7 +170,6 @@ bool Largest5DigitPalindromeProduct() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	Largest2DigitPalindromeProduct<16>();

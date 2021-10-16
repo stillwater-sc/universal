@@ -17,22 +17,21 @@
 #include <universal/number/posit/numeric_limits.hpp>
 // type manipulators such as pretty printers
 #include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 
 template<size_t nbits, size_t es>
 void TestULP() 
 {
-	using namespace std;
 	using namespace sw::universal;
 
 	posit<nbits, es> a(1.0f);
-	cout << typeid(a).name() << '\n';
+	std::cout << typeid(a).name() << '\n';
 //	double da(1.0);
-	cout << "posit at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << '\n';
-//	cout << "double at 1.0 : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << '\n';
+	std::cout << "posit at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << '\n';
+//	std::cout << "double at 1.0 : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << '\n';
 
 	a = std::numeric_limits< posit<64, 3> >::epsilon();
-	cout << "posit epsilon : " << to_binary(a) << " : " << a << '\n';
+	std::cout << "posit epsilon : " << to_binary(a) << " : " << a << '\n';
 }
 
 // conditional compile flags
@@ -41,13 +40,13 @@ void TestULP()
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "posit ULP tests" << endl;
+	std::cout << "posit ULP tests\n";
 
+#if MANUAL_TESTING
 	TestULP<8, 0>();
 	TestULP<16, 1>();
 	TestULP<32, 2>();
@@ -57,7 +56,25 @@ try {
 	{
 		posit<64, 3> a(1.0);
 	}
+#else 
 
+#if REGRESSION_LEVEL_1
+	TestULP<8, 0>();
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+	TestULP<64, 3>();
+#endif
+
+#endif // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

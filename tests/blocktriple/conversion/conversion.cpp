@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -13,22 +14,22 @@
 #include <universal/native/integers.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 
-template<size_t fbits, typename Ty>
+template<size_t fbits, sw::universal::BlockTripleOperator op, typename Ty>
 std::string convert(Ty f) {
+	using default_bt = uint8_t;
 	std::stringstream s;
-	sw::universal::blocktriple<fbits> a(f);
-	s << std::setw(30) << sw::universal::to_binary(a) << " : " << a;
+	sw::universal::blocktriple<fbits, op, default_bt> a(f);
+	s << std::setw(30) << sw::universal::to_binary(a) << " : " << a << " " << typeid(a).name();
 	return s.str();
 }
 
-template<size_t fbits, typename ConversionType>
+template<size_t fbits, sw::universal::BlockTripleOperator op, typename ConversionType>
 int VerifyConversion() {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", uint8_t>    ";
+	std::cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", " << op << ", uint8_t>\n";
 	int nrOfFailures = 0;
-	blocktriple<fbits, uint8_t> a, nut;
+	blocktriple<fbits, op, uint8_t> a, nut;
 	constexpr size_t NR_VALUES = (1ull << (fbits + 1));
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		if (i == 0) a.setzero(); else a.setnormal();
@@ -37,20 +38,23 @@ int VerifyConversion() {
 		nut = v;
 		if (v != float(nut)) {
 			++nrOfFailures;
-			cout << setw(10) << i << " : " << to_binary(a) << " != " << to_binary(nut) << '\n';
+			std::cout << "FAIL: " << std::setw(10) << i << " : " << to_binary(a) << " != " << to_binary(nut) << '\n';
+		}
+		else {
+			std::cout << "PASS: " << std::setw(10) << i << " : " << to_binary(a) << " == " << to_binary(nut) << '\n';
 		}
 	}
-	cout << (nrOfFailures ? "FAIL\n" : "PASS\n");
+	std::cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", " << op << ", uint8_t>  ";
+	std::cout << (nrOfFailures ? "FAIL\n" : "PASS\n");
 	return nrOfFailures;
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -64,77 +68,88 @@ try {
 
 	float f;
 	f = 511.875f;
-	cout << to_binary(f, true) << '\n';
-	cout << convert<12,float>(f) << '\n';
-	cout << convert<11, float>(f) << '\n';
-	cout << convert<10, float>(f) << '\n';
-	cout << convert<9, float>(f) << '\n';
-	cout << convert<8, float>(f) << '\n';
+	std::cout << to_binary(f, true) << '\n';
+	std::cout << convert<12, BlockTripleOperator::ADD, float>(f) << '\n';
+	std::cout << convert<11, BlockTripleOperator::ADD, float>(f) << '\n';
+	std::cout << convert<10, BlockTripleOperator::ADD, float>(f) << '\n';
+	std::cout << convert<9, BlockTripleOperator::ADD, float>(f) << '\n';
+	std::cout << convert<8, BlockTripleOperator::ADD, float>(f) << '\n';
 
-	cout << "convert floats\n";
+	std::cout << "convert floats\n";
 	f = 1.0f;
 	for (int i = 0; i < 10; ++i) {
-		cout << convert<12, float>(f) << '\n';
+		std::cout << convert<12, BlockTripleOperator::ADD, float>(f) << '\n';
 		f *= 2.0f;
 	}
-	cout << "rounding floats\n";
-	cout << convert<1, float>(15.0f) << '\n'; // 16
-	cout << convert<2, float>(15.0f) << '\n'; // 16
-	cout << convert<3, float>(15.0f) << '\n'; // 15
-	cout << convert<4, float>(15.0f) << '\n'; // 15
-	cout << convert<5, float>(15.0f) << '\n'; // 15
+	std::cout << "rounding floats\n";
+	std::cout << convert<1, BlockTripleOperator::ADD, float>(15.0f) << '\n'; // 16
+	std::cout << convert<2, BlockTripleOperator::ADD, float>(15.0f) << '\n'; // 16
+	std::cout << convert<3, BlockTripleOperator::ADD, float>(15.0f) << '\n'; // 15
+	std::cout << convert<4, BlockTripleOperator::ADD, float>(15.0f) << '\n'; // 15
+	std::cout << convert<5, BlockTripleOperator::ADD, float>(15.0f) << '\n'; // 15
 	
 	///////////////////////////////////////////////////
-	cout << "convert doubles\n";
+	std::cout << "convert doubles\n";
 	double d;
 	d = 1.0;
 	for (int i = 0; i < 10; ++i) {
-		cout << convert<12, double>(d) << '\n';
+		std::cout << convert<12, BlockTripleOperator::ADD, double>(d) << '\n';
 		d *= 2.0;
 	}
-	cout << "rounding doubles\n";
-	cout << convert<1, double>(15.0) << '\n'; // 16
-	cout << convert<2, double>(15.0) << '\n'; // 16
-	cout << convert<3, double>(15.0) << '\n'; // 15
-	cout << convert<4, double>(15.0) << '\n'; // 15
-	cout << convert<5, double>(15.0) << '\n'; // 15
+	std::cout << "rounding doubles\n";
+	std::cout << convert<1, BlockTripleOperator::ADD, double>(15.0) << '\n'; // 16
+	std::cout << convert<2, BlockTripleOperator::ADD, double>(15.0) << '\n'; // 16
+	std::cout << convert<3, BlockTripleOperator::ADD, double>(15.0) << '\n'; // 15
+	std::cout << convert<4, BlockTripleOperator::ADD, double>(15.0) << '\n'; // 15
+	std::cout << convert<5, BlockTripleOperator::ADD, double>(15.0) << '\n'; // 15
 
 	///////////////////////////////////////////////////
-	cout << "convert long long with nbits = 10\n";
+	std::cout << "convert negative long long to blocktriple with fbits = 10\n";
 	for (long long i = 1; i < 257; i *= 2) {
-		cout << convert<10, long long>(-i) << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, long long>(-i) << '\n';
 	}
+	std::cout << "convert positive long long to blocktriple with fbits = 10\n";
 	for (long long i = 1; i < 257; i *= 2) {
-		cout << convert<10, long long>(i) << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, long long>(i) << '\n';
 	}
+
+	std::cout << "maxpos of long long and blocktriple with fbits = 10\n";
 	{
 		constexpr long long maxpos = std::numeric_limits<long long>::max();
-		cout << convert<10, long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, 64, true) << '\n';
-		cout << convert<10, long long>(-maxpos) << " : " << -maxpos << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, 64, true) << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, long long>(-maxpos) << " : " << -maxpos << '\n';
 		float fmaxpos = float(maxpos);
-		cout << convert<10, float>(fmaxpos) << " : " << fmaxpos << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, float>(fmaxpos) << " : " << fmaxpos << '\n';
 	}
 
-	cout << "convert unsigned long long with nbits = 32\n";
+	std::cout << "convert unsigned long long to blocktriple with fbits = 32\n";
 	for (unsigned long long i = 1; i < 257; i *= 2) {
-		cout << convert<32, unsigned long long>(i) << '\n';
+		std::cout << convert<32, BlockTripleOperator::ADD, unsigned long long>(i) << '\n';
 	}
+	std::cout << "maxpos of unsigned long long and blocktriple with fbits = 10\n";
 	{
 		constexpr unsigned long long maxpos = std::numeric_limits<unsigned long long>::max();
-		cout << convert<10, unsigned long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, 64, true) << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, unsigned long long>(maxpos) << " : " << maxpos << " : " << to_binary(maxpos, 64, true) << '\n';
 		float fmaxpos = float(maxpos);
-		cout << convert<10, float>(fmaxpos) << " : " << fmaxpos << '\n';
+		std::cout << convert<10, BlockTripleOperator::ADD, float>(fmaxpos) << " : " << fmaxpos << '\n';
 	}
 
 	///////////////////////////////////////////////////
-	cout << "rounding signed integers\n";
+	std::cout << "rounding signed integers\n";
 	long l = 0xFFF;
-	cout << to_binary(l, 16) << " : " << l << '\n';
-	cout << convert<16, long>(l) << '\n';
-	cout << convert<13, long>(l) << '\n';
-	cout << convert<12, long>(l) << '\n';
-	cout << convert<11, long>(l) << '\n';
-	cout << convert<8, long>(l) << '\n';
+	std::cout << to_binary(l, 16) << " : " << l << '\n';
+	std::cout << convert<16, BlockTripleOperator::ADD, long>(l) << '\n';
+	std::cout << convert<13, BlockTripleOperator::ADD, long>(l) << '\n';
+	std::cout << convert<12, BlockTripleOperator::ADD, long>(l) << '\n';
+	std::cout << convert<11, BlockTripleOperator::ADD, long>(l) << '\n';
+	std::cout << convert<10, BlockTripleOperator::ADD, long>(l) << '\n';
+	std::cout << convert<9, BlockTripleOperator::ADD, long>(l) << '\n';
+	std::cout << convert<8, BlockTripleOperator::ADD, long>(l) << '\n';
+
+//	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::REPRESENTATION, float>();
+	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, float>();
+//	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::MUL, float>();
+	nrOfFailedTestCases = 0;
 
 #if STRESS_TESTING
 
@@ -144,25 +159,25 @@ try {
 
 #else  // !MANUAL_TESTING
 
-	cout << tag << endl;
+	std::cout << tag << endl;
 
-	nrOfFailedTestCases += VerifyConversion<5, float>();
-	nrOfFailedTestCases += VerifyConversion<9, float>();
-	nrOfFailedTestCases += VerifyConversion<12, float>();
+	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, float>();
+	nrOfFailedTestCases += VerifyConversion<9, BlockTripleOperator::ADD, float>();
+	nrOfFailedTestCases += VerifyConversion<12, BlockTripleOperator::ADD, float>();
 
-	nrOfFailedTestCases += VerifyConversion<5, double>();
-	nrOfFailedTestCases += VerifyConversion<9, double>();
-	nrOfFailedTestCases += VerifyConversion<12, double>();
+	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, double>();
+	nrOfFailedTestCases += VerifyConversion<9, BlockTripleOperator::ADD, double>();
+	nrOfFailedTestCases += VerifyConversion<12, BlockTripleOperator::ADD, double>();
 
 	for (int i = 1; i < 257; i *= 2) {
 		float f = float(i);
-		blocktriple<9, uint8_t> nut = f;
+		blocktriple<9, BlockTripleOperator::ADD, uint8_t> nut = f;
 		if (f != float(nut)) {
 			++nrOfFailedTestCases;
 		}
 	}
 
-	cout << tag << ((0 == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	std::cout << tag << ((0 == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 
 #if STRESS_TESTING
 

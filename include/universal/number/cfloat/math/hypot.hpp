@@ -40,19 +40,19 @@ hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN
 
 namespace sw::universal {
 
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> hypot(cfloat<nbits,es,bt> x, cfloat<nbits,es,bt> y) {
-	return cfloat<nbits,es,bt>(std::hypot(double(x),double(y)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypot(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypot(double(x),double(y)));
 }
 
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> hypotf(cfloat<nbits,es,bt> x, cfloat<nbits,es,bt> y) {
-	return cfloat<nbits,es,bt>(std::hypotf(float(x),float(y)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypotf(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypotf(float(x),float(y)));
 }
 
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> hypotl(cfloat<nbits,es,bt> x, cfloat<nbits,es,bt> y) {
-	return cfloat<nbits,es,bt>(std::hypotl((long double)(x),(long double)(y)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> hypotl(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::hypotl((long double)(x),(long double)(y)));
 }
 
 }  // namespace sw::universal

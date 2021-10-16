@@ -107,7 +107,6 @@ const double pi = 3.14159265358979323846;
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
@@ -124,7 +123,7 @@ try {
 	GenerateTestCaseAcosh<16, 1, double>(pi / 2.0);
 	GenerateTestCaseAtanh<16, 1, double>(pi / 4.0);
 
-	std::cout << endl;
+	std::cout << '\n';
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifySinh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "sinh");
@@ -135,7 +134,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "asinh");
 #else
 
-	cout << "cfloat hyperbolic sine/cosine/tangent function validation" << endl;
+	std::cout << "cfloat hyperbolic sine/cosine/tangent function validation\n";
 
 
 #if STRESS_TESTING

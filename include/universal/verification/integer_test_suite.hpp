@@ -19,28 +19,29 @@
 namespace sw::universal {
 
 	// enumerate all addition cases for an integer<16> configuration compared against native short
-	template<typename BlockType>
-	int VerifyShortAddition(const std::string& tag, bool bReportIndividualTestCases) {
-		constexpr size_t nbits = 16;
+	template<typename BlockType, size_t testBits = 12>
+	int VerifyShortAddition(bool bReportIndividualTestCases) {
+		constexpr size_t nbits = 16; 
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		using Integer = integer<nbits, BlockType>;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
+
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
-
-		short i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i64a = short(ia);
+			short i64a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i64b = short(ib);
+				short i64b = short(ib);
 				iref = i64a + i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia + ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 						continue;
 					}
@@ -67,28 +68,29 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all subtraction cases for an integer<16> configuration compared against native short
-	template<typename BlockType>
-	int VerifyShortSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+	template<typename BlockType, size_t testBits = 12>
+	int VerifyShortSubtraction(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		using Integer = integer<nbits, BlockType>;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
+
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
-
-		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i16a = short(ia);
+			short i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i16b = short(ib);
+				short i16b = short(ib);
 				iref = i16a - i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia - ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 						continue;
 					}
@@ -115,28 +117,29 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all multiplication cases for an integer<16> configuration compared against native short
-	template<typename BlockType>
-	int VerifyShortMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+	template<typename BlockType, size_t testBits = 12>
+	int VerifyShortMultiplication(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		using Integer = integer<nbits, BlockType>;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
+
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
-
-		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i16a = short(ia);
+			short i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i16b = short(ib);
+				short i16b = short(ib);
 				iref = i16a * i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia * ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 						continue;
 					}
@@ -163,21 +166,22 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all division cases for an integer<16> configuration compared against native short
-	template<typename BlockType>
-	int VerifyShortDivision(const std::string& tag, bool bReportIndividualTestCases) {
+	template<typename BlockType, size_t testBits = 10>
+	int VerifyShortDivision(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		using Integer = integer<nbits, BlockType>;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
+
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
-
-		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i16a = short(ia);
+			short i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i16b = short(ib);
+				short i16b = short(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				if (j == 0) {
 					try {
@@ -192,7 +196,7 @@ namespace sw::universal {
 					}
 				}
 				iref = i16a / i16b; // protected by the continue above
-				if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+				if (iref > max_int || iref < min_int) {
 					try {
 						iresult = ia / ib;
 					}
@@ -224,27 +228,28 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all remainder cases for an integer<16> configuration compared against native short
-	template<typename BlockType = uint8_t>
-	int VerifyShortRemainder(const std::string& tag, bool bReportIndividualTestCases) {
+	template<typename BlockType, size_t testBits = 10>
+	int VerifyShortRemainder(bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
+		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		using Integer = integer<nbits, BlockType>;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
+
 		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
-
-		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i16a = short(ia);
+			short i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i16b = short(ib);
+				short i16b = short(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia % ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 						continue;
 					}
@@ -273,25 +278,27 @@ namespace sw::universal {
 
 	// enumerate all addition cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyAddition(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
-		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
 
-		int64_t i64a, i64b;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
+
+		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i64a = int64_t(ia);
+			int64_t i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i64b = int64_t(ib);
+				int64_t i64b = int64_t(ib);
 				iref = i64a + i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia + ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 	
 					}
@@ -319,25 +326,27 @@ namespace sw::universal {
 	}
 	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifySubtraction(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
-		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
 
-		int64_t i64a, i64b;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
+
+		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i64a = int64_t(ia);
+			int64_t i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i64b = int64_t(ib);
+				int64_t i64b = int64_t(ib);
 				iref = i64a - i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia - ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 
 					}
@@ -366,25 +375,27 @@ namespace sw::universal {
 
 	// enumerate all multiplication cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyMultiplication(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
-		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
 
-		int64_t i64a, i64b;
+		Integer ia, ib, iresult, iref;
+		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
+
+		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i64a = int64_t(ia);
+			int64_t i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i64b = int64_t(ib);
+				int64_t i64b = int64_t(ib);
 				iref = i64a * i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia * ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 
 					}
@@ -413,18 +424,19 @@ namespace sw::universal {
 
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyDivision(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
-		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
 
-		int64_t i64a, i64b;
+		Integer ia, ib, iresult, iref;
+
+		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i64a = int64_t(ia);
+			int64_t i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i64b = int64_t(ib);
+				int64_t i64b = int64_t(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia / ib;
@@ -473,18 +485,19 @@ namespace sw::universal {
 
 	// enumerate all remainder cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyRemainder(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyRemainder(bool bReportIndividualTestCases) {
+		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
-		int nrOfFailedTests = 0;
-		integer<nbits, BlockType> ia, ib, iresult, iref;
 
-		int64_t i64a, i64b;
+		Integer ia, ib, iresult, iref;
+
+		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			i64a = int64_t(ia);
+			int64_t i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				i64b = int64_t(ib);
+				int64_t i64b = int64_t(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia % ib;

@@ -20,10 +20,9 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "numeric_limits for different number systems " << endl;
+	std::cout << "numeric_limits for different number systems\n";
 
 	using int32    = integer<32>;
 	using fixpnt32 = fixpnt<32, 16>;
@@ -33,34 +32,33 @@ try {
 
 	// report on precision and dynamic range of the number system
 
-	streamsize precision = cout.precision();
+	std::streamsize precision = std::cout.precision();
 
 	constexpr size_t columnWidth = 30;
-	numberTraits<int32, columnWidth>(cout);
-	numberTraits<fixpnt32, columnWidth>(cout);
-	numberTraits<float, columnWidth>(cout);
-	numberTraits<areal32, columnWidth>(cout);
-	numberTraits<posit32, columnWidth>(cout);
-	numberTraits<lns32, columnWidth>(cout);
+	numberTraits<int32, columnWidth>(std::cout);
+	numberTraits<fixpnt32, columnWidth>(std::cout);
+	numberTraits<float, columnWidth>(std::cout);
+	numberTraits<areal32, columnWidth>(std::cout);
+	numberTraits<posit32, columnWidth>(std::cout);
+	numberTraits<lns32, columnWidth>(std::cout);
 
-	cout << minmax_range<float>() << endl;
-	cout << minmax_range<posit32>() << endl;
-	cout << minmax_range<lns32>() << endl;
+	std::cout << minmax_range<float>() << '\n';
+	std::cout << minmax_range<posit32>() << '\n';
+	std::cout << minmax_range<lns32>() << '\n';
 
-	cout << dynamic_range<float>() << endl;
-	cout << dynamic_range<posit32>() << endl;
-	cout << dynamic_range<lns32>() << endl;
+	std::cout << dynamic_range<float>() << '\n';
+	std::cout << dynamic_range<posit32>() << '\n';
+	std::cout << dynamic_range<lns32>() << '\n';
 
-	cout << symmetry<float>() << endl;
-	cout << symmetry<posit32>() << endl;
-	cout << symmetry<lns32>() << endl;
+	std::cout << symmetry<float>() << '\n';
+	std::cout << symmetry<posit32>() << '\n';
+	std::cout << symmetry<lns32>() << '\n';
 
-	compareNumberTraits<float, areal32>(cout);
-	compareNumberTraits<float, posit32>(cout);
-	compareNumberTraits<float, lns32>(cout);
+	compareNumberTraits<float, areal32>(std::cout);
+	compareNumberTraits<float, posit32>(std::cout);
+	compareNumberTraits<float, lns32>(std::cout);
 
-	cout << setprecision(precision);
-	cout << endl;
+	std::cout << std::setprecision(precision) << std::endl;
 	
 	return EXIT_SUCCESS;
 }

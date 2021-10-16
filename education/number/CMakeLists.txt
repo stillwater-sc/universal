@@ -1,0 +1,8 @@
+add_subdirectory("integer")
+add_subdirectory("fixpnt")
+add_subdirectory("areal")
+add_subdirectory("cfloat")
+add_subdirectory("unum")
+add_subdirectory("posit")
+add_subdirectory("valid")
+add_subdirectory("lns")

@@ -12,7 +12,7 @@ namespace sw::universal {
 // test reporting helper
 // takes an int reporting the number of test failures and prints a PASS/FAIL designation
 int ReportTestResult(int nrOfFailedTests, const std::string& description, const std::string& test_operation) {
-	constexpr int TEST_TAG_WIDTH = 25;
+	constexpr int TEST_TAG_WIDTH = 30;
 	if (nrOfFailedTests > 0) {
 		std::cout << description << " " << std::setw(TEST_TAG_WIDTH) << test_operation << " FAIL " << nrOfFailedTests << " failed test cases\n";
 	}
@@ -24,7 +24,7 @@ int ReportTestResult(int nrOfFailedTests, const std::string& description, const 
 
 // simple checker
 int ReportCheck(const std::string& tag, const std::string& test, bool success) {
-	constexpr int TEST_TAG_WIDTH = 25;
+	constexpr int TEST_TAG_WIDTH = 30;
 	int nrOfFailedTestCases = 0;
 	if (success) {
 		std::cout << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << " PASS\n";

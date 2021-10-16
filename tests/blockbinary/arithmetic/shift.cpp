@@ -15,12 +15,10 @@
 // enumerate all addition cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyArithmeticRightShift(bool bReportIndividualTestCases) {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl;
-	cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
-	cout << typeid(blockbinary<nbits, BlockType>).name() << endl;
+	std::cout << "\nblockbinary<" << nbits << ',' << typeid(BlockType).name() << ">\n";
+	std::cout << typeid(blockbinary<nbits, BlockType>).name() << '\n';
 
 	// take maxneg and shift it right in all possible strides
 	int nrOfFailedTests = 0;
@@ -57,7 +55,6 @@ int VerifyArithmeticRightShift(bool bReportIndividualTestCases) {
 }
 
 void ShiftExamples() {
-	using namespace std;
 	using namespace sw::universal;
 
 	blockbinary<37, uint8_t> a;
@@ -70,44 +67,44 @@ void ShiftExamples() {
 	c.setbits(0xAAAAAAAAAA);
 	//	d.set_raw_bits(0x5555555555);
 
-	cout << to_binary(a, true) << endl;
-	cout << to_binary(b, true) << endl;
-	cout << to_binary(c, true) << endl;
-	cout << to_hex(a, true) << endl;
-	cout << to_hex(b, true) << endl;
-	cout << to_hex(c, true) << endl;
-	//	cout << to_hex(d, true) << endl;
+	std::cout << to_binary(a, true) << '\n';
+	std::cout << to_binary(b, true) << '\n';
+	std::cout << to_binary(c, true) << '\n';
+	std::cout << to_hex(a, true) << '\n';
+	std::cout << to_hex(b, true) << '\n';
+	std::cout << to_hex(c, true) << '\n';
+	//	std::cout << to_hex(d, true) << '\n';
 
-	cout << "shifting\n";
+	std::cout << "shifting\n";
 	a.setbits(0x155555555);
-	cout << to_binary(a, true) << endl;
+	std::cout << to_binary(a, true) << '\n';
 	a <<= 1;
-	cout << to_binary(a, true) << endl;
+	std::cout << to_binary(a, true) << '\n';
 	a <<= 1;
-	cout << to_binary(a, true) << endl;
+	std::cout << to_binary(a, true) << '\n';
 	a <<= 1;
-	cout << to_binary(a, true) << endl;
+	std::cout << to_binary(a, true) << '\n';
 	a <<= 1;
-	cout << to_binary(a, true) << endl;
+	std::cout << to_binary(a, true) << '\n';
 	a >>= 4;
-	cout << to_binary(a, true) << endl;
+	std::cout << to_binary(a, true) << '\n';
 	a >>= 9;
-	cout << to_binary(a, true) << endl;
+	std::cout << to_binary(a, true) << '\n';
 
 	b.setbits(0x155555555);
-	cout << to_binary(b, true) << endl;
+	std::cout << to_binary(b, true) << '\n';
 	b <<= 1;
-	cout << to_binary(b, true) << endl;
+	std::cout << to_binary(b, true) << '\n';
 	b <<= 1;
-	cout << to_binary(b, true) << endl;
+	std::cout << to_binary(b, true) << '\n';
 	b <<= 1;
-	cout << to_binary(b, true) << endl;
+	std::cout << to_binary(b, true) << '\n';
 	b <<= 1;
-	cout << to_binary(b, true) << endl;
+	std::cout << to_binary(b, true) << '\n';
 	b >>= 4;
-	cout << to_binary(b, true) << endl;
+	std::cout << to_binary(b, true) << '\n';
 	b >>= 17;
-	cout << to_binary(b, true) << endl;
+	std::cout << to_binary(b, true) << '\n';
 }
 
 // conditional compile flags
@@ -116,7 +113,6 @@ void ShiftExamples() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl; 
@@ -197,8 +193,9 @@ try {
 
 #else
 
-	cout << "block shifts validation" << endl;
+	std::cout << "block shifts validation\n";
 	bReportIndividualTestCases = false;
+
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<2>(bReportIndividualTestCases), "blockbinary<2>", "arithmetic right shift");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<3>(bReportIndividualTestCases), "blockbinary<3>", "arithmetic right shift");
 	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<4>(bReportIndividualTestCases), "blockbinary<4>", "arithmetic right shift");

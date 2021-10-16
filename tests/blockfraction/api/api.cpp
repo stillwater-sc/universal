@@ -23,23 +23,27 @@ for very large representations these copies become prohibitive, and for those si
 the blockfraction is not a good solution.
 
 */
+
+template<typename BlockFraction>
+void PrintRoundingMode(const BlockFraction& a, size_t targetLsb) {
+	std::cout << to_binary(a) << " target lsb = " << targetLsb << " ->rounding mode is " << (a.roundingMode(targetLsb) ? "up" : "down") << '\n';
+}
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockfraction storage class construction/conversion testing";
 
 	{
-		blockfraction<7, uint8_t> a, b, c;
+		blockfraction<7, uint8_t, BitEncoding::Twos> a, b, c;
 		a.setbits(0x11); // 1.0 in 7-bit blockfraction form
 		b.setbits(0x11);
-		cout << to_binary(a) << " : " << a << '\n';
-		cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
 		c.add(a, b);
-		cout << to_binary(c) << " : " << c << endl;
+		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		cout << to_binary(fractionBits, 4) << endl;
+		std::cout << to_binary(fractionBits, 4) << '\n';
 	}
 
 	{
@@ -47,30 +51,44 @@ try {
 		// a 00h.fffff format is thus 8 bits
 		// By design, the 00h.fffff format contains all the valid values
 		// for addition and subtraction.
-		blockfraction<8, uint8_t> a, b, c;
+		blockfraction<8, uint8_t, BitEncoding::Twos> a, b, c;
 		a.setbits(0x21); // 1.0 in 8-bit blockfraction form
 		b.setbits(0x21);
-		cout << to_binary(a) << " : " << a << '\n';
-		cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
 		c.add(a, b);
-		cout << to_binary(c) << " : " << c << endl;
+		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		cout << to_binary(fractionBits, 5) << endl;
+		std::cout << to_binary(fractionBits, 5) << '\n';
 	}
 
 	{
-		blockfraction<12, uint8_t> a, b, c;
+		blockfraction<12, uint8_t, BitEncoding::Twos> a, b, c;
 		a.setbits(0x100);
 		b.setbits(0x200);
 		b.twosComplement();
-		cout << to_binary(a) << " : " << a << '\n';
-		cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
 		c.add(a, b);
-		// this moves the radix
-		cout << to_binary(c) << " : " << c << endl;
+		std::cout << to_binary(c) << " : " << c << '\n';
 		uint64_t fractionBits = c.fraction_ull();
-		cout << to_binary(fractionBits, 9) << endl;
+		std::cout << to_binary(fractionBits, 9) << '\n';
 	}
+
+	// rounding 
+	// 0000'0000  lsb target is at(3)
+	blockfraction<8, uint8_t, BitEncoding::Ones> a;
+	size_t lsbTarget = 3;
+	a.setbits(0x0F);	// 00001111  up
+	PrintRoundingMode(a, lsbTarget);
+	a.setbits(0x07); 	// 00000111  up
+	PrintRoundingMode(a, lsbTarget);
+	a.setbits(0x03);	// 00000011  down
+	PrintRoundingMode(a, lsbTarget);
+	a.setbits(0x04); 	// 00000100  up: tie, round to even, which is down in this case
+	PrintRoundingMode(a, lsbTarget);
+	a.setbits(0x0C); 	// 00001100  up: tie, round to even, which is up in this case
+	PrintRoundingMode(a, lsbTarget);
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

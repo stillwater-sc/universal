@@ -26,7 +26,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
@@ -45,11 +44,10 @@ try {
 	x5 = c2;
 	x4 = 2 * x5;
 
-	cout << "x2 = " << x2 << endl;
-	cout << "x4 = " << x4 << endl;
-	cout << "x5 = " << x5 << endl;
-	
-    
+	std::cout << "x2 = " << x2 << '\n';
+	std::cout << "x4 = " << x4 << '\n';
+	std::cout << "x5 = " << x5 << '\n';
+	 
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

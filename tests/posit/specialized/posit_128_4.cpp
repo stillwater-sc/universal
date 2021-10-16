@@ -21,56 +21,105 @@
 
 /// Standard posits with nbits = 128 have 4 exponent bits.
 
-#define STRESS_TESTING 1
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 0) { cout << argv[0] << endl; }
-
-	constexpr size_t RND_TEST_CASES = 10000;
-
+	// posit<128,4>
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<128,4>";
+	size_t RND_TEST_CASES = 1024;
 
 #if POSIT_FAST_POSIT_128_4
-	cout << "Fast specialization posit<128,4> configuration tests" << endl;
+	std::cout << "Fast specialization posit<128,4> configuration tests\n";
 #else
-	cout << "Standard posit<128,4> configuration tests" << endl;
+	std::cout << "Standard posit<128,4> configuration tests\n";
 #endif
 
-	posit<nbits, es> p;
-	cout << dynamic_range(p) << endl << endl;
+	using Scalar = posit<nbits, es>;
+	Scalar p;
+	std::cout << dynamic_range(p) << "\n\n";
+	std::string tag = type_tag(p);
 
+#if MANUAL_TESTING
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+
+	nrOfFailedTestCases = 0;
+#else
+
+#if REGRESSION_LEVEL_1
 	// special cases
+	std::cout << "Special case tests\n";
+	std::string test = "Initialize to zero: ";
 	p = 0;
-	if (!p.iszero()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	test = "Initialize to NAN";
 	p = NAN;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "Initialize to INFINITY";
 	p = INFINITY;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "sign is true";
 	p = -1.0f;
-	if (!p.sign()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	test = "is negative";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	test = "sign is false";
 	p = +1.0f;
-	if (p.sign()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	test = "is positive";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
-	// TODO: as we don't have a reference floating point implementation to Verify
-	// the arithmetic operations we are going to ignore the failures
-#if STRESS_TESTING
-	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-	cout << "Without an arithmetic reference, test failures can be ignored" << endl;
+	RND_TEST_CASES = 1024;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+
 #endif
+
+#if REGRESSION_LEVEL_2
+	RND_TEST_CASES = 1024*16;
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+	// TODO: as we don't have a reference floating point implementation to Verify
+	// the arithmetic operations we are going to ignore the failures
+
+	RND_TEST_CASES = 1024 * 1024;
+	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
+	std::cout << "Without an arithmetic reference, test failures can be ignored\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+
 	nrOfFailedTestCases = 0;
+#endif
+
+#endif // MANUAL_TESTING
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

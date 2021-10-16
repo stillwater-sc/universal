@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -27,6 +28,8 @@ namespace sw::universal {
 		constexpr size_t nbits = TestType::nbits;  // nbits of a blocktriple represent the number of fraction bits of the representation
 		constexpr size_t bfbits = TestType::bfbits;
 		using bt = typename TestType::BlockType;
+		constexpr sw::universal::BitEncoding encoding = TestType::encoding;
+
 		constexpr size_t NR_VALUES = (1 << nbits);
 		TestType v;
 
@@ -44,7 +47,7 @@ namespace sw::universal {
 				v.setbits(i + NR_VALUES);
 				bool s = v.sign();
 				int scale = v.scale();
-				blockfraction<bfbits, bt> f = v.significant();
+				blockfraction<bfbits, bt, encoding> f = v.significant();
 
 				ostr << i << ','
 					<< to_binary(v) << ','
@@ -84,7 +87,7 @@ namespace sw::universal {
 						if (sign) v.setbits(2 * NR_VALUES - 1 - i); else v.setbits(i + NR_VALUES);  // to have the same progression as posits
 						bool s = v.sign();
 						int scale = v.scale();
-						blockfraction<bfbits, bt> f = v.significant();
+						blockfraction<bfbits, bt, encoding> f = v.significant();
 
 						ostr << std::setw(4) << ++cnt << ": "
 							<< std::setw(bin_column) << to_binary(v)
@@ -103,7 +106,6 @@ namespace sw::universal {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// Usage: tables [-csv]
@@ -113,11 +115,15 @@ try {
 	}
 
 	std::string tag = "Generate value tables for blocktriple configurations";
-	cout << tag << endl;
+	std::cout << tag << '\n';
 
-	GenerateTable < blocktriple<3, uint8_t> >(cout, csv);
-	GenerateTable < blocktriple<4, uint8_t> >(cout, csv);
-	GenerateTable < blocktriple<5, uint8_t> >(cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
+	GenerateTable < blocktriple<3, BlockTripleOperator::ADD, uint8_t> >(std::cout, csv);
+	GenerateTable < blocktriple<4, BlockTripleOperator::ADD, uint8_t> >(std::cout, csv);
+	GenerateTable < blocktriple<5, BlockTripleOperator::ADD, uint8_t> >(std::cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
+
+	GenerateTable < blocktriple<3, BlockTripleOperator::MUL, uint8_t> >(std::cout, csv);
+	GenerateTable < blocktriple<4, BlockTripleOperator::MUL, uint8_t> >(std::cout, csv);
+	GenerateTable < blocktriple<5, BlockTripleOperator::MUL, uint8_t> >(std::cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
 
 	return EXIT_SUCCESS;
 }

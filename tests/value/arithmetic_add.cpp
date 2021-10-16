@@ -28,14 +28,14 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 			for (size_t afrac = 0; afrac < max_fract; ++afrac) {
 				afraction = convert_to_bitblock<fbits>(afrac);
 				a.set(sign == 1, scale, afraction, false, false);
-				std::cout << to_triple(a) << std::endl;
+				// std::cout << to_triple(a) << std::endl;
 				for (size_t sign = 0; sign < 2; ++sign) {
 					for (int scale = scale_lb; scale < scale_ub; ++scale) {
 						for (size_t bfrac = 0; bfrac < max_fract; ++bfrac) {
 							bfraction = convert_to_bitblock<fbits>(bfrac);
 							b.set(sign == 1, scale, bfraction, false, false);
 							module_add<fbits, abits>(a, b, sum);
-							std::cout << to_triple(a) << " + " << to_triple(b) << " = " << to_triple(sum) << std::endl;
+							//std::cout << to_triple(a) << " + " << to_triple(b) << " = " << to_triple(sum) << std::endl;
 
 							double dsum = sum.to_double();
 							ref = dsum;
@@ -69,20 +69,28 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 	return nrOfFailedTestCases;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	// Arithmetic tests for value class
-	cout << endl << "value addition arithmetic tests" << endl;
-	cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases" << endl;
+	std::cout << "\nvalue addition arithmetic tests\n";
+	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
 
@@ -103,9 +111,21 @@ try {
 
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 3>("FAIL", bReportIndividualTestCases), "value<3>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8>", "addition");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 3>("FAIL", bReportIndividualTestCases), "value<3> scale 2^5", "addition");
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 4>("FAIL", bReportIndividualTestCases), "value<4> scale 2^5", "addition");
+#endif
+
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 5>("FAIL", bReportIndividualTestCases), "value<5> scale 2^5", "addition");
+#endif
+
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8> scale 2^3", "addition");
+#endif
 
 #endif // MANUAL_TESTING
 

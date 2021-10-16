@@ -9,7 +9,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
@@ -20,8 +19,8 @@ try {
 	//bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	Posit tmps[] = { Posit(0.0), Posit(0.2), Posit(0.4), Posit(0.6), Posit(0.8), --Posit(1.0) };
 
@@ -31,13 +30,13 @@ try {
 		Posit step = ub / nrSamples;
 		Posit x = Posit(0); // minpos<nbits, es>();
 		for (unsigned i = 0; i <= nrSamples; ++i) {
-			cout << "x = " << x << " logt(" << t << "," << x << ") = " << sw::function::logt(t, x) << endl;
+			std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << sw::function::logt(t, x) << '\n';
 			x += step;
 		}
 	}
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

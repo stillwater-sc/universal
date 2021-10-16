@@ -23,9 +23,8 @@
 
 // test performance of shift operator on fixpnt<> class
 void TestShiftOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "FIXPNT Fixed-Point Logical shift operator performance" << endl;
+	std::cout << "\nFIXPNT Fixed-Point Logical shift operator performance\n";
 
 	constexpr uint64_t NR_OPS = 1000000;
 
@@ -42,8 +41,8 @@ void TestShiftOperatorPerformance() {
 
 // measure performance of arithmetic operations
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
-	cout << endl << "FIXPNT Fixed-Point Saturating Arithmetic operator performance" << endl;
+	using namespace sw::universal;
+	std::cout << "\nFIXPNT Fixed-Point Saturating Arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 1000000;
 	PerformanceRunner("fixpnt<8,4, Saturating,uint8_t>      add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt<8,4, Saturating, uint8_t> >, NR_OPS);
@@ -83,7 +82,6 @@ void TestArithmeticOperatorPerformance() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer operator performance benchmarking";
@@ -93,7 +91,7 @@ try {
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else

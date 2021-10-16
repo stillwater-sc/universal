@@ -85,13 +85,11 @@ size_t fvmTest() {
 #define MANUAL 0
 #define STRESS 1
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL

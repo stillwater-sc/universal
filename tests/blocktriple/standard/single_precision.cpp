@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
@@ -13,17 +14,14 @@
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
+	std::cout << "Standard single-precision blocktriple<23> configuration tests\n";
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = " blocktriple<23>";
-
-	cout << "Standard single-precision blocktriple<23> configuration tests" << endl;
 
 #if MANUAL_TESTING
 

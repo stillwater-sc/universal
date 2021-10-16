@@ -31,12 +31,6 @@ inline std::string to_triple(const long double& number) {
 	return std::string("to_triple() not implemented for HP compiler");
 }
 
-inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
-	std::cerr << "extract_fp_components not implemented for HP compiler");
-}
-inline void extract_fp_components(double fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
-	std::cerr << "extract_fp_components not implemented for HP compiler");
-}
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
 	std::cerr << "extract_fp_components not implemented for HP compiler");
 }

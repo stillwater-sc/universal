@@ -14,19 +14,19 @@ namespace sw::universal {
 // Real component of a complex posit
 template<size_t nbits, size_t es>
 posit<nbits,es> real(std::complex< posit<nbits,es> > x) {
-	return posit<nbits,es>(std::real(x));
+  return posit<nbits,es>(x.real());
 }
 
 // Imaginary component of a complex posit
 template<size_t nbits, size_t es>
 posit<nbits,es> imag(std::complex< posit<nbits,es> > x) {
-	return posit<nbits,es>(std::imag(x));
+  return posit<nbits,es>(x.imag());
 }
 
 // Conjucate of a complex posit
 template<size_t nbits, size_t es>
 std::complex< posit<nbits,es> > conj(std::complex< posit<nbits,es> > x) {
-	return std::conj(x);
+  return std::complex< posit<nbits,es> >(x.real(), -x.imag());
 }
 
 }  // namespace sw::universal

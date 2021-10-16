@@ -33,11 +33,10 @@ then for all d in [0,p], the fraction field length of 2^(m-d) is at least (p - d
 
 template<typename Real>
 int SterbenzCheck(const Real& a) {
-	using namespace std;
 	using namespace sw::universal;
 
 	Real c = a - (a / 2);
-	cout << color_print(c) << endl;
+	std::cout << color_print(c) << '\n';
 
 	int nrOfFailures = 0;
 	float fa = float(a);
@@ -46,19 +45,18 @@ int SterbenzCheck(const Real& a) {
 		float fc = fa - fb;
 		c = a - b;
 		if (fc != c) {
-			cout << "FAIL: " << a << " - " << b << " = " << c << " reference = " << fc << endl;
+			std::cout << "FAIL: " << a << " - " << b << " = " << c << " reference = " << fc << '\n';
 			++nrOfFailures;
 		}
 	}
 	if (nrOfFailures == 0) {
-		cout << "PASS" << endl;
+		std::cout << "PASS\n";
 	}
 	return nrOfFailures;
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 8;
@@ -69,8 +67,8 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	// set an a
 	Real a = 1.0f;
@@ -78,7 +76,7 @@ try {
 	// a/2 = 0011000000000000 
 	// a   = 0100000000000000 
 	// 2*a = 0101000000000000
-	cout << "[ " << color_print(a / 2) << " " << color_print(a) << " " << color_print(2 * a) << " ]" << endl;
+	std::cout << "[ " << color_print(a / 2) << " " << color_print(a) << " " << color_print(2 * a) << " ]" << '\n';
 	SterbenzCheck(a);
 
 	a.minpos();
@@ -92,7 +90,7 @@ try {
 	SterbenzCheck(a);
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

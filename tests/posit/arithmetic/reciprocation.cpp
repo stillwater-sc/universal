@@ -37,17 +37,16 @@ void GenerateTestCase(Ty a) {
 }
 
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 1
+#define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	cout << "Posit reciprocate validation" << endl;
+	std::cout << "Posit reciprocate validation\n";
 
 	std::string tag = "Reciprocation failed: ";
 
@@ -93,6 +92,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 1>(bReportIndividualTestCases), "posit<5,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 2>(bReportIndividualTestCases), "posit<5,2>", "reciprocation");
 
+#if STRESS_TESTING
+
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 0>(bReportIndividualTestCases), "posit<6,0>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 1>(bReportIndividualTestCases), "posit<6,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 2>(bReportIndividualTestCases), "posit<6,2>", "reciprocation");
@@ -115,8 +116,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<12, 1>(bReportIndividualTestCases), "posit<12,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<14, 1>(bReportIndividualTestCases), "posit<14,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<16, 1>(bReportIndividualTestCases), "posit<16,1>", "reciprocation");
-
-#if STRESS_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<18, 1>(bReportIndividualTestCases), "posit<18,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<20, 1>(bReportIndividualTestCases), "posit<20,1>", "reciprocation");

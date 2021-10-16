@@ -16,9 +16,8 @@
 
 // test construction peformance
 void TestBlockPerformanceOnConstruction() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Construction performance" << endl;
+	std::cout << "\nConstruction performance\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull + 1;
 
@@ -34,9 +33,8 @@ void TestBlockPerformanceOnConstruction() {
 
 // test performance of shift operator on blockbinary<> class
 void TestShiftOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Logical shift operator performance" << endl;
+	std::cout << "\nLogical shift operator performance\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
 
@@ -50,9 +48,8 @@ void TestShiftOperatorPerformance() {
 }
 
 void TestBlockPerformanceOnShift() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Block size performance on logical shift operators" << endl;
+	std::cout << "\nBlock size performance on logical shift operators\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
 
@@ -87,9 +84,8 @@ void TestBlockPerformanceOnShift() {
 }
 
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "Arithmetic operator performance" << endl;
+	std::cout << "\nArithmetic operator performance\n";
 
 	size_t NR_OPS = 1024ull * 1024ull * 2ull;
 
@@ -128,9 +124,8 @@ void TestArithmeticOperatorPerformance() {
 }
 
 void TestBlockPerformanceOnAdd() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "ADDITION: blockbinary arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nADDITION: blockbinary arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 2ull * 1024ull * 1024ull;
 
@@ -159,9 +154,8 @@ void TestBlockPerformanceOnAdd() {
 }
 
 void TestBlockPerformanceOnDiv() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "DIVISION: blockbinary arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nDIVISION: blockbinary arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024;
 	PerformanceRunner("blockbinary<4,uint8>      div   ", DivisionWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
@@ -189,9 +183,8 @@ void TestBlockPerformanceOnDiv() {
 }
 
 void TestBlockPerformanceOnRem() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "REMAINDER: blockbinary arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nREMAINDER: blockbinary arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024;
 	PerformanceRunner("blockbinary<4,uint8>      rem   ", RemainderWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
@@ -219,9 +212,8 @@ void TestBlockPerformanceOnRem() {
 }
 
 void TestBlockPerformanceOnMul() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "MULTIPLICATION: blockbinary arithemetic performance as a function of size and BlockType" << endl;
+	std::cout << "\nMULTIPLICATION: blockbinary arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 512ull * 1024;
 	PerformanceRunner("blockbinary<4,uint8>      mul   ", MultiplicationWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
@@ -254,7 +246,6 @@ void TestBlockPerformanceOnMul() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "BLOCKBINARY operator performance benchmarking";

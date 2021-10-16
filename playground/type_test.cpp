@@ -58,9 +58,8 @@ void test(const std::string& message)
     std::cout << color_print(p) << std::endl;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
-    using namespace std;
     using namespace sw::universal;
 
     test<size_t>("size_t");

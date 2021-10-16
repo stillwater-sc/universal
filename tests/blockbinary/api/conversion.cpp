@@ -10,7 +10,6 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "blockbinary storage class construction/conversion testing";
@@ -26,8 +25,8 @@ try {
 		for (size_t i = 0; i < fbits; ++i) {
 			a.setbits(msbMask);
 			blockbinary<sumbits> b(a);
-			cout << to_binary(a, true) << '\n';
-			cout << to_binary(b, true) << '\n';
+			std::cout << to_binary(a, true) << '\n';
+			std::cout << to_binary(b, true) << '\n';
 			msbMask <<= 1;
 		}
 	}

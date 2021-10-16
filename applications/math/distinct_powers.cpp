@@ -22,17 +22,16 @@
  */
 template<size_t nbits>
 sw::universal::integer<nbits> IntegerPowerCombinationsUsingVector(const sw::universal::integer<nbits>& min, const sw::universal::integer<nbits>& max) {
-	using namespace std;
 	using namespace sw::universal;
 	using Integer = integer<nbits>;
 
-	vector<Integer> combinations;
+	std::vector<Integer> combinations;
 	for (Integer a = min; a <= max; ++a) {
 		for (Integer b = min; b <= max; ++b) {
 			combinations.push_back(ipow(a, b));
 		}
 	}
-	sort(combinations.begin(), combinations.end());
+	std::sort(combinations.begin(), combinations.end());
 	// remove duplicates
 	combinations.erase(unique(combinations.begin(), combinations.end()), combinations.end());
 	return Integer(combinations.size());
@@ -40,11 +39,10 @@ sw::universal::integer<nbits> IntegerPowerCombinationsUsingVector(const sw::univ
 	
 template<size_t nbits>
 sw::universal::integer<nbits> IntegerPowerCombinationsUsingSet(const sw::universal::integer<nbits>& min, const sw::universal::integer<nbits>& max) {
-	using namespace std;
 	using namespace sw::universal;
 	using Integer = integer<nbits>;
 
-	set<Integer> combinations;
+	std::set<Integer> combinations;
 	for (Integer a = min; a <= max; ++a) {
 		for (Integer b = min; b <= max; ++b) {
 			combinations.insert(ipow(a, b));
@@ -55,11 +53,10 @@ sw::universal::integer<nbits> IntegerPowerCombinationsUsingSet(const sw::univers
 
 template<size_t nbits, size_t es>
 size_t IntegerPowerCombinationsUsingSet(const sw::universal::posit<nbits, es>& min, const sw::universal::posit<nbits, es>& max) {
-	using namespace std;
 	using namespace sw::universal;
 	using Posit = posit<nbits, es>;
 
-	set<Posit> combinations;
+	std::set<Posit> combinations;
 	for (Posit a = min; a <= max; a = a + 1) {
 		for (Posit b = min; b <= max; b = b + 1) {
 			combinations.insert(ipow(a, b));
@@ -69,9 +66,7 @@ size_t IntegerPowerCombinationsUsingSet(const sw::universal::posit<nbits, es>& m
 }
 
 size_t DistinctPowerCombinations(size_t min, size_t max) {
-	using namespace std;
-
-	set<double> combinations;
+	std::set<double> combinations;
 	for (size_t a = min; a <= max; ++a) {
 		for (size_t b = min; b <= max; ++b) {
 			combinations.insert(pow(a, b));
@@ -82,7 +77,6 @@ size_t DistinctPowerCombinations(size_t min, size_t max) {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	goto version_double;
@@ -96,8 +90,8 @@ version_double:
 		size_t min = 2, max = 100;
 		size_t cardinality = DistinctPowerCombinations(min, max);
 
-		cout << "cardinality of integer power combinations in the range "
-			<< "[" << min << ',' << max << "] = " << cardinality << endl;
+		std::cout << "cardinality of integer power combinations in the range "
+			<< "[" << min << ',' << max << "] = " << cardinality << '\n';
 
 		return 0;
 	}
@@ -112,8 +106,8 @@ version_integer_vector:
 	//	Integer cardinality = IntegerPowerCombinationsUsingSet(min, max);
 		Integer cardinality = IntegerPowerCombinationsUsingVector(min, max);
 
-		cout << "cardinality of integer power combinations in the range "
-			<< "[" << min << ',' << max << "] = " << cardinality << endl;
+		std::cout << "cardinality of integer power combinations in the range "
+			<< "[" << min << ',' << max << "] = " << cardinality << '\n';
 
 		return 0;
 	}
@@ -124,14 +118,14 @@ version_integer_set:
 		constexpr size_t nbits = 1024;
 		using Integer = integer<nbits>;
 
-		cout << "100^100 = " << ipow(Integer(100), Integer(100)) << endl;
+		std::cout << "100^100 = " << ipow(Integer(100), Integer(100)) << '\n';
 
 		Integer min = 2;
 		for (Integer max = min + 1; max <= 100; ++max) {
 			Integer cardinality = IntegerPowerCombinationsUsingSet(min, max);
 
-			cout << "cardinality of integer power combinations in the range "
-				 << "[" << min << ',' << max << "] = " << cardinality << endl;
+			std::cout << "cardinality of integer power combinations in the range "
+				 << "[" << min << ',' << max << "] = " << cardinality << '\n';
 		}
 	}
 
@@ -141,14 +135,14 @@ version_posit_set:
 		constexpr size_t es = 3;
 		using Posit = posit<nbits, es>;
 
-		cout << "100^100 = " << ipow(Posit(100), Posit(100)) << endl;
+		std::cout << "100^100 = " << ipow(Posit(100), Posit(100)) << '\n';
 
 		Posit min = 2;
 		for (Posit max = min + 1; max <= 100; ++max) {
 			size_t cardinality = IntegerPowerCombinationsUsingSet(min, max);
 
-			cout << "cardinality of integer power combinations in the range "
-				<< "[" << min << ',' << max << "] = " << cardinality << endl;
+			std::cout << "cardinality of integer power combinations in the range "
+				<< "[" << min << ',' << max << "] = " << cardinality << '\n';
 		}
 	}
 

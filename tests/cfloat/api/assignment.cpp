@@ -16,7 +16,7 @@
 
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/math_functions.hpp>
+#include <universal/number/cfloat/mathlib.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // print the constexpr values of the cfloat class
@@ -307,7 +307,6 @@ int TestDoubleBlockRepresentations(const std::string& op, bool bReportIndividual
 
 	std::string testcase;
 
-
 	if constexpr (es < 7) {
 		std::stringstream ss;
 		ss << "cfloat<9, " << es << ", uint8_t> ";
@@ -441,7 +440,6 @@ cfloat<32,2> 'seem'ffff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '000h'1111'11
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -510,7 +508,7 @@ try {
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else //!MANUAL_TESTING
-	cout << "cfloat assignment validation" << endl;
+	std::cout << "cfloat assignment validation\n";
 
 	bool bVerbose = false;
 
@@ -518,7 +516,9 @@ try {
 	using Real = sw::universal::cfloat<8, 2>;
 	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->cfloat special cases", bReportIndividualTestCases);
 	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->cfloat special cases", bReportIndividualTestCases);
+#if LONG_DOUBLE_SUPPORT
 	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->cfloat special cases", bReportIndividualTestCases);
+#endif
 
 	std::cout << "Single block representations\n--------------------------------------------- es = 1 encodings\n";
 	nrOfFailedTestCases += TestSingleBlockRepresentations<1, float>("=float", bReportIndividualTestCases, bVerbose);

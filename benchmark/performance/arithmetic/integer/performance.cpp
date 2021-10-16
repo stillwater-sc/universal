@@ -23,8 +23,8 @@
 
 // test performance of shift operator on integer<> class
 void TestShiftOperatorPerformance() {
-	using namespace std;
-	cout << endl << "INTEGER Logical shift operator performance" << endl;
+	using namespace sw::universal;
+	std::cout << "\nINTEGER Logical shift operator performance\n";
 
 	constexpr uint64_t NR_OPS = 1000000;
 
@@ -40,9 +40,8 @@ void TestShiftOperatorPerformance() {
 
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
-	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "INTEGER Arithmetic operator performance" << endl;
+	std::cout << "\nINTEGER Arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 1000000;
 
@@ -91,7 +90,6 @@ void TestArithmeticOperatorPerformance() {
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer operator performance benchmarking";
@@ -109,7 +107,7 @@ try {
 	}
 
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else

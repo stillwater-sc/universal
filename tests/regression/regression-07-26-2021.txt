@@ -1,0 +1,743 @@
+Date run : 06/20/2021
+Processor: Intel Core i7-10700 CPU @ 2.90GHz Base/4.60GHz Turbo, 8 cores, 16 threads, 16MB L3, 2.0MB L2, 512KB L1, desktop processor
+Memory   : 16GB
+System   : 64-bit Windows 10 Pro, Version 2004, x64-based processor, OS build 19041.1110
+
+Library Version: V3.31.1
+
+Build started...
+1>------ Build started: Project: RUN_TESTS, Configuration: Release x64 ------
+1>Test project C:/Users/tomtz/Documents/dev/clones/universal/build
+1>        Start   1: bitblock_arithmetic
+1>  1/364 Test   #1: bitblock_arithmetic ......................   Passed    0.08 sec
+1>        Start   2: bitblock_logic
+1>  2/364 Test   #2: bitblock_logic ...........................   Passed    0.02 sec
+1>        Start   3: bitblock_multi_word
+1>  3/364 Test   #3: bitblock_multi_word ......................   Passed    0.07 sec
+1>        Start   4: value_api
+1>  4/364 Test   #4: value_api ................................   Passed    0.02 sec
+1>        Start   5: value_arithmetic_add
+1>  5/364 Test   #5: value_arithmetic_add .....................   Passed    0.07 sec
+1>        Start   6: value_performance
+1>  6/364 Test   #6: value_performance ........................   Passed    9.13 sec
+1>        Start   7: bb_constexpr
+1>  7/364 Test   #7: bb_constexpr .............................   Passed    0.02 sec
+1>        Start   8: bb_conversion
+1>  8/364 Test   #8: bb_conversion ............................   Passed    0.02 sec
+1>        Start   9: bb_rounding
+1>  9/364 Test   #9: bb_rounding ..............................   Passed    0.02 sec
+1>        Start  10: bb_logic
+1> 10/364 Test  #10: bb_logic .................................   Passed    5.01 sec
+1>        Start  11: bb_addition
+1> 11/364 Test  #11: bb_addition ..............................   Passed    1.58 sec
+1>        Start  12: bb_division
+1> 12/364 Test  #12: bb_division ..............................   Passed    8.23 sec
+1>        Start  13: bb_multiplication
+1> 13/364 Test  #13: bb_multiplication ........................   Passed    4.06 sec
+1>        Start  14: bb_remainder
+1> 14/364 Test  #14: bb_remainder .............................   Passed    8.22 sec
+1>        Start  15: bb_shift
+1> 15/364 Test  #15: bb_shift .................................   Passed    0.02 sec
+1>        Start  16: bb_subtraction
+1> 16/364 Test  #16: bb_subtraction ...........................   Passed    0.02 sec
+1>        Start  17: bb_urmul
+1> 17/364 Test  #17: bb_urmul .................................   Passed   11.68 sec
+1>        Start  18: bb_performance
+1> 18/364 Test  #18: bb_performance ...........................   Passed    4.08 sec
+1>        Start  19: bf_api
+1> 19/364 Test  #19: bf_api ...................................   Passed    0.02 sec
+1>        Start  20: bf_constexpr
+1> 20/364 Test  #20: bf_constexpr .............................   Passed    0.02 sec
+1>        Start  21: bf_conversion
+1> 21/364 Test  #21: bf_conversion ............................   Passed    0.02 sec
+1>        Start  22: bf_addition
+1> 22/364 Test  #22: bf_addition ..............................   Passed    0.23 sec
+1>        Start  23: bf_division
+1> 23/364 Test  #23: bf_division ..............................   Passed    0.02 sec
+1>        Start  24: bf_multiplication
+1> 24/364 Test  #24: bf_multiplication ........................   Passed    1.59 sec
+1>        Start  25: bf_subtraction
+1> 25/364 Test  #25: bf_subtraction ...........................   Passed    0.36 sec
+1>        Start  26: bf_performance
+1> 26/364 Test  #26: bf_performance ...........................   Passed    1.34 sec
+1>        Start  27: bt_api
+1> 27/364 Test  #27: bt_api ...................................   Passed    0.02 sec
+1>        Start  28: bt_constexpr
+1> 28/364 Test  #28: bt_constexpr .............................   Passed    0.02 sec
+1>        Start  29: bt_logic
+1> 29/364 Test  #29: bt_logic .................................   Passed    0.04 sec
+1>        Start  30: bt_conversion
+1> 30/364 Test  #30: bt_conversion ............................   Passed    0.02 sec
+1>        Start  31: bt_tables
+1> 31/364 Test  #31: bt_tables ................................   Passed    0.02 sec
+1>        Start  32: bt_addition
+1> 32/364 Test  #32: bt_addition ..............................   Passed    0.07 sec
+1>        Start  33: bt_algo
+1> 33/364 Test  #33: bt_algo ..................................   Passed    0.02 sec
+1>        Start  34: bt_single_precision
+1> 34/364 Test  #34: bt_single_precision ......................   Passed    0.02 sec
+1>        Start  35: bt_performance
+1> 35/364 Test  #35: bt_performance ...........................   Passed    0.02 sec
+1>        Start  36: native_bit_manipulation
+1> 36/364 Test  #36: native_bit_manipulation ..................   Passed    0.02 sec
+1>        Start  37: native_fractionviz
+1> 37/364 Test  #37: native_fractionviz .......................   Passed    0.02 sec
+1>        Start  38: native_ieee754
+1> 38/364 Test  #38: native_ieee754 ...........................   Passed    0.02 sec
+1>        Start  39: native_mathlib
+1> 39/364 Test  #39: native_mathlib ...........................   Passed    0.02 sec
+1>        Start  40: native_representable
+1> 40/364 Test  #40: native_representable .....................   Passed    0.02 sec
+1>        Start  41: integer_addition
+1> 41/364 Test  #41: integer_addition .........................   Passed    1.90 sec
+1>        Start  42: integer_division
+1> 42/364 Test  #42: integer_division .........................   Passed    3.81 sec
+1>        Start  43: integer_gcd_lcm
+1> 43/364 Test  #43: integer_gcd_lcm ..........................   Passed    0.36 sec
+1>        Start  44: integer_logic
+1> 44/364 Test  #44: integer_logic ............................   Passed    6.34 sec
+1>        Start  45: integer_misc
+1> 45/364 Test  #45: integer_misc .............................   Passed    0.11 sec
+1>        Start  46: integer_multiplication
+1> 46/364 Test  #46: integer_multiplication ...................   Passed   12.33 sec
+1>        Start  47: integer_remainder
+1> 47/364 Test  #47: integer_remainder ........................   Passed    2.20 sec
+1>        Start  48: integer_sqrt
+1> 48/364 Test  #48: integer_sqrt .............................   Passed    5.42 sec
+1>        Start  49: integer_subtraction
+1> 49/364 Test  #49: integer_subtraction ......................   Passed    2.19 sec
+1>        Start  50: adaptiveint_add
+1> 50/364 Test  #50: adaptiveint_add ..........................   Passed    0.02 sec
+1>        Start  51: decimal_decimal
+1> 51/364 Test  #51: decimal_decimal ..........................   Passed    0.38 sec
+1>        Start  52: fixpnt_api
+1> 52/364 Test  #52: fixpnt_api ...............................   Passed    0.02 sec
+1>        Start  53: fixpnt_assignment
+1> 53/364 Test  #53: fixpnt_assignment ........................   Passed    0.02 sec
+1>        Start  54: fixpnt_complex
+1> 54/364 Test  #54: fixpnt_complex ...........................   Passed    0.02 sec
+1>        Start  55: fixpnt_constexpr
+1> 55/364 Test  #55: fixpnt_constexpr .........................   Passed    0.02 sec
+1>        Start  56: fixpnt_mod_addition
+1> 56/364 Test  #56: fixpnt_mod_addition ......................   Passed    3.39 sec
+1>        Start  57: fixpnt_mod_complex_add
+1> 57/364 Test  #57: fixpnt_mod_complex_add ...................   Passed   33.47 sec
+1>        Start  58: fixpnt_mod_complex_mul
+1> 58/364 Test  #58: fixpnt_mod_complex_mul ...................   Passed    0.61 sec
+1>        Start  59: fixpnt_mod_complex_sub
+1> 59/364 Test  #59: fixpnt_mod_complex_sub ...................   Passed    0.59 sec
+1>        Start  60: fixpnt_mod_conversion
+1> 60/364 Test  #60: fixpnt_mod_conversion ....................   Passed    4.04 sec
+1>        Start  61: fixpnt_mod_division
+1> 61/364 Test  #61: fixpnt_mod_division ......................   Passed    0.02 sec
+1>        Start  62: fixpnt_mod_multiplication
+1> 62/364 Test  #62: fixpnt_mod_multiplication ................   Passed    5.55 sec
+1>        Start  63: fixpnt_mod_subnormal_conversion
+1> 63/364 Test  #63: fixpnt_mod_subnormal_conversion ..........   Passed    0.02 sec
+1>        Start  64: fixpnt_mod_subtraction
+1> 64/364 Test  #64: fixpnt_mod_subtraction ...................   Passed    1.26 sec
+1>        Start  65: fixpnt_sat_addition
+1> 65/364 Test  #65: fixpnt_sat_addition ......................   Passed    9.47 sec
+1>        Start  66: fixpnt_sat_conversion
+1> 66/364 Test  #66: fixpnt_sat_conversion ....................   Passed    7.99 sec
+1>        Start  67: fixpnt_sat_division
+1> 67/364 Test  #67: fixpnt_sat_division ......................   Passed    0.02 sec
+1>        Start  68: fixpnt_sat_multiplication
+1> 68/364 Test  #68: fixpnt_sat_multiplication ................   Passed   22.51 sec
+1>        Start  69: fixpnt_sat_subnormal_conversion
+1> 69/364 Test  #69: fixpnt_sat_subnormal_conversion ..........   Passed    0.03 sec
+1>        Start  70: fixpnt_sat_subtraction
+1> 70/364 Test  #70: fixpnt_sat_subtraction ...................   Passed    3.50 sec
+1>        Start  71: afloat_add
+1> 71/364 Test  #71: afloat_add ...............................   Passed    0.02 sec
+1>        Start  72: lns_arithmetic_add
+1> 72/364 Test  #72: lns_arithmetic_add .......................   Passed    0.02 sec
+1>        Start  73: lns_arithmetic_mul
+1> 73/364 Test  #73: lns_arithmetic_mul .......................   Passed    0.02 sec
+1>        Start  74: unum_api
+1> 74/364 Test  #74: unum_api .................................   Passed    0.02 sec
+1>        Start  75: unum_construct
+1> 75/364 Test  #75: unum_construct ...........................   Passed    0.02 sec
+1>        Start  76: unum2_api
+1> 76/364 Test  #76: unum2_api ................................   Passed    0.02 sec
+1>        Start  77: unum2_construct
+1> 77/364 Test  #77: unum2_construct ..........................   Passed    0.02 sec
+1>        Start  78: posit_api
+1> 78/364 Test  #78: posit_api ................................   Passed    0.02 sec
+1>        Start  79: posit_assignment
+1> 79/364 Test  #79: posit_assignment .........................   Passed    0.02 sec
+1>        Start  80: posit_casting
+1> 80/364 Test  #80: posit_casting ............................   Passed    0.02 sec
+1>        Start  81: posit_constexpr_test
+1> 81/364 Test  #81: posit_constexpr_test .....................   Passed    0.02 sec
+1>        Start  82: posit_decode
+1> 82/364 Test  #82: posit_decode .............................   Passed    0.02 sec
+1>        Start  83: posit_numeric_limits
+1> 83/364 Test  #83: posit_numeric_limits .....................   Passed    0.02 sec
+1>        Start  84: posit_postfix
+1> 84/364 Test  #84: posit_postfix ............................   Passed    0.02 sec
+1>        Start  85: posit_prefix
+1> 85/364 Test  #85: posit_prefix .............................   Passed    0.02 sec
+1>        Start  86: posit_quire_accumulation
+1> 86/364 Test  #86: posit_quire_accumulation .................   Passed    0.03 sec
+1>        Start  87: posit_reciprocal_tables
+1> 87/364 Test  #87: posit_reciprocal_tables ..................   Passed    0.02 sec
+1>        Start  88: posit_serialization
+1> 88/364 Test  #88: posit_serialization ......................   Passed    0.02 sec
+1>        Start  89: posit_ulp
+1> 89/364 Test  #89: posit_ulp ................................   Passed    0.02 sec
+1>        Start  90: posit_conversion
+1> 90/364 Test  #90: posit_conversion .........................   Passed    0.85 sec
+1>        Start  91: posit_conversion_functions
+1> 91/364 Test  #91: posit_conversion_functions ...............   Passed    0.02 sec
+1>        Start  92: posit_logic
+1> 92/364 Test  #92: posit_logic ..............................   Passed    0.19 sec
+1>        Start  93: posit_addition
+1> 93/364 Test  #93: posit_addition ...........................   Passed    0.33 sec
+1>        Start  94: posit_complex_add
+1> 94/364 Test  #94: posit_complex_add ........................   Passed    2.43 sec
+1>        Start  95: posit_decrement
+1> 95/364 Test  #95: posit_decrement ..........................   Passed    0.02 sec
+1>        Start  96: posit_division
+1> 96/364 Test  #96: posit_division ...........................   Passed    0.43 sec
+1>        Start  97: posit_fma
+1> 97/364 Test  #97: posit_fma ................................   Passed    0.02 sec
+1>        Start  98: posit_increment
+1> 98/364 Test  #98: posit_increment ..........................   Passed    0.02 sec
+1>        Start  99: posit_literals
+1> 99/364 Test  #99: posit_literals ...........................   Passed    2.05 sec
+1>        Start 100: posit_multiplication
+1>100/364 Test #100: posit_multiplication .....................   Passed    0.31 sec
+1>        Start 101: posit_negation
+1>101/364 Test #101: posit_negation ...........................   Passed    0.05 sec
+1>        Start 102: posit_reciprocation
+1>102/364 Test #102: posit_reciprocation ......................   Passed    7.19 sec
+1>        Start 103: posit_sqrt
+1>103/364 Test #103: posit_sqrt ...............................   Passed    0.14 sec
+1>        Start 104: posit_subtraction
+1>104/364 Test #104: posit_subtraction ........................   Passed    0.30 sec
+1>        Start 105: posit_classify
+1>105/364 Test #105: posit_classify ...........................   Passed    0.02 sec
+1>        Start 106: posit_exponent
+1>106/364 Test #106: posit_exponent ...........................   Passed    0.39 sec
+1>        Start 107: posit_hyperbolic
+1>107/364 Test #107: posit_hyperbolic .........................   Passed    0.02 sec
+1>        Start 108: posit_logarithm
+1>108/364 Test #108: posit_logarithm ..........................   Passed    0.02 sec
+1>        Start 109: posit_pow
+1>109/364 Test #109: posit_pow ................................   Passed    0.17 sec
+1>        Start 110: posit_trigonometry
+1>110/364 Test #110: posit_trigonometry .......................   Passed    0.02 sec
+1>        Start 111: posit_truncate
+1>111/364 Test #111: posit_truncate ...........................   Passed    0.02 sec
+1>        Start 112: fast_posit_128_4
+1>112/364 Test #112: fast_posit_128_4 .........................   Passed    2.54 sec
+1>        Start 113: fast_posit_16_1
+1>113/364 Test #113: fast_posit_16_1 ..........................   Passed   17.60 sec
+1>        Start 114: fast_posit_256_5
+1>114/364 Test #114: fast_posit_256_5 .........................   Passed    7.43 sec
+1>        Start 115: fast_posit_2_0
+1>115/364 Test #115: fast_posit_2_0 ...........................   Passed    0.02 sec
+1>        Start 116: fast_posit_32_2
+1>116/364 Test #116: fast_posit_32_2 ..........................   Passed   27.00 sec
+1>        Start 117: fast_posit_3_0
+1>117/364 Test #117: fast_posit_3_0 ...........................   Passed    0.02 sec
+1>        Start 118: fast_posit_48_2
+1>118/364 Test #118: fast_posit_48_2 ..........................   Passed    9.29 sec
+1>        Start 119: fast_posit_4_0
+1>119/364 Test #119: fast_posit_4_0 ...........................   Passed    0.02 sec
+1>        Start 120: fast_posit_64_3
+1>120/364 Test #120: fast_posit_64_3 ..........................   Passed   13.31 sec
+1>        Start 121: fast_posit_8_0
+1>121/364 Test #121: fast_posit_8_0 ...........................   Passed    0.09 sec
+1>        Start 122: fast_posit_8_1
+1>122/364 Test #122: fast_posit_8_1 ...........................   Passed    0.26 sec
+1>        Start 123: fast_quire_32_2
+1>123/364 Test #123: fast_quire_32_2 ..........................   Passed    1.67 sec
+1>        Start 124: aposit_add
+1>124/364 Test #124: aposit_add ...............................   Passed    0.02 sec
+1>        Start 125: valid_api
+1>125/364 Test #125: valid_api ................................   Passed    0.02 sec
+1>        Start 126: valid_conversion
+1>126/364 Test #126: valid_conversion .........................   Passed    0.02 sec
+1>        Start 127: valid_logic
+1>127/364 Test #127: valid_logic ..............................   Passed    0.02 sec
+1>        Start 128: valid_addition
+1>128/364 Test #128: valid_addition ...........................   Passed    0.02 sec
+1>        Start 129: valid_exponent
+1>129/364 Test #129: valid_exponent ...........................   Passed    0.26 sec
+1>        Start 130: areal_api
+1>130/364 Test #130: areal_api ................................   Passed    0.02 sec
+1>        Start 131: areal_assignment
+1>131/364 Test #131: areal_assignment .........................   Passed    0.29 sec
+1>        Start 132: areal_constexpr
+1>132/364 Test #132: areal_constexpr ..........................   Passed    0.02 sec
+1>        Start 133: areal_special_cases
+1>133/364 Test #133: areal_special_cases ......................   Passed    0.02 sec
+1>        Start 134: areal_logic
+1>134/364 Test #134: areal_logic ..............................   Passed    0.04 sec
+1>        Start 135: areal_double_conversion
+1>135/364 Test #135: areal_double_conversion ..................   Passed    0.02 sec
+1>        Start 136: areal_float_conversion
+1>136/364 Test #136: areal_float_conversion ...................   Passed    0.02 sec
+1>        Start 137: areal_sampling
+1>137/364 Test #137: areal_sampling ...........................   Passed    0.02 sec
+1>        Start 138: areal_addition
+1>138/364 Test #138: areal_addition ...........................   Passed    0.02 sec
+1>        Start 139: areal_double_precision
+1>139/364 Test #139: areal_double_precision ...................   Passed    0.02 sec
+1>        Start 140: areal_half_precision
+1>140/364 Test #140: areal_half_precision .....................   Passed    0.02 sec
+1>        Start 141: areal_quad_precision
+1>141/364 Test #141: areal_quad_precision .....................   Passed    0.02 sec
+1>        Start 142: areal_quarter_precision
+1>142/364 Test #142: areal_quarter_precision ..................   Passed    0.02 sec
+1>        Start 143: areal_single_precision
+1>143/364 Test #143: areal_single_precision ...................   Passed    0.02 sec
+1>        Start 144: cfloat_api
+1>144/364 Test #144: cfloat_api ...............................   Passed    0.02 sec
+1>        Start 145: cfloat_assignment
+1>145/364 Test #145: cfloat_assignment ........................   Passed    0.33 sec
+1>        Start 146: cfloat_constexpr
+1>146/364 Test #146: cfloat_constexpr .........................   Passed    0.02 sec
+1>        Start 147: cfloat_dynamic_range
+1>147/364 Test #147: cfloat_dynamic_range .....................   Passed    0.02 sec
+1>        Start 148: cfloat_special_cases
+1>148/364 Test #148: cfloat_special_cases .....................   Passed    0.02 sec
+1>        Start 149: cfloat_ulp
+1>149/364 Test #149: cfloat_ulp ...............................   Passed    0.02 sec
+1>        Start 150: cfloat_logic
+1>150/364 Test #150: cfloat_logic .............................   Passed    0.04 sec
+1>        Start 151: cfloat_blocktriple
+1>151/364 Test #151: cfloat_blocktriple .......................   Passed    0.02 sec
+1>        Start 152: cfloat_double_conversion
+1>152/364 Test #152: cfloat_double_conversion .................   Passed    0.05 sec
+1>        Start 153: cfloat_double_subnormals
+1>153/364 Test #153: cfloat_double_subnormals .................   Passed    0.02 sec
+1>        Start 154: cfloat_float_conversion
+1>154/364 Test #154: cfloat_float_conversion ..................   Passed    0.08 sec
+1>        Start 155: cfloat_float_subnormals
+1>155/364 Test #155: cfloat_float_subnormals ..................   Passed    0.02 sec
+1>        Start 156: cfloat_normalization
+1>156/364 Test #156: cfloat_normalization .....................   Passed    0.02 sec
+1>        Start 157: cfloat_addition
+1>157/364 Test #157: cfloat_addition ..........................   Passed    0.02 sec
+1>        Start 158: cfloat_decrement
+1>158/364 Test #158: cfloat_decrement .........................   Passed    0.02 sec
+1>        Start 159: cfloat_increment
+1>159/364 Test #159: cfloat_increment .........................   Passed    0.02 sec
+1>        Start 160: cfloat_random_arithmetic
+1>160/364 Test #160: cfloat_random_arithmetic .................   Passed    0.02 sec
+1>        Start 161: cfloat_amd_fp24
+1>161/364 Test #161: cfloat_amd_fp24 ..........................   Passed    0.02 sec
+1>        Start 162: cfloat_bfloat16
+1>162/364 Test #162: cfloat_bfloat16 ..........................   Passed    0.02 sec
+1>        Start 163: cfloat_pixar_pxr24
+1>163/364 Test #163: cfloat_pixar_pxr24 .......................   Passed    0.02 sec
+1>        Start 164: cfloat_tensorfloat
+1>164/364 Test #164: cfloat_tensorfloat .......................   Passed    0.02 sec
+1>        Start 165: cfloat_classify
+1>165/364 Test #165: cfloat_classify ..........................   Passed    0.02 sec
+1>        Start 166: cfloat_exponent
+1>166/364 Test #166: cfloat_exponent ..........................   Passed    0.03 sec
+1>        Start 167: cfloat_hyperbolic
+1>167/364 Test #167: cfloat_hyperbolic ........................   Passed    0.02 sec
+1>        Start 168: cfloat_logarithm
+1>168/364 Test #168: cfloat_logarithm .........................   Passed    0.02 sec
+1>        Start 169: cfloat_pow
+1>169/364 Test #169: cfloat_pow ...............................   Passed    0.02 sec
+1>        Start 170: cfloat_trigonometry
+1>170/364 Test #170: cfloat_trigonometry ......................   Passed    0.02 sec
+1>        Start 171: cfloat_truncate
+1>171/364 Test #171: cfloat_truncate ..........................   Passed    0.02 sec
+1>        Start 172: mp_secant
+1>172/364 Test #172: mp_secant ................................   Passed    0.02 sec
+1>        Start 173: mp_taylor
+1>173/364 Test #173: mp_taylor ................................   Passed    0.02 sec
+1>        Start 174: mp_simpson
+1>174/364 Test #174: mp_simpson ...............................   Passed    0.02 sec
+1>        Start 175: mp_trapezoidal
+1>175/364 Test #175: mp_trapezoidal ...........................   Passed    0.02 sec
+1>        Start 176: mp_spline
+1>176/364 Test #176: mp_spline ................................   Passed    0.02 sec
+1>        Start 177: optimal_secant
+1>177/364 Test #177: optimal_secant ...........................   Passed    0.02 sec
+1>        Start 178: mp_cg
+1>178/364 Test #178: mp_cg ....................................   Passed    0.02 sec
+1>        Start 179: mp_cg_mvdot_cmpdot
+1>179/364 Test #179: mp_cg_mvdot_cmpdot .......................   Passed    2.01 sec
+1>        Start 180: mp_cg_mvdot_cmpfdp
+1>180/364 Test #180: mp_cg_mvdot_cmpfdp .......................   Passed    2.01 sec
+1>        Start 181: mp_cg_mvfdp_cmpdot
+1>181/364 Test #181: mp_cg_mvfdp_cmpdot .......................   Passed    2.45 sec
+1>        Start 182: mp_cg_mvfdp_cmpfdp
+1>182/364 Test #182: mp_cg_mvfdp_cmpfdp .......................   Passed    2.01 sec
+1>        Start 183: performance_dot
+1>183/364 Test #183: performance_dot ..........................   Passed    0.02 sec
+1>        Start 184: performance_gemm
+1>184/364 Test #184: performance_gemm .........................   Passed    0.03 sec
+1>        Start 185: performance_matvec
+1>185/364 Test #185: performance_matvec .......................   Passed    0.02 sec
+1>        Start 186: decimal_performance
+1>186/364 Test #186: decimal_performance ......................   Passed    0.06 sec
+1>        Start 187: integer_performance
+1>187/364 Test #187: integer_performance ......................   Passed    3.95 sec
+1>        Start 188: fixpnt_performance
+1>188/364 Test #188: fixpnt_performance .......................   Passed    0.36 sec
+1>        Start 189: cfloat_performance
+1>189/364 Test #189: cfloat_performance .......................   Passed    1.76 sec
+1>        Start 190: areal_performance
+1>190/364 Test #190: areal_performance ........................   Passed    0.02 sec
+1>        Start 191: lns_performance
+1>191/364 Test #191: lns_performance ..........................   Passed    0.02 sec
+1>        Start 192: posit_10b_posit
+1>192/364 Test #192: posit_10b_posit ..........................   Passed    0.21 sec
+1>        Start 193: posit_12b_posit
+1>193/364 Test #193: posit_12b_posit ..........................   Passed    0.23 sec
+1>        Start 194: posit_14b_posit
+1>194/364 Test #194: posit_14b_posit ..........................   Passed    0.28 sec
+1>        Start 195: posit_16b_posit
+1>195/364 Test #195: posit_16b_posit ..........................   Passed    0.05 sec
+1>        Start 196: posit_32b_posit
+1>196/364 Test #196: posit_32b_posit ..........................   Passed    0.06 sec
+1>        Start 197: posit_48b_posit
+1>197/364 Test #197: posit_48b_posit ..........................   Passed    2.87 sec
+1>        Start 198: posit_4b_posit
+1>198/364 Test #198: posit_4b_posit ...........................   Passed    0.03 sec
+1>        Start 199: posit_64b_posit
+1>199/364 Test #199: posit_64b_posit ..........................   Passed    5.03 sec
+1>        Start 200: posit_8b_posit
+1>200/364 Test #200: posit_8b_posit ...........................   Passed    0.03 sec
+1>        Start 201: valid_performance
+1>201/364 Test #201: valid_performance ........................   Passed    0.02 sec
+1>        Start 202: unum_performance
+1>202/364 Test #202: unum_performance .........................   Passed    0.02 sec
+1>        Start 203: accuracy_dot
+1>203/364 Test #203: accuracy_dot .............................   Passed    0.02 sec
+1>        Start 204: accuracy_gemm
+1>204/364 Test #204: accuracy_gemm ............................   Passed    0.03 sec
+1>        Start 205: accuracy_matvec
+1>205/364 Test #205: accuracy_matvec ..........................   Passed    0.02 sec
+1>        Start 206: energy_dot
+1>206/364 Test #206: energy_dot ...............................   Passed    0.02 sec
+1>        Start 207: energy_gemm
+1>207/364 Test #207: energy_gemm ..............................   Passed    0.02 sec
+1>        Start 208: energy_matvec
+1>208/364 Test #208: energy_matvec ............................   Passed    0.02 sec
+1>        Start 209: areal
+1>209/364 Test #209: areal ....................................   Passed    0.02 sec
+1>        Start 210: double
+1>210/364 Test #210: double ...................................   Passed    0.02 sec
+1>        Start 211: fixpnt
+1>211/364 Test #211: fixpnt ...................................   Passed    0.02 sec
+1>        Start 212: float
+1>212/364 Test #212: float ....................................   Passed    0.02 sec
+1>        Start 213: float2posit
+1>213/364 Test #213: float2posit ..............................   Passed    0.02 sec
+1>        Start 214: ieee
+1>214/364 Test #214: ieee .....................................   Passed    0.02 sec
+1>        Start 215: lns
+1>215/364 Test #215: lns ......................................   Passed    0.02 sec
+1>        Start 216: longdouble
+1>216/364 Test #216: longdouble ...............................   Passed    0.02 sec
+1>        Start 217: plimits
+1>217/364 Test #217: plimits ..................................   Passed    0.02 sec
+1>        Start 218: posit
+1>218/364 Test #218: posit ....................................   Passed    0.02 sec
+1>        Start 219: propenv
+1>219/364 Test #219: propenv ..................................   Passed    0.02 sec
+1>        Start 220: propp
+1>220/364 Test #220: propp ....................................   Passed    0.02 sec
+1>        Start 221: propq
+1>221/364 Test #221: propq ....................................   Passed    0.02 sec
+1>        Start 222: signedint
+1>222/364 Test #222: signedint ................................   Passed    0.02 sec
+1>        Start 223: unsignedint
+1>223/364 Test #223: unsignedint ..............................   Passed    0.02 sec
+1>        Start 224: utils_lookup_arithmetic
+1>224/364 Test #224: utils_lookup_arithmetic ..................   Passed    0.02 sec
+1>        Start 225: utils_reverse_view
+1>225/364 Test #225: utils_reverse_view .......................   Passed    0.02 sec
+1>        Start 226: edu_tables_areals
+1>226/364 Test #226: edu_tables_areals ........................   Passed    0.02 sec
+1>        Start 227: edu_tables_bfloats
+1>227/364 Test #227: edu_tables_bfloats .......................   Passed    0.03 sec
+1>        Start 228: edu_tables_fixpnts
+1>228/364 Test #228: edu_tables_fixpnts .......................   Passed    0.08 sec
+1>        Start 229: edu_tables_posits
+1>229/364 Test #229: edu_tables_posits ........................   Passed    0.04 sec
+1>        Start 230: edu_integer_basic_operators
+1>230/364 Test #230: edu_integer_basic_operators ..............   Passed    0.02 sec
+1>        Start 231: edu_fixpnt_basic_operators
+1>231/364 Test #231: edu_fixpnt_basic_operators ...............   Passed    0.02 sec
+1>        Start 232: edu_bfloat_basic_operators
+1>232/364 Test #232: edu_bfloat_basic_operators ...............   Passed    0.02 sec
+1>        Start 233: edu_areal_basic_operators
+1>233/364 Test #233: edu_areal_basic_operators ................   Passed    0.02 sec
+1>        Start 234: edu_unum_basic_operators
+1>234/364 Test #234: edu_unum_basic_operators .................   Passed    0.02 sec
+1>        Start 235: edu_posit_basic_operators
+1>235/364 Test #235: edu_posit_basic_operators ................   Passed    0.02 sec
+1>        Start 236: edu_posit_components
+1>236/364 Test #236: edu_posit_components .....................   Passed    0.02 sec
+1>        Start 237: edu_posit_conversion
+1>237/364 Test #237: edu_posit_conversion .....................   Passed    0.02 sec
+1>        Start 238: edu_posit_discretization_curves
+1>238/364 Test #238: edu_posit_discretization_curves ..........   Passed    0.02 sec
+1>        Start 239: edu_posit_enumeration
+1>239/364 Test #239: edu_posit_enumeration ....................   Passed    0.02 sec
+1>        Start 240: edu_posit_exceptions
+1>240/364 Test #240: edu_posit_exceptions .....................   Passed    0.02 sec
+1>        Start 241: edu_posit_exponents
+1>241/364 Test #241: edu_posit_exponents ......................   Passed    0.02 sec
+1>        Start 242: edu_posit_extract
+1>242/364 Test #242: edu_posit_extract ........................   Passed    0.02 sec
+1>        Start 243: edu_posit_fractions
+1>243/364 Test #243: edu_posit_fractions ......................   Passed    0.04 sec
+1>        Start 244: edu_posit_raw_bit_patterns
+1>244/364 Test #244: edu_posit_raw_bit_patterns ...............   Passed    0.02 sec
+1>        Start 245: edu_posit_regimes
+1>245/364 Test #245: edu_posit_regimes ........................   Passed    0.02 sec
+1>        Start 246: edu_posit_scales
+1>246/364 Test #246: edu_posit_scales .........................   Passed    0.02 sec
+1>        Start 247: edu_posit_serialization
+1>247/364 Test #247: edu_posit_serialization ..................   Passed    0.02 sec
+1>        Start 248: edu_posit_signalling_nar
+1>248/364 Test #248: edu_posit_signalling_nar .................   Passed    0.02 sec
+1>        Start 249: edu_posit_ulp
+1>249/364 Test #249: edu_posit_ulp ............................   Passed    0.37 sec
+1>        Start 250: edu_posit_values
+1>250/364 Test #250: edu_posit_values .........................   Passed    0.02 sec
+1>        Start 251: edu_quire_quires
+1>251/364 Test #251: edu_quire_quires .........................   Passed    0.02 sec
+1>        Start 252: edu_valid_intervals
+1>252/364 Test #252: edu_valid_intervals ......................   Passed    0.02 sec
+1>        Start 253: edu_lns_basic_operators
+1>253/364 Test #253: edu_lns_basic_operators ..................   Passed    0.02 sec
+1>        Start 254: blas_hilbert
+1>254/364 Test #254: blas_hilbert .............................   Passed    0.17 sec
+1>        Start 255: blas_inverse
+1>255/364 Test #255: blas_inverse .............................   Passed    0.03 sec
+1>        Start 256: blas_l1_fused_dot
+1>256/364 Test #256: blas_l1_fused_dot ........................   Passed    0.02 sec
+1>        Start 257: blas_l2_fused_mv
+1>257/364 Test #257: blas_l2_fused_mv .........................   Passed    0.02 sec
+1>        Start 258: blas_l3_fused_mm
+1>258/364 Test #258: blas_l3_fused_mm .........................   Passed    0.02 sec
+1>        Start 259: blas_lu
+1>259/364 Test #259: blas_lu ..................................   Passed    0.02 sec
+1>        Start 260: blas_norms
+1>260/364 Test #260: blas_norms ...............................   Passed    0.02 sec
+1>        Start 261: blas_randsvd
+1>261/364 Test #261: blas_randsvd .............................   Passed    0.02 sec
+1>        Start 262: chaos_bakers_map
+1>262/364 Test #262: chaos_bakers_map .........................   Passed    0.02 sec
+1>        Start 263: chaos_time_precision_lyapunov
+1>263/364 Test #263: chaos_time_precision_lyapunov ............   Passed    0.02 sec
+1>        Start 264: cheby_chebtests
+1>264/364 Test #264: cheby_chebtests ..........................   Passed    0.02 sec
+1>        Start 265: cheby_nodes
+1>265/364 Test #265: cheby_nodes ..............................   Passed    0.02 sec
+1>        Start 266: cheby_skeleton
+1>266/364 Test #266: cheby_skeleton ...........................   Passed    0.02 sec
+1>        Start 267: complex_compute
+1>267/364 Test #267: complex_compute ..........................   Passed    0.02 sec
+1>        Start 268: crypto_fermat
+1>268/364 Test #268: crypto_fermat ............................   Passed    2.46 sec
+1>        Start 269: crypto_large_lcm
+1>269/364 Test #269: crypto_large_lcm .........................   Passed   17.43 sec
+1>        Start 270: crypto_pollard_rho
+1>270/364 Test #270: crypto_pollard_rho .......................   Passed    0.02 sec
+1>        Start 271: crypto_quadratic_sieve
+1>271/364 Test #271: crypto_quadratic_sieve ...................   Passed    0.02 sec
+1>        Start 272: dsp_adc_mapping
+1>272/364 Test #272: dsp_adc_mapping ..........................   Passed    0.02 sec
+1>        Start 273: dsp_fir_filter
+1>273/364 Test #273: dsp_fir_filter ...........................   Passed    0.02 sec
+1>        Start 274: engineering_chem_equilibrium
+1>274/364 Test #274: engineering_chem_equilibrium .............   Passed    0.02 sec
+1>        Start 275: engineering_water
+1>275/364 Test #275: engineering_water ........................   Passed    0.02 sec
+1>        Start 276: math_decimal_lpp
+1>276/364 Test #276: math_decimal_lpp .........................   Passed    5.02 sec
+1>        Start 277: math_distinct_powers
+1>277/364 Test #277: math_distinct_powers .....................   Passed    0.04 sec
+1>        Start 278: math_largest_palindrome_product
+1>278/364 Test #278: math_largest_palindrome_product ..........   Passed    0.27 sec
+1>        Start 279: math_numbers_irrational
+1>279/364 Test #279: math_numbers_irrational ..................   Passed    0.03 sec
+1>        Start 280: math_numbers_rational
+1>280/364 Test #280: math_numbers_rational ....................   Passed    0.02 sec
+1>        Start 281: math_pascals_triangle
+1>281/364 Test #281: math_pascals_triangle ....................   Passed    0.25 sec
+1>        Start 282: math_primes
+1>282/364 Test #282: math_primes ..............................   Passed   10.23 sec
+1>        Start 283: math_sincospi
+1>283/364 Test #283: math_sincospi ............................   Passed    0.02 sec
+1>        Start 284: math_stirlings_approximation
+1>284/364 Test #284: math_stirlings_approximation .............   Passed    0.05 sec
+1>        Start 285: numeric_limits
+1>285/364 Test #285: numeric_limits ...........................   Passed    0.02 sec
+1>        Start 286: numeric_midpoint
+1>286/364 Test #286: numeric_midpoint .........................   Passed    0.02 sec
+1>        Start 287: numeric_numbers
+1>287/364 Test #287: numeric_numbers ..........................   Passed    0.02 sec
+1>        Start 288: numeric_posit_properties
+1>288/364 Test #288: numeric_posit_properties .................   Passed    0.02 sec
+1>        Start 289: numeric_residual
+1>289/364 Test #289: numeric_residual .........................   Passed    0.03 sec
+1>        Start 290: numeric_rump_equation
+1>290/364 Test #290: numeric_rump_equation ....................   Passed    0.02 sec
+1>        Start 291: numeric_ulp_math
+1>291/364 Test #291: numeric_ulp_math .........................   Passed    0.02 sec
+1>        Start 292: ode_convergence
+1>292/364 Test #292: ode_convergence ..........................   Passed    0.02 sec
+1>        Start 293: ode_first-order-ode
+1>293/364 Test #293: ode_first-order-ode ......................   Passed    0.02 sec
+1>        Start 294: ode_general-runge-kutta
+1>294/364 Test #294: ode_general-runge-kutta ..................   Passed    0.02 sec
+1>        Start 295: ode_rungekutta
+1>295/364 Test #295: ode_rungekutta ...........................   Passed    0.03 sec
+1>        Start 296: pde_cg
+1>296/364 Test #296: pde_cg ...................................   Passed    2.66 sec
+1>        Start 297: pde_gauss_seidel
+1>297/364 Test #297: pde_gauss_seidel .........................   Passed    0.02 sec
+1>        Start 298: pde_jacobi
+1>298/364 Test #298: pde_jacobi ...............................   Passed    0.02 sec
+1>        Start 299: pde_laplace
+1>299/364 Test #299: pde_laplace ..............................   Passed    0.02 sec
+1>        Start 300: pde_sor
+1>300/364 Test #300: pde_sor ..................................   Passed    0.03 sec
+1>        Start 301: roots_bisection
+1>301/364 Test #301: roots_bisection ..........................   Passed    0.02 sec
+1>        Start 302: roots_rpoly_ak1
+1>302/364 Test #302: roots_rpoly_ak1 ..........................   Passed    0.02 sec
+1>        Start 303: science_iso_constants
+1>303/364 Test #303: science_iso_constants ....................   Passed    0.02 sec
+1>        Start 304: science_physics_constants
+1>304/364 Test #304: science_physics_constants ................   Passed    0.02 sec
+1>        Start 305: sequences_fibonacci
+1>305/364 Test #305: sequences_fibonacci ......................   Passed    0.02 sec
+1>        Start 306: sequences_tribonacci
+1>306/364 Test #306: sequences_tribonacci .....................   Passed    0.03 sec
+1>        Start 307: stl_sequential_containers
+1>307/364 Test #307: stl_sequential_containers ................   Passed    1.96 sec
+1>        Start 308: trig_arbitrary_precision_pi
+1>308/364 Test #308: trig_arbitrary_precision_pi ..............   Passed    0.20 sec
+1>        Start 309: weather_error_growth_atmospheric_model
+1>309/364 Test #309: weather_error_growth_atmospheric_model ...   Passed    0.02 sec
+1>        Start 310: ns_catastrophic_cancellation
+1>310/364 Test #310: ns_catastrophic_cancellation .............   Passed    0.02 sec
+1>        Start 311: ns_contract_expand
+1>311/364 Test #311: ns_contract_expand .......................   Passed    0.02 sec
+1>        Start 312: ns_exp_div_factorial
+1>312/364 Test #312: ns_exp_div_factorial .....................   Passed    0.02 sec
+1>        Start 313: ns_exponentiation
+1>313/364 Test #313: ns_exponentiation ........................   Passed    0.02 sec
+1>        Start 314: ns_integer_cover
+1>314/364 Test #314: ns_integer_cover .........................   Passed   21.34 sec
+1>        Start 315: ns_kahan_sum
+1>315/364 Test #315: ns_kahan_sum .............................   Passed    0.48 sec
+1>        Start 316: ns_linear_cover
+1>316/364 Test #316: ns_linear_cover ..........................   Passed    0.02 sec
+1>        Start 317: ns_paranoia
+1>317/364 Test #317: ns_paranoia ..............................   Passed    0.02 sec
+1>        Start 318: ns_precision
+1>318/364 Test #318: ns_precision .............................   Passed    0.02 sec
+1>        Start 319: ns_rounding_error_addition
+1>319/364 Test #319: ns_rounding_error_addition ...............   Passed    0.06 sec
+1>        Start 320: ns_rounding_error_multiplication
+1>320/364 Test #320: ns_rounding_error_multiplication .........   Passed    0.02 sec
+1>        Start 321: ns_sterbenz_lemma
+1>321/364 Test #321: ns_sterbenz_lemma ........................   Passed    0.02 sec
+1>        Start 322: ns_sum_of_integers
+1>322/364 Test #322: ns_sum_of_integers .......................   Passed    9.63 sec
+1>        Start 323: ns_thin_triangle
+1>323/364 Test #323: ns_thin_triangle .........................   Passed    0.02 sec
+1>        Start 324: ns_two_sum
+1>324/364 Test #324: ns_two_sum ...............................   Passed    0.51 sec
+1>        Start 325: ns_type_traits
+1>325/364 Test #325: ns_type_traits ...........................   Passed    0.02 sec
+1>        Start 326: ns_underflow
+1>326/364 Test #326: ns_underflow .............................   Passed    0.02 sec
+1>        Start 327: fpb_end_of_error
+1>327/364 Test #327: fpb_end_of_error .........................   Passed    0.09 sec
+1>        Start 328: fpb_hamming_1987
+1>328/364 Test #328: fpb_hamming_1987 .........................   Passed    0.02 sec
+1>        Start 329: fpb_log_exp
+1>329/364 Test #329: fpb_log_exp ..............................   Passed    0.02 sec
+1>        Start 330: hw_cfloat
+1>330/364 Test #330: hw_cfloat ................................   Passed    0.02 sec
+1>        Start 331: hw_integer
+1>331/364 Test #331: hw_integer ...............................   Passed    0.02 sec
+1>        Start 332: hw_posit
+1>332/364 Test #332: hw_posit .................................   Passed    0.02 sec
+1>        Start 333: functions_factorial
+1>333/364 Test #333: functions_factorial ......................   Passed    0.02 sec
+1>        Start 334: functions_isrepresentable
+1>334/364 Test #334: functions_isrepresentable ................   Passed    0.02 sec
+1>        Start 335: functions_lerp
+1>335/364 Test #335: functions_lerp ...........................   Passed    0.02 sec
+1>        Start 336: functions_logistic_loss
+1>336/364 Test #336: functions_logistic_loss ..................   Passed    0.02 sec
+1>        Start 337: functions_polynomial
+1>337/364 Test #337: functions_polynomial .....................   Passed    0.02 sec
+1>        Start 338: playground_efunc_posits
+1>338/364 Test #338: playground_efunc_posits ..................   Passed    0.02 sec
+1>        Start 339: playground_efunc_valids
+1>339/364 Test #339: playground_efunc_valids ..................   Passed    0.02 sec
+1>        Start 340: playground_gismo_test
+1>340/364 Test #340: playground_gismo_test ....................   Passed    0.02 sec
+1>        Start 341: playground_meta_programming
+1>341/364 Test #341: playground_meta_programming ..............   Passed    0.02 sec
+1>        Start 342: playground_serialization
+1>342/364 Test #342: playground_serialization .................   Passed    0.02 sec
+1>        Start 343: playground_skeleton
+1>343/364 Test #343: playground_skeleton ......................   Passed    0.03 sec
+1>        Start 344: playground_type_test
+1>344/364 Test #344: playground_type_test .....................   Passed    0.02 sec
+1>        Start 345: c_api_pure_playground
+1>345/364 Test #345: c_api_pure_playground ....................   Passed    0.02 sec
+1>        Start 346: c_api_pure_posit8
+1>346/364 Test #346: c_api_pure_posit8 ........................   Passed    0.03 sec
+1>        Start 347: c_api_shim_exact_test
+1>347/364 Test #347: c_api_shim_exact_test ....................   Passed    0.03 sec
+1>        Start 348: c_api_shim_experiment
+1>348/364 Test #348: c_api_shim_experiment ....................   Passed    0.02 sec
+1>        Start 349: c_api_shim_posit128
+1>349/364 Test #349: c_api_shim_posit128 ......................   Passed    1.81 sec
+1>        Start 350: c_api_shim_posit16
+1>350/364 Test #350: c_api_shim_posit16 .......................   Passed    2.22 sec
+1>        Start 351: c_api_shim_posit256
+1>351/364 Test #351: c_api_shim_posit256 ......................   Passed    2.06 sec
+1>        Start 352: c_api_shim_posit32
+1>352/364 Test #352: c_api_shim_posit32 .......................   Passed    0.98 sec
+1>        Start 353: c_api_shim_posit4
+1>353/364 Test #353: c_api_shim_posit4 ........................   Passed    0.02 sec
+1>        Start 354: c_api_shim_posit64
+1>354/364 Test #354: c_api_shim_posit64 .......................   Passed    2.67 sec
+1>        Start 355: c_api_shim_posit8
+1>355/364 Test #355: c_api_shim_posit8 ........................   Passed    0.28 sec
+1>        Start 356: float_quire_accumulation
+1>356/364 Test #356: float_quire_accumulation .................   Passed    0.02 sec
+1>        Start 357: float_quires
+1>357/364 Test #357: float_quires .............................   Passed    0.02 sec
+1>        Start 358: blas_generators
+1>358/364 Test #358: blas_generators ..........................   Passed    0.02 sec
+1>        Start 359: blas_matrix_ops
+1>359/364 Test #359: blas_matrix_ops ..........................   Passed    1.66 sec
+1>        Start 360: blas_minij
+1>360/364 Test #360: blas_minij ...............................   Passed    0.02 sec
+1>        Start 361: blas_rand_spectral
+1>361/364 Test #361: blas_rand_spectral .......................   Passed    0.02 sec
+1>        Start 362: blas_vector_ops
+1>362/364 Test #362: blas_vector_ops ..........................   Passed    0.08 sec
+1>        Start 363: vmath_linspace
+1>363/364 Test #363: vmath_linspace ...........................   Passed    0.02 sec
+1>        Start 364: vmath_trigonometry
+1>364/364 Test #364: vmath_trigonometry .......................   Passed    0.02 sec
+1>
+1>100% tests passed, 0 tests failed out of 364
+1>
+1>Total Test time (real) = 392.33 sec
+========== Build: 1 succeeded, 0 failed, 1 up-to-date, 0 skipped ==========

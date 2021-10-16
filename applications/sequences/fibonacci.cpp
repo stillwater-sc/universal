@@ -8,7 +8,6 @@
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::sequences;
 
@@ -16,8 +15,8 @@ try {
 
 	using int256 = sw::universal::integer<256>;
 	auto v = Fibonacci<int256>(100);
-	cout << "Fibonacci sequence\n";
-	for (auto e: v) { cout << e << '\n'; }
+	std::cout << "Fibonacci sequence\n";
+	for (auto e: v) { std::cout << e << '\n'; }
 
 	//streamsize precision = cout.precision();
 	// ...

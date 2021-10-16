@@ -8,35 +8,10 @@
 #include <string>
 #include <sstream>
 
-// compiler specific operators
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
+// should be defined by calling environment, just catching it here just in case it is not
+#ifndef LONG_DOUBLE_SUPPORT
+#pragma message("LONG_DOUBLE_SUPPORT is not defined")
+#define LONG_DOUBLE_SUPPORT 0
 #endif
 
 namespace sw::universal {
@@ -94,9 +69,12 @@ logic though.
 */
 
 // a block-based 2's complement binary number
-template<size_t nbits, typename bt = uint8_t>
+template<size_t _nbits, typename bt = uint8_t>
 class blockbinary {
 public:
+	static constexpr size_t nbits = _nbits;
+	typedef bt BlockType;
+
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
@@ -152,9 +130,12 @@ public:
 	explicit operator unsigned int() const       { return unsigned(to_ull()); }
 	explicit operator unsigned long() const      { return (unsigned long)to_ull(); }
 	explicit operator unsigned long long() const { return to_ull(); }
+	// TODO: these need proper implementations that can convert very large integers to the proper scale afforded by the floating-point formats
 	explicit operator float() const              { return float(to_long_long()); }
 	explicit operator double() const             { return double(to_long_long()); }
+#if LONG_DOUBLE_SUPPORT
 	explicit operator long double() const        { return (long double)to_long_long(); }
+#endif
 
 	// prefix operators
 	blockbinary operator-() const {
@@ -350,16 +331,15 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setbit(size_t i, bool v = true) {
+	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
 			_block[i / bitsInBlock] = bt((block & null) | mask);
-			return;
 		}
-		throw "blockbinary<nbits, bt>.setbit(index): bit index out of bounds";
+		// nop if i is out of range
 	}
 	inline constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
@@ -373,10 +353,10 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	inline constexpr void setblock(size_t b, const bt& block) {
-		if (b >= nrBlocks) throw "block index out of bounds";
-		_block[b] = block;
-	}	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
+	inline constexpr void setblock(size_t b, const bt& block) noexcept {
+		if (b < nrBlocks) _block[b] = block; // nop if b is out of range
+	}	
+	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}		
@@ -397,31 +377,37 @@ public:
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
 	}
+	inline constexpr bool isallones() const noexcept {
+		if constexpr (nrBlocks > 1) for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != ALL_ONES) return false;
+		if (_block[MSU] != MSU_MASK) return false;
+		return true;
+	}
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool test(size_t bitIndex) const noexcept {
-		return at(bitIndex);
-	}
+	inline constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
 	inline constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		bt word = _block[bitIndex / bitsInBlock];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
-	inline constexpr uint8_t nibble(size_t n) const {
+	inline constexpr uint8_t nibble(size_t n) const noexcept {
+		uint8_t retval{ 0 };
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			size_t nibbleIndexInWord = n % (bitsInBlock >> 2);
 			bt mask = static_cast<bt>(0x0Fu << (nibbleIndexInWord*4));
 			bt nibblebits = static_cast<bt>(mask & word);
-			return static_cast<uint8_t>(nibblebits >> static_cast<bt>(nibbleIndexInWord*4));
+			retval = static_cast<uint8_t>(nibblebits >> static_cast<bt>(nibbleIndexInWord*4));
 		}
-		throw "nibble index out of bounds";
+		else { // nop when nibble index out of bounds
+			retval = 0;
+		}
+		return retval;
 	}
-	// TODO: convert to noexcept function?
-	inline constexpr bt block(size_t b) const {
-		if (b >= nrBlocks) throw "block index out of bounds";
-		return _block[b];
+	inline constexpr bt block(size_t b) const noexcept { // TODO: convert to noexcept function?
+		if (b < nrBlocks) return _block[b]; 
+		return bt(0); // return 0 when block index out of bounds
 	}
 
 	// copy a value over from one blockbinary to this blockbinary

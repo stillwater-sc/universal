@@ -28,16 +28,15 @@ void GeneratePositReciprocalLookupTable(std::ostream& os) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "Generate posit reciprocal lookup table" << endl;
+	std::cout << "Generate posit reciprocal lookup table\n";
 
-	GeneratePositReciprocalLookupTable<3, 0>(cout);
-	//GeneratePositReciprocalLookupTable<4, 0>(cout);
-	//GeneratePositReciprocalLookupTable<4, 1>(cout);
+	GeneratePositReciprocalLookupTable<3, 0>(std::cout);
+	//GeneratePositReciprocalLookupTable<4, 0>(std::cout);
+	//GeneratePositReciprocalLookupTable<4, 1>(std::cout);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

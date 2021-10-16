@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 31)
+  set(UNIVERSAL_VERSION_MINOR 43)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -74,12 +74,12 @@ option(USE_AVX                           "Build code with AVX ISA support"      
 option(USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
 # control which projects get enabled
 # Continuous Integration override to build all
-option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
+option(BUILD_ALL                         "Set to ON to build all components"                   OFF)
 # or subsets of the components
 option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
-option(BUILD_NUMERICAL_CHECKS            "Set to ON to build all the numerical components"     OFF)
+option(BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
 option(BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
-option(BUILD_REGRESSION_SUITES           "Set to ON to build all the regression suites"        OFF)
+option(BUILD_NUMBER_SYSTEMS              "Set to ON to build all the number systems"           OFF)
 option(BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
 
 # or, build individual components
@@ -90,8 +90,13 @@ option(BUILD_EDUCATION                   "Set to ON to build educational example
 option(BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
 
 # numerical and special math functions
-option(BUILD_NUMERICAL_CHALLENGES        "Set to ON to build numerical challenge programs"     OFF)
-option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
+option(BUILD_NUMERIC_CHALLENGES          "Set to ON to build numerical challenge programs"     OFF)
+option(BUILD_NUMERIC_UTILS               "Set to ON to build numerical utilities"              OFF)
+option(BUILD_NUMERIC_FPBENCH             "Set to ON to build fpbench benchmarks"               OFF)
+option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special functions programs"       OFF)
+# reproducible IEEE-754
+option(BUILD_NUMERIC_IEEE_QUIRES         "Set to ON to build reproducible IEEE floats"         OFF)
+
 
 # C API library and test programs
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
@@ -99,28 +104,25 @@ option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"
 option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 
 # number systems and their verification suites
-option(BUILD_ARITHMETIC_CLASSES          "Set to ON to build arithmetic class tests"           OFF)
-option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
-option(BUILD_INTEGERS                    "Set to ON to build integer tests"                    OFF)
-option(BUILD_DECIMALS                    "Set to ON to build decimal tests"                    OFF)
-option(BUILD_FIXPNTS                     "Set to ON to build fixed-point tests"                OFF)
-option(BUILD_CFLOATS                     "Set to ON to build cfloat tests"                     OFF)
-option(BUILD_AREALS                      "Set to ON to build areal tests"                      OFF)
-option(BUILD_UNUM_TYPE_1                 "Set to ON to build unum Type 1 tests"                OFF)
-option(BUILD_UNUM_TYPE_2                 "Set to ON to build unum Type 2 tests"                OFF)
-option(BUILD_POSITS                      "Set to ON to build unum Type 3 posit tests"          OFF)
-option(BUILD_VALIDS                      "Set to ON to build unum Type 3 valid tests"          OFF)
-option(BUILD_REALS                       "Set to ON to build real tests"                       OFF)
-option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
+option(BUILD_NUMBER_ARITHMETIC_CLASSES   "Set to ON to build arithmetic class tests"           OFF)
+option(BUILD_NUMBER_NATIVE_TYPES         "Set to ON to build native type tests"                OFF)
+option(BUILD_NUMBER_INTEGERS             "Set to ON to build integer tests"                    OFF)
+option(BUILD_NUMBER_DECIMALS             "Set to ON to build decimal tests"                    OFF)
+option(BUILD_NUMBER_FIXPNTS              "Set to ON to build fixed-point tests"                OFF)
+option(BUILD_NUMBER_CFLOATS              "Set to ON to build cfloat tests"                     OFF)
+option(BUILD_NUMBER_AREALS               "Set to ON to build areal tests"                      OFF)
+option(BUILD_NUMBER_UNUM_TYPE_1          "Set to ON to build unum Type 1 tests"                OFF)
+option(BUILD_NUMBER_UNUM_TYPE_2          "Set to ON to build unum Type 2 tests"                OFF)
+option(BUILD_NUMBER_POSITS               "Set to ON to build unum Type 3 posit tests"          OFF)
+option(BUILD_NUMBER_VALIDS               "Set to ON to build unum Type 3 valid tests"          OFF)
+option(BUILD_NUMBER_REALS                "Set to ON to build real tests"                       OFF)
+option(BUILD_NUMBER_LNS                  "Set to ON to build LNS tests"                        OFF)
 # conversion test suites
-option(BUILD_CONVERSIONS                 "Set to ON to build conversion test suites"           OFF)
-
-# reproducible IEEE-754
-option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
+option(BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
 # Basic Linear Algebra tests
-option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
-option(BUILD_VMATH                       "Set to ON to build the BLAS vector math lib"         OFF)
+option(BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"                   OFF)
+option(BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the BLAS vector math lib"         OFF)
 
 # benchmarking
 option(BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
@@ -138,6 +140,17 @@ option(BUILD_MIXEDPRECISION_CONJUGATE    "Set to ON to build mixed-precision CG"
 # validation
 option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
 option(BUILD_VALIDATION_HW               "Set to ON to build hw validation testbenches"        OFF)
+
+# regression test intensity
+# sanity is level 1 (=min) regression testing
+option(BUILD_REGRESSION_SANITY           "Set to ON to enable regression level sanity"         ON)
+# stress is level 4 (= max) regression testing
+option(BUILD_REGRESSION_STRESS           "Set to ON to enable regression level stress"         OFF)
+# four levels of intensity
+option(BUILD_REGRESSION_LEVEL_1          "Set to ON to enable regression level 1"              OFF)
+option(BUILD_REGRESSION_LEVEL_2          "Set to ON to enable regression level 2"              OFF)
+option(BUILD_REGRESSION_LEVEL_3          "Set to ON to enable regression level 3"              OFF)
+option(BUILD_REGRESSION_LEVEL_4          "Set to ON to enable regression level 4"              OFF)
 
 # documentation
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
@@ -190,6 +203,36 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++20 has been enabled by default: but bit_cast<> requires gcc 11")
 endif()
 
+# enable the regression testing level of the build
+if(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_1=1)
+	add_definitions(-D REGRESSION_LEVEL_2=0)
+	add_definitions(-D REGRESSION_LEVEL_3=0)
+	add_definitions(-D REGRESSION_LEVEL_4=0)
+endif(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
+if(BUILD_REGRESSION_LEVEL_2)
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_1=1)
+	add_definitions(-D REGRESSION_LEVEL_2=1)
+	add_definitions(-D REGRESSION_LEVEL_3=0)
+	add_definitions(-D REGRESSION_LEVEL_4=0)
+endif(BUILD_REGRESSION_LEVEL_2)
+if(BUILD_REGRESSION_LEVEL_3)
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_1=1)
+	add_definitions(-D REGRESSION_LEVEL_2=1)
+	add_definitions(-D REGRESSION_LEVEL_3=1)
+	add_definitions(-D REGRESSION_LEVEL_4=0)
+endif(BUILD_REGRESSION_LEVEL_3)
+if(BUILD_REGRESSION_STRESS OR BUILD_REGRESSION_LEVEL_4)
+	add_definitions(-D REGRESSION_LEVEL_OVERRIDE)
+	add_definitions(-D REGRESSION_LEVEL_1)
+	add_definitions(-D REGRESSION_LEVEL_2)
+	add_definitions(-D REGRESSION_LEVEL_3)
+	add_definitions(-D REGRESSION_LEVEL_4)
+endif(BUILD_REGRESSION_STRESS OR BUILD_REGRESSION_LEVEL_4)
+
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	include(CheckCXXCompilerFlag)
@@ -219,7 +262,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	#set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 	#set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
 
-	#set(EXTRA_CXX_FLAGS "-std=c++20") # isn't this done by CMAKE_CXX_STANDARD?
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3)
@@ -242,8 +284,8 @@ elseif(MSVC)
 
 	# include code quality flags
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /MP")
-	add_definitions(-D _CRT_SECURE_NO_WARNINGS)
-	add_definitions(-D _SCL_SECURE_NO_WARNINGS)
+#	add_definitions(-D _CRT_SECURE_NO_WARNINGS)
+#	add_definitions(-D _SCL_SECURE_NO_WARNINGS)
 
 	# specific flags for debug and release builds
 
@@ -311,7 +353,7 @@ elseif(MSVC)
 	# The Spectre-mitigated libraries for Visual Studio 2017 and later can be downloaded 
 	# in the Visual Studio Installer. They're found in the Individual Components tab under 
 	# Compilers, build tools, and runtimes, and have "Libs for Spectre" in the name.
-	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Qspectre")
+	# set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Qspectre")
 	# /Qspectre is very noise, so do not include it for debug builds
 	# set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
 
@@ -352,21 +394,6 @@ endif()
 
 ####
 # Set UNIVERSAL include directory that contains all the different number systems
-# universal/native
-# universal/bitblock
-# universal/blockbin
-# universal/integer
-# universal/decimal
-# universal/fixpnt
-# universal/cfloat
-# universal/areal
-# universal/unum
-# universal/unum2
-# universal/posit
-# universal/valid
-# universal/lns
-# universal/adaptiveint
-# universal/adaptivefloat
 include_directories("./include")
 
 ####
@@ -397,7 +424,8 @@ endmacro (compile_all)
 ####
 # Setup the cmake config files
 string(REGEX REPLACE "_" "" PROJECT_NAME_NOSPACES ${PROJECT_NAME})
-message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_NOSPACES}")
+# in case the project name changes
+# message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_NOSPACES}")
 set(cmake_conf_file         "${PROJECT_NAME_NOSPACES}-config.cmake")
 set(cmake_conf_version_file "${PROJECT_NAME_NOSPACES}-config-version.cmake")
 set(cmake_targets_file      "${PROJECT_NAME_NOSPACES}-targets.cmake")
@@ -421,14 +449,42 @@ else()
     message(FATAL_ERROR "Not supported system type. Options: UNIX or WIN32.")
 endif()
 
-message(STATUS "include_install_dir         = ${include_install_dir}")
-message(STATUS "include_install_dir_full    = ${include_install_dir_full}")
-message(STATUS "config_install_dir          = ${config_install_dir}")
-message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
+#####  Gather git repo related information
+# Get the current working branch
+execute_process(
+  COMMAND git rev-parse --abbrev-ref HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest abbreviated commit hash of the working branch
+execute_process(
+  COMMAND git log -1 --format=%h
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# propagate the git information to any executables that might want to use it
+add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
+add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
+
+set(PROJECT_VERSION "${PROJECT_VERSION}.${GIT_COMMIT_HASH}")
+
+message(STATUS "")
+message(STATUS "PROJECT_NAME                = ${PROJECT_NAME}")
+message(STATUS "PROJECT_NAME_NOSPACES       = ${PROJECT_NAME_NOSPACES}")
 message(STATUS "PROJECT_SOURCE_DIR          = ${PROJECT_SOURCE_DIR}")
 message(STATUS "PROJECT_VERSION             = ${PROJECT_VERSION}")
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR    = ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "CMAKE_CURRENT_BINARY_DIR    = ${CMAKE_CURRENT_BINARY_DIR}")
+message(STATUS "GIT_COMMIT_HASH             = ${GIT_COMMIT_HASH}")
+message(STATUS "GIT_BRANCH                  = ${GIT_BRANCH}")
+message(STATUS "include_install_dir         = ${include_install_dir}")
+message(STATUS "include_install_dir_full    = ${include_install_dir_full}")
+message(STATUS "config_install_dir          = ${config_install_dir}")
+message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
 
 # configure the library target
 target_include_directories(${project_library_target_name} 
@@ -479,42 +535,40 @@ install(FILES
 install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
-if(BUILD_CI_CHECK)
+if(BUILD_ALL)
 	# set the grouped components to build (will trigger builds when tested)
 	set(BUILD_DEMONSTRATION ON)
-	set(BUILD_NUMERICAL_CHECKS ON)
+	set(BUILD_NUMERICS ON)
 	set(BUILD_BENCHMARKS ON)
-	set(BUILD_REGRESSION_SUITES ON)
+	set(BUILD_NUMBER_SYSTEMS ON)
 	set(BUILD_MIXEDPRECISION_SDK ON)
 
 	# build the BLAS test/verification suites
-	set(BUILD_BLAS ON)
-	set(BUILD_VMATH ON)
+	set(BUILD_LINEAR_ALGEBRA_BLAS ON)
+	set(BUILD_LINEAR_ALGEBRA_VMATH ON)
 
 	# build the C API library
 	set(BUILD_C_API_PURE_LIB ON)
 	set(BUILD_C_API_SHIM_LIB ON)
 
-	# build IEEE float/double quire capability
-	set(BUILD_IEEE_FLOAT_QUIRES ON)
-
 	# build the HW validation environment
 	set(BUILD_VALIDATION_HW ON)
-endif(BUILD_CI_CHECK)
+endif(BUILD_ALL)
 
 if(BUILD_DEMONSTRATION)
 	# core demonstration example applications that use the library
 	set(BUILD_EDUCATION ON)
 	set(BUILD_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
-
 	set(BUILD_PLAYGROUND ON)
 endif(BUILD_DEMONSTRATION)
 
-if(BUILD_NUMERICAL_CHECKS)
-	set(BUILD_NUMERICAL_CHALLENGES ON)
-	set(BUILD_FUNCTIONS ON)
-endif(BUILD_NUMERICAL_CHECKS)
+if(BUILD_NUMERICS)
+	set(BUILD_NUMERIC_CHALLENGES ON)
+	set(BUILD_NUMERIC_UTILS ON)
+	set(BUILD_NUMERIC_FUNCTIONS ON)
+	set(BUILD_NUMERIC_IEEE_QUIRES ON)
+endif(BUILD_NUMERICS)
 
 if(BUILD_BENCHMARKS)
 	# build the benchmark suites
@@ -523,25 +577,25 @@ if(BUILD_BENCHMARKS)
 	set(BUILD_BENCHMARK_ENERGY ON)
 endif(BUILD_BENCHMARKS)
 
-if(BUILD_REGRESSION_SUITES)
+if(BUILD_NUMBER_SYSTEMS)
 	# build the different test/verification suites for each number system
-	set(BUILD_ARITHMETIC_CLASSES ON)
-	set(BUILD_NATIVE_TYPES ON)
-	set(BUILD_REALS ON)
-	set(BUILD_INTEGERS ON)
-	set(BUILD_DECIMALS ON)
-	set(BUILD_FIXPNTS ON)
-	set(BUILD_CFLOATS ON)
-	set(BUILD_AREALS ON)
-	set(BUILD_UNUM_TYPE_1 ON)
-	set(BUILD_UNUM_TYPE_2 ON)
-	set(BUILD_POSITS ON)
-	set(BUILD_VALIDS ON)
-	set(BUILD_LNS ON)
+	set(BUILD_NUMBER_ARITHMETIC_CLASSES ON)
+	set(BUILD_NUMBER_NATIVE_TYPES ON)
+	set(BUILD_NUMBER_REALS ON)
+	set(BUILD_NUMBER_INTEGERS ON)
+	set(BUILD_NUMBER_DECIMALS ON)
+	set(BUILD_NUMBER_FIXPNTS ON)
+	set(BUILD_NUMBER_CFLOATS ON)
+	set(BUILD_NUMBER_AREALS ON)
+	set(BUILD_NUMBER_UNUM_TYPE_1 ON)
+	set(BUILD_NUMBER_UNUM_TYPE_2 ON)
+	set(BUILD_NUMBER_POSITS ON)
+	set(BUILD_NUMBER_VALIDS ON)
+	set(BUILD_NUMBER_LNS ON)
 	
 	# build the conversion test suites
-	set(BUILD_CONVERSIONS ON)
-endif(BUILD_REGRESSION_SUITES)
+	set(BUILD_NUMBER_CONVERSIONS ON)
+endif(BUILD_NUMBER_SYSTEMS)
 
 if(BUILD_MIXEDPRECISION_SDK)
 	set(BUILD_MIXEDPRECISION_ROOTS ON)
@@ -553,74 +607,74 @@ if(BUILD_MIXEDPRECISION_SDK)
 endif(BUILD_MIXEDPRECISION_SDK)
 
 # Build the tests for the underlying storage classes
-if(BUILD_ARITHMETIC_CLASSES)
+if(BUILD_NUMBER_ARITHMETIC_CLASSES)
 add_subdirectory("tests/bitblock")
 add_subdirectory("tests/value")
 add_subdirectory("tests/blockbinary")
 add_subdirectory("tests/blockfraction")
 add_subdirectory("tests/blocktriple")
-endif(BUILD_ARITHMETIC_CLASSES)
+endif(BUILD_NUMBER_ARITHMETIC_CLASSES)
 
-if(BUILD_NATIVE_TYPES)
+if(BUILD_NUMBER_NATIVE_TYPES)
 add_subdirectory("tests/native")
-endif(BUILD_NATIVE_TYPES)
+endif(BUILD_NUMBER_NATIVE_TYPES)
 
 # Arbitrary integers tests
-if(BUILD_INTEGERS)
+if(BUILD_NUMBER_INTEGERS)
 add_subdirectory("tests/integer")
 add_subdirectory("tests/adaptiveint")
-endif(BUILD_INTEGERS)
+endif(BUILD_NUMBER_INTEGERS)
 
-if(BUILD_DECIMALS)
+if(BUILD_NUMBER_DECIMALS)
 add_subdirectory("tests/decimal")
-endif(BUILD_DECIMALS)
+endif(BUILD_NUMBER_DECIMALS)
 
 # Arbitrary fixed-point tests
-if(BUILD_FIXPNTS)
+if(BUILD_NUMBER_FIXPNTS)
 add_subdirectory("tests/fixpnt")
-endif(BUILD_FIXPNTS)
+endif(BUILD_NUMBER_FIXPNTS)
 
 # Arbitrary reals tests
-if(BUILD_REALS)
+if(BUILD_NUMBER_REALS)
 add_subdirectory("tests/adaptivefloat")
-endif(BUILD_REALS)
+endif(BUILD_NUMBER_REALS)
 
-if(BUILD_LNS)
+if(BUILD_NUMBER_LNS)
 add_subdirectory("tests/lns")
-endif(BUILD_LNS)
+endif(BUILD_NUMBER_LNS)
 
-if(BUILD_UNUM_TYPE_1)
+if(BUILD_NUMBER_UNUM_TYPE_1)
 add_subdirectory("tests/unum")
-endif(BUILD_UNUM_TYPE_1)
+endif(BUILD_NUMBER_UNUM_TYPE_1)
 
-if(BUILD_UNUM_TYPE_2)
+if(BUILD_NUMBER_UNUM_TYPE_2)
 add_subdirectory("tests/unum2")
-endif(BUILD_UNUM_TYPE_2)
+endif(BUILD_NUMBER_UNUM_TYPE_2)
 
-if(BUILD_POSITS)
+if(BUILD_NUMBER_POSITS)
 add_subdirectory("tests/posit")
 add_subdirectory("tests/posit/specialized")
 add_subdirectory("tests/adaptiveposit")
-endif(BUILD_POSITS)
+endif(BUILD_NUMBER_POSITS)
 
-if(BUILD_VALIDS)
+if(BUILD_NUMBER_VALIDS)
 add_subdirectory("tests/valid")
-endif(BUILD_VALIDS)
+endif(BUILD_NUMBER_VALIDS)
 
 # reals with an uncertainty bit
-if(BUILD_AREALS)
+if(BUILD_NUMBER_AREALS)
 add_subdirectory("tests/areal")
-endif(BUILD_AREALS)
+endif(BUILD_NUMBER_AREALS)
 
 # cfloats
-if(BUILD_CFLOATS)
+if(BUILD_NUMBER_CFLOATS)
 add_subdirectory("tests/cfloat")
-endif(BUILD_CFLOATS)
+endif(BUILD_NUMBER_CFLOATS)
 
 # conversion tests suites
-if(BUILD_CONVERSION_TESTS)
+if(BUILD_NUMBER_CONVERSIONS)
 add_subdirectory("tests/conversions")
-endif(BUILD_CONVERSION_TESTS)
+endif(BUILD_NUMBER_CONVERSIONS)
 
 
 if(BUILD_MIXEDPRECISION_ROOTS)
@@ -674,22 +728,16 @@ endif(BUILD_BENCHMARK_ENERGY)
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
-add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
+# educational examples
 if(BUILD_EDUCATION)
 add_subdirectory("education/tables")
-add_subdirectory("education/integer")
-add_subdirectory("education/fixpnt")
-add_subdirectory("education/bfloat")
-add_subdirectory("education/areal")
-add_subdirectory("education/unum")
-add_subdirectory("education/posit")
+add_subdirectory("education/number")
 add_subdirectory("education/quire")
-add_subdirectory("education/valid")
-add_subdirectory("education/lns")
 endif(BUILD_EDUCATION)
 
+# application examples
 if(BUILD_APPLICATIONS)
 add_subdirectory("applications/blas")
 add_subdirectory("applications/chaos")
@@ -710,18 +758,23 @@ add_subdirectory("applications/trigonometry")
 add_subdirectory("applications/weather")
 endif(BUILD_APPLICATIONS)
 
-if(BUILD_NUMERICAL_CHALLENGES)
+# numerical benchmarks and challenge problems
+if(BUILD_NUMERIC_CHALLENGES)
 add_subdirectory("tests/numerical/properties")
+endif(BUILD_NUMERIC_CHALLENGES)
+if(BUILD_NUMERIC_UTILS)
+add_subdirectory("tests/numerical/utils")
+endif(BUILD_NUMERIC_UTILS)
+if(BUILD_NUMERIC_FPBENCH)
 add_subdirectory("tests/numerical/fpbench")
-endif(BUILD_NUMERICAL_CHALLENGES)
+endif(BUILD_NUMERIC_FPBENCH)
+if(BUILD_NUMERIC_FUNCTIONS)
+add_subdirectory("tests/functions")
+endif(BUILD_NUMERIC_FUNCTIONS)
 
 if(BUILD_VALIDATION_HW)
 add_subdirectory("validation/hw")
 endif(BUILD_VALIDATION_HW)
-
-if(BUILD_FUNCTIONS)
-add_subdirectory("tests/functions")
-endif(BUILD_FUNCTIONS)
 
 if(BUILD_PLAYGROUND)
 add_subdirectory("playground")
@@ -744,10 +797,12 @@ add_subdirectory("tests/float")
 endif(BUILD_IEEE_FLOAT_QUIRES)
 
 # Basic Linear Algebra library
-if(BUILD_BLAS)
+if(BUILD_LINEAR_ALGEBRA_BLAS)
 add_subdirectory("tests/blas")
+endif(BUILD_LINEAR_ALGEBRA_BLAS)
+if(BUILD_LINEAR_ALGEBRA_VMATH)
 add_subdirectory("tests/vmath")
-endif(BUILD_BLAS)
+endif(BUILD_LINEAR_ALGEBRA_VMATH)
 
 ####
 # Configuration summary

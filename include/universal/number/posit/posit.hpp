@@ -1,4 +1,4 @@
-// <universal/posit/posit>: arbitrary configuration fixed-size posit standard header
+// <universal/posit/posit.hpp>: arbitrary configuration fixed-size posit standard header
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -84,8 +84,8 @@
 #include <universal/number/posit/fdp.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// math functions
-#include <universal/number/posit/math_functions.hpp>
+/// elementary math functions library
+#include <universal/number/posit/mathlib.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// numerical functions

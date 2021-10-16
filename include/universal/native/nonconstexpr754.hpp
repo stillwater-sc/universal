@@ -150,15 +150,7 @@ inline std::string to_base2_scientific(float number) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
-	s << "e2^" << std::showpos << (decoder.parts.exponent - 127);
-/* deprecated
-	bool s;
-	int base2Exp;
-	float _fr;
-	unsigned int mantissa;
-	extract_fp_components(number, s, base2Exp, _fr, mantissa);
-	s << (s ? "-" : "+") << "1." << std::bitset<23>(mantissa) << "e2^" << std::showpos << base2Exp - 1;
-*/
+	s << "e" << std::showpos << (static_cast<int>(decoder.parts.exponent) - 127);
 	return s.str();
 }
 
@@ -334,7 +326,7 @@ inline std::string to_base2_scientific(double number) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	} 
-	s << "e2^" << std::showpos << (decoder.parts.exponent - 1023);
+	s << "e" << std::showpos << (static_cast<int>(decoder.parts.exponent) - 1023);
 	return s.str();
 }
 
@@ -402,6 +394,7 @@ so as to enable the representation of special states such as
 infinity and Not a Number.If the exponent field is zero, the
 value is a denormal number and the exponent of 2 is 16382.
 */
+#include <universal/native/nonconstexpr/extract_fp_components.hpp>
 #include <universal/native/nonconstexpr/msvc_long_double.hpp>
 #include <universal/native/nonconstexpr/clang_long_double.hpp>
 #include <universal/native/nonconstexpr/gcc_long_double.hpp>

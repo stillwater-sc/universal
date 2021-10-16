@@ -21,7 +21,6 @@
 
 template<size_t nbits, size_t es, size_t capacity = 10>
 void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 	assert(num_rows(A) == num_cols(A));
@@ -36,13 +35,13 @@ void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<
 		steady_clock::time_point t2 = steady_clock::now();
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 		double elapsed = time_span.count();
-		std::cout << "Crout took " << elapsed << " seconds." << std::endl;
-		std::cout << "Performance " << (uint32_t)(N*N*N / (1000 * elapsed)) << " KOPS/s" << std::endl;
+		std::cout << "Crout took " << elapsed << " seconds.\n";
+		std::cout << "Performance " << (uint32_t)(N*N*N / (1000 * elapsed)) << " KOPS/s\n";
 
 		SolveCrout(LU, b, x);
-		cout << "Crout LU\n" << LU << endl;
-		cout << "Solution\n" << x << endl;
-		cout << "RHS\n" << b << endl;
+		std::cout << "Crout LU\n" << LU << '\n';
+		std::cout << "Solution\n" << x << '\n';
+		std::cout << "RHS\n" << b << '\n';
 	}
 
 	{
@@ -52,13 +51,13 @@ void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<
 		steady_clock::time_point t2 = steady_clock::now();
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 		double elapsed = time_span.count();
-		std::cout << "CroutFDP took " << elapsed << " seconds." << std::endl;
-		std::cout << "Performance " << (uint32_t)(N * N * N / (1000 * elapsed)) << " KOPS/s" << std::endl;
+		std::cout << "CroutFDP took " << elapsed << " seconds.\n";
+		std::cout << "Performance " << (uint32_t)(N * N * N / (1000 * elapsed)) << " KOPS/s\n";
 
 		SolveCroutFDP(LU, b, x);
-		cout << "CroutFDP LU\n" << LU << endl;
-		cout << "Solution\n" << x << endl;
-		cout << "RHS\n" << b << endl;
+		std::cout << "CroutFDP LU\n" << LU << '\n';
+		std::cout << "Solution\n" << x << '\n';
+		std::cout << "RHS\n" << b << '\n';
 	}
 
 	std::cout << std::endl;
@@ -66,16 +65,15 @@ void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<
 
 template<size_t nbits, size_t es>
 void GaussianEliminationTest() {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 	using Scalar = sw::universal::posit<nbits, es>;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
-	cout << "Using " << dynamic_range<nbits, es>() << endl;
+	std::cout << "Using " << dynamic_range<nbits, es>() << '\n';
 
 	// repeat set up for posits
-	cout << "Posit inputs\n";
+	std::cout << "Posit inputs\n";
 	Matrix U = {     // define the upper triangular matrix
 		{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 },
 		{ 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 },
@@ -90,24 +88,23 @@ void GaussianEliminationTest() {
 	Matrix L = transpose(U);
 
 	auto A = L * U;   // construct the A matrix to solve
-	cout << "L\n" << L << endl;
-	cout << "U\n" << U << endl;
-	cout << "A\n" << A << endl;
+	std::cout << "L\n" << L << '\n';
+	std::cout << "U\n" << U << '\n';
+	std::cout << "A\n" << A << '\n';
 	size_t N = num_cols(A);
 	// define a difficult solution
-	Scalar epsplus = Scalar(1) + numeric_limits<Scalar>::epsilon();
+	Scalar epsplus = Scalar(1) + std::numeric_limits<Scalar>::epsilon();
 	Vector x(N);
 	x = epsplus;
 	auto b = fmv(A, x);   // construct the right hand side
-	cout << "b" << b << endl;
-	cout << endl << ">>>>>>>>>>>>>>>>" << endl;
+	std::cout << "b" << b << '\n';
+	std::cout << "\n>>>>>>>>>>>>>>>>\n";
 
 	BenchmarkLUDecomposition(A, x, b);
 }
 
 template<typename Scalar>
 void LUTest() {
-	using namespace std;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	Matrix A = {
@@ -119,18 +116,17 @@ void LUTest() {
 	};
 
 	auto LU = lu(A);
-	cout << "\n---------------- result ------------------\n";
-	cout << "Combined matrix\n" << LU << endl;
+	std::cout << "\n---------------- result ------------------\n";
+	std::cout << "Combined matrix\n" << LU << '\n';
 	auto D = diag(diag(LU));
 	auto L = tril(LU) - D + sw::universal::blas::eye<Scalar>(num_cols(A));
 	auto U = triu(LU);
-	cout << "Lower Triangular matrix\n" << L << endl;
-	cout << "Upper Triangular matrix\n" << U << endl;
+	std::cout << "Lower Triangular matrix\n" << L << '\n';
+	std::cout << "Upper Triangular matrix\n" << U << '\n';
 }
 
 template<typename Scalar>
 void FrankMatrixTest() {
-	using namespace std;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
@@ -157,8 +153,7 @@ void FrankMatrixTest() {
 			infnorm = fabs(v);
 		}
 	}
-	cout << "\nSolution vector for type " << setw(30) << typeid(Scalar).name() << " is [" << xx << "]" << " infinity norm of error " << infnorm << endl;
-
+	std::cout << "\nSolution vector for type " << std::setw(30) << typeid(Scalar).name() << " is [" << xx << "]" << " infinity norm of error " << infnorm << '\n';
 }
 
 void FrankMatrix() {
@@ -177,7 +172,6 @@ void FrankMatrix() {
 
 template<typename Scalar>
 void MagicSquareTest(int N) {
-	using namespace std;
 	using namespace sw::universal::blas;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
@@ -190,41 +184,39 @@ void MagicSquareTest(int N) {
 	steady_clock::time_point t1 = steady_clock::now();
 	x = solve(A, b);
 	steady_clock::time_point t2 = steady_clock::now();
-//	cout << "solution x\n" << x << endl;
+//	std::cout << "solution x\n" << x << '\n';
 	bool bFail = false;
 	for (auto v : x) {
 		if (fabs(v - 1) > 0.00001) {
-			cout << v << " outside of range 1.0+-0.00001\n";
+			std::cout << v << " outside of range 1.0+-0.00001\n";
 			bFail = true;
 			break;
 		}
 	}
-	if (bFail) cout << "FAIL for " << typeid(Scalar).name() << " when N = " << N << endl;
-	else cout << "PASS for N = " << typeid(Scalar).name() << " when N = " << N << endl;
+	if (bFail) std::cout << "FAIL for " << typeid(Scalar).name() << " when N = " << N << '\n';
+	else std::cout << "PASS for N = " << typeid(Scalar).name() << " when N = " << N << '\n';
 	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 	double elapsed = time_span.count();
-	cout << "solve took " << elapsed << " seconds: ";
+	std::cout << "solve took " << elapsed << " seconds: ";
 	double nrOps = double(N) * double(N) * double(N) / (3.0 * elapsed);
-	cout << "performance ";
+	std::cout << "performance ";
 	if (nrOps > 1000000.0) {
-		cout << (uint32_t)(nrOps * 1e-6) << " MOPS/s" << endl;
+		std::cout << (uint32_t)(nrOps * 1e-6) << " MOPS/s\n";
 	}
 	else {
-		cout << (uint32_t)(nrOps * 1e-3) << " KOPS/s" << endl;
+		std::cout << (uint32_t)(nrOps * 1e-3) << " KOPS/s\n";
 	}
-
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
 	// We want to solve the system Ax=b
 	// GaussianEliminationTest<32, 2>();
 
-	if (argc == 1) cout << argv[0] << '\n';
+	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
 	FrankMatrix();

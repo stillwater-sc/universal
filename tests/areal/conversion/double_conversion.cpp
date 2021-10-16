@@ -18,54 +18,50 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/areal/areal_impl.hpp>
-#include <universal/number/areal/manipulators.hpp>
-#include <universal/number/areal/math_functions.hpp>
+#include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/areal_test_suite.hpp>
 #include <universal/number/areal/table.hpp> // only used for value table generation
 
 // sign of 0 is flipped on MSVC Release builds
 void CompilerBug() {
-	using namespace std;
 	using namespace sw::universal;
 	{
 		areal<5, 1> a;
 		a.setbits(0x0);
-		cout << "areal<5,1> : " << to_binary(a) << " : " << a << endl;
+		std::cout << "areal<5,1> : " << to_binary(a) << " : " << a << std::endl;
 		float f = float(a);
-		cout << "float      : " << f << endl;
+		std::cout << "float      : " << f << std::endl;
 		double d = double(a);
-		cout << "double     : " << d << endl;
+		std::cout << "double     : " << d << std::endl;
 	}
 	{
 		areal<5, 1> a;
 		a.setbits(0x10);
-		cout << "areal<5,1> : " << to_binary(a) << " : " << a << endl;
+		std::cout << "areal<5,1> : " << to_binary(a) << " : " << a << std::endl;
 		float f = float(a);
-		cout << "float      : " << f << endl;
+		std::cout << "float      : " << f << std::endl;
 		double d = double(a);
-		cout << "double     : " << d << endl;
+		std::cout << "double     : " << d << std::endl;
 	}
 
 	{
 		areal<6, 1> a;
 		a.setbits(0x0);
-		cout << "areal<6,1> : " << to_binary(a) << " : " << a << endl;
+		std::cout << "areal<6,1> : " << to_binary(a) << " : " << a << std::endl;
 		float f = float(a);
-		cout << "float      : " << f << endl;
+		std::cout << "float      : " << f << std::endl;
 		double d = double(a);
-		cout << "double     : " << d << endl;
+		std::cout << "double     : " << d << std::endl;
 	}
 	{
 		areal<6, 1> a;
 		a.setbits(0x20);
-		cout << "areal<6,1> : " << to_binary(a) << " : " << a << endl;
+		std::cout << "areal<6,1> : " << to_binary(a) << " : " << a << std::endl;
 		float f = float(a);
-		cout << "float      : " << f << endl;
+		std::cout << "float      : " << f << std::endl;
 		double d = double(a);
-		cout << "double     : " << d << endl;
+		std::cout << "double     : " << d << std::endl;
 	}
 }
 
@@ -75,7 +71,6 @@ void CompilerBug() {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 0) {
@@ -111,7 +106,7 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7, uint8_t> >(tag, true), tag, "areal<10,7,uint8_t>");
 //	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7, uint16_t> >(tag, true), tag, "areal<10,7,uint16_t>");
 
-	cout << "failed tests: " << nrOfFailedTestCases << endl;
+	std::cout << "failed tests: " << nrOfFailedTestCases << std::endl;
 
 #if STRESS_TESTING
 
@@ -121,7 +116,7 @@ try {
 
 #else  // !MANUAL_TESTING
 	bool bReportIndividualTestCases = false;
-	cout << "AREAL conversion from double validation" << endl;
+	std::cout << "AREAL conversion from double validation\n";
 
 	// es = 1
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<4, 1>, double >(tag, bReportIndividualTestCases), tag, "areal<4,1>");

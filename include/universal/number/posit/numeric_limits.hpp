@@ -151,7 +151,7 @@ namespace std {
 			return Posit(sw::universal::SpecificValue::minpos);
 		}
 		static constexpr Posit infinity() { // return positive infinity
-			return Posit(NAR);
+			return Posit(sw::universal::SpecificValue::maxpos);
 		}
 		static constexpr Posit quiet_NaN() { // return non-signaling NaN
 			return Posit(NAR);

@@ -11,7 +11,7 @@
 #include <tuple>
 #include <algorithm> // std::max
 
-#include <universal/native/ieee754.hpp>
+#include <universal/native/nonconstexpr754.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 

@@ -176,13 +176,12 @@ int check() {
 }
 
 void TestFastdiv() {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl << "TestFastdiv" << endl;
+	std::cout << "\nTestFastdiv\n";
 	// fast integer division by transformation to multiply with magic constant followed by a shift
 	fid::fastdiv fast_divisor(1);
-	cout << "size of fastdiv: " << sizeof(fast_divisor) << endl;
+	std::cout << "size of fastdiv: " << sizeof(fast_divisor) << '\n';
 	fast_divisor.info();
 
 	// int q = dividend / divisor;
@@ -190,7 +189,7 @@ void TestFastdiv() {
 	for (int i = 0; i < 10; i++) {
 		int divisor = rand();
 		fid::fastdiv fast_divisor(divisor);
-		cout << "divisor : " << divisor << std::endl;
+		std::cout << "divisor : " << divisor << '\n';
 		fast_divisor.info();
 	}
 
@@ -205,12 +204,20 @@ void ExamplePattern() {
 	GenerateDivTest<sw::universal::integer<16> >(2, 16, z);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	std::string tag = "Integer Arithmetic tests failed";
@@ -226,34 +233,41 @@ try {
 	ReportTestResult(VerifyDivision<4, uint8_t>("manual test", true), "integer<4, uint8_t>", "divisio");
 	ReportTestResult(VerifyDivision<11, uint8_t>("manual test", true), "integer<11, uint8_t>", "divisio");
 
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else
-	std::cout << "Integer Arithmetic verfication" << std::endl;
+	std::cout << "Integer Division Arithmetic verfication" << std::endl;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	// samples of number systems
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(tag, bReportIndividualTestCases), "integer<4, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(tag, bReportIndividualTestCases), "integer<6, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12, uint16_t>", "division");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "integer<4, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(bReportIndividualTestCases), "integer<6, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "integer<8, uint8_t>", "division");
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint8_t >(bReportIndividualTestCases), "integer< 9, uint8_t >", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint16_t>(bReportIndividualTestCases), "integer< 9, uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint8_t >(bReportIndividualTestCases), "integer<11, uint8_t >", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(bReportIndividualTestCases), "integer<11, uint16_t>", "division");
+#endif
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "division");
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint8_t >(bReportIndividualTestCases), "integer<13, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(bReportIndividualTestCases), "integer<13, uint8_t>", "division");
+#endif
 
+#if REGRESSION_LEVEL_4
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "division");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "division");
+#endif
 
-#endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING

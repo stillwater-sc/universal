@@ -9,27 +9,32 @@
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/verification/test_reporters.hpp> 
 
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt_impl.hpp>
-// fixed-point type manipulators such as pretty printers
-#include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/math_functions.hpp>
-
-// conditional compile flags
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 0) { cout << argv[0] << endl; }
+	if (argc > 0) { std::cout << argv[0] << std::endl; }
 
+	std::string test_suite = "fixed-point class interface ";
+	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
 
-	cout << "fixed-point class interface tests" << endl;
+
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR fixed-point (the default)
@@ -43,7 +48,7 @@ try {
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << endl;
+			std::cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
 	}
 
@@ -55,7 +60,7 @@ try {
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL: " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+			std::cout << "FAIL: " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
 		}
 	}
 
@@ -73,8 +78,8 @@ try {
 		if (a != (d - 1)) ++nrOfFailedTestCases; // saturating to maxneg
 		if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
 		if (nrOfFailedTestCases - start > 0) {
-			cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
-			cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << endl;
+			std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
+			std::cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << '\n';
 		}
 	}
 
@@ -89,8 +94,8 @@ try {
 		if (a != (b - c)) ++nrOfFailedTestCases;
 		//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
-			cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
+			std::cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
+			std::cout << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
 	}
 
@@ -107,7 +112,7 @@ try {
 		b.setbits(1); // set the ULP
 		if (!b.at(0)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : selectors\n";
+			std::cout << "FAIL : selectors\n";
 		}
 	}
 
@@ -137,7 +142,7 @@ try {
 		d.setzero();
 		if (d != 0) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : modifiers\n";
+			std::cout << "FAIL : modifiers\n";
 		}
 	}
 
@@ -155,7 +160,7 @@ try {
 		b = twosComplement(a);
 		if (b != 1) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : complements 1\n";
+			std::cout << "FAIL : complements 1\n";
 		}
 	}
 	{
@@ -170,7 +175,7 @@ try {
 		b = twosComplement(a);
 		if (b != 1) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : complements 2\n";
+			std::cout << "FAIL : complements 2\n";
 		}
 	}
 	{
@@ -185,7 +190,7 @@ try {
 		b = twosComplement(a);
 		if (b != 1) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : complements 3\n";
+			std::cout << "FAIL : complements 3\n";
 		}
 	}
 
@@ -210,17 +215,17 @@ try {
 		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
-		maxpos<nbits, rbits, arithmetic, blocktype>(a);
-		maxneg<nbits, rbits, arithmetic, blocktype>(b);
-		minpos<nbits, rbits, arithmetic, blocktype>(c);
-		minneg<nbits, rbits, arithmetic, blocktype>(d);
+		a.maxpos();
+		b.maxneg();
+		c.minpos();
+		d.minneg();
 		if ((c + d) != 0) ++nrOfFailedTestCases;
 
 		if ((a + c) != b) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL: min/max\n";
-			cout << to_binary(c + d) << " vs " << to_binary(fixpnt<nbits, rbits, arithmetic, blocktype>(0)) << endl;
-			cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
+			std::cout << "FAIL: min/max\n";
+			std::cout << to_binary(c + d) << " vs " << to_binary(fixpnt<nbits, rbits, arithmetic, blocktype>(0)) << '\n';
+			std::cout << to_binary(a + c) << " vs " << to_binary(b) << '\n';
 		}
 	}
 
@@ -328,7 +333,7 @@ try {
 		if (2l >= d) ++nrOfFailedTestCases;
 		if (3ll >= d) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL: logic operators\n";
+			std::cout << "FAIL: logic operators\n";
 		}
 	}
 
@@ -348,7 +353,7 @@ try {
 			c = f;
 			d = double(a);
 			if (a != c && a != d) ++nrOfFailedTestCases;
-			cout << setw(3) << i << ' ' << to_binary(a) << ' ' << setw(10) << a << ' ' << setw(3) << int(f) << ' ' << to_binary(b) << ' ' << b << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+			std::cout << setw(3) << i << ' ' << to_binary(a) << ' ' << setw(10) << a << ' ' << setw(3) << int(f) << ' ' << to_binary(b) << ' ' << b << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
 		}
 	}
 
@@ -361,17 +366,12 @@ try {
 
 		for (int i = -16; i < 16; ++i) {
 			a = i;
-			cout << to_binary(i) << ' ' << a << ' ' << to_binary(a) << ' ' << to_binary(-a) << ' ' << -a << ' ' << to_binary(-i) << endl;
+			std::cout << to_binary(i) << ' ' << a << ' ' << to_binary(a) << ' ' << to_binary(-a) << ' ' << -a << ' ' << to_binary(-i) << '\n';
 		}
 	}
 #endif // LATER
 
-	if (nrOfFailedTestCases > 0) {
-		cout << "FAIL" << endl;
-	}
-	else {
-		cout << "PASS" << endl;
-	}
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

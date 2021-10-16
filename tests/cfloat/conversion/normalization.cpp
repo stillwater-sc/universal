@@ -16,7 +16,7 @@
 
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/math_functions.hpp>
+#include <universal/number/cfloat/mathlib.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
@@ -30,7 +30,6 @@ namespace sw::universal {
 	/// <returns></returns>
 	template<typename cfloatConfiguration>
 	int VerifyCfloatNormalization(bool bReportIndividualTestCases) {
-		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = cfloatConfiguration::nbits;
 		constexpr size_t es = cfloatConfiguration::es;
@@ -49,7 +48,7 @@ namespace sw::universal {
 				a.normalize(b);
 				if (double(a) != double(b)) {
 					++nrOfTestFailures;
-					if (bReportIndividualTestCases) cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
 				}
 			}
 		}
@@ -64,7 +63,6 @@ namespace sw::universal {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	print_cmd_line(argc, argv);
@@ -88,7 +86,7 @@ try {
 		blocktriple<fbits + 1> b;  // representing significant
 		a = 0.015625f;
 //		a.normalize(b);
-		cout << to_binary(a) << " : " << a << " : scale " << a.scale() << " : " << to_triple(b) << " : " << b << endl;
+		std::cout << to_binary(a) << " : " << a << " : scale " << a.scale() << " : " << to_triple(b) << " : " << b << std::endl;
 
 	}
 
@@ -103,7 +101,7 @@ try {
 	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<9, 1, uint8_t> >(true);
 #endif
 
-	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
+	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
 
 #if STRESS_TESTING

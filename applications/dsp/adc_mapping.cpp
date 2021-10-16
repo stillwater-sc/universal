@@ -33,7 +33,6 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 template<size_t nbits, size_t es>
 void GenerateSample() {
-	using namespace std;
 	using namespace sw::universal;
 
 	posit<nbits, es> a, b;
@@ -42,12 +41,11 @@ void GenerateSample() {
 	// -1, -8191/8192, ... -1/8192, 0, 1/8192, ... , 8191/8192, 1
 	b = 8192; // 2^13
 	a = 8191; // 2^13 - 1
-	cout << a << " / " << b << " = " << a / b << endl;
+	std::cout << a << " / " << b << " = " << a / b << '\n';
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
@@ -58,14 +56,14 @@ try {
 	posit<16, 1> p = 1, q, diff;
 	q = p--;
 	diff = q - p;
-	cout << q << " " << color_print(q) << " - " << p << " " << color_print(p) << " diff " << diff << " " << color_print(diff) << endl;
+	std::cout << q << " " << color_print(q) << " - " << p << " " << color_print(p) << " diff " << diff << " " << color_print(diff) << '\n';
 
 	posit<16, 1> a, b, zero = 0;
 	b = 8192;
 	a = 1 / b;
-	cout << "   1 / 8192 =  " << a << " " << color_print(a) << endl;
-	cout << "   0 / 8192 =  0.00000000 " << color_print(zero) << endl;
-	cout << "  -1 / 8192 = " << -a << " " << color_print(-a) << endl;
+	std::cout << "   1 / 8192 =  " << a << " " << color_print(a) << '\n';
+	std::cout << "   0 / 8192 =  0.00000000 " << color_print(zero) << '\n';
+	std::cout << "  -1 / 8192 = " << -a << " " << color_print(-a) << '\n';
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

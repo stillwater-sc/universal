@@ -21,12 +21,20 @@ int Check(const value<fbits>& v, double ref, bool bReportIndividualTestCases) {
 	return fails;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
@@ -34,8 +42,8 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// API tests for value class
-	cout << endl << "value API tests" << endl;
-	cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases" << endl;
+	std::cout << "\nvalue API tests\n";
+	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
 
@@ -88,24 +96,38 @@ try {
 	{
 		float f = 1.23456789;
 		auto components = ieee_components(f);
-		cout << std::get<0>(components) << ", " << std::get<1>(components) << ", " << std::get<2>(components) << endl;
+		std::cout << std::get<0>(components) << ", " << std::get<1>(components) << ", " << std::get<2>(components) << '\n';
 	}
 
 	{
 		double d = 1.23456789;
 		auto components = ieee_components(d);
-		cout << std::get<0>(components) << ", " << std::get<1>(components) << ", " << std::get<2>(components) << endl;
+		std::cout << std::get<0>(components) << ", " << std::get<1>(components) << ", " << std::get<2>(components) << '\n';
 	}
 
 #else
 
-	cout << "TBD" << endl;
+#if REGRESSION_LEVEL_1
+
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+
+#endif
 
 #endif // MANUAL_TESTING
 
-	if (nrOfFailedTestCases > 0) cout << "FAIL"; else cout << "PASS";
+	if (nrOfFailedTestCases > 0) std::cout << "FAIL"; else std::cout << "PASS";
 
-	cout.flush();
+	std::cout.flush();
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

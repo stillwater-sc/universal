@@ -8,37 +8,39 @@
 namespace std {
 
 template <size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating> 
-class numeric_limits< sw::universal::cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating> > {
+class numeric_limits< sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > {
 public:
-	using cfloat = sw::universal::cfloat<nbits, es, bt,hasSubnormals,hasSupernormals,isSaturating>;
+	using Cfloat = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	static constexpr bool is_specialized = true;
-	static constexpr cfloat min() { // return minimum value
-		return cfloat(sw::universal::SpecificValue::minpos);
+	static constexpr Cfloat min() { // return minimum value
+		return Cfloat(sw::universal::SpecificValue::minpos);
 	} 
-	static constexpr cfloat max() { // return maximum value
-		return cfloat(sw::universal::SpecificValue::maxpos);
+	static constexpr Cfloat max() { // return maximum value
+		return Cfloat(sw::universal::SpecificValue::maxpos);
 	} 
-	static constexpr cfloat lowest() { // return most negative value
-		return cfloat(sw::universal::SpecificValue::maxneg);
+	static constexpr Cfloat lowest() { // return most negative value
+		return Cfloat(sw::universal::SpecificValue::maxneg);
 	} 
-	static constexpr cfloat epsilon() { // return smallest effective increment from 1.0
-		cfloat one{ 1.0f }, incr{ 1.0f };
+	static constexpr Cfloat epsilon() { // return smallest effective increment from 1.0
+		Cfloat one{ 1.0f }, incr{ 1.0f };
 		return ++incr - one;
 	}
-	static constexpr cfloat round_error() { // return largest rounding error
-		return cfloat(0.5f);
+	static constexpr Cfloat round_error() { // return largest rounding error
+		return Cfloat(0.5f);
 	}
-	static constexpr cfloat denorm_min() {  // return minimum denormalized value
-		return cfloat(1.0f); 
+	static constexpr Cfloat denorm_min() {  // return minimum denormalized value
+		Cfloat dmin;
+		++dmin;
+		return dmin;
 	}
-	static constexpr cfloat infinity() { // return positive infinity
-		return cfloat(INFINITY); 
+	static constexpr Cfloat infinity() { // return positive infinity
+		return Cfloat(sw::universal::SpecificValue::infpos);
 	}
-	static constexpr cfloat quiet_NaN() { // return non-signaling NaN
-		return cfloat(NAN); 
+	static constexpr Cfloat quiet_NaN() { // return non-signaling NaN
+		return Cfloat(sw::universal::SpecificValue::qnan);
 	}
-	static constexpr cfloat signaling_NaN() { // return signaling NaN
-		return cfloat(NAN);
+	static constexpr Cfloat signaling_NaN() { // return signaling NaN
+		return Cfloat(sw::universal::SpecificValue::snan);
 	}
 
 	static constexpr int digits       = nbits - 1 - es + 1;

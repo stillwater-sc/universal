@@ -17,11 +17,9 @@
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyRemainder(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl;
-	cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	std::cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << ">\n";
 
 	bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
@@ -41,13 +39,13 @@ int VerifyRemainder(bool bReportIndividualTestCases) {
 			cref = aref % bref;
 
 			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) cout << setw(5) << aref << " % " << setw(5) << bref << " = " << setw(5) << cref << " : ";
-				if (bReportOverflowCondition) cout << "underflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " % " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
+				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) cout << setw(5) << aref << " % " << setw(5) << bref << " = " << setw(5) << cref << " : ";
-				if (bReportOverflowCondition) cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " % " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
+				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
 				++nrOfOverflows;
 			}
 
@@ -63,7 +61,8 @@ int VerifyRemainder(bool bReportIndividualTestCases) {
 		}
 		//		if (i % 1024 == 0) std::cout << '.';
 	}
-	cout << "Total State Space: " << setw(10) << NR_VALUES * NR_VALUES << " Overflows: " << setw(10) << nrOfOverflows << " Underflows " << setw(10) << nrOfUnderflows << endl;
+	std::cout << "Total State Space: " << std::setw(10) << NR_VALUES * NR_VALUES 
+		<< " Overflows: " << std::setw(10) << nrOfOverflows << " Underflows " << std::setw(10) << nrOfUnderflows << '\n';
 	return nrOfFailedTests;
 }
 
@@ -99,7 +98,6 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	if (argc > 1) std::cout << argv[0] << std::endl;
@@ -122,26 +120,26 @@ try {
 
 #else
 
-	cout << "blockbinary remainder validation" << endl;
+	std::cout << "blockbinary remainder validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<5, uint8_t>(bReportIndividualTestCases), "blockbinary<5,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6, uint8_t>(bReportIndividualTestCases), "blockbinary<6,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<7, uint8_t>(bReportIndividualTestCases), "blockbinary<7,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<9, uint8_t>(bReportIndividualTestCases), "blockbinary<9,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 4, uint8_t>(bReportIndividualTestCases), "blockbinary< 4,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 5, uint8_t>(bReportIndividualTestCases), "blockbinary< 5,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 6, uint8_t>(bReportIndividualTestCases), "blockbinary< 6,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 7, uint8_t>(bReportIndividualTestCases), "blockbinary< 7,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 8, uint8_t>(bReportIndividualTestCases), "blockbinary< 8,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 9, uint8_t>(bReportIndividualTestCases), "blockbinary< 9,uint8_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t>(bReportIndividualTestCases), "blockbinary<10,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "remainder");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<9, uint16_t>(bReportIndividualTestCases), "blockbinary<9,uint16_t>", "remainder");
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t >(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "remainder");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 9, uint16_t>(bReportIndividualTestCases), "blockbinary< 9,uint16_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<13, uint16_t>(bReportIndividualTestCases), "blockbinary<13,uint16_t>", "remainder");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32_t>", "remainder");
 
-#if STRESS_TESTING
-
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(bReportIndividualTestCases), "blockbinary<16,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t >(bReportIndividualTestCases), "blockbinary<16,uint8_t>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "remainder");
 
 

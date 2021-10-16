@@ -64,25 +64,23 @@ Scalar GoodOneMinusSqrtOfOneMinusZ(Scalar z) {
 
 template<typename Scalar>
 void OneMinusSqrtOfOneMinusZ() {
-	using namespace std;
 	using namespace sw::universal;
 	constexpr size_t columnWidth = 20;
-	cout << setw(columnWidth) << "z"
-		<< setw(columnWidth) << "bad"
-		<< setw(columnWidth) << "good"
-		<< setw(columnWidth) << "error"
-		<< endl;
+	std::cout << std::setw(columnWidth) << "z"
+		<< std::setw(columnWidth) << "bad"
+		<< std::setw(columnWidth) << "good"
+		<< std::setw(columnWidth) << "error"
+		<< '\n';
 	for (float z = 0.0f; z < 1.0f; z = z + 0.05f) {
 		Scalar bad = BadOneMinusSqrtOfOneMinusZ(z);
 		Scalar good = GoodOneMinusSqrtOfOneMinusZ(z);
 		Scalar error = abs(bad - good);
-		cout << setw(columnWidth) << z << " " << bad << " " << good << " " << error << endl;
+		std::cout << std::setw(columnWidth) << z << " " << bad << " " << good << " " << error << '\n';
 	}
 }
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
@@ -94,24 +92,24 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 	Scalar p1 = 1.0/6;
 	Scalar p2 = 1.001/6;
 	int    r = 20;
 
 	for (int i = 0; i < r; ++i) {
-		cout << setw(3) << i << " " << ConditionalProb_v1(i, p1, p2) << " " << ConditionalProb_v2(i, p1, p2) << endl;
+		std::cout << std::setw(3) << i << " " << ConditionalProb_v1(i, p1, p2) << " " << ConditionalProb_v2(i, p1, p2) << '\n';
 	}
 
-	cout << "1 - SQRT(1 - z)\n";
+	std::cout << "1 - SQRT(1 - z)\n";
 	OneMinusSqrtOfOneMinusZ< posit<16, 1> >();
 	OneMinusSqrtOfOneMinusZ< posit<32, 2> >();
 	OneMinusSqrtOfOneMinusZ< posit<64, 3> >();
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

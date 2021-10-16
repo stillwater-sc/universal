@@ -86,10 +86,10 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	fixpnt<nbits + 1, rbits + 1, arithmetic, BlockType> fpminpos;
-	double dminpos = double(minpos(fpminpos));
-	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxneg;
-	double dmaxneg = double(maxneg(fpmaxneg));
+	fixpnt<nbits + 1, rbits + 1, arithmetic, BlockType> minpos(SpecificValue::minpos);
+	double dminpos = double(minpos);
+	fixpnt<nbits, rbits, arithmetic, BlockType> maxneg(SpecificValue::maxneg);
+	double dmaxneg = double(maxneg);
 
 	// NUT: number under test
 	fixpnt<nbits, rbits, arithmetic, BlockType> nut;
@@ -201,10 +201,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	double ref;
 
 	// set the saturation clamps
-	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxpos{ 0 }, fpmaxneg{ 0 };
-	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
-	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-
+	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -219,7 +216,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 				result = a + b;
 			}
 			catch (...) {
-				if (ref < double(fpmaxneg) || ref > double(fpmaxpos)) {
+				if (ref < double(maxneg) || ref > double(maxpos)) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -241,9 +238,9 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+//	std::cout << std::endl;
 	return nrOfFailedTests;
 }
 
@@ -256,10 +253,7 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 	double ref;
 
 	// set the saturation clamps
-	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxpos, fpmaxneg;
-	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
-	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-
+	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -274,7 +268,7 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 				result = a - b;
 			}
 			catch (...) {
-				if (ref < double(fpmaxneg) || ref > double(fpmaxpos)) {
+				if (ref < double(maxneg) || ref > double(maxpos)) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -296,9 +290,9 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+//	std::cout << std::endl;
 	return nrOfFailedTests;
 }
 
@@ -311,10 +305,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 	double ref;
 
 	// set the saturation clamps
-	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxpos, fpmaxneg;
-	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
-	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-
+	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -329,7 +320,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 				result = a * b;
 			}
 			catch (...) {
-				if (ref < double(fpmaxneg) || ref > double(fpmaxpos)) {
+				if (ref < double(maxneg) || ref > double(maxpos)) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -351,9 +342,9 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+//	std::cout << std::endl;
 	return nrOfFailedTests;
 }
 
@@ -366,10 +357,7 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	double ref;
 
 	// set the saturation clamps
-	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxpos, fpmaxneg;
-	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
-	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-
+	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -388,7 +376,7 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 				result = a / b;
 			}
 			catch (...) {
-				if (ref < double(fpmaxneg) || b == 0 || ref > double(fpmaxpos)) {
+				if (ref < double(maxneg) || b == 0 || ref > double(maxpos)) {
 					// correctly caught the overflow and divide by zero exception
 					continue;
 				}
@@ -410,25 +398,24 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+//	std::cout << std::endl;
 	return nrOfFailedTests;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // enumeration utility functions
 
-
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
+void GenerateFixedPointValues(std::ostream& ostr, const fixpnt<nbits, rbits, arithmetic, BlockType>& v) {
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 	fixpnt<nbits, rbits, arithmetic, BlockType> a;
-	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
+	ostr << type_tag(v) << '\n';
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		float f = float(a);
-		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << std::endl;
+		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << '\n';
 	}
 }
 

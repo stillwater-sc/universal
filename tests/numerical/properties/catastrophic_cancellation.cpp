@@ -32,7 +32,6 @@ Scalar GenerateTestCase(Scalar e, Scalar x, Scalar origin) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	// print detailed bit-level computational intermediate results
@@ -43,15 +42,15 @@ try {
 	std::string tag = "Catastrophic Cancellation: ";
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
-	cout << "Catastrophic Cancellation Experiment" << endl;
+	std::cout << "Catastrophic Cancellation Experiment" << '\n';
 
-	cout << "IEEE Float single precision  :\n" << GenerateTestCase(0.00000006f, 0.5f, 1.0f) << endl;
-	cout << "IEEE Float double precision  :\n" << GenerateTestCase<double>(0.00000006f, 0.5, 1.0) << endl;
+	std::cout << "IEEE Float single precision  :\n" << GenerateTestCase(0.00000006f, 0.5f, 1.0f) << '\n';
+	std::cout << "IEEE Float double precision  :\n" << GenerateTestCase<double>(0.00000006f, 0.5, 1.0) << '\n';
 	if (sizeof(long double) == 16) {
-		cout << "IEEE Float quad precision  :\n" << GenerateTestCase(0.00000006l, 0.5l, 1.0l) << endl;
+		std::cout << "IEEE Float quad precision  :\n" << GenerateTestCase(0.00000006l, 0.5l, 1.0l) << '\n';
 	}
 
 	{
@@ -61,7 +60,7 @@ try {
 		peps = 0.00000006f;
 		px = 0.5;
 		porigin = 1.0;
-		cout << "posit<56,2>                  :\n" << GenerateTestCase(peps, px, porigin) << endl;
+		std::cout << "posit<56,2>                  :\n" << GenerateTestCase(peps, px, porigin) << '\n';
 	}
 
 	{
@@ -71,7 +70,7 @@ try {
 		peps = 0.00000006f;
 		px = 0.5;
 		porigin = 1.0;
-		cout << "posit<64,3>                  :\n" << GenerateTestCase(peps, px, porigin) << endl;
+		std::cout << "posit<64,3>                  :\n" << GenerateTestCase(peps, px, porigin) << '\n';
 	}
 
 	{
@@ -81,7 +80,7 @@ try {
 		peps = 0.00000006f;
 		px = 0.5;
 		porigin = 1.0;
-		cout << "posit<80,3>                  :\n" << GenerateTestCase(peps, px, porigin) << endl;
+		std::cout << "posit<80,3>                  :\n" << GenerateTestCase(peps, px, porigin) << '\n';
 	}
 
 	{
@@ -91,7 +90,7 @@ try {
 		peps = 0.00000006f;
 		px = 0.5;
 		porigin = 1.0;
-		cout << "posit<88,3>                  :\n" << GenerateTestCase(peps, px, porigin) << endl;
+		std::cout << "posit<88,3>                  :\n" << GenerateTestCase(peps, px, porigin) << '\n';
 	}
 
 	{
@@ -101,7 +100,7 @@ try {
 		peps = 0.00000006;
 		px = 0.5;
 		porigin = 1.0;
-		cout << "posit<96,3>                  :\n" << GenerateTestCase(peps, px, porigin) << endl;
+		std::cout << "posit<96,3>                  :\n" << GenerateTestCase(peps, px, porigin) << '\n';
 	}
 
 	{
@@ -111,11 +110,11 @@ try {
 		peps = 0.00000006;
 		px = 0.5;
 		porigin = 1.0;
-		cout << "posit<100,3>                 :\n" << GenerateTestCase(peps, px, porigin) << endl;
+		std::cout << "posit<100,3>                 :\n" << GenerateTestCase(peps, px, porigin) << '\n';
 	}
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -13,6 +13,11 @@
 #include <map>
 #include <cassert>
 
+ // supportint types and functions
+#include <universal/native/ieee754.hpp>   // IEEE-754 decoders
+#include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/native/integers.hpp>   // manipulators for native integer types
+
 /*
 The fixed-point arithmetic can be configured to:
 - throw exception on overflow
@@ -28,8 +33,8 @@ Compile-time configuration flags are used to select the exception mode.
 Run-time configuration is used to select modular vs saturation arithmetic.
 */
 #include <universal/number/fixpnt/exceptions.hpp>  // you need the exception types defined, but you may not throw them
-#include <universal/native/ieee754.hpp>   // IEEE-754 decoders
-#include <universal/native/integers.hpp>   // manipulators for native integer types
+
+// composition types used by fixpnt
 #include <universal/internal/blockbinary/blockbinary.hpp>
 
 namespace sw::universal {
@@ -39,6 +44,7 @@ constexpr bool Saturating = !Modulo;
 
 // forward references
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt> class fixpnt;
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt> fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, bt>&);
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt> struct fixpntdiv_t;
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt> fixpntdiv_t<nbits, rbits, arithmetic, bt> fixpntdiv(const fixpnt<nbits, rbits, arithmetic, bt>&, const fixpnt<nbits, rbits, arithmetic, bt>&);
 
@@ -77,7 +83,7 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 	}
 	// calculate scale
 	long scale = 0;
-	if (nbits > rbits + 1) {  // subtle bug: in fixpnt numbers with only 1 bit before the radix point, '1' is maxneg, and thus while (v > 1) never completes
+	if constexpr (nbits > rbits + 1) {  // subtle bug: in fixpnt numbers with only 1 bit before the radix point, '1' is maxneg, and thus while (v > 1) never completes
 		v >>= rbits;
 		while (v > 1) {
 			++scale;
@@ -87,69 +93,14 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 	return scale;
 }
 
-// the value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits
-// so the number 0100.0100 is the value 01000100 with an implicit scaling of 2^4 = 16
-// 01000100 = 64 + 4 = 68 -> scaled by 16 = 4.25 -> 4 + 0.25 = 0100 + 0100
-
-	// 01111....11111 is max pos
-	// 00000....00001 is min pos
-	// 00000....00000 is zero
-	// 11111....11111 is min neg
-	// 10000....00000 is max min
-
-
-// minimum positive value of the fixed point configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-fixpnt<nbits, rbits, arithmetic, bt>& minpos(fixpnt<nbits, rbits, arithmetic, bt>& a) {
-	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
-	// minpos = 0000....00001
-	a.clear();
-	a.setbit(0, true);
-	return a;
-}
-
-// maximum value of the fixed point configuration
-// what is maxpos when all bits are fraction bits?
-//   still #.01111...11111 as the rbits simply define the range this value is scaled by
-// when rbits > nbits: is that a valid format? By definition, it is not:
-// a compile time assert has been added to enforce.
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-constexpr fixpnt<nbits, rbits, arithmetic, bt>& maxpos(fixpnt<nbits, rbits, arithmetic, bt>& a) {
-	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
-	// maxpos = 01111....1111
-	a.clear();
-	a.flip();
-	a.setbit(nbits - 1, false);
-	return a;
-}
-
-// minimum positive value of the fixed point configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-fixpnt<nbits, rbits, arithmetic, bt>& minneg(fixpnt<nbits, rbits, arithmetic, bt>& a) {
-	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
-	// minneg = 11111....11111
-	a.clear();
-	a.flip();
-	return a;
-}
-
-// maximum negative value of the fixed point configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-fixpnt<nbits, rbits, arithmetic, bt>& maxneg(fixpnt<nbits, rbits, arithmetic, bt>& a) {
-	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
-	// maxneg = 10000....0000
-	a.clear();
-	a.setbit(nbits - 1);
-	return a;
-}
-
 // conversion helpers
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert(int64_t v, fixpnt<nbits, rbits, arithmetic, bt>& result) {
 	if (0 == v) { result.setzero();	return result; }
-	if (arithmetic == Saturating) { // check if we are in the representable range
-		if (v >= static_cast<int64_t>(maxpos(result))) return result;
-		if (v <= static_cast<int64_t>(maxneg(result))) return result;
+	constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+	if constexpr (arithmetic == Saturating) { // check if we are in the representable range
+		if (v >= static_cast<int64_t>(maxpos)) { result = maxpos; return result; }
+		if (v <= static_cast<int64_t>(maxneg)) { result = maxneg; return result; }
 	}
 	bool negative = (v < 0 ? true : false);
 	v = (v < 0 ? -v : v); // how do you deal with maxneg?
@@ -167,9 +118,10 @@ inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert(int64_t v, fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, bt>& result) {
 	if (0 == v) { result.setzero();	return result;	}
-	if (arithmetic == Saturating) {	// check if we are in the representable range
-		if (v >= static_cast<uint64_t>(maxpos(result))) return result;
-		if (v <= static_cast<uint64_t>(maxneg(result))) return result;
+	constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+	if constexpr (arithmetic == Saturating) {	// check if we are in the representable range
+		if (v >= static_cast<uint64_t>(maxpos)) { result = maxpos; return result; }
+		if (v <= static_cast<uint64_t>(maxneg)) { result = maxneg; return result; }
 	}
 	result.clear();
 	constexpr uint64_t mask = 0x1;
@@ -182,12 +134,14 @@ inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert_unsigned(uint64_t
 }
 
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
-template<size_t _nbits, size_t _rbits, bool arithmetic = Modulo, typename bt = uint8_t>
+template<size_t _nbits, size_t _rbits, bool _arithmetic = Modulo, typename bt = uint8_t>
 class fixpnt {
 public:
 	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t rbits = _rbits;
+	static constexpr bool   arithmetic = _arithmetic;
+	typedef bt BlockType;
 	static constexpr size_t bitsInChar = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInChar;
 	static constexpr size_t nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
@@ -202,12 +156,46 @@ public:
 	constexpr fixpnt& operator=(const fixpnt&) noexcept = default;
 	fixpnt& operator=(fixpnt&&) noexcept = default;
 
-	/// Construct a new fixpnt from another, sign extend when necessary: 
-	// src and tgt fixpnt need to have the same arithmetic and blocktype
+	// decorated/converting constructors
+
+	/// <summary>
+	/// construct a new fixpnt from another, sign extend when necessary: 
+	/// src and tgt fixpnt need to have the same arithmetic and blocktype
+	/// </summary>
+	/// <param name="a">value to convert</param>
 	template<size_t src_nbits, size_t src_rbits>
 	fixpnt(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
 		*this = a;
 	}
+
+	// specific value constructor
+	constexpr fixpnt(const SpecificValue code) : bb{ 0 } {
+		switch (code) {
+		case SpecificValue::infpos:
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+		case SpecificValue::nar:
+		case SpecificValue::zero:
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::infneg:
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
+	}
+	/////////   operators
+
 	template<size_t src_nbits, size_t src_rbits>
 	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
 		std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
@@ -238,8 +226,7 @@ public:
 	fixpnt(unsigned long initial_value)      noexcept { *this = initial_value; }
 	fixpnt(unsigned long long initial_value) noexcept { *this = initial_value; }
 	fixpnt(float initial_value)              noexcept { *this = initial_value; }
-	fixpnt(double initial_value)   noexcept { *this = initial_value; }
-	fixpnt(long double initial_value)        noexcept { *this = initial_value; }
+	fixpnt(double initial_value)             noexcept { *this = initial_value; }
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -258,141 +245,15 @@ public:
 	fixpnt& operator=(unsigned int rhs)       { return convert_unsigned(rhs, *this); }
 	fixpnt& operator=(unsigned long rhs)      { return convert_unsigned(rhs, *this); }
 	fixpnt& operator=(unsigned long long rhs) { return convert_unsigned(rhs, *this); }
-	fixpnt& operator=(float rhs) {
-		clear();
-		if (rhs == 0.0) {
-			return *this;
-		}
-		if (arithmetic == Saturating) {	// check if the value is in the representable range
-			fixpnt<nbits, rbits, arithmetic, bt> a;
-			maxpos(a);
-			if (rhs >= float(a)) { return *this = a; } // set to max pos value
-			maxneg(a);
-			if (rhs <= float(a)) { return *this = a; } // set to max neg value
-		}
-		float_decoder decoder;
-		decoder.f = rhs;
-		uint32_t raw = (1ul << 23ul) | decoder.parts.fraction; // TODO: this only works for normalized numbers 1.###, need a test for denorm
-		int radixPoint = 23 - (static_cast<int>(decoder.parts.exponent) - 127); // move radix point to the right if scale > 0, left if scale < 0
-		// our fixed-point has its radixPoint at rbits
-		int shiftRight = radixPoint - int(rbits);
-		// do we need to round?
-		if (shiftRight > 0) {
-			// yes, round the raw bits
-			// collect guard, round, and sticky bits
-			// this same logic will work for the case where 
-			// we only have a guard bit and no round and/or sticky bits
-			// because the mask logic will make round and sticky both 0
-			// so no need to special case it
-			uint32_t mask = (1ul << (shiftRight - 1));
-			bool guard = (mask & raw);
-			mask >>= 1;
-			bool round = (mask & raw);
-			if (shiftRight > 1) {
-				mask = (0xFFFF'FFFFul << (shiftRight - 2));
-				mask = ~mask;
-			}
-			else {
-				mask = 0;
-			}
-			bool sticky = (mask & raw);
-			
-			raw >>= shiftRight;  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1ul);
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			//       x     1       1     0        up
-			//       x     1       1     1        up
-			if (guard) {
-				if (lsb && (!round && !sticky)) ++raw; // round to even
-				if (round || sticky) ++raw;
-			}
-		}
-		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
-		setbits(raw);
-		return *this;
-	}
-	fixpnt& operator=(double rhs) {
-		clear();
-		if (rhs == 0.0) {
-			return *this;
-		}
-		if (arithmetic == Saturating) {	// check if the value is in the representable range
-			fixpnt<nbits, rbits, arithmetic, bt> a;
-			maxpos(a);
-			if (rhs >= double(a)) { return *this = a; } // set to max pos value
-			maxneg(a);
-			if (rhs <= double(a)) { return *this = a; } // set to max neg value
-		}
-		bool sign = rhs < 0.0 ? true : false;
-#define TYPE_PUNNING
-#ifdef TYPE_PUNNING
-		double_decoder decoder;
-		decoder.d = rhs;
-		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
-		int radixPoint = 52 - (int(decoder.parts.exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
-#else
-		uint64_t fraction = *reinterpret_cast<const uint64_t*>(&rhs) & 0x000F'FFFF'FFFF'FFFFull;
-		uint64_t raw = 0x0010'0000'0000'0000ull | fraction;
-		uint64_t exponent = (*reinterpret_cast<uint64_t*>(&rhs) & 0x7FF0'0000'0000'0000ull) >> 52;
+	fixpnt& operator=(float rhs)              { return convert_ieee754(rhs); }
+	fixpnt& operator=(double rhs)             { return convert_ieee754(rhs); }
 
-		int radixPoint = 52 - (int(exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
+	// guard long double support to enable ARM and RISC-V embedded environments
+#if LONG_DOUBLE_SUPPORT
+	fixpnt(long double initial_value)        noexcept { *this = initial_value; }
+	fixpnt& operator=(long double rhs) { return convert_ieee754(rhs);  }
+	explicit operator long double() const { return to_native<long double>(); }
 #endif
-
-		// our fixed-point has its radixPoint at rbits
-		int shiftRight = radixPoint - int(rbits);
-		// do we need to round?
-		if (shiftRight > 0) {
-			// yes, round the raw bits
-			// collect guard, round, and sticky bits
-			// this same logic will work for the case where 
-			// we only have a guard bit  and no round and sticky bits
-			// because the mask logic will make round and sticky both 0
-			uint64_t mask = (uint64_t(1) << (shiftRight - 1));
-			bool guard = (mask & raw);
-			mask >>= 1;
-			bool round = (mask & raw);
-			if (shiftRight > 1) {
-				mask = (0xFFFFFFFFFFFFFFFF << (shiftRight - 2));
-				mask = ~mask;
-			}
-			else {
-				mask = 0;
-			}
-			bool sticky = (mask & raw);
-
-			raw >>= shiftRight;  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1);
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			//       x     1       1     0        up
-			//       x     1       1     1        up
-			if (guard) {
-				if (lsb && (!round && !sticky)) ++raw; // round to even
-				if (round || sticky) ++raw;
-			}
-		}
-		raw = sign ? (~raw + 1) : raw; // take two's complement if negative
-		setbits(raw);
-		return *this;
-	}
-	fixpnt& operator=(long double rhs) {
-		if (rhs == 0.0l) {
-			setzero();
-			return *this;
-		}
-		//long_double_decoder decoder;
-		//decoder.ld = rhs;
-		std::cerr << "assignment from long double not implemented yet\n";
-		float_assign(rhs);
-		return *this;
-	}
 
 	// assignment operator for blockbinary type
 	template<size_t nnbits, typename Bbt>
@@ -418,6 +279,7 @@ public:
 		}
 		return *this;
 	}
+
 #ifdef POSIT_CONCEPT_GENERALIZATION
 	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
 	template<typename PositType>
@@ -489,33 +351,32 @@ public:
 	}
 	// conversion operators
 // Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator unsigned short() const     { return to_ushort(); }
-	explicit operator unsigned int() const       { return to_uint(); }
-	explicit operator unsigned long() const      { return to_ulong(); }
-	explicit operator unsigned long long() const { return to_ulong_long(); }
-	explicit operator short() const              { return convert_signed<short>(); }
-	explicit operator int() const                { return convert_signed<int>(); }
-	explicit operator long() const               { return convert_signed<long>(); }
-	explicit operator long long() const          { return convert_signed<long long>(); }
-	explicit operator float() const              { return to_float(); }
-	explicit constexpr operator double() const   { return to_double(); }
-	explicit operator long double() const        { return to_long_double(); }
+	explicit operator unsigned short() const     { return to_unsigned<unsigned short>(); }
+	explicit operator unsigned int() const       { return to_unsigned<unsigned int>(); }
+	explicit operator unsigned long() const      { return to_unsigned<unsigned long>(); }
+	explicit operator unsigned long long() const { return to_unsigned<unsigned long long>(); }
+	explicit operator short() const              { return to_signed<short>(); }
+	explicit operator int() const                { return to_signed<int>(); }
+	explicit operator long() const               { return to_signed<long>(); }
+	explicit operator long long() const          { return to_signed<long long>(); }
+	explicit operator float() const              { return to_native<float>(); }
+	explicit constexpr operator double() const   { return to_native<double>(); }
 
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {
-		if (arithmetic == Modulo) {
+		if constexpr (arithmetic == Modulo) {
 			bb += rhs.bb;
 		}
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
 			biggerbb c = uradd(bb, rhs.bb);  // c = a + b
-			fixpnt<nbits, rbits, arithmetic, bt> fp;
-			biggerbb saturation = maxpos<nbits, rbits, arithmetic, bt>(fp).getbb();		
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			biggerbb saturation = maxpos.getbb();		
 			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
-			saturation = maxneg<nbits, rbits, arithmetic, bt>(fp).getbb();
+			saturation = maxneg.getbb();
 			if (c <= saturation) {
 				bb = saturation;
 				return *this;
@@ -525,19 +386,19 @@ public:
 		return *this;
 	}
 	fixpnt& operator-=(const fixpnt& rhs) {
-		if (arithmetic == Modulo) {
+		if constexpr (arithmetic == Modulo) {
 			operator+=(sw::universal::twosComplement(rhs));
 		}
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
 			biggerbb c = ursub(bb, rhs.getbb());  // c = a - b
-			fixpnt<nbits, rbits, arithmetic, bt> fp;
-			biggerbb saturation = maxpos<nbits, rbits, arithmetic, bt>(fp).getbb();
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			biggerbb saturation = maxpos.getbb();
 			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
-			saturation = maxneg<nbits, rbits, arithmetic, bt>(fp).getbb();
+			saturation = maxneg.getbb();
 			if (c <= saturation) {
 				bb = saturation;
 				return *this;
@@ -547,7 +408,7 @@ public:
 		return *this;
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
-		if (arithmetic == Modulo) {
+		if constexpr (arithmetic == Modulo) {
 //			blockbinary<2 * nbits, bt> c = urmul(this->bb, rhs.bb);
 			blockbinary<2 * nbits, bt> c = urmul2(this->bb, rhs.bb);
 			bool roundUp = c.roundingMode(rbits);
@@ -557,15 +418,15 @@ public:
 		}
 		else {
 			blockbinary<2 * nbits, bt> c = urmul2(this->bb, rhs.bb);
-			fixpnt<nbits, rbits, arithmetic, bt> fp;
-			blockbinary<2 * nbits, bt> saturation = maxpos<nbits, rbits, arithmetic, bt>(fp).getbb();
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			blockbinary<2 * nbits, bt> saturation = maxpos.getbb();
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;
 			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
-			saturation = maxneg<nbits, rbits, arithmetic, bt>(fp).getbb();
+			saturation = maxneg.getbb();
 			if (c < saturation) {
 				bb = saturation;
 				return *this;
@@ -576,7 +437,7 @@ public:
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
-		if (arithmetic == Modulo) {
+		if constexpr (arithmetic == Modulo) {
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits, bt> roundingBits;
 			blockbinary<2 * nbits + roundingDecisionBits, bt> c = urdiv(this->bb, rhs.bb, roundingBits);
@@ -609,6 +470,64 @@ public:
 	// modifiers
 	inline constexpr void clear() noexcept { bb.clear(); }
 	inline constexpr void setzero() noexcept { bb.clear(); }
+
+	// specific number system values we would like to have as constexpr
+
+	// the value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits
+// so the number 0100.0100 is the value 01000100 with an implicit scaling of 2^4 = 16
+// 01000100 = 64 + 4 = 68 -> scaled by 16 = 4.25 -> 4 + 0.25 = 0100 + 0100
+
+	// 01111....11111 is max pos
+	// 00000....00001 is min pos
+	// 00000....00000 is zero
+	// 11111....11111 is min neg
+	// 10000....00000 is max min
+
+
+// minimum positive value of the fixed point configuration
+	constexpr fixpnt& minpos() noexcept {
+		static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
+		// minpos = 0000....00001
+		clear();
+		setbit(0, true);
+		return *this;
+	}
+
+	// maximum value of the fixed point configuration
+	// what is maxpos when all bits are fraction bits?
+	//   still #.01111...11111 as the rbits simply define the range this value is scaled by
+	// when rbits > nbits: is that a valid format? By definition, it is not:
+	// a compile time assert has been added to enforce.
+	constexpr fixpnt& maxpos() noexcept {
+		static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
+		// maxpos = 01111....1111
+		clear();
+		flip();
+		setbit(nbits - 1, false);
+		return *this;
+	}
+	// zero
+	constexpr fixpnt& zero() noexcept {
+		clear();
+		return *this;
+	}
+	// minimum positive value of the fixed point configuration
+	constexpr fixpnt& minneg() noexcept {
+		static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
+		// minneg = 11111....11111
+		clear();
+		flip();
+		return *this;
+	}
+
+	// maximum negative value of the fixed point configuration
+	constexpr fixpnt& maxneg() noexcept {
+		static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
+		// maxneg = 10000....0000
+		clear();
+		setbit(nbits - 1);
+		return *this;
+	}
 	inline constexpr void setbit(size_t bitIndex, bool v = true) noexcept {
 		if (bitIndex < nbits) bb.setbit(bitIndex, v);
 		// when bitIndex is out-of-bounds, fail silently as no-op
@@ -640,15 +559,77 @@ public:
 protected:
 	// HELPER methods
 
+	template<typename Real>
+	inline constexpr fixpnt& convert_ieee754(Real rhs) {
+		clear();
+		if (rhs == 0.0) return *this;
+		if constexpr (arithmetic == Saturating) {	// check if the value is in the representable range
+			fixpnt<nbits, rbits, arithmetic, bt> a;
+			a.maxpos();
+			if (rhs >= float(a)) { return *this = a; } // set to max pos value
+			a.maxneg();
+			if (rhs <= float(a)) { return *this = a; } // set to max neg value
+		}
+
+		bool s{ false };
+		uint64_t unbiasedExponent{ 0 };
+		uint64_t raw{ 0 };
+		extractFields(rhs, s, unbiasedExponent, raw); // use native conversion
+		if (unbiasedExponent > 0) raw |= (1ull << ieee754_parameter<Real>::fbits);
+		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
+
+		// our fixed-point has its radixPoint at rbits
+		int shiftRight = radixPoint - int(rbits);
+		// do we need to round?
+		if (shiftRight > 0) {
+			// yes, round the raw bits
+			// collect guard, round, and sticky bits
+			// this same logic will work for the case where 
+			// we only have a guard bit and no round and/or sticky bits
+			// because the mask logic will make round and sticky both 0
+			// so no need to special case it
+			uint64_t mask = (1ull << (shiftRight - 1));
+			bool guard = (mask & raw);
+			mask >>= 1;
+			bool round = (mask & raw);
+			if (shiftRight > 1) {
+				mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
+				mask = ~mask;
+			}
+			else {
+				mask = 0;
+			}
+			bool sticky = (mask & raw);
+
+			raw >>= shiftRight;  // shift out the bits we are rounding away
+			bool lsb = (raw & 0x1ul);
+			//  ... lsb | guard  round sticky   round
+			//       x     0       x     x       down
+			//       0     1       0     0       down  round to even
+			//       1     1       0     0        up   round to even
+			//       x     1       0     1        up
+			//       x     1       1     0        up
+			//       x     1       1     1        up
+			if (guard) {
+				if (lsb && (!round && !sticky)) ++raw; // round to even
+				if (round || sticky) ++raw;
+			}
+		}
+		raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
+		setbits(raw);
+		return *this;
+	}
+
 	// conversion functions
-	// from fixed-point to native
-	template<typename Integer>
-	typename std::enable_if< std::is_integral<Integer>::value && std::is_signed<Integer>::value,
-	                Integer>::type convert_signed() const {
-		if (nbits <= rbits) return 0;
-		constexpr unsigned sizeOfInteger = 8 * sizeof(Integer);
-		Integer ll = 0;
-		Integer mask = 1;
+
+	// from fixed-point to native signed integer
+	template<typename NativeInt>
+	typename std::enable_if< std::is_integral<NativeInt>::value && std::is_signed<NativeInt>::value,
+		NativeInt>::type to_signed() const {
+		if constexpr (nbits <= rbits) return 0;
+		constexpr unsigned sizeOfInteger = 8 * sizeof(NativeInt);
+		NativeInt ll = 0;
+		NativeInt mask = 1;
 		unsigned upper = (nbits < sizeOfInteger ? nbits : sizeOfInteger);
 		for (unsigned i = rbits; i < upper; ++i) {
 			ll |= at(i) ? mask : 0;
@@ -662,6 +643,47 @@ protected:
 		}
 		return ll;
 	}
+	
+	// from fixed-point to native unsigned integer
+	template<typename NativeInt>
+	typename std::enable_if< std::is_integral<NativeInt>::value&& std::is_unsigned<NativeInt>::value,
+		NativeInt>::type to_unsigned() const {
+		return NativeInt(bb.to_long_long());
+	}
+
+	template<typename TargetFloat>
+	TargetFloat to_native() const {
+		// pick up the absolute value of the minimum normal and subnormal exponents 
+		constexpr size_t minNormalExponent = static_cast<size_t>(-ieee754_parameter<TargetFloat > ::minNormalExp);
+		constexpr size_t minSubnormalExponent = static_cast<size_t>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
+		static_assert(rbits <= minSubnormalExponent, "to_native: fixpnt fraction is too small to represent with requested floating-point type");
+		TargetFloat multiplier = 0;
+		if constexpr (rbits > minNormalExponent) { // value is a subnormal number
+			multiplier = ieee754_parameter<TargetFloat>::minSubnormal;
+			for (size_t i = 0; i < minSubnormalExponent - rbits; ++i) {
+				multiplier *= 2.0f; // these are error free multiplies
+			}
+		}
+		else {
+			// the value is a normal number
+			multiplier = ieee754_parameter<TargetFloat>::minNormal;
+			for (size_t i = 0; i < minNormalExponent - rbits; ++i) {
+				multiplier *= 2.0f; // these are error free multiplies
+			}
+		}
+		// you pop out here with the starting bit value
+		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? sw::universal::twosComplement(*this) : *this);
+		// construct the value
+		TargetFloat value{ 0.0 };
+		for (size_t i = 0; i < nbits; ++i) {
+			if (raw.at(i)) value += multiplier;
+			multiplier *= 2.0; // these are error free multiplies
+		}
+		return (sign() ? -value : value);
+	}
+
+#ifdef DEPRECATED
+
 	unsigned short to_ushort() const {
 		return static_cast<unsigned short>(to_ulong_long());
 	}
@@ -674,6 +696,7 @@ protected:
 	unsigned long long to_ulong_long() const {
 		return static_cast<unsigned long long>(bb.to_long_long());
 	}
+
 	float to_float() const {
 		// minimum positive normal value of a single precision float == 2^-126
 		// float minpos_normal = 1.1754943508222875079687365372222e-38
@@ -704,7 +727,7 @@ protected:
 		}
 		return (sign() ? -value : value);
 	}
-	constexpr double to_double() const {
+	double to_double() const {
 		// minimum positive normal value of a double precision float == 2^-1022
 		// double dbl_minpos_normal = 2.2250738585072013830902327173324e-308;
 		// minimum positive subnormal value of a double precision float == 2 ^ -1074
@@ -743,17 +766,17 @@ protected:
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
-		if (arithmetic == Saturating) {
+		if constexpr (arithmetic == Saturating) {
 			// we are implementing saturation for values that are outside of the fixed-point's range
 			// check if we are in the representable range
-			fixpnt<nbits, rbits, arithmetic, bt> fp;
-			if (rhs >= (Ty)maxpos<nbits, rbits, arithmetic, bt>(fp)) {
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			if (rhs >= (Ty)maxpos) {
 				// set to max value
 				flip();
 				setbit(nbits - 1, false);
 				return;
 			}
-			if (rhs <= (Ty)maxneg<nbits, rbits, arithmetic, bt>(fp)) {
+			if (rhs <= (Ty)maxneg) {
 				// set to max neg value
 				setbit(nbits - 1, true);
 				return;
@@ -766,6 +789,7 @@ protected:
 		Ty tmp = rhs * one;
 		*this = uint64_t(tmp);
 	}
+#endif
 
 private:
 	blockbinary<nbits, bt> bb;
@@ -782,7 +806,13 @@ private:
 };
 
 
-
+/// Magnitude of a fixpnt. Expensive as fixpnts are encoded as 2's complement, so we need to test, copy, complement, and return.
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
+	fixpnt<nbits, rbits, arithmetic, bt> tmp(v);
+	if (v.isneg()) tmp.twosComplement();
+	return tmp;
+}
 
 ////////////////////////    FIXED-POINT functions   /////////////////////////////////
 
@@ -1920,7 +1950,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 	support::decimal partial, multiplier;
 	fixpnt<nbits, rbits, arithmetic, bt> number;
 	number = value.sign() ? sw::universal::twosComplement(value) : value;
-	if (nbits > rbits) {
+	if constexpr (nbits > rbits) {
 		// convert the fixed point by first handling the integer part
 		multiplier.setdigit(1);
 		// convert fixpnt to decimal by adding and doubling multipliers

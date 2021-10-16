@@ -15,10 +15,9 @@
 
 int main()
 try {
-	using namespace std;
 	using namespace sw::universal;
 
-	cout << "classic floating-point increment operator validation" << endl;
+	std::cout << "classic floating-point increment operator validation\n";
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
@@ -68,6 +67,13 @@ try {
 		VerifyCfloatIncrement < cfloat<10, 3> >(bReportIndividualTestCases), "cfloat<10,3,uint8_t,subnormals,supernormals,!saturating>", "increment");
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatIncrement < cfloat<17, 3> >(bReportIndividualTestCases), "cfloat<17,3,uint8_t,subnormals,supernormals,!saturating>", "increment");
+
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< cfloat<32, 8, uint32_t, true, true, false> >(bReportIndividualTestCases), "cfloat<32, 8, subnormals, supernormals, !saturating", "increment");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< cfloat<64, 11, uint32_t, true, true, false> >(bReportIndividualTestCases), "cfloat<64, 11, subnormals, supernormals, !saturating", "increment");
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< cfloat<128, 11, uint32_t, true, true, false> >(bReportIndividualTestCases), "cfloat<128, 11, subnormals, supernormals, !saturating", "increment");
 
 #if STRESS_TESTING
 

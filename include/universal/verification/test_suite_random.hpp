@@ -60,7 +60,10 @@ namespace sw::universal {
 
 	// Execute a binary operator
 	template<typename TestType>
-	void executeBinary(int opcode, double da, double db, const TestType& testa, const TestType& testb, TestType& testresult, TestType& testref) {
+	void executeBinary(int opcode, 
+		double da, double db, 
+		const TestType& testa, const TestType& testb, 
+		TestType& testresult, TestType& testref) {
 		double reference = 0.0;
 		switch (opcode) {
 		case OPCODE_ADD:
@@ -203,6 +206,8 @@ namespace sw::universal {
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<typename TestType>
 	int VerifyBinaryOperatorThroughRandoms(bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
+		std::cerr << typeid(TestType).name() << " : ";
+
 		std::string operation_string;
 		switch (opcode) {
 		case OPCODE_ADD:
@@ -243,6 +248,7 @@ namespace sw::universal {
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
+		if (bReportIndividualTestCases) std::cerr << '\n';
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType testa, testb, testresult, testref;
 			testa.setbits(distr(eng));
@@ -253,9 +259,8 @@ namespace sw::universal {
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " testa " << testa << std::endl;
 			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " testa " << testb << std::endl;
 
-			executeBinary(opcode, da, db, testa, testb, testref, testresult);
-
-			testresult = testref;
+			executeBinary(opcode, da, db, testa, testb, testresult, testref);
+			// check the result
 			if (testresult != testref) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testresult, testref);

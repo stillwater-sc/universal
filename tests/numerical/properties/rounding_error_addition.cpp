@@ -10,7 +10,6 @@
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
 int GenerateAdditionError(const std::string& tag, bool bReportIndividualTestCases) {
-	using namespace std;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	using Posit = sw::universal::posit<nbits, es>;
@@ -43,7 +42,6 @@ int GenerateAdditionError(const std::string& tag, bool bReportIndividualTestCase
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	//constexpr size_t nbits = 32;
@@ -55,8 +53,8 @@ try {
 	bool bReportIndividualTestCases = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 #ifdef MANUAL_TEST
 
@@ -73,7 +71,7 @@ try {
 #endif // MANUAL_TEST
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

@@ -44,7 +44,6 @@ void printSamples(std::ostream& ostr, std::vector<Real>& samples) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::function;
 
@@ -52,8 +51,8 @@ try {
 	// bool verbose = false;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
 #if defined(_MSC_VER)
 	//using Rand = std::mt19937_64;
@@ -71,18 +70,18 @@ try {
 	for (int j = 0; j < N; ++j) {
 		samples[j] = Real(uid(rng));
 	}
-	sort(samples.begin(), samples.end());
-	printSamples(cout, samples);
+	std::sort(samples.begin(), samples.end());
+	printSamples(std::cout, samples);
 
 	for (int i = 1; i < N; ++i) {
 		samples[i - 1] = lerp(samples[i - 1], samples[i]);
 	}
 	samples.pop_back();
-	printSamples(cout, samples);
+	printSamples(std::cout, samples);
 #endif
 
 	// restore the previous ostream precision
-	cout << setprecision(precision);
+	std::cout << std::setprecision(precision);
 
 	return EXIT_SUCCESS;
 }

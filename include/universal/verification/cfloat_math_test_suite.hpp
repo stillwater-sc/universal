@@ -11,7 +11,7 @@
 #include <limits>
 
 // mathematical function definitions and implementations
-#include <universal/number/cfloat/math_functions.hpp>
+#include <universal/number/cfloat/mathlib.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 

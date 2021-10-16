@@ -20,7 +20,7 @@
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/number/posit/numeric_limits.hpp>
 #include <universal/number/posit/specializations.hpp>
-#include <universal/number/posit/math_functions.hpp>
+#include <universal/number/posit/mathlib.hpp>
 #include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 //#include <universal/verification/posit_test_suite.hpp>
@@ -171,7 +171,6 @@ void GenerateTestCase(Ty a, Ty b) {
 
 int main(int argc, char** argv)
 try {
-	using namespace std;
 	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
@@ -201,7 +200,16 @@ try {
 
 #else
 
-	cout << "Posit addition validation" << endl;
+	std::cout << "Posit addition validation\n";
+
+
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>      (tag, bReportIndividualTestCases), "posit<8,2>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 2>   (tag, bReportIndividualTestCases), "posit<8,2>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>      (tag, bReportIndividualTestCases), "posit<8,2>", "division with literal");
+
+
+#if STRESS_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "addition with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "addition with literal");
@@ -230,8 +238,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "division with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "division with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "division with literal");
-
-#if STRESS_TESTING
 
 #endif  // STRESS_TESTING
 

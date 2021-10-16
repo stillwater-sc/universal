@@ -7,6 +7,14 @@
 #define _FIXPNT_STANDARD_HEADER_
 
 ////////////////////////////////////////////////////////////////////////////////////////
+///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+
+// compiler specific configuration for long double support
+#include <universal/utility/long_double.hpp>
+// compiler specific configuration for C++20 bit_cast
+#include <universal/utility/bit_cast.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -31,8 +39,12 @@
 #include <universal/number/fixpnt/exceptions.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 
+// useful functions to work with fixpnts
+#include <universal/number/fixpnt/manipulators.hpp>
+#include <universal/number/fixpnt/attributes.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/fixpnt/math_functions.hpp>
+#include <universal/number/fixpnt/mathlib.hpp>
 
 #endif

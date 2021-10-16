@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
 #undef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO
 #undef BITBLOCK_ROUND_TIES_TO_ZERO
@@ -27,49 +28,46 @@ size_t NrWords() {
 
 #include <intrin.h>
 void CheckUnsignedNegationBehavior() {
-	using namespace std;
-
 	unsigned long x = 0x7fffffff;
-	cout << hex;
-	cout << " +x = " << x << endl;
-	cout << " -x = " << -x << endl;
-	cout << dec;
-//	cout << " #1 = " << popcnt(x) << endl;
+	std::cout << std::hex;
+	std::cout << " +x = " << x << '\n';
+	std::cout << " -x = " << -x << '\n';
+	std::cout << std::dec;
+//	std::cout << " #1 = " << popcnt(x) << '\n';
 }
 
 void CheckMultiWordBehavior() {
-	using namespace std;
 	using namespace sw::universal::internal;
 	using WordT = unsigned char;
 
 	// checking UBB_WORDS
-	cout << "UBB_WORDS for key sizes\n";
-	cout << "UBB_WORDS(8)    : " << NrWords<8, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(12)   : " << NrWords<12, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(16)   : " << NrWords<16, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(20)   : " << NrWords<20, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(24)   : " << NrWords<24, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(32)   : " << NrWords<32, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(40)   : " << NrWords<40, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(48)   : " << NrWords<48, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(56)   : " << NrWords<56, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(64)   : " << NrWords<64, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(80)   : " << NrWords<80, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(96)   : " << NrWords<96, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(112)  : " << NrWords<112, sizeof(WordT)>() << endl;
-	cout << "UBB_WORDS(128)  : " << NrWords<128, sizeof(WordT)>() << endl;
+	std::cout << "UBB_WORDS for key sizes\n";
+	std::cout << "UBB_WORDS(8)    : " << NrWords<8, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(12)   : " << NrWords<12, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(16)   : " << NrWords<16, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(20)   : " << NrWords<20, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(24)   : " << NrWords<24, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(32)   : " << NrWords<32, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(40)   : " << NrWords<40, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(48)   : " << NrWords<48, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(56)   : " << NrWords<56, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(64)   : " << NrWords<64, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(80)   : " << NrWords<80, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(96)   : " << NrWords<96, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(112)  : " << NrWords<112, sizeof(WordT)>() << '\n';
+	std::cout << "UBB_WORDS(128)  : " << NrWords<128, sizeof(WordT)>() << '\n';
 
 	// this creates and masks the size of the requested number of bits Nb
 	// val & ~((~static_cast<unsigned long long>(0)) << Nb)
-	cout << hex << ((~static_cast<unsigned long long>(0)) << 8) << endl;
-	cout << hex << ((~static_cast<unsigned long long>(0)) << 16) << endl;
-	cout << hex << ((~static_cast<unsigned long long>(0)) << 32) << endl;
-	cout << hex << ((~static_cast<unsigned long long>(0)) << 63) << "   <---- special case as shifting by 64 is undefined" << endl;
-	cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 8)) << endl;
-	cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 16)) << endl;
-	cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 32)) << endl;
-	cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 63)) << "   <---- special case as shifting by 64 is undefined" << endl;
-	cout << dec;
+	std::cout << std::hex << ((~static_cast<unsigned long long>(0)) << 8) << '\n';
+	std::cout << std::hex << ((~static_cast<unsigned long long>(0)) << 16) << '\n';
+	std::cout << std::hex << ((~static_cast<unsigned long long>(0)) << 32) << '\n';
+	std::cout << std::hex << ((~static_cast<unsigned long long>(0)) << 63) << "   <---- special case as shifting by 64 is undefined\n";;
+	std::cout << std::hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 8)) << '\n';
+	std::cout << std::hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 16)) << '\n';
+	std::cout << std::hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 32)) << '\n';
+	std::cout << std::hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 63)) << "   <---- special case as shifting by 64 is undefined\n";
+	std::cout << std::dec;
 
 	bitblock<8> bb008;
 	bitblock<16> bb016;
@@ -87,11 +85,11 @@ void CheckMultiWordBehavior() {
 	bb128 = bbu64;
 	bb128 |= bbl64;
 
-	cout << "bb008: " << bb008 << " size in bytes: " << sizeof(bb008) << endl;
-	cout << "bb016: " << bb016 << " size in bytes: " << sizeof(bb016) << endl;
-	cout << "bb032: " << bb032 << " size in bytes: " << sizeof(bb032) << endl;
-	cout << "bb064: " << bb064 << " size in bytes: " << sizeof(bb064) << endl;
-	cout << "bb128: " << bb128 << " size in bytes: " << sizeof(bb128) << endl;
+	std::cout << "bb008: " << bb008 << " size in bytes: " << sizeof(bb008) << '\n';
+	std::cout << "bb016: " << bb016 << " size in bytes: " << sizeof(bb016) << '\n';
+	std::cout << "bb032: " << bb032 << " size in bytes: " << sizeof(bb032) << '\n';
+	std::cout << "bb064: " << bb064 << " size in bytes: " << sizeof(bb064) << '\n';
+	std::cout << "bb128: " << bb128 << " size in bytes: " << sizeof(bb128) << '\n';
 }
 
 #endif
@@ -177,10 +175,8 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
-	using namespace std;
-
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
@@ -206,10 +202,10 @@ try {
 
 #else
 
-	cout << "Test of operators on bitblocks" << endl;
+	std::cout << "Test of operators on bitblocks\n";
 	nrOfFailedTestCases += Conversions();
 
-	cout << "Register management" << endl;
+	std::cout << "Register management\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<3, 8>(bReportIndividualTestCases),   "bitblock<  5>", "copyInto");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<4, 8>(bReportIndividualTestCases),   "bitblock<  8>", "copyInto");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<8, 16>(bReportIndividualTestCases),  "bitblock< 16>", "copyInto");
@@ -219,7 +215,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<8, 64>(bReportIndividualTestCases),  "bitblock< 64>", "copyInto");
 	nrOfFailedTestCases += ReportTestResult(VerifyCopyInto<8, 128>(bReportIndividualTestCases), "bitblock<128>", "copyInto");
 
-	cout << "Arithmetic: addition" << endl;
+	std::cout << "Arithmetic: addition\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<3>(bReportIndividualTestCases), "bitblock<3>", "+");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<4>(bReportIndividualTestCases), "bitblock<4>", "+");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<5>(bReportIndividualTestCases), "bitblock<5>", "+");
@@ -227,7 +223,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<7>(bReportIndividualTestCases), "bitblock<7>", "+");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetAddition<8>(bReportIndividualTestCases), "bitblock<8>", "+");
 
-	cout << "Arithmetic: subtraction" << endl;
+	std::cout << "Arithmetic: subtraction\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<3>(bReportIndividualTestCases), "bitblock<3>", "-");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<4>(bReportIndividualTestCases), "bitblock<4>", "-");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<5>(bReportIndividualTestCases), "bitblock<5>", "-");
@@ -235,7 +231,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<7>(bReportIndividualTestCases), "bitblock<7>", "-");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetSubtraction<8>(bReportIndividualTestCases), "bitblock<8>", "-");
 
-	cout << "Arithmetic: multiplication" << endl;
+	std::cout << "Arithmetic: multiplication\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<3>(bReportIndividualTestCases), "bitblock<3>", "*");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<4>(bReportIndividualTestCases), "bitblock<4>", "*");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<5>(bReportIndividualTestCases), "bitblock<5>", "*");
@@ -243,17 +239,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<7>(bReportIndividualTestCases), "bitblock<7>", "*");
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetMultiplication<8>(bReportIndividualTestCases), "bitblock<8>", "*");
 
-	cout << "Arithmetic: division" << endl;
+	std::cout << "Arithmetic: division\n";
 	bitblock<8> a, b;
 	bitblock<16> c;
 	try {
 		integer_divide_unsigned(a, b, c); // divide by zero
 	}
 	catch (const bitblock_divide_by_zero& e) {
-		cout << "Properly caught exception: " << e.what() << endl;
+		std::cout << "Properly caught exception: " << e.what() << '\n';
 	}
 	catch (...) {
-		cout << "Why can't I catch this specific exception type?" << endl;
+		std::cout << "Why can't I catch this specific exception type?\n";
 	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBitsetDivision<3>(bReportIndividualTestCases), "bitblock<3>", "/");

@@ -31,9 +31,7 @@ Keywords: reliable computation time, Lyapunov exponent, float precision
 
 int main()
 try {
-	using namespace std;
-
-	cout << "Time-Precision Trade-off for Lyaponov exponent\n";
+	std::cout << "Time-Precision Trade-off for Lyaponov exponent\n";
 
     
 	return EXIT_SUCCESS;
