@@ -327,8 +327,8 @@ inline std::string to_base2_scientific(double number) {
 	double_decoder decoder;
 	decoder.d = number;
 	s << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
-	uint64_t mask = (uint64_t(1) << 52);
-	for (int i = 52; i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << 51);
+	for (int i = 51; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	} 

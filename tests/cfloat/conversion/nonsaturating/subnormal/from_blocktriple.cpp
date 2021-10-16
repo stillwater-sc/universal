@@ -14,9 +14,7 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/mathlib.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/number/cfloat/table.hpp>

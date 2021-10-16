@@ -6,6 +6,7 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
+
 // Configure the cfloat template environment
 // first: enable general or specialized configurations
 #define CFLOAT_FAST_SPECIALIZATION 0
@@ -13,14 +14,7 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/mathlib.hpp>
-//#include <universal/verification/test_suite_conversion.hpp>
-//#include <universal/verification/cfloat_test_suite.hpp>
-
+#include <universal/number/cfloat/cfloat.hpp>
 
 void GenerateSinglePrecisionSubnormals() 
 {

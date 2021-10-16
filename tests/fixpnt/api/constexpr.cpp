@@ -4,16 +4,13 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt_impl.hpp>
-// fixed-point type manipulators such as pretty printers
-#include <universal/number/fixpnt/manipulators.hpp>
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/fixpnt/mathlib.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -65,10 +62,12 @@ try {
 			constexpr fixpnt<8, 4> a(1.0);   // double
 			std::cout << a << '\n';
 		}
+#if LONG_DOUBLE_SUPPORT
 		{
 			constexpr fixpnt<8, 4> a(1.0l);  // long double
 			std::cout << a << '\n';
 		}
+#endif
 	}
 	{
 		// assignment operators
@@ -88,10 +87,12 @@ try {
 			constexpr fixpnt<8, 4> a = 1.0;   // double
 			std::cout << a << '\n';
 		}
+#if LONG_DOUBLE_SUPPORT
 		{
 			constexpr fixpnt<8, 4> a = 1.0l;  // long double
 			std::cout << a << '\n';
 		}
+#endif
 	}
 #endif
 

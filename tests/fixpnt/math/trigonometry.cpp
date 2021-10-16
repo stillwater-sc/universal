@@ -6,7 +6,6 @@
 #include <universal/utility/directives.hpp>
 // use default library configuration
 #include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/verification/fixpnt_math_test_suite.hpp>
 
 /* 

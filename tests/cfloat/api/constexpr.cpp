@@ -11,10 +11,7 @@
 #define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable cfloat arithmetic exceptions
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
-
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/mathlib.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 
 #if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an cfloat

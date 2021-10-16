@@ -13,9 +13,7 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
-
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/table.hpp>
 
 // conditional compile flags
