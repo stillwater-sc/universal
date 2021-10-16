@@ -26,26 +26,31 @@ try {
 		std::cerr << "Show the sign/scale/fraction components of an IEEE float.\n";
 		std::cerr << "Usage: float float_value\n";
 		std::cerr << "Example: float 0.03124999\n";
-		std::cerr << "float: 0.031249990686774254 (+,-6,11111111111111111111011)\n";
+		std::cerr << "float: 0.031249990686774254 (+,-6,11111111111111111111011)\n\n";
+
+		using Scalar = float;
+
+		std::cout << "Number Traits of IEEE-754 float\n";
+		numberTraits<Scalar>(std::cout);
+
+		std::cout << "smallest normal number\n";
+		std::cout << to_binary(std::numeric_limits<float>::min()) << '\n';
+		std::cout << "smallest denormalized number\n";
+		std::cout << to_binary(std::numeric_limits<float>::denorm_min()) << '\n';
+
+		std::cout << '\n';
+		std::cout << "Universal parameterization of IEEE-754 fields\n";
+		std::cout << ieee754_parameter<Scalar>() << '\n';
+		std::cout.flush();
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	float f = float(atof(argv[1]));
 	value<fbits> v(f);
 
-	std::cout << "float: " << std::setprecision(max_digits10) << f << " " << to_triple(v) << '\n';
-
-	using Scalar = float;
-
-	std::cout << "Universal parameterization of IEEE-754 fields\n";
-	std::cout << ieee754_parameter<Scalar>() << '\n';
-
-	std::cout << "Number Traits of IEEE-754 float\n";
-	numberTraits<Scalar>(std::cout);
-
-	std::cout << "smallest normal number\n";
-	std::cout << to_binary(std::numeric_limits<float>::min()) << '\n';
-	std::cout << "smallest denormalized number\n";
-	std::cout << to_binary(std::numeric_limits<float>::denorm_min()) << '\n';
+	std::cout << "float value  : " << std::setprecision(max_digits10) << f << '\n';
+	std::cout << "triple form  : " << to_triple(f) << '\n';
+	std::cout << "binary form  : " << to_binary(f, true) << '\n';
+	std::cout << "color coded  : " << color_print(f) << '\n';
 
 	return EXIT_SUCCESS;
 }

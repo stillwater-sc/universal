@@ -49,7 +49,7 @@ inline std::string to_base2_scientific(long double number) {
 }
 
 // generate a binary string for a native double precision IEEE floating point
-inline std::string to_hex(const long double& number) {
+inline std::string to_hex(long double number) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -58,7 +58,7 @@ inline std::string to_hex(const long double& number) {
 }
 
 // generate a binary string for a native double precision IEEE floating point
-inline std::string to_binary(const long double& number, bool bNibbleMarker = false) {
+inline std::string to_binary(long double number, bool bNibbleMarker = false) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -91,7 +91,7 @@ inline std::string to_binary(const long double& number, bool bNibbleMarker = fal
 }
 
 // return in triple form (+, scale, fraction)
-inline std::string to_triple(const long double& number) {
+inline std::string to_triple(long double number) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -126,7 +126,7 @@ inline std::string to_triple(const long double& number) {
 }
 
 // generate a color coded binary string for a native double precision IEEE floating point
-inline std::string color_print(const long double& number) {
+inline std::string color_print(long double number) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -138,6 +138,9 @@ inline std::string color_print(const long double& number) {
 	Color cyan(ColorCode::FG_CYAN);
 	Color white(ColorCode::FG_WHITE);
 	Color def(ColorCode::FG_DEFAULT);
+
+	// print prefix
+	s << yellow << "0b";
 
 	// print sign bit
 	s << red << (decoder.parts.sign ? '1' : '0') << '.';
