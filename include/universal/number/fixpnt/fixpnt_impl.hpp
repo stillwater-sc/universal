@@ -210,9 +210,9 @@ public:
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	CONSTEXPRESSION fixpnt(long double initial_value)        noexcept { *this = initial_value; }
-	CONSTEXPRESSION fixpnt& operator=(long double rhs) { return convert_ieee754(rhs);  }
-	explicit operator long double() const { return to_native<long double>(); }
+	CONSTEXPRESSION fixpnt(long double initial_value)   noexcept { *this = initial_value; }
+	CONSTEXPRESSION fixpnt& operator=(long double rhs)  noexcept { return convert_ieee754(rhs);  }
+	CONSTEXPRESSION explicit operator long double() const noexcept { return to_native<long double>(); }
 #endif
 
 	// assignment operator for blockbinary type
@@ -221,7 +221,7 @@ public:
 
 	// conversion operator between different fixed point formats with the same rbits
 	template<size_t src_bits>
-	constexpr fixpnt& operator=(const fixpnt<src_bits, rbits, arithmetic, bt>& src) {
+	fixpnt& operator=(const fixpnt<src_bits, rbits, arithmetic, bt>& src) {
 		if (src_bits <= nbits) {
 			// simple copy of the bytes
 			for (unsigned i = 0; i < unsigned(src.nrBlocks); ++i) {
@@ -277,50 +277,50 @@ public:
 #endif
 
 	// prefix operators
-	fixpnt operator-() const { return sw::universal::twosComplement(*this); }
+	constexpr fixpnt operator-() const { return sw::universal::twosComplement(*this); }
 	// one's complement
-	fixpnt operator~() const { 
+	constexpr fixpnt operator~() const { 
 		fixpnt complement(*this);
 		complement.flip(); 
 		return complement;
 	}
 	// increment by 1 ULP
-	fixpnt operator++(int) {
+	constexpr fixpnt operator++(int) {
 		fixpnt tmp(*this);
 		operator++();
 		return tmp;
 	}
 	// increment by 1 ULP
-	fixpnt& operator++() {
+	constexpr fixpnt& operator++() {
 		fixpnt increment;
 		increment.setbits(0x1);
 		*this += increment;
 		return *this;
 	}
 	// decrement by 1 ULP
-	fixpnt operator--(int) {
+	constexpr fixpnt operator--(int) {
 		fixpnt tmp(*this);
 		operator--();
 		return tmp;
 	}
 	// decrement by 1 ULP
-	fixpnt& operator--() {
+	constexpr fixpnt& operator--() {
 		fixpnt decrement;
 		decrement.setbits(0x1);
 		return *this -= decrement;
 	}
 	// conversion operators
 // Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator unsigned short() const     { return to_unsigned<unsigned short>(); }
-	explicit operator unsigned int() const       { return to_unsigned<unsigned int>(); }
-	explicit operator unsigned long() const      { return to_unsigned<unsigned long>(); }
-	explicit operator unsigned long long() const { return to_unsigned<unsigned long long>(); }
-	explicit operator short() const              { return to_signed<short>(); }
-	explicit operator int() const                { return to_signed<int>(); }
-	explicit operator long() const               { return to_signed<long>(); }
-	explicit operator long long() const          { return to_signed<long long>(); }
-	explicit operator float() const              { return to_native<float>(); }
-	explicit constexpr operator double() const   { return to_native<double>(); }
+	explicit constexpr operator unsigned short()     const noexcept { return to_unsigned<unsigned short>(); }
+	explicit constexpr operator unsigned int()       const noexcept { return to_unsigned<unsigned int>(); }
+	explicit constexpr operator unsigned long()      const noexcept { return to_unsigned<unsigned long>(); }
+	explicit constexpr operator unsigned long long() const noexcept { return to_unsigned<unsigned long long>(); }
+	explicit constexpr operator short()              const noexcept { return to_signed<short>(); }
+	explicit constexpr operator int()                const noexcept { return to_signed<int>(); }
+	explicit constexpr operator long()               const noexcept { return to_signed<long>(); }
+	explicit constexpr operator long long()          const noexcept { return to_signed<long long>(); }
+	explicit constexpr operator float()              const noexcept { return to_native<float>(); }
+	explicit constexpr operator double()             const noexcept { return to_native<double>(); }
 
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {

@@ -43,7 +43,6 @@ try {
 	}
 
 // TODO: make fixpnt constexpr
-#ifdef CONSTEXPRESSION
 	{
 		// decorated constructors
 		{
@@ -54,20 +53,26 @@ try {
 			constexpr fixpnt<8, 4> a(1ul);  // unsigned long
 			std::cout << a << '\n';
 		}
+// constexpr for float depends on C++20 support and bit_cast<>
+#if BIT_CAST_SUPPORT
 		{
-			constexpr fixpnt<8, 4> a(1.0f);  // float
+			CONSTEXPRESSION fixpnt<8, 4> a(1.0f);  // float
 			std::cout << a << '\n';
 		}
 		{
-			constexpr fixpnt<8, 4> a(1.0);   // double
+			CONSTEXPRESSION fixpnt<8, 4> a(1.0);   // double
 			std::cout << a << '\n';
 		}
 #if LONG_DOUBLE_SUPPORT
 		{
-			constexpr fixpnt<8, 4> a(1.0l);  // long double
+			CONSTEXPRESSION fixpnt<8, 4> a(1.0l);  // long double
 			std::cout << a << '\n';
 		}
-#endif
+#endif // LONG_DOUBLE_SUPPORT
+#else
+		std::cout << "constexpr not supported yet by compiler\n";
+
+#endif // BIT_CAST_SUPPORT
 	}
 	{
 		// assignment operators
@@ -79,22 +84,27 @@ try {
 			constexpr fixpnt<8, 4> a = 1ul;  // unsigned long
 			std::cout << a << '\n';
 		}
+// constexpr for float depends on C++20 support and bit_cast<>
+#if BIT_CAST_SUPPORT
 		{
-			constexpr fixpnt<8, 4> a = 1.0f;  // float
+			CONSTEXPRESSION fixpnt<8, 4> a = 1.0f;  // float
 			std::cout << a << '\n';
 		}
 		{
-			constexpr fixpnt<8, 4> a = 1.0;   // double
+			CONSTEXPRESSION fixpnt<8, 4> a = 1.0;   // double
 			std::cout << a << '\n';
 		}
 #if LONG_DOUBLE_SUPPORT
 		{
-			constexpr fixpnt<8, 4> a = 1.0l;  // long double
+			CONSTEXPRESSION fixpnt<8, 4> a = 1.0l;  // long double
 			std::cout << a << '\n';
 		}
-#endif
+#endif // LONG_DOUBLE_SUPPORT
+#else
+		std::cout << "constexpr not supported yet by compiler\n";
+
+#endif // BIT_CAST_SUPPORT
 	}
-#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
