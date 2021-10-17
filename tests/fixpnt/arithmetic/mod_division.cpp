@@ -13,7 +13,6 @@
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
-
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 

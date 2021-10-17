@@ -13,10 +13,7 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // enabling tracing
 #define TRACE_CONVERSION 0
-
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/mathlib.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // print the constexpr values of the cfloat class

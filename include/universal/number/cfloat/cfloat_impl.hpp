@@ -2375,6 +2375,8 @@ public:
 protected:
 	// HELPER methods
 
+	// convert an unsigned integer into a cfloat
+	// TODO: this method does not protect against being called with a signed integer
 	template<typename Ty>
 	constexpr cfloat& convert_unsigned_integer(const Ty& rhs) noexcept {
 		clear();
@@ -2387,6 +2389,8 @@ protected:
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
 		return *this;
 	}
+	// convert a signed integer into a cfloat
+	// TODO: this method does not protect against being called with a signed integer
 	template<typename Ty>
 	constexpr cfloat& convert_signed_integer(const Ty& rhs) noexcept {
 		clear();

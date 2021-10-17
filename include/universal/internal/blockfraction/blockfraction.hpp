@@ -9,6 +9,12 @@
 #include <sstream>
 #include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
 
+// should be defined by calling environment, just catching it here just in case it is not
+#ifndef LONG_DOUBLE_SUPPORT
+#pragma message("LONG_DOUBLE_SUPPORT is not defined")
+#define LONG_DOUBLE_SUPPORT 0
+#endif
+
 /*
    The fraction bits in a floating-point representation benefit from different
    representations for different operators:
@@ -189,7 +195,9 @@ public:
 	/// conversion operators
 	explicit operator float() const              { return float(to_float()); }
 	explicit operator double() const             { return double(to_double()); }
+#if LONG_DOUBLE_SUPPORT
 	explicit operator long double() const        { return (long double)to_long_double(); }
+#endif
 
 	/// prefix operators
 	//

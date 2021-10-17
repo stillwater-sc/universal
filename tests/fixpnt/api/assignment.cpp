@@ -6,17 +6,13 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
+
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/fixpnt/fixpnt_impl.hpp>
-// fixed-point type manipulators such as pretty printers
-#include <universal/number/fixpnt/manipulators.hpp>
-#include <universal/number/fixpnt/mathlib.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 void PositiveTestCases() {

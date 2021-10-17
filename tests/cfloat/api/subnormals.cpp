@@ -4,9 +4,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>   // for subnormals and color_print
+// Configure the cfloat template environment
+// first: enable general or specialized configurations
+#define CFLOAT_FAST_SPECIALIZATION 0
+// second: enable/disable arithmetic exceptions
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/number/cfloat/cfloat.hpp>
 
 int main()
 try {

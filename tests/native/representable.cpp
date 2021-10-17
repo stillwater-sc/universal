@@ -32,10 +32,10 @@ try {
 
 #if LONG_DOUBLE_SUPPORT
 	constexpr long double denorm_min = std::numeric_limits<long double>::denorm_min();
-	std::cout << "smallest long double: " << to_binary(denorm_min) << " : " << denorm_min << '/n';
+	std::cout << "smallest long double: " << to_binary(denorm_min) << " : " << denorm_min << '\n';
 #endif
 	constexpr long double denorm_min = std::numeric_limits<long double>::denorm_min();
-	std::cout << "smallest long double: " << denorm_min << '/n';
+	std::cout << "smallest long double: " << denorm_min << '\n';
 	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;

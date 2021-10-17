@@ -18,7 +18,6 @@
 #define POSIT_FAST_POSIT_3_1   1
 #define POSIT_FAST_POSIT_4_0   1
 #define POSIT_FAST_POSIT_8_0   1
-#define POSIT_FAST_POSIT_8_1   1
 #define POSIT_FAST_POSIT_16_1  1
 #define POSIT_FAST_POSIT_32_2  1
 #define POSIT_FAST_POSIT_48_2  0
@@ -64,12 +63,6 @@
 #endif
 #if POSIT_FAST_POSIT_8_0
 #include <universal/number/posit/specialized/posit_8_0.hpp>
-#endif
-#ifndef POSIT_FAST_POSIT_8_1
-#define POSIT_FAST_POSIT_8_1 0
-#endif
-#if POSIT_FAST_POSIT_8_1
-#include <universal/number/posit/specialized/posit_8_1.hpp>
 #endif
 #ifndef POSIT_FAST_POSIT_16_1
 #define POSIT_FAST_POSIT_16_1 0

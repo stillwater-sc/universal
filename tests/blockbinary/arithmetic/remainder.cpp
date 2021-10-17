@@ -4,11 +4,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
 
-// minimum set of include files to reflect source code dependencies
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/blockbinary_test_status.hpp>
@@ -96,22 +96,21 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	if (argc > 1) std::cout << argv[0] << std::endl;
-
+	std::string test_suite = "blockbinary remainder";
+	std::string test_tag = "remainder";
+	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "blockbinary remainder: ";
 
 #if MANUAL_TESTING
 
 	GenerateTestCase<4>(0x8, 0x1); // -8 % 1 = 0
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4>", test_tag);
 
 
 #if STRESS_TESTING
@@ -122,25 +121,25 @@ try {
 
 	std::cout << "blockbinary remainder validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 4, uint8_t>(bReportIndividualTestCases), "blockbinary< 4,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 5, uint8_t>(bReportIndividualTestCases), "blockbinary< 5,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 6, uint8_t>(bReportIndividualTestCases), "blockbinary< 6,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 7, uint8_t>(bReportIndividualTestCases), "blockbinary< 7,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 8, uint8_t>(bReportIndividualTestCases), "blockbinary< 8,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 9, uint8_t>(bReportIndividualTestCases), "blockbinary< 9,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t>(bReportIndividualTestCases), "blockbinary<10,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 4, uint8_t>(bReportIndividualTestCases), "blockbinary< 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 5, uint8_t>(bReportIndividualTestCases), "blockbinary< 5,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 6, uint8_t>(bReportIndividualTestCases), "blockbinary< 6,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 7, uint8_t>(bReportIndividualTestCases), "blockbinary< 7,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 8, uint8_t>(bReportIndividualTestCases), "blockbinary< 8,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 9, uint8_t>(bReportIndividualTestCases), "blockbinary< 9,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t>(bReportIndividualTestCases), "blockbinary<10,uint8_t>", test_tag);
 
 #if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t >(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t >(bReportIndividualTestCases), "blockbinary<12,uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 9, uint16_t>(bReportIndividualTestCases), "blockbinary< 9,uint16_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<13, uint16_t>(bReportIndividualTestCases), "blockbinary<13,uint16_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 9, uint16_t>(bReportIndividualTestCases), "blockbinary< 9,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<13, uint16_t>(bReportIndividualTestCases), "blockbinary<13,uint16_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t >(bReportIndividualTestCases), "blockbinary<16,uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t >(bReportIndividualTestCases), "blockbinary<16,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", test_tag);
 
 
 #endif  // STRESS_TESTING

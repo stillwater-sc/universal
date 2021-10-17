@@ -4,10 +4,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
 #include <iostream>
 #include <iomanip>
 
-// minimum set of include files to reflect source code dependencies
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/blockbinary_test_status.hpp>
@@ -98,15 +98,15 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	if (argc > 1) std::cout << argv[0] << std::endl;
 	
+	std::string test_suite = "unrounded blockbinary multiplication";
+	std::string test_tag = "unrounded multiplication";
+	std::cout << test_suite << '\n';
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "unrounded block multiplication: ";
 
 #if MANUAL_TESTING
 
@@ -116,9 +116,9 @@ try {
 	blockbinary<8> c = urmul(a, b);
 	cout << (long long)a << " * " << (long long)b << " = " << (long long)c << " : " << to_binary(c) << " <--- demonstration that 2*nbits is sufficient to represent all results\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<4, uint8_t>(true), "blockbinary<4,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<8, uint8_t>(true), "blockbinary<8,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<8, uint16_t>(true), "blockbinary<8,uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<4, uint8_t>(true), "blockbinary<4,uint8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<8, uint8_t>(true), "blockbinary<8,uint8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<8, uint16_t>(true), "blockbinary<8,uint16>", test_tag);
 
 	nrOfFailedTestCases = 0;
 
@@ -128,35 +128,33 @@ try {
 #endif
 
 #else
-	bool bReportIndividualTestCases = false;
-	std::cout << "unrounded block multiplication validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 4, uint8_t >(bReportIndividualTestCases), "blockbinary< 8,uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 4, uint16_t>(bReportIndividualTestCases), "blockbinary< 8,uint16>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 4, uint32_t>(bReportIndividualTestCases), "blockbinary< 8,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 4, uint8_t >(bReportIndividualTestCases), "blockbinary< 8,uint8 >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 4, uint16_t>(bReportIndividualTestCases), "blockbinary< 8,uint16>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 4, uint32_t>(bReportIndividualTestCases), "blockbinary< 8,uint32>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 8, uint8_t >(bReportIndividualTestCases), "blockbinary< 8,uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 8, uint16_t>(bReportIndividualTestCases), "blockbinary< 8,uint16>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 8, uint32_t>(bReportIndividualTestCases), "blockbinary< 8,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 8, uint8_t >(bReportIndividualTestCases), "blockbinary< 8,uint8 >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 8, uint16_t>(bReportIndividualTestCases), "blockbinary< 8,uint16>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 8, uint32_t>(bReportIndividualTestCases), "blockbinary< 8,uint32>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 9, uint8_t >(bReportIndividualTestCases), "blockbinary< 9,uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 9, uint16_t>(bReportIndividualTestCases), "blockbinary< 9,uint16>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 9, uint32_t>(bReportIndividualTestCases), "blockbinary< 9,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 9, uint8_t >(bReportIndividualTestCases), "blockbinary< 9,uint8 >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 9, uint16_t>(bReportIndividualTestCases), "blockbinary< 9,uint16>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication< 9, uint32_t>(bReportIndividualTestCases), "blockbinary< 9,uint32>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<10, uint8_t >(bReportIndividualTestCases), "blockbinary<10,uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<10, uint16_t>(bReportIndividualTestCases), "blockbinary<10,uint16>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<10, uint32_t>(bReportIndividualTestCases), "blockbinary<10,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<10, uint8_t >(bReportIndividualTestCases), "blockbinary<10,uint8 >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<10, uint16_t>(bReportIndividualTestCases), "blockbinary<10,uint16>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<10, uint32_t>(bReportIndividualTestCases), "blockbinary<10,uint32>", test_tag);
 
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<11, uint8_t>(bReportIndividualTestCases), "blockbinary<11,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<11, uint32_t>(bReportIndividualTestCases), "blockbinary<11,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<11, uint8_t>(bReportIndividualTestCases), "blockbinary<11,uint8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<11, uint32_t>(bReportIndividualTestCases), "blockbinary<11,uint32>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<12, uint16_t>(bReportIndividualTestCases), "blockbinary<12,uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<12, uint16_t>(bReportIndividualTestCases), "blockbinary<12,uint16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32>", test_tag);
 
 #endif  // STRESS_TESTING
 

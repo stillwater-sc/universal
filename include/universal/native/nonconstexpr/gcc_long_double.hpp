@@ -121,8 +121,8 @@ inline std::string to_triple(long double number) {
 
 	// print fraction bits
 	s << (decoder.parts.bit63 ? '1' : '0');
-	uint64_t mask = (uint64_t(1) << 62);
-	for (int i = 62; i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << 61);
+	for (int i = 61; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
@@ -165,8 +165,8 @@ inline std::string color_print(long double number) {
 
 	// print fraction bits
 	s << magenta << (decoder.parts.bit63 ? '1' : '0');
-	uint64_t mask = (uint64_t(1) << 62);
-	for (int i = 62; i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << 61);
+	for (int i = 61; i >= 0; --i) {
 		s << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
 		if (i > 0 && i % 4 == 0) s << magenta << '\'';
 		mask >>= 1;
