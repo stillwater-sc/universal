@@ -31,11 +31,9 @@ class chebfun {
         chebfun() {}  // default constructor
         // chebfun(size_type n):domain(n){chebpts(n);} // decorated constructor
         
-        template<typename Func>
-        chebfun(Func f) {
-            std::cout << "Chebfun constructor test =  " << f(0) << std::endl;
+        chebfun(Scalar(*f)(Scalar)) {
+            std::cout << "Chebfun constructor test =  " << f(1.5) << std::endl;
         }
-
         Scalar operator[](size_type i){return domain[i];}
 
    
