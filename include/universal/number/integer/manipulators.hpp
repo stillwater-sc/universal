@@ -56,7 +56,7 @@ inline std::string to_triple(const integer<nbits, bt>& number) {
 	}
 	else {
 		for (int i = msb-1; i >= 0; --i) {
-			ss << (number.at(i) ? '1' : '0');
+			ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
 		}
 	}
 

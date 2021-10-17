@@ -44,7 +44,7 @@ try {
 		std::cout.flush();
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
-	long double q = atof(argv[1]);
+	long double q = strtold(argv[1], NULL);
 	value<fbits> v(q);
 
 	std::cout << "long double: " << std::setprecision(max_digits10) << q << '\n';

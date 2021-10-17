@@ -206,7 +206,7 @@ public:
 	}
 	constexpr integer& operator++() {
 		*this += integer(1);
-		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
+		b[MS_BYTE] = static_cast<uint8_t>(b[MS_BYTE] & MS_BYTE_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// decrement
@@ -217,7 +217,7 @@ public:
 	}
 	constexpr integer& operator--() {
 		*this -= integer(1);
-		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
+		b[MS_BYTE] = static_cast<uint8_t>(b[MS_BYTE] & MS_BYTE_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// conversion operators
@@ -248,7 +248,7 @@ public:
 			sum.b[i] = (uint8_t)(s & 0xFF);
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		sum.b[MS_BYTE] = MS_BYTE_MASK & sum.b[MS_BYTE];
+		sum.b[MS_BYTE] = static_cast<uint8_t>(MS_BYTE_MASK & sum.b[MS_BYTE]);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		if (carry) throw integer_overflow();
 #endif
@@ -429,10 +429,10 @@ public:
 	inline constexpr void setbit(size_t i, bool v = true) {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
-			uint8_t null = ~(1 << (i % 8));
-			uint8_t bit = (v ? 1 : 0);
-			uint8_t mask = (bit << (i % 8));
-			b[i / 8] = (byte & null) | mask;
+			uint8_t null = static_cast<uint8_t>(~(1 << (i % 8)));
+			uint8_t bit = static_cast<uint8_t>(v ? 1 : 0);
+			uint8_t mask = static_cast<uint8_t>(bit << (i % 8));
+			b[i / 8] = static_cast<uint8_t>((byte & null) | mask);
 			return;
 		}
 		throw "integer<nbits, BlockType> bit index out of bounds";
@@ -449,14 +449,14 @@ public:
 			value >>= 8;
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
+		b[MS_BYTE] = static_cast<uint8_t>(MS_BYTE_MASK & b[MS_BYTE]);
 	}
 	inline constexpr integer& assign(const std::string& txt) {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
+		b[MS_BYTE] = static_cast<uint8_t>(MS_BYTE_MASK & b[MS_BYTE]);
 		return *this;
 	}
 	// pure bit copy of source integer, no sign extension
@@ -467,14 +467,14 @@ public:
 		for (int i = 0; i < lastByte; ++i) {
 			b[i] = src.byte(i);
 		}
-		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
+		b[MS_BYTE] = static_cast<uint8_t>(b[MS_BYTE] & MS_BYTE_MASK); // assert precondition of properly nulled leading non-bits
 	}
 	// in-place one's complement
 	inline constexpr integer& flip() {
 		for (unsigned i = 0; i < nrBytes; ++i) {
-			b[i] = ~b[i];
+			b[i] = static_cast<uint8_t>(~b[i]);
 		}
-		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
+		b[MS_BYTE] = static_cast<uint8_t>(b[MS_BYTE] & MS_BYTE_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 
@@ -508,7 +508,7 @@ public:
 	inline constexpr bool at(size_t i) const {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
-			uint8_t mask = 1 << (i % 8);
+			uint8_t mask = static_cast<uint8_t>(1 << (i % 8));
 			return (byte & mask);
 		}
 		throw "bit index out of bounds";
@@ -531,10 +531,11 @@ public:
 			if (v & 0x1ull) setbit(i);
 			v >>= 1;
 		}
-		if (nbits > 64 && negative) {
-			// sign extend
-			for (unsigned i = upper; i < nbits; ++i) {
-				setbit(i);
+		if constexpr (nbits > 64) {
+			if (negative) {	// sign extend if negative
+				for (unsigned i = upper; i < nbits; ++i) {
+					setbit(i);
+				}
 			}
 		}
 		return *this;
@@ -868,7 +869,7 @@ void mul(decimal& lhs, const decimal& rhs) {
 			decimal::iterator pit = partial_sum.begin() + position;
 			uint8_t carry = 0;
 			for (bit = lhs.begin(); bit != lhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
-				uint8_t digit = *sit * *bit + carry;
+				uint8_t digit = static_cast<uint8_t>(*sit * *bit + carry);
 				*pit = digit % 10u;
 				carry = digit / 10u;
 			}
@@ -1089,7 +1090,7 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 			else if (*r == 'x' || *r == 'X') {
 				if (odd) {
 					// complete the most significant byte
-					value.setbyte(byteIndex, byte);
+					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
 				}
 				// check that we have [-+]0[xX] format
 				++r;
@@ -1130,7 +1131,7 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 			else {
 				if (odd) {
 					byte += charLookup.at(*r) << 4;
-					value.setbyte(byteIndex, byte);
+					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
 					++byteIndex;
 				}
 				else {
@@ -1203,7 +1204,7 @@ inline std::string to_binary(const integer<nbits, BlockType>& number, bool nibbl
 	std::stringstream s;
 	s << "0b";
 	for (int i = nbits - 1; i >= 0; --i) {
-		s << (number.at(i) ? "1" : "0");
+		s << (number.at(static_cast<size_t>(i)) ? "1" : "0");
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
 	return s.str();
@@ -1232,8 +1233,8 @@ inline bool operator< (const integer<nbits, BlockType>& lhs, const integer<nbits
 	if (rhs_is_negative && !lhs_is_negative) return false;
 	// arguments have the same sign
 	for (int i = nbits - 1; i >= 0; --i) {
-		bool a = lhs.at(i);
-		bool b = rhs.at(i);
+		bool a = lhs.at(static_cast<size_t>(i));
+		bool b = rhs.at(static_cast<size_t>(i));
 		if (a ^ b) {
 			if (a == false) {
 				return true; 
