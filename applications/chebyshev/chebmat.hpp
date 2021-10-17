@@ -13,12 +13,14 @@
 #include <universal/blas/blas.hpp>
 
 namespace chebyshev {
-	using namespace sw::universal;
+
 	template<typename Scalar>
-	blas::matrix<Scalar> chebmat(size_t n)
+	sw::universal::blas::matrix<Scalar> chebmat(size_t n)
 	{
 		if (n < 1) return blas::matrix<Scalar>{};
-		blas::matrix<Scalar> T = 1;
+		Scalar one(1.0f);
+		sw::universal::blas::matrix<Scalar> T(n+1, n+1);
+		T = one;
         for(size_t i = 1;i < n+1; ++i){
                 for(size_t j = 2;j < i; ++j){
                     T(i,j) = 1;

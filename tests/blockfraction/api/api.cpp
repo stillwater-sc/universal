@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
 #include <iostream>
 
 #include <universal/native/integers.hpp>
@@ -28,6 +29,7 @@ template<typename BlockFraction>
 void PrintRoundingMode(const BlockFraction& a, size_t targetLsb) {
 	std::cout << to_binary(a) << " target lsb = " << targetLsb << " ->rounding mode is " << (a.roundingMode(targetLsb) ? "up" : "down") << '\n';
 }
+
 int main()
 try {
 	using namespace sw::universal;

@@ -12,7 +12,6 @@
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
-
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
@@ -108,7 +107,7 @@ try {
 
 	std::string test_suite = "Fixed-point saturating subnormal conversion ";
 	std::string test_tag = "conversion of IEEE-754 subnormals";
-	bool bReportIndividualTestCases = false;
+//	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING

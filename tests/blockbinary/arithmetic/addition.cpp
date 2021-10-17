@@ -4,10 +4,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
 #include <iostream>
 #include <iomanip>
 
-// minimum set of include files to reflect source code dependencies
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/blockbinary_test_status.hpp>

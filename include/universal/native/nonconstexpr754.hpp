@@ -168,6 +168,9 @@ inline std::string color_print(float number) {
 	Color white(ColorCode::FG_WHITE);
 	Color def(ColorCode::FG_DEFAULT);
 
+	// print prefix
+	s << yellow << "0b";
+
 	// print sign bit
 	s << red << (decoder.parts.sign ? '1' : '0') << '.';
 
@@ -209,13 +212,16 @@ inline std::string color_print(double number) {
 	Color white(ColorCode::FG_WHITE);
 	Color def(ColorCode::FG_DEFAULT);
 
+	// print prefix
+	s << yellow << "0b";
+	
 	// print sign bit
 	s << red << (decoder.parts.sign ? '1' : '0') << '.';
 
 	// print exponent bits
 	{
-		uint64_t mask = 0x800;
-		for (int i = 11; i >= 0; --i) {
+		uint64_t mask = 0x400;
+		for (int i = 10; i >= 0; --i) {
 			s << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
 			if (i > 0 && i % 4 == 0) s << cyan << '\'';
 			mask >>= 1;
@@ -225,8 +231,8 @@ inline std::string color_print(double number) {
 	s << '.';
 
 	// print fraction bits
-	uint64_t mask = (uint64_t(1) << 52);
-	for (int i = 52; i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << 51);
+	for (int i = 51; i >= 0; --i) {
 		s << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
 		if (i > 0 && i % 4 == 0) s << magenta << '\'';
 		mask >>= 1;
@@ -321,8 +327,8 @@ inline std::string to_base2_scientific(double number) {
 	double_decoder decoder;
 	decoder.d = number;
 	s << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
-	uint64_t mask = (uint64_t(1) << 52);
-	for (int i = 52; i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << 51);
+	for (int i = 51; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	} 
@@ -398,10 +404,12 @@ value is a denormal number and the exponent of 2 is 16382.
 #include <universal/native/nonconstexpr/msvc_long_double.hpp>
 #include <universal/native/nonconstexpr/clang_long_double.hpp>
 #include <universal/native/nonconstexpr/gcc_long_double.hpp>
-#include <universal/native/nonconstexpr/intelicc_long_double.hpp>
 #include <universal/native/nonconstexpr/riscv_long_double.hpp>
+/*
+  the support for these compilers is not up to date
+#include <universal/native/nonconstexpr/intelicc_long_double.hpp>
 #include <universal/native/nonconstexpr/ibmxlc_long_double.hpp>
 #include <universal/native/nonconstexpr/hpcc_long_double.hpp>
 #include <universal/native/nonconstexpr/pgi_long_double.hpp>
 #include <universal/native/nonconstexpr/sunpro_long_double.hpp>
-
+*/

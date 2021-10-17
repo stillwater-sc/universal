@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION

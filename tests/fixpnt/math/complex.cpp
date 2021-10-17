@@ -4,7 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-
 // use default number system library configuration
 #include <universal/number/fixpnt/fixpnt.hpp>
 

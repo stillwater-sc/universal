@@ -13,7 +13,6 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
-
 #include <universal/number/cfloat/cfloat.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override

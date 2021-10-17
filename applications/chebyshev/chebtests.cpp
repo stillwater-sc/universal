@@ -38,10 +38,14 @@ try {
 		constexpr size_t nbits = 32;
 		constexpr size_t es = 1;
 		using Scalar = posit<nbits, es>;
-		cout << "\nUsing POSIT<" << nbits << "," <<  es << ">\n" <<  endl;
+		std::cout << "\nUsing POSIT<" << nbits << "," <<  es << ">\n\n";
 	#else	  
 		using Scalar = double;
+<<<<<<< HEAD
 		std::cout << "\nUsing DOUBLE " << "\n" <<  std::endl;
+=======
+		std::cout << "\nUsing DOUBLE " << "\n\n";
+>>>>>>> upstream/main
 	#endif
 
 	// TESTS

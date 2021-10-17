@@ -26,7 +26,6 @@ namespace sw::universal {
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
-		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -41,6 +40,7 @@ namespace sw::universal {
 					iresult = ia + ib;
 				}
 				catch (...) {
+					Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 						continue;
@@ -75,7 +75,6 @@ namespace sw::universal {
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
-		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -90,6 +89,7 @@ namespace sw::universal {
 					iresult = ia - ib;
 				}
 				catch (...) {
+					Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 						continue;
@@ -124,7 +124,6 @@ namespace sw::universal {
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
-		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -139,6 +138,7 @@ namespace sw::universal {
 					iresult = ia * ib;
 				}
 				catch (...) {
+					Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 						continue;
@@ -173,7 +173,6 @@ namespace sw::universal {
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
-		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -182,6 +181,7 @@ namespace sw::universal {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
 				short i16b = short(ib);
+				if (j > 0) iref = i16a / i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				if (j == 0) {
 					try {
@@ -195,7 +195,7 @@ namespace sw::universal {
 						nrOfFailedTests++;
 					}
 				}
-				iref = i16a / i16b; // protected by the continue above
+				Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 				if (iref > max_int || iref < min_int) {
 					try {
 						iresult = ia / ib;
@@ -235,7 +235,6 @@ namespace sw::universal {
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
-		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -244,11 +243,13 @@ namespace sw::universal {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
 				short i16b = short(ib);
+				if (j > 0) iref = i16a % i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia % ib;
 				}
 				catch (...) {
+					Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 						continue;
@@ -260,7 +261,6 @@ namespace sw::universal {
 #else
 				iresult = ia % ib;
 #endif
-				iref = i16a % i16b;
 				if (iresult != iref) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
@@ -283,7 +283,6 @@ namespace sw::universal {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
 		Integer ia, ib, iresult, iref;
-		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -298,6 +297,7 @@ namespace sw::universal {
 					iresult = ia + ib;
 				}
 				catch (...) {
+					Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 	
@@ -331,7 +331,6 @@ namespace sw::universal {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
 		Integer ia, ib, iresult, iref;
-		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -346,6 +345,7 @@ namespace sw::universal {
 					iresult = ia - ib;
 				}
 				catch (...) {
+					Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 
@@ -380,7 +380,6 @@ namespace sw::universal {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
 		Integer ia, ib, iresult, iref;
-		Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -395,6 +394,7 @@ namespace sw::universal {
 					iresult = ia * ib;
 				}
 				catch (...) {
+					Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
 					if (iref > max_int || iref < min_int) {
 						// correctly caught the exception
 

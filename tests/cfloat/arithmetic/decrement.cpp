@@ -4,11 +4,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/cfloat/cfloat_impl.hpp>
+
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
-#include <universal/utility/bit_cast.hpp>
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0

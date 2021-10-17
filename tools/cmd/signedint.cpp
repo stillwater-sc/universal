@@ -3,11 +3,21 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
 #include <universal/number/integer/integer.hpp>
 
+template<typename Scalar>
+void ParseAndReport(const std::string& arg) {
+	Scalar v;
+	sw::universal::parse(arg, v);
+	std::cout << "The input value of " << arg << " can be represented by " << typeid(v).name() << '\n';
+	std::cout << " value       : " << v << '\n';
+	std::cout << " binary form : " << sw::universal::to_binary(v, true) << '\n';
+	std::cout << " triple form : " << sw::universal::to_triple(v) << '\n';
+}
 // receive an unsigned integer and print its components
 int main(int argc, char** argv)
 try {
@@ -16,7 +26,7 @@ try {
 	if (argc != 2) {
 		std::cerr << "signedint : components of a signed integer\n";
 		std::cerr << "Show the sign/scale/fraction components of a signed integer.\n";
-		std::cerr << "Usage: signedint integer_value\n";
+		std::cerr << "Usage: signedint value\n";
 		std::cerr << "Example: signedint 1234567890123456789012345\n";
 		std::cerr << "class sw::universal::integer<128,unsigned int>         : 1234567890123456789012345 (+,80,00000101011011100000111100110110101001100100010000111101111000101101111101111001)\n";
 
@@ -24,7 +34,7 @@ try {
 	}
 	// integer attributes
 	std::string arg = argv[1];
-	size_t max_digits10 = arg.length() + 1;
+//	size_t max_digits10 = arg.length() + 1;
 
 	// integer size check
 	integer<1032, uint32_t> ref;
@@ -34,62 +44,52 @@ try {
 		return EXIT_FAILURE;
 	}
 
-	// TODO: need to honor format manipulator
-	constexpr size_t columnWidth = 50;
 	value >= 0 ? parse("0x7F", ref) : parse("-128", ref);
 	if (value < ref) {
-		integer<8, uint8_t> int8;
-		parse(arg, int8);
-		std::cout << std::setw(columnWidth) << std::left << typeid(int8).name() << ": " << std::setprecision(max_digits10) << std::right << int8 << " " << to_triple(int8) << '\n';
+		using Scalar = integer<8, uint8_t>;
+		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFF", ref);
 	if (value < ref) {
-		integer<16, uint16_t> int16;
-		parse(arg, int16);
-		std::cout << std::setw(columnWidth) << std::left << typeid(int16).name()  << ": " << std::setprecision(max_digits10) << std::right << int16 << " " << to_triple(int16) << '\n';
+		using Scalar = integer<16, uint16_t>;
+		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFF", ref);
 	if (value < ref) {
-		integer<32, uint32_t> int32;
-		parse(arg, int32);
-		std::cout << std::setw(columnWidth) << std::left << typeid(int32).name()  << ": " << std::setprecision(max_digits10) << std::right << int32 << " " << to_triple(int32) << '\n';
+		using Scalar = integer<32, uint32_t>;
+		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFF", ref);
 	if (value < ref) {
-		integer<64, uint32_t> int64;
-		parse(arg, int64);
-		std::cout << std::setw(columnWidth) << std::left << typeid(int64).name()  << ": " << std::setprecision(max_digits10) << std::right << int64 << " " << to_triple(int64) << '\n';
+		using Scalar = integer<64, uint32_t>;
+		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", ref);
 	if (value < ref) {
-		integer<128, uint32_t> int128;
-		parse(arg, int128);
-		std::cout << std::setw(columnWidth) << std::left << typeid(int128).name() << ": " << std::setprecision(max_digits10) << std::right << int128 << " " << to_triple(int128) << '\n';
+		using Scalar = integer<128, uint32_t>;
+		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", ref);
 	if (value < ref) {
-		integer<256, uint32_t> int256;
-		parse(arg, int256);
-		std::cout << std::setw(columnWidth) << std::left << typeid(int256).name() << ": " << std::setprecision(max_digits10) << std::right << int256 << " " << to_triple(int256) << '\n';
+		using Scalar = integer<256, uint32_t>;
+		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", ref);
 	if (value < ref) {
-		integer<512, uint32_t> int512;
-		parse(arg, int512);
-		std::cout << std::setw(columnWidth) << std::left << typeid(int512).name() << ": " << std::setprecision(max_digits10) << std::right << int512 << " " << to_triple(int512) << '\n';
+		using Scalar = integer<512, uint32_t>;
+		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", ref);
 	if (value < ref) {
-		integer<1024, uint32_t> int1024;
-		parse(arg, int1024);
-		std::cout << std::setw(columnWidth) << std::left << typeid(int1024).name() << ": " << std::setprecision(max_digits10) << std::right << int1024 << " " << to_triple(int1024) << '\n';
+		using Scalar = integer<1024, uint32_t>;
+		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	std::cout << "The value " << arg << " is too large to be represented by a 1024 bit integer or smaller\n";

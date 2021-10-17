@@ -11,9 +11,7 @@
 #define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
+#include <universal/number/cfloat/cfloat.hpp>
 
 // marshall the exception state of cfloat to the test suite
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION 
@@ -726,6 +724,10 @@ void TestScale(int& nrOfFailedTestCases) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 #undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1

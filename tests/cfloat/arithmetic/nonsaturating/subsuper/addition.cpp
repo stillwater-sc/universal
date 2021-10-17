@@ -9,12 +9,11 @@
 #define CFLOAT_TRACE_ADD
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
 #define BLOCKTRIPLE_TRACE_ADD
-#include <universal/number/cfloat/cfloat_impl.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_case.hpp>
 //#include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
-#include <universal/utility/bit_cast.hpp>
 #include <universal/number/cfloat/table.hpp>
 
 #define MANUAL_TESTING 1

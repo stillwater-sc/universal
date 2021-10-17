@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
 // Configure the cfloat template environment
 // first: enable general or specialized configurations
@@ -11,13 +12,7 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 // third: enable native literals in logic and arithmetic operations
 #define CFLOAT_ENABLE_LITERALS 1
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/cfloat/cfloat_impl.hpp>
-#include <universal/number/cfloat/numeric_limits.hpp>
-// type manipulators such as pretty printers
-#include <universal/number/cfloat/manipulators.hpp>
-#include <universal/number/cfloat/mathlib.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 void TestULP() 

@@ -4,10 +4,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
 #include <iostream>
 #include <iomanip>
 
-// minimum set of include files to reflect source code dependencies
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/blockbinary_test_status.hpp>
@@ -111,16 +111,15 @@ void ShiftExamples() {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	if (argc > 1) std::cout << argv[0] << std::endl; 
 	
+	std::string test_suite = "blockbinary arithmetic shifting";
+	std::string test_tag = "arithmetic right shift";
+	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "block shifts: ";
 
 #if MANUAL_TESTING
 
@@ -169,7 +168,7 @@ try {
 		cout << to_binary(a, true) << ' ' << (long long)(a) << "  right shift by " << i << endl;
 	}
 #endif
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<12>(true), "blockbinary<12>", "arithmetic right shift");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<12>(true), "blockbinary<12>", test_tag);
 
 	{
 		blockbinary<12> a;
@@ -187,59 +186,49 @@ try {
 		}
 	}
 
-#if STRESS_TESTING
-
-#endif
-
 #else
 
 	std::cout << "block shifts validation\n";
 	bReportIndividualTestCases = false;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<2>(bReportIndividualTestCases), "blockbinary<2>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<3>(bReportIndividualTestCases), "blockbinary<3>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<4>(bReportIndividualTestCases), "blockbinary<4>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<5>(bReportIndividualTestCases), "blockbinary<5>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<6>(bReportIndividualTestCases), "blockbinary<6>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<7>(bReportIndividualTestCases), "blockbinary<7>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<8>(bReportIndividualTestCases), "blockbinary<8>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<9>(bReportIndividualTestCases), "blockbinary<9>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<10>(bReportIndividualTestCases), "blockbinary<10>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<11>(bReportIndividualTestCases), "blockbinary<11>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<12>(bReportIndividualTestCases), "blockbinary<12>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<13>(bReportIndividualTestCases), "blockbinary<13>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<14>(bReportIndividualTestCases), "blockbinary<14>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<15>(bReportIndividualTestCases), "blockbinary<15>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<16>(bReportIndividualTestCases), "blockbinary<16>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<17>(bReportIndividualTestCases), "blockbinary<17>", "arithmetic right shift");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<2>(bReportIndividualTestCases), "blockbinary<2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<3>(bReportIndividualTestCases), "blockbinary<3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<4>(bReportIndividualTestCases), "blockbinary<4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<5>(bReportIndividualTestCases), "blockbinary<5>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<6>(bReportIndividualTestCases), "blockbinary<6>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<7>(bReportIndividualTestCases), "blockbinary<7>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<8>(bReportIndividualTestCases), "blockbinary<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<9>(bReportIndividualTestCases), "blockbinary<9>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<10>(bReportIndividualTestCases), "blockbinary<10>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<11>(bReportIndividualTestCases), "blockbinary<11>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<12>(bReportIndividualTestCases), "blockbinary<12>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<13>(bReportIndividualTestCases), "blockbinary<13>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<14>(bReportIndividualTestCases), "blockbinary<14>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<15>(bReportIndividualTestCases), "blockbinary<15>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<16>(bReportIndividualTestCases), "blockbinary<16>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<17>(bReportIndividualTestCases), "blockbinary<17>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<18>(bReportIndividualTestCases), "blockbinary<18>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<20>(bReportIndividualTestCases), "blockbinary<20>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<24>(bReportIndividualTestCases), "blockbinary<24>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<28>(bReportIndividualTestCases), "blockbinary<28>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<32>(bReportIndividualTestCases), "blockbinary<32>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<40>(bReportIndividualTestCases), "blockbinary<40>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<48>(bReportIndividualTestCases), "blockbinary<48>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<56>(bReportIndividualTestCases), "blockbinary<56>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<64>(bReportIndividualTestCases), "blockbinary<64>", "arithmetic right shift");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<18>(bReportIndividualTestCases), "blockbinary<18>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<20>(bReportIndividualTestCases), "blockbinary<20>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<24>(bReportIndividualTestCases), "blockbinary<24>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<28>(bReportIndividualTestCases), "blockbinary<28>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<32>(bReportIndividualTestCases), "blockbinary<32>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<40>(bReportIndividualTestCases), "blockbinary<40>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<48>(bReportIndividualTestCases), "blockbinary<48>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<56>(bReportIndividualTestCases), "blockbinary<56>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<64>(bReportIndividualTestCases), "blockbinary<64>", test_tag);
 
 	// using a more efficient storage class
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<32,uint32_t>(bReportIndividualTestCases), "blockbinary<32,uint32_t>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<40,uint32_t>(bReportIndividualTestCases), "blockbinary<40,uint32_t>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<48, uint32_t>(bReportIndividualTestCases), "blockbinary<48,uint32_t>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<56, uint32_t>(bReportIndividualTestCases), "blockbinary<56,uint32_t>", "arithmetic right shift");
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<64, uint32_t>(bReportIndividualTestCases), "blockbinary<64,uint32_t>", "arithmetic right shift");
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<32,uint32_t>(bReportIndividualTestCases), "blockbinary<32,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<40,uint32_t>(bReportIndividualTestCases), "blockbinary<40,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<48, uint32_t>(bReportIndividualTestCases), "blockbinary<48,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<56, uint32_t>(bReportIndividualTestCases), "blockbinary<56,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<64, uint32_t>(bReportIndividualTestCases), "blockbinary<64,uint32_t>", test_tag);
 	
 	// can't test this with VerifyArithmeticRightShift since we don't have a >64bit native integer type
-	//nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<128, uint32_t>(bReportIndividualTestCases), "blockbinary<128,uint32_t>", "arithmetic right shift");
-	//nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<256, uint32_t>(bReportIndividualTestCases), "blockbinary<256,uint32_t>", "arithmetic right shift");
+	//nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<128, uint32_t>(bReportIndividualTestCases), "blockbinary<128,uint32_t>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<256, uint32_t>(bReportIndividualTestCases), "blockbinary<256,uint32_t>", test_tag);
 
-
-#if STRESS_TESTING
-
-
-
-#endif  // STRESS_TESTING
 
 #endif  // MANUAL_TESTING
 
