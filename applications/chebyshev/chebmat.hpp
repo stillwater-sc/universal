@@ -19,7 +19,7 @@ namespace chebyshev {
 	{
 		if (n < 1) return blas::matrix<Scalar>{};
 		Scalar one(1.0f);
-		sw::universal::blas::matrix<Scalar> T(n, n);
+		sw::universal::blas::matrix<Scalar> T(n+1, n+1);
 		T = one;
         for(size_t i = 1;i < n+1; ++i){
                 for(size_t j = 2;j < i; ++j){
