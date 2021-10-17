@@ -56,10 +56,10 @@ try {
 		constexpr size_t nbits = 32;
 		constexpr size_t es = 1;
 		using Scalar = posit<nbits, es>;
-		cout << "\nUsing POSIT<" << nbits << "," <<  es << ">\n" <<  endl;
+		std::cout << "\nUsing POSIT<" << nbits << "," <<  es << ">\n\n";
 	#else	  
 		using Scalar = double;
-		cout << "\nUsing DOUBLE " << "\n" <<  endl;
+		std::cout << "\nUsing DOUBLE " << "\n\n";
 	#endif
 
 	// TESTS
@@ -147,7 +147,7 @@ try {
 	
 //	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
 //	auto f = chebyshev::chebfun<float>(std::sin);
-	auto M = chebyshev::chebmat(5);
+	auto M = chebyshev::chebmat<float>(5);
 	std::cout << M << std::endl;
 
 
