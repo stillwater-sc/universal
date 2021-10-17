@@ -44,8 +44,6 @@ try {
 		return EXIT_FAILURE;
 	}
 
-	// TODO: need to honor format manipulator
-	constexpr size_t columnWidth = 50;
 	value >= 0 ? parse("0x7F", ref) : parse("-128", ref);
 	if (value < ref) {
 		using Scalar = integer<8, uint8_t>;
