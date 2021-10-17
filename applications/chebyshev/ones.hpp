@@ -1,23 +1,24 @@
-// PROD(x) - Product of elements in x
+// ONES(n) - returns the ones vector
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Author: James Quinlan
+// James Quinlan, 04/29/2021
 
 #include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 namespace sw::universal{
+    using namespace sw::universal::blas;
 
 	template<typename Scalar>
-	Scalar prod(blas::vector<Scalar> x)
+	vector<Scalar>ones(size_t n)
 	{
-        Scalar y = 1;
-		for(int k = 0; k < size(x); ++k){
-			y = y*x(k); 
-		}
-		return y;
+		blas::vector<Scalar>x(n);
+        for(size_t i = 0; i<n; ++i){
+            x(i) = 1;
+        }
+		return x;
 	}
 }

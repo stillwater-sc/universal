@@ -11,7 +11,7 @@ namespace sw {
                 size_t n = num_rows(A);
                 size_t m = num_cols(A);
 
-                size_t rank = 0;
+                size_t rank = 0; // has to be at least 1.
                 vector<bool> row(n, false);
                 for (size_t i = 0; i < m; ++i) {
                     size_t j = 0;

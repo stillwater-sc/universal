@@ -8,24 +8,33 @@
      weakly singular, or blow up on the interval.
 */ 
 
+#pragma once
+
 // Dependencies
 #include<vector>
 #include<cmath> /* cos */
+#include <universal/number/posit/posit.hpp>
+#include <universal/blas/blas.hpp>
+#include "chebpts.hpp"
 
-
-
+namespace chebyshev{
 
 template<typename Scalar>
 class chebfun { 
 
     public:             
         typedef Scalar              value_type;
-        typedef size_type           size_t;
+        typedef size_t              size_type;
         // constexpr Scalar pi = 3.14159265358979323846;
     
     // Class Constructor:     
-        chebfun():domain(0){}
-        chebfun(size_type n):domain(n){-cos(k*pi/6)}
+        chebfun() {}  // default constructor
+        // chebfun(size_type n):domain(n){chebpts(n);} // decorated constructor
+        
+        template<typename Func>
+        chebfun(Func f) {
+            std::cout << "Chebfun constructor test =  " << f(0) << std::endl;
+        }
 
         Scalar operator[](size_type i){return domain[i];}
 
@@ -38,3 +47,5 @@ class chebfun {
 
 
 }; // End CHEBFUN
+
+}
