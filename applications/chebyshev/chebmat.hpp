@@ -35,7 +35,7 @@ namespace chebyshev {
 		return T;
 	}
 }
-// End Notes
+// Note:
 /*
 In practice, FFT is used to determine the coefficients a_0, a_1, ...
 */
