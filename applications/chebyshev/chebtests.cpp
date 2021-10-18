@@ -125,25 +125,38 @@ try {
 	//std::cout << chebpoly<Scalar>(3) + rpad<Scalar>(chebpoly<Scalar>(1), 3-1) << std::endl;
 	//chebpoly<Scalar>(n);
 
+<<<<<<< HEAD
  
 	// 13.
 	
 <<<<<<< HEAD
+=======
+
+
+
+	// 13.
+	
+
+>>>>>>> wip
 	//	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
 	//	auto f = chebyshev::chebfun<float>(std::sin);
 	auto M = chebyshev::chebmat<float>(5);
 	std::cout << M << std::endl;
+<<<<<<< HEAD
 =======
 //	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
     auto f = chebyshev::chebfun<float>(std::sin);
 	// auto M = chebyshev::chebmat<float>(5);
 	//std::cout <<  << std::endl;
+=======
+>>>>>>> wip
 
 	auto A = chebyshev::chebmat<float>(3);
 	blas::vector<Scalar> x(3);
 	x(0)=6;x(1)=-5;x(2)=1;
 	std::cout << A << x << std::endl;
 
+<<<<<<< HEAD
 
 >>>>>>> n+1 -> n
 
@@ -169,6 +182,8 @@ try {
 	x(0,0)=6;x(1,0)=-5;x(2,0)=1;
 	std::cout << A << x << std::endl;
  
+=======
+>>>>>>> wip
 	return EXIT_SUCCESS;
 }
 
