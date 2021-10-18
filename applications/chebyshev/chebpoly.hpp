@@ -4,6 +4,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // Author: James Quinlan
+// Modified: 2021-10-17
 
 #pragma once
 
