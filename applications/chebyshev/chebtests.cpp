@@ -150,8 +150,10 @@ try {
 	auto M = chebyshev::chebmat<float>(5);
 	std::cout << M << std::endl;
 
-	auto A = chebyshev::chebmat<float>(8);
-	std::cout << A << std::endl;
+	auto A = chebyshev::chebmat<float>(3);
+	blas::vector<Scalar> x(3);
+	x(0)=6;x(1)=-5;x(2)=1;
+	std::cout << A << x << std::endl;
 
 
 
