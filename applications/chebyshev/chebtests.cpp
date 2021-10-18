@@ -125,7 +125,19 @@ try {
 	//std::cout << chebpoly<Scalar>(3) + rpad<Scalar>(chebpoly<Scalar>(1), 3-1) << std::endl;
 	//chebpoly<Scalar>(n);
 
+ 
+	// 13.
+	
+//	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
+//	auto f = chebyshev::chebfun<float>(std::sin);
+	auto M = chebyshev::chebmat<float>(5);
+	std::cout << M << std::endl;
 
+	auto A = chebyshev::chebmat<float>(8);
+	std::cout << A << std::endl;
+
+
+ 
 
 
 	// 13.
