@@ -4,7 +4,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // Author: James Quinlan
-// Modified: 2021-10-15
+// Modified: 2021-10-17
 
 #pragma once
 
@@ -21,11 +21,18 @@ namespace chebyshev {
 		Scalar one(1.0f);
 		sw::universal::blas::matrix<Scalar> T(n+1, n+1);
 		T = one;
-        for(size_t i = 1;i < n+1; ++i){
-                for(size_t j = 2;j < i; ++j){
-                    T(i,j) = 1;
+		if (n > 1){
+			T(1,1) = 1;
+			for(size_t i = 2;i<n+1;++i){
+				T(i,0) = -T(i-2,0);
+			}
+		}
+        for(size_t i = 2;i < n+1; ++i){
+                for(size_t j = 1;j < i+1; ++j){
+                    T(i,j) = 2*T(i-1,j-1) - T(i-2,j);
                 }
-        }   
+        } 
+		   
 		return T;
 	}
 }
