@@ -128,8 +128,8 @@ try {
  
 	// 13.
 	
-//	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
-//	auto f = chebyshev::chebfun<float>(std::sin);
+	//	auto f = chebyshev::chebfun<float>([]<typename T>(T x) {return sin(x);});
+	//	auto f = chebyshev::chebfun<float>(std::sin);
 	auto M = chebyshev::chebmat<float>(5);
 	std::cout << M << std::endl;
 
@@ -138,7 +138,7 @@ try {
 	x(0)=6;x(1)=-5;x(2)=1;
 	std::cout << A << x << std::endl;
 
-
+ 
  
 
 
@@ -154,7 +154,7 @@ try {
 	blas::matrix<Scalar> x(3,1);
 	x(0,0)=6;x(1,0)=-5;x(2,0)=1;
 	std::cout << A << x << std::endl;
-
+ 
 	return EXIT_SUCCESS;
 }
 
