@@ -41,7 +41,6 @@ try {
 		std::cout << "\nUsing POSIT<" << nbits << "," <<  es << ">\n\n";
 	#else	  
 		using Scalar = double;
-
 		std::cout << "\nUsing DOUBLE " << "\n\n";
 	#endif
 
@@ -132,13 +131,6 @@ try {
     auto f = chebyshev::chebfun<float>(std::sin);
 	// auto M = chebyshev::chebmat<float>(5);
 	//std::cout <<  << std::endl;
-
-
-
-
-
-
-
 
 	return EXIT_SUCCESS;
 }
