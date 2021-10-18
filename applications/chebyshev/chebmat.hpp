@@ -24,6 +24,7 @@ namespace chebyshev {
 		if (n > 1){
 			T(1,1) = 1;
 <<<<<<< HEAD
+<<<<<<< HEAD
 			for(size_t i = 2;i<n;++i){
 				T(i,0) = -T(i-2,0);
 			}
@@ -37,11 +38,17 @@ namespace chebyshev {
 		}
         for(size_t i = 2;i < n+1; ++i){
 >>>>>>> edit chebmat
+=======
+			for(size_t i = 2;i<n;++i){
+				T(i,0) = -T(i-2,0);
+			}
+		}
+        for(size_t i = 2;i < n; ++i){
+>>>>>>> n+1 -> n
                 for(size_t j = 1;j < i+1; ++j){
                     T(i,j) = 2*T(i-1,j-1) - T(i-2,j);
                 }
-        } 
-		   
+        }   
 		return T;
 	}
 }
