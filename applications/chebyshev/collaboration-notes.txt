@@ -1,14 +1,15 @@
-
+ 
 James: I modified your chebfun function as it needed a matrix constructor. 
  
  However, you are looping from 0 to n, which is n+1 rows and columns,
+ 
        which surprised me, so I need you to take a look at this and see if I did the right thing.   
        Theo 10/17/2021
 
 Theo: In chebfun.hpp, lines 39 and 40 is how we step it up 10/16/2021.  Just wondering about the reversion
     back to Func instead of *f().  Also, n+1 because a polynomial of degree n has n+1 terms, i.e., 
     a_0 + a_1*T_1 + a_2*T_2 + ... + a_n*T_n.
-
+ 
     However, after sleeping on it, I may want to change to n x n, and just keep in mind, that would
     coorespond to a n-1 degree polynomial.  
 
@@ -17,4 +18,4 @@ Theo: In chebfun.hpp, lines 39 and 40 is how we step it up 10/16/2021.  Just won
    
  James: I modified your chebfun function as it needed a matrix constructor. However, you are looping from 0 to n, which is n+1 rows and columns,
        which surprised me, so I need you to take a look at this and see if I did the right thing.   Theo 10/17/2021
-
+ 
