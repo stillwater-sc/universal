@@ -151,10 +151,16 @@ try {
 =======
 >>>>>>> wip
 
+<<<<<<< HEAD
 	auto A = chebyshev::chebmat<float>(3);
 	blas::matrix<Scalar> x(3,1);
 	x(0,0)=6;x(1,0)=-5;x(2,0)=1;
 	std::cout << A << x << std::endl;
+=======
+	auto A = chebyshev::chebmat<float>(8);
+	std::cout << A << std::endl;
+
+>>>>>>> n+1 -> n
 
 <<<<<<< HEAD
 
