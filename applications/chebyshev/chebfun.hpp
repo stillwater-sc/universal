@@ -35,10 +35,13 @@ class chebfun {
             std::cout << "Chebfun constructor test =  " << f(1.5) << std::endl;
         }
 
+<<<<<<< HEAD
         // chebfun(Scalar(*f)(Scalar)) {
         //     std::cout << "Chebfun constructor test =  " << f(1.5) << std::endl;
 
 
+=======
+>>>>>>> edit chebmat
         Scalar operator[](size_type i){return domain[i];}
 
    
