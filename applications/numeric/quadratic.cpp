@@ -4,11 +4,16 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
-#include <cmath>   // lerp and midpoint
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
 #endif
 
+/* 
+	Background on the poor numerical performance of the quadratic solution
+	https://people.eecs.berkeley.edu/~wkahan/Qdrtcs.pdf
+	https://news.ycombinator.com/item?id=16949156
+	https://pavpanchekha.com/blog/accurate-quadratic.html
+ */
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/posit/posit.hpp>
@@ -54,7 +59,7 @@ try {
 	using Posit64 = sw::universal::posit<64, 2>;
 
 	float a = 1.0f;
-	float b = 1.0e4f;
+	float b = 1.0e5f;
 	float c = 1.0f;
 
 	std::cout << "single precision floating-point\n";
