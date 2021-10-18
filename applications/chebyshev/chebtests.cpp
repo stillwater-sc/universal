@@ -132,6 +132,9 @@ try {
 	// auto M = chebyshev::chebmat<float>(5);
 	//std::cout <<  << std::endl;
 
+	auto A = chebyshev::chebmat<float>(8);
+	std::cout << A << std::endl;
+
 
 
 
