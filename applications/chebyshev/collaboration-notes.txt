@@ -1,4 +1,8 @@
+
  James: I modified your chebfun function as it needed a matrix constructor. 
+
+James: I modified your chebfun function as it needed a matrix constructor. 
+
 However, you are looping from 0 to n, which is n+1 rows and columns,
        which surprised me, so I need you to take a look at this and see if I did the right thing.   
        Theo 10/17/2021

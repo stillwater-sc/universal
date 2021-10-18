@@ -28,10 +28,12 @@ namespace chebyshev {
 			}
 		}
         for(size_t i = 2;i < n; ++i){
+
                 for(size_t j = 1;j < i+1; ++j){
                     T(i,j) = 2*T(i-1,j-1) - T(i-2,j);
                 }
-        }   
+        } 
+		   
 		return T;
 	}
 }
