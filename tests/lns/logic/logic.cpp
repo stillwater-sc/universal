@@ -1,4 +1,4 @@
-// arithmetic_add.cpp: test suite runner for addition on arbitrary logarithmic number system
+// logic.cpp: test suite runner for logic operation on arbitrary logarithmic number system
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -33,8 +33,8 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "lns addition validation";
-	std::string test_tag = "addition";
+	std::string test_suite = "lns logic validation";
+	std::string test_tag = "logic ops";
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 

@@ -775,7 +775,7 @@ inline bool operator< (const decimal& lhs, long rhs) {
 inline bool operator> (const decimal& lhs, long rhs) {
 	return operator< (decimal(rhs), lhs);
 }
-inline bool operator<=(decimal& lhs, long rhs) {
+inline bool operator<=(const decimal& lhs, long rhs) {
 	return operator< (lhs, decimal(rhs)) || operator==(lhs, decimal(rhs));
 }
 inline bool operator>=(const decimal& lhs, long rhs) {
