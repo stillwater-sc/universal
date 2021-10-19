@@ -116,46 +116,43 @@ void TestConversionPerformance() {
 // Generic set of adds and subtracts for a given number system type
 template<typename NativeFloat>
 void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-	NativeFloat a, b, c, d;
-	d = 1.0e7;
-	b = d;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a = NativeFloat(i);
-		c = a + b;
-		a = c - b;
+	std::vector<NativeFloat> data = { 0.99999f, -1.00001f };
+	NativeFloat a, b{ 1.0625f };
+	for (size_t i = 1; i < NR_OPS; ++i) {
+		a = data[i % 2];
+		b = b + a;
 	}
-	std::stringstream s;
-	s << d;
+	if (b == 1.0625f) {
+		std::cout << "dummy case to fool the optimizer\n";
+	}
 }
 
 // Generic set of multiplies for a given number system type
 template<typename NativeFloat>
 void MultiplicationWorkload(uint64_t NR_OPS) {
-	NativeFloat a, b, c, d;
-	d = 1.0e7;
-	b = c = d;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a = NativeFloat(i);
-		c = a * b;
-		d = c;
+	std::vector<NativeFloat> data = { 0.99999f, 1.00001f };
+	NativeFloat a, b{ 1.0625f };
+	for (size_t i = 1; i < NR_OPS; ++i) {
+		a = data[i % 2];
+		b = b * a;
 	}
-	std::stringstream s;
-	s << d;
+	if (b == 1.0625f) {
+		std::cout << "dummy case to fool the optimizer\n";
+	}
 }
 
 // Generic set of divides for a given number system type
 template<typename NativeFloat>
 void DivisionWorkload(uint64_t NR_OPS) {
-	NativeFloat a, b, c, d;
-	d = 1.0e7;
-	b = c = d;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a = NativeFloat(i);
-		c = a / b;
-		d = c;
+	std::vector<NativeFloat> data = { 0.99999f, 1.00001f };
+	NativeFloat a, b{ 1.0625f };
+	for (size_t i = 1; i < NR_OPS; ++i) {
+		a = data[i%2];
+		b = b / a;
 	}
-	std::stringstream s;
-	s << d;
+	if (b == 1.0625f) {
+		std::cout << "dummy case to fool the optimizer\n";
+	}
 }
 
 // measure performance of arithmetic operators
