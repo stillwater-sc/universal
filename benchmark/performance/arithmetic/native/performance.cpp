@@ -5,7 +5,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
+#include <universal/utility/bit_cast.hpp>   // TODO: can this be integrated in category headers?
 #include <chrono>
+#include <vector>
 
 #include <universal/native/ieee754.hpp>
 // is representable
@@ -21,9 +23,9 @@ void CopyWorkload(uint64_t NR_OPS) {
 	bool bFail = false;
 	size_t j = 0;
 	for (size_t i = 0; i < NR_OPS; ++i,++j) {
-		a = i;
+		a = NativeFloat(i);
 		b = a;
-		c = j;
+		c = NativeFloat(j);
 		if (b != c) {
 			bFail = true;
 		}
@@ -52,15 +54,15 @@ void TestCopyPerformance() {
 #endif
 }
 
-template<typename Scalar>
+template<typename NativeFloat>
 void DecodeWorkload(uint64_t NR_OPS) {
 	using namespace sw::universal;
 
-	Scalar a{ 1.0f };
+	NativeFloat a{ 1.0f };
 	size_t success{ 0 };
 	bool first{ true };
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a *= i;
+		a *= NativeFloat(i);
 		bool s;
 		uint64_t e, f;
 		extractFields(a, s, e, f);
@@ -112,13 +114,13 @@ void TestConversionPerformance() {
 }
 
 // Generic set of adds and subtracts for a given number system type
-template<typename Scalar>
+template<typename NativeFloat>
 void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
+	NativeFloat a, b, c, d;
 	d = 1.0e7;
 	b = d;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a = i;
+		a = NativeFloat(i);
 		c = a + b;
 		a = c - b;
 	}
@@ -127,13 +129,13 @@ void AdditionSubtractionWorkload(uint64_t NR_OPS) {
 }
 
 // Generic set of multiplies for a given number system type
-template<typename Scalar>
+template<typename NativeFloat>
 void MultiplicationWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
+	NativeFloat a, b, c, d;
 	d = 1.0e7;
 	b = c = d;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a = i;
+		a = NativeFloat(i);
 		c = a * b;
 		d = c;
 	}
@@ -142,13 +144,13 @@ void MultiplicationWorkload(uint64_t NR_OPS) {
 }
 
 // Generic set of divides for a given number system type
-template<typename Scalar>
+template<typename NativeFloat>
 void DivisionWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
+	NativeFloat a, b, c, d;
 	d = 1.0e7;
 	b = c = d;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a = i;
+		a = NativeFloat(i);
 		c = a / b;
 		d = c;
 	}
@@ -200,27 +202,27 @@ void CustomPerfRunner(const std::string& tag, void (f)(std::vector<NativeFloat>&
 
 template<typename NativeFloat>
 void ArrayWorkload(std::vector<NativeFloat>& data) {
-	for (int i = 0; i < data.size()-1; i++)
-		data[i] = 0.5 * (data[i] + data[i + 1]);
+	for (size_t i = 0; i < data.size()-1; ++i)
+		data[i] = NativeFloat(0.5) * (data[i] + data[i + 1]);
 }
 
 template<typename NativeFloat>
 void TestSpecialValueWorkload(const std::string& tag, size_t NR_ELEMENTS) {
 	std::vector<NativeFloat> data(NR_ELEMENTS);
 
-	for (int i = 0; i < NR_ELEMENTS; i++) data[i] = 0.0;
+	for (size_t i = 0; i < NR_ELEMENTS; ++i) data[i] = 0.0;
 	CustomPerfRunner(tag + std::string("zeros          "), ArrayWorkload<NativeFloat>, data);
 
-	for (int i = 0; i < NR_ELEMENTS; i++) data[i] = 1.0;
+	for (size_t i = 0; i < NR_ELEMENTS; ++i) data[i] = 1.0;
 	CustomPerfRunner(tag + std::string("ones           "), ArrayWorkload<NativeFloat>, data);
 
-	for (int i = 0; i < NR_ELEMENTS; i++) data[i] = std::numeric_limits<NativeFloat>::denorm_min();
+	for (size_t i = 0; i < NR_ELEMENTS; ++i) data[i] = std::numeric_limits<NativeFloat>::denorm_min();
 	CustomPerfRunner(tag + std::string("subnormals     "), ArrayWorkload<NativeFloat>, data);
 
-	for (int i = 0; i < NR_ELEMENTS; i++) data[i] = std::numeric_limits<NativeFloat>::infinity();
+	for (size_t i = 0; i < NR_ELEMENTS; ++i) data[i] = std::numeric_limits<NativeFloat>::infinity();
 	CustomPerfRunner(tag + std::string("Inf            "), ArrayWorkload<NativeFloat>, data);
 
-	for (int i = 0; i < NR_ELEMENTS; i++) data[i] = std::numeric_limits<NativeFloat>::quiet_NaN();
+	for (size_t i = 0; i < NR_ELEMENTS; ++i) data[i] = std::numeric_limits<NativeFloat>::quiet_NaN();
 	CustomPerfRunner(tag + std::string("NaN            "), ArrayWorkload<NativeFloat>, data);
 }
 
