@@ -770,7 +770,6 @@ blockbinary<1024,uint32>  rem         65536 per       0.0170348sec ->   3 Mops/s
 */
 
 /*
-/*
 ETLO
 Date run : 10/19/2021
 Processor: Intel Core i7-10700 CPU @ 2.90GHz, 8 cores, 16 threads, 15W mobile processor
