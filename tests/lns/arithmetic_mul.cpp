@@ -7,6 +7,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_reporters.hpp>
 #include <universal/verification/test_case.hpp>
 
 template<size_t nbits> 
@@ -32,6 +33,9 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::string test_suite = "lns multiplication validation";
+	std::string test_tag = "multiplication";
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
@@ -49,24 +53,22 @@ try {
 	std::cout << c.to_long_double() << '\n';
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", true), "lns<8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", true), "lns<8>", test_tag);
 
-	nrOfFailedTestCases = 0;  // in manual testing mode, we ignore any failures
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 	std::cout << "Arbitrary LNS multiplication validation\n";
 
 	bool bReportIndividualTestCases = false;
 	std::string tag = "multiplication failed: ";
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>(tag, bReportIndividualTestCases), "lns<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>(tag, bReportIndividualTestCases), "lns<8>", test_tag);
 
-#if STRESS_TESTING
-
-#endif  // STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

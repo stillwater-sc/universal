@@ -1,4 +1,4 @@
-// performance.cpp : performance benchmarking for abitrary fixed-precision cfloats
+// performance.cpp : performance benchmarking for native floating-point
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -42,7 +42,7 @@ void CopyWorkload(uint64_t NR_OPS) {
 /// </summary>
 void TestCopyPerformance() {
 	using namespace sw::universal;
-	std::cout << "classic floating-piont cfloat copy performance\n";
+	std::cout << "native floating-point copy performance\n";
 
 	uint64_t NR_OPS = 10000000;
 	// single block representations
@@ -55,18 +55,18 @@ void TestCopyPerformance() {
 }
 
 template<typename NativeFloat>
-void DecodeWorkload(uint64_t NR_OPS) {
+void DecodeWorkload(size_t NR_OPS) {
 	using namespace sw::universal;
 
 	NativeFloat a{ 1.0f };
 	size_t success{ 0 };
 	bool first{ true };
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a *= NativeFloat(i);
+	for (size_t i = 0; i < NR_OPS; ++i) {
+		a = NativeFloat(i);
 		bool s;
 		uint64_t e, f;
 		extractFields(a, s, e, f);
-		if ((i%2) == (f & 0x1)) {
+		if (s == false) {
 			++success;
 		}
 		else {
@@ -93,7 +93,7 @@ void DecodeWorkload(uint64_t NR_OPS) {
 /// </summary>
 void TestDecodePerformance() {
 	using namespace sw::universal;
-	std::cout << "classic floating-point cfloat decode operator performance\n";
+	std::cout << "native floating-point decode operator performance\n";
 
 	uint64_t NR_OPS = 100000;
 	// single block representations
@@ -115,7 +115,7 @@ void TestConversionPerformance() {
 
 // Generic set of adds and subtracts for a given number system type
 template<typename NativeFloat>
-void AdditionSubtractionWorkload(uint64_t NR_OPS) {
+void AdditionSubtractionWorkload(size_t NR_OPS) {
 	std::vector<NativeFloat> data = { 0.99999f, -1.00001f };
 	NativeFloat a, b{ 1.0625f };
 	for (size_t i = 1; i < NR_OPS; ++i) {
@@ -129,7 +129,7 @@ void AdditionSubtractionWorkload(uint64_t NR_OPS) {
 
 // Generic set of multiplies for a given number system type
 template<typename NativeFloat>
-void MultiplicationWorkload(uint64_t NR_OPS) {
+void MultiplicationWorkload(size_t NR_OPS) {
 	std::vector<NativeFloat> data = { 0.99999f, 1.00001f };
 	NativeFloat a, b{ 1.0625f };
 	for (size_t i = 1; i < NR_OPS; ++i) {
@@ -143,7 +143,7 @@ void MultiplicationWorkload(uint64_t NR_OPS) {
 
 // Generic set of divides for a given number system type
 template<typename NativeFloat>
-void DivisionWorkload(uint64_t NR_OPS) {
+void DivisionWorkload(size_t NR_OPS) {
 	std::vector<NativeFloat> data = { 0.99999f, 1.00001f };
 	NativeFloat a, b{ 1.0625f };
 	for (size_t i = 1; i < NR_OPS; ++i) {
