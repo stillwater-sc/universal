@@ -10,6 +10,10 @@
 #include <vector>
 
 #include <universal/native/ieee754.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+//#define POSIT_FAST_SPECIALIZATION 1
+#define POSIT_FAST_POSIT_32_2 1
+#include <universal/number/posit/posit.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
@@ -224,7 +228,7 @@ void TestSpecialValueWorkload(const std::string& tag, size_t NR_ELEMENTS) {
 }
 
 void TestSpecialValuePerformance() {
-	std::cout << "comparative special value processing performance\n";
+	std::cout << "native floating-point special value processing performance\n";
 	constexpr size_t NR_OPS = 1024 * 1024;
 
 	TestSpecialValueWorkload<float>      (std::string("float                    "), NR_OPS);
@@ -232,6 +236,11 @@ void TestSpecialValuePerformance() {
 #if LONG_DOUBLE_SUPPORT
 	TestSpecialValueWorkload<long double>(std::string("long double              "), NR_OPS);
 #endif
+	TestSpecialValueWorkload<sw::universal::cfloat<32, 8>>
+		                                 (std::string("cfloat<32,8>             "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::posit<32, 2>>
+		                                 (std::string("posit<32,2>              "), NR_OPS);
+
 }
 
 // conditional compilation
@@ -242,7 +251,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "comparative arithmetic operator performance benchmarking";
+	std::string tag = "native floating-point operator performance benchmarking";
 
 #if MANUAL_TESTING
 
@@ -263,9 +272,9 @@ try {
 
 	int nrOfFailedTestCases = 0;
 	   
-	TestCopyPerformance();
-	TestDecodePerformance();
-	TestArithmeticOperatorPerformance();
+//	TestCopyPerformance();
+//	TestDecodePerformance();
+//	TestArithmeticOperatorPerformance();
 	TestSpecialValuePerformance();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
