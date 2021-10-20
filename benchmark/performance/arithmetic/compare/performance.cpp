@@ -10,8 +10,13 @@
 #include <vector>
 
 #include <universal/native/ieee754.hpp>
+#define CFLOAT_SUPPORT
 #include <universal/number/cfloat/cfloat.hpp>
+
+#define POSIT_SUPPORT
 //#define POSIT_FAST_SPECIALIZATION 1
+#define POSIT_FAST_POSIT_8_0  0
+#define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_32_2 1
 #include <universal/number/posit/posit.hpp>
 // is representable
@@ -46,7 +51,7 @@ void CopyWorkload(uint64_t NR_OPS) {
 /// </summary>
 void TestCopyPerformance() {
 	using namespace sw::universal;
-	std::cout << "native floating-point copy performance\n";
+	std::cout << "comparative floating-point copy performance\n";
 
 	uint64_t NR_OPS = 10000000;
 	// single block representations
@@ -97,7 +102,7 @@ void DecodeWorkload(size_t NR_OPS) {
 /// </summary>
 void TestDecodePerformance() {
 	using namespace sw::universal;
-	std::cout << "native floating-point decode operator performance\n";
+	std::cout << "comparative floating-point decode operator performance\n";
 
 	uint64_t NR_OPS = 100000;
 	// single block representations
@@ -112,7 +117,7 @@ void TestDecodePerformance() {
 // measure performance of conversion operators
 void TestConversionPerformance() {
 	using namespace sw::universal;
-	std::cout << "native floating-point conversion performance\n";
+	std::cout << "comparative floating-point conversion performance\n";
 
 //	uint64_t NR_OPS = 1000000;
 }
@@ -161,7 +166,7 @@ void DivisionWorkload(size_t NR_OPS) {
 
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
-	std::cout << "native floating-point  arithmetic operator performance\n";
+	std::cout << "comparative floating-point  arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 16 * 1024 * 1024;
 
@@ -228,7 +233,7 @@ void TestSpecialValueWorkload(const std::string& tag, size_t NR_ELEMENTS) {
 }
 
 void TestSpecialValuePerformance() {
-	std::cout << "native floating-point special value processing performance\n";
+	std::cout << "comparative floating-point special value processing performance\n";
 	constexpr size_t NR_OPS = 1024 * 1024;
 
 	TestSpecialValueWorkload<float>      (std::string("float                    "), NR_OPS);
@@ -236,11 +241,36 @@ void TestSpecialValuePerformance() {
 #if LONG_DOUBLE_SUPPORT
 	TestSpecialValueWorkload<long double>(std::string("long double              "), NR_OPS);
 #endif
-	TestSpecialValueWorkload<sw::universal::cfloat<32, 8>>
-		                                 (std::string("cfloat<32,8>             "), NR_OPS);
-	TestSpecialValueWorkload<sw::universal::posit<32, 2>>
-		                                 (std::string("posit<32,2>              "), NR_OPS);
 
+#ifdef CFLOAT_SUPPORT
+	TestSpecialValueWorkload<sw::universal::cfloat< 8, 2>>
+		                                 (std::string("cfloat<  8, 2>           "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::cfloat< 16, 5>>
+		                                 (std::string("cfloat< 16, 5>           "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::cfloat< 32, 8>>
+		                                 (std::string("cfloat< 32, 8>           "), NR_OPS);
+//	TestSpecialValueWorkload<sw::universal::cfloat< 64, 11>>
+//                                         (std::string("cfloat< 64,11>           "), NR_OPS);
+//	TestSpecialValueWorkload<sw::universal::cfloat< 80, 15>>
+//                                         (std::string("cfloat< 80,15>           "), NR_OPS);
+//	TestSpecialValueWorkload<sw::universal::cfloat<128, 15>>
+//                                         (std::string("cfloat< 80,15>           "), NR_OPS);
+#endif
+
+#ifdef POSIT_SUPPORT
+	TestSpecialValueWorkload<sw::universal::posit<  8, 0>>
+		                                 (std::string("posit<  8,0>             "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::posit< 16, 1>>
+		                                 (std::string("posit< 16,1>             "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::posit< 32, 2>>
+		                                 (std::string("posit< 32,2>             "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::posit< 64, 3>>
+		                                 (std::string("posit< 64,3>             "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::posit<128, 4>>
+                                         (std::string("posit<128,4>             "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::posit<256, 5>>
+                                         (std::string("posit<256,5>             "), NR_OPS);
+#endif
 }
 
 // conditional compilation
