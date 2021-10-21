@@ -1474,6 +1474,59 @@ inline fixpnt<nbits, rbits, arithmetic, bt> operator%(const fixpnt<nbits, rbits,
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - fixpnt binary arithmetic operators
+
+// BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator+(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator-(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator*(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator/(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+
+// // BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator+(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator-(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator*(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator/(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+
 // BINARY ADDITION
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline fixpnt<nbits, rbits, arithmetic, bt> operator+(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
@@ -1500,9 +1553,114 @@ inline fixpnt<nbits, rbits, arithmetic, bt> operator%(long long lhs, const fixpn
 	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 
+// BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator+(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator-(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator*(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator/(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+
+// // BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator+(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator-(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator*(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator/(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+
+// BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator+(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator-(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator*(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator/(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// fixpnt - literal double binary arithmetic operators
+// fixpnt - literal float/double/long double binary arithmetic operators
+
+// BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
+	return operator+(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
+	return operator-(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
+	return operator*(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
+	return operator/(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
+	return operator%(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+
 // BINARY ADDITION
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline fixpnt<nbits, rbits, arithmetic, bt> operator+(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, double rhs) {
@@ -1527,6 +1685,60 @@ inline fixpnt<nbits, rbits, arithmetic, bt> operator/(const fixpnt<nbits, rbits,
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline fixpnt<nbits, rbits, arithmetic, bt> operator%(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, double rhs) {
 	return operator%(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+
+// BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator+(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator-(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator*(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator/(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator%(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// literal double - fixpnt binary arithmetic operators
+// BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator+(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator-(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator*(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator/(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1557,6 +1769,33 @@ inline fixpnt<nbits, rbits, arithmetic, bt> operator%(double lhs, const fixpnt<n
 	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// literal double - fixpnt binary arithmetic operators
+// BINARY ADDITION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator+(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator+(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator-(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator-(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator*(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator*(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY DIVISION
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator/(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator/(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+// BINARY REMAINDER
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator%(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator%(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
 
 ///////////////////////////// IOSTREAM operators ///////////////////////////////////////////////
 

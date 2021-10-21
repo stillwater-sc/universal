@@ -27,7 +27,7 @@ template<typename Scalar>
 std::pair<Scalar, Scalar> Quadratic(const Scalar& a, const Scalar& b, const Scalar& c) {
 	std::pair<Scalar, Scalar> roots;
 
-	Scalar b2_minus_4ac = b * b - Scalar(4.0) * a * c;
+	Scalar b2_minus_4ac = b * b - 4 * a * c;
 	Scalar sqrt_b2_minus_4ac = sqrt(b2_minus_4ac);
 	roots.first  = (-b - sqrt_b2_minus_4ac) / (2 * a);
 	roots.second = (-b + sqrt_b2_minus_4ac) / (2 * a);
@@ -101,6 +101,13 @@ try {
 
 	{
 		using Scalar = Posit32;
+		Scalar a{ 3.0 }, b{ 5.0 }, c{ -7.0 };
+		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
+		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+	}
+	{
+		// TODO: fixpnt divide is still messed up
+		using Scalar = sw::universal::fixpnt<16,8>;
 		Scalar a{ 3.0 }, b{ 5.0 }, c{ -7.0 };
 		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
 		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
