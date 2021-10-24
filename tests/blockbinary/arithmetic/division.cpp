@@ -11,9 +11,10 @@
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/blockbinary_test_status.hpp>
 
-// enumerate all multiplication cases for an blockbinary<nbits,BlockType> configuration
+// enumerate all division cases for a blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyDivision(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
@@ -21,7 +22,8 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 
 	std::cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << ">\n";
 
-	bool bReportOverflowCondition = false;
+	constexpr bool bReportUnderflowCondition = false;
+	constexpr bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
 	int nrOfOverflows = 0;   // ref > maxpos
 	int nrOfUnderflows = 0;  // ref < maxneg
@@ -39,13 +41,17 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 			cref = aref / bref;
 
 			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " / " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
-				if (bReportOverflowCondition) std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
+				if constexpr (bReportUnderflowCondition) {
+					std::cout << std::setw(5) << aref << " / " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
+					std::cout << "underflow: " << std::setw(5) << cref << " < " << std::setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
+				}
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) std::cout << std::setw(5) << aref << " / " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
-				if (bReportOverflowCondition) std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
+				if constexpr (bReportOverflowCondition) {
+					std::cout << std::setw(5) << aref << " / " << std::setw(5) << bref << " = " << std::setw(5) << cref << " : ";
+					std::cout << "overflow: " << std::setw(5) << cref << " > " << std::setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << std::setw(5) << result.to_long_long() << " " << std::setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << '\n';
+				}
 				++nrOfOverflows;
 			}
 
@@ -55,7 +61,7 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, result, cref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, result, cref);
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, result, cref);
 			}
 			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
@@ -99,25 +105,37 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << '\n';
 	std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << '\n';
 	//	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
-	reference.set_raw_bits(_c);
+	reference.setbits(static_cast<size_t>(_c));
 	std::cout << (result == reference ? "PASS" : "FAIL") << "\n\n";
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-// conditional compile flags
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	if (argc > 1) std::cout << argv[0] << std::endl; 
-	
-	bool bReportIndividualTestCases = true;
+	std::string test_suite = "blockbinary division validation";	
+	std::string test_tag = "blockbinary division: ";
+	std::cout << test_suite << '\n';
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "blockbinary division: ";
 
 #if MANUAL_TESTING
 
@@ -125,46 +143,39 @@ try {
 //	TestMostSignificantBit<27, uint16_t>();
 //	TestMostSignificantBit<33, uint32_t>();
 
-	GenerateTestCase<4>(0x8,0x1);  // -8 / 1 => -8
+	GenerateTestCase<4>(0x1,0x8);  // 1 / -8 => 0
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8>", test_tag);
 
-
-#if STRESS_TESTING
-
-#endif
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
-	std::cout << "blockbinary division validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, uint8_t>(bReportIndividualTestCases), "blockbinary< 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 5, uint8_t>(bReportIndividualTestCases), "blockbinary< 5,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, uint8_t>(bReportIndividualTestCases), "blockbinary< 6,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 7, uint8_t>(bReportIndividualTestCases), "blockbinary< 7,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, uint8_t>(bReportIndividualTestCases), "blockbinary< 8,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint8_t>(bReportIndividualTestCases), "blockbinary< 9,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(bReportIndividualTestCases), "blockbinary<10,uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 4, uint8_t>(bReportIndividualTestCases), "blockbinary< 4,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 5, uint8_t>(bReportIndividualTestCases), "blockbinary< 5,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, uint8_t>(bReportIndividualTestCases), "blockbinary< 6,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 7, uint8_t>(bReportIndividualTestCases), "blockbinary< 7,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, uint8_t>(bReportIndividualTestCases), "blockbinary< 8,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint8_t>(bReportIndividualTestCases), "blockbinary< 9,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(bReportIndividualTestCases), "blockbinary<10,uint8_t>", "division");
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t >(bReportIndividualTestCases), "blockbinary<12,uint8_t>", test_tag);
 
-#if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t >(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint16_t>(bReportIndividualTestCases), "blockbinary<9,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(bReportIndividualTestCases), "blockbinary<13,uint16_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint16_t>(bReportIndividualTestCases), "blockbinary<9,uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(bReportIndividualTestCases), "blockbinary<13,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t >(bReportIndividualTestCases), "blockbinary<16,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", test_tag);
+#endif  // REGRESSION_LEVEL_4
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t >(bReportIndividualTestCases), "blockbinary<16,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "division");
-
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

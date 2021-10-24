@@ -219,6 +219,10 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -236,6 +240,129 @@ try {
 
 #if MANUAL_TESTING
 
+#undef quick
+#ifdef quick
+	{
+		fixpnt<5, 0> a, b, c;
+		a = 2;
+		b = 2;
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+	}
+	{
+		fixpnt<5, 1> a, b, c;
+		a = 2;
+		b = 2;
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+	}
+	{
+		fixpnt<5, 2> a, b, c;
+		a = 2;
+		b = 2;
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+	}
+#endif
+
+	{
+		fixpnt<16, 15> a, b;
+		a.setbits(0x0400);
+		std::cout << to_binary(a) << " : " << a << '\n';
+		b.setbits(0x2000);
+		std::cout << to_binary(b) << " : " << b << '\n';
+		fixpnt<32, 30> c;
+		c = a;
+		std::cout << to_binary(c) << " : " << c << '\n';
+		c <<= 16;
+		std::cout << to_binary(c) << " : " << c << '\n';
+	}
+	{
+		fixpnt<8, 4> a;
+		a.setbits(0x84);
+		std::cout << to_binary(a) << " : " << a << '\n';
+		a.setbits(0x80);
+		std::cout << to_binary(a) << " : " << a << '\n';
+	}
+	{
+		fixpnt<5, 2> a, b;
+		a = 2.25f;
+		b = 0.25f;
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
+		blockbinary<11> bba(a.getbb()), bbb(b.getbb()), bbc;
+		bba <<= 6; bbb <<= 6;
+		std::cout << to_binary(bba, true) << " : " << bba << '\n';
+		std::cout << to_binary(bbb, true) << " : " << bbb << '\n';
+		bbc = bba / bbb;
+		std::cout << to_binary(bbc, true) << " : " << bbc << '\n';
+
+		a = 0.5f;
+		b = 1.5f;
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
+		bba = a.getbb(); bbb = b.getbb();
+		bba <<= 6; bbb <<= 6;
+		std::cout << to_binary(bba, true) << " : " << bba << '\n';
+		std::cout << to_binary(bbb, true) << " : " << bbb << '\n';
+		bbc = bba / bbb;
+		std::cout << to_binary(bbc, true) << " : " << bbc << '\n';
+	}
+	{
+		float f1 = 1.0f;
+		float f2 = 3.0f;
+		fixpnt<4, 0> a, b, c;
+		a = f1;
+		b = f2;
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+		c = f1 / f2;
+		std::cout << to_binary(f1) << " / " << to_binary(f2) << " = " << to_binary(f1/f2) << " : " << c << std::endl;
+	}
+	{
+		float f1 = 0.5f;
+		float f2 = 1.5f;
+		fixpnt<4, 1> a, b, c;
+		a = f1;
+		b = f2;
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+		c = f1 / f2;
+		std::cout << to_binary(f1) << " / " << to_binary(f2) << " = " << to_binary(f1 / f2) << " : " << c << std::endl;
+	}
+
+	{
+		float f1 = 1.0f;
+		float f2 = 2.0f;
+		fixpnt<4, 0> a, b, c;
+		a = f1;
+		b = f2;
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+		c = f1 / f2;
+		std::cout << to_binary(f1) << " / " << to_binary(f2) << " = " << to_binary(f1 / f2) << " : " << c << std::endl;
+	}
+	{
+		float f1 = 0.5f;
+		float f2 = 1.0f;
+		fixpnt<4, 1> a, b, c;
+		a = f1;
+		b = f2;
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+		c = f1 / f2;
+		std::cout << to_binary(f1) << " / " << to_binary(f2) << " = " << to_binary(f1 / f2) << " : " << c << std::endl;
+	}
+
+
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", test_tag);
+
+	return 0;
 	constexpr size_t nbits = 4;
 	constexpr size_t rbits = 1;
 
@@ -247,12 +374,13 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(3.0f, 1.5f); 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
-	//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", test_tag);
 
+	return 0;
 
-#ifdef REGRESSION_LEVEL_4
+#if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", test_tag);
@@ -296,7 +424,6 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 #endif  // MANUAL_TESTING
-
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

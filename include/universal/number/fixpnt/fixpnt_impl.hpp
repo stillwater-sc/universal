@@ -156,13 +156,14 @@ public:
 	}
 	/////////   operators
 
+	// fixpnt size adapter
 	template<size_t src_nbits, size_t src_rbits>
 	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
 		std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
 //		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
 // TODO: do we want prohibit this condition? To be consistent with native types we need to round down automatically.
 		if (src_nbits <= nbits) {
-			bb = a.bb;
+			bb = a.getbb();
 			if (a.sign()) { // sign extend
 				for (size_t i = src_nbits; i < nbits; ++i) setbit(i);
 			}
@@ -378,7 +379,7 @@ public:
 		}
 		else {
 			blockbinary<2 * nbits, bt> c = urmul2(this->bb, rhs.bb);
-			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg); // TODO: can these be static?
 			blockbinary<2 * nbits, bt> saturation = maxpos.getbb();
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;
@@ -399,12 +400,13 @@ public:
 	fixpnt& operator/=(const fixpnt& rhs) {
 		if constexpr (arithmetic == Modulo) {
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
-			blockbinary<roundingDecisionBits, bt> roundingBits;
-			blockbinary<2 * nbits + roundingDecisionBits, bt> c = urdiv(this->bb, rhs.bb, roundingBits);
-			std::cout << to_binary(*this) << " / " << to_binary(rhs) << std::endl;
-//			std::cout << to_binary(this->bb) << " / " << to_binary(rhs.bb) << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
-			bool roundUp = c.roundingMode(rbits + roundingDecisionBits);
-			c >>= rbits + nbits + roundingDecisionBits - 1;
+			constexpr size_t targetLsb = nbits + roundingDecisionBits;
+			// old			blockbinary<2 * nbits + roundingDecisionBits, bt> c = urdiv<nbits, roundingDecisionBits>(this->bb, rhs.bb);
+			auto c = urdiv<nbits, roundingDecisionBits>(this->bb, rhs.bb);
+//			std::cout << to_binary(*this) << " / " << to_binary(rhs) << std::endl;
+//			std::cout << to_binary(this->bb) << " / " << to_binary(rhs.bb) << " = " << to_binary(c) << " lsb at " << targetLsb << '\n';
+			bool roundUp = c.roundingMode(targetLsb);
+			c >>= nbits + roundingDecisionBits - rbits;
 			if (roundUp) ++c;
 //			std::cout << " rounded " << to_binary(c) << std::endl;
 			this->bb = c; // select the lower nbits of the result
@@ -566,7 +568,7 @@ protected:
 	}
 
 	template<typename Real>
-	inline constexpr fixpnt& convert_ieee754(Real rhs) {
+	inline CONSTEXPRESSION fixpnt& convert_ieee754(Real rhs) {
 		clear();
 		if (rhs == 0.0) return *this;
 		if constexpr (arithmetic == Saturating) {	// check if the value is in the representable range
@@ -586,9 +588,8 @@ protected:
 
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
-		// do we need to round?
 		if (shiftRight > 0) {
-			// yes, round the raw bits
+			// we need to round the raw bits
 			// collect guard, round, and sticky bits
 			// this same logic will work for the case where 
 			// we only have a guard bit and no round and/or sticky bits
@@ -677,7 +678,7 @@ protected:
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
-		// you pop out here with the starting bit value
+		// you pop out here with multiplier set to the weight of the starting bit
 		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? sw::universal::twosComplement(*this) : *this);
 		// construct the value
 		TargetFloat value{ 0.0 };
