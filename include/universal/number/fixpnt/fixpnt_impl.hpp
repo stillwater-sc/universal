@@ -94,6 +94,9 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 }
 
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
+// The value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits.
+// For example, the encoding 0100.0100 is the value 01000100 with an implicit scaling of 2^4 = 16
+// => 01000100 = 64 + 4 = 68 -> scaled by 16 = 4.25 -> 4 + 0.25 = 0100 + 0100
 template<size_t _nbits, size_t _rbits, bool _arithmetic = Modulo, typename bt = uint8_t>
 class fixpnt {
 public:
@@ -119,14 +122,12 @@ public:
 	// decorated/converting constructors
 
 	/// <summary>
-	/// construct a new fixpnt from another, sign extend when necessary: 
+	/// construct a new fixpnt from another, sign extend or round when necessary: 
 	/// src and tgt fixpnt need to have the same arithmetic and blocktype
 	/// </summary>
-	/// <param name="a">value to convert</param>
+	/// <param name="a">source fixpnt</param>
 	template<size_t src_nbits, size_t src_rbits>
-	fixpnt(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
-		*this = a;
-	}
+	fixpnt(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept { *this = a; }
 
 	// specific value constructor
 	constexpr fixpnt(const SpecificValue code) : bb{ 0 } {
@@ -154,23 +155,75 @@ public:
 			break;
 		}
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////   operators
+
+
+	// assignment operator for blockbinary type
+	template<size_t nnbits, typename Bbt>
+	constexpr fixpnt& operator=(const blockbinary<nnbits, Bbt>& rhs) { bb = rhs; return *this; }
+
+#ifdef DEPRECATED
+	// conversion operator between different fixed point formats with the same rbits
+	template<size_t src_bits>
+	fixpnt& operator=(const fixpnt<src_bits, rbits, arithmetic, bt>& src) {
+		if (src_bits <= nbits) {
+			// simple copy of the bytes
+			for (unsigned i = 0; i < unsigned(src.nrBlocks); ++i) {
+				bb[i] = src.block(i);
+			}
+			if (src < 0) {
+				// we need to sign extent
+				for (unsigned i = nbits; i < unsigned(src_bits); ++i) {
+					this->set(i, true);
+				}
+			}
+		}
+		else {
+			throw "to be implemented";
+		}
+		return *this;
+	}
+#endif
 
 	// fixpnt size adapter
 	template<size_t src_nbits, size_t src_rbits>
 	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
-		std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
-//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
-// TODO: do we want prohibit this condition? To be consistent with native types we need to round down automatically.
-		if (src_nbits <= nbits) {
+		// std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
+		//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
+		// TODO: do we want prohibit this condition? To be consistent with native types we need to round automatically.
+		if constexpr (src_nbits <= nbits) {
 			bb = a.getbb();
-			if (a.sign()) { // sign extend
-				for (size_t i = src_nbits; i < nbits; ++i) setbit(i);
+			if constexpr (src_nbits < nbits) {
+				if (a.sign()) { // sign extend if necessary
+					for (size_t i = src_nbits; i < nbits; ++i) setbit(i);
+				}
 			}
+#ifdef TODO
+			// round: <src_nbits, src_rbits> -> <nbits, rbits>
+			// we round on the difference between (src_rbits - rbits) fraction bits
+			// and modulo arithmetic, lop of the high order integer bits
+			if constexpr (src_rbits > rbits) {
+				auto rawbb = a.getbb();
+				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
+				rawbb >>= src_rbits - rbits;
+				if (roundUp) ++rawbb;
+				bb = rawbb;
+			}
+#endif
 		}
 		else {
-			// round down
-			std::cerr << "rounding to smaller fixpnt not implemented yet\n";
+			// round: <src_nbits, src_rbits> -> <nbits, rbits>
+			// we round on the difference between (src_rbits - rbits) fraction bits
+			// and modulo arithmetic, lop of the high order integer bits
+			if constexpr (src_rbits > rbits) {
+				auto rawbb = a.getbb();
+				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
+				rawbb >>= src_rbits - rbits;
+				if (roundUp) ++rawbb;
+				bb = rawbb;
+			}
 		}
 		return *this;
 	}
@@ -216,30 +269,6 @@ public:
 	CONSTEXPRESSION explicit operator long double() const noexcept { return to_native<long double>(); }
 #endif
 
-	// assignment operator for blockbinary type
-	template<size_t nnbits, typename Bbt>
-	constexpr fixpnt& operator=(const blockbinary<nnbits, Bbt>& rhs) { bb = rhs; return *this; }
-
-	// conversion operator between different fixed point formats with the same rbits
-	template<size_t src_bits>
-	fixpnt& operator=(const fixpnt<src_bits, rbits, arithmetic, bt>& src) {
-		if (src_bits <= nbits) {
-			// simple copy of the bytes
-			for (unsigned i = 0; i < unsigned(src.nrBlocks); ++i) {
-				bb[i] = src.block(i);
-			}
-			if (src < 0) {
-				// we need to sign extent
-				for (unsigned i = nbits; i < unsigned(src_bits); ++i) {
-					this->set(i, true);
-				}
-			}
-		}
-		else {
-			throw "to be implemented";
-		}
-		return *this;
-	}
 
 #ifdef POSIT_CONCEPT_GENERALIZATION
 	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
@@ -399,17 +428,24 @@ public:
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
 		if constexpr (arithmetic == Modulo) {
-			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
-			constexpr size_t targetLsb = nbits + roundingDecisionBits;
-			// old			blockbinary<2 * nbits + roundingDecisionBits, bt> c = urdiv<nbits, roundingDecisionBits>(this->bb, rhs.bb);
-			auto c = urdiv<nbits, roundingDecisionBits>(this->bb, rhs.bb);
-//			std::cout << to_binary(*this) << " / " << to_binary(rhs) << std::endl;
-//			std::cout << to_binary(this->bb) << " / " << to_binary(rhs.bb) << " = " << to_binary(c) << " lsb at " << targetLsb << '\n';
-			bool roundUp = c.roundingMode(targetLsb);
-			c >>= nbits + roundingDecisionBits - rbits;
-			if (roundUp) ++c;
-//			std::cout << " rounded " << to_binary(c) << std::endl;
-			this->bb = c; // select the lower nbits of the result
+			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
+			// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
+			constexpr size_t roundingBits = 4;
+			blockbinary<2 * nbits + 1 + roundingBits> dividend(bb);
+			dividend <<= (2 * rbits + roundingBits); // scale up to include rounding bits
+			blockbinary<2 * nbits + 1 + roundingBits> divisor(rhs.getbb());
+			divisor <<= rbits;
+			blockbinary<2 * nbits + 1 + roundingBits> quotient = dividend / divisor;
+
+			std::cout << "dividend : " << to_binary(dividend, true) << " : " << dividend << '\n';
+			std::cout << "divisor  : " << to_binary(divisor, true) << " : " << divisor << '\n';
+			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << '\n';
+
+			bool roundUp = quotient.roundingMode(roundingBits);
+			quotient >>= roundingBits;
+			if (roundUp) ++quotient;
+			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << (roundUp ? " rounded up": " truncated") << '\n';
+			bb = quotient;
 		}
 		else {
 			std::cerr << "saturating divide not implemented yet\n";
@@ -434,19 +470,13 @@ public:
 	inline constexpr void setzero() noexcept { bb.clear(); }
 
 	// specific number system values we would like to have as constexpr
-
-	// the value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits
-// so the number 0100.0100 is the value 01000100 with an implicit scaling of 2^4 = 16
-// 01000100 = 64 + 4 = 68 -> scaled by 16 = 4.25 -> 4 + 0.25 = 0100 + 0100
-
 	// 01111....11111 is max pos
 	// 00000....00001 is min pos
 	// 00000....00000 is zero
 	// 11111....11111 is min neg
 	// 10000....00000 is max min
 
-
-// minimum positive value of the fixed point configuration
+	// minimum positive value of the fixed point configuration
 	constexpr fixpnt& minpos() noexcept {
 		static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 		// minpos = 0000....00001
@@ -454,7 +484,6 @@ public:
 		setbit(0, true);
 		return *this;
 	}
-
 	// maximum value of the fixed point configuration
 	// what is maxpos when all bits are fraction bits?
 	//   still #.01111...11111 as the rbits simply define the range this value is scaled by
@@ -1280,6 +1309,7 @@ inline bool operator>=(const double lhs, const fixpnt<nbits, rbits, arithmetic, 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // fixpnt - fixpnt binary arithmetic operators
+
 // BINARY ADDITION
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline fixpnt<nbits, rbits, arithmetic, bt> operator+(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
@@ -1320,6 +1350,20 @@ inline fixpnt<nbits, rbits, arithmetic, bt> operator%(const fixpnt<nbits, rbits,
 // fixpnt - literal binary arithmetic operators
 
 ///////////////////// int
+
+// BINARY left shift
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator<<(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
+	fixpnt<nbits, rbits, arithmetic, bt> tmp = lhs;
+	return tmp <<= rhs;
+}
+// BINARY right shift
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline fixpnt<nbits, rbits, arithmetic, bt> operator>>(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
+	fixpnt<nbits, rbits, arithmetic, bt> tmp = lhs;
+	return tmp >>= rhs;
+}
+
 // BINARY ADDITION
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline fixpnt<nbits, rbits, arithmetic, bt> operator+(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {

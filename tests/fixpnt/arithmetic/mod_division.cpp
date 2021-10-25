@@ -16,6 +16,36 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
+// division algorithm of fixpnt
+template<size_t nbits, size_t rbits>
+void TestDivisionAlgorithm(
+	const sw::universal::fixpnt<nbits, rbits, sw::universal::Modulo>& a,
+	const sw::universal::fixpnt<nbits, rbits, sw::universal::Modulo>& b,
+	      sw::universal::fixpnt<nbits, rbits, sw::universal::Modulo>& c) {
+	using namespace sw::universal;
+
+	// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
+	// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
+
+	constexpr size_t rbs = 0; // nr of rounding bits for the divide
+	blockbinary<2 * nbits + 1 + rbs> dividend(a.getbb());
+	dividend <<= (2 * rbits + rbs);
+	blockbinary<2 * nbits + 1 + rbs> divisor(b.getbb());
+	divisor <<= rbs;
+	blockbinary<2 * nbits + 1 + rbs> quotient = dividend / divisor;
+
+	std::cout << "dividend : " << to_binary(dividend, true) << " : " << dividend << '\n';
+	std::cout << "divisor  : " << to_binary(divisor, true) << " : "  << divisor << '\n';
+	std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << '\n';
+
+	bool roundUp = quotient.roundingMode(rbs);
+	quotient >>= rbs; // get rid of the rounding bits 
+	if (roundUp) ++quotient;
+	std::cout << "quotient : " << to_binary(quotient, true) << (roundUp ? " rounded up" : " truncated") << '\n';
+	c = quotient;
+	std::cout << "c        : " << to_binary(c, true) << '\n';
+}
+
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using nbits modulo arithmetic with final sign
 template<size_t nbits, typename BlockType>
@@ -49,7 +79,6 @@ inline sw::universal::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::
 	std::cout << "fnl " << result << std::endl;
 	return result;
 }
-
 
 // unrounded division, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, size_t roundingBits, typename BlockType>
@@ -213,6 +242,7 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 	}
 }
 
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -240,19 +270,20 @@ try {
 
 #if MANUAL_TESTING
 
-#undef quick
+#define quick
 #ifdef quick
 	{
 		fixpnt<5, 0> a, b, c;
-		a = 2;
-		b = 2;
+		a = 5;
+		b = -9;
 		c = a / b;
 		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+		TestDivisionAlgorithm(a, b, c);
 	}
 	{
 		fixpnt<5, 1> a, b, c;
 		a = 2;
-		b = 2;
+		b = 2;  // too big
 		c = a / b;
 		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
 	}
@@ -265,18 +296,31 @@ try {
 	}
 #endif
 
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0, Modulo, uint8_t>(true), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
+	return 0;
 	{
-		fixpnt<16, 15> a, b;
-		a.setbits(0x0400);
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		fixpnt<nbits, rbits, Modulo, uint8_t> a, b, c;
+		a = 1.0625;
+		b = 2.125;
 		std::cout << to_binary(a) << " : " << a << '\n';
-		b.setbits(0x2000);
 		std::cout << to_binary(b) << " : " << b << '\n';
-		fixpnt<32, 30> c;
-		c = a;
-		std::cout << to_binary(c) << " : " << c << '\n';
-		c <<= 16;
+
+		TestDivisionAlgorithm(a, b, c);
+
 		std::cout << to_binary(c) << " : " << c << '\n';
 	}
+
+	{
+		fixpnt<4, 0> a, b, c;
+		a = 2;
+		b = 3;
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
+	}
+
 	{
 		fixpnt<8, 4> a;
 		a.setbits(0x84);

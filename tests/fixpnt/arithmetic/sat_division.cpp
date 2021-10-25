@@ -255,7 +255,7 @@ try {
 	//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Saturating, uint8_t>(true), "fixpnt<8,4,Saturating,uint8_t>", test_tag);
 
 
-#ifdef REGRESSION_LEVEL_4
+#if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Saturating,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Saturating,uint8_t>", test_tag);

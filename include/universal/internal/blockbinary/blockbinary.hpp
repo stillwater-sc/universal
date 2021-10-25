@@ -831,7 +831,7 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 template<size_t nbits, typename bt>
 std::string to_binary(const blockbinary<nbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
-	s << 'b';
+	s << "0b";
 	for (int i = int(nbits - 1); i >= 0; --i) {
 		s << (number.at(size_t(i)) ? '1' : '0');
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
@@ -862,7 +862,7 @@ std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = true)
 // ostream operator
 template<size_t nbits, typename bt>
 std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, bt>& number) {
-	return ostr << to_binary(number);
+	return ostr << number.to_long_long(); // TODO: add an decimal converter
 }
 
 

@@ -86,14 +86,12 @@ namespace sw::universal {
 					if (sign) v.setscale(-scale); else v.setscale(scale);  // to have the same progression as posits
 					for (size_t i = 0; i < NR_VALUES; i++) {
 						if (sign) v.setbits(2 * NR_VALUES - 1 - i); else v.setbits(i + NR_VALUES);  // to have the same progression as posits
-						bool s = v.sign();
-						int scale = v.scale();
 						blockfraction<bfbits, bt, encoding> f = v.significant();
 
 						ostr << std::setw(4) << ++cnt << ": "
 							<< std::setw(bin_column) << to_binary(v)
-							<< std::setw(sign_column) << s
-							<< std::setw(scale_column) << scale
+							<< std::setw(sign_column) << v.sign()
+							<< std::setw(scale_column) << v.scale()
 							<< std::setw(fraction_column) << std::right << to_binary(f, true)
 							<< std::setw(value_column) << v
 							<< std::endl;

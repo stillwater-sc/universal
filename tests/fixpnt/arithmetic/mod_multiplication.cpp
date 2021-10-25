@@ -38,11 +38,15 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -55,6 +59,7 @@ try {
 
 	std::string test_suite = "fixed-point modular multiplication ";
 	std::string test_tag = "modular multiplication";
+	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
@@ -71,6 +76,27 @@ try {
 		std::cout << b << " * " << a << " = " << c << " : " << (long long)c << '\n';
 	}
 
+	{
+		// generate overflow condition to observe modulo behavior
+		fixpnt<8, 4> a, b, c;
+		a.setbits(0x70);
+		b.setbits(0x70);
+		c = a * b;
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(c) << " : " << c << '\n';
+		// the full precision version of this multiply
+		fixpnt<17, 8> aa(a), bb(b), cc;
+		aa <<= 4;
+		bb <<= 4;
+		cc = aa * bb;
+		std::cout << to_binary(aa) << " : " << aa << '\n';
+		std::cout << to_binary(bb) << " : " << bb << '\n';
+		std::cout << to_binary(cc) << " : " << cc << '\n';
+		c = cc;  // rounding 
+		std::cout << to_binary(c)  << " : " << c << '\n';
+	}
+
 	float fa = -8.0f;
 	float fb = 0.125f;
 	GenerateTestCase<8, 4>(fa, fb);
@@ -79,7 +105,7 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 0>(0.5f, 1.5f); 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag); 
-	return 0;
+	
 	GenerateTestCase<4, 1>(-0.5f, -3.5f);
 	GenerateTestCase<4, 1>(-3.5f, -0.5f);
 
