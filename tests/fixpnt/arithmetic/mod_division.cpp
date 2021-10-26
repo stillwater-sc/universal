@@ -27,23 +27,27 @@ void TestDivisionAlgorithm(
 	// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
 	// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
 
-	constexpr size_t rbs = 0; // nr of rounding bits for the divide
-	blockbinary<2 * nbits + 1 + rbs> dividend(a.getbb());
-	dividend <<= (2 * rbits + rbs);
-	blockbinary<2 * nbits + 1 + rbs> divisor(b.getbb());
-	divisor <<= rbs;
-	blockbinary<2 * nbits + 1 + rbs> quotient = dividend / divisor;
+	bool positive = a.ispos() & b.ispos() | a.isneg() & b.isneg();
+	constexpr size_t roundingBits = nbits;
+	constexpr size_t accumulatorSize = 2 * (nbits + rbits + roundingBits);
+	blockbinary<accumulatorSize> dividend(a.getbb());
+	if (dividend.isneg()) dividend.twosComplement();
+	dividend <<= (2 * (rbits + roundingBits));
+	blockbinary<accumulatorSize> divisor(b.getbb());
+	if (divisor.isneg()) divisor.twosComplement();
+	divisor <<= rbits + roundingBits;
+	blockbinary<accumulatorSize> quotient = dividend / divisor;
 
 	std::cout << "dividend : " << to_binary(dividend, true) << " : " << dividend << '\n';
 	std::cout << "divisor  : " << to_binary(divisor, true) << " : "  << divisor << '\n';
 	std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << '\n';
 
-	bool roundUp = quotient.roundingMode(rbs);
-	quotient >>= rbs; // get rid of the rounding bits 
+	bool roundUp = quotient.roundingMode(roundingBits);
+	quotient >>= roundingBits; // get rid of the remaining over'scale
 	if (roundUp) ++quotient;
 	std::cout << "quotient : " << to_binary(quotient, true) << (roundUp ? " rounded up" : " truncated") << '\n';
-	c = quotient;
-	std::cout << "c        : " << to_binary(c, true) << '\n';
+	c = (positive ? quotient : quotient.twosComplement());
+	std::cout << "c        : " << to_binary(c, true) << " : " << c << '\n';
 }
 
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
@@ -244,7 +248,7 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -270,12 +274,12 @@ try {
 
 #if MANUAL_TESTING
 
-#define quick
+#undef quick
 #ifdef quick
 	{
 		fixpnt<5, 0> a, b, c;
-		a = 5;
-		b = -9;
+		a = 2;
+		b = 2;
 		c = a / b;
 		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
 		TestDivisionAlgorithm(a, b, c);
@@ -283,7 +287,7 @@ try {
 	{
 		fixpnt<5, 1> a, b, c;
 		a = 2;
-		b = 2;  // too big
+		b = 2;
 		c = a / b;
 		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
 	}
@@ -296,133 +300,19 @@ try {
 	}
 #endif
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0, Modulo, uint8_t>(true), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
-	return 0;
-	{
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
-		fixpnt<nbits, rbits, Modulo, uint8_t> a, b, c;
-		a = 1.0625;
-		b = 2.125;
-		std::cout << to_binary(a) << " : " << a << '\n';
-		std::cout << to_binary(b) << " : " << b << '\n';
-
-		TestDivisionAlgorithm(a, b, c);
-
-		std::cout << to_binary(c) << " : " << c << '\n';
-	}
-
-	{
-		fixpnt<4, 0> a, b, c;
-		a = 2;
-		b = 3;
-		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
-	}
-
-	{
-		fixpnt<8, 4> a;
-		a.setbits(0x84);
-		std::cout << to_binary(a) << " : " << a << '\n';
-		a.setbits(0x80);
-		std::cout << to_binary(a) << " : " << a << '\n';
-	}
-	{
-		fixpnt<5, 2> a, b;
-		a = 2.25f;
-		b = 0.25f;
-		std::cout << to_binary(a) << " : " << a << '\n';
-		std::cout << to_binary(b) << " : " << b << '\n';
-		blockbinary<11> bba(a.getbb()), bbb(b.getbb()), bbc;
-		bba <<= 6; bbb <<= 6;
-		std::cout << to_binary(bba, true) << " : " << bba << '\n';
-		std::cout << to_binary(bbb, true) << " : " << bbb << '\n';
-		bbc = bba / bbb;
-		std::cout << to_binary(bbc, true) << " : " << bbc << '\n';
-
-		a = 0.5f;
-		b = 1.5f;
-		std::cout << to_binary(a) << " : " << a << '\n';
-		std::cout << to_binary(b) << " : " << b << '\n';
-		bba = a.getbb(); bbb = b.getbb();
-		bba <<= 6; bbb <<= 6;
-		std::cout << to_binary(bba, true) << " : " << bba << '\n';
-		std::cout << to_binary(bbb, true) << " : " << bbb << '\n';
-		bbc = bba / bbb;
-		std::cout << to_binary(bbc, true) << " : " << bbc << '\n';
-	}
-	{
-		float f1 = 1.0f;
-		float f2 = 3.0f;
-		fixpnt<4, 0> a, b, c;
-		a = f1;
-		b = f2;
-		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
-		c = f1 / f2;
-		std::cout << to_binary(f1) << " / " << to_binary(f2) << " = " << to_binary(f1/f2) << " : " << c << std::endl;
-	}
-	{
-		float f1 = 0.5f;
-		float f2 = 1.5f;
-		fixpnt<4, 1> a, b, c;
-		a = f1;
-		b = f2;
-		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
-		c = f1 / f2;
-		std::cout << to_binary(f1) << " / " << to_binary(f2) << " = " << to_binary(f1 / f2) << " : " << c << std::endl;
-	}
-
-	{
-		float f1 = 1.0f;
-		float f2 = 2.0f;
-		fixpnt<4, 0> a, b, c;
-		a = f1;
-		b = f2;
-		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
-		c = f1 / f2;
-		std::cout << to_binary(f1) << " / " << to_binary(f2) << " = " << to_binary(f1 / f2) << " : " << c << std::endl;
-	}
-	{
-		float f1 = 0.5f;
-		float f2 = 1.0f;
-		fixpnt<4, 1> a, b, c;
-		a = f1;
-		b = f2;
-		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
-		c = f1 / f2;
-		std::cout << to_binary(f1) << " / " << to_binary(f2) << " = " << to_binary(f1 / f2) << " : " << c << std::endl;
-	}
-
-
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", test_tag);
 
-	return 0;
-	constexpr size_t nbits = 4;
-	constexpr size_t rbits = 1;
-
-	GenerateValueTable<nbits, rbits>();
-
-	GenerateComparison<nbits, rbits>(0x3, 0x4); // 0110 and 0100 in 4bit formats
-	GenerateComparison<nbits, rbits>(0x4, 0x1); // 010.0 / 000.1 = 2 / 0.5 = 4 = 100.0 = -4
-
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase<4, 1>(3.0f, 1.5f); 
-
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", test_tag);
 
-	return 0;
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", test_tag);
 
 #if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
@@ -446,6 +336,16 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 6, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 6, 6,Modulo,uint8_t>", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 1,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 2,Modulo,uint8_t>", test_tag);
@@ -457,12 +357,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 8,Modulo,uint8_t>", test_tag);
 #endif
 
-#if REGRESSION_LEVEL_3
-
-#endif
-
 #if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10, 0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10, 4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10, 7,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10,10, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,10,Modulo,uint8_t>", test_tag);
 
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12, 6,Modulo,uint8_t>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

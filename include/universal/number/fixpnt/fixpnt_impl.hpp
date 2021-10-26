@@ -428,24 +428,29 @@ public:
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
 		if constexpr (arithmetic == Modulo) {
+			bool positive = ispos() & rhs.ispos() | isneg() & rhs.isneg();
+
 			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
 			// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
-			constexpr size_t roundingBits = 4;
-			blockbinary<2 * nbits + 1 + roundingBits> dividend(bb);
-			dividend <<= (2 * rbits + roundingBits); // scale up to include rounding bits
-			blockbinary<2 * nbits + 1 + roundingBits> divisor(rhs.getbb());
-			divisor <<= rbits;
-			blockbinary<2 * nbits + 1 + roundingBits> quotient = dividend / divisor;
+			constexpr size_t roundingBits = nbits;
+			constexpr size_t accumulatorSize = 2 * nbits + 2 * rbits + 2 * roundingBits;
+			blockbinary<accumulatorSize> dividend(bb);
+			if (dividend.isneg()) dividend.twosComplement();
+			dividend <<= (2 * (rbits + roundingBits)); // scale up to include rounding bits
+			blockbinary<accumulatorSize> divisor(rhs.getbb());
+			if (divisor.isneg()) divisor.twosComplement();
+			divisor <<= rbits + roundingBits;
+			blockbinary<accumulatorSize> quotient = dividend / divisor;
 
-			std::cout << "dividend : " << to_binary(dividend, true) << " : " << dividend << '\n';
-			std::cout << "divisor  : " << to_binary(divisor, true) << " : " << divisor << '\n';
-			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << '\n';
+//			std::cout << "dividend : " << to_binary(dividend, true) << " : " << dividend << '\n';
+//			std::cout << "divisor  : " << to_binary(divisor, true) << " : " << divisor << '\n';
+//			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << '\n';
 
 			bool roundUp = quotient.roundingMode(roundingBits);
 			quotient >>= roundingBits;
 			if (roundUp) ++quotient;
-			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << (roundUp ? " rounded up": " truncated") << '\n';
-			bb = quotient;
+//			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << (roundUp ? " rounded up": " truncated") << '\n';
+			bb = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
 			std::cerr << "saturating divide not implemented yet\n";
