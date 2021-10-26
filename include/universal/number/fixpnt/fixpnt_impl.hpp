@@ -428,7 +428,7 @@ public:
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
 		if constexpr (arithmetic == Modulo) {
-			bool positive = ispos() & rhs.ispos() | isneg() & rhs.isneg();
+			bool positive = (ispos() & rhs.ispos()) | (isneg() & rhs.isneg());  // XNOR
 
 			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
 			// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor

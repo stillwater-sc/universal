@@ -27,7 +27,7 @@ void TestDivisionAlgorithm(
 	// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
 	// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
 
-	bool positive = a.ispos() & b.ispos() | a.isneg() & b.isneg();
+	bool positive = (a.ispos() & b.ispos()) | (a.isneg() & b.isneg());  // XNOR
 	constexpr size_t roundingBits = nbits;
 	constexpr size_t accumulatorSize = 2 * (nbits + rbits + roundingBits);
 	blockbinary<accumulatorSize> dividend(a.getbb());
