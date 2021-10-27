@@ -15,7 +15,7 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in fixed_point.hpp
+// generate specific test case that you can trace with the trace conditions in fixpnt.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
@@ -34,7 +34,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-
 template<size_t nbits, size_t rbits>
 void GenerateFixedPointComparisonTable() {
 	using namespace sw::universal;
@@ -49,6 +48,122 @@ void GenerateFixedPointComparisonTable() {
 		fpnext.set_raw_bits(2 * i + 1);
 		std::cout << to_binary(fpnext) << ' ' << std::setw(10) << fpnext << "  |  " << '\n';
 	}
+}
+
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+int VerifySignedIntegerProgressions(bool bReportIndividualTestCases) {
+	using namespace sw::universal;
+	int nrOfFailedTestCases = 0;
+
+	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+	// generate the integer progression for this fixpnt, which is represented by a marging MSB
+	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
+	// assume that we have maximally 64 integer bits
+	static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
+
+	// largest negative integer    is 100...000
+	// largest positive integer    is 011111111
+	// largest positive power of 2 is 010000000
+
+	Fixed a;
+
+	constexpr Fixed maxneg(SpecificValue::maxneg);
+	int64_t marchingOne = (long long)maxneg;
+	for (int i = (ibits - 1); i >= 0; --i) {
+		a = marchingOne;
+		if (i == 0) {
+			if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << 0 << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
+		}
+		else {
+			if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << -i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
+		}
+		if (a != marchingOne) {
+			++nrOfFailedTestCases;
+		}
+		marchingOne /= 2;
+	}
+	marchingOne = 1;
+	for (int i = 1; i < (ibits); ++i) {
+		a = marchingOne;
+		if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
+		if (a != marchingOne) {
+			++nrOfFailedTestCases;
+		}
+		marchingOne *= 2;
+	}
+	return nrOfFailedTestCases;
+}
+
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+int VerifyUnsignedIntegerProgressions(bool bReportIndividualTestCases) {
+	using namespace sw::universal;
+	int nrOfFailedTestCases = 0;
+
+	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+	// generate the integer progression for this fixpnt, which is represented by a marging MSB
+	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
+	// assume that we have maximally 64 integer bits
+	static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
+
+	Fixed a;
+	uint64_t marchingOne = 1;
+	for (int i = 1; i < (ibits); ++i) {
+		a = marchingOne;
+		if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
+		if (a != marchingOne) {
+			++nrOfFailedTestCases;
+		}
+		marchingOne *= 2;
+	}
+	return nrOfFailedTestCases;
+}
+
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+int VerifySignedIntegerProgressionsFloat(bool bReportIndividualTestCases) {
+	using namespace sw::universal;
+	int nrOfFailedTestCases = 0;
+
+	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+	// generate the integer progression for this fixpnt, which is represented by a marging MSB
+	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
+	// assume that we have maximally 64 integer bits
+	static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
+
+	// largest negative integer    is 100...000
+	// largest positive integer    is 011111111
+	// largest positive power of 2 is 010000000
+
+	Fixed a, b;
+
+	constexpr Fixed maxneg(SpecificValue::maxneg);
+	int64_t marchingOne = (long long)maxneg;
+	float f = float(marchingOne);
+	std::cout << to_binary(f) << '\n';
+	for (int i = (ibits - 1); i >= 0; --i) {
+		a = float(marchingOne);
+		b = double(marchingOne);
+		if (i == 0) {
+			if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << 0 << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
+		}
+		else {
+			if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << -i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
+		}
+		if (a != marchingOne || b != marchingOne) {
+			++nrOfFailedTestCases;
+		}
+		marchingOne /= 2;
+	}
+	marchingOne = 1;
+	for (int i = 1; i < (ibits); ++i) {
+		a = float(marchingOne);
+		b = double(marchingOne);
+		if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
+		if (a != marchingOne || b != marchingOne) {
+			++nrOfFailedTestCases;
+		}
+		marchingOne *= 2;
+	}
+	return nrOfFailedTestCases;
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -79,56 +194,90 @@ try {
 	std::cout << to_binary(f) << " : " << f << std::endl;
 
 	ReportFixedPointRanges(std::cout, fixpnt< 4, 0, Modulo, uint16_t>());
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t>");
 	ReportFixedPointRanges(std::cout, fixpnt< 4, 1, Modulo, uint16_t>());
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t>");
 
+	{
+		int64_t i = 0x0000'8000;
+		i = -i;
+		std::cout << to_binary(i) << '\n';
+		// i /= 2;
+		fixpnt<32, 16> bigfp = float(i);
+		std::cout << to_binary(bigfp) << " : " << bigfp << '\n';
+	}
 
-//	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases += VerifySignedIntegerProgressions<128, 64, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat<  8,  4, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 16,  8, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 32, 16, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 64, 32, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat<128, 64, Modulo, uint8_t>(bReportIndividualTestCases);
+
+	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions< 64, 32, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions<128, 64, Modulo, uint8_t>(bReportIndividualTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else  // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 4,Modulo,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 5,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 6,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 7,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 8,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 5,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 6,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 7,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 8,Modulo,uint8_t>");
+
+	nrOfFailedTestCases += VerifySignedIntegerProgressions<  8,  4, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressions< 16,  8, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressions< 32, 16, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressions< 64, 32, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressions<128, 64, Modulo, uint8_t>(bReportIndividualTestCases);
+
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat<  8, 4, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 16, 8, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 32, 16, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 64, 32, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat<128, 64, Modulo, uint8_t>(bReportIndividualTestCases);
+
+	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions<  8, 4, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions< 16, 8, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions< 32, 16, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions< 64, 32, Modulo, uint8_t>(bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions<128, 64, Modulo, uint8_t>(bReportIndividualTestCases);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 6, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 6,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 8,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,10, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,10,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12,12, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,12,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 6, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 6,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12, 8,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12,10, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,10,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12,12, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<12,12,Modulo,uint8_t>");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 4,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 8,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,12, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16,12,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16,16, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16,16,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 0, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 0,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 1, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 1,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 2, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 2,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 3, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 3,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 4, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 4,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 8, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16, 8,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16,12, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16,12,Modulo,uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16,16, Modulo, uint8_t>(bReportIndividualTestCases), test_tag, "fixpnt<16,16,Modulo,uint8_t>");
 #endif
 
 #if REGRESSION_LEVEL_4

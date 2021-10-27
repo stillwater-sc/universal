@@ -569,15 +569,23 @@ protected:
 			if (v >= static_cast<SignedInt>(maxpos)) { return *this = maxpos; }
 			if (v <= static_cast<SignedInt>(maxneg)) { return *this = maxneg; }
 		}
-		bool negative = (v < 0 ? true : false);
-		v = (v < 0 ? -v : v); // TODO: deal with maxneg?
-		v <<= rbits; // we are modeling the fixed-point as a binary with a shift
-		unsigned upper = (nbits < 64 ? nbits : 64);
-		for (unsigned i = 0; i < upper; ++i) {
-			if (v & 0x1) setbit(i);
-			v >>= 1;
+		constexpr size_t sizeofInteger = 8 * sizeof(v);
+		if (v == -v) {
+			// v is at maxneg 0x10...000
+			if constexpr (sizeofInteger <= (nbits - rbits)) {
+				setbit(sizeofInteger + rbits - 1);
+			}
 		}
-		if (negative) twosComplement();
+		else {
+			bool negative = (v < 0 ? true : false);
+			v = (v < 0 ? -v : v);
+			unsigned upper = (sizeofInteger < (nbits - rbits)) ? sizeofInteger : (nbits - rbits);
+			for (unsigned i = 0; i < upper; ++i) {
+				if (v & 0x1) setbit(i + rbits);
+				v >>= 1;
+			}
+			if (negative) twosComplement();
+		}
 		return *this;
 	}
 	// convert an unsigned integer into a fixpnt
@@ -593,7 +601,7 @@ protected:
 			if (v <= static_cast<UnsignedInt>(maxneg)) { return *this = maxneg; }
 		}
 		constexpr uint64_t mask = 0x1;
-		unsigned upper = (nbits <= 64 ? nbits : 64);
+		unsigned upper = (nbits - rbits) <= 64 ? nbits : 64;
 		for (unsigned i = 0; i < upper - rbits && v > 0; ++i) {
 			if (v & mask) setbit(i + rbits); // we have no fractional part in v
 			v >>= 1;
@@ -655,13 +663,29 @@ protected:
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
 			}
+			raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
+			setbits(raw);
 		}
 		else {
-			// no need to round, just shift the bits in place
-			raw <<= -shiftRight;
+			int shiftLeft = -shiftRight;
+			if (shiftLeft < (64 - ieee754_parameter<Real>::fbits)) {  // what is the distance between the MSB and 64?
+				// no need to round, just shift the bits in place
+				raw <<= shiftLeft;
+				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
+				setbits(raw);
+			}
+			else {
+				// we need to project the bits we have on the fixpnt
+				for (size_t i = 0; i < ieee754_parameter<Real>::fbits + 1; ++i) {
+					if (raw & 0x01) {
+						setbit(i + shiftLeft);
+					}
+					raw >>= 1;
+				}
+				if (s) twosComplement();
+			}
 		}
-		raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
-		setbits(raw);
+
 		return *this;
 	}
 
@@ -675,7 +699,7 @@ protected:
 		constexpr unsigned sizeOfInteger = 8 * sizeof(NativeInt);
 		NativeInt ll = 0;
 		NativeInt mask = 1;
-		unsigned upper = (nbits < sizeOfInteger ? nbits : sizeOfInteger);
+		unsigned upper = (nbits - rbits) > 64 ? (rbits + 64) : nbits;
 		for (unsigned i = rbits; i < upper; ++i) {
 			ll |= at(i) ? mask : 0;
 			mask <<= 1;
