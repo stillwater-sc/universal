@@ -68,6 +68,7 @@ try {
 	using Float64 = double;
 	using Posit32 = sw::universal::posit<32, 2>;
 	using Posit64 = sw::universal::posit<64, 2>;
+	using Fixed64 = sw::universal::fixpnt<64, 16>;
 
 	float a = 1.0f;
 	float b = 1.0e5f;
@@ -93,6 +94,10 @@ try {
 	CompareTerms<Posit64>(a, b, c);
 	std::cout << '\n';
 
+	std::cout << "fixed-point fixpnt<64, 16>\n";
+	CompareTerms<Fixed64>(a, b, c);
+	std::cout << '\n';
+
 	integer<64> inta(a);
 	integer<64> intb(b);
 	integer<64> intc(c);
@@ -106,11 +111,18 @@ try {
 		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
 	}
 	{
-		// TODO: fixpnt divide is still messed up
 		using Scalar = sw::universal::fixpnt<16,8>;
 		Scalar a{ 3.0 }, b{ 5.0 }, c{ -7.0 };
 		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
 		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+	}
+
+	{
+		Fixed64 a;
+		a = 100000.0f;
+		std::cout << "a   : " << to_binary(a) << " : " << a << '\n';
+		a *= a;
+		std::cout << "a^2 : " << to_binary(a) << " : " << a << '\n';
 	}
 
 	std::cout << std::setprecision(precision);

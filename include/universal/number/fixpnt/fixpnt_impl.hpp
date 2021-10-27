@@ -656,6 +656,10 @@ protected:
 				if (round || sticky) ++raw;
 			}
 		}
+		else {
+			// no need to round, just shift the bits in place
+			raw <<= -shiftRight;
+		}
 		raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
 		setbits(raw);
 		return *this;
@@ -2415,7 +2419,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const fixpnt<nbits, rbits, a
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << convert_to_decimal_string(i);
+	ss << std::setw(width) << std::setprecision(prec) << convert_to_decimal_string(i) << ' ';
 
 	return ostr << ss.str();
 }
@@ -2438,7 +2442,7 @@ inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithme
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number, bool bNibbleMarker = false) {
 	std::stringstream ss;
-	ss << 'b';
+	ss << "0b";
 	for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(rbits); --i) {
 		ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
 		if (bNibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) ss << '\'';
