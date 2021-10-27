@@ -18,6 +18,7 @@
 #define THROW_ARITHMETIC_EXCEPTION 1
 #endif
 
+#include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>  // error/success reporting
 
@@ -75,7 +76,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 
 	// set the saturation clamps
-	TestType maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
+	TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 
 	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	TestType a, b, result, cref;

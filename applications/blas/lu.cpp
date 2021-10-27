@@ -3,18 +3,14 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
-#ifdef _MSC_VER
-#pragma warning(disable : 4514)   // unreferenced inline function has been removed
-#pragma warning(disable : 4710)   // 'int sprintf_s(char *const ,const size_t,const char *const ,...)': function not inlined
-#pragma warning(disable : 4820)   // 'sw::universal::value<23>': '3' bytes padding added after data member 'sw::universal::value<23>::_sign'
-#pragma warning(disable : 5045)   // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
-
+#include <universal/utility/directives.hpp>
 #include <chrono>
+#include <universal/native/ieee754.hpp>
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // enable fast posits
 #define POSIT_FAST_SPECIALIZATION
+#include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
@@ -131,16 +127,20 @@ void FrankMatrixTest() {
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	Matrix A = {
-	{ 5, 4, 3, 2, 1 },
-	{ 4, 4, 3, 2, 1 },
-	{ 0, 3, 3, 2, 1 },
-	{ 0, 0, 2, 2, 1 },
-	{ 0, 0, 0, 1, 1 }
+		{ 9, 8, 7, 6, 5, 4, 3, 2, 1 },
+		{ 8, 8, 7, 6, 5, 4, 3, 2, 1 },
+		{ 0, 7, 7, 6, 5, 4, 3, 2, 1 },
+		{ 0, 0, 6, 6, 5, 4, 3, 2, 1 },
+		{ 0, 0, 0, 5, 5, 4, 3, 2, 1 },
+		{ 0, 0, 0, 0, 4, 4, 3, 2, 1 },
+		{ 0, 0, 0, 0, 0, 3, 3, 2, 1 },
+		{ 0, 0, 0, 0, 0, 0, 2, 2, 1 },
+		{ 0, 0, 0, 0, 0, 0, 0, 1, 1 }
 	};
 
-	Vector x(5);
+	Vector x(9);
 	x = Scalar(1);  // vector of 1's
-	Vector b(5);
+	Vector b(9);
 	b = A * x;
 	// now solve for b should yield a vector of 1's
 	sw::universal::blas::vector<size_t> p;
@@ -153,7 +153,7 @@ void FrankMatrixTest() {
 			infnorm = fabs(v);
 		}
 	}
-	std::cout << "\nSolution vector for type " << std::setw(30) << typeid(Scalar).name() << " is [" << xx << "]" << " infinity norm of error " << infnorm << '\n';
+	std::cout << "Solution vector for type " << std::setw(32) << typeid(Scalar).name() << " is [" << xx << "]" << " infinity norm of error " << infnorm << '\n';
 }
 
 void FrankMatrix() {
@@ -163,10 +163,11 @@ void FrankMatrix() {
 	FrankMatrixTest<double>();
 	FrankMatrixTest<long double>();
 	FrankMatrixTest< posit<16, 1> >();
-	FrankMatrixTest< posit<20, 1> >();
-	FrankMatrixTest< posit<28, 1> >();
 	FrankMatrixTest< posit<28, 2> >();    // <---- this has the same number of fraction bits at 1 as IEEE single precision
 	FrankMatrixTest< posit<32, 2> >();
+	FrankMatrixTest< posit<40, 2> >();
+	FrankMatrixTest< posit<48, 2> >();
+	FrankMatrixTest< posit<56, 2> >();
 	FrankMatrixTest< posit<64, 3> >();
 }
 
@@ -208,7 +209,42 @@ void MagicSquareTest(int N) {
 	}
 }
 
-int main(int argc, char** argv)
+void MagicSquareMatrix() {
+	std::cout << "Magic Square matrix solver\n";
+	MagicSquareTest<float>(5);
+	MagicSquareTest<float>(51);
+	MagicSquareTest<float>(251);
+	MagicSquareTest<float>(501);
+	MagicSquareTest<double>(501);
+	MagicSquareTest<sw::universal::posit<32, 2> >(51);
+	MagicSquareTest<sw::universal::posit<32, 2> >(251);
+}
+
+template<typename Posit>
+void PrintPositsAroundOne() {
+	constexpr float eps = std::numeric_limits<float>::epsilon();
+	constexpr float epsminus = 1.0f - eps;
+	constexpr float epsplus = 1.0f + eps;
+	Posit pepsminus(epsminus), pepsplus(epsplus);
+	std::string tag = type_tag(pepsminus);
+	std::cout << tag << '\n';
+	std::cout << "1.0 - FLT_EPSILON:\n";
+	std::cout << "         float       : "   << sw::universal::to_binary(epsminus) << " : " << epsminus << '\n';
+	std::cout << "         " << tag << " : " << sw::universal::color_print(pepsminus) << " : " << pepsminus << '\n';
+	std::cout << "1.0 + FLT_EPSILON:\n";
+	std::cout << "         float       : "   << sw::universal::to_binary(epsplus) << " : " << epsplus << '\n';
+	std::cout << "         " << tag << " : " << sw::universal::color_print(pepsplus) << " : " << pepsplus << '\n';
+}
+
+void FloatVsPositAroundOne() {
+	using namespace sw::universal;
+
+	PrintPositsAroundOne < posit<26, 2> >();
+	PrintPositsAroundOne < posit<27, 2> >();
+	PrintPositsAroundOne < posit<28, 2> >();  // => equivalent to float around 1.0
+}
+
+int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
@@ -216,69 +252,22 @@ try {
 	// We want to solve the system Ax=b
 	// GaussianEliminationTest<32, 2>();
 
-	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
+;
+	std::cout << std::setprecision(std::numeric_limits<float>::max_digits10);
+	FloatVsPositAroundOne();
 
+	std::cout << '\n';
 	FrankMatrix();
 
-	/*
-	MagicSquareTest<float>(5);
-	MagicSquareTest<float>(51);
-	MagicSquareTest<float>(251);
-	MagicSquareTest<float>(501);
-	MagicSquareTest<double>(501);
+	std::cout << '\n';
+	MagicSquareMatrix();
 
-	MagicSquareTest<posit<32, 2> >(51);
-	MagicSquareTest<posit<32, 2> >(251);
-	*/
 
-	// basic structure from MATLAB
+	// basic workflow used in MATLAB
 	//	[L U P] = lu(A);
 	//	y = L\(P*b);
 	//	x = U\y;
-
-#if 0
-	constexpr float eps = std::numeric_limits<float>::epsilon();
-	constexpr float epsminus = 1.0f - eps;
-	constexpr float epsplus = 1.0f + eps;
-
-	cout << setprecision(std::numeric_limits<float>::max_digits10);
-	cout << "posit<25,2>\n";
-	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<25, 2>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<25, 2>(epsplus) << endl;
-	cout << "posit<26,2>\n";
-	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<26, 2>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<26, 2>(epsplus) << endl;
-	cout << "posit<27,2>\n";
-	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<27, 2>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<27, 2>(epsplus) << endl;
-	cout << "posit<28,2>\n";
-	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<28, 2>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<28, 2>(epsplus) << endl;
-	cout << "posit<29,2>\n";
-	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<29, 2>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<29, 2>(epsplus) << endl;
-	cout << "posit<30,2>\n";
-	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<30, 2>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<30, 2>(epsplus) << endl;
-	cout << "posit<31,2>\n";
-	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<31, 2>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<31, 2>(epsplus) << endl;
-	cout << "posit<32,2>\n";
-	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<32, 2>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<32, 2>(epsplus) << endl;
-
-	cout << endl << endl;
-	// is there a representational difference between 1+FLT_EPSILON in float versus posit<32,2>?
-	double depsplus = epsplus;
-	double pepsplus = double(posit<32, 2>(epsplus));
-	cout << "1.0 + FLT_EPSILON = " << depsplus << " converts to posit value " << epsplus << endl;
-	cout << "1.0 + FLT_EPSILON = " << depsplus << " converts to posit value " << pepsplus << endl;
-
-	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << hex_format(posit<32, 2>(epsplus)) << endl;
-	cout << "1.0 + FLT_EPSILON = " << depsplus << " converts to posit value " << hex_format(posit<32, 2>(pepsplus)) << endl;
-
-#endif
 
 	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

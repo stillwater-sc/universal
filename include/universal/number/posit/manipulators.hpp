@@ -56,6 +56,7 @@ std::string posit_range() {
 // Generate a type tag for this posit, for example, posit<8,1>
 template<size_t nbits, size_t es>
 std::string type_tag(const posit<nbits, es>& p) {
+	posit<nbits, es> v(p); // to remove unused formal parameter warning
 	std::stringstream ss;
 	ss << "posit<" << nbits << "," << es << ">";
 	return ss.str();
@@ -205,7 +206,7 @@ std::string color_print(const posit<nbits, es>& p) {
 	int nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (regimeBits > nrOfRegimeBitsProcessed++) {
-			ss << yellow << (_sign ? (r[i] ? '0' : '1') : (r[i] ? '1' : '0'));
+			ss << yellow << (_sign ? (r[static_cast<size_t>(i)] ? '0' : '1') : (r[static_cast<size_t>(i)] ? '1' : '0'));
 		}
 	}
 
@@ -214,7 +215,7 @@ std::string color_print(const posit<nbits, es>& p) {
 	int nrOfExponentBitsProcessed = 0;
 	for (int i = int(es) - 1; i >= 0; --i) {
 		if (exponentBits > nrOfExponentBitsProcessed++) {
-			ss << cyan << (_sign ? (e[i] ? '0' : '1') : (e[i] ? '1' : '0'));
+			ss << cyan << (_sign ? (e[static_cast<size_t>(i)] ? '0' : '1') : (e[static_cast<size_t>(i)] ? '1' : '0'));
 		}
 	}
 
@@ -224,7 +225,7 @@ std::string color_print(const posit<nbits, es>& p) {
 	int nrOfFractionBitsProcessed = 0;
 	for (int i = int(p.fbits) - 1; i >= 0; --i) {
 		if (fractionBits > nrOfFractionBitsProcessed++) {
-			ss << magenta << (f[i] ? "1" : "0");
+			ss << magenta << (f[static_cast<size_t>(i)] ? "1" : "0");
 		}
 	}
 

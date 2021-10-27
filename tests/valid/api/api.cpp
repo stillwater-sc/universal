@@ -13,7 +13,7 @@
 #define POSIT_ENABLE_LITERALS 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/valid/valid_impl.hpp>
+#include <universal/number/valid/valid.hpp>
 // type manipulators such as pretty printers
 #include <universal/number/valid/manipulators.hpp>
 #include <universal/number/valid/math_functions.hpp>

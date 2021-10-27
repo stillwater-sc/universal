@@ -116,21 +116,21 @@ int VerifyComplexSubtraction(bool bReportIndividualTestCases) {
 #define HARDWARE_ACCELERATION 0
 #define HARDWARE_ACCELERATION 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite = "fixed-point complex subtraction validation";
+	std::string test_tag = "complex modular addition";
+	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	std::string tag = "complex modulo subtraction failed: ";
 
 #if MANUAL_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "subtraction");
 
-#if STRESS_TESTING
-	// manual exhaustive test
+#if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 2, Modulo, uint8_t>(true), "fixpnt<4,2,Modulo,uint8_t>", "subtraction");
@@ -138,6 +138,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 4, Modulo, uint8_t>(true), "fixpnt<4,4,Modulo,uint8_t>", "subtraction");
 #endif
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
 	std::cout << "Fixed-point complex modulo subtraction validation\n";
@@ -207,9 +209,9 @@ try {
 #endif // HARDWARE_ACCELERATION
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

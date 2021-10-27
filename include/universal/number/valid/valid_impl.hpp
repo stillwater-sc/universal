@@ -256,6 +256,34 @@ inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& v) 
 	return istr;
 }
 
+// valid - logic operators
+template<size_t nnbits, size_t ees>
+inline bool operator==(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return false; }
+template<size_t nnbits, size_t ees>
+inline bool operator!=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nnbits, size_t ees>
+inline bool operator< (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return false; }
+template<size_t nnbits, size_t ees>
+inline bool operator> (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nnbits, size_t ees>
+inline bool operator<=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nnbits, size_t ees>
+inline bool operator>=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator< (lhs, rhs); }
+
+// valid - literal logic operators
+template<size_t nnbits, size_t ees>
+inline bool operator==(const valid<nnbits, ees>& lhs, double rhs) { return lhs == valid<nnbits, ees>(rhs); }
+template<size_t nnbits, size_t ees>
+inline bool operator!=(const valid<nnbits, ees>& lhs, double rhs) { return !operator==(lhs, rhs); }
+template<size_t nnbits, size_t ees>
+inline bool operator< (const valid<nnbits, ees>& lhs, double rhs) { return lhs < valid<nnbits, ees>(rhs); }
+template<size_t nnbits, size_t ees>
+inline bool operator> (const valid<nnbits, ees>& lhs, double rhs) { return  operator< (rhs, lhs); }
+template<size_t nnbits, size_t ees>
+inline bool operator<=(const valid<nnbits, ees>& lhs, double rhs) { return !operator> (lhs, rhs); }
+template<size_t nnbits, size_t ees>
+inline bool operator>=(const valid<nnbits, ees>& lhs, double rhs) { return !operator< (lhs, rhs); }
+
 // valid - valid binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits, size_t es>

@@ -348,7 +348,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
-// enumerate all division cases for an fixpnt<nbits,rbits> configuration
+// enumerate all division cases for a fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 int VerifyDivision(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
@@ -391,12 +391,12 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 			cref = ref;
 			if (result != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, cref, result);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, result, cref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, cref, result);
+				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, result, cref);
 			}
-			if (nrOfFailedTests > 24) return nrOfFailedTests;
+//			if (nrOfFailedTests > 1) return nrOfFailedTests;
 		}
 //		if (i % 1024 == 0) std::cout << '.';
 	}

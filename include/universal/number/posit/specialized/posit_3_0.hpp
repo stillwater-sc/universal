@@ -118,20 +118,28 @@ public:
 	// specific value constructor
 	constexpr posit(const SpecificValue code) : _bits(0) {
 		switch (code) {
+		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
 			maxpos();
 			break;
 		case SpecificValue::minpos:
 			minpos();
 			break;
+		case SpecificValue::zero:
 		default:
 			zero();
 			break;
 		case SpecificValue::minneg:
 			minneg();
 			break;
+		case SpecificValue::infneg:
 		case SpecificValue::maxneg:
 			maxneg();
+			break;
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+		case SpecificValue::nar:
+			setnar();
 			break;
 		}
 	}

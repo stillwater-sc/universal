@@ -197,6 +197,7 @@ inline std::istream& operator>>(std::istream& istr, const lns<nnbits,nbt>& v) {
 	return istr;
 }
 
+// lns - logic operators
 template<size_t nnbits, typename nbt>
 inline bool operator==(const lns<nnbits,nbt>& lhs, const lns<nnbits,nbt>& rhs) { return false; }
 template<size_t nnbits, typename nbt>
@@ -209,6 +210,20 @@ template<size_t nnbits, typename nbt>
 inline bool operator<=(const lns<nnbits,nbt>& lhs, const lns<nnbits,nbt>& rhs) { return !operator> (lhs, rhs); }
 template<size_t nnbits, typename nbt>
 inline bool operator>=(const lns<nnbits,nbt>& lhs, const lns<nnbits,nbt>& rhs) { return !operator< (lhs, rhs); }
+
+// lns - literal logic operators
+template<size_t nnbits, typename nbt>
+inline bool operator==(const lns<nnbits, nbt>& lhs, double rhs) { return lhs == lns<nnbits,nbt>(rhs); }
+template<size_t nnbits, typename nbt>
+inline bool operator!=(const lns<nnbits, nbt>& lhs, double rhs) { return !operator==(lhs, rhs); }
+template<size_t nnbits, typename nbt>
+inline bool operator< (const lns<nnbits, nbt>& lhs, double rhs) { return lhs < lns<nnbits, nbt>(rhs); }
+template<size_t nnbits, typename nbt>
+inline bool operator> (const lns<nnbits, nbt>& lhs, double rhs) { return  operator< (rhs, lhs); }
+template<size_t nnbits, typename nbt>
+inline bool operator<=(const lns<nnbits, nbt>& lhs, double rhs) { return !operator> (lhs, rhs); }
+template<size_t nnbits, typename nbt>
+inline bool operator>=(const lns<nnbits, nbt>& lhs, double rhs) { return !operator< (lhs, rhs); }
 
 // lns - lns binary arithmetic operators
 // BINARY ADDITION

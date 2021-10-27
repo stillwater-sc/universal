@@ -15,11 +15,11 @@
 // when you define VALID_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define VALID_VERBOSE_OUTPUT
 #define VALID_TRACE_SUB
-#include <universal/number/posit/exceptions.hpp>
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/valid/valid_impl.hpp>
+
+#include <universal/number/valid/valid.hpp>
 #include <universal/number/valid/manipulators.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_reporters.hpp>
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -38,11 +38,10 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = false;
+	std::string test_suite = "valid addition validation";
+	std::string test_tag = "addition";
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-	std::string tag = "Addition failed: ";
-
-	std::cout << "Valid addition validation\n";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -64,6 +63,8 @@ try {
 	v2.setub(ub, true);
 	std::cout << v2 << '\n';
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
@@ -119,9 +120,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 1>(tag, bReportIndividualTestCases), "valid<16,1>", "addition");
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

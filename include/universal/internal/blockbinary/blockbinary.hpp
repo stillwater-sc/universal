@@ -99,9 +99,7 @@ public:
 
 	/// construct a blockbinary from another: bt must be the same
 	template<size_t nnbits>
-	blockbinary(const blockbinary<nnbits, bt>& rhs) {
-		this->assign(rhs);
-	}
+	blockbinary(const blockbinary<nnbits, bt>& rhs) { this->assign(rhs); }
 
 	// initializer for long long
 	constexpr blockbinary(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
@@ -757,7 +755,7 @@ inline blockbinary<2 * nbits, bt> urmul2(const blockbinary<nbits, bt>& a, const 
 #define TRACE_DIV 0
 // unrounded division, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, size_t roundingBits, typename bt>
-inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, bt>& a, const blockbinary<nbits, bt>& b, blockbinary<roundingBits, bt>& r) {
+inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, bt>& a, const blockbinary<nbits, bt>& b) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";
@@ -768,29 +766,38 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 	bool b_sign = b.sign();
 	bool result_negative = (a_sign ^ b_sign);
 
-	// normalize both arguments to positive in new size
+	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
 	blockbinary<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
 	blockbinary<nbits + 1, bt> b_new(b);
+#if TRACE_DIV
+	std::cout << "a " << to_binary(a_new) << '\n';
+	std::cout << "b " << to_binary(b_new) << '\n';
+#endif
 	if (a_sign) a_new.twosComplement();
 	if (b_sign) b_new.twosComplement();
+#if TRACE_DIV
+	std::cout << "a " << to_binary(a_new) << '\n';
+	std::cout << "b " << to_binary(b_new) << '\n';
+#endif
 
 	// initialize the long division
-	blockbinary<2 * nbits + roundingBits, bt> decimator(a_new);
-	blockbinary<2 * nbits + roundingBits, bt> subtractand(b_new); // prepare the subtractand
-	blockbinary<2 * nbits + roundingBits, bt> result;
+	blockbinary<2 * nbits + roundingBits + 1, bt> decimator(a_new);
+	blockbinary<2 * nbits + roundingBits + 1, bt> subtractand(b_new); // prepare the subtractand
+	blockbinary<2 * nbits + roundingBits + 1, bt> result;
 
-	int msp = nbits + roundingBits - 1; // msp = most significant position
+	constexpr size_t msp = nbits + roundingBits; // msp = most significant position
 	decimator <<= msp; // scale the decimator to the largest possible positive value
 
 	int msb_b = subtractand.msb();
 	int msb_a = decimator.msb();
 	int shift = msb_a - msb_b;
-	int scale = shift - msp;   // scale of the result quotient
 	subtractand <<= shift;
+	int offset = msb_a - static_cast<int>(msp);  // msb of the result
+	int scale  = shift - static_cast<int>(msp);  // scale of the result quotient
 
 #if TRACE_DIV
-	std::cout << "  " << to_binary(decimator) << std::endl;
-	std::cout << "- " << to_binary(subtractand) << " shift: " << shift << std::endl;
+	std::cout << "  " << to_binary(decimator, true)   << " msp  : " << msp << '\n';
+	std::cout << "- " << to_binary(subtractand, true) << " shift: " << shift << '\n';
 #endif
 	// long division
 	for (int i = msb_a; i >= 0; --i) {
@@ -805,13 +812,15 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 		subtractand >>= 1;
 
 #if TRACE_DIV
-		std::cout << "  " << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
-		std::cout << "- " << to_binary(subtractand) << std::endl;
+		std::cout << "  " << to_binary(decimator, true) << "  current quotient: " << to_binary(result, true) << '\n';
+		std::cout << "- " << to_binary(subtractand, true) << '\n';
 #endif
 	}
-	result <<= scale;
+	result <<= (scale - offset);
+#if TRACE_DIV
+	std::cout << "  " << "scaled result: " << to_binary(result, true) << " scale : " << scale << " offset : " << offset << '\n';
+#endif
 	if (result_negative) result.twosComplement();
-	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
 }
 
@@ -822,7 +831,7 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 template<size_t nbits, typename bt>
 std::string to_binary(const blockbinary<nbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
-	s << 'b';
+	s << "0b";
 	for (int i = int(nbits - 1); i >= 0; --i) {
 		s << (number.at(size_t(i)) ? '1' : '0');
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
@@ -853,7 +862,7 @@ std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = true)
 // ostream operator
 template<size_t nbits, typename bt>
 std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, bt>& number) {
-	return ostr << to_binary(number);
+	return ostr << number.to_long_long(); // TODO: add an decimal converter
 }
 
 
