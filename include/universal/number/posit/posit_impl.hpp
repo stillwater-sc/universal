@@ -1740,9 +1740,9 @@ inline std::string to_binary(const posit<nbits, es>& number, bool nibbleMarker =
 	extract_fields(raw, s, r, e, f);
 
 	ss << (s ? "0b1." : "0b0.");
-	ss << to_string(r, false) << "."
-		<< to_string(e, false) << "."
-		<< to_string(f, false);
+	ss << to_string(r, false, nibbleMarker) << "."
+		<< to_string(e, false, nibbleMarker) << "."
+		<< to_string(f, false, nibbleMarker);
 
 	return ss.str();
 }

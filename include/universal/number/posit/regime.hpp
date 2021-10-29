@@ -182,19 +182,20 @@ inline std::istream& operator>> (std::istream& istr, const regime<nbits, es>& r)
 }
 
 template<size_t nbits, size_t es>
-inline std::string to_string(const regime<nbits, es>& r, bool dashExtent = true) {
-	std::stringstream ss;
+inline std::string to_string(const regime<nbits, es>& r, bool dashExtent = true, bool nibbleMarker = false) {
+	std::stringstream sstr;
 	bitblock<nbits - 1> bb = r.get();
 	size_t nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (r.nrBits() > nrOfRegimeBitsProcessed++) {
-			ss << (bb[size_t(i)] ? "1" : "0");
+			sstr << (bb[size_t(i)] ? '1' : '0');
 		}
 		else {
-			ss << (dashExtent ? "-" : "");
+			sstr << (dashExtent ? "-" : "");
 		}
+		if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
 	}
-	return ss.str();
+	return sstr.str();
 }
 
 template<size_t nbits, size_t es>

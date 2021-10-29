@@ -3,9 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "universal/number/posit/posit_impl.hpp"
-#include "universal/number/posit/manipulators.hpp"
+#include <universal/utility/directives.hpp>
+#include <universal/number/posit/posit.hpp>
 
 /*
   Generator of a single lookup table for reciprocals of any posit configuration with 16 or fewer bits.
@@ -26,7 +25,7 @@ void GeneratePositReciprocalLookupTable(std::ostream& os) {
 	}
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

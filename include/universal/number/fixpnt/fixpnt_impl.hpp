@@ -2464,21 +2464,21 @@ inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithme
 
 // to_binary generates a binary presentation of the fixed-point number
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number, bool bNibbleMarker = false) {
-	std::stringstream ss;
-	ss << "0b";
+inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number, bool nibbleMarker = false) {
+	std::stringstream sstr;
+	sstr << "0b";
 	for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(rbits); --i) {
-		ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-		if (bNibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) ss << '\'';
+		sstr << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+		if (nibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) sstr << '\'';
 	}
-	ss << '.';
+	sstr << '.';
 	if constexpr (rbits > 0) {
 		for (int i = int(rbits) - 1; i >= 0; --i) {
-			ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-			if (bNibbleMarker && (rbits - i) % 4 == 0 && i != 0) ss << '\'';
+			sstr << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if (nibbleMarker && (rbits - i) % 4 == 0 && i != 0) sstr << '\'';
 		}
 	}
-	return ss.str();
+	return sstr.str();
 }
 
 // to_triple generates a triple (sign,scale,fraction) representation of the fixed-point number

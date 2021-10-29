@@ -103,6 +103,15 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	// selectors
 
+		// type tag to identify the type without having to depend on demangle
+	{
+		using Fixed = fixpnt<16, 2>;
+		Fixed a{ 0 };
+		std::cout << "type identifier : " << type_tag(a) << '\n';
+		std::cout << "type identifier : " << type_tag(fixpnt<8, 4>()) << '\n';
+		std::cout << "type identifier : " << type_tag(fixpnt<8, 4, Saturating, uint16_t>()) << '\n';
+	}
+
 	{
 		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 8;

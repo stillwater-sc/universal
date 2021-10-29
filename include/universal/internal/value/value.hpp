@@ -638,13 +638,18 @@ inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { ret
 
 template<size_t nbits>
 inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true) {
-	std::stringstream s;
-	s << 'b';
-	for (int i = int(nbits - 1); i >= 0; --i) {
-		s << (a[static_cast<size_t>(i)] ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	if constexpr (nbits > 1) {
+		std::stringstream s;
+		s << "0b";
+		for (int i = int(nbits - 1); i >= 0; --i) {
+			s << (a[static_cast<size_t>(i)] ? '1' : '0');
+			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+		}
+		return s.str();
 	}
-	return s.str();
+	else {
+		return std::string("-");
+	}
 }
 template<size_t fbits>
 inline std::string to_triple(const value<fbits>& v) {
