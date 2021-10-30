@@ -36,6 +36,7 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 
 // composition types used by fixpnt
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/number/support/decimal.hpp>
 
 namespace sw::universal {
 
@@ -530,6 +531,7 @@ public:
 	}
 	// use un-interpreted raw bits to set the bits of the fixpnt: TODO: expand the API to support fixed-points > 64 bits
 	inline constexpr void setbits(uint64_t value) noexcept { bb.setbits(value); }
+	// assign the value of the textual representation to the fixpnt: can be binary/octal/decimal/hexadecimal
 	inline fixpnt& assign(const std::string& txt) noexcept {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
@@ -1879,6 +1881,7 @@ inline fixpnt<nbits, rbits, arithmetic, bt> operator%(long double lhs, const fix
 
 /// stream operators
 
+#ifdef MOVED
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /// support detail
 
@@ -2251,7 +2254,8 @@ namespace support {
 		return ostr << ss.str();
 	}
 
-} // namespace impl
+} // namespace support
+#endif // MOVED
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2336,15 +2340,14 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 	return ss.str();
 }
 
-// read a fixed-point ASCII format and make a binary fixpnt out of it
+// read an ASCII format and make a binary fixpnt out of it: TBD
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& value) {
 	bool bSuccess = false;
 	value.clear();
-	// check if the txt is an fixpnt form: [0123456789]+
-	std::regex decimal_regex("[0-9]+");
-	std::regex octal_regex("^0[1-7][0-7]*$");
-	std::regex hex_regex("0[xX][0-9a-fA-F']+");
+
+	std::regex binary_regex("0b([01]+)?(.)?([01]+)?$"); // bin does not have a negative size, just raw bits
+	std::regex decimal_regex("/^-?(0|[1-9][0-9]*)?"); // ("/^-?(0|[1-9][0-9]*)?(\.[0-9]+)?(?<=[0-9])(e-?(0|[1-9][0-9]*))?$");
 	// setup associative array to map chars to nibbles
 	std::map<char, int> charLookup{
 		{ '0', 0 },
@@ -2370,59 +2373,30 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 		{ 'E', 14 },
 		{ 'F', 15 },
 	};
-	if (std::regex_match(number, octal_regex)) {
-		std::cout << "found an octal representation\n";
+	if (std::regex_match(number, binary_regex)) {
+		std::cout << "found an binary representation\n";
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
-			std::cout << "char = " << *r << std::endl;
 		}
-		bSuccess = false; // TODO
-	}
-	else if (std::regex_match(number, hex_regex)) {
-		//std::cout << "found a hexadecimal representation\n";
-		// each char is a nibble
-		int byte{ 0 };
-		int byteIndex{ 0 };
-		bool odd{ false };
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
-			++r) {
-			if (*r == '\'') {
-				// ignore
-			}
-			else if (*r == 'x' || *r == 'X') {
-				// we have reached the end of our parse
-				if (odd) {
-					// complete the most significant byte
-					value.setbyte(byteIndex, byte);
-				}
-				bSuccess = true;
-			}
-			else {
-				if (odd) {
-					byte += charLookup.at(*r) << 4;
-					value.setbyte(byteIndex, byte);
-					++byteIndex;
-				}
-				else {
-					byte = charLookup.at(*r);
-				}
-				odd = !odd;
-			}
-		}
+		bSuccess = false;
 	}
 	else if (std::regex_match(number, decimal_regex)) {
-		//std::cout << "found a decimal fixpnt representation\n";
+		std::cout << "found a decimal representation\n";
 		fixpnt<nbits, rbits, arithmetic, bt> scale = 1;
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
-			fixpnt<nbits, rbits, arithmetic, bt> digit = charLookup.at(*r);
-			value += scale * digit;
-			scale *= 10;
+			if (*r != '.') {
+				fixpnt<nbits, rbits, arithmetic, bt> digit = charLookup.at(*r); // we are guaranteed by the regex not to have hexadecimal values
+				value += scale * digit;
+				scale *= 10;
+			}
 		}
 		bSuccess = true;
+	}
+	else {
+		std::cerr << number << ": neither a binary nor a decimal representation found\n";
 	}
 
 	return bSuccess;

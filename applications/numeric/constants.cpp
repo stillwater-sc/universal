@@ -9,6 +9,7 @@
 #include <numbers>    // high-precision numbers
 #endif
 #include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
+#include <universal/common/numeric_limits_utility.hpp>
 #include <universal/verification/performance_runner.hpp>
 
 // select the number systems we would like to compare
@@ -35,6 +36,7 @@ void SqrtWorkload(uint64_t NR_OPS) {
 	if (a == c) std::cout << "amazing\n";
 }
 
+// type_tag for native types
 template<typename Float>
 std::string type_tag(Float v) {
 	return typeid(v).name();
@@ -114,6 +116,8 @@ try {
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}
+
+	compareNumberTraits<Posit, Fixed>(std::cout);
 
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;
