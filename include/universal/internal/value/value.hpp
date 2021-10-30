@@ -11,6 +11,7 @@
 #include <tuple>
 #include <algorithm> // std::max
 
+#include <universal/number/support/decimal.hpp>
 #include <universal/native/nonconstexpr754.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
@@ -539,6 +540,53 @@ private:
 	friend bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs);
 };
 
+template<size_t fbits>
+inline std::string convert_to_decimal_string(const value<fbits>& v) {
+	auto bits = v.fraction();
+	// construct the value of the fraction
+	support::decimal range, discretizationLevels, step, partial, multiplier, one;
+	// create the decimal range we are discretizing
+	range.setdigit(1);
+	range.shiftLeft(fbits);
+	// calculate the discretization levels of this range
+	discretizationLevels.setdigit(1);
+	for (size_t i = 0; i < fbits; ++i) {
+		support::add(discretizationLevels, discretizationLevels);
+	}
+	step = div(range, discretizationLevels);
+	// now construct the value of this range by adding the fraction samples
+	partial.setzero();
+	multiplier.setdigit(1);
+	one.setdigit(1); // the hidden bit
+	// convert the fraction part
+	for (unsigned i = 0; i < fbits; ++i) {
+		if (bits.at(i)) {
+			support::add(partial, multiplier);
+		}
+		support::add(multiplier, multiplier);
+	}
+	support::mul(partial, step);
+	support::add(partial, one);
+
+	std::stringstream str;
+	// leading 0s will cause the partial to be represented incorrectly
+	// if we simply convert it to digits.
+	// The partial represents the parts in the range, so we can deduce
+	// the number of leading zeros by comparing to the length of range
+	size_t nrLeadingZeros = range.size() - partial.size() - 1;
+	for (size_t i = 0; i < nrLeadingZeros; ++i) str << '0';
+	size_t digitsWritten = nrLeadingZeros;
+	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		str << (int)*rit;
+		++digitsWritten;
+	}
+	if (digitsWritten < fbits) { // deal with trailing 0s
+		for (size_t i = digitsWritten; i < fbits; ++i) {
+			str << '0';
+		}
+	}
+	return str.str();
+}
 ////////////////////// VALUE operators
 template<size_t nfbits>
 inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {

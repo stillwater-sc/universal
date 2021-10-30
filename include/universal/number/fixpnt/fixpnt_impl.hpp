@@ -2333,13 +2333,12 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 	fixpnt<nbits, rbits, arithmetic, bt> number;
 	number = value.sign() ? sw::universal::twosComplement(value) : value;
 	if constexpr (nbits > rbits) {
-		// convert the fixed point by first handling the integer part
+		// convert the fixed point: start by handling the integer part
 		multiplier.setdigit(1);
 		// convert fixpnt to decimal by adding and doubling multipliers
 		for (unsigned i = rbits; i < nbits; ++i) {
 			if (number.at(i)) {
 				support::add(partial, multiplier);
-				//std::cout << partial << std::endl;
 			}
 			support::add(multiplier, multiplier);
 		}

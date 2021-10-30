@@ -28,8 +28,14 @@ try {
 
 	std::cout << "posit class interface tests\n";
 
+	{
+		posit<16, 2> a(1.03125f);
+		std::cout << convert_to_decimal_string(a) << '\n';
+	}
+
+
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// SATURATING posits
+	//// posit construction, initialization, assignment and comparisions
 
 	{
 		int start = nrOfFailedTestCases;
