@@ -2305,7 +2305,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 			support::add(discretizationLevels, discretizationLevels);
 		}
 		step = div(range, discretizationLevels);
-		// now construct the parts of this range the fraction samples
+		// now construct the value of this range by adding the fraction samples
 		partial.setzero();
 		multiplier.setdigit(1);
 		// convert the fraction part
