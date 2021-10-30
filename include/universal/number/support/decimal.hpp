@@ -17,6 +17,13 @@ namespace sw::universal::support {
 
 // paired down implementation of a decimal type to generate decimal representations for fixpnt<nbits,rbits> types
 
+
+// forward reference
+class decimal;
+void add(decimal& lhs, const decimal& rhs);
+void sub(decimal& lhs, const decimal& rhs);
+
+// decimal representation
 class decimal : public std::vector<uint8_t> {
 public:
 	decimal() { setzero(); }
@@ -81,8 +88,37 @@ private:
 	friend std::ostream& operator<<(std::ostream& ostr, const decimal& d);
 };
 
-// forward reference
-void sub(decimal& lhs, const decimal& rhs);
+
+// find largest multiplier
+decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
+	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
+	decimal one, remainder, multiplier;
+	one.setdigit(1);
+	remainder = lhs; remainder.setpos();
+	multiplier.setdigit(0);
+	for (int i = 0; i <= 11; ++i) {  // function works for 9 into 99, just as an aside
+		if (remainder.ispos() && !remainder.iszero()) {  // test for proper > 0
+			sub(remainder, rhs); //  remainder -= rhs;
+			add(multiplier, one);  // ++multiplier
+		}
+		else {
+			if (remainder.isneg()) {  // we went too far
+				sub(multiplier, one); // --multiplier
+			}
+			// else implies remainder is 0										
+			break;
+		}
+	}
+	return multiplier;
+}
+
+// find the order of the most significant digit, precondition decimal is unpadded
+inline int findMsd(const decimal& v) {
+	int msd = int(v.size()) - 1;
+	if (msd == 0 && v.iszero()) return -1; // no significant digit found, all digits are zero
+	//assert(v.at(msd) != 0); // indicates the decimal wasn't unpadded
+	return msd;
+}
 
 bool less(const decimal& lhs, const decimal& rhs) {
 	// this logic assumes that there is no padding in the operands
@@ -118,6 +154,7 @@ bool lessOrEqual(const decimal& lhs, const decimal& rhs) {
 	// at this point we know the two operands are the same
 	return true;
 }
+
 // in-place addition (equivalent to +=)
 void add(decimal& lhs, const decimal& rhs) {
 	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
@@ -151,32 +188,6 @@ void add(decimal& lhs, const decimal& rhs) {
 		}
 	}
 	if (carry) lhs.push_back(1);
-}
-void convert_to_decimal(long long v, decimal& d) {
-	using namespace std;
-	d.setzero();
-	bool sign = false;
-	if (v == 0) return;
-	if (v < 0) {
-		sign = true; // negative number
-		// transform to sign-magnitude on positive side
-		v *= -1;
-	}
-	uint64_t mask = 0x1;
-	// IMPORTANT: can't use initializer or assignment operator as it would yield 
-	// an infinite loop calling convert_to_decimal. So we need to construct the
-	// decimal from first principals
-	decimal base; // can't use base(1) semantics here as it would cause an infinite loop
-	base.setdigit(1);
-	while (v) { // minimum loop iterations; exits when no bits left
-		if (v & mask) {
-			add(d, base);
-		}
-		add(base, base);
-		v >>= 1;
-	}
-	// finally set the sign
-	d.setsign(sign);
 }
 // in-place subtraction (equivalent to -=)
 void sub(decimal& lhs, const decimal& rhs) {
@@ -230,7 +241,6 @@ void sub(decimal& lhs, const decimal& rhs) {
 		lhs.setsign(sign);
 	}
 }
-
 // in-place multiplication (equivalent to *=)
 void mul(decimal& lhs, const decimal& rhs) {
 	// special case
@@ -284,38 +294,6 @@ void mul(decimal& lhs, const decimal& rhs) {
 	lhs = product;
 	lhs.setsign(signOfFinalResult);
 }
-
-// find largest multiplier
-decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
-	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
-	decimal one, remainder, multiplier;
-	one.setdigit(1);
-	remainder = lhs; remainder.setpos();
-	multiplier.setdigit(0);
-	for (int i = 0; i <= 11; ++i) {  // function works for 9 into 99, just as an aside
-		if (remainder.ispos() && !remainder.iszero()) {  // test for proper > 0
-			sub(remainder, rhs); //  remainder -= rhs;
-			add(multiplier, one);  // ++multiplier
-		}
-		else {
-			if (remainder.isneg()) {  // we went too far
-				sub(multiplier, one); // --multiplier
-			}
-			// else implies remainder is 0										
-			break;
-		}
-	}
-	return multiplier;
-}
-
-// find the order of the most significant digit, precondition decimal is unpadded
-inline int findMsd(const decimal& v) {
-	int msd = int(v.size()) - 1;
-	if (msd == 0 && v.iszero()) return -1; // no significant digit found, all digits are zero
-	//assert(v.at(msd) != 0); // indicates the decimal wasn't unpadded
-	return msd;
-}
-
 // integer division (equivalent to /=)
 decimal div(const decimal& _a, const decimal& _b) {
 	if (_b.iszero()) {
@@ -365,6 +343,33 @@ decimal div(const decimal& _a, const decimal& _b) {
 	return quotient;
 }
 
+// convert a native long long to a decimal representation
+void convert_to_decimal(long long v, decimal& d) {
+	using namespace std;
+	d.setzero();
+	bool sign = false;
+	if (v == 0) return;
+	if (v < 0) {
+		sign = true; // negative number
+		// transform to sign-magnitude on positive side
+		v *= -1;
+	}
+	uint64_t mask = 0x1;
+	// IMPORTANT: can't use initializer or assignment operator as it would yield 
+	// an infinite loop calling convert_to_decimal. So we need to construct the
+	// decimal from first principals
+	decimal base; // can't use base(1) semantics here as it would cause an infinite loop
+	base.setdigit(1);
+	while (v) { // minimum loop iterations; exits when no bits left
+		if (v & mask) {
+			add(d, base);
+		}
+		add(base, base);
+		v >>= 1;
+	}
+	// finally set the sign
+	d.setsign(sign);
+}
 // generate an ASCII decimal format and send to ostream
 inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 	// to make certain that setw and left/right operators work properly

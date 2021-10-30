@@ -3,6 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+
 #include <iostream>
 #include <string>
 // configure the integer arithmetic class
@@ -152,6 +154,19 @@ try {
 	std::cout << "4G  = " <<  4 * c << '\n';
 	std::cout << "8G  = " <<  8 * c << '\n';
 	std::cout << "16G = " << 16 * c << '\n';
+
+	{
+		constexpr size_t nbits = 128;
+		integer<nbits> c;
+		c.clear();
+		c.setbit(nbits - 1);
+		std::cout << "maxneg = " << to_binary(c) << '\n';
+		for (size_t i = 0; i < nbits; ++i) {
+			std::cout << c << " : " << to_triple(c) << '\n';
+			c /= 2;
+		}
+	}
+
 
 	std::cout << '\n';
 

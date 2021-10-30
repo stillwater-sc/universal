@@ -12,8 +12,20 @@
 #include <vector>
 #include <map>
 
-#include <universal/number/integer/exceptions.hpp>
+// supporting types and functions
 #include <universal/number/shared/specific_value_encoding.hpp>
+
+/*
+the integer arithmetic can be configured to:
+- throw exceptions on overflow
+- throw execptions on arithmetic
+
+you need the exception types defined, but you have the option to throw them
+ */
+#include <universal/number/integer/exceptions.hpp>
+
+ // composition types used by integer
+#include <universal/number/support/decimal.hpp>
 
 namespace sw::universal {
 
@@ -706,186 +718,6 @@ private:
 	friend signed findMsb(const integer<nnbits, BBlockType>& v);
 };
 
-// paired down implementation of a decimal type to generate decimal representations for integer<nbits, BlockType> types
-namespace impl {
-	// Decimal representation as a set of decimal digits with sign used for creating decimal representations of the integers
-class decimal : public std::vector<uint8_t> {
-public:
-	decimal() : sign{ false } {}
-	bool sign;
-	// remove any leading zeros from a decimal representation
-	void unpad() {
-		size_t n = size();
-		for (size_t i = n - 1; i > 0; --i) {
-			if (operator[](i) == 0u) pop_back();
-		}
-	}
-private:
-	friend std::ostream& operator<<(std::ostream& ostr, const decimal& d);
-};
-
-// generate an ASCII decimal format and send to ostream
-inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the integer into a string
-	std::stringstream ss;
-
-	//std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-	if (d.sign) ss << '-';
-	for (decimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
-		ss << (int)*rit;
-	}
-	return ostr << ss.str();
-}
-// forward reference
-void sub(decimal& lhs, const decimal& rhs);
-
-bool less(const decimal& lhs, const decimal& rhs) {
-	// this logic assumes that there is no padding in the operands
-	size_t l = lhs.size();
-	size_t r = rhs.size();
-	if (l < r) return true;
-	if (l > r) return false;
-	// numbers are the same size, need to compare magnitude
-	decimal::const_reverse_iterator ritl = lhs.rbegin();
-	decimal::const_reverse_iterator ritr = rhs.rbegin();
-	for (; ritl != lhs.rend() || ritr != rhs.rend(); ++ritl, ++ritr) {
-		if (*ritl < *ritr) return true;
-		if (*ritl > *ritr) return false;
-		// if the digits are equal we need to check the next set
-	}
-	// at this point we know the two operands are the same
-	return false;
-}
-void add(decimal& lhs, const decimal& rhs) {
-	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
-	if (lhs.sign != rhs.sign) {  // different signs
-		_rhs.sign = !rhs.sign;
-		return sub(lhs, _rhs);
-	}
-	else {
-		// same sign implies this->negative is invariant
-	}
-	size_t l = lhs.size();
-	size_t r = _rhs.size();
-	// zero pad the shorter decimal
-	if (l < r) {
-		lhs.insert(lhs.end(), r - l, 0);
-	}
-	else {
-		_rhs.insert(_rhs.end(), l - r, 0);
-	}
-	decimal::iterator lit = lhs.begin();
-	decimal::iterator rit = _rhs.begin();
-	char carry = 0;
-	for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
-		*lit += *rit + carry;
-		if (*lit > 9) {
-			carry = 1;
-			*lit -= 10;
-		}
-		else {
-			carry = 0;
-		}
-	}
-	if (carry) lhs.push_back(1);
-}
-void sub(decimal& lhs, const decimal& rhs) {
-	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
-	bool sign = lhs.sign;
-	if (lhs.sign != rhs.sign) {
-		_rhs.sign = !rhs.sign;
-		return add(lhs, _rhs);
-	}
-	// largest value must be subtracted from
-	size_t l = lhs.size();
-	size_t r = _rhs.size();
-	// zero pad the shorter decimal
-	if (l < r) {
-		lhs.insert(lhs.end(), r - l, 0);
-		std::swap(lhs, _rhs);
-		sign = !sign;
-	}
-	else if (r < l) {
-		_rhs.insert(_rhs.end(), l - r, 0);
-	}
-	else {
-		// the operands are the same size, thus we need to check their magnitude
-		if (less(lhs, _rhs)) {
-			std::swap(lhs, _rhs);
-			sign = !sign;
-		}
-	}
-	decimal::iterator lit = lhs.begin();
-	decimal::iterator rit = _rhs.begin();
-	uint8_t borrow = 0u;
-	for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
-		if (*rit > *lit - borrow) {
-			*lit = 10u + *lit - borrow - *rit;
-			borrow = 1u;
-		}
-		else {
-			*lit = *lit - borrow - *rit;
-			borrow = 0u;
-		}
-	}
-	if (borrow) std::cout << "can this happen?" << std::endl;
-	lhs.unpad();
-	lhs.sign = sign;
-}
-void mul(decimal& lhs, const decimal& rhs) {
-	bool signOfFinalResult = (lhs.sign != rhs.sign) ? true : false;
-	decimal product;
-	// find the smallest decimal to minimize the amount of work
-	size_t l = lhs.size();
-	size_t r = rhs.size();
-	decimal::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
-	if (l < r) {
-		int64_t position = 0;
-		for (sit = lhs.begin(); sit != lhs.end(); ++sit) {
-			decimal partial_sum;
-			partial_sum.insert(partial_sum.end(), r + position, 0);
-			decimal::iterator pit = partial_sum.begin() + position;
-			uint8_t carry = 0u;
-			for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
-				uint8_t digit = static_cast<uint8_t>(*sit * *bit + carry);
-				*pit = digit % 10u;
-				carry = digit / 10u;
-			}
-			if (carry) partial_sum.push_back(carry);
-			add(product, partial_sum);
-//			std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
-			++position;
-		}
-	}
-	else {
-		int64_t position = 0;
-		for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
-			decimal partial_sum;
-			partial_sum.insert(partial_sum.end(), l + position, 0);
-			decimal::iterator pit = partial_sum.begin() + position;
-			uint8_t carry = 0;
-			for (bit = lhs.begin(); bit != lhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
-				uint8_t digit = static_cast<uint8_t>(*sit * *bit + carry);
-				*pit = digit % 10u;
-				carry = digit / 10u;
-			}
-			if (carry) partial_sum.push_back(carry);
-			add(product, partial_sum);
-//			std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
-			++position;
-		}
-	}
-	product.unpad();
-	product.sign = signOfFinalResult;
-	lhs = product;
-}
-
-} // namespace impl
-
 ////////////////////////    INTEGER functions   /////////////////////////////////
 
 template<size_t nbits, typename BlockType>
@@ -907,23 +739,23 @@ std::string convert_to_decimal_string(const integer<nbits, BlockType>& value) {
 		return std::string("0");
 	}
 	integer<nbits, BlockType> number = value.sign() ? twos_complement(value) : value;
-	impl::decimal partial, multiplier;
-	partial.push_back(0); partial.sign = false;
-	multiplier.push_back(1); multiplier.sign = false;
+	support::decimal partial, multiplier;
+	partial.setzero();
+	multiplier.setdigit(1);
 	// convert integer to decimal by adding and doubling multipliers
 	for (unsigned i = 0; i < nbits; ++i) {
 		if (number.at(i)) {
-			impl::add(partial, multiplier);
+			support::add(partial, multiplier);
 			// std::cout << partial << std::endl;
 		}
-		impl::add(multiplier, multiplier);
+		support::add(multiplier, multiplier);
 	}
-	std::stringstream ss;
-	if (value.sign()) ss << '-';
-	for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		ss << (int)*rit;
+	std::stringstream str;
+	if (value.sign()) str << '-';
+	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		str << (int)*rit;
 	}
-	return ss.str();
+	return str.str();
 }
 
 // findMsb takes an integer<nbits, BlockType> reference and returns the position of the most significant bit, -1 if v == 0
@@ -1263,27 +1095,27 @@ inline bool operator>=(const integer<nbits, BlockType>& lhs, const integer<nbits
 // integer - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<size_t nbits, typename BlockType>
-inline bool operator==(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline bool operator==(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator==(lhs, integer<nbits, BlockType>(rhs));
 }
 template<size_t nbits, typename BlockType>
-inline bool operator!=(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline bool operator!=(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return !operator==(lhs, rhs);
 }
 template<size_t nbits, typename BlockType>
-inline bool operator< (const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline bool operator< (const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator<(lhs, integer<nbits, BlockType>(rhs));
 }
 template<size_t nbits, typename BlockType>
-inline bool operator> (const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline bool operator> (const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator< (integer<nbits, BlockType>(rhs), lhs);
 }
 template<size_t nbits, typename BlockType>
-inline bool operator<=(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline bool operator<=(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 template<size_t nbits, typename BlockType>
-inline bool operator>=(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline bool operator>=(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -1292,27 +1124,27 @@ inline bool operator>=(const integer<nbits, BlockType>& lhs, const long long rhs
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
 template<size_t nbits, typename BlockType>
-inline bool operator==(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline bool operator==(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator==(integer<nbits, BlockType>(lhs), rhs);
 }
 template<size_t nbits, typename BlockType>
-inline bool operator!=(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline bool operator!=(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return !operator==(lhs, rhs);
 }
 template<size_t nbits, typename BlockType>
-inline bool operator< (const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline bool operator< (long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator<(integer<nbits, BlockType>(lhs), rhs);
 }
 template<size_t nbits, typename BlockType>
-inline bool operator> (const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline bool operator> (long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator< (rhs, lhs);
 }
 template<size_t nbits, typename BlockType>
-inline bool operator<=(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline bool operator<=(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 template<size_t nbits, typename BlockType>
-inline bool operator>=(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline bool operator>=(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -1381,84 +1213,84 @@ inline integer<nbits, BlockType> operator^(const integer<nbits, BlockType>& lhs,
 // integer - literal binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator+(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline integer<nbits, BlockType> operator+(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator+(lhs, integer<nbits, BlockType>(rhs));
 }
 // BINARY SUBTRACTION
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator-(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline integer<nbits, BlockType> operator-(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator-(lhs, integer<nbits, BlockType>(rhs));
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator*(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline integer<nbits, BlockType> operator*(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator*(lhs, integer<nbits, BlockType>(rhs));
 }
 // BINARY DIVISION
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator/(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline integer<nbits, BlockType> operator/(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator/(lhs, integer<nbits, BlockType>(rhs));
 }
 // BINARY REMAINDER
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator%(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline integer<nbits, BlockType> operator%(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator%(lhs, integer<nbits, BlockType>(rhs));
 }
 // BINARY BIT-WISE AND
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator&(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline integer<nbits, BlockType> operator&(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator&(lhs, integer<nbits, BlockType>(rhs));
 }
 // BINARY BIT-WISE OR
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator|(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline integer<nbits, BlockType> operator|(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator|(lhs, integer<nbits, BlockType>(rhs));
 }
 // BINARY BIT-WISE XOR
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator^(const integer<nbits, BlockType>& lhs, const long long rhs) {
+inline integer<nbits, BlockType> operator^(const integer<nbits, BlockType>& lhs, long long rhs) {
 	return operator^(lhs, integer<nbits, BlockType>(rhs));
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - integer binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator+(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline integer<nbits, BlockType> operator+(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator+(integer<nbits, BlockType>(lhs), rhs);
 }
 // BINARY SUBTRACTION
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator-(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline integer<nbits, BlockType> operator-(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator-(integer<nbits, BlockType>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator*(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline integer<nbits, BlockType> operator*(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator*(integer<nbits, BlockType>(lhs), rhs);
 }
 // BINARY DIVISION
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator/(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline integer<nbits, BlockType> operator/(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator/(integer<nbits, BlockType>(lhs), rhs);
 }
 // BINARY REMAINDER
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator%(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline integer<nbits, BlockType> operator%(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator%(integer<nbits, BlockType>(lhs), rhs);
 }
 // BINARY BIT-WISE AND
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator&(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline integer<nbits, BlockType> operator&(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator&(integer<nbits, BlockType>(lhs), rhs);
 }
 // BINARY BIT-WISE OR
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator|(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline integer<nbits, BlockType> operator|(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator|(integer<nbits, BlockType>(lhs), rhs);
 }
 // BINARY BIT-WISE XOR
 template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator^(const long long lhs, const integer<nbits, BlockType>& rhs) {
+inline integer<nbits, BlockType> operator^(long long lhs, const integer<nbits, BlockType>& rhs) {
 	return operator^(integer<nbits, BlockType>(lhs), rhs);
 }
 

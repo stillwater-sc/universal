@@ -13,7 +13,7 @@
 #include <map>
 #include <cassert>
 
- // supportint types and functions
+// supporting types and functions
 #include <universal/native/ieee754.hpp>   // IEEE-754 decoders
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/native/integers.hpp>   // manipulators for native integer types
@@ -31,8 +31,10 @@ operators will be much faster than saturation.
 
 Compile-time configuration flags are used to select the exception mode.
 Run-time configuration is used to select modular vs saturation arithmetic.
+
+You need the exception types defined, but you have the option to throw them
 */
-#include <universal/number/fixpnt/exceptions.hpp>  // you need the exception types defined, but you may not throw them
+#include <universal/number/fixpnt/exceptions.hpp>  // 
 
 // composition types used by fixpnt
 #include <universal/internal/blockbinary/blockbinary.hpp>
@@ -2315,18 +2317,18 @@ namespace support {
 // convert fixpnt to decimal string, i.e. "-1234.5678"
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>& value) {
-	std::stringstream ss;
+	std::stringstream str;
 	if (value.iszero()) {
-		ss << '0';
+		str << '0';
 		if constexpr (rbits > 0) {
-			ss << '.';
+			str << '.';
 			for (size_t i = 0; i < rbits; ++i) {
-				ss << '0';
+				str << '0';
 			}
 		}
-		return ss.str();
+		return str.str();
 	}
-	if (value.sign()) ss << '-';
+	if (value.sign()) str << '-';
 	support::decimal partial, multiplier;
 	fixpnt<nbits, rbits, arithmetic, bt> number;
 	number = value.sign() ? sw::universal::twosComplement(value) : value;
@@ -2342,15 +2344,15 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 			support::add(multiplier, multiplier);
 		}
 		for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-			ss << (int)*rit;
+			str << (int)*rit;
 		}
 	}
 	else {
-		ss << '0';
+		str << '0';
 	}
 
 	if constexpr (rbits > 0) {
-		ss << ".";
+		str << ".";
 		// and secondly, the fraction part
 		support::decimal range, discretizationLevels, step;
 		// create the decimal range we are discretizing
@@ -2378,19 +2380,19 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 		// The partial represents the parts in the range, so we can deduce
 		// the number of leading zeros by comparing to the length of range
 		size_t nrLeadingZeros = range.size() - partial.size() - 1;
-		for (size_t i = 0; i < nrLeadingZeros; ++i) ss << '0';
+		for (size_t i = 0; i < nrLeadingZeros; ++i) str << '0';
 		size_t digitsWritten = nrLeadingZeros;
 		for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-			ss << (int)*rit;
+			str << (int)*rit;
 			++digitsWritten;
 		}
 		if (digitsWritten < rbits) { // deal with trailing 0s
 			for (size_t i = digitsWritten; i < rbits; ++i) {
-				ss << '0';
+				str << '0';
 			}
 		}
 	}
-	return ss.str();
+	return str.str();
 }
 
 // read an ASCII format and make a binary fixpnt out of it: TBD
