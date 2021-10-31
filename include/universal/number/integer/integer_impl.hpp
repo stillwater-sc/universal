@@ -255,7 +255,7 @@ public:
 			// cast up so we can test for overflow
 			uint16_t l = uint16_t(b[i]);
 			uint16_t r = uint16_t(rhs.b[i]);
-			uint16_t s = l + r + (carry ? uint16_t(0x0001) : uint16_t(0x0000));
+			uint16_t s = static_cast<uint16_t>(l + r + static_cast<uint16_t>(carry ? uint16_t(0x0001) : uint16_t(0x0000)));
 			carry = (s > 255 ? true : false);
 			sum.b[i] = (uint8_t)(s & 0xFF);
 		}
@@ -474,9 +474,9 @@ public:
 	// pure bit copy of source integer, no sign extension
 	template<size_t src_nbits>
 	inline constexpr void bitcopy(const integer<src_nbits, BlockType>& src) {
-		int lastByte = (nrBytes < src.nrBytes ? nrBytes : src.nrBytes);
+		unsigned lastByte = (nrBytes < src.nrBytes ? nrBytes : src.nrBytes);
 		clear();
-		for (int i = 0; i < lastByte; ++i) {
+		for (unsigned i = 0; i < lastByte; ++i) {
 			b[i] = src.byte(i);
 		}
 		b[MS_BYTE] = static_cast<uint8_t>(b[MS_BYTE] & MS_BYTE_MASK); // assert precondition of properly nulled leading non-bits
@@ -572,9 +572,7 @@ public:
 	template<typename Real>
 	constexpr integer& convert_ieee(Real rhs) noexcept {
 		clear();
-		long long base = static_cast<long long>(rhs);
-		*this = base;
-		return *this;
+		return *this = static_cast<long long>(rhs); // TODO: this clamps the IEEE range to +-2^63
 	}
 
 protected:
@@ -839,10 +837,10 @@ idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>& _a, const integer
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
 			accumulator -= subtractand;
-			divresult.quot.setbit(i);
+			divresult.quot.setbit(static_cast<size_t>(i));
 		}
 		else {
-			divresult.quot.setbit(i, false);
+			divresult.quot.setbit(static_cast<size_t>(i), false);
 		}
 		subtractand >>= 1;
 //		std::cout << "i = " << i << " subtractand : " << subtractand << '\n';

@@ -522,12 +522,26 @@ protected:
 		return *this;
 	}
 	template<typename Ty>
-	decimal& convert_ieee754(Ty& rhs) {
+	decimal& convert_ieee754(Ty rhs) {
 		if (rhs < 0.5 && rhs > -0.5) {
 			return *this = 0;
 		}
 		else {
-
+			this->negative = false;
+			if (rhs < 0.0) { this->negative = true; rhs = -rhs; }
+			double_decoder decoder;
+			decoder.d = double(rhs);  // ignore long double
+			int scale = int(decoder.parts.exponent) - 1023;
+			constexpr uint64_t hidden_bit = (uint64_t(1) << 51);
+			uint64_t bits = decoder.parts.fraction | hidden_bit;
+			if (scale < 51) {
+				bits >>= (51ll - scale);
+				*this = bits;
+			}
+			else {
+				scale -= 51;
+				*this = bits;
+			}
 		}
 		return *this;
 	}
