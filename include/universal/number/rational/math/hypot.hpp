@@ -48,8 +48,10 @@ rational hypotf(rational x, rational y) {
 	return rational(std::hypotf(float(x),float(y)));
 }
 
+#if LONG_DOUBLE_SUPPORT
 rational hypotl(rational x, rational y) {
 	return rational(std::hypotl((long double)(x),(long double)(y)));
 }
+#endif
 
 }  // namespace sw::universal

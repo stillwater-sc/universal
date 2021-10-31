@@ -36,7 +36,6 @@ decimal quotient(const decimal&, const decimal&);
 decimal remainder(const decimal&, const decimal&);
 int findMsd(const decimal&);
 
-
 /// <summary>
 /// Adaptive precision decimal number type
 /// </summary>
@@ -56,19 +55,19 @@ public:
 	decimal& operator=(decimal&&) = default;
 
 	// initializers for native types
-	decimal(char initial_value) { *this = initial_value; }
-	decimal(short initial_value) { *this = initial_value; }
-	decimal(int initial_value) { *this = initial_value; }
-	decimal(long initial_value) { *this = initial_value; }
-	decimal(long long initial_value) { *this = initial_value; }
-	decimal(unsigned char initial_value) { *this = initial_value; }
-	decimal(unsigned short initial_value) { *this = initial_value; }
-	decimal(unsigned int initial_value) { *this = initial_value; }
-	decimal(unsigned long initial_value) { *this = initial_value; }
-	decimal(unsigned long long initial_value) { *this = initial_value; }
-	decimal(float initial_value) { *this = initial_value; }
-	decimal(double initial_value) { *this = initial_value; }
-	decimal(long double initial_value) { *this = initial_value; }
+	decimal(char initial_value)                { *this = initial_value; }
+	decimal(short initial_value)               { *this = initial_value; }
+	decimal(int initial_value)                 { *this = initial_value; }
+	decimal(long initial_value)                { *this = initial_value; }
+	decimal(long long initial_value)           { *this = initial_value; }
+	decimal(unsigned char initial_value)       { *this = initial_value; }
+	decimal(unsigned short initial_value)      { *this = initial_value; }
+	decimal(unsigned int initial_value)        { *this = initial_value; }
+	decimal(unsigned long initial_value)       { *this = initial_value; }
+	decimal(unsigned long long initial_value)  { *this = initial_value; }
+	decimal(float initial_value)               { *this = initial_value; }
+	decimal(double initial_value)              { *this = initial_value; }
+
 
 	// assignment operators for native types
 	decimal& operator=(const std::string& digits) {
@@ -87,7 +86,11 @@ public:
 	decimal& operator=(unsigned long long rhs) { return convert_integer(rhs);}
 	decimal& operator=(float rhs)              { return convert_ieee754(rhs);}
 	decimal& operator=(double rhs)             { return convert_ieee754(rhs);}
-	decimal& operator=(long double rhs)        { return convert_ieee754(rhs);}
+
+#if LONG_DOUBLE_SUPPORT
+	decimal(long double initial_value)         { *this = initial_value; }
+	decimal& operator=(long double rhs)        { return convert_ieee754(rhs); }
+#endif
 
 	// arithmetic operators
 	decimal& operator+=(const decimal& rhs) {
@@ -523,24 +526,53 @@ protected:
 	}
 	template<typename Ty>
 	decimal& convert_ieee754(Ty rhs) {
-		if (rhs < 0.5 && rhs > -0.5) {
+		clear();
+		if (rhs <= 0.5 && rhs >= -0.5) {
 			return *this = 0;
 		}
 		else {
-			this->negative = false;
-			if (rhs < 0.0) { this->negative = true; rhs = -rhs; }
-			double_decoder decoder;
-			decoder.d = double(rhs);  // ignore long double
-			int scale = int(decoder.parts.exponent) - 1023;
-			constexpr uint64_t hidden_bit = (uint64_t(1) << 51);
-			uint64_t bits = decoder.parts.fraction | hidden_bit;
-			if (scale < 51) {
-				bits >>= (51ll - scale);
-				*this = bits;
+			if (rhs < -0.5) negative = true; else negative = false;
+
+			bool s{ false };
+			uint64_t unbiasedExponent{ 0 };
+			uint64_t raw{ 0 };
+			extractFields(rhs, s, unbiasedExponent, raw);
+			// TODO: subnormals
+
+			raw |= (1ull << ieee754_parameter<Ty>::fbits); // add in the hidden bit
+			// scale up by fbits, convert, and then scale back
+			uint64_t mask = 0x1;
+			decimal base; // can't use base(1) semantics here as it would cause an infinite loop
+			base[0] = 1;
+//			int i = 0;
+			while (raw) { // minimum loop iterations; exits when no bits left
+//				std::cout << std::setw(3) << i++ << "  base : " << base << '\n';
+				if (raw & mask) {
+					*this += base;
+				}
+				base += base;
+				raw >>= 1;
+			}
+//			std::cout << "upconversion : " << *this << " : final bit value: " << base << '\n';
+			int scale = static_cast<int>(unbiasedExponent) - ieee754_parameter<Ty>::bias; // original scale of the number
+			int upScale = ieee754_parameter<Ty>::fbits;
+			int correction = upScale - scale;
+//			std::cout << "correction = " << correction << " scale = " << scale << " upscale = " << upScale << '\n';
+			if (correction >= 0) {
+				decimal downConvert;
+				downConvert[0] = 1;
+				for (int i = 0; i < correction; ++i) downConvert += downConvert;
+//				std::cout << "downConvert : " << downConvert << '\n';
+				// divide the factor out
+				*this /= downConvert;
 			}
 			else {
-				scale -= 51;
-				*this = bits;
+				decimal upConvert;
+				upConvert[0] = 1;
+				for (int i = 0; i < -correction; ++i) upConvert += upConvert;
+//				std::cout << "upConvert : " << upConvert << '\n';
+				// multiply to add the missing factor
+				*this *= upConvert;
 			}
 		}
 		return *this;

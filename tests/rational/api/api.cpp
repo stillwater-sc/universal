@@ -44,6 +44,14 @@ try {
 
 #if MANUAL_TESTING
 
+	using Rational = sw::universal::rational;
+
+	Rational a, b, c;
+	a = 1;
+	b = 2;
+	c = a / b;
+
+	std::cout << a << " / " << b << " = " << c << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

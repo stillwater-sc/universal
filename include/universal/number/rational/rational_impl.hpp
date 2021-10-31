@@ -58,7 +58,7 @@ public:
 	rational(unsigned long long initial_value) { *this = initial_value; }
 	rational(float initial_value)              { *this = initial_value; }
 	rational(double initial_value)             { *this = initial_value; }
-	rational(long double initial_value)        { *this = initial_value; }
+
 
 	// assignment operators for native types
 	rational& operator=(const std::string& digits) {
@@ -76,8 +76,12 @@ public:
 	rational& operator=(unsigned long rhs)      { return convert_integer(rhs); }
 	rational& operator=(unsigned long long rhs) { return convert_integer(rhs); }
 	rational& operator=(float rhs)              { return convert_ieee754(rhs); }
-	rational& operator=(double rhs)             { return convert_ieee754(rhs);	}
+	rational& operator=(double rhs)             { return convert_ieee754(rhs); }
+
+#if LONG_DOUBLE_SUPPORT
+	rational(long double initial_value) { *this = initial_value; }
 	rational& operator=(long double rhs)        { return convert_ieee754(rhs); }
+#endif
 
 	// arithmetic operators
 	rational& operator+=(const rational& rhs) {
@@ -260,6 +264,7 @@ protected:
 		if (rhs < 0) negative = true; else negative = false;
 		denominator = 1;
 		numerator = rhs;
+		return *this;
 	}
 	template<typename Ty>
 	rational& convert_ieee754(Ty& rhs) {
