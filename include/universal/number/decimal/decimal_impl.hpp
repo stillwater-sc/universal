@@ -18,37 +18,7 @@
 #include <universal/string/strmanip.hpp>
 #include <universal/number/decimal/exceptions.hpp>
 
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
-// occurrence is NOT an official API for any of the Universal number systems
+// ALPHA feature: occurrence is NOT an official API for any of the Universal number systems
 #if !defined(DECIMAL_OPERATIONS_COUNT)
 #define DECIMAL_OPERATIONS_COUNT 0
 #endif
@@ -65,7 +35,7 @@ struct decintdiv;
 decimal quotient(const decimal&, const decimal&);
 decimal remainder(const decimal&, const decimal&);
 int findMsd(const decimal&);
-template<typename Ty> decimal& convert_to_decimal(Ty, decimal&);
+
 
 /// <summary>
 /// Adaptive precision decimal number type
@@ -105,45 +75,19 @@ public:
 		parse(digits);
 		return *this;
 	}
-	decimal& operator=(char rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(short rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(int rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(long rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(long long rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(unsigned char rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(unsigned short rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(unsigned int rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(unsigned long rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(unsigned long long rhs) {
-		return convert_to_decimal(rhs, *this);
-	}
-	decimal& operator=(float rhs) {
-		return float_assign(rhs);
-	}
-	decimal& operator=(double rhs) {
-		return float_assign(rhs);
-	}
-	decimal& operator=(long double rhs) {
-		return float_assign(rhs);
-	}
+	decimal& operator=(char rhs)               { return convert_integer(rhs);}
+	decimal& operator=(short rhs)              { return convert_integer(rhs);}
+	decimal& operator=(int rhs)                { return convert_integer(rhs);}
+	decimal& operator=(long rhs)               { return convert_integer(rhs);}
+	decimal& operator=(long long rhs)          { return convert_integer(rhs);}
+	decimal& operator=(unsigned char rhs)      { return convert_integer(rhs);}
+	decimal& operator=(unsigned short rhs)     { return convert_integer(rhs);}
+	decimal& operator=(unsigned int rhs)       { return convert_integer(rhs);}
+	decimal& operator=(unsigned long rhs)      { return convert_integer(rhs);}
+	decimal& operator=(unsigned long long rhs) { return convert_integer(rhs);}
+	decimal& operator=(float rhs)              { return convert_ieee754(rhs);}
+	decimal& operator=(double rhs)             { return convert_ieee754(rhs);}
+	decimal& operator=(long double rhs)        { return convert_ieee754(rhs);}
 
 	// arithmetic operators
 	decimal& operator+=(const decimal& rhs) {
@@ -543,27 +487,47 @@ protected:
 		return ld;
 	}
 
+	// Convert integer types to a decimal representation
+// TODO: needs SFINAE enable_if to constrain it to native integer types
 	template<typename Ty>
-	decimal& float_assign(Ty& rhs) {
+	decimal& convert_integer(Ty v) {
+		using namespace std;
+		//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
+		bool sign = false;
+		setzero(); // initialize the decimal value to 0
+		if (v == 0) return *this;
+		if (numeric_limits<Ty>::is_signed) {
+			if (v < 0) {
+				sign = true; // negative number
+				// transform to sign-magnitude on positive side
+				v *= Ty(-1);
+			}
+		}
+		uint64_t mask = 0x1;
+		// IMPORTANT: can't use initializer or assignment operator as it would yield 
+		// an infinite loop calling convert_integer. So we need to construct the
+		// decimal from first principals
+		decimal base; // can't use base(1) semantics here as it would cause an infinite loop
+		base.clear();
+		base.push_back(1);
+		while (v) { // minimum loop iterations; exits when no bits left
+			if (v & mask) {
+				*this += base;
+			}
+			base += base;
+			v >>= 1;
+		}
+		// lastly, set the sign
+		setsign(sign);
+		return *this;
+	}
+	template<typename Ty>
+	decimal& convert_ieee754(Ty& rhs) {
 		if (rhs < 0.5 && rhs > -0.5) {
 			return *this = 0;
 		}
 		else {
-			this->negative = false;
-			if (rhs < 0.0) { this->negative = true; rhs = -rhs; }
-			double_decoder decoder;
-			decoder.d = rhs;
-			int scale = int(decoder.parts.exponent) - 1023;
-			constexpr uint64_t hidden_bit = (uint64_t(1) << 51);
-			uint64_t bits = decoder.parts.fraction | hidden_bit;
-			if (scale < 51) {
-				bits >>= (51ll - scale);
-				*this = bits;
-			}
-			else {
-				scale -= 51;
-				*this = bits;
-			}
+
 		}
 		return *this;
 	}
@@ -592,41 +556,6 @@ inline int findMsd(const decimal& v) {
 	if (msd == 0 && v == 0) return -1; // no significant digit found, all digits are zero
 	assert(v.at(static_cast<size_t>(msd)) != 0); // indicates the decimal wasn't unpadded
 	return msd;
-}
-
-// Convert integer types to a decimal representation
-// TODO: needs SFINAE enable_if to constrain it to native integer types
-template<typename Ty>
-decimal& convert_to_decimal(Ty v, decimal& d) {
-	using namespace std;
-	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
-	bool sign = false;
-	d.setzero(); // initialize the decimal value to 0
-	if (v == 0) return d;
-	if (numeric_limits<Ty>::is_signed) {
-		if (v < 0) {
-			sign = true; // negative number
-			// transform to sign-magnitude on positive side
-			v *= Ty(-1);
-		}
-	}
-	uint64_t mask = 0x1;
-	// IMPORTANT: can't use initializer or assignment operator as it would yield 
-	// an infinite loop calling convert_to_decimal. So we need to construct the
-	// decimal from first principals
-	decimal base; // can't use base(1) semantics here as it would cause an infinite loop
-	base.clear();
-	base.push_back(1);
-	while (v) { // minimum loop iterations; exits when no bits left
-		if (v & mask) {
-			d += base;
-		}
-		base += base;
-		v >>= 1;
-	}
-	// finally set the sign
-	d.setsign(sign);
-	return d;
 }
 
 

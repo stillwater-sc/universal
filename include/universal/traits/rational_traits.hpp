@@ -1,5 +1,5 @@
 #pragma once
-//  fixpnt_traits.hpp : traits for fixed-point number systems
+//  rational_traits.hpp : traits for rational number systems
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -8,22 +8,22 @@
 
 namespace sw::universal {
 
-	// define a trait for fixed-point types
+	// define a trait for the rational number system type
 	template<typename _Ty>
-	struct is_fixpnt_trait
+	struct is_rational_trait
 		: false_type
 	{
 	};
-	template<size_t nbits, size_t rbits>
-	struct is_fixpnt_trait< sw::universal::fixpnt<nbits, rbits> >
+	template<>
+	struct is_rational_trait< sw::universal::rational >
 		: true_type
 	{
 	};
 
 	template<typename _Ty>
-	constexpr bool is_fixpnt = is_fixpnt_trait<_Ty>::value;
+	constexpr bool is_rational = is_rational_trait<_Ty>::value;
 
 	template<typename _Ty, typename Type = void>
-	using enable_if_fixpnt = std::enable_if_t<is_fixpnt<_Ty>, Type>;
+	using enable_if_rational = std::enable_if_t<is_rational<_Ty>, Type>;
 
 } // namespace sw::universal

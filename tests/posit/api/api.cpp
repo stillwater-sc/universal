@@ -29,11 +29,18 @@ try {
 	std::cout << "posit class interface tests\n";
 
 	{
-		posit<16, 2> a(1.03125f);
-		std::cout << convert_to_decimal_string(a) << '\n';
+		posit<16, 2> a;
+		a = 0.5f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.0f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.5f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.0625f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
 	}
 
-
+	return 0;
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
 

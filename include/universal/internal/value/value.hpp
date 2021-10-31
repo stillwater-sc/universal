@@ -542,7 +542,12 @@ private:
 
 template<size_t fbits>
 inline std::string convert_to_decimal_string(const value<fbits>& v) {
+	std::cout << to_triple(v) << '\n';
+	auto scale = v.scale();
 	auto bits = v.fraction();
+	// construct the value of the hidden bit
+	support::decimal bitValue;
+
 	// construct the value of the fraction
 	support::decimal range, discretizationLevels, step, partial, multiplier, one;
 	// create the decimal range we are discretizing
@@ -557,18 +562,26 @@ inline std::string convert_to_decimal_string(const value<fbits>& v) {
 	// now construct the value of this range by adding the fraction samples
 	partial.setzero();
 	multiplier.setdigit(1);
-	one.setdigit(1); // the hidden bit
 	// convert the fraction part
 	for (unsigned i = 0; i < fbits; ++i) {
-		if (bits.at(i)) {
+		std::cout << multiplier << '\n';
+		if (bits[i]) {
 			support::add(partial, multiplier);
+			std::cout << "-> " << partial << '\n';
 		}
 		support::add(multiplier, multiplier);
 	}
+	support::add(partial, multiplier);
+	std::cout << "hb " << partial << '\n';
+
 	support::mul(partial, step);
-	support::add(partial, one);
+	std::cout << partial << '\n';
 
 	std::stringstream str;
+	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		str << (int)*rit;
+	}
+#ifdef REV
 	// leading 0s will cause the partial to be represented incorrectly
 	// if we simply convert it to digits.
 	// The partial represents the parts in the range, so we can deduce
@@ -585,6 +598,7 @@ inline std::string convert_to_decimal_string(const value<fbits>& v) {
 			str << '0';
 		}
 	}
+#endif
 	return str.str();
 }
 ////////////////////// VALUE operators

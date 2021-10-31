@@ -3,9 +3,12 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/internal/bitblock/bitblock.hpp>  // TODO: remove: should not have an internal type in the public interface
-#include <universal/internal/value/value.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/utility/directives.hpp>
+// configure the value<> environment
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/internal/value/value.hpp>  // INTERNAL class: not part of the public Universal API
+#include <universal/verification/test_suite.hpp>
 
 using namespace sw::universal::internal;
 
@@ -38,14 +41,27 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
-	bool bReportIndividualTestCases = true;
+	std::string test_suite = "value class API";
+	std::string test_tag = "value";
+	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
+	bool bReportIndividualTestCases = false;
 
-	// API tests for value class
-	std::cout << "\nvalue API tests\n";
 	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
+
+	{
+		value<4> a;
+		a = 0.5f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.0f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.5f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.0625f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+	}
 
 	// assignment
 	{
@@ -94,7 +110,7 @@ try {
 	}
 
 	{
-		float f = 1.23456789;
+		float f = 1.23456789f;
 		auto components = ieee_components(f);
 		std::cout << std::get<0>(components) << ", " << std::get<1>(components) << ", " << std::get<2>(components) << '\n';
 	}
@@ -105,6 +121,8 @@ try {
 		std::cout << std::get<0>(components) << ", " << std::get<1>(components) << ", " << std::get<2>(components) << '\n';
 	}
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
@@ -123,12 +141,9 @@ try {
 
 #endif
 
-#endif // MANUAL_TESTING
-
-	if (nrOfFailedTestCases > 0) std::cout << "FAIL"; else std::cout << "PASS";
-
-	std::cout.flush();
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

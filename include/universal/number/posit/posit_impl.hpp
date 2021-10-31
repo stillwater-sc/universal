@@ -1735,7 +1735,7 @@ inline std::string convert_to_decimal_string(const posit<nbits, es>& p) {
 
 
 	std::stringstream str;
-	str << v;
+	str << convert_to_decimal_string(v);
 	return str.str();
 }
 

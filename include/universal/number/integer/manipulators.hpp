@@ -8,16 +8,16 @@
 
 namespace sw::universal {
 
-	// Generate a type tag for general integer
-	template<size_t nbits, typename bt>
-	std::string type_tag(const integer<nbits, bt>& v) {
-		std::stringstream str;
-		if (v.iszero()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
-		str << "integer<"
-			<< std::setw(4) << nbits << ", "
-			<< typeid(bt).name() << '>';
-		return str.str();
-	}
+// Generate a type tag for general integer
+template<size_t nbits, typename bt>
+std::string type_tag(const integer<nbits, bt>& v) {
+	std::stringstream str;
+	if (v.iszero()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
+	str << "integer<"
+	    << std::setw(4) << nbits << ", "
+	    << typeid(bt).name() << '>';
+	return str.str();
+}
 
 // return in triple form (sign, scale, fraction)
 template<size_t nbits, typename bt>
