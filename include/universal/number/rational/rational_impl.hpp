@@ -85,20 +85,45 @@ public:
 
 	// arithmetic operators
 	rational& operator+=(const rational& rhs) {
+		if (rhs.negative) return *this -= rhs;
+		if (denominator == rhs.denominator) {
+			numerator += rhs.numerator;
+		}
+		else {
+			decimal a = numerator * rhs.denominator + denominator * rhs.numerator;
+			decimal b = denominator * rhs.denominator;
+			numerator = a;
+			denominator = b;
+		}
 		return *this;
 	}
 	rational& operator-=(const rational& rhs) {
+		if (rhs.negative) return *this += rhs;
+		if (denominator == rhs.denominator) {
+			numerator -= rhs.numerator;
+		}
+		else {
+			decimal a = numerator * rhs.denominator - denominator * rhs.numerator;
+			decimal b = denominator * rhs.denominator;
+			numerator = a;
+			denominator = b;
+		}
 		return *this;
 	}
 	rational& operator*=(const rational& rhs) {
+		numerator   *= rhs.numerator;
+		denominator *= rhs.denominator;
+		negative = (negative && rhs.negative) || (!negative && !rhs.negative);
 		return *this;
 	}
 	rational& operator/=(const rational& rhs) {
+		std::cout << *this << " " << rhs << '\n';
+		numerator   *= rhs.denominator;
+		denominator *= rhs.numerator;
+		negative = (negative && rhs.negative) || (!negative && !rhs.negative);
 		return *this;
 	}
-	rational& operator%=(const rational& rhs) {
-		return *this;
-	}
+
 	rational& operator<<=(int shift) {
 		return *this;
 	}
@@ -348,12 +373,7 @@ inline rational operator/(const rational& lhs, const rational& rhs) {
 	ratio /= rhs;
 	return ratio;
 }
-// binary remainder of rational numbers
-inline rational operator%(const rational& lhs, const rational& rhs) {
-	rational remainder = lhs;
-	remainder %= rhs;
-	return remainder;
-}
+
 // binary left shift
 inline rational operator<<(const rational& lhs, int shift) {
 	rational d(lhs);

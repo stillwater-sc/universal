@@ -46,12 +46,21 @@ try {
 
 	using Rational = sw::universal::rational;
 
-	Rational a, b, c;
+	Rational a, b, c, d;
 	a = 1;
 	b = 2;
 	c = a / b;
 
 	std::cout << a << " / " << b << " = " << c << '\n';
+	b = 3;
+	d = a / b;
+	std::cout << a << " / " << b << " = " << d << '\n';
+	a = c;
+	b = d;
+
+	c = a / b;
+	std::cout << a << " / " << b << " = " << c << '\n';
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
