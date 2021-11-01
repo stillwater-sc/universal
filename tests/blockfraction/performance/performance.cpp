@@ -87,7 +87,7 @@ void TestBlockPerformanceOnShift() {
 
 // Generic set of adds and subtracts for a given number system type
 template<typename Scalar>
-void BFAdditionWorkload(uint64_t NR_OPS) {
+void BFAdditionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
@@ -95,14 +95,14 @@ void BFAdditionWorkload(uint64_t NR_OPS) {
 	a.setradix(nbits);
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
+	for (size_t i = 0; i < NR_OPS; ++i) {
 		c.add(a, b);
 		d = c;
 	}
 }
 
 template<typename Scalar>
-void BFSubtractionWorkload(uint64_t NR_OPS) {
+void BFSubtractionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
@@ -110,14 +110,14 @@ void BFSubtractionWorkload(uint64_t NR_OPS) {
 	a.setradix(nbits);
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
+	for (size_t i = 0; i < NR_OPS; ++i) {
 		c.sub(a, b);
 		d = c;
 	}
 }
 
 template<typename Scalar>
-void BFMultiplicationWorkload(uint64_t NR_OPS) {
+void BFMultiplicationWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
@@ -126,7 +126,7 @@ void BFMultiplicationWorkload(uint64_t NR_OPS) {
 	Scalar c, d;
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
+	for (size_t i = 0; i < NR_OPS; ++i) {
 		c.mul(a, b);
 		c.clear(); // reset to zero so d = c is fast
 		d = c;
@@ -134,7 +134,7 @@ void BFMultiplicationWorkload(uint64_t NR_OPS) {
 }
 
 template<typename Scalar>
-void BFDivisionWorkload(uint64_t NR_OPS) {
+void BFDivisionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
@@ -143,7 +143,7 @@ void BFDivisionWorkload(uint64_t NR_OPS) {
 	Scalar c, d;
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
+	for (size_t i = 0; i < NR_OPS; ++i) {
 		c.div(a, b);
 		c.clear(); // reset to zero so d = c is fast
 		d = c;

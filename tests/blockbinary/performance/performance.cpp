@@ -27,9 +27,9 @@ namespace sw::universal::bb {
 
 	// blockbinary construction workload
 	template<typename BlockbinaryConfiguration>
-	void ConstructionPerformanceWorkload(uint64_t NR_OPS) {
+	void ConstructionPerformanceWorkload(size_t NR_OPS) {
 		int positives{ 0 }, negatives{ 0 };
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
+		for (size_t i = 0; i < NR_OPS; ++i) {
 			BlockbinaryConfiguration a; // don't initialize with i as that is a conversion operation
 			a.setbits(i);
 			if (a.sign()) ++positives; else ++negatives;
@@ -39,10 +39,10 @@ namespace sw::universal::bb {
 
 	// blockbinary workload for testing shift operations on a given number system type that supports operator>> and operator<<
 	template<typename BlockbinaryConfiguration>
-	void ShiftPerformanceWorkload(uint64_t NR_OPS) {
+	void ShiftPerformanceWorkload(size_t NR_OPS) {
 		BlockbinaryConfiguration a;
 		a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
+		for (size_t i = 0; i < NR_OPS; ++i) {
 			a >>= 13;
 			a <<= 37;
 		}

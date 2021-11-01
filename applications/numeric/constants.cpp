@@ -26,10 +26,10 @@
 #include <ostream>
 
 template<typename Scalar>
-void SqrtWorkload(uint64_t NR_OPS) {
+void SqrtWorkload(size_t NR_OPS) {
 	Scalar a{ 0 }, c{ 0 };
 	size_t maxpos = (1ull << (Scalar::nbits - Scalar::rbits - 1));
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
+	for (size_t i = 0; i < NR_OPS; ++i) {
 		a = (i % maxpos);
 		c = sw::universal::sqrt(a);
 	}
