@@ -3,15 +3,15 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // set to 1 if you want to generate hw test vectors
 #define HARDWARE_QA_OUTPUT 0
 
 // type definitions for the important types, posit<> and quire<>
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/traits/posit_traits.hpp>
-#include <universal/number/posit/quire.hpp>
-#include <universal/number/posit/fdp.hpp>
+#include <universal/number/posit/posit.hpp>
+//#include <universal/traits/posit_traits.hpp>
+//#include <universal/number/posit/quire.hpp>
+//#include <universal/number/posit/fdp.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/quire_test_suite.hpp>
 #include <universal/utility/convert_to.hpp>
@@ -82,12 +82,12 @@ int ValidateExactDotProduct() {
 	}
 
 	{
-		using Vector = std::vector<float>;
-		Vector fv;
+		using FVector = std::vector<float>;
+		FVector fv;
 		for_each(begin(pv), end(pv), [&fv](const Scalar& p) {
 			fv.push_back(float(p));
 		});
-		Vector fones;
+		FVector fones;
 		for_each(begin(pv), end(pv), [&fones](const Scalar& p) {
 			fones.push_back(float(p));
 		});
@@ -238,7 +238,7 @@ int ValidateSignMagnitudeTransitions() {
 }
 
 template<size_t nbits, size_t es, size_t capacity = 2>
-int ValidateCarryPropagation(bool bReportIndividualTestCases) {
+int ValidateCarryPropagation() {
 	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 
@@ -257,7 +257,7 @@ int ValidateCarryPropagation(bool bReportIndividualTestCases) {
 }
 
 template<size_t nbits, size_t es, size_t capacity = 2>
-int ValidateBorrowPropagation(bool bReportIndividualTestCases) {
+int ValidateBorrowPropagation() {
 	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 
@@ -350,9 +350,9 @@ try {
 	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::minpos));
 	
 	std::cout << "Carry Propagation\n";
-	nrOfFailedTestCases += ReportTestResult(ValidateCarryPropagation<4, 1>(bReportIndividualTestCases), "carry propagation", "increment");
+	nrOfFailedTestCases += ReportTestResult(ValidateCarryPropagation<4, 1>(), "carry propagation", "increment");
 	std::cout << "Borrow Propagation\n";
-	nrOfFailedTestCases += ReportTestResult(ValidateBorrowPropagation<4, 1>(bReportIndividualTestCases), "borrow propagation", "increment");
+	nrOfFailedTestCases += ReportTestResult(ValidateBorrowPropagation<4, 1>(), "borrow propagation", "increment");
 
 #ifdef ISSUE_45_DEBUG
 	{	

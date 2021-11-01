@@ -192,24 +192,25 @@ inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& 
 }
 
 template<size_t nbits, size_t es>
-inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = true) {
-	std::stringstream ostr;
+inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = true, bool nibbleMarker = false) {
+	std::stringstream sstr;
 	size_t nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
 		for (int i = int(es) - 1; i >= 0; --i) {
 			if (e.nrBits() > nrOfExponentBitsProcessed++) {
 				bitblock<es> bb = e.get();
-				ostr << (bb[size_t(i)] ? "1" : "0");
+				sstr << (bb[size_t(i)] ? '1' : '0');
 			}
 			else {
-				ostr << (dashExtent ? "-" : "");
+				sstr << (dashExtent ? "-" : "");
 			}
+			if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
 		}
 	}
 	else {
-		ostr << "~"; // for proper alignment in tables
+		sstr << '~'; // for proper alignment in tables
 	}
-	return ostr.str();
+	return sstr.str();
 }
 
 template<size_t nbits, size_t es>

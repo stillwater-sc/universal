@@ -3,18 +3,17 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+
 #include <iostream>
 #include <string>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/integer/math_functions.hpp>
-#include <universal/number/integer/numeric_limits.hpp>
-#include <universal/number/integer/attributes.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-//#include <universal/verification/integer_test_suite.hpp>
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_suite.hpp>
 
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type
@@ -57,10 +56,10 @@ void TestSizeof() {
 	int1024 o;
 
 	constexpr int WIDTH = 30;
-	std::cout << std::setw(WIDTH) << typeid(a).name() << "  size in bytes " << a.nrBytes << '\n';
-	std::cout << std::setw(WIDTH) << typeid(k).name() << "  size in bytes " << k.nrBytes << '\n';
-	std::cout << std::setw(WIDTH) << typeid(m).name() << "  size in bytes " << m.nrBytes << '\n';
-	std::cout << std::setw(WIDTH) << typeid(o).name() << "  size in bytes " << o.nrBytes << '\n';
+	std::cout << std::setw(WIDTH) << type_tag(a) << "  size in bytes " << a.nrBytes << '\n';
+	std::cout << std::setw(WIDTH) << type_tag(k) << "  size in bytes " << k.nrBytes << '\n';
+	std::cout << std::setw(WIDTH) << type_tag(m) << "  size in bytes " << m.nrBytes << '\n';
+	std::cout << std::setw(WIDTH) << type_tag(o) << "  size in bytes " << o.nrBytes << '\n';
 	if (a.nrBytes != sizeof(a)) pass = false;
 	if (k.nrBytes != sizeof(k)) pass = false;
 	if (m.nrBytes != sizeof(m)) pass = false;
@@ -131,7 +130,11 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "Miscellaneous integer tests failed";
+	std::string test_suite = "integer class API ";
+	std::string test_tag = "integer";
+	std::cout << test_suite << '\n';
+	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
@@ -152,12 +155,25 @@ try {
 	std::cout << "8G  = " <<  8 * c << '\n';
 	std::cout << "16G = " << 16 * c << '\n';
 
+	{
+		constexpr size_t nbits = 128;
+		integer<nbits> c;
+		c.clear();
+		c.setbit(nbits - 1);
+		std::cout << "maxneg = " << to_binary(c) << '\n';
+		for (size_t i = 0; i < nbits; ++i) {
+			std::cout << c << " : " << to_triple(c) << '\n';
+			c /= 2;
+		}
+	}
+
+
 	std::cout << '\n';
 
 	std::cout << "a fast zero value: " << zero << '\n';
 
-	std::cout << "done" << std::endl;
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else // !MANUAL_TESTING
 
 	std::cout << "Miscellaneous integer function verfication\n";
@@ -181,13 +197,9 @@ try {
 #if REGRESSION_LEVEL_4
 #endif
 
-#if STRESS_TESTING
-
-#endif // STRESS_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif // MANUAL_TESTING
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

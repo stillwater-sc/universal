@@ -13,7 +13,7 @@
 #include <map>
 #include <cassert>
 
- // supportint types and functions
+// supporting types and functions
 #include <universal/native/ieee754.hpp>   // IEEE-754 decoders
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/native/integers.hpp>   // manipulators for native integer types
@@ -31,11 +31,14 @@ operators will be much faster than saturation.
 
 Compile-time configuration flags are used to select the exception mode.
 Run-time configuration is used to select modular vs saturation arithmetic.
+
+You need the exception types defined, but you have the option to throw them
 */
-#include <universal/number/fixpnt/exceptions.hpp>  // you need the exception types defined, but you may not throw them
+#include <universal/number/fixpnt/exceptions.hpp>  // 
 
 // composition types used by fixpnt
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/number/support/decimal.hpp>
 
 namespace sw::universal {
 
@@ -530,6 +533,7 @@ public:
 	}
 	// use un-interpreted raw bits to set the bits of the fixpnt: TODO: expand the API to support fixed-points > 64 bits
 	inline constexpr void setbits(uint64_t value) noexcept { bb.setbits(value); }
+	// assign the value of the textual representation to the fixpnt: can be binary/octal/decimal/hexadecimal
 	inline fixpnt& assign(const std::string& txt) noexcept {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
@@ -941,402 +945,455 @@ inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const fi
 
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const int rhs) {
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const int rhs) {
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
 	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const int rhs) {
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const int rhs) {
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const int rhs) {
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
 	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const int rhs) {
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, int rhs) {
 	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long rhs) {
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long rhs) {
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
 	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long rhs) {
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long rhs) {
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long rhs) {
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
 	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long rhs) {
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long rhs) {
 	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long long rhs) {
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long long rhs) {
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
 	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long long rhs) {
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long long rhs) {
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long long rhs) {
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
 	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const long long rhs) {
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long long rhs) {
 	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned int rhs) {
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned int rhs) {
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
 	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned int rhs) {
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned int rhs) {
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned int rhs) {
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
 	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned int rhs) {
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned int rhs) {
 	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long rhs) {
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long rhs) {
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
 	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long rhs) {
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long rhs) {
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long rhs) {
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
 	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long rhs) {
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long rhs) {
 	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long long rhs) {
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long long rhs) {
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
 	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long long rhs) {
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long long rhs) {
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long long rhs) {
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
 	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const unsigned long long rhs) {
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, unsigned long long rhs) {
 	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - fixpnt binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator==(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator!=(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator< (int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator> (int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator<=(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator>=(int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator==(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator!=(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator< (long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator> (long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator<=(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator>=(long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator==(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator!=(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator< (long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator> (long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator<=(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator>=(long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator==(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator!=(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator< (unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator> (unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator<=(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator>=(unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator==(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator!=(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator< (unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator> (unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator<=(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator>=(unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator==(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator!=(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator< (unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator> (unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator<=(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator>=(unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // fixpnt - literal float/double binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const float rhs) {
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const float rhs) {
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
 	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const float rhs) {
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const float rhs) {
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const float rhs) {
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
 	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const float rhs) {
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, float rhs) {
 	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const double rhs) {
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, double rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const double rhs) {
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, double rhs) {
 	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const double rhs) {
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, double rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const double rhs) {
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, double rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const double rhs) {
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, double rhs) {
 	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const double rhs) {
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, double rhs) {
 	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
 }
  
+#if LONG_DOUBLE_SUPPORT
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator<(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(rhs), lhs);
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, long double rhs) {
+	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, bt>(rhs));
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal float/double - fixpnt binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator==(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator!=(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator< (float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator> (float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator<=(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator>=(float lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator==(const double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator==(double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator!=(const double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator!=(double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator< (const double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator< (double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator> (const double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator> (double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator<=(const double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator<=(double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool operator>=(const double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+inline bool operator>=(double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
 	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
 }
 
+#if LONG_DOUBLE_SUPPORT
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator==(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator!=(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return !operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator< (long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator<(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator> (long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, bt>(lhs));
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator<=(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+inline bool operator>=(long double lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
+	return !operator< (fixpnt<nbits, rbits, arithmetic, bt>(lhs), rhs);
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1879,6 +1936,7 @@ inline fixpnt<nbits, rbits, arithmetic, bt> operator%(long double lhs, const fix
 
 /// stream operators
 
+#ifdef MOVED
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /// support detail
 
@@ -2251,49 +2309,49 @@ namespace support {
 		return ostr << ss.str();
 	}
 
-} // namespace impl
+} // namespace support
+#endif // MOVED
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 // convert fixpnt to decimal string, i.e. "-1234.5678"
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>& value) {
-	std::stringstream ss;
+	std::stringstream str;
 	if (value.iszero()) {
-		ss << '0';
+		str << '0';
 		if constexpr (rbits > 0) {
-			ss << '.';
+			str << '.';
 			for (size_t i = 0; i < rbits; ++i) {
-				ss << '0';
+				str << '0';
 			}
 		}
-		return ss.str();
+		return str.str();
 	}
-	if (value.sign()) ss << '-';
+	if (value.sign()) str << '-';
 	support::decimal partial, multiplier;
 	fixpnt<nbits, rbits, arithmetic, bt> number;
 	number = value.sign() ? sw::universal::twosComplement(value) : value;
 	if constexpr (nbits > rbits) {
-		// convert the fixed point by first handling the integer part
+		// convert the fixed point: start by handling the integer part
 		multiplier.setdigit(1);
 		// convert fixpnt to decimal by adding and doubling multipliers
 		for (unsigned i = rbits; i < nbits; ++i) {
 			if (number.at(i)) {
 				support::add(partial, multiplier);
-				//std::cout << partial << std::endl;
 			}
 			support::add(multiplier, multiplier);
 		}
 		for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-			ss << (int)*rit;
+			str << (int)*rit;
 		}
 	}
 	else {
-		ss << '0';
+		str << '0';
 	}
 
 	if constexpr (rbits > 0) {
-		ss << ".";
+		str << ".";
 		// and secondly, the fraction part
 		support::decimal range, discretizationLevels, step;
 		// create the decimal range we are discretizing
@@ -2305,7 +2363,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 			support::add(discretizationLevels, discretizationLevels);
 		}
 		step = div(range, discretizationLevels);
-		// now construct the parts of this range the fraction samples
+		// now construct the value of this range by adding the fraction samples
 		partial.setzero();
 		multiplier.setdigit(1);
 		// convert the fraction part
@@ -2321,30 +2379,29 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 		// The partial represents the parts in the range, so we can deduce
 		// the number of leading zeros by comparing to the length of range
 		size_t nrLeadingZeros = range.size() - partial.size() - 1;
-		for (size_t i = 0; i < nrLeadingZeros; ++i) ss << '0';
+		for (size_t i = 0; i < nrLeadingZeros; ++i) str << '0';
 		size_t digitsWritten = nrLeadingZeros;
 		for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-			ss << (int)*rit;
+			str << (int)*rit;
 			++digitsWritten;
 		}
 		if (digitsWritten < rbits) { // deal with trailing 0s
 			for (size_t i = digitsWritten; i < rbits; ++i) {
-				ss << '0';
+				str << '0';
 			}
 		}
 	}
-	return ss.str();
+	return str.str();
 }
 
-// read a fixed-point ASCII format and make a binary fixpnt out of it
+// read an ASCII format and make a binary fixpnt out of it: TBD
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& value) {
 	bool bSuccess = false;
 	value.clear();
-	// check if the txt is an fixpnt form: [0123456789]+
-	std::regex decimal_regex("[0-9]+");
-	std::regex octal_regex("^0[1-7][0-7]*$");
-	std::regex hex_regex("0[xX][0-9a-fA-F']+");
+
+	std::regex binary_regex("0b([01]+)?(.)?([01]+)?$"); // bin does not have a negative size, just raw bits
+	std::regex decimal_regex("/^-?(0|[1-9][0-9]*)?"); // ("/^-?(0|[1-9][0-9]*)?(\.[0-9]+)?(?<=[0-9])(e-?(0|[1-9][0-9]*))?$");
 	// setup associative array to map chars to nibbles
 	std::map<char, int> charLookup{
 		{ '0', 0 },
@@ -2370,59 +2427,30 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 		{ 'E', 14 },
 		{ 'F', 15 },
 	};
-	if (std::regex_match(number, octal_regex)) {
-		std::cout << "found an octal representation\n";
+	if (std::regex_match(number, binary_regex)) {
+		std::cout << "found an binary representation\n";
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
-			std::cout << "char = " << *r << std::endl;
 		}
-		bSuccess = false; // TODO
-	}
-	else if (std::regex_match(number, hex_regex)) {
-		//std::cout << "found a hexadecimal representation\n";
-		// each char is a nibble
-		int byte{ 0 };
-		int byteIndex{ 0 };
-		bool odd{ false };
-		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
-			++r) {
-			if (*r == '\'') {
-				// ignore
-			}
-			else if (*r == 'x' || *r == 'X') {
-				// we have reached the end of our parse
-				if (odd) {
-					// complete the most significant byte
-					value.setbyte(byteIndex, byte);
-				}
-				bSuccess = true;
-			}
-			else {
-				if (odd) {
-					byte += charLookup.at(*r) << 4;
-					value.setbyte(byteIndex, byte);
-					++byteIndex;
-				}
-				else {
-					byte = charLookup.at(*r);
-				}
-				odd = !odd;
-			}
-		}
+		bSuccess = false;
 	}
 	else if (std::regex_match(number, decimal_regex)) {
-		//std::cout << "found a decimal fixpnt representation\n";
+		std::cout << "found a decimal representation\n";
 		fixpnt<nbits, rbits, arithmetic, bt> scale = 1;
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
-			fixpnt<nbits, rbits, arithmetic, bt> digit = charLookup.at(*r);
-			value += scale * digit;
-			scale *= 10;
+			if (*r != '.') {
+				fixpnt<nbits, rbits, arithmetic, bt> digit = charLookup.at(*r); // we are guaranteed by the regex not to have hexadecimal values
+				value += scale * digit;
+				scale *= 10;
+			}
 		}
 		bSuccess = true;
+	}
+	else {
+		std::cerr << number << ": neither a binary nor a decimal representation found\n";
 	}
 
 	return bSuccess;
@@ -2464,21 +2492,21 @@ inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithme
 
 // to_binary generates a binary presentation of the fixed-point number
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number, bool bNibbleMarker = false) {
-	std::stringstream ss;
-	ss << "0b";
+inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number, bool nibbleMarker = false) {
+	std::stringstream sstr;
+	sstr << "0b";
 	for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(rbits); --i) {
-		ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-		if (bNibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) ss << '\'';
+		sstr << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+		if (nibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) sstr << '\'';
 	}
-	ss << '.';
+	sstr << '.';
 	if constexpr (rbits > 0) {
 		for (int i = int(rbits) - 1; i >= 0; --i) {
-			ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-			if (bNibbleMarker && (rbits - i) % 4 == 0 && i != 0) ss << '\'';
+			sstr << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if (nibbleMarker && (rbits - i) % 4 == 0 && i != 0) sstr << '\'';
 		}
 	}
-	return ss.str();
+	return sstr.str();
 }
 
 // to_triple generates a triple (sign,scale,fraction) representation of the fixed-point number

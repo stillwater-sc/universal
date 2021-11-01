@@ -21,7 +21,7 @@
 #include <universal/number/posit/posit.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/performance_runner.hpp>
 
 template<typename NativeFloat>
@@ -232,7 +232,42 @@ void TestSpecialValueWorkload(const std::string& tag, size_t NR_ELEMENTS) {
 	CustomPerfRunner(tag + std::string("NaN            "), ArrayWorkload<NativeFloat>, data);
 }
 
-void TestSpecialValuePerformance() {
+void TestSpecialValuePerformanceLevel1() {
+	std::cout << "comparative floating-point special value processing performance\n";
+	constexpr size_t NR_OPS = 1024 * 1024;
+
+	TestSpecialValueWorkload<float>(std::string("float                    "), NR_OPS);
+	TestSpecialValueWorkload<double>(std::string("double                   "), NR_OPS);
+#if LONG_DOUBLE_SUPPORT
+	TestSpecialValueWorkload<long double>(std::string("long double              "), NR_OPS);
+#endif
+
+#ifdef CFLOAT_SUPPORT
+	TestSpecialValueWorkload<sw::universal::cfloat< 8, 2>>
+		(std::string("cfloat<  8, 2>           "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::cfloat< 16, 5>>
+		(std::string("cfloat< 16, 5>           "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::cfloat< 32, 8>>
+		(std::string("cfloat< 32, 8>           "), NR_OPS);
+	//	TestSpecialValueWorkload<sw::universal::cfloat< 64, 11>>
+	//                                         (std::string("cfloat< 64,11>           "), NR_OPS);
+	//	TestSpecialValueWorkload<sw::universal::cfloat< 80, 15>>
+	//                                         (std::string("cfloat< 80,15>           "), NR_OPS);
+	//	TestSpecialValueWorkload<sw::universal::cfloat<128, 15>>
+	//                                         (std::string("cfloat< 80,15>           "), NR_OPS);
+#endif
+
+#ifdef POSIT_SUPPORT
+	TestSpecialValueWorkload<sw::universal::posit<  8, 0>>
+		(std::string("posit<  8,0>             "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::posit< 16, 1>>
+		(std::string("posit< 16,1>             "), NR_OPS);
+	TestSpecialValueWorkload<sw::universal::posit< 32, 2>>
+		(std::string("posit< 32,2>             "), NR_OPS);
+#endif
+}
+
+void TestSpecialValuePerformanceLevel4() {
 	std::cout << "comparative floating-point special value processing performance\n";
 	constexpr size_t NR_OPS = 1024 * 1024;
 
@@ -273,15 +308,26 @@ void TestSpecialValuePerformance() {
 #endif
 }
 
-// conditional compilation
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "native floating-point operator performance benchmarking";
+	std::string test_suite = "native floating-point operator performance benchmarking ";
+	std::cout << test_suite << '\n';
+
+	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
@@ -294,22 +340,32 @@ try {
 	PerformanceRunner("float                    copy           ", CopyWorkload< float >, NR_OPS);
 	PerformanceRunner("double                   copy           ", CopyWorkload< double >, NR_OPS);
 
-		std::cout << "done" << std::endl;
+	TestSpecialValuePerformanceLevel4();
 
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << tag << std::endl;
 
-	int nrOfFailedTestCases = 0;
 	   
-//	TestCopyPerformance();
-//	TestDecodePerformance();
-//	TestArithmeticOperatorPerformance();
-	TestSpecialValuePerformance();
+#if REGRESSION_LEVEL_1
+	TestSpecialValuePerformanceLevel1();
+#endif
 
+#if REGRESSION_LEVEL_2
+	//TestSpecialValuePerformanceLevel2();
+#endif
+
+#if REGRESSION_LEVEL_3
+	//TestSpecialValuePerformanceLevel3();
+#endif
+
+#if REGRESSION_LEVEL_4
+	TestSpecialValuePerformanceLevel4();
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif // MANUAL_TESTING
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << '\n';

@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
 // Configure the posit template environment
 // first: enable general or specialized configurations
@@ -13,16 +14,13 @@
 #define POSIT_ENABLE_LITERALS 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit_impl.hpp>
-// type manipulators such as pretty printers
-#include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/mathlib.hpp>
+#include <universal/number/posit/posit.hpp>
 
 // conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -30,12 +28,25 @@ try {
 
 	std::cout << "posit class interface tests\n";
 
+	{
+		posit<16, 2> a;
+		a = 0.5f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.0f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.5f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 1.0625f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+	}
+
+	return 0;
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// SATURATING posits
+	//// posit construction, initialization, assignment and comparisions
 
 	{
 		int start = nrOfFailedTestCases;
-		// construction with explicit arithmetic type and default BlockType (uint8_t)
+		// maxpos of a posit<8,0> = 64
 		posit<8, 0> a(-64), b(-128), c(64), d(-64);
 		// b initialized to -128 in saturating arithmetic becomes -64
 		if (0 != (c + d)) ++nrOfFailedTestCases; //cout << to_binary(c + d) << endl;
@@ -49,24 +60,36 @@ try {
 		}
 	}
 
-#undef LATER
-#ifdef LATER
+	// type tag to identify the type without having to depend on demangle
+	{
+		using Posit = posit<16, 2>;
+		Posit a{ 0 };
+		std::cout << "type identifier : " << type_tag(a) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit< 8, 2>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit< 16, 2>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit< 32, 2>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit< 64, 2>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit<128, 2>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit<256, 2>()) << '\n';
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// improving efficiency for bigger fixed-points through explicit BlockType specification
+	//// improving efficiency for posits through explicit BlockType specification
 
 	{
 		int start = nrOfFailedTestCases;
-		// construction with explicit arithmetic type and BlockType
-		posit<16, 4> a, b(-2048.125f), c(2047.875), d(-2047.875);
+
+		posit<16, 2> a{ 0 }, b{ -0.984375f }, c{ 0.984375 }, d{ -0.984375 };
 		if (a != (c + d)) ++nrOfFailedTestCases;
-		if (a != (b - c)) ++nrOfFailedTestCases;
+		if (a != (-b - c)) ++nrOfFailedTestCases;
 		//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
-			cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
+			std::cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
+			std::cout << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
 	}
-
+#undef LATER
+#ifdef LATER
 	/////////////////////////////////////////////////////////////////////////////////////
 	// selectors
 

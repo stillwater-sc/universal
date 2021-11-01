@@ -25,17 +25,13 @@
 #define REGRESSION_LEVEL_4 0
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	if (argc > 0) { std::cout << argv[0] << std::endl; }
 
 	std::string test_suite = "fixed-point class interface ";
 	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
-
-
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR fixed-point (the default)
@@ -102,6 +98,15 @@ try {
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	// selectors
+
+		// type tag to identify the type without having to depend on demangle
+	{
+		using Fixed = fixpnt<16, 2>;
+		Fixed a{ 0 };
+		std::cout << "type identifier : " << type_tag(a) << '\n';
+		std::cout << "type identifier : " << type_tag(fixpnt<8, 4>()) << '\n';
+		std::cout << "type identifier : " << type_tag(fixpnt<8, 4, Saturating, uint16_t>()) << '\n';
+	}
 
 	{
 		int start = nrOfFailedTestCases;
@@ -195,18 +200,21 @@ try {
 		}
 	}
 
+	#undef FIXPNT_PARSE
+#ifdef FIXPNT_PARSE
 	////////////////////////////////////////////////////////////////////////////////////
 	// parsing of text input
 	{
-		/* TODO: implement parse
-		constexpr size_t nbits = 128;
-		constexpr size_t rbits = 64;
-		fixpnt<nbits, rbits, Modulo, uint32_t> a, b, c, d;
-		a.assign("123456789.987654321");
-		parse("123456789.987654321", b);
-		*/
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		fixpnt<nbits, rbits, Modulo, uint32_t> a, b;
+		a.assign("7.98765");
+		if (a != 7.98765) ++nrOfFailedTestCases;
+		a.assign("0b0010.1111");
+		b.setbits(0x2F);
+		if (a != b) ++nrOfFailedTestCases;
 	}
-
+#endif
 	///////////////////////////////////////////////////////////////////////////////////
 	// arithmetic
 	{

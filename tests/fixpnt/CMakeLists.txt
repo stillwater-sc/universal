@@ -1,9 +1,9 @@
-file(GLOB API_SRC "api/*.cpp")
+file(GLOB API_SRC        "api/*.cpp")
 file(GLOB CONVERSION_SRC "conversion/*.cpp")
-file(GLOB LOGIC "logic/*.cpp")
+file(GLOB LOGIC_SRC      "logic/*.cpp")
 file(GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
-file(GLOB COMPLEX_SRC "complex/*.cpp")
-file(GLOB MATH_SRC "math/*.cpp")
+file(GLOB COMPLEX_SRC    "complex/*.cpp")
+file(GLOB MATH_SRC       "math/*.cpp")
 
 compile_all("true" "fixpnt" "Number Systems/fixed size/fixed-point/api" "${API_SRC}")
 compile_all("true" "fixpnt" "Number Systems/fixed size/fixed-point/conversion" "${CONVERSION_SRC}")

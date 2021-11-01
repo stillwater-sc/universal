@@ -8,7 +8,7 @@
 
 namespace sw::universal {
 
-// Generate a type tag for this fixpnt
+// Generate a type tag for general fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 std::string type_tag(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	std::stringstream s;

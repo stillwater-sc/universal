@@ -3,12 +3,11 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/posit/manipulators.hpp>
+#include <universal/utility/directives.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

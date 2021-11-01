@@ -1727,6 +1727,18 @@ inline std::string to_string(const posit<nbits, es>& p, std::streamsize precisio
 	return ss.str();
 }
 
+template<size_t nbits, size_t es>
+inline std::string convert_to_decimal_string(const posit<nbits, es>& p) {
+	using Posit = posit<nbits, es>;
+
+	value<Posit::fbits> v = p.to_value(); // value is a triple(sign, scale, fraction)
+
+
+	std::stringstream str;
+	str << convert_to_decimal_string(v);
+	return str.str();
+}
+
 // binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction
 template<size_t nbits, size_t es>
 inline std::string to_binary(const posit<nbits, es>& number, bool nibbleMarker = false) {
@@ -1740,9 +1752,9 @@ inline std::string to_binary(const posit<nbits, es>& number, bool nibbleMarker =
 	extract_fields(raw, s, r, e, f);
 
 	ss << (s ? "0b1." : "0b0.");
-	ss << to_string(r, false) << "."
-		<< to_string(e, false) << "."
-		<< to_string(f, false);
+	ss << to_string(r, false, nibbleMarker) << "."
+		<< to_string(e, false, nibbleMarker) << "."
+		<< to_string(f, false, nibbleMarker);
 
 	return ss.str();
 }

@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -22,7 +23,7 @@
 void TestShiftOperatorPerformance() {
 	using namespace sw::universal;
 	using Decimal = sw::universal::decimal;
-	std::cout << "\nDECIMAL Logical shift operator performance\n";
+	std::cout << "decimal logical shift operator performance\n";
 
 	constexpr uint64_t NR_OPS = 1000;
 
@@ -34,46 +35,46 @@ void TestShiftOperatorPerformance() {
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace sw::universal;
-	using IntegerType = sw::universal::decimal;
-	std::cout << "\nDECIMAL Arithmetic operator performance\n";
+	using Decimal = sw::universal::decimal;
+	std::cout << "decimal arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 1000;
 
-	PerformanceRunner("decimal 1-digits    add/subtract   ", AdditionSubtractionWorkload< IntegerType >, NR_OPS);
-	PerformanceRunner("decimal 10-digits   add/subtract   ", AdditionSubtractionWorkload< IntegerType >, NR_OPS);
-//	PerformanceRunner("decimal 100-digits  add/subtract   ", AdditionSubtractionWorkload< IntegerType >, NR_OPS);
-//	PerformanceRunner("decimal 1000-digits add/subtract   ", AdditionSubtractionWorkload< IntegerType >, NR_OPS);
+	PerformanceRunner("decimal 1-digits    add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("decimal 10-digits   add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("decimal 100-digits  add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("decimal 1000-digits add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
 
 	NR_OPS = 1024;
-	PerformanceRunner("decimal 1-digit     division       ", DivisionWorkload< IntegerType >, NR_OPS);
-	PerformanceRunner("decimal 10-digit    division       ", DivisionWorkload< IntegerType >, NR_OPS);
-//	PerformanceRunner("decimal 100-digit   division       ", DivisionWorkload< IntegerType >, NR_OPS);
-//	PerformanceRunner("decimal 1000-digit  division       ", DivisionWorkload< IntegerType >, NR_OPS);
+	PerformanceRunner("decimal 1-digit     division       ", DivisionWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("decimal 10-digit    division       ", DivisionWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("decimal 100-digit   division       ", DivisionWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("decimal 1000-digit  division       ", DivisionWorkload< Decimal >, NR_OPS);
 
 	NR_OPS = 1024;
-	PerformanceRunner("decimal 11-digit    remainder      ", RemainderWorkload< IntegerType >, NR_OPS);
-	PerformanceRunner("decimal 10-digit    remainder      ", RemainderWorkload< IntegerType >, NR_OPS);
-//	PerformanceRunner("decimal 100-digit   remainder      ", RemainderWorkload< IntegerType >, NR_OPS);
-//	PerformanceRunner("decimal 1000-digit  remainder      ", RemainderWorkload< IntegerType >, NR_OPS);
+	PerformanceRunner("decimal 11-digit    remainder      ", RemainderWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("decimal 10-digit    remainder      ", RemainderWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("decimal 100-digit   remainder      ", RemainderWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("decimal 1000-digit  remainder      ", RemainderWorkload< Decimal >, NR_OPS);
 
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024;
-	PerformanceRunner("decimal 1-digit     multiplication ", MultiplicationWorkload< IntegerType >, NR_OPS);
-	PerformanceRunner("decimal 10-digit    multiplication ", MultiplicationWorkload< IntegerType >, NR_OPS);
-//	PerformanceRunner("decimal 100-digit   multiplication ", MultiplicationWorkload< IntegerType >, NR_OPS);
-//	PerformanceRunner("decimal 1000-digit  multiplication ", MultiplicationWorkload< IntegerType >, NR_OPS);
+	PerformanceRunner("decimal 1-digit     multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("decimal 10-digit    multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("decimal 100-digit   multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("decimal 1000-digit  multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
 }
 
 // conditional compilation
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "Decimal integer operator performance benchmarking";
+	std::string tag = "Decimal big-integer operator performance benchmarking";
 
 #if MANUAL_TESTING
 
