@@ -24,11 +24,7 @@ namespace sw::universal {
 /////////////////////////////////////////////
 // Forward references
 class rational;
-struct decintdiv;
 rational quotient(const rational&, const rational&);
-rational remainder(const rational&, const rational&);
-int findMsd(const rational&);
-template<typename Ty> rational& convert_to_float(Ty, rational&);
 
 /// <summary>
 /// Adaptive precision rational number system type
@@ -83,56 +79,8 @@ public:
 	rational& operator=(long double rhs)        { return convert_ieee754(rhs); }
 #endif
 
-	// arithmetic operators
-	rational& operator+=(const rational& rhs) {
-		if (rhs.negative) return *this -= rhs;
-		if (denominator == rhs.denominator) {
-			numerator += rhs.numerator;
-		}
-		else {
-			decimal a = numerator * rhs.denominator + denominator * rhs.numerator;
-			decimal b = denominator * rhs.denominator;
-			numerator = a;
-			denominator = b;
-		}
-		return *this;
-	}
-	rational& operator-=(const rational& rhs) {
-		if (rhs.negative) return *this += rhs;
-		if (denominator == rhs.denominator) {
-			numerator -= rhs.numerator;
-		}
-		else {
-			decimal a = numerator * rhs.denominator - denominator * rhs.numerator;
-			decimal b = denominator * rhs.denominator;
-			numerator = a;
-			denominator = b;
-		}
-		return *this;
-	}
-	rational& operator*=(const rational& rhs) {
-		numerator   *= rhs.numerator;
-		denominator *= rhs.denominator;
-		negative = (negative && rhs.negative) || (!negative && !rhs.negative);
-		return *this;
-	}
-	rational& operator/=(const rational& rhs) {
-		std::cout << *this << " " << rhs << '\n';
-		numerator   *= rhs.denominator;
-		denominator *= rhs.numerator;
-		negative = (negative && rhs.negative) || (!negative && !rhs.negative);
-		return *this;
-	}
-
-	rational& operator<<=(int shift) {
-		return *this;
-	}
-	rational& operator>>=(int shift) {
-		return *this;
-	}
-
 	// unitary operators
-	rational operator-() {
+	rational operator-() const {
 		rational tmp(*this);
 		tmp.setsign(!tmp.sign());
 		return tmp;
@@ -140,23 +88,77 @@ public:
 	rational operator++(int) { // postfix
 		rational tmp(*this);
 		++numerator;
-		// TBD: need to reduce to normal form
 		return tmp;
 	}
 	rational& operator++() { // prefix
 		++numerator;
-		// TBD: need to reduce to normal form
 		return *this;
 	}
 	rational operator--(int) { // postfix
 		rational tmp(*this);
-		++numerator;
-		// TBD: need to reduce to normal form
+		--numerator;
 		return tmp;
 	}
 	rational& operator--() { // prefix
-		++numerator;
-		// TBD: need to reduce to normal form
+		--numerator;
+		return *this;
+	}
+
+	// arithmetic operators
+	rational& operator+=(const rational& rhs) {
+		decimal a = (negative ? -numerator : numerator);
+		decimal b = denominator;
+		decimal c = (rhs.negative ? -rhs.numerator : rhs.numerator);
+		decimal d = rhs.denominator;
+		if (denominator == rhs.denominator) {
+			decimal num = a + c;
+			negative = num.isneg();
+			numerator = (negative ? -num : num);
+		}
+		else {
+			decimal e = a * d + b * c;
+			decimal f = b * d;
+			negative = e.isneg();
+			numerator = (negative ? -e : e);
+			denominator = f;
+		}
+		normalize();
+		return *this;
+	}
+	rational& operator-=(const rational& rhs) {
+		decimal a = (negative ? -numerator : numerator);
+		decimal b = denominator;
+		decimal c = (rhs.negative ? -rhs.numerator : rhs.numerator);
+		decimal d = rhs.denominator;
+		if (denominator == rhs.denominator) {
+			decimal num = a - c;
+			negative = num.isneg();
+			numerator = (negative ? -num : num);
+		}
+		else {
+			decimal e = a * d - b * c;
+			decimal f = b * d;
+			negative = e.isneg();
+			numerator = (negative ? -e : e);
+			denominator = f;
+		}
+		normalize();
+		return *this;
+	}
+	rational& operator*=(const rational& rhs) {
+		numerator *= rhs.numerator;
+		denominator *= rhs.denominator;
+		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
+		normalize();
+		return *this;
+	}
+	rational& operator/=(const rational& rhs) {
+		std::cout << "--> " << *this << " " << rhs << '\n';
+		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
+		numerator *= rhs.denominator;
+		denominator *= rhs.numerator;
+		std::cout << numerator << ", " << denominator << '\n';
+		normalize();
 		return *this;
 	}
 
@@ -194,12 +196,6 @@ public:
 	inline void setnumerator(const decimal& num) { numerator = num; }
 	inline void setdenominator(const decimal& denom) { denominator = denom; }
 	inline void setbits(uint64_t v) { *this = v; } // API to be consistent with the other number systems
-
-	// remove any leading zeros from a rational representation
-	void unpad() {
-		numerator.unpad();
-		denominator.unpad();
-	}
 
 	// read a rational ASCII format and make a rational type out of it
 	bool parse(const std::string& _digits) {
@@ -266,6 +262,18 @@ public:
 protected:
 	// HELPER methods
 
+	// remove greatest common divisor out of the numerator/denominator pair
+	inline void normalize() {
+		decimal a, b, r;
+		a = numerator; b = denominator;
+		while (a % b > 0) {
+			r = a % b;
+			a = b;
+			b = r;
+		}
+		numerator /= b;
+		denominator /= b;
+	}
 	// conversion functions
 	inline short to_short() const { return short(to_long_long()); }
 	inline int to_int() const { return short(to_long_long()); }
@@ -286,9 +294,15 @@ protected:
 
 	template<typename Ty>
 	rational& convert_integer(Ty& rhs) {
-		if (rhs < 0) negative = true; else negative = false;
+		if (rhs < 0) {
+			negative  = true;
+			numerator = -rhs;
+		}
+		else {
+			negative  = false;
+			numerator = rhs;
+		}
 		denominator = 1;
-		numerator = rhs;
 		return *this;
 	}
 	template<typename Ty>
@@ -333,7 +347,8 @@ inline std::string to_string(const rational& d) {
 inline std::ostream& operator<<(std::ostream& ostr, const rational& d) {
 	// make certain that setw and left/right operators work properly
 	std::stringstream str;
-	str << d.numerator << " / " << d.denominator;
+	if (d.isneg()) str << '-';
+	str << d.numerator << '/' << d.denominator;
 	return ostr << str.str();
 }
 
@@ -374,19 +389,11 @@ inline rational operator/(const rational& lhs, const rational& rhs) {
 	return ratio;
 }
 
-// binary left shift
-inline rational operator<<(const rational& lhs, int shift) {
-	rational d(lhs);
-	return d <<= shift;
-}
-// binary right shift
-inline rational operator>>(const rational& lhs, int shift) {
-	rational d(lhs);
-	return d >>= shift;
-}
+//////////////////////////////////////////////////////////////////////////////////
 /// logic operators
 
-	// rational - rational logic operators
+/// rational - rational logic operators
+
 // equality test
 bool operator==(const rational& lhs, const rational& rhs) {
 	return lhs.numerator == rhs.numerator && lhs.denominator == rhs.denominator;

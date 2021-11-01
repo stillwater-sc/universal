@@ -47,19 +47,41 @@ try {
 	using Rational = sw::universal::rational;
 
 	Rational a, b, c, d;
-	a = 1;
-	b = 2;
+	a = -1;
+	b = 8;
 	c = a / b;
-
 	std::cout << a << " / " << b << " = " << c << '\n';
-	b = 3;
+	a = 3;
 	d = a / b;
 	std::cout << a << " / " << b << " = " << d << '\n';
 	a = c;
 	b = d;
+	c = a + b;
+	std::cout << a << " + " << b << " = " << c << '\n';
+	c = a - b;
+	std::cout << a << " - " << b << " = " << c << '\n';
+	d = a * b;
+	std::cout << a << " * " << b << " = " << d << '\n';
+	a = -a;
+	b = -b;
+	c = a + b;
+	std::cout << a << " + " << b << " = " << c << '\n';
+	c = a - b;
+	std::cout << a << " - " << b << " = " << c << '\n';
+	d = a * b;
+	std::cout << a << " * " << b << " = " << d << '\n';
 
-	c = a / b;
-	std::cout << a << " / " << b << " = " << c << '\n';
+	{
+		decimal a, b, remainder;
+		a = 3; b = 9;
+		while (a % b > 0) {
+			remainder = a % b;
+			a = b;
+			b = remainder;
+		}
+		std::cout << "gcd of (3, 9) = " << remainder << '\n';
+	}
+
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

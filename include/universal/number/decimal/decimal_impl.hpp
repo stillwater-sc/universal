@@ -288,7 +288,7 @@ public:
 	}
 
 	// unitary operators
-	decimal operator-() {
+	decimal operator-() const {
 		decimal tmp(*this);
 		tmp.setsign(!tmp.sign());
 		return tmp;
