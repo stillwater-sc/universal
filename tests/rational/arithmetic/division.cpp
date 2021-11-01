@@ -1,4 +1,4 @@
-//  api.cpp : class API tests for rational number system type
+//  division.cpp : test suite for division of rational numbers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -8,11 +8,6 @@
 #include <string>
 #include <universal/number/rational/rational.hpp>
 #include <universal/verification/test_suite.hpp>
-
-/*
-   The goal of the rational number system is to provide a flexible
-   and easy to use rational arithmetic type.
-*/
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -34,8 +29,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "rational class API ";
-	std::string test_tag = "rational";
+	std::string test_suite = "rational division ";
+	std::string test_tag = "division";
 	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -43,42 +38,6 @@ try {
 #if MANUAL_TESTING
 
 	using Rational = sw::universal::rational;
-
-	Rational a, b, c, d;
-	a = -1;
-	b = 8;
-	c = a / b;
-	std::cout << a << " / " << b << " = " << c << '\n';
-	a = 3;
-	d = a / b;
-	std::cout << a << " / " << b << " = " << d << '\n';
-	a = c;
-	b = d;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	c = a - b;
-	std::cout << a << " - " << b << " = " << c << '\n';
-	d = a * b;
-	std::cout << a << " * " << b << " = " << d << '\n';
-	a = -a;
-	b = -b;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	c = a - b;
-	std::cout << a << " - " << b << " = " << c << '\n';
-	d = a * b;
-	std::cout << a << " * " << b << " = " << d << '\n';
-
-	{
-		decimal a, b, remainder;
-		a = 3; b = 9;
-		while (a % b > 0) {
-			remainder = a % b;
-			a = b;
-			b = remainder;
-		}
-		std::cout << "gcd of (3, 9) = " << remainder << '\n';
-	}
 
 
 
