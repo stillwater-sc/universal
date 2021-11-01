@@ -19,7 +19,7 @@
 */
 
 template<typename cfloatConfiguration>
-void CopyWorkload(uint64_t NR_OPS) {
+void CopyWorkload(size_t NR_OPS) {
 	using namespace sw::universal;
 	cfloatConfiguration a,b,c;
 
@@ -133,13 +133,13 @@ void TestCopyPerformance() {
 }
 
 template<typename Scalar>
-void DecodeWorkload(uint64_t NR_OPS) {
+void DecodeWorkload(size_t NR_OPS) {
 	using namespace sw::universal;
 
 	Scalar a{ 0 };
 	size_t success{ 0 };
 	bool first{ true };
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
+	for (size_t i = 0; i < NR_OPS; ++i) {
 		a.setbits(i);
 		bool s{ false };
 		blockbinary<a.es, typename Scalar::BlockType> e;
@@ -265,7 +265,7 @@ void TestDecodePerformance() {
 
 #ifdef LATER
 template<typename cfloatConfiguration>
-void NormalizeWorkload(uint64_t NR_OPS) {
+void NormalizeWorkload(size_t NR_OPS) {
 	using namespace sw::universal;
 	constexpr size_t nbits = cfloatConfiguration::nbits;
 	constexpr size_t es = cfloatConfiguration::es;
@@ -275,7 +275,7 @@ void NormalizeWorkload(uint64_t NR_OPS) {
 	blocktriple<fhbits> b;  // representing significant
 
 	bool bFail = false;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
+	for (size_t i = 0; i < NR_OPS; ++i) {
 		a.setbits(i);
 		a.normalize(b);
 		if (a.sign() != b.sign()) {

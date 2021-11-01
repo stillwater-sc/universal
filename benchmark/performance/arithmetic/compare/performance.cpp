@@ -25,7 +25,7 @@
 #include <universal/verification/performance_runner.hpp>
 
 template<typename NativeFloat>
-void CopyWorkload(uint64_t NR_OPS) {
+void CopyWorkload(size_t NR_OPS) {
 	using namespace sw::universal;
 	NativeFloat a,b,c;
 

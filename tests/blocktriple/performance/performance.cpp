@@ -19,14 +19,14 @@ namespace sw::universal::internal {
 
 	// Generic set of adds and subtracts for a given number system type
 	template<typename Scalar>
-	void AdditionSubtractionWorkload(uint64_t NR_OPS) {
+	void AdditionSubtractionWorkload(size_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
 		d.clear();
 		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 		c = d;
 		b = c;
 		a = b;
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
+		for (size_t i = 0; i < NR_OPS; ++i) {
 			c.add(a, b);
 		}
 		if (c == d) std::cout << "amazing\n";
@@ -34,14 +34,14 @@ namespace sw::universal::internal {
 
 	// Generic set of multiplies for a given number system type
 	template<typename Scalar>
-	void MultiplicationWorkload(uint64_t NR_OPS) {
+	void MultiplicationWorkload(size_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
 		d.clear();
 		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 		c = d;
 		b = c;
 		a = b;
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
+		for (size_t i = 0; i < NR_OPS; ++i) {
 			c.mul(a, b);
 			d = c;
 		}
@@ -49,14 +49,14 @@ namespace sw::universal::internal {
 
 	// Generic set of divides for a given number system type
 	template<typename Scalar>
-	void DivisionWorkload(uint64_t NR_OPS) {
+	void DivisionWorkload(size_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
 		d.clear();
 		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 		c = d;
 		b = c;
 		a = b;
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
+		for (size_t i = 0; i < NR_OPS; ++i) {
 			//c = a / b;
 			c.clear(); // reset to zero so d = c is fast
 			d = c;
