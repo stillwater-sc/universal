@@ -34,9 +34,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
+#include <universal/number/rational/exceptions.hpp>
 #include <universal/number/rational/rational_impl.hpp>
 #include <universal/number/rational/numeric_limits.hpp>
-#include <universal/number/rational/exceptions.hpp>
 #include <universal/traits/rational_traits.hpp>
 
 // useful functions to work with rationals

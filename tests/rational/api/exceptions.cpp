@@ -1,4 +1,4 @@
-//  sqrt.cpp : test suite for sqrt of rational numbers
+//  exceptions.cpp : test suite for arithmetic exceptions of rational numbers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -31,19 +31,17 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "rational sqrt ";
-	std::string test_tag = "sqrt";
+	std::string test_suite = "rational arithmetic exceptions ";
+	std::string test_tag = "exceptions";
 	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
-	using Rational = sw::universal::rational;
+	nrOfFailedTestCases += TestDivisionByZero<rational>();
 
-	Rational a{ 1 };
-	sqrt(a);
-
+	nrOfFailedTestCases += TestNegativeSqrtArgument<rational>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

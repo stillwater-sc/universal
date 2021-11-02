@@ -153,11 +153,16 @@ public:
 		return *this;
 	}
 	rational& operator/=(const rational& rhs) {
-		std::cout << "--> " << *this << " " << rhs << '\n';
+#if RATIONAL_THROW_ARITHMETIC_EXCEPTION
+		if (rhs.iszero()) {
+			throw rational_divide_by_zero();
+		}
+#else
+		std::cerr << "rational_divide_by_zero\n";
+#endif
 		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
 		numerator *= rhs.denominator;
 		denominator *= rhs.numerator;
-		std::cout << numerator << ", " << denominator << '\n';
 		normalize();
 		return *this;
 	}
@@ -265,7 +270,14 @@ protected:
 	// remove greatest common divisor out of the numerator/denominator pair
 	inline void normalize() {
 		decimal a, b, r;
-		a = numerator; b = denominator;
+		a = numerator; b = denominator;  // precondition is numerator and denominator are positive
+#if RATIONAL_THROW_ARITHMETIC_EXCEPTION
+		if (b.iszero()) {
+			throw rational_divide_by_zero();
+		}
+#else
+		std::cerr << "rational_divide_by_zero\n";
+#endif
 		while (a % b > 0) {
 			r = a % b;
 			a = b;
@@ -488,7 +500,7 @@ struct rationalintdiv {
 rationalintdiv rational_divide(const rational& lhs, const rational& rhs) {
 	if (rhs.iszero()) {
 #if RATIONAL_THROW_ARITHMETIC_EXCEPTION
-		throw rational_integer_divide_by_zero{};
+		throw rational_divide_by_zero{};
 #else
 		std::cerr << "rational_divide_by_zero\n";
 #endif // RATIONAL_THROW_ARITHMETIC_EXCEPTION

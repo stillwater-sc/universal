@@ -34,11 +34,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
+#include <universal/number/decimal/exceptions.hpp>
 #include <universal/number/decimal/decimal_impl.hpp>
 #include <universal/number/decimal/numeric_limits.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/integer/math_functions.hpp>
+#include <universal/number/decimal/mathlib.hpp>
 
 #endif

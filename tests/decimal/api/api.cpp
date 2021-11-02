@@ -1,4 +1,4 @@
-//  decimal.cpp : test suite runner for abitrary precision decimal integers
+//  api.cpp : test suite runner for abitrary precision decimal integers class API
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
