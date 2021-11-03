@@ -1,14 +1,12 @@
-//  sqrt.cpp : test suite for sqrt of rational numbers
+//  exceptions.cpp : test suite for arithmetic exceptions of fixpnt numbers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <string>
 // configure the number system
-#define RATIONAL_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/rational/rational.hpp>
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -31,19 +29,30 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "rational sqrt ";
-	std::string test_tag = "sqrt";
+	std::string test_suite = "fixpnt arithmetic exceptions ";
+	std::string test_tag = "exceptions";
 	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
-	using Rational = sw::universal::rational;
+	using Number = sw::universal::fixpnt<8, 4, Modulo, uint16_t>;
 
-	Rational a{ 1 };
-	sqrt(a);
+	nrOfFailedTestCases += TestDivisionByZero<Number>();
 
+	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>();
+
+#ifdef IMPLEMENTED
+	// special value-add cases
+	constexpr Number maxpos(SpecificValue::maxpos);
+	constexpr Number minpos(SpecificValue::minpos);
+	constexpr Number maxneg(SpecificValue::maxneg);
+	nrOfFailedTestCases += TestOverflowOnAddition(maxpos, maxpos);
+	nrOfFailedTestCases += TestOverflowOnSubtraction(maxneg, maxpos);
+	nrOfFailedTestCases += TestOverflowOnMultiplication(maxneg, maxpos);
+	nrOfFailedTestCases += TestOverflowOnDivision(maxneg, minpos);
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -69,11 +78,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::rational_arithmetic_exception& err) {
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
 	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::rational_internal_exception& err) {
+catch (const sw::universal::fixpnt_internal_exception& err) {
 	std::cerr << "Uncaught internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

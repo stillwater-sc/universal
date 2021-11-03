@@ -39,9 +39,11 @@ try {
 
 #if MANUAL_TESTING
 
-	nrOfFailedTestCases += TestDivisionByZero<decimal>();
+	using Number = sw::universal::decimal;
 
-	nrOfFailedTestCases += TestNegativeSqrtArgument<decimal>();
+	nrOfFailedTestCases += TestDivisionByZero<Number>();
+
+	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -67,11 +69,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::decimal_arithmetic_error& err) {
+catch (const sw::universal::decimal_arithmetic_exception& err) {
 	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::decimal_internal_error& err) {
+catch (const sw::universal::decimal_internal_exception& err) {
 	std::cerr << "Uncaught internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

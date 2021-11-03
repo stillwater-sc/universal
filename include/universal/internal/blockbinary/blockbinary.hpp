@@ -131,6 +131,7 @@ public:
 	// TODO: these need proper implementations that can convert very large integers to the proper scale afforded by the floating-point formats
 	explicit operator float() const              { return float(to_long_long()); }
 	explicit operator double() const             { return double(to_long_long()); }
+
 #if LONG_DOUBLE_SUPPORT
 	explicit operator long double() const        { return (long double)to_long_long(); }
 #endif

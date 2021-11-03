@@ -430,6 +430,11 @@ public:
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
+#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
+		if (rhs.iszero()) throw fixpnt_divide_by_zero();
+#else
+		std::cerr << "fixpnt_divide_by_zero" << std::endl;
+#endif
 		if constexpr (arithmetic == Modulo) {
 			bool positive = (ispos() & rhs.ispos()) | (isneg() & rhs.isneg());  // XNOR
 
@@ -437,13 +442,13 @@ public:
 			// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
 			constexpr size_t roundingBits = nbits;
 			constexpr size_t accumulatorSize = 2 * nbits + 2 * rbits + 2 * roundingBits;
-			blockbinary<accumulatorSize> dividend(bb);
+			blockbinary<accumulatorSize, bt> dividend(this->bb);
 			if (dividend.isneg()) dividend.twosComplement();
 			dividend <<= (2 * (rbits + roundingBits)); // scale up to include rounding bits
-			blockbinary<accumulatorSize> divisor(rhs.getbb());
+			blockbinary<accumulatorSize, bt> divisor(rhs.getbb());
 			if (divisor.isneg()) divisor.twosComplement();
 			divisor <<= rbits + roundingBits;
-			blockbinary<accumulatorSize> quotient = dividend / divisor;
+			blockbinary<accumulatorSize, bt> quotient = dividend / divisor;
 
 //			std::cout << "dividend : " << to_binary(dividend, true) << " : " << dividend << '\n';
 //			std::cout << "divisor  : " << to_binary(divisor, true) << " : " << divisor << '\n';
@@ -453,7 +458,7 @@ public:
 			quotient >>= roundingBits;
 			if (roundUp) ++quotient;
 //			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << (roundUp ? " rounded up": " truncated") << '\n';
-			bb = (positive ? quotient : quotient.twosComplement());
+			this->bb = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
 			std::cerr << "saturating divide not implemented yet\n";

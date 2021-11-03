@@ -15,6 +15,11 @@
 #include <universal/utility/bit_cast.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
+/// required std libraries 
+#include <iostream>
+#include <iomanip>
+
+////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -34,9 +39,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
+#include <universal/number/fixpnt/exceptions.hpp>
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/numeric_limits.hpp>
-#include <universal/number/fixpnt/exceptions.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 
 // useful functions to work with fixpnts

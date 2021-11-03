@@ -217,6 +217,7 @@ try {
 #endif
 	///////////////////////////////////////////////////////////////////////////////////
 	// arithmetic
+
 	{
 		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 16;

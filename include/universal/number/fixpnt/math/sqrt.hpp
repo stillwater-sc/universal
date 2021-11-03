@@ -140,7 +140,14 @@ namespace sw::universal {
 #else
 	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
-		return fixpnt<nbits, rbits, arithmetic, bt>(std::sqrt((double)f));
+#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
+		if (f.isneg()) {
+			throw fixpnt_negative_sqrt_arg();
+		}
+#else 
+		std::cerr << "fixpnt_negative_sqrt_arg\n";
+#endif
+			return fixpnt<nbits, rbits, arithmetic, bt>(std::sqrt((double)f));
 	}
 #endif
 
