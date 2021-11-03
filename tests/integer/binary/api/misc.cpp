@@ -1,4 +1,4 @@
-//  misc.cpp : miscellaneous tests for abitrary precision integers
+//  misc.cpp : miscellaneous tests for abitrary fixed-size integers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
