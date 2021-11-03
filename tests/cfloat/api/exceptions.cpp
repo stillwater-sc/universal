@@ -1,12 +1,14 @@
-//  exceptions.cpp : test suite for arithmetic exceptions of integer<> numbers
+//  exceptions.cpp : test suite for arithmetic exceptions of classic float numbers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <iostream>
+#include <string>
 // configure the number system
-#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/integer/integer.hpp>
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -29,32 +31,20 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "integer arithmetic exceptions ";
+	std::string test_suite = "cfloat arithmetic exceptions ";
 	std::string test_tag = "exceptions";
 	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
-	using Number = sw::universal::integer<16, uint16_t>;
+	using Number = sw::universal::cfloat<16, 5, uint16_t>;
 
 	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
 
-	// is an integer sqrt function useful?
-	//nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
-
-#ifdef IMPLEMENTED
-
-	// special value-add cases
-	constexpr Number maxpos(SpecificValue::maxpos);
-	constexpr Number minpos(SpecificValue::minpos);
-	constexpr Number maxneg(SpecificValue::maxneg);
-	nrOfFailedTestCases += TestOverflowOnAddition(bReportIndividualTestCases, maxpos, maxpos);
-	nrOfFailedTestCases += TestOverflowOnSubtraction(bReportIndividualTestCases, maxneg, maxpos);
-	nrOfFailedTestCases += TestOverflowOnMultiplication(bReportIndividualTestCases, maxneg, maxpos);
-	nrOfFailedTestCases += TestOverflowOnDivision(bReportIndividualTestCases, maxneg, minpos);
-#endif
+	// TODO: need to implement conversion from signed int
+	// nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -80,11 +70,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::integer_arithmetic_exception& err) {
+catch (const sw::universal::cfloat_arithmetic_exception& err) {
 	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::integer_internal_exception& err) {
+catch (const sw::universal::cfloat_internal_exception& err) {
 	std::cerr << "Uncaught internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

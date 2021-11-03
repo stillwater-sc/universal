@@ -41,9 +41,9 @@ try {
 
 	using Number = sw::universal::decimal;
 
-	nrOfFailedTestCases += TestDivisionByZero<Number>();
+	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
 
-	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>();
+	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

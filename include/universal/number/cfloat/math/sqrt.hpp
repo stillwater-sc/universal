@@ -78,12 +78,21 @@ namespace sw::universal {
 	// sqrt for arbitrary cfloat
 	template<size_t nbits, size_t es, typename bt>
 	inline cfloat<nbits, es, bt> sqrt(const cfloat<nbits, es, bt>& a) {
-
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+		if (a.isneg()) throw cfloat_negative_sqrt_arg();
+#else
+		std::cerr << "cfloat_negative_sqrt_argument" << std::endl;
+#endif
 		return a;
 	}
 #else
 	template<size_t nbits, size_t es, typename bt>
 	inline cfloat<nbits, es, bt> sqrt(const cfloat<nbits, es, bt>& a) {
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+		if (a.isneg()) throw cfloat_negative_sqrt_arg();
+#else
+		std::cerr << "cfloat_negative_sqrt_argument" << std::endl;
+#endif
 		return cfloat<nbits, es, bt>(std::sqrt((double)a));
 	}
 #endif

@@ -39,19 +39,19 @@ try {
 
 	using Number = sw::universal::fixpnt<8, 4, Modulo, uint16_t>;
 
-	nrOfFailedTestCases += TestDivisionByZero<Number>();
+	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
 
-	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>();
+	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
 
 #ifdef IMPLEMENTED
 	// special value-add cases
 	constexpr Number maxpos(SpecificValue::maxpos);
 	constexpr Number minpos(SpecificValue::minpos);
 	constexpr Number maxneg(SpecificValue::maxneg);
-	nrOfFailedTestCases += TestOverflowOnAddition(maxpos, maxpos);
-	nrOfFailedTestCases += TestOverflowOnSubtraction(maxneg, maxpos);
-	nrOfFailedTestCases += TestOverflowOnMultiplication(maxneg, maxpos);
-	nrOfFailedTestCases += TestOverflowOnDivision(maxneg, minpos);
+	nrOfFailedTestCases += TestOverflowOnAddition(bReportIndividualTestCases, maxpos, maxpos);
+	nrOfFailedTestCases += TestOverflowOnSubtraction(bReportIndividualTestCases, maxneg, maxpos);
+	nrOfFailedTestCases += TestOverflowOnMultiplication(bReportIndividualTestCases, maxneg, maxpos);
+	nrOfFailedTestCases += TestOverflowOnDivision(bReportIndividualTestCases, maxneg, minpos);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
