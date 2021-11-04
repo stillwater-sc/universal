@@ -26,6 +26,7 @@ int scale_maxpos_fixpnt() {
 // calculate exponential scale of minpos
 template<size_t nbits, size_t rbits>
 int scale_minpos_fixpnt() {
+	assert(nbits >= rbits);
 	return -int(rbits);
 }
 
@@ -33,7 +34,6 @@ int scale_minpos_fixpnt() {
 // the type of arithmetic, Modulo or Saturating, does not affect the range
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 void ReportFixedPointRanges(std::ostream& ostr, const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-	using namespace std;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, bt>;
 	FixedPoint fp;
 	ostr << std::setw(40) << type_tag(v) << " : [ "

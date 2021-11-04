@@ -1003,18 +1003,18 @@ public:
 	// specific number system values of interest
 	inline constexpr cfloat& maxpos() noexcept {
 		if constexpr (hasSupernormals) {
-			// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 11..11, f = 111...101
+			// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
 			clear();
 			flip();
-			setbit(nbits - 1ull, false);
-			setbit(1ull, false);
+			setbit(nbits - 1ull, false); // sign = 0
+			setbit(1ull, false); // bit1 = 0
 		}
 		else {
 			// maximum positive value has this bit pattern: 0-1...0-111...111, that is, sign = 0, e = 11..10, f = 111...111
 			clear();
 			flip();
-			setbit(fbits, false); // set least significant exponent bit to 0b0
-			setbit(nbits - 1ull, false); // set sign to 0b0
+			setbit(fbits, false); // set least significant exponent bit to 0
+			setbit(nbits - 1ull, false); // set sign to 0
 		}
 		return *this;
 	}
@@ -1027,7 +1027,7 @@ public:
 		else {
 			// minimum positive value has this bit pattern: 0-001-00...0, that is, sign = 0, e = 001, f = 0000
 			clear();
-			setexponent(1);
+			setbit(fbits);
 		}
 		return *this;
 	}
@@ -1046,7 +1046,7 @@ public:
 		else {
 			// minimum negative value has this bit pattern: 1-001-00...0, that is, sign = 1, e = 001, f = 0000
 			clear();
-			setexponent(1);
+			setbit(fbits);
 			setbit(nbits - 1ull);
 		}
 		return *this;
@@ -1062,10 +1062,7 @@ public:
 			// maximum negative value has this bit pattern: 1-1...0-111...111, that is, sign = 1, e = 11..10, f = 111...111
 			clear();
 			flip();
-			blockbinary<es, bt> scale;
-			exponent(scale);
-			--scale;
-			setexponent(int(scale));
+			setbit(fbits, false);
 		}
 		return *this;
 	}
