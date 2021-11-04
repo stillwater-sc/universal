@@ -34,9 +34,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
+#include <universal/number/lns/exceptions.hpp>
 #include <universal/number/lns/lns_impl.hpp>
 #include <universal/number/lns/numeric_limits.hpp>
-#include <universal/number/lns/exceptions.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions

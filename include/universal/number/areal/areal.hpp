@@ -34,9 +34,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
+#include <universal/number/areal/exceptions.hpp>
 #include <universal/number/areal/areal_impl.hpp>
 #include <universal/number/areal/numeric_limits.hpp>
-#include <universal/number/areal/exceptions.hpp>
 #include <universal/number/areal/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
