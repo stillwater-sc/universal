@@ -1,11 +1,9 @@
-//  decimal.cpp : test suite runner for abitrary precision decimal integers
+//  api.cpp : test suite runner for abitrary precision decimal integers class API
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <string>
 // configure the decimal integer arithmetic class
 #define DECIMAL_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/decimal/decimal.hpp>

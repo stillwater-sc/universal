@@ -1,4 +1,4 @@
-//  api.cpp : class API tests for rational number system type
+//  sqrt.cpp : test suite for sqrt of rational numbers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,13 +6,10 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <string>
+// configure the number system
+#define RATIONAL_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/rational/rational.hpp>
 #include <universal/verification/test_suite.hpp>
-
-/*
-   The goal of the rational number system is to provide a flexible
-   and easy to use rational arithmetic type.
-*/
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -34,8 +31,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "rational class API ";
-	std::string test_tag = "rational";
+	std::string test_suite = "rational sqrt ";
+	std::string test_tag = "sqrt";
 	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -44,42 +41,8 @@ try {
 
 	using Rational = sw::universal::rational;
 
-	Rational a, b, c, d;
-	a = -1;
-	b = 8;
-	c = a / b;
-	std::cout << a << " / " << b << " = " << c << '\n';
-	a = 3;
-	d = a / b;
-	std::cout << a << " / " << b << " = " << d << '\n';
-	a = c;
-	b = d;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	c = a - b;
-	std::cout << a << " - " << b << " = " << c << '\n';
-	d = a * b;
-	std::cout << a << " * " << b << " = " << d << '\n';
-	a = -a;
-	b = -b;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	c = a - b;
-	std::cout << a << " - " << b << " = " << c << '\n';
-	d = a * b;
-	std::cout << a << " * " << b << " = " << d << '\n';
-
-	{
-		decimal a, b, remainder;
-		a = 3; b = 9;
-		while (a % b > 0) {
-			remainder = a % b;
-			a = b;
-			b = remainder;
-		}
-		std::cout << "gcd of (3, 9) = " << remainder << '\n';
-	}
-
+	Rational a{ 1 };
+	sqrt(a);
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

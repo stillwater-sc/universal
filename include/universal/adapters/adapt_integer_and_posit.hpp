@@ -76,7 +76,7 @@ inline void convert_i2p(const integer<ibits, BlockType>& w, posit<nbits, es>& p)
 	bool isInf = false;
 	bool isNan = false;
 	long _scale = scale(w);
-	integer<ibits, BlockType> w2 = sign ? twos_complement(w) : w;
+	integer<ibits, BlockType> w2 = sign ? twosComplement(w) : w;
 	int msb = findMsb(w2);
 	internal::bitblock<nbits> fraction_without_hidden_bit;
 	int fbit = nbits - 1;

@@ -61,22 +61,22 @@ public:
 		parse(digits);
 		return *this;
 	}
-	rational& operator=(char rhs)               { return convert_integer(rhs); }
-	rational& operator=(short rhs)              { return convert_integer(rhs); }
-	rational& operator=(int rhs)                { return convert_integer(rhs); }
-	rational& operator=(long rhs)               { return convert_integer(rhs); }
-	rational& operator=(long long rhs)          { return convert_integer(rhs); }
-	rational& operator=(unsigned char rhs)      { return convert_integer(rhs); }
-	rational& operator=(unsigned short rhs)     { return convert_integer(rhs); }
-	rational& operator=(unsigned int rhs)       { return convert_integer(rhs); }
-	rational& operator=(unsigned long rhs)      { return convert_integer(rhs); }
-	rational& operator=(unsigned long long rhs) { return convert_integer(rhs); }
-	rational& operator=(float rhs)              { return convert_ieee754(rhs); }
-	rational& operator=(double rhs)             { return convert_ieee754(rhs); }
+	rational& operator=(signed char rhs)        { return from_signed<signed char>(rhs); }
+	rational& operator=(short rhs)              { return from_signed<short>(rhs); }
+	rational& operator=(int rhs)                { return from_signed<int>(rhs); }
+	rational& operator=(long rhs)               { return from_signed<long>(rhs); }
+	rational& operator=(long long rhs)          { return from_signed<long long>(rhs); }
+	rational& operator=(unsigned char rhs)      { return from_unsigned<unsigned char>(rhs); }
+	rational& operator=(unsigned short rhs)     { return from_unsigned<unsigned short>(rhs); }
+	rational& operator=(unsigned int rhs)       { return from_unsigned<unsigned int>(rhs); }
+	rational& operator=(unsigned long rhs)      { return from_unsigned<unsigned long>(rhs); }
+	rational& operator=(unsigned long long rhs) { return from_unsigned<unsigned long long>(rhs); }
+	rational& operator=(float rhs)              { return from_ieee754<float>(rhs); }
+	rational& operator=(double rhs)             { return from_ieee754<double>(rhs); }
 
 #if LONG_DOUBLE_SUPPORT
-	rational(long double initial_value) { *this = initial_value; }
-	rational& operator=(long double rhs)        { return convert_ieee754(rhs); }
+	rational(long double initial_value)         { *this = initial_value; }
+	rational& operator=(long double rhs)        { return from_ieee754<long double>(rhs); }
 #endif
 
 	// unitary operators
@@ -153,27 +153,32 @@ public:
 		return *this;
 	}
 	rational& operator/=(const rational& rhs) {
-		std::cout << "--> " << *this << " " << rhs << '\n';
+#if RATIONAL_THROW_ARITHMETIC_EXCEPTION
+		if (rhs.iszero()) {
+			throw rational_divide_by_zero();
+		}
+#else
+		std::cerr << "rational_divide_by_zero\n";
+#endif
 		negative = !((negative && rhs.negative) || (!negative && !rhs.negative));
 		numerator *= rhs.denominator;
 		denominator *= rhs.numerator;
-		std::cout << numerator << ", " << denominator << '\n';
 		normalize();
 		return *this;
 	}
 
 	// conversion operators 
-	explicit operator unsigned short() const     { return to_ushort(); }
-	explicit operator unsigned int() const       { return to_uint(); }
-	explicit operator unsigned long() const      { return to_ulong(); }
-	explicit operator unsigned long long() const { return to_ulong_long(); }
-	explicit operator short() const              { return to_short(); }
-	explicit operator int() const                { return to_int(); }
-	explicit operator long() const               { return to_long(); }
-	explicit operator long long() const          { return to_long_long(); }
-	explicit operator float() const              { return to_native<float>(); }
-	explicit operator double() const             { return to_native<double>(); }
-	explicit operator long double() const        { return to_native<long double>(); }
+	explicit operator unsigned short() const     { return to_unsigned<unsigned short>(); }
+	explicit operator unsigned int() const       { return to_unsigned<unsigned int>(); }
+	explicit operator unsigned long() const      { return to_unsigned<unsigned long>(); }
+	explicit operator unsigned long long() const { return to_unsigned<unsigned long long>(); }
+	explicit operator short() const              { return to_signed<short>(); }
+	explicit operator int() const                { return to_signed<int>(); }
+	explicit operator long() const               { return to_signed<long>(); }
+	explicit operator long long() const          { return to_signed<long long>(); }
+	explicit operator float() const              { return to_ieee754<float>(); }
+	explicit operator double() const             { return to_ieee754<double>(); }
+	explicit operator long double() const        { return to_ieee754<long double>(); }
 
 	// selectors
 	inline bool iszero() const {
@@ -265,7 +270,14 @@ protected:
 	// remove greatest common divisor out of the numerator/denominator pair
 	inline void normalize() {
 		decimal a, b, r;
-		a = numerator; b = denominator;
+		a = numerator; b = denominator;  // precondition is numerator and denominator are positive
+#if RATIONAL_THROW_ARITHMETIC_EXCEPTION
+		if (b.iszero()) {
+			throw rational_divide_by_zero();
+		}
+#else
+		std::cerr << "rational_divide_by_zero\n";
+#endif
 		while (a % b > 0) {
 			r = a % b;
 			a = b;
@@ -275,46 +287,50 @@ protected:
 		denominator /= b;
 	}
 	// conversion functions
-	inline short to_short() const { return short(to_long_long()); }
-	inline int to_int() const { return short(to_long_long()); }
-	inline long to_long() const { return short(to_long_long()); }
-	inline long long to_long_long() const {
-		return (long long)numerator / (long long)denominator;
-	}
-	inline unsigned short to_ushort() const { return static_cast<unsigned short>(to_ulong_long()); }
-	inline unsigned int to_uint() const { return static_cast<unsigned int>(to_ulong_long()); }
-	inline unsigned long to_ulong() const { return static_cast<unsigned long>(to_ulong_long()); }
-	inline unsigned long long to_ulong_long() const {
-		return (unsigned long long)numerator / (unsigned long long)denominator;
-	}
-
+	// convert to signed int: TODO, SFINEA
+	template<typename SignedInt>
+	inline SignedInt to_signed() const { return static_cast<SignedInt>(numerator / denominator); }
+	// convert to unsigned int: TODO, SFINEA
+	template<typename UnsignedInt>
+	inline UnsignedInt to_unsigned() const { return static_cast<UnsignedInt>(numerator / denominator); }
+	// convert to ieee-754: TODO, SFINEA
 	template<typename Ty>
-	inline long double to_native() const { return Ty(numerator) / Ty(denominator);
-	}
+	inline Ty to_ieee754() const { return Ty(numerator) / Ty(denominator); }
 
-	template<typename Ty>
-	rational& convert_integer(Ty& rhs) {
+	// from signed int: TODO, SFINEA
+	template<typename UnsignedInt>
+	rational& from_signed(UnsignedInt& rhs) {
 		if (rhs < 0) {
-			negative  = true;
+			negative = true;
 			numerator = -rhs;
 		}
 		else {
-			negative  = false;
+			negative = false;
 			numerator = rhs;
 		}
 		denominator = 1;
 		return *this;
 	}
-	template<typename Ty>
-	rational& convert_ieee754(Ty& rhs) {
+	// from signed int: TODO, SFINEA
+	template<typename UnsignedInt>
+	rational& from_unsigned(UnsignedInt& rhs) {
+		negative  = false;
+		numerator = rhs;
+		denominator = 1;
+		return *this;
+	}
+	// from ieee754: TODO, SFINEA
+	template<typename Real>
+	rational& from_ieee754(Real& rhs) {
+		std::cerr << "TBD" << rhs << std::endl;
 		return *this;
 	}
 
 private:
 	// sign-magnitude number: indicate if number is positive or negative
 	bool negative;
-	decimal numerator;
-	decimal denominator;
+	decimal numerator; // will be managed as a positive number
+	decimal denominator; // will be managed as a positive number
 
 	friend std::ostream& operator<<(std::ostream& ostr, const rational& d);
 	friend std::istream& operator>>(std::istream& istr, rational& d);
@@ -484,7 +500,7 @@ struct rationalintdiv {
 rationalintdiv rational_divide(const rational& lhs, const rational& rhs) {
 	if (rhs.iszero()) {
 #if RATIONAL_THROW_ARITHMETIC_EXCEPTION
-		throw rational_integer_divide_by_zero{};
+		throw rational_divide_by_zero{};
 #else
 		std::cerr << "rational_divide_by_zero\n";
 #endif // RATIONAL_THROW_ARITHMETIC_EXCEPTION

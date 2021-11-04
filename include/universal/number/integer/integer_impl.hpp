@@ -41,7 +41,7 @@ template<size_t nbits, typename BlockType>
 inline long scale(const integer<nbits, BlockType>& i) {
 	integer<nbits, BlockType> v(i);
 	if (i.sign()) { // special case handling
-		v = twos_complement(v);
+		v.twosComplement();
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
 			return long(nbits - 1);
 		}
@@ -262,13 +262,15 @@ public:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		sum.b[MS_BYTE] = static_cast<uint8_t>(MS_BYTE_MASK & sum.b[MS_BYTE]);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-		if (carry) throw integer_overflow();
+		// TODO: what is the real overflow condition?
+		// if (carry) throw integer_overflow();
 #endif
 		*this = sum;
 		return *this;
 	}
 	integer& operator-=(const integer& rhs) {
-		operator+=(twos_complement(rhs));
+		integer twos(rhs);
+		operator+=(twos.twosComplement());
 		return *this;
 	}
 	integer& operator*=(const integer& rhs) {
@@ -489,6 +491,11 @@ public:
 		b[MS_BYTE] = static_cast<uint8_t>(b[MS_BYTE] & MS_BYTE_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
+	// in-place 2's complement
+	inline constexpr integer& twosComplement() {
+		flip();
+		return ++(*this);
+	}
 
 	// selectors
 	inline constexpr bool iszero() const {
@@ -523,7 +530,10 @@ public:
 			uint8_t mask = static_cast<uint8_t>(1 << (i % 8));
 			return (byte & mask);
 		}
-		throw "bit index out of bounds";
+		throw integer_byte_index_out_of_bounds();
+	}
+	inline constexpr bool test(size_t i) const {
+		return at(i);
 	}
 	inline constexpr uint8_t byte(unsigned int i) const {
 		if (i < nrBytes) return b[i];
@@ -723,20 +733,34 @@ inline integer<nbits, BlockType> abs(const integer<nbits, BlockType>& a) {
 	return (a >= 0 ? a : twos_complement(a));
 }
 
+// free function generator to create a 1's complement copy of an integer
+template<size_t nbits, typename BlockType>
+inline integer<nbits, BlockType> onesComplement(const integer<nbits, BlockType>& value) {
+	integer<nbits, BlockType> ones(value);
+	return ones.flip();
+}
+// free function generator to create the 2's complement of an integer
+template<size_t nbits, typename BlockType>
+inline integer<nbits, BlockType> twosComplement(const integer<nbits, BlockType>& value) {
+	integer<nbits, BlockType> twos(value);
+	return twos.twosComplement();;
+}
+
+#ifdef DEPRECATED
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> twos_complement(const integer<nbits, BlockType>& value) {
 	integer<nbits, BlockType> complement = ~value;
 	++complement;
 	return complement;
 }
-
+#endif
 // convert integer to decimal string
 template<size_t nbits, typename BlockType>
 std::string convert_to_decimal_string(const integer<nbits, BlockType>& value) {
 	if (value.iszero()) {
 		return std::string("0");
 	}
-	integer<nbits, BlockType> number = value.sign() ? twos_complement(value) : value;
+	integer<nbits, BlockType> number = value.sign() ? twosComplement(value) : value;
 	support::decimal partial, multiplier;
 	partial.setzero();
 	multiplier.setdigit(1);

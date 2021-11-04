@@ -1,4 +1,4 @@
-//  api.cpp : class API tests for rational number system type
+//  exceptions.cpp : test suite for arithmetic exceptions of valid numbers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,13 +6,10 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <string>
-#include <universal/number/rational/rational.hpp>
+// configure the number system
+#define VALID_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/valid/valid.hpp>
 #include <universal/verification/test_suite.hpp>
-
-/*
-   The goal of the rational number system is to provide a flexible
-   and easy to use rational arithmetic type.
-*/
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -34,53 +31,20 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "rational class API ";
-	std::string test_tag = "rational";
+	std::string test_suite = "valid arithmetic exceptions ";
+	std::string test_tag = "exceptions";
 	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
-	using Rational = sw::universal::rational;
+	using Number = sw::universal::valid<16,2>;
 
-	Rational a, b, c, d;
-	a = -1;
-	b = 8;
-	c = a / b;
-	std::cout << a << " / " << b << " = " << c << '\n';
-	a = 3;
-	d = a / b;
-	std::cout << a << " / " << b << " = " << d << '\n';
-	a = c;
-	b = d;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	c = a - b;
-	std::cout << a << " - " << b << " = " << c << '\n';
-	d = a * b;
-	std::cout << a << " * " << b << " = " << d << '\n';
-	a = -a;
-	b = -b;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	c = a - b;
-	std::cout << a << " - " << b << " = " << c << '\n';
-	d = a * b;
-	std::cout << a << " * " << b << " = " << d << '\n';
+	// TODO: implement arithmetic operators for valid<>
+//	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
 
-	{
-		decimal a, b, remainder;
-		a = 3; b = 9;
-		while (a % b > 0) {
-			remainder = a % b;
-			a = b;
-			b = remainder;
-		}
-		std::cout << "gcd of (3, 9) = " << remainder << '\n';
-	}
-
-
+//	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -106,11 +70,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::rational_arithmetic_exception& err) {
+catch (const sw::universal::valid_arithmetic_exception& err) {
 	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::rational_internal_exception& err) {
+catch (const sw::universal::valid_internal_exception& err) {
 	std::cerr << "Uncaught internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

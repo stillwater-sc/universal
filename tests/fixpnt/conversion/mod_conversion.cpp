@@ -58,6 +58,7 @@ int VerifySignedIntegerProgressions(bool bReportIndividualTestCases) {
 	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
 	// generate the integer progression for this fixpnt, which is represented by a marging MSB
 	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
+	static_assert(ibits > 2, "test requires at least 3 bits of integer bits");
 	// assume that we have maximally 64 integer bits
 	static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
 
@@ -69,7 +70,7 @@ int VerifySignedIntegerProgressions(bool bReportIndividualTestCases) {
 
 	constexpr Fixed maxneg(SpecificValue::maxneg);
 	int64_t marchingOne = (long long)maxneg;
-	for (int i = (ibits - 1); i >= 0; --i) {
+	for (int i = static_cast<int>(ibits - 1); i >= 0; --i) {
 		a = marchingOne;
 		if (i == 0) {
 			if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << 0 << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
@@ -83,7 +84,7 @@ int VerifySignedIntegerProgressions(bool bReportIndividualTestCases) {
 		marchingOne /= 2;
 	}
 	marchingOne = 1;
-	for (int i = 1; i < (ibits); ++i) {
+	for (size_t i = 1; i < ibits; ++i) {
 		a = marchingOne;
 		if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
 		if (a != marchingOne) {
@@ -102,12 +103,13 @@ int VerifyUnsignedIntegerProgressions(bool bReportIndividualTestCases) {
 	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
 	// generate the integer progression for this fixpnt, which is represented by a marging MSB
 	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
+	static_assert(ibits > 2, "test requires at least 3 bits of integer bits");
 	// assume that we have maximally 64 integer bits
 	static_assert(ibits < 65, "test assumes we have at most 64 integer bits");
 
 	Fixed a;
 	uint64_t marchingOne = 1;
-	for (int i = 1; i < (ibits); ++i) {
+	for (size_t i = 1; i < ibits; ++i) {
 		a = marchingOne;
 		if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << '\n';
 		if (a != marchingOne) {
