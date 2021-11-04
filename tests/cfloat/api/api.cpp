@@ -126,6 +126,53 @@ try {
 			std::cout << "/////////    end of division    //////////\n\n";
 		}
 	}
+
+	{
+		// report on the dynamic range of some standard configurations
+		using quarter = cfloat<  8,  2, uint8_t, true, true, false>;
+		using half    = cfloat< 16,  5, uint8_t, true, true, false>;
+		using single  = cfloat< 32,  8, uint8_t, true, false, false>;
+		using dual    = cfloat< 64, 11, uint8_t, true, false, false>;
+		using quad    = cfloat<128, 15, uint8_t, true, false, false>;
+		using octo    = cfloat<256, 18, uint8_t, true, false, false>;
+		report_range<quarter>(std::cout);
+		report_range<half>(std::cout);
+		report_range<single>(std::cout);
+		report_range<dual>(std::cout);
+		report_range<quad>(std::cout);
+		report_range<octo>(std::cout);
+
+		quarter q;
+		q.setbits(0x01);  // smallest subnormal
+		std::cout << "minpos  cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
+		q.setbits(0x5f);  // max normal
+		std::cout << "maxnorm cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
+		q.setbits(0x7d);  // max supernormal
+		std::cout << "maxpos  cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
+
+		half h;
+		h.setbits(0x0001); // smallest subnormal
+		std::cout << "minpos  cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
+		h.setbits(0x7bff);  // max normal
+		std::cout << "maxnorm cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
+		h.setbits(0x7ffd);  // max supernormal
+		std::cout << "maxpos  cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
+
+		using QuarterNormal = cfloat<  8, 2, uint8_t, false, false, false>; // no sub or supernormals
+		QuarterNormal qn;
+		qn.minpos();
+		std::cout << "minpos quarterNormal: " << to_binary(qn) << " : " << qn << '\n';
+		qn.maxpos();
+		std::cout << "maxpos quarterNormal: " << to_binary(qn) << " : " << qn << '\n';
+
+		using halfNormal = cfloat< 16, 5, uint16_t, false, false, false>; // no sub or supernormals
+		halfNormal hn;
+		hn.minpos();
+		std::cout << "minpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
+		hn.maxpos();
+		std::cout << "maxpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
+	}
+
 	return 0;
 	{
 		using BlockType = uint32_t;

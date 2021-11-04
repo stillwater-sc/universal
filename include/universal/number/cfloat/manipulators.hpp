@@ -21,12 +21,12 @@ template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSuper
 std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	std::stringstream s;
 	s << "cfloat<"
-		<< nbits << ", "
-		<< es << ", "
+		<< std::setw(3) << nbits << ", "
+		<< std::setw(3) << es << ", "
 		<< typeid(bt).name() << ", "
-		<< (hasSubnormals ? "hasSubnormals, " : "noSubnormals, ")
-		<< (hasSupernormals ? "hasSupernormals, " : "noSupernormals, ")
-		<< (isSaturating ? "Saturating>" : "notSaturating>");
+		<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
+		<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
+		<< (isSaturating ? "   Saturating>" : "notSaturating>");
 	if (v.iszero()) s << ' ';
 	return s.str();
 }

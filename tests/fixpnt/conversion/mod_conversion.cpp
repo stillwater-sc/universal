@@ -141,7 +141,7 @@ int VerifySignedIntegerProgressionsFloat(bool bReportIndividualTestCases) {
 	int64_t marchingOne = (long long)maxneg;
 	float f = float(marchingOne);
 	std::cout << to_binary(f) << '\n';
-	for (int i = (ibits - 1); i >= 0; --i) {
+	for (int i = static_cast<int>(ibits - 1); i >= 0; --i) {
 		a = float(marchingOne);
 		b = double(marchingOne);
 		if (i == 0) {
@@ -156,7 +156,7 @@ int VerifySignedIntegerProgressionsFloat(bool bReportIndividualTestCases) {
 		marchingOne /= 2;
 	}
 	marchingOne = 1;
-	for (int i = 1; i < (ibits); ++i) {
+	for (size_t i = 1; i < ibits; ++i) {
 		a = float(marchingOne);
 		b = double(marchingOne);
 		if (bReportIndividualTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << to_binary(b) << '\n';
