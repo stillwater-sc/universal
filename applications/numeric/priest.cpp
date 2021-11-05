@@ -41,8 +41,71 @@ std::pair<Real, Real> SumErr(Real a, Real b) {
 	h = g - a;
 	f = b - h;
 	d = f - e;
+	if (d + e != f) {
+		c = a, d = b;
+	}
+	return std::pair(c, d);
+}
+
+template<typename Real>
+std::pair<Real, Real> SumErrCorollary2(Real a, Real b) {
+	Real c, d, e;
+
+	if (abs(a) < abs(b)) std::swap(a, b);
+	c = a + b;
+	e = c - a;
+	d = b - e;
 
 	return std::pair(c, d);
+}
+
+template<typename Real>
+void TestSumErr() {
+	using namespace sw::universal;
+	using Float = sw::universal::cfloat<32, 8, uint32_t>;
+	Float fa, fb;
+	Real a, b, c, d;
+
+	fa = 1.0f;
+	++fa;
+	fb = 1.0f;
+	--fb;
+	a = float(fa);
+	b = float(fb);
+	auto result = SumErr(a, b);
+	c = result.first;
+	d = result.second;
+	std::cout << c << " + " << d << " = " << a << " + " << b << '\n';
+	std::cout << to_binary(c) << " : " << to_binary(a + b) << '\n';
+	std::cout << to_binary(d) << '\n';
+	std::cout << "a : " << to_binary(a) << '\n';
+	std::cout << "b : " << to_binary(b) << '\n';
+	std::cout << "c : " << to_binary(c) << '\n';
+	std::cout << "d : " << to_binary(d) << '\n';
+
+	std::cout << "Corollary2: simplified\n";
+	result = SumErrCorollary2(a, b);
+	c = result.first;
+	d = result.second;
+	std::cout << c << " + " << d << " = " << a << " + " << b << '\n';
+	std::cout << to_binary(c) << " : " << to_binary(a + b) << '\n';
+	std::cout << to_binary(d) << '\n';
+	std::cout << "a : " << to_binary(a) << '\n';
+	std::cout << "b : " << to_binary(b) << '\n';
+	std::cout << "c : " << to_binary(c) << '\n';
+	std::cout << "d : " << to_binary(d) << '\n';
+}
+
+template<typename Real>
+std::pair<Real, Real> split(Real x, unsigned k) {
+	using namespace sw::universal;
+	unsigned t = ieee754_parameter<Real>::fbits;
+	Real a_k = static_cast<Real>((1ull << (t - k)) + 1);
+	Real y = a_k * x;
+	Real z = y - x;
+	Real xp = y - z;
+	Real xpp = x - xp;
+	return std::pair(xp, xpp);
 }
 
 int main()
@@ -66,26 +129,21 @@ try {
 	std::cout << "double      digits of precision : " << std::numeric_limits<double>::max_digits10 << '\n';
 	std::cout << "long double digits of precision : " << std::numeric_limits<Longd>::max_digits10 << '\n';
 
-	Float fa, fb;
-	Sngle a, b, c, d;
+	TestSumErr<float>();
+	TestSumErr<double>();
 
-	fa = 1.0f;
+	std::cout << "\nSplitting of a floating-point value\n";
+	Float fa{ 1.875f + 0.0625f + 0.03125f };
 	++fa;
-	fb = 1.0f;
-	--fb;
-	a = Sngle(fa);
-	b = Sngle(fb);
-	auto result = SumErr(a, b);
-	c = result.first;
-	d = result.second;
-	std::cout << c << " + " << d << " = " << a << " + " << b << '\n';
-	std::cout << to_binary(c) << " : " << to_binary(a + b) << '\n';
-	std::cout << to_binary(d) << '\n';
-	std::cout << "a : " << to_binary(a) << '\n';
-	std::cout << "b : " << to_binary(b) << '\n';
-	std::cout << "c : " << to_binary(c) << '\n';
-	std::cout << "d : " << to_binary(d) << '\n';
-
+	float x = float(fa);
+	for (unsigned k = 1; k < 10; ++k) {
+		auto xs = split(x, k);
+		float xp = xs.first;
+		float xpp = xs.second;
+		std::cout << "x   : " << to_binary(x) << " : " << x << '\n';
+		std::cout << "x'  : " << to_binary(xp) << " : " << xp << '\n';
+		std::cout << "x'' : " << to_binary(xpp) << " : " << xpp << '\n';
+	}
 
 
 	std::cout << std::setprecision(precision);
