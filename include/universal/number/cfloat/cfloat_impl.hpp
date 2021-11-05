@@ -2799,25 +2799,25 @@ public:
 					}
 				}
 			}
+			// post-processing results to implement saturation and projection after rounding logic
+			if constexpr (isSaturating) {
+				if (isinf(INF_TYPE_POSITIVE) || isnan(NAN_TYPE_QUIET)) {
+					maxpos();
+				}
+				else if (isinf(INF_TYPE_NEGATIVE) || isnan(NAN_TYPE_SIGNALLING)) {
+					maxneg();
+				}
+			}
+			else {
+				if (isnan(NAN_TYPE_QUIET)) {
+					setinf(false);
+				}
+				else if (isnan(NAN_TYPE_SIGNALLING)) {
+					setinf(true);
+				}
+			}
+			return *this;  // TODO: unreachable in some configurations	
 		}
-		// post-processing results to implement saturation and projection after rounding logic
-		if constexpr (isSaturating) {
-			if (isinf(INF_TYPE_POSITIVE) || isnan(NAN_TYPE_QUIET)) {
-				maxpos();
-			}
-			else if (isinf(INF_TYPE_NEGATIVE) || isnan(NAN_TYPE_SIGNALLING)) {
-				maxneg();
-			}
-		}
-		else {
-			if (isnan(NAN_TYPE_QUIET)) {
-				setinf(false);
-			}
-			else if (isnan(NAN_TYPE_SIGNALLING)) {
-				setinf(true);
-			}
-		}
-		return *this;  // TODO: unreachable in some configurations
 	}
 
 	// post-processing results to implement saturation and projection after rounding logic
