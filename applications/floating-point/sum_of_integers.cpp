@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
+#include <universal/utility/directives.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/posit/posit.hpp>
 
@@ -11,7 +11,7 @@ template<typename Scalar>
 Scalar NaiveSumOfIntegers(long long lowerbound = 0, long long upperbound = 10000) {
 	Scalar sum = 0;
 	for (long long i = lowerbound; i < upperbound; ++i) {
-		sum += i;
+		sum += Scalar(i);
 	}
 	return sum;
 }
@@ -19,7 +19,7 @@ Scalar NaiveSumOfIntegers(long long lowerbound = 0, long long upperbound = 10000
 // to see how different Universal number systems fair on the sum of integers, set STRESS_TESTING to 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

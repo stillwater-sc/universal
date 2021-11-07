@@ -1,27 +1,43 @@
-﻿// exponentiation.cpp: evaluation of exponentiation of posit number systems
+﻿// contract_expand.cpp: evaluation of contractions and expansions of posit number systems
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
+#include <universal/utility/directives.hpp>
 // pull in the posit number system
 #include <universal/number/posit/posit.hpp>
 
 template<typename Scalar>
-void Exponentiation(int depth) {
+void ContractionExpansion(int depth) {
 	using namespace sw::universal;
 
+	int columnWidth = 20;
 	Scalar seed = 2.0;
-	Scalar x = seed;
-	std::cout << x << '\n';
-	for (int i = 0; i < depth; ++i) {
-		x = exp2(x);
-		std::cout << x << '\n';
+	std::cout << "Contraction/Expansion sequence sqrt(sqrt(sqrt(...sqrt(x))))))^depth => seed with seed = " << seed << '\n';
+	std::cout << std::setw(3) << "#"
+		<< std::setw(columnWidth) << "contraction"
+		<< std::setw(columnWidth) << "expansion"
+		<< std::setw(columnWidth) << "error"
+		<< '\n';
+	for (int i = 1; i < depth; ++i) {
+		Scalar x = seed;
+		for (int k = 1; k < i; ++k) {
+			x = sqrt(x);
+		}
+		Scalar contraction = x;
+		for (int k = 1; k < i; ++k) {
+			x = exp2(x);
+		}
+		Scalar expansion = x;
+		std::cout << std::setw(3) << i << " "
+			<< std::setw(columnWidth) << contraction << " "
+			<< std::setw(columnWidth) << expansion << " "
+			<< std::setw(columnWidth) << expansion - seed
+			<< '\n';
 	}
-
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -36,7 +52,7 @@ try {
 	auto precision = std::cout.precision();
 	std::cout << std::setprecision(12);
 
-	Exponentiation<Posit>(5);
+	ContractionExpansion<Posit>(10);
 
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);

@@ -50,7 +50,7 @@ Relative error =
 				  |ln(computed value/ correct value)|,
 
  where we require that the correct value is finite and nonzero, and the computed
- value has the sign sign as the correct value. Relative error is otherwise treated
+ value has the same sign as the correct value. Relative error is otherwise treated
  as undefined. Peter Lindstrom notes that the natural logarithm is the right one to use,
  because the relative error of 1 + 𝜀 is close to 𝜀 when the correct value is 1,
  which agrees with our intuition and also closely matches the traditional definition
