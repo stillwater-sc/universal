@@ -1,48 +1,18 @@
-﻿// contract_expand.cpp: evaluation of contractions and expansions of posit number systems
+﻿// rounding_error_multiplication.cpp: evaluation of rounding errors of multiplication in the posit number systems 
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
+#include <universal/utility/directives.hpp>
 // pull in the posit number system
 #include <universal/number/posit/posit.hpp>
 
-template<typename Scalar>
-void ContractionExpansion(int depth) {
-	using namespace sw::universal;
-
-	int columnWidth = 20;
-	Scalar seed = 2.0;
-	std::cout << "Contraction/Expansion sequence sqrt(sqrt(sqrt(...sqrt(x))))))^depth => seed with seed = " << seed << '\n';
-	std::cout << std::setw(3) << "#"
-		<< std::setw(columnWidth) << "contraction"
-		<< std::setw(columnWidth) << "expansion"
-		<< std::setw(columnWidth) << "error"
-		<< '\n';
-	for (int i = 1; i < depth; ++i) {
-		Scalar x = seed;
-		for (int k = 1; k < i; ++k) {
-			x = sqrt(x);
-		}
-		Scalar contraction = x;
-		for (int k = 1; k < i; ++k) {
-			x = exp2(x);
-		}
-		Scalar expansion = x;
-		std::cout << std::setw(3) << i << " "
-			<< std::setw(columnWidth) << contraction << " "
-			<< std::setw(columnWidth) << expansion << " "
-			<< std::setw(columnWidth) << expansion - seed
-			<< '\n';
-	}
-}
-
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
 	using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
@@ -52,7 +22,14 @@ try {
 	auto precision = std::cout.precision();
 	std::cout << std::setprecision(12);
 
-	ContractionExpansion<Posit>(10);
+	// with dynamic precision, we have the situation where multiplying
+	// extreme numbers creates precision we do not have..
+	Posit maxpos(SpecificValue::maxpos);
+	Posit minpos(SpecificValue::minpos);
+	Posit one = minpos * maxpos;
+	std::cout << "maxpos : " << info_print(maxpos) << '\n';
+	std::cout << "minpos : " << info_print(minpos) << '\n';
+	std::cout << "one    : " << info_print(one) << '\n';
 
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);

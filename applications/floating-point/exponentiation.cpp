@@ -1,18 +1,32 @@
-﻿// rounding_error_multiplication.cpp: evaluation of rounding errors of multiplication in the posit number systems 
+﻿// exponentiation.cpp: evaluation of exponentiation of posit number systems
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
+#include <universal/utility/directives.hpp>
 // pull in the posit number system
 #include <universal/number/posit/posit.hpp>
 
-int main(int argc, char** argv)
+template<typename Scalar>
+void Exponentiation(int depth) {
+	using namespace sw::universal;
+
+	Scalar seed = 2.0;
+	Scalar x = seed;
+	std::cout << x << '\n';
+	for (int i = 0; i < depth; ++i) {
+		x = exp2(x);
+		std::cout << x << '\n';
+	}
+
+}
+
+int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
 	using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
@@ -22,14 +36,7 @@ try {
 	auto precision = std::cout.precision();
 	std::cout << std::setprecision(12);
 
-	// with dynamic precision, we have the situation where multiplying
-	// extreme numbers creates precision we do not have..
-	Posit maxpos(SpecificValue::maxpos);
-	Posit minpos(SpecificValue::minpos);
-	Posit one = minpos * maxpos;
-	std::cout << "maxpos : " << info_print(maxpos) << '\n';
-	std::cout << "minpos : " << info_print(minpos) << '\n';
-	std::cout << "one    : " << info_print(one) << '\n';
+	Exponentiation<Posit>(5);
 
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);
