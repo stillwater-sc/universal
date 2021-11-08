@@ -11,12 +11,22 @@
 #include <tuple>
 #include <algorithm> // std::max
 
+#include <universal/common/exceptions.hpp>
 #include <universal/number/support/decimal.hpp>
 #include <universal/native/nonconstexpr754.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 
 namespace sw::universal::internal {
+
+struct value_internal_exception : public universal_internal_exception {
+	value_internal_exception(const std::string& error)
+		: universal_internal_exception(std::string("value internal exception: ") + error) {};
+};
+
+struct value_shift_too_large : public value_internal_exception {
+	value_shift_too_large() : value_internal_exception("shift value too large") {}
+};
 
 using namespace sw::universal;
 
@@ -368,7 +378,7 @@ public:
 #if VALUE_THROW_ARITHMETIC_EXCEPTION
 		// Check range
 		if (int(fbits) + shift >= int(Size))
-			throw shift_too_large{};
+			throw value_shift_too_large{};
 #else
 		// Check range
 		if (int(fbits) + shift >= int(Size)) {

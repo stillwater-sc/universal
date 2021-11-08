@@ -21,7 +21,7 @@ struct fixpnt_divide_by_zero : public fixpnt_arithmetic_exception {
 
 // overflow exception for fixed-point
 struct fixpnt_overflow : public fixpnt_arithmetic_exception {
-	explicit fixpnt_overflow() : fixpnt_arithmetic_exception("overflow") {}
+	fixpnt_overflow() : fixpnt_arithmetic_exception("overflow") {}
 };
 
 // negative argument to sqrt

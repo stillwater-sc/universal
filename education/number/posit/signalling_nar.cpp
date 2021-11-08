@@ -26,7 +26,7 @@ try {
 		pc = pa / pb;
 		std::cout << "Correct: division by zero exception didn't fire as it is not enabled\n";
 	}
-	catch (const divide_by_zero& err) {
+	catch (const posit_divide_by_zero& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
 	}
 
@@ -36,7 +36,7 @@ try {
 		pc = pa / pb;
 		std::cout << "Correct: division by nar exception didn't fire as it is not enabled\n";
 	}
-	catch (const divide_by_nar& err) {
+	catch (const posit_divide_by_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
 	}
 
@@ -46,7 +46,7 @@ try {
 		pc = pa / pb;
 		std::cout << "Correct: numerator is nar exception didn't fire as it is not enabled\n";
 	}
-	catch (const numerator_is_nar& err) {
+	catch (const posit_numerator_is_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
 	}
 
@@ -56,7 +56,7 @@ try {
 		pc = pa + pb;
 		std::cout << "Correct: operand is nar exception didn't fire as it is not enabled\n";
 	}
-	catch (const operand_is_nar& err) {
+	catch (const posit_operand_is_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
 	}
 
@@ -66,7 +66,7 @@ try {
 		pc = pa - pb;
 		std::cout << "Correct: operand is nar exception didn't fire as it is not enabled\n";
 	}
-	catch (const operand_is_nar& err) {
+	catch (const posit_operand_is_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
 	}
 
@@ -76,7 +76,7 @@ try {
 		pc = pa * pb;
 		std::cout << "Correct: operand is nar exception didn't fire as it is not enabled\n";
 	}
-	catch (const operand_is_nar& err) {
+	catch (const posit_operand_is_nar& err) {
 		std::cerr << "Incorrectly caught exception: " << err.what() << std::endl;
 	}
 

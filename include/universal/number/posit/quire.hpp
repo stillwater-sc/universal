@@ -130,7 +130,7 @@ public:
 	quire& operator=(const internal::value<fbits>& rhs) {
 		reset();
 		if (rhs.iszero()) return *this;
-		if (rhs.isinf() || rhs.isnan()) throw operand_is_nar{};
+		if (rhs.isinf() || rhs.isnan()) throw posit_operand_is_nar{};
 		_sign = rhs.sign();
 
 		int scale = rhs.scale();

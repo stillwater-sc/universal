@@ -715,7 +715,7 @@ public:
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
-			throw operand_is_nar{};
+			throw posit_operand_is_nar{};
 		}
 #else
 		if (isnar() || rhs.isnar()) {
@@ -757,7 +757,7 @@ public:
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
-			throw operand_is_nar{};
+			throw posit_operand_is_nar{};
 		}
 #else
 		if (isnar() || rhs.isnar()) {
@@ -800,7 +800,7 @@ public:
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || rhs.isnar()) {
-			throw operand_is_nar{};
+			throw posit_operand_is_nar{};
 		}
 #else
 		if (isnar() || rhs.isnar()) {
@@ -841,13 +841,13 @@ public:
 		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) {
-			throw divide_by_zero{};    // not throwing is a quiet signalling NaR
+			throw posit_divide_by_zero{};    // not throwing is a quiet signalling NaR
 		}
 		if (rhs.isnar()) {
-			throw divide_by_nar{};
+			throw posit_divide_by_nar{};
 		}
 		if (isnar()) {
-			throw numerator_is_nar{};
+			throw posit_numerator_is_nar{};
 		}
 		if (iszero() || isnar()) {
 			return *this;
@@ -877,10 +877,10 @@ public:
 		// special case handling on the output
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (ratio.iszero()) {
-			throw division_result_is_zero{};
+			throw posit_division_result_is_zero{};
 		}
 		else if (ratio.isinf()) {
-			throw division_result_is_infinite{};
+			throw posit_division_result_is_infinite{};
 		}
 		else {
 			convert<nbits, es, divbits>(ratio, *this);
@@ -1139,42 +1139,42 @@ private:
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 	short to_short() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return short(to_float());
 	}
 	int to_int() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return int(to_double());
 	}
 	long to_long() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return long(to_long_double());
 	}
 	long long to_long_long() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return (long long)(to_long_double());
 	}
 	unsigned short to_ushort() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return (unsigned short)(to_float());
 	}
 	unsigned int to_uint() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return (unsigned int)(to_double());
 	}
 	unsigned long to_ulong() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return (unsigned long)(to_long_double());
 	}
 	unsigned long long to_ulong_long() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return (unsigned long long)(to_long_double());
 	}
 #else
