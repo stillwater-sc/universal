@@ -53,6 +53,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
+#include <universal/number/posit/exceptions.hpp>
 #include <universal/number/posit/posit_fwd.hpp>
 #include <universal/number/posit/posit_parse.hpp>
 #include <universal/number/posit/posit_impl.hpp>

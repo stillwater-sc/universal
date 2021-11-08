@@ -70,10 +70,10 @@ public:
 	bool assign(unsigned int remaining_bits, internal::bitblock<FBits>& _fraction, std::size_t hpos = FBits)
 	{
         if (hpos > FBits)
-            throw hpos_too_large{};
+            throw posit_hpos_too_large{};
                     
         if (remaining_bits > fbits)
-            throw rbits_too_large{};
+            throw posit_rbits_too_large{};
                     
         reset();                                    // In any case
         
@@ -97,7 +97,7 @@ public:
 	bool assign2(unsigned int remaining_bits, internal::bitblock<FBits>& _fraction)
 	{
 		if (remaining_bits > fbits)
-			throw rbits_too_large{};
+			throw posit_rbits_too_large{};
 
 		reset();                                    // In any case
 												// if input is empty -> reset
@@ -158,7 +158,7 @@ public:
             
         // Check range
         if (long(fbits) + shift >= long(Size))
-            throw shift_too_large{};
+            throw value_shift_too_large{};
                 
         const long hpos = fbits + shift;              // position of hidden bit
             
