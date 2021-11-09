@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/number/support/decimal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -22,16 +23,64 @@
 #define REGRESSION_LEVEL_4 1
 #endif
 
+template<typename Real>
+void Boundary(Real v, Real& nLow, Real& nHigh) {
+	std::cout << sw::universal::to_binary(v) << " : " << v << '\n';
+	nLow = v;
+	nHigh = v;
+}
+
+template<typename Real>
+void NarrowInterval(Real v, int& e, Real& nLeft, Real& nRight) {
+	Real nLow, nHigh;
+	Boundary<Real>(v, nLow, nHigh);
+	e = floor(log10(nHigh));
+	nLeft = nLow * pow(Real(10.0), Real(-e));
+	nRight = nHigh * pow(Real(10.0), Real(-e));
+}
+
+template<typename Real>
+void NextDigit(Real& nBar, int& d) {
+	d = static_cast<int>(nBar);
+	nBar = (nBar - d) * Real(10.0);
+}
+
+template<typename Real>
+void Digits(Real& nLeft, Real& nRight) {
+	std::vector<int> digits;
+	int dLeft, dRight;
+	do {
+		NextDigit(nLeft, dLeft);
+		NextDigit(nRight, dRight);
+		digits.push_back(dRight);
+		std::cout << "(" << nLeft << ", " << nRight << ") - (" << dLeft << ", " << dRight << ")\n";
+	} while (dLeft != dRight);
+}
+
+template<typename Real>
+void Convert(Real v, sw::universal::support::decimal& digits) {
+	int e{ 0 };
+	Real nLeft, nRight;
+	NarrowInterval(v, e, nLeft, nRight);
+	std::cout << "(" << e << ", " << nLeft << ", " << nRight << ")\n";
+	Digits(nLeft, nRight);
+}
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	std::string test_suite =  "Experiments in printing floating-point numbers";
+	std::string test_suite =  "Experiments in printing floating-point numbers ";
 	std::string test_tag = "print";
 	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
+
+	using Real = float;
+
+	Real a = 6.54321e5;
+	support::decimal d;
+	Convert(a, d);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; 
