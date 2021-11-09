@@ -1,4 +1,4 @@
-﻿// printing.cpp: experiments with printing floating-point numbers
+﻿// something.cpp: experiments with numbers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -9,8 +9,8 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	std::string test_suite =  "Experiments in printing floating-point numbers";
-	std::string test_tag = "print";
+	std::string test_suite = "Experiments with numbers";
+	std::string test_tag = "operator";
 	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
 

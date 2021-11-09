@@ -1,4 +1,4 @@
-// rungekutta.cpp: program to solve odes with general RK method using coefficients from Butcher's table
+// general_runge_kutta.cpp: program to solve odes with general RK method using coefficients from Butcher's table
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 // Author: Jacob Todd  jtodd1@une.edu
@@ -31,8 +31,6 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 */
 
-// constexpr double pi = 3.14159265358979323846;  // best practice for C++
-
 // our test function where dy/dx is f(x,y)
 template<typename Scalar>
 Scalar myFunc(const Scalar& x, const Scalar& y) {
@@ -43,13 +41,13 @@ Scalar myFunc(const Scalar& x, const Scalar& y) {
 // Use Butcher's table as argument and define ODE
 template<typename Scalar>
 Scalar GRK(Scalar b_table[5][5], Scalar (*f)(const Scalar&, const Scalar&), const Scalar h, Scalar x0, Scalar y0) {
-	int s = sizeof(b_table[0])/sizeof(b_table[0][0]) - 1; // number of steps
+    int s = sizeof(b_table[0])/sizeof(b_table[0][0]) - 1; // number of steps
     Scalar ks[4];
-	std::fill(ks, ks + s, Scalar(0));
+    std::fill(ks, ks + s, Scalar(0));
 
-    for(int i = 0; i < s; i++){
+    for (int i = 0; i < s; ++i) {
         Scalar sum = 0;
-        for(int j = 1; j <= s; j++){
+        for(int j = 1; j <= s; ++j) {
             sum = sum + b_table[i][j] * ks[j - 1];
         }
         sum = h * sum;
@@ -57,7 +55,7 @@ Scalar GRK(Scalar b_table[5][5], Scalar (*f)(const Scalar&, const Scalar&), cons
     }
 
     Scalar out = 0;
-    for(int i = 1; i <= s; i++){
+    for (int i = 1; i <= s; ++i) {
         out = out + b_table[s][i] * ks[i - 1];
     }
     out = out + y0;
@@ -70,12 +68,12 @@ try {
 	{
 		using Scalar = float;
 		Scalar butcher[5][5] = {
-        {0, 0, 0, 0, 0},
-        {0.5, 0.5, 0, 0, 0},
-        {0.5, 0, 0.5, 0, 0},
-        {1, 0, 0, 1, 0},
-        {0, Scalar(1)/Scalar(6), Scalar(1)/Scalar(3), Scalar(1)/Scalar(3), Scalar(1)/Scalar(6)}
-    };
+			{0, 0, 0, 0, 0},
+			{0.5, 0.5, 0, 0, 0},
+			{0.5, 0, 0.5, 0, 0},
+			{1, 0, 0, 1, 0},
+			{0, Scalar(1)/Scalar(6), Scalar(1)/Scalar(3), Scalar(1)/Scalar(3), Scalar(1)/Scalar(6)}
+		};
 		Scalar h = 1;
 		Scalar y0 = 1;
 		Scalar x0 = 0;
@@ -90,23 +88,19 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
