@@ -737,6 +737,7 @@ endif(BUILD_EDUCATION)
 
 # application examples
 if(BUILD_APPLICATIONS)
+add_subdirectory("applications/approximation")
 add_subdirectory("applications/blas")
 add_subdirectory("applications/chaos")
 add_subdirectory("applications/chebyshev")
