@@ -10,14 +10,25 @@
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
 #define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/test_status.hpp>
-#include <universal/verification/test_case.hpp>
-//#include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/number/cfloat/table.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 /*
   Minimum number of operand bits for the adder = <abits> 
@@ -48,19 +59,20 @@ int main()
 try {
 	using namespace sw::universal;
 
-	int nrOfFailedTestCases = 0;
-	std::string tag = "cfloat_ttf addition failed: ";
-
 	// cfloat encoding configuration for the test
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
 
+	std::string test_suite = "classic cfloat_ttf addition validation";
+	std::string test_tag   = "cfloat_ttf addition";
+	std::cout << test_suite << '\n';
+	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
+
 #if MANUAL_TESTING
 
 	GenerateCfloatExponentBounds();
-
-	std::cout << "Manual Testing\n";
 
 	TestCase< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 0.5f, 1.5f);
 
@@ -108,14 +120,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,4,uint8_t, t,t,f>", "addition");
 
-	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
-	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else  // !MANUAL_TESTING
 
-#else
-	std::cout << "classic cfloat_fff addition validation\n";
-
-	bool bReportIndividualTestCases = false;
-
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 3, 1,uint8_t, t,t,f>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 4, 1,uint8_t, t,t,f>", "addition");
@@ -142,7 +151,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 8, 4,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 8, 5,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 8, 6,uint8_t, t,t,f>", "addition");
+#endif
 
+#if REGRESSION_LEVEL_2
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<9, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 9, 1,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<9, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 9, 2,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<9, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 9, 3,uint8_t, t,t,f>", "addition");
@@ -151,7 +162,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<9, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 9, 6,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<9, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat< 9, 7,uint8_t, t,t,f>", "addition");
 
-#if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<10, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<10, 1,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<10, 2,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<10, 3,uint8_t, t,t,f>", "addition");
@@ -170,7 +180,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<11, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<11, 7,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<11, 8,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<11, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<11, 9,uint8_t, t,t,f>", "addition");
+#endif
 
+#if REGRESSION_LEVEL_3
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<12, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<12, 1,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<12, 2,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<12, 3,uint8_t, t,t,f>", "addition");
@@ -191,7 +203,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<13, 9,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<13,10,uint8_t ,t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<13, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<13,11,uint8_t, t,t,f>", "addition");
+#endif
 
+#if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<14, 3,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<14, 4,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<14, 5,uint8_t, t,t,f>", "addition");
@@ -221,14 +235,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<16, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<16, 9,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<16, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<16,10,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<16, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(bReportIndividualTestCases), "cfloat<16,11,uint8_t, t,t,f>", "addition");
+#endif
 
-#endif  // STRESS_TESTING
-
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
