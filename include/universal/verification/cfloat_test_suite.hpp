@@ -247,18 +247,20 @@ namespace sw::universal {
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+#ifdef CHECK_SPECIAL_ENCODING
 					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
-
+#endif
 				}
 				else if (i == HALF - 1) { // encoding of qNaN
 					golden.setnan(NAN_TYPE_QUIET);
 					testValue = SrcType(da);
 					nut = testValue;
-					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
-
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+#ifdef CHECK_SPECIAL_ENCODING
+					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
 					std::cout << "quiet      NAN : " << to_binary(testValue) << std::endl;
 					std::cout << "quiet NaN mask : " << to_binary(ieee754_parameter<SrcType>::qnanmask, sizeof(testValue)*8) << std::endl;
+#endif
 				}
 				else if (i == HALF + 1) {
 					// special case of projecting to -0
@@ -289,8 +291,10 @@ namespace sw::universal {
 					testValue = SrcType(da);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+#ifdef CHECK_SPECIAL_ENCODING
 					std::cout << "signalling NAN : " << to_binary(testValue) << std::endl;
 					std::cout << "signalNaN mask : " << to_binary(ieee754_parameter<SrcType>::snanmask, sizeof(testValue)*8) << std::endl;
+#endif
 				}
 				else {
 					// for odd values of i, we are between sample values of the NUT
@@ -432,7 +436,8 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-
+// #define CUSTOM_FEEDBACK
+	
 	// generate random test cases to test conversion from an IEEE-754 float to a cfloat
 	template<typename TestType>
 	int VerifyFloat2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
@@ -442,16 +447,16 @@ namespace sw::universal {
 		constexpr bool hasSubnormals = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
-
-		std::cerr << '\n' << typeid(TestType).name() << '\n';
-		// this is too verbose, so I turned it off
-		// std::cerr << "                                                     ignoring subnormals for the moment\n";
+		using SrcType = float;
 
 		int nrOfFailedTests = 0;
 		cfloat<32, 8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> ref; // this is a superset of IEEE-754 float with supernormals
 		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
-		float refValue{ 0.0f };
-		float testValue{ 0.0f };
+
+		if (bReportIndividualTestCases) { std::cerr << type_tag(nut) << '\n'; }
+		// this is too verbose, so I turned it off
+		// std::cerr << "                                                     ignoring subnormals for the moment\n";
+
 		// run randoms
 		std::random_device rd;     // get a random seed from the OS entropy device
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
@@ -460,9 +465,9 @@ namespace sw::universal {
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			uint32_t rawBits = distr(eng);
 			ref.setbits(rawBits);
-			refValue = float(ref);
+			SrcType refValue = SrcType(ref);
 			nut = refValue;
-			testValue = float(nut);
+			SrcType testValue = SrcType(nut);
 			if (isdenorm(refValue)) {
 //				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
@@ -470,7 +475,7 @@ namespace sw::universal {
 			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
 #ifndef CUSTOM_FEEDBACK
 			if (testValue != refValue) {
-				std::cout << to_binary(nut) << '\n' << to_binary(ref) << std::endl;
+				std::cout << to_binary(nut) << '\n' << to_binary(ref) << '\n';
 			}
 #endif
 			if (nrOfFailedTests > 24) {
@@ -481,7 +486,7 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-// #define CUSTOM_FEEDBACK
+
 	// generate random test cases to test conversion from an IEEE-754 double to a cfloat
 	template<typename TestType>
 	int VerifyDouble2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {

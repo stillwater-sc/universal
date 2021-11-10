@@ -54,6 +54,10 @@ Compare the operator=() and convert() cfloat patterns to check correctness
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -122,15 +126,9 @@ try {
 		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), tag, "cfloat<10,2> ADD");
 
 	}
-	std::cout << "failed tests: " << nrOfFailedTestCases << '\n';
-	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
 
-#if STRESS_TESTING
-
-	// manual exhaustive test
-
-#endif
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else  // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
@@ -282,13 +280,11 @@ try {
 
 	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<25, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL> >(bReportIndividualTestCases), tag, "cfloat<25,2> MUL");   // 4 blocks
 
-#endif  // STRESS_TESTING
+#endif
 
-#endif  // MANUAL_TESTING
-
-	std::cout << test_suite << (nrOfFailedTestCases == 0 ? "PASSED" : "FAILED") << std::endl;
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;

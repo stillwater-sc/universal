@@ -37,6 +37,10 @@ Compare the operator=() and convert() cfloat patterns to check correctness
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -129,8 +133,7 @@ try {
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
-
+	return EXIT_SUCCESS; // ignore failures
 #else  // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
@@ -228,9 +231,8 @@ try {
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-#endif  // MANUAL_TESTING
-
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;

@@ -9,7 +9,7 @@
 
 namespace sw::universal {
 
-	enum class TestCaseOperator { ADD, SUB, MUL, DIV, REM };
+	enum class TestCaseOperator { ADD, SUB, MUL, DIV /*, REM */ };
 
 	// generate an arithmetic test case
 	template<typename Number, typename Ty>
