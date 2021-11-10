@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Experiments with numbers";
+	std::string test_suite = "Experiments with Taylor Series Expansion";
 	std::string test_tag = "operator";
 	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
