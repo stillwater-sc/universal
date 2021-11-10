@@ -19,7 +19,7 @@ namespace sw::universal {
 
 // ReportTestSuiteResult prints to std::cerr whether or not the test suite passed or failed
 void ReportTestSuiteResults(const std::string& test_suite, int nrOfFailedTestCases) {
-	std::cerr << test_suite <<  (nrOfFailedTestCases == 0 ? "PASS" : "FAIL") << '\n';
+	std::cerr << test_suite <<  (nrOfFailedTestCases == 0 ? ": PASS" : ": FAIL") << '\n';
 }
 
 template<typename TestType>
