@@ -25,12 +25,12 @@ try {
 
 	// default behavior
 	{
-		std::cout << "Default cfloat has subnormals, supernormals and is not saturating\n";
+		std::cout << "Default cfloat has no subnormals, no supernormals and is not saturating\n";
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
 		using bt = uint8_t;
-		constexpr bool hasSubnormals   = true;
-		constexpr bool hasSupernormals = true;
+		constexpr bool hasSubnormals   = false;
+		constexpr bool hasSupernormals = false;
 		constexpr bool isSaturating    = false;
 		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = true, hasSupernormals = true, isSaturating = false
 
@@ -46,8 +46,8 @@ try {
 
 	{
 		// report on the dynamic range of some standard configurations
-		using quarter = cfloat<  8,  2, uint8_t, true, true, false>;
-		using half    = cfloat< 16,  5, uint8_t, true, true, false>;
+		using quarter = cfloat<  8,  2, uint8_t, false, false, false>;
+		using half    = cfloat< 16,  5, uint8_t, false, false, false>;
 		using single  = cfloat< 32,  8, uint8_t, true, false, false>;
 		using dual    = cfloat< 64, 11, uint8_t, true, false, false>;
 		using quad    = cfloat<128, 15, uint8_t, true, false, false>;

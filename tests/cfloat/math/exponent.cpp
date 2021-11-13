@@ -51,7 +51,6 @@ void GenerateTestCase(Ty a) {
 }
 
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
 #define GENERATE_EXPONENT_TABLES 0
 
 int main()
@@ -60,10 +59,12 @@ try {
 
 //	GenerateEulersNumber();  // 9000 digits of e
 
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "cfloat<> mathlib exponentiation validation";
+	std::string test_tag    = "exponentiation";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "cfloat exp() failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -92,38 +93,35 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 4, uint8_t> >(bReportIndividualTestCases), "cfloat<8,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 4, uint8_t> >(reportTestCases), "cfloat<8,4>", "exp2");
 
 #else
 
 	std::cout << "classic floating-point cfloat exponential function validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 8, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<8,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 9, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<9,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<10, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<10,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<10, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<10,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<12, 4, uint8_t> >(bReportIndividualTestCases), "cfloat<12,4>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<16, 5, uint8_t> >(bReportIndividualTestCases), "cfloat<16,5>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 8, 3, uint8_t> >(reportTestCases), "cfloat<8,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat< 9, 2, uint8_t> >(reportTestCases), "cfloat<9,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<10, 2, uint8_t> >(reportTestCases), "cfloat<10,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<10, 3, uint8_t> >(reportTestCases), "cfloat<10,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<12, 4, uint8_t> >(reportTestCases), "cfloat<12,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< cfloat<16, 5, uint8_t> >(reportTestCases), "cfloat<16,5>", "exp");
 
 	// base-2 exponent testing
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<8,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<9, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<9,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<10, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<10,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<10, 3, uint8_t> >(bReportIndividualTestCases), "cfloat<10,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<12, 4, uint8_t> >(bReportIndividualTestCases), "cfloat<12,4>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<16, 5, uint8_t> >(bReportIndividualTestCases), "cfloat<16,5>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<8, 3, uint8_t> >(reportTestCases), "cfloat<8,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<9, 2, uint8_t> >(reportTestCases), "cfloat<9,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<10, 2, uint8_t> >(reportTestCases), "cfloat<10,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<10, 3, uint8_t> >(reportTestCases), "cfloat<10,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<12, 4, uint8_t> >(reportTestCases), "cfloat<12,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< cfloat<16, 5, uint8_t> >(reportTestCases), "cfloat<16,5>", "exp2");
 
 
-#if STRESS_TESTING
-	
-#endif  // STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

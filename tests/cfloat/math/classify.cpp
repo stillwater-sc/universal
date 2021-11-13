@@ -9,17 +9,17 @@
 #include <universal/verification/cfloat_math_test_suite.hpp>
 
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
 
 int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "cfloat<> mathlib classification validation";
+	std::string test_tag    = "assignment";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -94,16 +94,10 @@ try {
 
 #else
 
-	cout << "cfloat classification function validation" << endl;
-
-
-#if STRESS_TESTING
-	
-#endif  // STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

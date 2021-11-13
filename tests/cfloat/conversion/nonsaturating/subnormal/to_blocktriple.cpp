@@ -57,8 +57,9 @@ try {
 
 	std::string test_suite          = "cfloat to blocktriple conversion validation";
 	std::string test_tag            = "conversion to blocktriple";
-	bool bReportIndividualTestCases = false;
+	bool reportTestCases            = false;
 	int nrOfFailedTestCases         = 0;
+
 	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
@@ -88,20 +89,20 @@ try {
 			using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			//Cfloat a; a.constexprClassParameters();
 			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(true), tag, "cfloat<4,2> to blocktriple ADD");
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<4,2> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), tag, "cfloat<4,2> to blocktriple MUL");
 		}
 		{
 			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			//Cfloat a; a.constexprClassParameters();
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<5,2> to blocktriple ADD");
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<5,2> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), tag, "cfloat<5,2> to blocktriple ADD");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), tag, "cfloat<5,2> to blocktriple MUL");
 		}
 
 		{
 			using Cfloat = cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			//Cfloat a; a.constexprClassParameters();
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(bReportIndividualTestCases), tag, "cfloat<8,3> to blocktriple ADD");
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(bReportIndividualTestCases), tag, "cfloat<8,3> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), tag, "cfloat<8,3> to blocktriple ADD");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), tag, "cfloat<8,3> to blocktriple MUL");
 		}
 
 	}
@@ -113,99 +114,99 @@ try {
 #if REGRESSION_LEVEL_1
 	// es = 1 is invalid for this cfloat configuration
 	/*
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 3,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 4,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 5,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 6,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 7,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 8,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 9,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<10,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<12,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<16,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<18,1>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 3,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<10,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<12,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<16,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<18,1>");   // 3 blocks
 	*/
 
 	// es = 2
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 4,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 5,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 6,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 7,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 8,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<10,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<12,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<14,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<16,2,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<18,2,uint8,tff> ADD");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 4,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 5,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 6,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 7,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 8,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<10,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<12,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<14,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<16,2,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<18,2,uint8,tff> ADD");   // 3 blocks
 
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 4,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 5,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 6,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 7,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 8,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<10,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<12,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<14,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<16,2,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<18,2,uint8,tff> MUL");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 4,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 5,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 6,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 7,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 8,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<10,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<12,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<14,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<16, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<16,2,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<18,2,uint8,tff> MUL");   // 3 blocks
 
 	// es = 3
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 5,3,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 6,3,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 7,3,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat< 8,3,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<10,3,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<12,3,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<14,3,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<18,3,uint8,tff> ADD");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 5,3,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 6,3,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 7,3,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat< 8,3,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<10,3,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<12,3,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<14,3,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<18,3,uint8,tff> ADD");   // 3 blocks
 
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 5,3,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 6,3,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 7,3,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 8,3,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<10,3,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<12,3,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<14,3,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<18,3,uint8,tff> MUL");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 5,3,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 6,3,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 7,3,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 8,3,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<10,3,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<12,3,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<14,3,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<18,3,uint8,tff> MUL");   // 3 blocks
 
 	// es = 4
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 6,4,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 7,4,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 8,4,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<10,4,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<12,4,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<14,4,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<18,4,uint8,tff> MUL");  // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 6, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 6,4,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 7,4,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 8,4,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<10,4,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<12,4,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<14,4,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<18,4,uint8,tff> MUL");  // 3 blocks
 
 	// es = 5
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 7,5,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 8,5,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<10,5,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<12,5,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<14,5,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<18,5,uint8,tff> MUL");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 7, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 7,5,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 8,5,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<10,5,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<12,5,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<14,5,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<18, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<18,5,uint8,tff> MUL");   // 3 blocks
 
 	// es = 6
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 8,6,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 9,6,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<10,6,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<12,6,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<14,6,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 8,6,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 9,6,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<10,6,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<12,6,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<14,6,uint8,tff> MUL");
 
 	// es = 7
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat< 9,7,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<10,7,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<12,7,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<14,7,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat< 9, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat< 9,7,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<10,7,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<12,7,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<14,7,uint8,tff> MUL");
 
 	// es = 8
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<11,8,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<12,8,uint8,tff> ADD");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(bReportIndividualTestCases), test_tag, "cfloat<14,8,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<11,8,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<12,8,uint8,tff> ADD");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<14,8,uint8,tff> ADD");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<11,8,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<12,8,uint8,tff> MUL");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(bReportIndividualTestCases), test_tag, "cfloat<14,8,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<11,8,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<12,8,uint8,tff> MUL");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<14,8,uint8,tff> MUL");
 
 #endif
 
@@ -219,7 +220,7 @@ try {
 
 #if REGRESSION_LEVEL_4
 
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<25, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL> >(bReportIndividualTestCases), tag, "cfloat<25,2,uint8,tff> MUL");  // 4 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<25, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL> >(reportTestCases), tag, "cfloat<25,2,uint8,tff> MUL");  // 4 blocks
 
 #endif
 

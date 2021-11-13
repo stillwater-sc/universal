@@ -46,14 +46,14 @@ namespace sw::universal {
 	}
 
 	template<typename SrcType, typename TestType>
-	int Compare(SrcType input, const TestType& testValue, const TestType& reference, bool bReportIndividualTestCases) {
+	int Compare(SrcType input, const TestType& testValue, const TestType& reference, bool reportTestCases) {
 		int fail = 0;
 		if (testValue != reference) {
 			fail++;
-			if (bReportIndividualTestCases)	CfloatReportConversionError("FAIL", "=", input, reference, testValue);
+			if (reportTestCases)	CfloatReportConversionError("FAIL", "=", input, reference, testValue);
 		}
 		else {
-			// if (bReportIndividualTestCases) CfloatReportConversionSuccess("PASS", "=", input, reference, testValue);
+			// if (reportTestCases) CfloatReportConversionSuccess("PASS", "=", input, reference, testValue);
 		}
 		return fail;
 	}
@@ -161,10 +161,10 @@ namespace sw::universal {
 	/// <typeparam name="TestType">the test configuration</typeparam>
 	/// <typeparam name="RefType">the reference configuration</typeparam>
 	/// <param name="tag">string to indicate what is being tested</param>
-	/// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
+	/// <param name="reportTestCases">if true print results of each test case. Default is false.</param>
 	/// <returns>number of failed test cases</returns>
 	template<typename TestType, typename SrcType = double>
-	int VerifyCfloatConversion(bool bReportIndividualTestCases) {
+	int VerifyCfloatConversion(bool reportTestCases) {
 		// we are going to generate a test set that consists of all configs and their midpoints
 		// we do this by enumerating a configuration that is 1-bit larger than the test configuration
 		// with the extra bit allocated to the fraction.
@@ -222,14 +222,14 @@ namespace sw::universal {
 					testValue = da;
 					nut = testValue;
 					golden = 0.0f;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 
 					// this rounds up 
 					testValue = SrcType(da + oneULP);  // the test value between 0 and minpos
 					nut = testValue;
 					next.setbits(i + 1);
 					golden = double(next);
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 				else if (i == HALF - 3) { // project to +inf
 					golden.setinf(false);
@@ -237,16 +237,16 @@ namespace sw::universal {
 					// project to inf
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 
 					testValue = SrcType(da);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 
 					// project to inf
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 #ifdef CHECK_SPECIAL_ENCODING
 					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
 #endif
@@ -255,7 +255,7 @@ namespace sw::universal {
 					golden.setnan(NAN_TYPE_QUIET);
 					testValue = SrcType(da);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 #ifdef CHECK_SPECIAL_ENCODING
 					std::cout << i << "  " << nrOfFailedTests - old << " : " << testValue << " : " << nut << " : " << to_binary(nut) << '\n';
 					std::cout << "quiet      NAN : " << to_binary(testValue) << std::endl;
@@ -267,7 +267,7 @@ namespace sw::universal {
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					golden = 0.0f; golden = -golden;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 				else if (i == NR_TEST_CASES - 3) { // project to -inf
 					golden.setinf(true);
@@ -275,22 +275,22 @@ namespace sw::universal {
 					// project to -inf
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 					
 					testValue = SrcType(da);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 
 					// project to -inf
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 				else if (i == NR_TEST_CASES - 1) { // encoding of SIGNALLING NAN
 					golden.setnan(NAN_TYPE_SIGNALLING);
 					testValue = SrcType(da);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 #ifdef CHECK_SPECIAL_ENCODING
 					std::cout << "signalling NAN : " << to_binary(testValue) << std::endl;
 					std::cout << "signalNaN mask : " << to_binary(ieee754_parameter<SrcType>::snanmask, sizeof(testValue)*8) << std::endl;
@@ -304,14 +304,14 @@ namespace sw::universal {
 					nut = testValue;
 					prev.setbits(i - 1);
 					golden = double(prev);
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 					
 					// round-up
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					next.setbits(i + 1);
 					golden = double(next);
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 			}
 			else {
@@ -324,7 +324,7 @@ namespace sw::universal {
 					testValue = da;
 					nut = testValue;
 					golden.setzero(); // make certain we are +0
-					//nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					//nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 					if (!nut.iszero()) {
 						std::cout << "number under test is not zero: " << to_binary(nut) << '\n';
 						++nrOfFailedTests;
@@ -334,7 +334,7 @@ namespace sw::universal {
 					testValue = SrcType(dminpos / 2.0);
 					nut = testValue;
 					// special handling as optimizer can destroy the sign on 0
-					// nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					// nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 					if (!nut.iszero()) {
 						std::cout << "number under test is not zero: " << to_binary(nut) << '\n';
 						++nrOfFailedTests;
@@ -351,7 +351,7 @@ namespace sw::universal {
 					nut = testValue;
 					golden.setzero(); golden.setsign(); // make certain we are -0
 					// special handling as optimizer can destroy the -0
-					// nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					// nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 					if (!nut.iszero()) {
 						std::cout << "number under test is not zero: " << to_binary(nut) << '\n';
 						++nrOfFailedTests;
@@ -361,7 +361,7 @@ namespace sw::universal {
 					testValue = SrcType(-dminpos / 2.0);
 					nut = testValue;
 					golden.setzero(); golden.setsign(); // make certain we are -0
-					// nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					// nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 					if (!nut.iszero()) {
 						std::cout << "number under test is not zero: " << to_binary(nut) << '\n';
 						++nrOfFailedTests;
@@ -377,17 +377,17 @@ namespace sw::universal {
 
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 				else if (i == HALF - 2) { // encoding of INF
 					golden.setinf(false);
 					testValue = SrcType(da);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 				else if (i == NR_TEST_CASES - 4) { // project to -inf or saturation to maxneg
 					if constexpr (isSaturating) {
@@ -399,17 +399,17 @@ namespace sw::universal {
 
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 				else if (i == NR_TEST_CASES - 2) { // encoding of -INF
 					golden.setinf(true);
 					testValue = SrcType(da);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 				else {
 					// for even values, we are on actual representable values, so we create the round-up and round-down cases
@@ -417,15 +417,15 @@ namespace sw::universal {
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					golden = da;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 					
 					// round-down
 					testValue = SrcType(da + oneULP);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, golden, reportTestCases);
 				}
 			}
-			if (bReportIndividualTestCases && nrOfFailedTests > old) {
+			if (reportTestCases && nrOfFailedTests > old) {
 				std::cout << "test case [" << i << "]\n";
 				std::cout << "oneULP        : " << to_binary(oneULP, true) << " : " << oneULP << '\n';
 				std::cout << "da - oneULP   : " << to_binary(da - oneULP, true) << " : " << da - oneULP << '\n';
@@ -440,7 +440,7 @@ namespace sw::universal {
 	
 	// generate random test cases to test conversion from an IEEE-754 float to a cfloat
 	template<typename TestType>
-	int VerifyFloat2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
+	int VerifyFloat2CfloatConversionRnd(bool reportTestCases, size_t nrOfRandoms = 10000) {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -450,10 +450,10 @@ namespace sw::universal {
 		using SrcType = float;
 
 		int nrOfFailedTests = 0;
-		cfloat<32, 8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> ref; // this is a superset of IEEE-754 float with supernormals
+		cfloat<32, 8, uint32_t, true, false, false> ref; // this is an IEEE-754 float
 		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
 
-		if (bReportIndividualTestCases) { std::cerr << type_tag(nut) << '\n'; }
+		if (reportTestCases) { std::cerr << type_tag(nut) << '\n'; }
 		// this is too verbose, so I turned it off
 		// std::cerr << "                                                     ignoring subnormals for the moment\n";
 
@@ -472,7 +472,7 @@ namespace sw::universal {
 //				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
-			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
+			nrOfFailedTests += Compare(refValue, testValue, refValue, reportTestCases);
 #ifndef CUSTOM_FEEDBACK
 			if (testValue != refValue) {
 				std::cout << to_binary(nut) << '\n' << to_binary(ref) << '\n';
@@ -489,18 +489,20 @@ namespace sw::universal {
 
 	// generate random test cases to test conversion from an IEEE-754 double to a cfloat
 	template<typename TestType>
-	int VerifyDouble2CfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
+	int VerifyDouble2CfloatConversionRnd(bool reportTestCases, size_t nrOfRandoms = 10000) {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
-
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+ 
 		std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		int nrOfFailedTests = 0;
-		cfloat<64, 11, uint64_t> ref;
-		cfloat<nbits, es, BlockType> nut;
-		double refValue{ 0.0 };
-		double testValue{ 0.0 };
+		cfloat<64, 11, uint64_t, true, false, false> ref;  // an IEEE-754 double type
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
+
 		// run randoms
 		std::random_device rd;     // get a random seed from the OS entropy device
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
@@ -509,14 +511,14 @@ namespace sw::universal {
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			uint64_t rawBits = distr(eng);
 			ref.setbits(rawBits);
-			refValue = double(ref);
+			double refValue = double(ref);
 			nut = refValue;
-			testValue = double(nut);
+			double testValue = double(nut);
 			if (isdenorm(refValue)) {
 //				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
-			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
+			nrOfFailedTests += Compare(refValue, testValue, refValue, reportTestCases);
 #ifdef CUSTOM_FEEDBACK
 			if (testValue != refValue) {
 				std::cout << "nut : " << to_binary(nut) << '\n' << "ref : " << to_binary(ref) << std::endl;
@@ -532,7 +534,7 @@ namespace sw::universal {
 
 	// generate IEEE-754 single precision subnormal values
 	template<typename BlockType>
-	int VerifyIeee754FloatSubnormals(bool bReportIndividualTestCases) {
+	int VerifyIeee754FloatSubnormals(bool reportTestCases) {
 		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = 32;
@@ -551,7 +553,7 @@ namespace sw::universal {
 			f = float(nut);
 			result = f;
 			if (result != nut) {
-				nrOfFailedTests += Compare(f, result, nut, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(f, result, nut, reportTestCases);
 			}
 			uint64_t fraction = nut.fraction_ull();
 			fraction <<= 1;
@@ -562,7 +564,7 @@ namespace sw::universal {
 
 	// generate IEEE-754 double precision subnormal values
 	template<typename BlockType>
-	int VerifyIeee754DoubleSubnormals(bool bReportIndividualTestCases) {
+	int VerifyIeee754DoubleSubnormals(bool reportTestCases) {
 		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = 64;
@@ -581,7 +583,7 @@ namespace sw::universal {
 			d = double(nut);
 			result = d;
 			if (result != nut) {
-				nrOfFailedTests += Compare(d, result, nut, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(d, result, nut, reportTestCases);
 			}
 			uint64_t fraction = nut.fraction_ull();
 			fraction <<= 1;
@@ -593,7 +595,7 @@ namespace sw::universal {
 #if LONG_DOUBLE_SUPPORT
 	// generate IEEE-754 long double precision subnormal values
 	template<typename BlockType>
-	int VerifyIeee754LongDoubleSubnormals(bool bReportIndividualTestCases) {
+	int VerifyIeee754LongDoubleSubnormals(bool reportTestCases) {
 		using namespace std;
 		using namespace sw::universal;
 		constexpr size_t nbits = 80;
@@ -615,7 +617,7 @@ namespace sw::universal {
 				d = double(nut);
 				result = d;
 				if (result != nut) {
-					nrOfFailedTests += Compare(d, result, nut, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(d, result, nut, reportTestCases);
 				}
 				blockbinary<fbits, BlockType> fraction{ 0 };
 				nut.fraction(fraction);
@@ -638,10 +640,10 @@ namespace sw::universal {
 	/// convert a blocktriple to a cfloat
 	/// </summary>
 	/// <typeparam name="CfloatConfiguration"></typeparam>
-	/// <param name="bReportIndividualTestCases"></param>
+	/// <param name="reportTestCases"></param>
 	/// <returns></returns>
 	template<typename CfloatConfiguration, BlockTripleOperator op>
-	int VerifyCfloatFromBlocktripleConversion(bool bReportIndividualTestCases) {
+	int VerifyCfloatFromBlocktripleConversion(bool reportTestCases) {
 		using namespace sw::universal;
 		constexpr size_t nbits = CfloatConfiguration::nbits;
 		constexpr size_t es = CfloatConfiguration::es;
@@ -705,11 +707,11 @@ namespace sw::universal {
 						if (a.isinf() && b.isinf()) continue;
 
 						++nrOfTestFailures;
-						if (bReportIndividualTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
+						if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 					}
 					else {
 #ifndef VERBOSE_POSITIVITY
-						if (bReportIndividualTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+						if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
 #endif
 					}
 				}
@@ -722,10 +724,10 @@ namespace sw::universal {
 /// testing of normalization for different blocktriple operators (ADD, MUL, DIV, SQRT)
 /// </summary>
 /// <typeparam name="CfloatConfiguration"></typeparam>
-/// <param name="bReportIndividualTestCases"></param>
+/// <param name="reportTestCases"></param>
 /// <returns></returns>
 	template<typename CfloatConfiguration, BlockTripleOperator op>
-	int VerifyCfloatToBlocktripleConversion(bool bReportIndividualTestCases) {
+	int VerifyCfloatToBlocktripleConversion(bool reportTestCases) {
 		using namespace sw::universal;
 		constexpr size_t nbits = CfloatConfiguration::nbits;
 		constexpr size_t es = CfloatConfiguration::es;
@@ -751,10 +753,10 @@ namespace sw::universal {
 					if (a.isinf() && b.isinf()) continue;
 
 					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+					if (reportTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
 				}
 				else {
-					if (bReportIndividualTestCases) std::cout << "PASS: " << to_binary(a) << " : " << a << " == " << to_triple(b) << " : " << b << '\n';
+					if (reportTestCases) std::cout << "PASS: " << to_binary(a) << " : " << a << " == " << to_triple(b) << " : " << b << '\n';
 				}
 			}
 		}
@@ -773,7 +775,7 @@ namespace sw::universal {
 					if (a.isinf() && b.isinf()) continue;
 
 					++nrOfTestFailures;
-					if (bReportIndividualTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+					if (reportTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
 				}
 			}
 		}
@@ -825,9 +827,9 @@ namespace sw::universal {
 
 	}
 
-	// test just the special cases of increment operator: operator+()
+	// test just the special cases of increment operator: operator++()
 	template<typename TestType>
-	int VerifyCfloatIncrementSpecialCases(bool bReportIndividualTestCases) {
+	int VerifyCfloatIncrementSpecialCases(bool reportTestCases) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -846,28 +848,28 @@ namespace sw::universal {
 			TestType a(minneg);
 			++a;  // we are going to be -0
 			if (!a.iszero() && a.isneg()) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != -0\n";
+				if (reportTestCases) std::cout << " FAIL " << a << " != -0\n";
 				++nrOfFailedTestCases;
 			}
 			++a; // going from -0 to +0
 			if (!a.iszero() && a.ispos()) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != +0\n";
+				if (reportTestCases) std::cout << " FAIL " << a << " != +0\n";
 				++nrOfFailedTestCases;
 			}
 			if (++a != minpos) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
 				++nrOfFailedTestCases;
 			}
 		}
 		else {  // the logic is exactly the same, but the values are very different
 			TestType a(minneg);
 			if (++a != 0) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != 0\n";
+				if (reportTestCases) std::cout << " FAIL " << a << " != 0\n";
 				++nrOfFailedTestCases;
 			}
 			a = 0;
 			if (++a != minpos) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
 				++nrOfFailedTestCases;
 			}
 		}
@@ -889,7 +891,7 @@ namespace sw::universal {
 
 	// validate the increment operator++
 	template<typename TestType>
-	int VerifyCfloatIncrement(bool bReportIndividualTestCases)
+	int VerifyCfloatIncrement(bool reportTestCases)
 	{
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
@@ -911,7 +913,7 @@ namespace sw::universal {
 			c++; // this will test both postfix and prefix operators
 			ref = *(it + 1);
 			if (c != ref) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -919,9 +921,71 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
+	// test just the special cases of decrement operator: operator--() TODO
+	template<typename TestType>
+	int VerifyCfloatDecrementSpecialCases(bool reportTestCases) {
+		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es = TestType::es;
+		using BlockType = typename TestType::BlockType;
+		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating = TestType::isSaturating;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+
+		Cfloat minneg(SpecificValue::minneg);
+		Cfloat minpos(SpecificValue::minpos);
+
+		int nrOfFailedTestCases = 0;
+
+		// special cases are transitions to different regimes and special encodings
+		if constexpr (hasSubnormals) {
+			TestType a(0);
+			--a;  // we are going to be -0
+			if (!a.iszero() && a.isneg()) {
+				if (reportTestCases) std::cout << " FAIL " << a << " != -0\n";
+				++nrOfFailedTestCases;
+			}
+			++a; // going from -0 to +0
+			if (!a.iszero() && a.ispos()) {
+				if (reportTestCases) std::cout << " FAIL " << a << " != +0\n";
+				++nrOfFailedTestCases;
+			}
+			if (++a != minpos) {
+				if (reportTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+				++nrOfFailedTestCases;
+			}
+		}
+		else {  // the logic is exactly the same, but the values are very different
+			TestType a(minneg);
+			if (++a != 0) {
+				if (reportTestCases) std::cout << " FAIL " << a << " != 0\n";
+				++nrOfFailedTestCases;
+			}
+			a = 0;
+			if (++a != minpos) {
+				if (reportTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+				++nrOfFailedTestCases;
+			}
+		}
+
+		if constexpr (hasSupernormals) {
+		}
+		else {
+		}
+
+		// special case of saturing arithmetic: sequences will terminate at maxneg and maxpos
+		if constexpr (isSaturating) {
+
+			// Cfloat maxneg(SpecificValue::maxneg);
+			// Cfloat maxpos(SpecificValue::maxpos);
+
+		}
+		return nrOfFailedTestCases;
+	}
+
 	// validate the decrement operator--
 	template<typename TestType>
-	int VerifyCfloatDecrement(bool bReportIndividualTestCases)
+	int VerifyCfloatDecrement(bool reportTestCases)
 	{
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
@@ -943,7 +1007,8 @@ namespace sw::universal {
 			ref = *(it - 1);
 
 			if (c != ref) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
+				// std::cout << to_binary(*it) << " : " << to_binary(*(it - 1)) << " : " << to_binary(c) << '\n';
+				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -956,10 +1021,10 @@ namespace sw::universal {
 	/// Uses doubles to create a reference to compare to.
 	/// </summary>
 	/// <typeparam name="TestType">the number system type to verify</typeparam>
-	/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
+	/// <param name="reportTestCases">if yes, report on individual test failures</param>
 	/// <returns>nr of failed test cases</returns>
 	template<typename TestType>
-	int VerifyCfloatAddition(bool bReportIndividualTestCases) {
+	int VerifyCfloatAddition(bool reportTestCases) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -1063,7 +1128,7 @@ namespace sw::universal {
 				if (nut != cref) {
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
 #ifdef TRACE_ROUNDING
 					blocktriple<TestType::abits, BlockType> bta, btb, btsum;
 					// transform the inputs into (sign,scale,significant) 
@@ -1084,7 +1149,7 @@ namespace sw::universal {
 #endif
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, nut, cref);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, nut, cref);
 				}
 			}
 			if constexpr (NR_VALUES > 256 * 256) {
@@ -1100,10 +1165,10 @@ namespace sw::universal {
 	/// Uses doubles to create a reference to compare to.
 	/// </summary>
 	/// <typeparam name="TestType">the number system type to verify</typeparam>
-	/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
+	/// <param name="reportTestCases">if yes, report on individual test failures</param>
 	/// <returns>nr of failed test cases</returns>
 	template<typename TestType>
-	int VerifyCfloatSubtraction(bool bReportIndividualTestCases) {
+	int VerifyCfloatSubtraction(bool reportTestCases) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -1207,7 +1272,7 @@ namespace sw::universal {
 				if (nut != cref) {
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, nut, cref);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, nut, cref);
 #ifdef TRACE_ROUNDING
 					blocktriple<TestType::abits, BlockType> bta, btb, btsum;
 					// transform the inputs into (sign,scale,significant) 
@@ -1228,7 +1293,7 @@ namespace sw::universal {
 #endif
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, nut, cref);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, nut, cref);
 				}
 			}
 			if constexpr (NR_VALUES > 256 * 256) {
@@ -1244,10 +1309,10 @@ namespace sw::universal {
 	/// Uses doubles to create a reference to compare to.
 	/// </summary>
 	/// <typeparam name="TestType">the number system type to verify</typeparam>
-	/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
+	/// <param name="reportTestCases">if yes, report on individual test failures</param>
 	/// <returns>nr of failed test cases</returns>
 	template<typename TestType>
-	int VerifyCfloatMultiplication(bool bReportIndividualTestCases) {
+	int VerifyCfloatMultiplication(bool reportTestCases) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -1337,7 +1402,7 @@ namespace sw::universal {
 				if (nut != cref) {
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, nut, cref);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, nut, cref);
 #ifdef TRACE_ROUNDING
 					blocktriple<TestType::abits, BlockType> bta, btb, btprod;
 					// transform the inputs into (sign,scale,significant) 
@@ -1358,7 +1423,7 @@ namespace sw::universal {
 #endif
 				}
 				else {
-					if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
+					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
 				}
 			}
 			if constexpr (NR_VALUES > 256 * 256) {

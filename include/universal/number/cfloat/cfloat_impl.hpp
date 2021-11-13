@@ -249,13 +249,17 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 
 
 /// <summary>
-/// An arbitrary configuration real number with gradual under/overflow and uncertainty bit
-/// </summary>
+/// An arbitrary, fixed-size floating-point number with configurable gradual under/overflow and saturation/non-saturation arithmetic.
+/// Default configuration offers normal encoding and non-saturating arithmetic.
+/// /// </summary>
 /// <typeparam name="nbits">number of bits in the encoding</typeparam>
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
 /// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
+/// <typeparam name="hasSubnormals">configure gradual underflow (==subnormals)</typeparam>
+/// <typeparam name="hasSupernormals">configure graudal overflow (==supernormals)</typeparam>
+/// <typeparam name="isSaturating">configure saturation arithmetic</typeparam>
 template<size_t _nbits, size_t _es, typename bt = uint8_t,
-	bool _hasSubnormals = true, bool _hasSupernormals = true, bool _isSaturating = false>
+	bool _hasSubnormals = false, bool _hasSupernormals = false, bool _isSaturating = false>
 class cfloat {
 public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
@@ -601,7 +605,7 @@ public:
 		else {
 			if (ispos()) {
 				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
-				if (isnan()) {
+				if (isnanencoding()) {
 					setnan(NAN_TYPE_SIGNALLING);
 				}
 				else {
@@ -625,7 +629,7 @@ public:
 			}
 			else {
 				// special case: pattern: 1.00.000 = -0 transitions to pattern: 0.00.000 = +0 
-				if (iszero()) {
+				if (iszeroencoding()) {
 					setzero();
 				}
 				else {
@@ -683,7 +687,7 @@ public:
 		else {
 			if (ispos()) {
 				// special case: pattern: 0.00.000 = +0 transitions to pattern: 1.00.000 = -0 
-				if (iszero()) {
+				if (iszeroencoding()) {
 					setsign(true);
 				}
 				else {
@@ -707,7 +711,7 @@ public:
 			}
 			else {
 				// special case: pattern: 1.11.111 = snan transitions to pattern: 0.11.111 = qnan 
-				if (isnan()) {
+				if (isnanencoding()) {
 					setsign(false);
 				}
 				else {
@@ -1266,7 +1270,7 @@ public:
 	// tests
 	inline constexpr bool isneg() const noexcept { return sign(); }
 	inline constexpr bool ispos() const noexcept { return !sign(); }
-	inline constexpr bool iszero() const noexcept {
+	inline constexpr bool iszeroencoding() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return true;
 		}
@@ -1283,8 +1287,18 @@ public:
 			return (_block[0] == 0) && _block[1] == 0 && _block[2] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 		else {
-			for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != 0) return false;
+			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != 0) return false;
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+	}
+	inline constexpr bool iszero() const noexcept {
+		if constexpr (hasSubnormals) {
+			return iszeroencoding();
+		}
+		else { // all subnormals round to 0
+			blockbinary<es, bt> ebits;
+			exponent(ebits);
+			if (ebits.iszero()) return true; else return false;
 		}
 	}
 	inline constexpr bool isone() const noexcept {
@@ -1305,6 +1319,7 @@ public:
 	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
 	/// <returns>true if +-inf, false otherwise</returns>
 	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
+		// the bit pattern encoding of Inf is independent of gradual overflow (supernormal) configuration
 		bool isNegInf = false;
 		bool isPosInf = false;
 		if constexpr (0 == nrBlocks) {
@@ -1345,6 +1360,41 @@ public:
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
+	inline constexpr bool isnanencoding(int NaNType = NAN_TYPE_EITHER) const noexcept {
+		// the bit encoding of NaN is independent of the gradual overflow configuration
+		bool isNaN = true;
+		bool isNegNaN = false;
+		bool isPosNaN = false;
+
+		if constexpr (0 == nrBlocks) {
+			return false;
+		}
+		else if constexpr (1 == nrBlocks) {
+		}
+		else if constexpr (2 == nrBlocks) {
+			isNaN = (_block[0] == BLOCK_MASK);
+		}
+		else if constexpr (3 == nrBlocks) {
+			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK);
+		}
+		else if constexpr (4 == nrBlocks) {
+			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && (_block[2] == BLOCK_MASK);
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks - 1; ++i) {
+				if (_block[i] != BLOCK_MASK) {
+					isNaN = false;
+					break;
+				}
+			}
+		}
+		isNegNaN = isNaN && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+		isPosNaN = isNaN && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
+
+		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
+			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
+				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+	}
 	/// <summary>
 	/// check if a value is a quiet or a signalling NaN
 	/// quiet NaN      = 0-1111-11111-1: sign = 0, uncertainty = 1, es/fraction bits = 1
@@ -1356,40 +1406,18 @@ public:
 		bool isNaN = true;
 		bool isNegNaN = false;
 		bool isPosNaN = false;
+
 		if constexpr (hasSupernormals) {
-			if constexpr (0 == nrBlocks) {
-				return false;
-			}
-			else if constexpr (1 == nrBlocks) {
-			}
-			else if constexpr (2 == nrBlocks) {
-				isNaN = (_block[0] == BLOCK_MASK);
-			}
-			else if constexpr (3 == nrBlocks) {
-				isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK);
-			}
-			else if constexpr (4 == nrBlocks) {
-				isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && (_block[2] == BLOCK_MASK);
-			}
-			else {
-				for (size_t i = 0; i < nrBlocks - 1; ++i) {
-					if (_block[i] != BLOCK_MASK) {
-						isNaN = false;
-						break;
-					}
-				}
-			}
-			isNegNaN = isNaN && ((_block[MSU] & MSU_MASK) == MSU_MASK);
-			isPosNaN = isNaN && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
+			return isnanencoding(NaNType);
 		}
 		else {
-			if (!issupernormal()) {	isNaN = false; }
+			if (!issupernormal()) { isNaN = false; }
 			isNegNaN = isNaN && sign();
 			isPosNaN = isNaN && !sign();
+			return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
+				(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
+					(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 		}
-		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) : 
-			     (NaNType == NAN_TYPE_SIGNALLING ? isNegNaN : 
-				   (NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
 	// isnormal returns true if exponent bits are not all zero or one, false otherwise
 	inline constexpr bool isnormal() const noexcept {
