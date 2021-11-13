@@ -9,21 +9,39 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite  = "cfloat<> ieee754 subnormal assignment";
+	std::string test_tag    = "assignment";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	constexpr bool hasSubnormals = true;
+	constexpr bool hasSubnormals   = true;
 	constexpr bool hasSupernormals = true;
-	constexpr bool isSaturating = false;
+	constexpr bool isSaturating    = false;
 
 	// single precision
 	{
@@ -118,14 +136,10 @@ try {
 
 #endif
 
-#if STRESS_TESTING
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

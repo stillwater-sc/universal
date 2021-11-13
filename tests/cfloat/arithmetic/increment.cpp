@@ -10,14 +10,17 @@
 #include <universal/verification/cfloat_test_suite.hpp>
 
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "classic floating-point increment operator validation\n";
+	std::string test_suite  = "cfloat<> increment operator validation";
+	std::string test_tag    = test_tag;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -46,42 +49,59 @@ try {
 		constexpr bool hasSupernormals = true;
 		constexpr bool isSaturating = true;
 		using Cfloat = cfloat<17, 3, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += ReportTestResult(VerifyCfloatIncrement< Cfloat >(true), "cfloat<17,3,uint8_t,subnormals,supernormals,!saturating>", "increment");
+		nrOfFailedTestCases += ReportTestResult(VerifyCfloatIncrement< Cfloat >(true), "cfloat<17,3,uint8_t,subnormals,supernormals,!saturating>", test_tag);
 	}
-	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
-	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
 
 #else
 
+	// normal encoding only
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrement < cfloat<8, 2, uint8_t, false, false, false> >(reportTestCases), type_tag(cfloat<8, 2, uint8_t, false, false, false>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrement < cfloat<9, 2, uint8_t, false, false, false> >(reportTestCases), type_tag(cfloat<9, 2, uint8_t, false, false, false>()), test_tag);
 
-	bool bReportIndividualTestCases = false;
+
+	// subnormal + normal
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrement < cfloat<8, 2, uint8_t, true, false, false> >(reportTestCases), type_tag(cfloat<8, 2, uint8_t, true, false, false>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrement < cfloat<9, 2, uint8_t, true, false, false> >(reportTestCases), type_tag(cfloat<9, 2, uint8_t, true, false, false>()), test_tag);
+
+
+	// normal + supernormal
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrement < cfloat<8, 2, uint8_t, false, true, false> >(reportTestCases), type_tag(cfloat<8, 2, uint8_t, false, true, false>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrement < cfloat<9, 2, uint8_t, false, true, false> >(reportTestCases), type_tag(cfloat<9, 2, uint8_t, false, true, false>()), test_tag);
+
+
+	// subnormal + normal + supernormal
 
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrement< cfloat<4, 1> >(bReportIndividualTestCases), "cfloat<4,1,uint8_t,subnormals,supernormals,!saturating>", "increment");
+		VerifyCfloatIncrement< cfloat<4, 1, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<4, 1, uint8_t, true, true, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrement < cfloat<8, 2> >(bReportIndividualTestCases), "cfloat<8,2,uint8_t,subnormals,supernormals,!saturating>", "increment");
+		VerifyCfloatIncrement < cfloat<8, 2, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<8, 2, uint8_t, true, true, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrement < cfloat<9, 2> >(bReportIndividualTestCases), "cfloat<9,2,uint8_t,subnormals,supernormals,!saturating>", "increment");
+		VerifyCfloatIncrement < cfloat<9, 2, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<9, 2, uint8_t, true, true, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrement < cfloat<10, 3> >(bReportIndividualTestCases), "cfloat<10,3,uint8_t,subnormals,supernormals,!saturating>", "increment");
+		VerifyCfloatIncrement < cfloat<10, 3, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<10, 3, uint8_t, true, true, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrement < cfloat<17, 3> >(bReportIndividualTestCases), "cfloat<17,3,uint8_t,subnormals,supernormals,!saturating>", "increment");
+		VerifyCfloatIncrement < cfloat<17, 3, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<17, 4, uint8_t, true, true, false>()), test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrementSpecialCases< cfloat<32, 8, uint32_t, true, true, false> >(bReportIndividualTestCases), "cfloat<32, 8, subnormals, supernormals, !saturating", "increment");
+		VerifyCfloatIncrementSpecialCases< cfloat<32, 8, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<32, 8, uint32_t, true, true, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrementSpecialCases< cfloat<64, 11, uint32_t, true, true, false> >(bReportIndividualTestCases), "cfloat<64, 11, subnormals, supernormals, !saturating", "increment");
+		VerifyCfloatIncrementSpecialCases< cfloat<64, 11, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<64, 11, uint32_t, true, true, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrementSpecialCases< cfloat<128, 11, uint32_t, true, true, false> >(bReportIndividualTestCases), "cfloat<128, 11, subnormals, supernormals, !saturating", "increment");
+		VerifyCfloatIncrementSpecialCases< cfloat<128, 15, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<128, 15, uint32_t, true, true, false>()), test_tag);
 
-#if STRESS_TESTING
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

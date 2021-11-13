@@ -186,7 +186,7 @@ std::string info_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 // generate a binary, color-coded representation of the cfloat
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
-	using Real = cfloat<nbits, es, bt>;
+	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	std::stringstream s;
 	bool sign{ false };
 	blockbinary<es,bt> e;

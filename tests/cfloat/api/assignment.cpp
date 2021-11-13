@@ -1,4 +1,4 @@
-// assignment.cpp: functional tests for assignments of native types to cfloats
+// astrignment.cpp: functional tests for astrignments of native types to cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -16,14 +16,14 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
-// print the constexpr values of the cfloat class
+// print the constexpr values of the cfloat clastr
 template<size_t nbits, size_t es, typename bt>
 void configuration() {
 	sw::universal::cfloat<nbits, es, bt> a;
 	a.debug();
 }
 
-// free function that does the same as the private copyBits function of the cfloat class
+// free function that does the same as the private copyBits function of the cfloat clastr
 template<typename ArgumentBlockType, typename BlockType>
 void copyBits(ArgumentBlockType v, BlockType _block[16]) {
 	size_t bitsInBlock = sizeof(BlockType) * 8;
@@ -41,87 +41,103 @@ void copyBits(ArgumentBlockType v, BlockType _block[16]) {
 }
 
 // verify the subnormals of an cfloat configuration
-template<size_t nbits, size_t es, typename bt = uint8_t, typename NativeFloatingPointType = double>
-int VerifySubnormalReverseSampling(bool bReportIndividualTestCases = false, bool verbose = false) {
+template<typename CfloatConfiguration, typename NativeFloatingPointType = double>
+int VerifySubnormalReverseSampling(bool reportTestCases = false, bool verbose = false) {
+	constexpr size_t nbits = CfloatConfiguration::nbits;
+	constexpr size_t es = CfloatConfiguration::es;
+	using bt = CfloatConfiguration::BlockType;
+	constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+	using Real = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+
 	// subnormals exist in the exponent = 0 range
 	constexpr size_t fbits = nbits - 1ull - es - 1ull;
 	constexpr size_t NR_SAMPLES = (1ull << (fbits + 1ull)); //  the first segment of fbits+ubit are subnormals
 	int nrOfFailedTestCases = 0;
-	using Real = sw::universal::cfloat<nbits, es, bt>;
-	Real ref{ 0 }; Real result{ 0 };
-	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
+	Real ref{ 0 };
+	for (size_t i = 0; i < NR_SAMPLES; ++i) {
 		ref.setbits(i);
 		NativeFloatingPointType input = NativeFloatingPointType(ref);
-		result = input;
+		Real result = input;
 		if (result != ref) {
+			if (ref.iszero() && result.iszero()) continue; // optimization may destroy sign on zero
 			nrOfFailedTestCases++;
 			//			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
-			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 		}
 		else {
-			if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+			if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 		}
 	}
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits, size_t es, typename bt = uint8_t, typename NativeFloatingPointType = double>
-int VerifyReverseSampling(bool bReportIndividualTestCases = false, bool verbose = false) {
+// verify that conversion is closed and consistent
+template<typename CfloatConfiguration, typename NativeFloatingPointType = double>
+int VerifyReverseSampling(bool reportTestCases = false, bool verbose = false) {
+	constexpr size_t nbits = CfloatConfiguration::nbits;
+	constexpr size_t es    = CfloatConfiguration::es;
+	using bt = CfloatConfiguration::BlockType;
+	constexpr bool hasSubnormals   = CfloatConfiguration::hasSubnormals;
+	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+	constexpr bool isSaturating    = CfloatConfiguration::isSaturating;
+	using Real = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+
 	constexpr size_t NR_SAMPLES = (1ull << nbits);
 	int nrOfFailedTestCases = 0;
-	using Real = sw::universal::cfloat<nbits, es, bt>;
 	Real ref{ 0 }; Real result{ 0 };
 	std::cout << std::setw(40) << typeid(result).name() << "   : ";
-	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
+	for (size_t i = 0; i < NR_SAMPLES; ++i) {
 		ref.setbits(i);
 		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
 		// special cases do not have consistent compiler behavior
 		if (ref.iszero()) {
-			// optimization compilers may destroy the sign on -0
+			// optimization may destroy the sign on -0
 			if (input != 0) {
 				nrOfFailedTestCases++;
-				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
-				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 			}
 		}
 		else if (ref.isnan()) {
-			// optimization compilers may change signalling NaNs to quiet NaNs
+			// optimization may change signalling NaNs to quiet NaNs
 			if (std::fpclassify(input) != FP_NAN) {
 				nrOfFailedTestCases++;
-				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
-				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 			}
 		}
 		else if (ref.isinf()) {
-			// optimization compilers may destroy the sign on -0
+			// optimization may destroy the sign on -0
 			if (std::fpclassify(input) != FP_INFINITE) {
 				nrOfFailedTestCases++;
-				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
-				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 			}
 		}
 		else if (result != ref) {
                           
 			nrOfFailedTestCases++;
 //			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
-			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 		}
 		else {
-			if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+			if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 		}
 	}
 	return nrOfFailedTestCases;
 }
 
 template<typename TestType, typename NativeFloatingPointType>
-int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases = false) {
+int VerifySpecialCases(const std::string& tag, bool reportTestCases = false) {
 	using namespace sw::universal;
 	int nrOfFailedTests{ 0 };
 	TestType a{ 0 };
@@ -137,7 +153,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	a = fa;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 	if (!a.isnan(NAN_TYPE_SIGNALLING)) ++nrOfFailedTests;
-	if (bReportIndividualTestCases && a.isnan(NAN_TYPE_SIGNALLING)) std::cout << "PASS snan\n"; else std::cout << "FAIL snan\n";
+	if (reportTestCases && a.isnan(NAN_TYPE_SIGNALLING)) std::cout << "PASS snan\n"; else std::cout << "FAIL snan\n";
 
 	// test qNaN
 	a.setnan(NAN_TYPE_QUIET);
@@ -146,7 +162,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	a = fa;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 	if (!a.isnan(NAN_TYPE_QUIET)) ++nrOfFailedTests;
-	if (bReportIndividualTestCases && a.isnan(NAN_TYPE_QUIET)) std::cout << "PASS qnan\n"; else std::cout << "FAIL qnan\n";
+	if (reportTestCases && a.isnan(NAN_TYPE_QUIET)) std::cout << "PASS qnan\n"; else std::cout << "FAIL qnan\n";
 
 	// test +inf
 	a.setinf(false); // +inf
@@ -155,7 +171,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	a = fa;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 	if (!a.isinf(INF_TYPE_POSITIVE)) ++nrOfFailedTests;
-	if (bReportIndividualTestCases && a.isinf(INF_TYPE_POSITIVE)) std::cout << "PASS +inf\n"; else std::cout << "FAIL +inf\n";
+	if (reportTestCases && a.isinf(INF_TYPE_POSITIVE)) std::cout << "PASS +inf\n"; else std::cout << "FAIL +inf\n";
 
 	// test -inf
 	a.setinf(true); // -inf
@@ -164,7 +180,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	a = fa;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 	if (!a.isinf(INF_TYPE_NEGATIVE)) ++nrOfFailedTests;
-	if (bReportIndividualTestCases && a.isinf(INF_TYPE_NEGATIVE)) std::cout << "PASS -inf\n"; else std::cout << "FAIL -inf\n";
+	if (reportTestCases && a.isinf(INF_TYPE_NEGATIVE)) std::cout << "PASS -inf\n"; else std::cout << "FAIL -inf\n";
 
 	std::cout << "Representations of zero in " << typeid(NativeFloatingPointType).name() << '\n';
 	NativeFloatingPointType zero;
@@ -179,9 +195,9 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	fa = NativeFloatingPointType(a);
 	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
 	a = fa;
-	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	std::cout << "astrignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 	if (!a.iszero()) ++nrOfFailedTests;
-	if (bReportIndividualTestCases && a.iszero()) std::cout << "PASS +0 == iszero()\n"; else std::cout << "FAIL +0 != iszero()\n";
+	if (reportTestCases && a.iszero()) std::cout << "PASS +0 == iszero()\n"; else std::cout << "FAIL +0 != iszero()\n";
 
 	// Testing problem: the optimizer might destroy the sign of a copy of a -0.0
 	// test -0.0
@@ -191,9 +207,9 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	fa = NativeFloatingPointType(a);
 	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
 	a = fa;
-	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	std::cout << "astrignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 	if (!a.iszero()) ++nrOfFailedTests;
-	if (bReportIndividualTestCases && a.iszero()) std::cout << "PASS -0 == iszero()\n"; else std::cout << "FAIL -0 != iszero()\n";
+	if (reportTestCases && a.iszero()) std::cout << "PASS -0 == iszero()\n"; else std::cout << "FAIL -0 != iszero()\n";
 
 	return nrOfFailedTests;
 }
@@ -216,8 +232,8 @@ void ConversionTest(NativeFloatingPointType& value) {
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 }
 
-template<size_t es, typename NativeFloatingPointType>
-int TestSingleBlockRepresentations(const std::string& op, bool bReportIndividualTestCases, bool bVerbose) {
+template<size_t es, bool hasSubnormals, bool hasSupernormals, bool isSaturating, typename NativeFloatingPointType>
+int TestSingleBlockRepresentations(const std::string& op, bool reportTestCases, bool bVerbose) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 
@@ -226,126 +242,92 @@ int TestSingleBlockRepresentations(const std::string& op, bool bReportIndividual
 	std::string testcase;
 
 	if constexpr (es < 2) {
-		std::stringstream ss;
-		ss << "cfloat<4, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 4, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<4, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 3) {
-		std::stringstream ss;
-		ss << "cfloat<5, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 5, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<5, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 4) {
-		std::stringstream ss;
-		ss << "cfloat<6, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 6, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<6, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 5) {
-		std::stringstream ss;
-		ss << "cfloat<7, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 7, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<7, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 6) {
-		std::stringstream ss;
-		ss << "cfloat<8, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 8, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<8, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 7) {
-		std::stringstream ss;
-		ss << "cfloat<9, " << es << ", uint16_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, es, uint16_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<9, es, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 8) {
-		std::stringstream ss;
-		ss << "cfloat<10, " << es << ", uint16_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, es, uint16_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<10, es, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 10) {
-		std::stringstream ss;
-		ss << "cfloat<12, " << es << ", uint16_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, es, uint16_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<12, es, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 12) {
-		std::stringstream ss;
-		ss << "cfloat<14, " << es << ", uint16_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, es, uint16_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<14, es, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 14) {
-		std::stringstream ss;
-		ss << "cfloat<16, " << es << ", uint16_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, es, uint16_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<16, es, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 18) {
-		std::stringstream ss;
-		ss << "cfloat<20, " << es << ", uint32_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint32_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<20, es, uint32_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 
 	return nrOfFailedTestCases;
 }
 
-template<size_t es, typename NativeFloatingPointType>
-int TestDoubleBlockRepresentations(const std::string& op, bool bReportIndividualTestCases, bool bVerbose) {
+template<size_t es, bool hasSubnormals, bool hasSupernormals, bool isSaturating, typename NativeFloatingPointType>
+int TestDoubleBlockRepresentations(const std::string& op, bool reportTestCases, bool bVerbose) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 
 	// 2 block representations
 
-	std::string testcase;
+	std::string testcase = "-";
 
 	if constexpr (es < 7) {
-		std::stringstream ss;
-		ss << "cfloat<9, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<9, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 8) {
-		std::stringstream ss;
-		ss << "cfloat<10, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<10, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 10) {
-		std::stringstream ss;
-		ss << "cfloat<12, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<12, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 12) {
-		std::stringstream ss;
-		ss << "cfloat<14, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<14, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 14) {
-		std::stringstream ss;
-		ss << "cfloat<16, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<16, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 18) {
-		std::stringstream ss;
-		ss << "cfloat<20, " << es << ", uint16_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint16_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<20, es, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 
 	return nrOfFailedTestCases;
 }
 
-template<size_t es, typename NativeFloatingPointType>
-int TestTripleBlockRepresentations(const std::string& op, bool bReportIndividualTestCases, bool bVerbose) {
+template<size_t es, bool hasSubnormals, bool hasSupernormals, bool isSaturating, typename NativeFloatingPointType>
+int TestTripleBlockRepresentations(const std::string& op, bool reportTestCases, bool bVerbose) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 
@@ -354,18 +336,28 @@ int TestTripleBlockRepresentations(const std::string& op, bool bReportIndividual
 	std::string testcase;
 
 	if constexpr (es < 18) {
-		std::stringstream ss;
-		ss << "cfloat<20, " << es << ", uint8_t> ";
-		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint8_t, NativeFloatingPointType>(bReportIndividualTestCases, bVerbose), testcase, op);
+		using CfloatConfiguration = cfloat<20, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<CfloatConfiguration, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 
 	return nrOfFailedTestCases;
 }
 
-// conditional compile flags
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 /*
 * e = exponent bit, m = most significant fraction bit, f = fraction bit, h = hidden bit
@@ -435,16 +427,16 @@ cfloat<32,2> 'seem'ffff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '000h'1111'11
 
 */
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "cfloat<> assignment";
+	std::string test_tag    = "assignment";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	print_cmd_line(argc, argv);
-
-	std::string tag = "cfloat assignment: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -454,123 +446,155 @@ try {
 	if (bConversionTest) {
 		float test = 0.0625f;
 		std::cout << to_binary(test) << " : " << test << std::endl;
-		ConversionTest<cfloat<8, 1>>(test);
+		ConversionTest<cfloat<8, 1, uint8_t, true, true, false>>(test);  // es = 1 requires sub and supernormals to be configured
 		ConversionTest<cfloat<8, 2>>(test);
 		ConversionTest<cfloat<8, 3>>(test);
 		ConversionTest<cfloat<8, 4>>(test);
 	}
 
 	{
-		sw::universal::cfloat<9, 1> a = -0.03125f;
+		sw::universal::cfloat<9, 1, uint8_t, true, true, false> a = -0.03125f;
 		std::cout << color_print(a) << " : " << a << std::endl;
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 1, uint8_t, float>(tag, true, false), "cfloat<9,1, uint8_t>", "=float");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<9, 1, uint8_t, float>(tag, true, false), "cfloat<9,1, uint8_t>", "=float");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling< cfloat<9, 1, uint8_t, true, true, false>, float>(reportTestCases, false), "cfloat<9,1, uint8_t>", "=float");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< cfloat<9, 1, uint8_t, true, true, false>, float>(true, false), "cfloat<9,1, uint8_t>", "=float");
 
-	{
-		float f;
-		sw::universal::cfloat<9, 1> a;
-		a.setbits(0x1FF); f = float(a);
-		std::cout << "signalling NaN : " << color_print(a) << " : " << a << " : " << f << '\n';
-		a.setbits(0x0FF); f = float(a);
-		std::cout << "     quiet NaN : " << color_print(a) << " : " << a << " : " << f << '\n';
-		a.setbits(0x1FE); f = float(a);
-		std::cout << "     -INFINITY : " << color_print(a) << " : " << a << " : " << f << '\n';
-		a.setbits(0x0FE); f = float(a);
-		std::cout << "     +INFINITY : " << color_print(a) << " : " << a << " : " << f << '\n';
-	}
-	
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 2, uint8_t, float>(tag, true, true), "cfloat<5,2, uint8_t>", "=float");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<5, 2, uint8_t, float>(tag, true, true), "cfloat<5,2, uint8_t>", "=float");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< cfloat<5, 2, uint8_t, false, false, false>, float>(reportTestCases, false), "cfloat<5,2> normals only", "=float");
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, false, false, false, float>("=float", false, false);
 
-	{
-		float f;
-		sw::universal::cfloat<5, 2> a;
-		a.setbits(0x18);
-		std::cout << color_print(a) << " : " << a << '\n';
-		f = float(a);
-		a = f;
-		std::cout << "source -2 : " << color_print(a) << " : " << a << " : " << f << '\n';
-
-	}
-
-#if STRESS_TESTING
-
-	// manual exhaustive test
-
-#endif
-
-	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
-	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
 
 #else //!MANUAL_TESTING
-	std::cout << "cfloat assignment validation\n";
-
 	bool bVerbose = false;
 
 	std::cout << "Special cases: zero, inf, nan\n";
 	using Real = sw::universal::cfloat<8, 2>;
-	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->cfloat special cases", bReportIndividualTestCases);
-	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->cfloat special cases", bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->cfloat special cases", reportTestCases);
+	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->cfloat special cases", reportTestCases);
 #if LONG_DOUBLE_SUPPORT
-	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->cfloat special cases", bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->cfloat special cases", reportTestCases);
 #endif
 
-	std::cout << "Single block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<1, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<1, double>("=double", bReportIndividualTestCases, bVerbose);
-	std::cout << "--------------------------------------------- es = 2 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<2, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<2, double>("=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases = 0;
+	constexpr bool hasSubnormals   = true;
+	constexpr bool noSubnormals    = false;
+	constexpr bool hasSupernormals = true;
+	constexpr bool noSupernormals  = false;
+	constexpr bool notSaturating   = false;
+
+	std::cout << "\ncfloat<> with only normal encodings\n";
+	std::cout << "Single block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 3 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<3, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<3, double>("=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, noSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 4 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<4, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<4, double>("=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, noSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "Double block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 3 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, noSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 4 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, noSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "Triple block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestTripleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestTripleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "\ncfloat<> with subnormal + normal\n";
+	std::cout << "Single block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, hasSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, hasSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 3 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, hasSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, hasSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 4 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, hasSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, hasSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "Double block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, hasSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, hasSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 3 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, hasSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, hasSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 4 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, hasSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, hasSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "Triple block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestTripleBlockRepresentations<2, hasSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestTripleBlockRepresentations<2, hasSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "\ncfloat<> with normal + supernormal\n";
+	std::cout << "Single block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, noSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, noSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 3 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, noSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, noSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 4 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, noSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, noSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "Double block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, noSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, noSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 3 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, noSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, noSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 4 encodings\n";
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, noSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, noSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "Triple block representations\n--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestTripleBlockRepresentations<2, noSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestTripleBlockRepresentations<2, noSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+
+	std::cout << "\ncfloat<> with subnormal + normal + supernormal\n";
+	std::cout << "Single block representations\n--------------------------------------------- es = 1 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<1, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<1, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 3 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<3, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 4 encodings\n";
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<4, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 
 	std::cout << "Double block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, double>("=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 2 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, double>("=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 3 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, double>("=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 4 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, double>("=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 
 	std::cout << "Triple block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestTripleBlockRepresentations<1, float>("=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestTripleBlockRepresentations<1, double>("=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += TestTripleBlockRepresentations<1, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestTripleBlockRepresentations<1, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 
 
-	/*
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<4, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<4,1,uint8_t>");
-
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<6, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<6,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<6, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<6,2,uint8_t>");
-
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<8, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<8,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<8, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<8,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<8, 3,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<8,3,uint8_t>");
-
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<10, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<10,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<10, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<10,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::cfloat<10, 3,  uint8_t>, float>(bReportIndividualTestCases), tag, "cfloat<10,3,uint8_t>");
-	*/
-
-	nrOfFailedTestCases = 0;
-#if STRESS_TESTING
-
-#endif  // STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

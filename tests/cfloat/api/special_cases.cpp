@@ -21,10 +21,10 @@
 #endif
 #include <universal/verification/test_suite_arithmetic.hpp>
 
-template<size_t nbits, size_t es, typename bt = uint8_t>
+template<size_t nbits, size_t es, typename bt = uint8_t, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline int TestZero() {
 	int fails = 0;
-	sw::universal::cfloat<nbits, es, bt> r;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> r;
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.iszero()) ++fails;
 	r = -r;
@@ -37,71 +37,71 @@ void TestIsZero(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
 	std::cout << "iszero()                        : ";
 	// one block configurations
-	nrOfFailedTestCases += TestZero<4, 1>();
-	nrOfFailedTestCases += TestZero<5, 1>();
-	nrOfFailedTestCases += TestZero<6, 1>();
-	nrOfFailedTestCases += TestZero<7, 1>();
-	nrOfFailedTestCases += TestZero<8, 1>();
-	nrOfFailedTestCases += TestZero<8, 2>();
-	nrOfFailedTestCases += TestZero<8, 3>();
+	nrOfFailedTestCases += TestZero<4, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<5, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<6, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<7, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<8, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<8, 2, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<8, 3, uint8_t, true, true, false>();
 
 	// two block configurations
-	nrOfFailedTestCases += TestZero<9, 3>();
-	nrOfFailedTestCases += TestZero<10, 3>();
-	nrOfFailedTestCases += TestZero<11, 3>();
-	nrOfFailedTestCases += TestZero<12, 3>();
-	nrOfFailedTestCases += TestZero<13, 3>();
-	nrOfFailedTestCases += TestZero<14, 3>();
-	nrOfFailedTestCases += TestZero<15, 3>();
-	nrOfFailedTestCases += TestZero<16, 3>();
-	nrOfFailedTestCases += TestZero<16, 4>();
-	nrOfFailedTestCases += TestZero<16, 5>();
+	nrOfFailedTestCases += TestZero<9, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<10, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<11, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<12, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<13, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<14, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<15, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<16, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<16, 4, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<16, 5, uint8_t, true, true, false>();
 
 	// three block configurations
-	nrOfFailedTestCases += TestZero<17, 5>();
-	nrOfFailedTestCases += TestZero<18, 5>();
-	nrOfFailedTestCases += TestZero<19, 5>();
-	nrOfFailedTestCases += TestZero<20, 5>();
-	nrOfFailedTestCases += TestZero<21, 5>();
-	nrOfFailedTestCases += TestZero<22, 5>();
-	nrOfFailedTestCases += TestZero<23, 5>();
-	nrOfFailedTestCases += TestZero<24, 5>();
-	nrOfFailedTestCases += TestZero<24, 6>();
-	nrOfFailedTestCases += TestZero<24, 7>();
+	nrOfFailedTestCases += TestZero<17, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<18, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<19, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<20, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<21, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<22, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<23, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<24, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<24, 6, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<24, 7, uint8_t, true, true, false>();
 
 	// four block configurations
-	nrOfFailedTestCases += TestZero<25, 8>();
-	nrOfFailedTestCases += TestZero<26, 8>();
-	nrOfFailedTestCases += TestZero<27, 8>();
-	nrOfFailedTestCases += TestZero<28, 8>();
-	nrOfFailedTestCases += TestZero<29, 8>();
-	nrOfFailedTestCases += TestZero<30, 8>();
-	nrOfFailedTestCases += TestZero<31, 8>();
-	nrOfFailedTestCases += TestZero<32, 8>();
+	nrOfFailedTestCases += TestZero<25, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<26, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<27, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<28, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<29, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<30, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<31, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<32, 8, uint8_t, true, true, false>();
 
 	// five block configurations
-	nrOfFailedTestCases += TestZero<39, 8>();
-	nrOfFailedTestCases += TestZero<40, 8>();
+	nrOfFailedTestCases += TestZero<39, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<40, 8, uint8_t, true, true, false>();
 
 	// six block configurations
-	nrOfFailedTestCases += TestZero<47, 9>();
-	nrOfFailedTestCases += TestZero<48, 9>();
+	nrOfFailedTestCases += TestZero<47, 9, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<48, 9, uint8_t, true, true, false>();
 
 	// seven block configurations
-	nrOfFailedTestCases += TestZero<55, 10>();
-	nrOfFailedTestCases += TestZero<56, 10>();
+	nrOfFailedTestCases += TestZero<55, 10, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<56, 10, uint8_t, true, true, false>();
 
 	// eight block configurations
-	nrOfFailedTestCases += TestZero<63, 11>();
-	nrOfFailedTestCases += TestZero<64, 11>();
+	nrOfFailedTestCases += TestZero<63, 11, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestZero<64, 11, uint8_t, true, true, false>();
 
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
-template<size_t nbits, size_t es, typename bt = uint8_t>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline int TestInf() {
 	int fails = 0;
-	sw::universal::cfloat<nbits, es, bt> r;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> r;
 	r.setinf(); // default is to set -inf
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isinf()) ++fails;
@@ -119,71 +119,71 @@ void TestIsInf(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
 	std::cout << "isinf()                         : ";
 	// one block configurations
-	nrOfFailedTestCases += TestInf<4, 1>();
-	nrOfFailedTestCases += TestInf<5, 1>();
-	nrOfFailedTestCases += TestInf<6, 1>();
-	nrOfFailedTestCases += TestInf<7, 1>();
-	nrOfFailedTestCases += TestInf<8, 1>();
-	nrOfFailedTestCases += TestInf<8, 2>();
-	nrOfFailedTestCases += TestInf<8, 3>();
+	nrOfFailedTestCases += TestInf<4, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<5, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<6, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<7, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<8, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<8, 2, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<8, 3, uint8_t, true, true, false>();
 
 	// two block configurations
-	nrOfFailedTestCases += TestInf<9, 3>();
-	nrOfFailedTestCases += TestInf<10, 3>();
-	nrOfFailedTestCases += TestInf<11, 3>();
-	nrOfFailedTestCases += TestInf<12, 3>();
-	nrOfFailedTestCases += TestInf<13, 3>();
-	nrOfFailedTestCases += TestInf<14, 3>();
-	nrOfFailedTestCases += TestInf<15, 3>();
-	nrOfFailedTestCases += TestInf<16, 3>();
-	nrOfFailedTestCases += TestInf<16, 4>();
-	nrOfFailedTestCases += TestInf<16, 5>();
+	nrOfFailedTestCases += TestInf<9, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<10, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<11, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<12, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<13, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<14, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<15, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<16, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<16, 4, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<16, 5, uint8_t, true, true, false>();
 
 	// three block configurations
-	nrOfFailedTestCases += TestInf<17, 5>();
-	nrOfFailedTestCases += TestInf<18, 5>();
-	nrOfFailedTestCases += TestInf<19, 5>();
-	nrOfFailedTestCases += TestInf<20, 5>();
-	nrOfFailedTestCases += TestInf<21, 5>();
-	nrOfFailedTestCases += TestInf<22, 5>();
-	nrOfFailedTestCases += TestInf<23, 5>();
-	nrOfFailedTestCases += TestInf<24, 5>();
-	nrOfFailedTestCases += TestInf<24, 6>();
-	nrOfFailedTestCases += TestInf<24, 7>();
+	nrOfFailedTestCases += TestInf<17, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<18, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<19, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<20, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<21, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<22, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<23, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<24, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<24, 6, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<24, 7, uint8_t, true, true, false>();
 
 	// four block configurations
-	nrOfFailedTestCases += TestInf<25, 8>();
-	nrOfFailedTestCases += TestInf<26, 8>();
-	nrOfFailedTestCases += TestInf<27, 8>();
-	nrOfFailedTestCases += TestInf<28, 8>();
-	nrOfFailedTestCases += TestInf<29, 8>();
-	nrOfFailedTestCases += TestInf<30, 8>();
-	nrOfFailedTestCases += TestInf<31, 8>();
-	nrOfFailedTestCases += TestInf<32, 8>();
+	nrOfFailedTestCases += TestInf<25, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<26, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<27, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<28, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<29, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<30, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<31, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<32, 8, uint8_t, true, true, false>();
 
 	// five block configurations
-	nrOfFailedTestCases += TestInf<39, 8>();
-	nrOfFailedTestCases += TestInf<40, 8>();
+	nrOfFailedTestCases += TestInf<39, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<40, 8, uint8_t, true, true, false>();
 
 	// six block configurations
-	nrOfFailedTestCases += TestInf<47, 9>();
-	nrOfFailedTestCases += TestInf<48, 9>();
+	nrOfFailedTestCases += TestInf<47, 9, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<48, 9, uint8_t, true, true, false>();
 
 	// seven block configurations
-	nrOfFailedTestCases += TestInf<55, 10>();
-	nrOfFailedTestCases += TestInf<56, 10>();
+	nrOfFailedTestCases += TestInf<55, 10, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<56, 10, uint8_t, true, true, false>();
 
 	// eight block configurations
-	nrOfFailedTestCases += TestInf<63, 11>();
-	nrOfFailedTestCases += TestInf<64, 11>();
+	nrOfFailedTestCases += TestInf<63, 11, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestInf<64, 11, uint8_t, true, true, false>();
 
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
-template<size_t nbits, size_t es, typename bt = uint8_t>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline int TestNaN() {
 	int fails = 0;
-	sw::universal::cfloat<nbits, es, bt> r;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> r;
 	r.setnan();
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isnan()) ++fails;
@@ -204,63 +204,63 @@ void TestIsNaN(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
 	std::cout << "isnan()                         : ";
 	// one block configurations
-	nrOfFailedTestCases += TestNaN<4, 1>();
-	nrOfFailedTestCases += TestNaN<5, 1>();
-	nrOfFailedTestCases += TestNaN<6, 1>();
-	nrOfFailedTestCases += TestNaN<7, 1>();
-	nrOfFailedTestCases += TestNaN<8, 1>();
-	nrOfFailedTestCases += TestNaN<8, 2>();
-	nrOfFailedTestCases += TestNaN<8, 3>();
+	nrOfFailedTestCases += TestNaN<4, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<5, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<6, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<7, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<8, 1, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<8, 2, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<8, 3, uint8_t, true, true, false>();
 
 	// two block configurations
-	nrOfFailedTestCases += TestNaN<9, 3>();
-	nrOfFailedTestCases += TestNaN<10, 3>();
-	nrOfFailedTestCases += TestNaN<11, 3>();
-	nrOfFailedTestCases += TestNaN<12, 3>();
-	nrOfFailedTestCases += TestNaN<13, 3>();
-	nrOfFailedTestCases += TestNaN<14, 3>();
-	nrOfFailedTestCases += TestNaN<15, 3>();
-	nrOfFailedTestCases += TestNaN<16, 3>();
-	nrOfFailedTestCases += TestNaN<16, 4>();
-	nrOfFailedTestCases += TestNaN<16, 5>();
+	nrOfFailedTestCases += TestNaN<9, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<10, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<11, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<12, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<13, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<14, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<15, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<16, 3, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<16, 4, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<16, 5, uint8_t, true, true, false>();
 
 	// three block configurations
-	nrOfFailedTestCases += TestNaN<17, 5>();
-	nrOfFailedTestCases += TestNaN<18, 5>();
-	nrOfFailedTestCases += TestNaN<19, 5>();
-	nrOfFailedTestCases += TestNaN<20, 5>();
-	nrOfFailedTestCases += TestNaN<21, 5>();
-	nrOfFailedTestCases += TestNaN<22, 5>();
-	nrOfFailedTestCases += TestNaN<23, 5>();
-	nrOfFailedTestCases += TestNaN<24, 5>();
-	nrOfFailedTestCases += TestNaN<24, 6>();
-	nrOfFailedTestCases += TestNaN<24, 7>();
+	nrOfFailedTestCases += TestNaN<17, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<18, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<19, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<20, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<21, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<22, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<23, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<24, 5, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<24, 6, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<24, 7, uint8_t, true, true, false>();
 
 	// four block configurations
-	nrOfFailedTestCases += TestNaN<25, 8>();
-	nrOfFailedTestCases += TestNaN<26, 8>();
-	nrOfFailedTestCases += TestNaN<27, 8>();
-	nrOfFailedTestCases += TestNaN<28, 8>();
-	nrOfFailedTestCases += TestNaN<29, 8>();
-	nrOfFailedTestCases += TestNaN<30, 8>();
-	nrOfFailedTestCases += TestNaN<31, 8>();
-	nrOfFailedTestCases += TestNaN<32, 8>();
+	nrOfFailedTestCases += TestNaN<25, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<26, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<27, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<28, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<29, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<30, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<31, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<32, 8, uint8_t, true, true, false>();
 
 	// five block configurations
-	nrOfFailedTestCases += TestNaN<39, 8>();
-	nrOfFailedTestCases += TestNaN<40, 8>();
+	nrOfFailedTestCases += TestNaN<39, 8, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<40, 8, uint8_t, true, true, false>();
 
 	// six block configurations
-	nrOfFailedTestCases += TestNaN<47, 9>();
-	nrOfFailedTestCases += TestNaN<48, 9>();
+	nrOfFailedTestCases += TestNaN<47, 9, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<48, 9, uint8_t, true, true, false>();
 
 	// seven block configurations
-	nrOfFailedTestCases += TestNaN<55, 10>();
-	nrOfFailedTestCases += TestNaN<56, 10>();
+	nrOfFailedTestCases += TestNaN<55, 10, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<56, 10, uint8_t, true, true, false>();
 
 	// eight block configurations
-	nrOfFailedTestCases += TestNaN<63, 11>();
-	nrOfFailedTestCases += TestNaN<64, 11>();
+	nrOfFailedTestCases += TestNaN<63, 11, uint8_t, true, true, false>();
+	nrOfFailedTestCases += TestNaN<64, 11, uint8_t, true, true, false>();
 
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
@@ -269,8 +269,8 @@ void TestSizeof(int& nrOfFailedTestCases) {
 	using namespace sw::universal;
 	int currentFails = nrOfFailedTestCases;
 	std::cout << "sizeof with blocktype uint8_t   : ";
-	if constexpr (sizeof(cfloat<4, 1>(0)) != 1) ++nrOfFailedTestCases;
-	if constexpr (sizeof(cfloat<5, 1>(0)) != 1) ++nrOfFailedTestCases;
+	if constexpr (sizeof(cfloat<4, 1, uint8_t, true, true, false>(0)) != 1) ++nrOfFailedTestCases;
+	if constexpr (sizeof(cfloat<5, 1, uint8_t, true, true, false>(0)) != 1) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<8, 2>(0)) != 1) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<9, 2>(0)) != 2) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<12, 3>(0)) != 2) ++nrOfFailedTestCases;
@@ -300,8 +300,8 @@ void TestSizeof(int& nrOfFailedTestCases) {
 	if constexpr (sizeof(cfloat<128, 11>(0)) != 16) ++nrOfFailedTestCases;
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	std::cout << "sizeof with blocktype uint16_t  : ";
-	if constexpr (sizeof(cfloat<4, 1, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
-	if constexpr (sizeof(cfloat<5, 1, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if constexpr (sizeof(cfloat<4, 1, uint16_t, true, true, false>(0)) != 2) ++nrOfFailedTestCases;
+	if constexpr (sizeof(cfloat<5, 1, uint16_t, true, true, false>(0)) != 2) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<8, 2, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<9, 2, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<12, 3, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
@@ -331,8 +331,8 @@ void TestSizeof(int& nrOfFailedTestCases) {
 	if constexpr (sizeof(cfloat<128, 11, uint16_t>(0)) != 16) ++nrOfFailedTestCases;
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	std::cout << "sizeof with blocktype uint32_t  : ";
-	if constexpr (sizeof(cfloat<4, 1, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if constexpr (sizeof(cfloat<5, 1, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if constexpr (sizeof(cfloat<4, 1, uint32_t, true, true, false>(0)) != 4) ++nrOfFailedTestCases;
+	if constexpr (sizeof(cfloat<5, 1, uint32_t, true, true, false>(0)) != 4) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<8, 2, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<9, 2, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
 	if constexpr (sizeof(cfloat<12, 3, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
@@ -387,7 +387,7 @@ void TestScale(int& nrOfFailedTestCases) {
 
 	{
 		std::cout << "scale cfloat<4,1>               : ";
-		cfloat<4, 1> a; 
+		cfloat<4, 1, uint8_t, true, true, false> a;
 		a.setbits(5); if (a.scale() != 1) ++nrOfFailedTestCases;
 		a.setbits(11); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
@@ -396,7 +396,7 @@ void TestScale(int& nrOfFailedTestCases) {
 
 	{
 		std::cout << "scale cfloat<5,1>               : ";
-		cfloat<5, 1> a;
+		cfloat<5, 1, uint8_t, true, true, false> a;
 		a.setbits(12); if (a.scale() != 1) ++nrOfFailedTestCases;
 		a.setbits(20); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
@@ -416,7 +416,7 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 	{
 		std::cout << "scale cfloat<6,1>               : ";
-		cfloat<6, 1> a;
+		cfloat<6, 1, uint8_t, true, true, false> a;
 		// [1-1-1111]
 		a.setbits(0x3F); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-1111]
@@ -425,7 +425,7 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 	{
 		std::cout << "scale cfloat<7,1>               : ";
-		cfloat<7, 1> a;
+		cfloat<7, 1, uint8_t, true, true, false> a;
 		// [1-1-1'1111]
 		a.setbits(0x7F); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-1'1111]
@@ -434,7 +434,7 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 	{
 		std::cout << "scale cfloat<8,1>               : ";
-		cfloat<8, 1> a;
+		cfloat<8, 1, uint8_t, true, true, false> a;
 		// [1-1-11'1111]
 		a.setbits(0xFF); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-11'1111]
