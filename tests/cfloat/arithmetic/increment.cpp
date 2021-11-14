@@ -16,7 +16,7 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "cfloat<> increment operator validation";
-	std::string test_tag    = test_tag;
+	std::string test_tag    = "increment";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 

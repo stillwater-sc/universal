@@ -436,7 +436,7 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-// #define CUSTOM_FEEDBACK
+#define CUSTOM_FEEDBACK
 	
 	// generate random test cases to test conversion from an IEEE-754 float to a cfloat
 	template<typename TestType>
@@ -449,8 +449,8 @@ namespace sw::universal {
 		constexpr bool isSaturating = TestType::isSaturating;
 		using SrcType = float;
 
-		int nrOfFailedTests = 0;
-		cfloat<32, 8, uint32_t, true, false, false> ref; // this is an IEEE-754 float
+//		cfloat<32, 8, uint32_t, true, false, false> ref; // this is an IEEE-754 float
+		cfloat<32, 8, uint32_t, true, true, false> ref; // this is a superset of an IEEE-754 float with gradual overflow
 		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
 
 		if (reportTestCases) { std::cerr << type_tag(nut) << '\n'; }
@@ -458,6 +458,7 @@ namespace sw::universal {
 		// std::cerr << "                                                     ignoring subnormals for the moment\n";
 
 		// run randoms
+		int nrOfFailedTests = 0;
 		std::random_device rd;     // get a random seed from the OS entropy device
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
@@ -469,13 +470,18 @@ namespace sw::universal {
 			nut = refValue;
 			SrcType testValue = SrcType(nut);
 			if (isdenorm(refValue)) {
-//				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
+				std::cerr << "synthesized a subnormal : " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
 			nrOfFailedTests += Compare(refValue, testValue, refValue, reportTestCases);
-#ifndef CUSTOM_FEEDBACK
+#ifdef CUSTOM_FEEDBACK
+			if (ref.isnan()) {
+				std::cerr << "synthesized a NaN       : " << to_binary(ref) << '\n';
+				std::cerr << "nut : " << to_binary(nut) << "\nref : " << to_binary(ref) << '\n';
+				std::cerr << "test: " << to_binary(testValue) << "\nref : " << to_binary(refValue) << '\n';
+			}
 			if (testValue != refValue) {
-				std::cout << to_binary(nut) << '\n' << to_binary(ref) << '\n';
+				std::cerr << "nut : " << to_binary(nut) << "\nref : " << to_binary(ref) << '\n';
 			}
 #endif
 			if (nrOfFailedTests > 24) {
@@ -497,13 +503,17 @@ namespace sw::universal {
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
  
-		std::cerr << "                                                     ignoring subnormals for the moment\n";
-
-		int nrOfFailedTests = 0;
-		cfloat<64, 11, uint64_t, true, false, false> ref;  // an IEEE-754 double type
+		cfloat<64, 11, uint64_t, true, false, false> ref;  // this is an IEEE-754 double
+//		cfloat<64, 11, uint64_t, true, false, false> ref;  // this is a superset of an IEEE-754 double with gradual overflow
 		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
 
+		if (reportTestCases) { std::cerr << type_tag(nut) << '\n'; }
+		// this is too verbose, so I turned it off
+		// std::cerr << "                                                     ignoring subnormals for the moment\n";
+
+
 		// run randoms
+		int nrOfFailedTests = 0;
 		std::random_device rd;     // get a random seed from the OS entropy device
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
@@ -515,13 +525,18 @@ namespace sw::universal {
 			nut = refValue;
 			double testValue = double(nut);
 			if (isdenorm(refValue)) {
-//				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
+				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
 			nrOfFailedTests += Compare(refValue, testValue, refValue, reportTestCases);
 #ifdef CUSTOM_FEEDBACK
+			if (ref.isnan()) {
+				std::cerr << "synthesized a NaN       : " << to_binary(ref) << '\n';
+				std::cerr << "nut : " << to_binary(nut) << "\nref : " << to_binary(ref) << '\n';
+				std::cerr << "test: " << to_binary(testValue) << "\nref : " << to_binary(refValue) << '\n';
+			}
 			if (testValue != refValue) {
-				std::cout << "nut : " << to_binary(nut) << '\n' << "ref : " << to_binary(ref) << std::endl;
+				std::cout << "nut : " << to_binary(nut) << "\nref : " << to_binary(ref) << std::endl;
 			}
 #endif
 			if (nrOfFailedTests > 24) {
