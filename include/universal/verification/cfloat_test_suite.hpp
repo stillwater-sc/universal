@@ -480,7 +480,7 @@ namespace sw::universal {
 				std::cerr << "nut : " << to_binary(nut) << "\nref : " << to_binary(ref) << '\n';
 				std::cerr << "test: " << to_binary(testValue) << "\nref : " << to_binary(refValue) << '\n';
 			}
-			if (testValue != refValue) {
+			if (testValue != refValue) { // IEEE rules: this test yields true if both are NaN
 				std::cerr << "nut : " << to_binary(nut) << "\nref : " << to_binary(ref) << '\n';
 			}
 #endif
@@ -535,7 +535,7 @@ namespace sw::universal {
 				std::cerr << "nut : " << to_binary(nut) << "\nref : " << to_binary(ref) << '\n';
 				std::cerr << "test: " << to_binary(testValue) << "\nref : " << to_binary(refValue) << '\n';
 			}
-			if (testValue != refValue) {
+			if (testValue != refValue) { // IEEE rules: this test yields true if both are NaN
 				std::cout << "nut : " << to_binary(nut) << "\nref : " << to_binary(ref) << std::endl;
 			}
 #endif

@@ -7,19 +7,19 @@
 
 namespace sw::universal {
 
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> pow(cfloat<nbits,es,bt> x, cfloat<nbits,es,bt> y) {
-	return cfloat<nbits,es,bt>(std::pow(double(x), double(y)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> pow(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::pow(double(x), double(y)));
 }
 		
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> pow(cfloat<nbits,es,bt> x, int y) {
-	return cfloat<nbits,es,bt>(std::pow(double(x), double(y)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> pow(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, int y) {
+	return cfloat<nbits,es,bt, hasSubnormals, hasSupernormals, isSaturating>(std::pow(double(x), double(y)));
 }
 		
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> pow(cfloat<nbits,es,bt> x, double y) {
-	return cfloat<nbits,es,bt>(std::pow(double(x), y));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> pow(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, double y) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::pow(double(x), y));
 }
 
 }  // namespace sw::universal
