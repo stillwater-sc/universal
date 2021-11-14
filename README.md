@@ -152,7 +152,7 @@ After cloning the library, building and testing it in your environment, you can 
 or manually via the Makefile target in the build directory:
 
 ```text
-> make -j ${nproc) install
+> make -j $(nproc) install
 ```
 
 The default install directory is `/usr/local` under Linux.  There is also an uninstall
