@@ -39,7 +39,7 @@ try {
 		constexpr bool hasSupernormals = true;
 		constexpr bool isSaturating = true;
 		using Cfloat = cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += ReportTestResult(VerifyCfloatDecrement< Cfloat >(true), "cfloat<4,1,uint8_t,subnormals,supernormals,!saturating>", "decrement");
+		nrOfFailedTestCases += ReportTestResult(VerifyCfloatDecrement< Cfloat >(true), "cfloat<4,1,uint8_t,subnormals,supernormals,!saturating>", test_tag);
 	}
 
 	{	
@@ -47,7 +47,7 @@ try {
 		constexpr bool hasSupernormals = true;
 		constexpr bool isSaturating = true;
 		using Cfloat = cfloat<17, 3, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += ReportTestResult(VerifyCfloatDecrement< Cfloat >(true), "cfloat<17,3,uint8_t,subnormals,supernormals,!saturating>", "decrement");
+		nrOfFailedTestCases += ReportTestResult(VerifyCfloatDecrement< Cfloat >(true), "cfloat<17,3,uint8_t,subnormals,supernormals,!saturating>", test_tag);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

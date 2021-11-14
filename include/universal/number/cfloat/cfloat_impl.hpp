@@ -1360,6 +1360,13 @@ public:
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
+	/// <summary>
+	/// check if a value is a quiet or a signalling NaN
+	/// quiet NaN      = 0-1111-11111-1: sign = 0, uncertainty = 1, es/fraction bits = 1
+	/// signalling NaN = 1-1111-11111-1: sign = 1, uncertainty = 1, es/fraction bits = 1
+	/// </summary>
+	/// <param name="NaNType">default is 0, both types, 1 checks for Signalling NaN, -1 checks for Quiet NaN</param>
+	/// <returns>true if the right kind of NaN, false otherwise</returns>
 	inline constexpr bool isnanencoding(int NaNType = NAN_TYPE_EITHER) const noexcept {
 		// the bit encoding of NaN is independent of the gradual overflow configuration
 		bool isNaN = true;
@@ -1395,22 +1402,14 @@ public:
 			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
 				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
-	/// <summary>
-	/// check if a value is a quiet or a signalling NaN
-	/// quiet NaN      = 0-1111-11111-1: sign = 0, uncertainty = 1, es/fraction bits = 1
-	/// signalling NaN = 1-1111-11111-1: sign = 1, uncertainty = 1, es/fraction bits = 1
-	/// </summary>
-	/// <param name="NaNType">default is 0, both types, 1 checks for Signalling NaN, -1 checks for Quiet NaN</param>
-	/// <returns>true if the right kind of NaN, false otherwise</returns>
 	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
-		bool isNaN = true;
-		bool isNegNaN = false;
-		bool isPosNaN = false;
-
 		if constexpr (hasSupernormals) {
 			return isnanencoding(NaNType);
 		}
 		else {
+			bool isNaN = true;
+			bool isNegNaN = false;
+			bool isPosNaN = false;
 			if (!issupernormal()) { isNaN = false; }
 			isNegNaN = isNaN && sign();
 			isPosNaN = isNaN && !sign();
