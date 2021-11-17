@@ -83,7 +83,7 @@ try {
 
 
 	// 7. Test linear shift and scale interval 
-		//blas::vector<Scalar> a(5);
+		//blas::matrix<Scalar> a(5);
 		//a(0)=2;a(1)=3;a(2)=4;a(3)=5;a(4)=6; 
 		//std::cout << "a = " << a << std::endl;
 
@@ -137,8 +137,8 @@ try {
 	std::cout << M << std::endl;
 
 	auto A = chebyshev::chebmat<float>(3);
-	blas::vector<Scalar> x(3);
-	x(0)=6;x(1)=-5;x(2)=1;
+	blas::matrix<Scalar> x(3,1);
+	x(0,0)=6;x(1,0)=-5;x(2,0)=1;
 	std::cout << A << x << std::endl;
 
 	return EXIT_SUCCESS;
