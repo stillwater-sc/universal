@@ -137,8 +137,10 @@ try {
 	std::cout << M << std::endl;
 
 	auto A = chebyshev::chebmat<float>(3);
+
 	blas::matrix<Scalar> x(3,1);
 	x(0,0)=6;x(1,0)=-5;x(2,0)=1;
+
 	std::cout << A << x << std::endl;
 
 	return EXIT_SUCCESS;
