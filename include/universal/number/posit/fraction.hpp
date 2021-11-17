@@ -262,24 +262,26 @@ inline std::istream& operator>> (std::istream& istr, const fraction<nfbits>& f) 
 }
 
 template<size_t nfbits>
-inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true) {
+inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, bool nibbleMarker = false) {
 	unsigned int nrOfFractionBitsProcessed = 0;
-	std::stringstream ss;
+	std::stringstream sstr;
 	if (nfbits > 0) {
 		bitblock<nfbits> bb = f.get();
 		int upperbound = nfbits;
 		upperbound--;
 		for (int i = upperbound; i >= 0; --i) {
 			if (f.nrBits() > nrOfFractionBitsProcessed++) {
-				ss << (bb[static_cast<size_t>(i)] ? "1" : "0");
+				sstr << (bb[static_cast<size_t>(i)] ? '1' : '0');
+
 			}
 			else {
-				ss << (dashExtent ? "-" : "");
+				sstr << (dashExtent ? "-" : "");
 			}
+			if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
 		}
 	}
-	if (nrOfFractionBitsProcessed == 0) ss << "~"; // for proper alignment in tables
-	return ss.str();
+	if (nrOfFractionBitsProcessed == 0) sstr << '~'; // for proper alignment in tables
+	return sstr.str();
 }
 
 template<size_t nfbits>

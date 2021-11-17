@@ -11,6 +11,8 @@
 #include <iomanip>
 #include <string>
 
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_suite_exceptions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/test_suite_logic.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>

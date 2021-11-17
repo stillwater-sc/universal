@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // Configure the posit template environment
 // first: enable general or specialized configurations
 #define POSIT_FAST_SPECIALIZATION
@@ -11,12 +11,8 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // third: enable native literals in logic and arithmetic operations
 #define POSIT_ENABLE_LITERALS 1
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit_impl.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/number/posit/numeric_limits.hpp>
-// type manipulators such as pretty printers
-#include <universal/number/posit/manipulators.hpp>
 #include <universal/number/posit/mathlib.hpp>
 
 template<size_t nbits, size_t es>
@@ -25,12 +21,12 @@ void TestULP()
 	using namespace sw::universal;
 
 	posit<nbits, es> a(1.0f);
-	std::cout << typeid(a).name() << '\n';
+	std::cout << type_tag(a) << '\n';
 //	double da(1.0);
 	std::cout << "posit at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << '\n';
 //	std::cout << "double at 1.0 : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << '\n';
 
-	a = std::numeric_limits< posit<64, 3> >::epsilon();
+	a = std::numeric_limits< posit<nbits, es> >::epsilon();
 	std::cout << "posit epsilon : " << to_binary(a) << " : " << a << '\n';
 }
 
@@ -47,19 +43,21 @@ try {
 	std::cout << "posit ULP tests\n";
 
 #if MANUAL_TESTING
-	TestULP<8, 0>();
-	TestULP<16, 1>();
-	TestULP<32, 2>();
-	TestULP<64, 3>();
+	TestULP<  8, 0>();
+	TestULP< 16, 1>();
+	TestULP< 32, 2>();
+	TestULP< 64, 3>();
 	TestULP<128, 4>();
 
-	{
-		posit<64, 3> a(1.0);
-	}
 #else 
 
 #if REGRESSION_LEVEL_1
-	TestULP<8, 0>();
+	TestULP< 8, 0>();
+	TestULP< 8, 1>();
+	TestULP< 8, 2>();
+	TestULP<16, 2>();
+	TestULP<32, 2>();
+	TestULP<64, 2>();
 #endif
 
 #if REGRESSION_LEVEL_2

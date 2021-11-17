@@ -1,0 +1,56 @@
+# YAML 1.2
+---
+cff-version: "1.2.0"
+message: "Please cite our work if you use Universal."
+title: "Universal: a header-only C++ template library for universal number arithmetic"
+authors:
+- family-names: Omtzigt
+  given-names: "E. Theodore L."
+  orcid: "https://orcid.org/0000-0003-0194-951X"
+- family-names: Gottschling
+  given-names: Peter
+- family-names: Seligman
+  given-names: Mark
+- family-names: Zorn
+  given-names: William
+date-released: 2020-12-20
+keywords: 
+  - "c plus plus"
+  - "artificial intelligence"
+  - "embedded systems"
+  - "arbitrary precision"
+  - "arithmetic"
+  - "digital signal processing"
+  - "interval arithmetic"
+  - "integer arithmetic"
+  - "half precision"
+  - "arbitrary precision integers"
+  - "rational arithmetic"
+  - "floating-point arithmetic"
+  - "posit arithmetic"
+  - "arbitrary precision arithmetic"
+  - "fixed-point arithmetic"
+  - "quarter precision"
+  - "quad precision"
+  - "octa precision"
+  - "arbitrary precision floats"
+license: "MIT"
+repository-code: "https://github.com/stillwater-sc/universal"
+version: "3.47"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: Omtzigt
+    given-names: "E. Theodore L."
+    orcid: "https://orcid.org/0000-0003-0194-951X"
+  - family-names: Gottschling
+    given-names: Peter
+  - family-names: Seligman
+    given-names: Mark
+  - family-names: Zorn
+    given-names: William
+  url: "https://arxiv.org/abs/2012.11011"
+  title: "Universal Numbers Library: design and implementation of a high-performance reproducible number systems library"
+  journal: "arXiv:2012.11011"
+  year: 2020
+...

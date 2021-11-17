@@ -28,13 +28,13 @@ void TestConversionPerformance() {
 }
 
 template<typename Scalar>
-void DecodeWorkload(uint64_t NR_OPS) {
+void DecodeWorkload(size_t NR_OPS) {
 	using namespace sw::universal;
 
 	Scalar a{ 0 };
 	size_t success{ 0 };
 	bool first{ true };
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
+	for (size_t i = 0; i < NR_OPS; ++i) {
 		a.setbits(i);
 		bool s{ false };
 		blockbinary<a.es, typename Scalar::BlockType> e;

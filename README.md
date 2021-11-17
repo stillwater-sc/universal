@@ -107,112 +107,17 @@ $ cd universal
 $ mkdir build
 $ cd build
 $ cmake ..
--- The C compiler identification is GNU 7.5.0
--- The CXX compiler identification is GNU 7.5.0
--- The ASM compiler identification is GNU
--- Found assembler: /usr/bin/cc
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Check for working C compiler: /usr/bin/cc - skipped
--- Detecting C compile features
--- Detecting C compile features - done
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Check for working CXX compiler: /usr/bin/c++ - skipped
--- Detecting CXX compile features
--- Detecting CXX compile features - done
--- No default build type specified: setting CMAKE_BUILD_TYPE=Release
--- C++17 support has been enabled by default
--- Performing Test COMPILER_HAS_SSE3_FLAG
--- Performing Test COMPILER_HAS_SSE3_FLAG - Success
--- Performing Test COMPILER_HAS_AVX_FLAG
--- Performing Test COMPILER_HAS_AVX_FLAG - Success
--- Performing Test COMPILER_HAS_AVX2_FLAG
--- Performing Test COMPILER_HAS_AVX2_FLAG - Success
--- universal -> universal
--- include_install_dir         = include
--- include_install_dir_full    = include/universal
--- config_install_dir          = share/universal
--- include_install_dir_postfix = universal
--- PROJECT_SOURCE_DIR          = /home/stillwater/dev/clones/universal
--- PROJECT_VERSION             = 2.1.41
--- CMAKE_CURRENT_SOURCE_DIR    = /home/stillwater/dev/clones/universal
--- CMAKE_CURRENT_BINARY_DIR    = /home/stillwater/dev/clones/universal/build
---
--- ******************* Universal Arithmetic Library Configuration Summary *******************
--- General:
---   Version                      :   2.1.41
---   System                       :   Linux
---   C compiler                   :   /usr/bin/cc
---   Release C flags              :   -O3 -DNDEBUG -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
---   Debug C flags                :   -g -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
---   C++ compiler                 :   /usr/bin/c++
---   Release CXX flags            :   -O3 -DNDEBUG -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
---   Debug CXX flags              :   -g -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
---   Build type                   :   Release
---
---   BUILD_CI_CHECK               :   OFF
---
---   BUILD_STORAGE_CLASSES        :   OFF
---   BUILD_NATIVE_TYPES           :   OFF
---   BUILD_INTEGERS               :   OFF
---   BUILD_DECIMALS               :   OFF
---   BUILD_FIXPNTS                :   OFF
---   BUILD_LNS                    :   OFF
---   BUILD_UNUM_TYPE_1            :   OFF
---   BUILD_UNUM_TYPE_2            :   OFF
---   BUILD_POSITS                 :   OFF
---   BUILD_VALIDS                 :   OFF
---   BUILD_REALS                  :   OFF
---
---   BUILD_C_API_PURE_LIB         :   OFF
---   BUILD_C_API_SHIM_LIB         :   OFF
---   BUILD_C_API_LIB_PIC          :   OFF
---
---   BUILD_CMD_LINE_TOOLS         :   ON
---   BUILD_EDUCATION              :   ON
---   BUILD_APPLICATIONS           :   ON
---   BUILD_NUMERICAL              :   OFF
---   BUILD_FUNCTIONS              :   OFF
---   BUILD_PLAYGROUND             :   ON
---
---   BUILD_CONVERSION_TESTS       :   OFF
---
---   BUILD_PERFORMANCE_TESTS      :   OFF
---
---   BUILD_IEEE_FLOAT_QUIRES      :   OFF
---
---   BUILD_DOCS                   :   OFF
---
--- Dependencies:
---   SSE3                         :   NO
---   AVX                          :   NO
---   AVX2                         :   NO
---   Pthread                      :   NO
---   TBB                          :   NO
---   OMP                          :   NO
---
--- Utilities:
---   Serializer                   :   NO
---
--- Install:
---   Install path                 :   /usr/local
---
--- Configuring done
--- Generating done
--- Build files have been written to: /home/stillwater/dev/clones/universal/build
 ```
 
 The build options are enabled/disabled as follows:
 
 ```text
-> cmake -DBUILD_EDUCATION=OFF -DBUILD_POSITS=ON ..
+> cmake -DBUILD_EDUCATION=OFF -DBUILD_NUMBER_POSITS=ON ..
 
 ```
 
 After building, issue the command _make test_ to run the complete test suite of all the enabled components, 
-as a regression capability when you are modifying the source code. This will take several minutes but will touch 
-all the corners of the code.
+as a regression capability when you are modifying the source code. This will take touch all the corners of the code.
 
 ```text
 > git clone https://github.com/stillwater-sc/universal
@@ -247,7 +152,7 @@ After cloning the library, building and testing it in your environment, you can 
 or manually via the Makefile target in the build directory:
 
 ```text
-> make -j ${nproc) install
+> make -j $(nproc) install
 ```
 
 The default install directory is `/usr/local` under Linux.  There is also an uninstall
@@ -274,39 +179,40 @@ The default build configuration will build the command line tools, a playground,
 If you want to build the full regression suite across all the number systems, use the following cmake command:
 
 ```text
-cmake -DBUILD_CI_CHECK=ON ..
+cmake -DBUILD_ALL=ON ..
 ```
 
 For performance, the build configuration can enable specific x86 instruction sets (SSE/AVX/AVX2). For example, if your processor supports the AVX2 instruction set, you can build the test suites and educational examples with the AVX2 flag turned on. This typically yields a 20% performance boost.
 
 ```text
-cmake -DBUILD_CI_CHECK=on -DUSE_AVX2=ON ..
+cmake -DBUILD_ALL=on -DUSE_AVX2=ON ..
 ```
 
 The library builds a set of useful command utilities to inspect native IEEE float/double/long double numbers as well as
 the custom number systems provided by Universal. Assuming you have build and installed the library, the commands are
 
 ```text
-    compieee       -- show the components (sign, scale, fraction) of the full set of IEEE floating point values
-    compsi         -- show the components (sign, scale, fraction) of a signed integer value
-    compui         -- show the components (sign, scale, fraction) of an unsigned integer value
-    compf          -- show the components (sign, scale, fraction) of a float value
-    compd          -- show the components (sign, scale, fraction) of a double value
-    compld         -- show the components (sign, scale, fraction) of a long double value
-    compfp         -- show the components (sign, scale, fraction) of a fixed-point value
-    compp          -- show the components (sign, scale, fraction) of a posit value
-    complns        -- show the components (sign, scale, fraction) of a logarithmic number system value
+    ieee           -- show the components (sign, scale, fraction) of the full set of IEEE floating point values
+    signedint      -- show the components (sign, scale, fraction) of a signed integer value
+    unsignedint    -- show the components (sign, scale, fraction) of an unsigned integer value
+    float          -- show the components (sign, scale, fraction) of a float value
+    double         -- show the components (sign, scale, fraction) of a double value
+    longdouble     -- show the components (sign, scale, fraction) of a long double value
+    fixpnt         -- show the components (sign, scale, fraction) of a fixed-point value
+    posit          -- show the components (sign, scale, fraction) of a posit value
+    lns            -- show the components (sign, scale, fraction) of a logarithmic number system value
 
-    convert        -- show the conversion process of a Real value to a posit
+    float2posit    -- show the conversion process of a Real value to a posit
 
     propenv        -- show the properties of the execution (==compiler) environment that built the library
     propp          -- show numerical properties of a posit environment including the associated quire
+    propq          -- show numerical properties of a quire
 ```
 
 For example:
 
 ```text
-$ compieee 1.234567890123456789012
+$ ieee 1.234567890123456789012
 compiler              : 7.5.0
 float precision       : 23 bits
 double precision      : 52 bits
@@ -342,14 +248,14 @@ long double:    1.23456789011999999999    triple: (+,0,0011110000001100101001000
       exact: TBD
 ```
 
-This _compieee_ command is very handy to quickly determine how your development environment represents (truncates) a specific value. 
+This _ieee_ command is very handy to quickly determine how your development environment represents (truncates) a specific value. 
 
-The specific commands _compf_, _compd_, and _compld_ focus on float, double, and long double representations respectively.
+The specific commands _float_, _double_, and _longdouble_ focus on float, double, and long double representations respectively.
 
-There is also a command _compp_ to help you visualize and compare the posit component fields for a given value, for example:
+There is also a command _posit_ to help you visualize and compare the posit component fields for a given value, for example:
 
 ```text
-$ compp 1.234567890123456789012
+$ posit 1.234567890123456789012
 posit< 8,0> = s0 r10 e f01000 qNE v1.25
 posit< 8,1> = s0 r10 e0 f0100 qNE v1.25
 posit< 8,2> = s0 r10 e00 f010 qNE v1.25

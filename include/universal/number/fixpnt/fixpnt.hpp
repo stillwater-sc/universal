@@ -1,6 +1,6 @@
 // arbitrary fixed-point arithmetic type standard header
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _FIXPNT_STANDARD_HEADER_
@@ -13,6 +13,11 @@
 #include <universal/utility/long_double.hpp>
 // compiler specific configuration for C++20 bit_cast
 #include <universal/utility/bit_cast.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
+/// required std libraries 
+#include <iostream>
+#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -34,9 +39,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
+#include <universal/number/fixpnt/exceptions.hpp>
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/number/fixpnt/numeric_limits.hpp>
-#include <universal/number/fixpnt/exceptions.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 
 // useful functions to work with fixpnts

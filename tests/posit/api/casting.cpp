@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // if you want to trace the posit intermediate results
 #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_CONVERT
@@ -79,7 +79,7 @@ void TestCase1() {
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

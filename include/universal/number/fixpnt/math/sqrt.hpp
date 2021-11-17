@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
+#include <universal/number/fixpnt/numeric_limits.hpp>
 #include <universal/number/fixpnt/math/sqrt_tables.hpp>
 
 #ifndef FIXPNT_NATIVE_SQRT
@@ -28,18 +29,57 @@ namespace sw::universal {
 
 	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-		const double eps = 1.0e-5;
-		fixpnt<nbits, rbits, arithmetic, bt> half(0.5);
-		fixpnt<nbits, rbits, arithmetic, bt> x_next;
-		fixpnt<nbits, rbits, arithmetic, bt> x_n = half * v;
-		fixpnt<nbits, rbits, arithmetic, bt> diff;
+		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
+		Fixed half(0.5f);
+		Fixed x_next;
+		Fixed x_n = half * v;
+		Fixed diff;
 		do {
 			x_next = (x_n + v / x_n) * half;
 			diff = x_next - x_n;
-			   std::cout << " x_n+1: " << x_next << " x_n: " << x_n << " diff " << diff << std::endl;
+			std::cout << " x_n+1: " << x_next << " x_n: " << x_n << " diff " << diff << '\n';
 			x_n = x_next;
-		} while (double(sw::universal::abs(diff)) > eps);
+		} while ((sw::universal::abs(x_n*x_n - v) > eps));
 		return x_n;
+	}
+
+	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod2(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
+		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
+
+		Fixed y(v);
+		Fixed x(v);
+		x >>= 1; // divide by 2
+		Fixed diff = (x - y);
+		while (sw::universal::abs(diff) > eps) {
+			x = (x + y);
+			x >>= 1;
+			y = v / x;
+			diff = x - y;
+			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
+		} 
+		return x;
+	}
+
+	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod3(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
+		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
+
+		Fixed y(v);
+		Fixed x(v);
+		x >>= 1; // divide by 2
+		Fixed diff = (x*x - y);
+		while (sw::universal::abs(diff) > eps) {
+			x = (x + y);
+			x >>= 1;
+			y = v / x;
+			diff = x - y;
+			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
+		}
+		return x;
 	}
 
 	/*
@@ -57,7 +97,7 @@ namespace sw::universal {
 	be good to perhaps 5 to 10 bits.
 
 	- Apply Newton iteration to refine the result. This takes the form yk =
-	yk?1/2 + (f /2)/yk?1. In base 2, the divisions by two can be done by
+	yk_1/2 + (f /2)/yk_1. In base 2, the divisions by two can be done by
 	exponent adjustments in floating-point computation, or by bit shifting
 	in fixed-point computation.
 
@@ -77,22 +117,45 @@ namespace sw::universal {
 #if FIXPNT_NATIVE_SQRT
 	// sqrt for arbitrary cfloat
 	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
-// TBD
-		return a;
+	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
+		if (f < 0) throw fixpnt_arithmetic_exception("argument to sqrt is negative");
+		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
+		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
+		Fixed y(f);
+		Fixed x(f);
+		x >>= 1; // divide by 2
+		Fixed diff = (x * x - y);
+		int iterations = 0;
+		while (sw::universal::abs(diff) > eps) {
+			x = (x + y);
+			x >>= 1;
+			y = f / x;
+			diff = x - y;
+//			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
+			if (++iterations > rbits) break;
+		}
+		if (iterations > rbits) std::cerr << "sqrt(" << double(f) << ") failed to converge\n";
+		return x;
 	}
 #else
 	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
-		return fixpnt<nbits, rbits, arithmetic, bt>(std::sqrt((double)a));
+	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
+#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
+		if (f.isneg()) {
+			throw fixpnt_negative_sqrt_arg();
+		}
+#else 
+		std::cerr << "fixpnt_negative_sqrt_arg\n";
+#endif
+			return fixpnt<nbits, rbits, arithmetic, bt>(std::sqrt((double)f));
 	}
 #endif
 
 	// reciprocal sqrt
 	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> rsqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
-		fixpnt<nbits, rbits, arithmetic, bt> v = sqrt(a);
-		return v.reciprocate();
+	inline fixpnt<nbits, rbits, arithmetic, bt> rsqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
+		fixpnt<nbits, rbits, arithmetic, bt> rsqrt = sqrt(f);
+		return rsqrt.reciprocate();
 	}
 
 	///////////////////////////////////////////////////////////////////

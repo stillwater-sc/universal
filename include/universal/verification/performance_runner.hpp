@@ -6,15 +6,16 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <vector>
 #include <chrono>
 
 namespace sw::universal {
 
 	// Generic workload for testing construction/destruction performance
 	template<typename Scalar>
-	void ConstructionPerformanceWorkload(uint64_t NR_OPS) {
+	void ConstructionPerformanceWorkload(size_t NR_OPS) {
 		int positives{ 0 }, negatives{ 0 };
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
+		for (size_t i = 0; i < NR_OPS; ++i) {
 			Scalar a; // don't initialize with i as that is a conversion operation
 			a.setbits(i);
 			if (a.sign()) ++positives; else ++negatives;
@@ -24,10 +25,10 @@ namespace sw::universal {
 
 	// Generic workload for testing shift operations on a given number system type that supports operator>> and operator<<
 	template<typename Scalar>
-	void ShiftPerformanceWorkload(uint64_t NR_OPS) {
+	void ShiftPerformanceWorkload(size_t NR_OPS) {
 		Scalar a;
 		a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
+		for (size_t i = 0; i < NR_OPS; ++i) {
 			a >>= 13;
 			a <<= 37;
 		}
@@ -35,49 +36,54 @@ namespace sw::universal {
 
 	// Generic set of adds and subtracts for a given number system type
 	template<typename Scalar>
-	void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-		Scalar a, b, c, d;
-		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
-		a = b = c = d;
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
-			c = a + b;
-			a = c - b;
+	void AdditionSubtractionWorkload(size_t NR_OPS) {
+		std::vector<Scalar> data = { 0.99999f, -1.00001f };
+		Scalar a, b{ 1.0625f };
+		for (size_t i = 1; i < NR_OPS; ++i) {
+			a = data[i % 2];
+			b = b + a;
+		}
+		if (b == Scalar(1.0625f)) {
+			std::cout << "dummy case to fool the optimizer\n";
 		}
 	}
 
 	// Generic set of multiplies for a given number system type
 	template<typename Scalar>
-	void MultiplicationWorkload(uint64_t NR_OPS) {
-		Scalar a, b, c, d;
-		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
-		a = b = c = d;
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
-			c = a * b;
-			c.clear(); // reset to zero so d = c is fast
-			d = c;
+	void MultiplicationWorkload(size_t NR_OPS) {
+		std::vector<Scalar> data = { 0.99999f, 1.00001f };
+		Scalar a, b{ 1.0625f };
+		for (size_t i = 1; i < NR_OPS; ++i) {
+			a = data[i % 2];
+			b = b * a;
+		}
+		if (b == Scalar(1.0625f)) {
+			std::cout << "dummy case to fool the optimizer\n";
 		}
 	}
 
 	// Generic set of divides for a given number system type
 	template<typename Scalar>
-	void DivisionWorkload(uint64_t NR_OPS) {
-		Scalar a, b, c, d;
-		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
-		a = b = c = d;
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
-			c = a / b;
-			c.clear(); // reset to zero so d = c is fast
-			d = c;
+	void DivisionWorkload(size_t NR_OPS) {
+		std::vector<Scalar> data = { 0.99999f, 1.00001f };
+		if (data[0] == 0) { data[0] = Scalar(1); }
+		Scalar a, b{ 1.0625f };
+		for (size_t i = 1; i < NR_OPS; ++i) {
+			a = data[i % 2];
+			b = b / a;
+		}
+		if (b == Scalar(1.0625f)) {
+			std::cout << "dummy case to fool the optimizer\n";
 		}
 	}
 
 	// Generic set of remainder calculations for a given number system type that supports the % operator
 	template<typename Scalar>
-	void RemainderWorkload(uint64_t NR_OPS) {
+	void RemainderWorkload(size_t NR_OPS) {
 		Scalar a, b, c, d;
 		d.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 		a = b = c = d;
-		for (uint64_t i = 0; i < NR_OPS; ++i) {
+		for (size_t i = 0; i < NR_OPS; ++i) {
 			c = a % b;
 			c.clear(); // reset to zero so d = c is fast
 			d = c;
@@ -107,7 +113,7 @@ namespace sw::universal {
 	}
 
 	// generic test runner, takes a function that enumerates an operator NR_OPS time, and measures elapsed time
-	void PerformanceRunner(const std::string& tag, void (f)(uint64_t), uint64_t NR_OPS) {
+	void PerformanceRunner(const std::string& tag, void (f)(size_t), size_t NR_OPS) {
 		using namespace std;
 		using namespace std::chrono;
 

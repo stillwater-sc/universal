@@ -1,14 +1,12 @@
-//  decimal.cpp : test suite runner for abitrary precision decimal integers
+//  api.cpp : test suite runner for abitrary precision decimal integers class API
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
-#include <string>
+#include <universal/utility/directives.hpp>
 // configure the decimal integer arithmetic class
 #define DECIMAL_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/decimal/decimal_impl.hpp>
-#include <universal/number/decimal/numeric_limits.hpp>
+#include <universal/number/decimal/decimal.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
 namespace sw::universal {
@@ -44,7 +42,7 @@ void ReportBinaryDecimalSuccess(const std::string& test_case, const std::string&
 }
 
 // verification of addition
-int VerifyAddition(const std::string& tag, long ub, bool bReportIndividualTestCases) {
+int VerifyAddition(long ub, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	for (long i = -ub; i <= ub; ++i) {
 		decimal d1 = i;
@@ -65,7 +63,7 @@ int VerifyAddition(const std::string& tag, long ub, bool bReportIndividualTestCa
 }
 
 // verification of subtraction
-int VerifySubtraction(const std::string& tag, long ub, bool bReportIndividualTestCases) {
+int VerifySubtraction(long ub, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	for (long i = -ub; i <= ub; ++i) {
 		decimal d1 = i;
@@ -86,7 +84,7 @@ int VerifySubtraction(const std::string& tag, long ub, bool bReportIndividualTes
 }
 
 // verification of multiplication
-int VerifyMultiplication(const std::string& tag, long ub, bool bReportIndividualTestCases) {
+int VerifyMultiplication(long ub, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	for (long i = -ub; i <= ub; ++i) {
 		decimal d1 = i;
@@ -107,7 +105,7 @@ int VerifyMultiplication(const std::string& tag, long ub, bool bReportIndividual
 }
 
 // verification of division
-int VerifyDivision(const std::string& tag, long ub, bool bReportIndividualTestCases) {
+int VerifyDivision(long ub, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	decimal dref;
 	for (long i = -ub; i <= ub; ++i) {
@@ -317,31 +315,40 @@ try {
 	d3 = d1 + d2;
 	std::cout << d1 << " + " << d2 << " = " << d3 << '\n';
 
-	// double conversion is not implemented yet
-	d1 = -0.25;
+	// ieee754 conversion
+	d1 = 0.5f;
 	std::cout << d1 << '\n';
-	d1 = 2.5;
+	d1 = 1.0f;
+	std::cout << d1 << '\n';
+	d1 = 2.5f;
 	std::cout << d1 << '\n';
 	d1 = 123456789.5;
 	std::cout << d1 << '\n';
 	d1 = 1.234567895e10;
 	std::cout << d1 << '\n';
-	d1 = 1.234567895e100;
+	d1 = 1.234567895e18;
 	std::cout << d1 << '\n';
-	return 0;
+	d1 = 1.234567895e20;
+	std::cout << d1 << '\n';
+	d1 = 1.234567895e30;
+	std::cout << d1 << '\n';
+	d1 = 1.234567895e10;
+	d2 = 1.0e20;
+	std::cout << d1 * d2 << '\n';
+
 	//reportType(d1);
 
 	findLargestMultipleTest();
 
 	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-	std::cout << d1 << '\n';
-	std::cout << d1 + d1 << '\n';
+	std::cout << "big number :  " << d1 << '\n';
+	std::cout << "doubled    : " << d1 + d1 << std::endl;
 
 	long rangeBound = 10; // 100;
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition(rangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision(rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 	nrOfFailedTestCases += BigNumberComputation();
 
@@ -352,10 +359,10 @@ try {
 
 	long rangeBound = 100;
 	std::cout << "quick sample test with range bound: " << rangeBound << '\n';
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition(rangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision(rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 	nrOfFailedTestCases += BigNumberComputation();
 
@@ -363,10 +370,10 @@ try {
 
 	long stressRangeBound = (1 << 9);
 	std::cout << "stress testing with range bound: " << stressRangeBound << '\n';
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", stressRangeBound, bReportIndividualTestCases), "decimal", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", stressRangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", stressRangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", stressRangeBound, bReportIndividualTestCases), "decimal", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition(stressRangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(stressRangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(stressRangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision(stressRangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #endif // STRESS_TESTING
 

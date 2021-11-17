@@ -558,6 +558,15 @@ public:
 	}
 	cfloat& operator/=(const cfloat& rhs) {
 		if constexpr (cfloat_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION
+		if (rhs.iszero()) throw cfloat_divide_by_zero();
+		if (rhs.isnan()) throw cfloat_divide_by_nan();
+		if (isnan()) throw cfloat_operand_is_nan();
+#else
+		if (rhs.iszero()) std::cerr << "cfloat_negative_sqrt_argument" << std::endl;
+		if (rhs.isnan()) std::cerr << "cfloat_divide_by_nan" << std::endl;
+		if (isnan()) std::cerr << "cfloat_operand_is_nan" << std::endl;
+#endif
 		return *this;
 	}
 	cfloat& operator/=(double rhs) {

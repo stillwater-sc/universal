@@ -89,14 +89,7 @@ namespace sw::universal {
 				b.setbits(j);
 
 				// generate the golden reference
-				bool ref;
-				if (a.isnan() || b.isnan()) {
-					return false;
-				}
-				else {
-					// same ordering as IEEE floats
-					ref = (double(a) < double(b));
-				}
+				bool ref = (double(a) < double(b));
 				bool result = (a < b);
 				if (ref != result) {
 					nrOfFailedTestCases++;
@@ -107,27 +100,20 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
-#if 0
-
-	// Posit greater-than diverges from IEEE float in dealing with INFINITY/NAN
-	// Any number is greater-than posit NaR
-	template<size_t nbits, size_t es>
-	int VerifyPositLogicGreaterThan() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+	template<typename TestType>
+	int VerifyLogicGreaterThan() {
+		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
+		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-			posit<nbits, es> a;
+			TestType a;
 			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-				posit<nbits, es> b;
+				TestType b;
 				b.setbits(j);
 
 				// generate the golden reference
 				bool ref = (double(a) > double(b)); // same behavior as IEEE floats 
-				if (!a.isnar() && b.isnar()) {
-					ref = true; // special case of posit NaR
-				}
 				bool presult = (a > b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
@@ -138,26 +124,20 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
-	// Posit less-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
-	// Posit NaR is smaller or equal than any other value
-	template<size_t nbits, size_t es>
-	int VerifyPositLogicLessOrEqualThan() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+	template<typename TestType>
+	int VerifyLogicLessOrEqualThan() {
+		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
+		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-			posit<nbits, es> a;
+			TestType a;
 			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-				posit<nbits, es> b;
+				TestType b;
 				b.setbits(j);
 
 				// set the golden reference			
 				bool ref = (double(a) <= double(b));// same behavior as IEEE floats
-				if (a.isnar()) {
-					// special case of posit <= for NaR
-					ref = true;
-				}
 				bool presult = (a <= b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
@@ -168,26 +148,20 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
-	// Posit greater-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
-	// Any number is greater-or-equal-than posit NaR
-	template<size_t nbits, size_t es>
-	int VerifyPositLogicGreaterOrEqualThan() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+	template<typename TestType>
+	int VerifyLogicGreaterOrEqualThan() {
+		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
+		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-			posit<nbits, es> a;
+			TestType a;
 			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-				posit<nbits, es> b;
+				TestType b;
 				b.setbits(j);
 
 				// set the golden reference			
 				bool ref = (double(a) >= double(b));// same behavior as IEEE floats
-				if (b.isnar()) {
-					// special case of posit >= for NaR
-					ref = true;
-				}
 				bool presult = (a >= b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
@@ -197,7 +171,5 @@ namespace sw::universal {
 		}
 		return nrOfFailedTestCases;
 	}
-
-#endif
 
 } // namespace sw::universal

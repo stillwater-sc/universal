@@ -3,12 +3,10 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_DECODE
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit_impl.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 /*
@@ -40,7 +38,7 @@ int ValidateDecode() {
 	return nrOfFailedTestCases;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

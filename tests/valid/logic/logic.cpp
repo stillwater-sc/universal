@@ -7,10 +7,11 @@
 // minimum set of include files to reflect source code dependencies
 // enable literals to simplify the testing codes
 #define Valid_ENABLE_LITERALS 1
-#include <universal/number/valid/valid_impl.hpp>
+#include <universal/number/valid/valid.hpp>
 #include <universal/number/valid/manipulators.hpp>
 //#include <universal/number/valid/math/classify.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -62,7 +63,8 @@ try {;
 		nrOfFailedTestCases += ReportTestResult(VerifyValidLogicGreaterOrEqualThan<3, 0>(), "valid<3,0>", ">=");
 	}
 
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 	valid<16, 1> p;
 
@@ -352,10 +354,11 @@ try {;
 	nrOfFailedTestCases += ReportTestResult(VerifyValidLogicGreaterOrEqualThan<16, 1>(), "valid<16,1>", ">=");
 #endif
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
 #endif // MANUAL_TESTING
 #endif // LATER
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

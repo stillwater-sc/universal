@@ -3,12 +3,11 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #define POSIT_FAST_POSIT_32_2 1
 #define POSIT_ENABLE_LITERALS 1
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/posit/manipulators.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -39,7 +38,7 @@ void VerifyToBinary() {
 // and output/input of large values using native posit algorithms 
 // that do not cast to native floating point types.
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
