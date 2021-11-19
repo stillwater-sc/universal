@@ -45,7 +45,7 @@ template<typename CfloatConfiguration, typename NativeFloatingPointType = double
 int VerifySubnormalReverseSampling(bool reportTestCases = false, bool verbose = false) {
 	constexpr size_t nbits = CfloatConfiguration::nbits;
 	constexpr size_t es = CfloatConfiguration::es;
-	using bt = CfloatConfiguration::BlockType;
+	using bt = typename CfloatConfiguration::BlockType;
 	constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
 	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
 	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
@@ -78,7 +78,7 @@ template<typename CfloatConfiguration, typename NativeFloatingPointType = double
 int VerifyReverseSampling(bool reportTestCases = false, bool verbose = false) {
 	constexpr size_t nbits = CfloatConfiguration::nbits;
 	constexpr size_t es    = CfloatConfiguration::es;
-	using bt = CfloatConfiguration::BlockType;
+	using bt = typename CfloatConfiguration::BlockType;
 	constexpr bool hasSubnormals   = CfloatConfiguration::hasSubnormals;
 	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
 	constexpr bool isSaturating    = CfloatConfiguration::isSaturating;

@@ -33,7 +33,7 @@ try {
 
 	std::string test_suite  = "areal arithmetic exceptions ";
 	std::string test_tag    = "exceptions";
-	bool reportTestCases    = false;
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';

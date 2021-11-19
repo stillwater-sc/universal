@@ -262,7 +262,7 @@ try {
 
 	std::string test_suite  = "cfloat<> logic operator validation";
 	std::string test_tag    = "logic";
-	bool reportTestCases    = false;
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
