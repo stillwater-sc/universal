@@ -16,25 +16,7 @@ Matrix uniform_random(size_t M, size_t N, double lowerbound = 0.0, double upperb
 	return uniform_random(A, lowerbound, upperbound);
 }
 
-// define a trait for vector types
-template<typename _Ty>
-struct is_vector_trait
-	: false_type
-{
-};
-template<typename _Ty>
-struct is_vector_trait< matrix<_Ty> >
-	: true_type
-{
-};
-template<typename _Ty>
-constexpr bool is_vector = is_vector_trait<_Ty>::value;
-
-template<typename _Ty, typename Type = void>
-using enable_if_vector = std::enable_if_t<is_vector<_Ty>, Type>;
-
-
-// fill a dense matrix with random values between [lowerbound, upperbound]
+// fill a dense vector with random values between [lowerbound, upperbound]
 template <typename Scalar>
 vector<Scalar>& uniform_random(vector<Scalar>& v, double lowerbound = 0.0, double upperbound = 1.0)
 {
@@ -56,24 +38,6 @@ vector<Scalar>& uniform_random(vector<Scalar>& v, double lowerbound = 0.0, doubl
 	return v;
 }
 
-// define a trait for matrix types
-template<typename _Ty>
-struct is_matrix_trait
-	: false_type
-{
-};
-template<typename _Ty>
-struct is_matrix_trait< matrix<_Ty> >
-	: true_type
-{
-};
-template<typename _Ty>
-constexpr bool is_matrix = is_matrix_trait<_Ty>::value;
-
-template<typename _Ty, typename Type = void>
-using enable_if_matrix = std::enable_if_t<is_matrix<_Ty>, Type>;
-
- 
 // fill a dense matrix with random values between [lowerbound, upperbound]
 template <typename Scalar>
 matrix<Scalar>& uniform_random(matrix<Scalar>& A, double lowerbound = 0.0, double upperbound = 1.0)

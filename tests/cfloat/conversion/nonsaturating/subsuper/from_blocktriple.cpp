@@ -56,7 +56,7 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
 
-	std::string test_suite = "Conversion from blocktriple to cfloat: ";
+	std::string test_suite = "Conversion from blocktriple to cfloat";
 	std::string test_tag   = "conversion ";
 	std::cout << test_suite << '\n';
 	bool bReportIndividualTestCases = false;

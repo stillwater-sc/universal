@@ -323,10 +323,11 @@ typename std::enable_if<std::is_integral<Scalar>::value, Scalar>::type operator*
 	return sum;
 }
 
-// typename std::enable_if<sw::universal::is_posit<Scalar>, Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+
 // fused dot product for posits
 template<typename Scalar>
-typename enable_if_posit<Scalar, Scalar> operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+// typename enable_if_posit<Scalar, Scalar> operator*(const vector<Scalar>& a, const vector<Scalar>& b) { // doesn't compile with gcc
+typename std::enable_if<sw::universal::is_posit<Scalar>, Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
 //	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
 	size_t N = size(a);
 	if (size(a) != size(b)) {
