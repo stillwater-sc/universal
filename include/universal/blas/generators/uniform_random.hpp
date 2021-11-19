@@ -16,9 +16,27 @@ Matrix uniform_random(size_t M, size_t N, double lowerbound = 0.0, double upperb
 	return uniform_random(A, lowerbound, upperbound);
 }
 
+// define a trait for vector types
+template<typename _Ty>
+struct is_vector_trait
+	: false_type
+{
+};
+template<typename _Ty>
+struct is_vector_trait< matrix<_Ty> >
+	: true_type
+{
+};
+template<typename _Ty>
+constexpr bool is_vector = is_vector_trait<_Ty>::value;
+
+template<typename _Ty, typename Type = void>
+using enable_if_vector = std::enable_if_t<is_vector<_Ty>, Type>;
+
+
 // fill a dense matrix with random values between [lowerbound, upperbound]
-template <typename Matrix>
-Matrix& uniform_random(Matrix& A, double lowerbound = 0.0, double upperbound = 1.0)
+template <typename Scalar>
+vector<Scalar>& uniform_random(vector<Scalar>& v, double lowerbound = 0.0, double upperbound = 1.0)
 {
 	// Use random_device to generate a seed for Mersenne twister engine.
 	std::random_device rd{};
@@ -31,6 +49,47 @@ Matrix& uniform_random(Matrix& A, double lowerbound = 0.0, double upperbound = 1
 	// Pattern to generate pseudo-random number.
 	// double rnd_value = dist(engine);
 
+	// generate and insert random values in A
+	for (size_t i = 0; i < v.size(); ++i) {
+		v[i] = Scalar(dist(engine));
+	}
+	return v;
+}
+
+// define a trait for matrix types
+template<typename _Ty>
+struct is_matrix_trait
+	: false_type
+{
+};
+template<typename _Ty>
+struct is_matrix_trait< matrix<_Ty> >
+	: true_type
+{
+};
+template<typename _Ty>
+constexpr bool is_matrix = is_matrix_trait<_Ty>::value;
+
+template<typename _Ty, typename Type = void>
+using enable_if_matrix = std::enable_if_t<is_matrix<_Ty>, Type>;
+
+ 
+// fill a dense matrix with random values between [lowerbound, upperbound]
+template <typename Scalar>
+matrix<Scalar>& uniform_random(matrix<Scalar>& A, double lowerbound = 0.0, double upperbound = 1.0)
+{
+	// Use random_device to generate a seed for Mersenne twister engine.
+	std::random_device rd{};
+	// Use Mersenne twister engine to generate pseudo-random numbers.
+	std::mt19937 engine{ rd() };
+	// "Filter" MT engine's output to generate pseudo-random double values,
+	// **uniformly distributed** on the closed interval [lowerbound, upperbound].
+	// (Note that the range is [inclusive, inclusive].)
+	std::uniform_real_distribution<double> dist{ lowerbound, upperbound };
+	// Pattern to generate pseudo-random number.
+	// double rnd_value = dist(engine);
+
+	using Matrix = matrix<Scalar>;
 	typedef typename Matrix::value_type    value_type;
 	typedef typename Matrix::size_type     size_type;
 
