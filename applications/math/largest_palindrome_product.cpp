@@ -33,7 +33,7 @@ bool Largest2DigitPalindromeProduct() {
 			// generate guidance on the scale of the product terms
 			Real squareRoot = std::sqrt(double(palindrome));
 //			cout << "sqrt guidance is " << squareRoot << endl;
-			Integer a, b, c;
+			Integer a, b;
 			a = squareRoot;
 			while (a < 100) {
 				b = palindrome / a;
@@ -69,7 +69,7 @@ bool Largest3DigitPalindromeProduct() {
 				// generate guidance on the scale of the product terms
 				Real squareRoot = std::sqrt(double(palindrome));
 //				cout << "sqrt guidance is " << squareRoot << endl;
-				Integer a, b, c;
+				Integer a, b;
 				a = squareRoot;
 				while (a < 1000) {
 					b = palindrome / a;
