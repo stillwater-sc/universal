@@ -11,7 +11,7 @@
 #include <universal/verification/test_case.hpp>
 
 template<size_t nbits> 
-int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+int ValidateMultiplication(const std::string& tag, bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
 
 	return nrOfFailedTestCases;
@@ -33,10 +33,12 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "lns multiplication validation";
-	std::string test_tag = "multiplication";
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "lns multiplication validation";
+	std::string test_tag    = "multiplication";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -53,17 +55,13 @@ try {
 	std::cout << c.to_long_double() << '\n';
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", true), "lns<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", reportTestCases), "lns<8>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
-	std::cout << "Arbitrary LNS multiplication validation\n";
 
-	bool bReportIndividualTestCases = false;
-	std::string tag = "multiplication failed: ";
-
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>(tag, bReportIndividualTestCases), "lns<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>(tag, reportTestCases), "lns<8>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

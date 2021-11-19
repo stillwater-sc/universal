@@ -31,20 +31,21 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "cfloat arithmetic exceptions ";
-	std::string test_tag = "exceptions";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = true;
+	std::string test_suite  = "cfloat arithmetic exceptions ";
+	std::string test_tag    = "exceptions";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
 	using Number = sw::universal::cfloat<16, 5, uint16_t>;
 
-	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
+	nrOfFailedTestCases += TestDivisionByZero<Number>(reportTestCases);
 
 	// TODO: need to implement conversion from signed int
-	// nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
+	// nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(reportTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

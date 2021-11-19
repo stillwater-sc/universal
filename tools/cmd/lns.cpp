@@ -4,27 +4,25 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/lns/lns.hpp>
-//#include <universal/lns/lns_manipulators.hpp>
 
-namespace sw {
-	namespace universal {
-		// return in triple form (sign, scale, fraction)
-		template<size_t nbits, typename bt>
-		inline std::string to_triple(const lns<nbits, bt>& number) {
-			std::stringstream ss;
+namespace sw::universal {
 
-			// print sign bit
-			ss << '(' << "tbd" << ',';
+	// return in triple form (sign, scale, fraction)
+	template<size_t nbits, typename bt>
+	inline std::string to_triple(const lns<nbits, bt>& number) {
+		std::stringstream ss;
 
-			// scale
-			ss << "tbd" << ',';
+		// print sign bit
+		ss << '(' << "tbd" << ',';
 
-			// print fraction bits
-			ss << "tbd";
+		// scale
+		ss << "tbd" << ',';
 
-			ss << ')';
-			return ss.str();
-		}
+		// print fraction bits
+		ss << "tbd";
+
+		ss << ')';
+		return ss.str();
 	}
 }
 

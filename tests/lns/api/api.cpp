@@ -11,7 +11,7 @@
 #include <universal/verification/test_case.hpp>
 
 template<size_t nbits> 
-int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
+int ValidateAddition(const std::string& tag, bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
 
 	return nrOfFailedTestCases;
@@ -33,10 +33,12 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "lns API demonstration";
-	std::string test_tag = "api";
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "lns API demonstration";
+	std::string test_tag    = "api";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -45,13 +47,13 @@ try {
 	TestCase< lns<8, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>("Manual Testing", true), "lns<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>("Manual Testing", reportTestCases), "lns<8>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>(tag, bReportIndividualTestCases), "lns<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>(tag, reportTestCases), "lns<8>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

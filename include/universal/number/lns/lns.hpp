@@ -38,6 +38,9 @@
 #include <universal/number/lns/lns_impl.hpp>
 #include <universal/number/lns/numeric_limits.hpp>
 
+// useful functions to work with logarithmic numbers
+#include <universal/number/lns/manipulators.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
 #include <universal/number/lns/math_functions.hpp>
