@@ -12,7 +12,7 @@ template<typename TestType>
 int VerifyFloor(bool reportTestCases) {
 	using namespace sw::universal;
 	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_VALUES = (1 << nbits);
+	constexpr size_t NR_VALUES = (1ull << nbits);
 	int nrOfFailedTestCases = 0;
 
 	TestType a;
@@ -34,7 +34,7 @@ template<typename TestType>
 int VerifyCeil(bool reportTestCases) {
 	using namespace sw::universal;
 	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_VALUES = (1 << nbits);
+	constexpr size_t NR_VALUES = (1ull << nbits);
 	int nrOfFailedTestCases = 0;
 
 	TestType a;

@@ -33,7 +33,7 @@ template<typename CfloatConfiguration>
 void report_range(std::ostream& ostr) {
 	constexpr size_t nbits = CfloatConfiguration::nbits;
 	constexpr size_t es = CfloatConfiguration::es;
-	using BlockType = CfloatConfiguration::BlockType;
+	using BlockType = typename CfloatConfiguration::BlockType;
 	constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
 	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
 	constexpr bool isSaturating = CfloatConfiguration::isSaturating;

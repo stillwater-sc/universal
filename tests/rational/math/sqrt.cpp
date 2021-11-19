@@ -31,11 +31,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "rational sqrt ";
-	std::string test_tag = "sqrt";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "rational sqrt ";
+	std::string test_tag    = "sqrt";
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 

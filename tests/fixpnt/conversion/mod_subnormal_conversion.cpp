@@ -105,10 +105,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "fixed-point modular subnormal conversion ";
-	std::string test_tag = "conversion of IEEE-754 subnormals";
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "fixed-point modular subnormal conversion ";
+	std::string test_tag    = "conversion of IEEE-754 subnormals";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// minpos_subnormal value
@@ -129,14 +131,14 @@ try {
 	//FloatGenerateFixedPointValues<8, 4>();
 	//DoubleGenerateFixedPointValues<8, 4>();
 
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,1, Modulo, uint32_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<4,1, Modulo, uint32_t>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,1, Modulo, uint32_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<4,1, Modulo, uint32_t>");
 
 #endif
 
