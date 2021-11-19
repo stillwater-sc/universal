@@ -45,7 +45,7 @@ void RangeTable(std::ostream& ostr) {
 	static_assert(nbits < 16, "size of the table is constrained to nbits < 16");
 
 	size_t COLUMN_WIDTH = 10;
-	size_t NR_SAMPLES = (1ull << nbits - 1); // ignore negative values
+	size_t NR_SAMPLES = (1ull << (nbits - 1)); // ignore negative values
 	Scalar x;
 	ostr << std::setw(COLUMN_WIDTH) << "x" << ','
 		<< std::setw(COLUMN_WIDTH) << "y = x" << ','
@@ -73,7 +73,7 @@ void RangeTable(std::ostream& ostr) {
 void SquareRootSquared(std::ostream& ostr) {
 	constexpr size_t nbits = 8;  // the sampling 
 	size_t COLUMN_WIDTH = 10;
-	size_t NR_SAMPLES = (1ull << nbits - 1); // ignore negative values
+	size_t NR_SAMPLES = (1ull << (nbits - 1)); // ignore negative values
 	using c8_2  = sw::universal::cfloat< 8, 2, uint8_t, true, true, false>;
 	using c10_2 = sw::universal::cfloat<10, 2, uint8_t, true, true, false> ;
 	using c12_2 = sw::universal::cfloat<12, 2, uint8_t, true, true, false> ;
@@ -112,7 +112,7 @@ void SquareRootSquared(std::ostream& ostr) {
 void SquareRootSquared2(std::ostream& ostr) {
 	constexpr size_t nbits = 8;  // the sampling 
 	size_t COLUMN_WIDTH = 10;
-	size_t NR_SAMPLES = (1ull << nbits - 1); // ignore negative values
+	size_t NR_SAMPLES = (1ull << (nbits - 1)); // ignore negative values
 	using c8_2 = sw::universal::cfloat<8, 2>;
 	using c10_2 = sw::universal::cfloat<10, 2>;
 	using c12_3 = sw::universal::cfloat<12, 3>;

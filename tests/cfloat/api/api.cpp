@@ -28,13 +28,10 @@ try {
 		std::cout << "Default cfloat has no subnormals, no supernormals and is not saturating\n";
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
-		using bt = uint8_t;
-		constexpr bool hasSubnormals   = false;
-		constexpr bool hasSupernormals = false;
-		constexpr bool isSaturating    = false;
-		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = true, hasSupernormals = true, isSaturating = false
+		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
 
 		Real a(1.0f), b(0.5f), c(0.0);
+		std::cout << type_tag(a) << '\n';
 		c = a + b;
 		std::cout << "c = " << c << '\n';
 		c = c - a;
@@ -44,8 +41,31 @@ try {
 		std::cout << "---\n";
 	}
 
+	// explicit configuration
 	{
-		// report on the dynamic range of some standard configurations
+		std::cout << "Explicit configuration of a cfloat\n";
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 3;
+		using bt = uint8_t;
+		constexpr bool hasSubnormals   = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool isSaturating    = false;
+		using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+
+		Real a(1.0f), b(0.5f), c(0.0);
+		std::cout << type_tag(a) << '\n';
+		c = a + b;
+		std::cout << "c = " << c << '\n';
+		c = c - a;
+		std::cout << "c = " << c << '\n';
+		c = c * b;
+		std::cout << "c = " << c << '\n';
+		std::cout << "---\n";
+	}
+
+	// report on the dynamic range of some standard configurations
+	{
+		std::cout << "Dynamic ranges of some standard cfloat<> configurations\n";
 		using quarter = cfloat<  8,  2, uint8_t, false, false, false>;
 		using half    = cfloat< 16,  5, uint8_t, false, false, false>;
 		using single  = cfloat< 32,  8, uint8_t, true, false, false>;
@@ -58,6 +78,8 @@ try {
 		report_range<dual>(std::cout);
 		report_range<quad>(std::cout);
 		report_range<octo>(std::cout);
+
+		std::cout << "---\n";
 
 		quarter q;
 		q.setbits(0x01);  // smallest subnormal
@@ -88,6 +110,8 @@ try {
 		std::cout << "minpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
 		hn.maxpos();
 		std::cout << "maxpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
+
+		std::cout << "---\n";
 	}
 
 	return 0;

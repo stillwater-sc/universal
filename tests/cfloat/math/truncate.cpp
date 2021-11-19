@@ -8,9 +8,6 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/cfloat_math_test_suite.hpp>
 
-
-#define MANUAL_TESTING 1
-
 template<typename TestType>
 int VerifyFloor(bool reportTestCases) {
 	using namespace sw::universal;
@@ -21,7 +18,7 @@ int VerifyFloor(bool reportTestCases) {
 	TestType a;
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
-		auto l1 = sw::universal::floor(a);
+		auto l1 = floor(a);
 		// generate the reference
 		float f = float(a);
 		auto l2 = std::floor(f);
@@ -32,6 +29,30 @@ int VerifyFloor(bool reportTestCases) {
 	}
 	return nrOfFailedTestCases;
 }
+
+template<typename TestType>
+int VerifyCeil(bool reportTestCases) {
+	using namespace sw::universal;
+	constexpr size_t nbits = TestType::nbits;
+	constexpr size_t NR_VALUES = (1 << nbits);
+	int nrOfFailedTestCases = 0;
+
+	TestType a;
+	for (size_t i = 0; i < NR_VALUES; ++i) {
+		a.setbits(i);
+		auto l1 = ceil(a);
+		// generate the reference
+		float f = float(a);
+		auto l2 = std::ceil(f);
+		if (l1 != l2) {             // TODO: fix float to int64 comparison
+			++nrOfFailedTestCases;
+			if (reportTestCases) ReportOneInputFunctionError("ceil", "ceil", a, TestType(l1), TestType(l2));
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
+#define MANUAL_TESTING 0
 
 int main()
 try {
@@ -48,13 +69,14 @@ try {
 	// generate individual testcases to hand trace/debug
 
 	nrOfFailedTestCases = ReportTestResult(VerifyFloor< cfloat<8, 2, uint8_t> >(reportTestCases), "floor", "cfloat<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < cfloat<8, 2, uint8_t> >(reportTestCases), "ceil ", "cfloat<8,2>");
 
-	nrOfFailedTestCases = 0; // nullify accumulated test failures in manual testing
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;  // ignore failures in manual testing mode
 #else
 
-	std::cout << "classic floating-point cfloat truncation function validation\n";
-
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< cfloat<8, 2, uint8_t> >(reportTestCases), "floor", "cfloat<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < cfloat<8, 2, uint8_t> >(reportTestCases), "ceil ", "cfloat<8,2>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

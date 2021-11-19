@@ -38,10 +38,12 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "valid addition validation";
-	std::string test_tag = "addition";
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "valid addition validation";
+	std::string test_tag    = "addition";
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -68,56 +70,56 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>(tag, bReportIndividualTestCases), "valid<3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>(tag, reportTestCases), "valid<3,0>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 0>(tag, bReportIndividualTestCases), "valid<4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 1>(tag, bReportIndividualTestCases), "valid<4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 0>(tag, reportTestCases), "valid<4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 1>(tag, reportTestCases), "valid<4,1>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>(tag, bReportIndividualTestCases), "valid<5,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 1>(tag, bReportIndividualTestCases), "valid<5,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 2>(tag, bReportIndividualTestCases), "valid<5,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>(tag, reportTestCases), "valid<5,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 1>(tag, reportTestCases), "valid<5,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 2>(tag, reportTestCases), "valid<5,2>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 0>(tag, bReportIndividualTestCases), "valid<6,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 1>(tag, bReportIndividualTestCases), "valid<6,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 2>(tag, bReportIndividualTestCases), "valid<6,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 3>(tag, bReportIndividualTestCases), "valid<6,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 0>(tag, reportTestCases), "valid<6,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 1>(tag, reportTestCases), "valid<6,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 2>(tag, reportTestCases), "valid<6,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 3>(tag, reportTestCases), "valid<6,3>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 0>(tag, bReportIndividualTestCases), "valid<7,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 1>(tag, bReportIndividualTestCases), "valid<7,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 2>(tag, bReportIndividualTestCases), "valid<7,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 3>(tag, bReportIndividualTestCases), "valid<7,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 4>(tag, bReportIndividualTestCases), "valid<7,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 0>(tag, reportTestCases), "valid<7,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 1>(tag, reportTestCases), "valid<7,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 2>(tag, reportTestCases), "valid<7,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 3>(tag, reportTestCases), "valid<7,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 4>(tag, reportTestCases), "valid<7,4>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 0>(tag, bReportIndividualTestCases), "valid<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 1>(tag, bReportIndividualTestCases), "valid<8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "valid<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 3>(tag, bReportIndividualTestCases), "valid<8,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "valid<8,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 5>(tag, bReportIndividualTestCases), "valid<8,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 0>(tag, reportTestCases), "valid<8,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 1>(tag, reportTestCases), "valid<8,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, reportTestCases), "valid<8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 3>(tag, reportTestCases), "valid<8,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, reportTestCases), "valid<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 5>(tag, reportTestCases), "valid<8,5>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<16,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<24,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, reportTestCases, OPCODE_ADD, 1000), "valid<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(tag, reportTestCases, OPCODE_ADD, 1000), "valid<24,1>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<32,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<32,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<48, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<48,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>(tag, reportTestCases, OPCODE_ADD, 1000), "valid<32,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, reportTestCases, OPCODE_ADD, 1000), "valid<32,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<48, 2>(tag, reportTestCases, OPCODE_ADD, 1000), "valid<48,2>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<64,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<64,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 4>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "valid<64,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, reportTestCases, OPCODE_ADD, 1000), "valid<64,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, reportTestCases, OPCODE_ADD, 1000), "valid<64,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 4>(tag, reportTestCases, OPCODE_ADD, 1000), "valid<64,4>", "addition");
 
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 1>(tag, bReportIndividualTestCases), "valid<10,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<12, 1>(tag, bReportIndividualTestCases), "valid<12,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<14, 1>(tag, bReportIndividualTestCases), "valid<14,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 1>(tag, bReportIndividualTestCases), "valid<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 1>(tag, reportTestCases), "valid<10,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<12, 1>(tag, reportTestCases), "valid<12,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<14, 1>(tag, reportTestCases), "valid<14,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 1>(tag, reportTestCases), "valid<16,1>", "addition");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -126,7 +128,19 @@ try {
 #endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Caught unexpected runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

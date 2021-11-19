@@ -31,7 +31,7 @@ try {
 
 	std::string test_suite  = "cfloat<> ieee754 subnormal assignment";
 	std::string test_tag    = "assignment";
-	bool reportTestCases    = false;
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';

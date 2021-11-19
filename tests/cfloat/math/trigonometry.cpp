@@ -176,8 +176,7 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setprecision(5);
 }
 
-#define MANUAL_TESTING 1
-
+#define MANUAL_TESTING 0
 
 int main()
 try {
@@ -209,23 +208,28 @@ try {
 
 	GenerateTestCase<16, 1, uint16_t, true, true, false, double>(m_pi_2);
 
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySine< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "asin");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifySine   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "tan");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;  // ignore failures in manual testing mode
 #else
 
-	// nbits=64 requires long double compiler support
-	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "cfloat<64,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "acos");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(bReportIndividualTestCases), "cfloat<10,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 1>(bReportIndividualTestCases), "cfloat<12,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<14, 1>(bReportIndividualTestCases), "cfloat<14,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(bReportIndividualTestCases), "cfloat<16,1>", "sin");
-	
+	// nbits=64 requires long double compiler support
+	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(reportTestCases, OPCODE_SQRT, 1000), "cfloat<64,2>", "sin");
+
+	nrOfFailedTestCases += ReportTestResult(VerifySine   < cfloat<16, 5> >(reportTestCases), "cfloat<16,5>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine < cfloat<16, 5> >(reportTestCases), "cfloat<16,5>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<16, 5> >(reportTestCases), "cfloat<16,5>", "tan");
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 

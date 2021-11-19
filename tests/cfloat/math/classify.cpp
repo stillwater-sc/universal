@@ -16,8 +16,8 @@ try {
 
 	std::string test_suite  = "cfloat<> mathlib classification validation";
 	std::string test_tag    = "assignment";
-	bool reportTestCases    = false;
-	int nrOfFailedTestCases = 0;
+//	bool reportTestCases    = false;
+//	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
 

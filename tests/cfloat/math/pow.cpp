@@ -80,7 +80,6 @@ try {
 	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", reportTestCases), "cfloat<16,1>", test_tag);
 
 #else
-	bool bReportIndividualTestCases = false;
 
 	std::cout << "Integer power function\n";
 	int a = 2;
@@ -95,7 +94,7 @@ try {
 
 	std::cout << "cfloat Power function validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< cfloat<8, 2, uint8_t> >(bReportIndividualTestCases), "cfloat<8,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "pow");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

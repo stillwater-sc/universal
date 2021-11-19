@@ -32,9 +32,9 @@ namespace sw::universal {
 		constexpr size_t nbits = CfloatConfiguration::nbits;
 		constexpr size_t es = CfloatConfiguration::es;
 		using bt = typename CfloatConfiguration::BlockType;
-		constexpr size_t fhbits = nbits - es;
 		cfloat<nbits, es, bt> a;
-		blocktriple<fhbits> b;  // representing significant
+		constexpr size_t fbits = CfloatConfiguration::fbits;
+		blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt> b;  // representing significant
 		int nrOfTestFailures{ 0 };
 		for (size_t i = 0; i < 64; ++i) {
 			a.setbits(i);
@@ -156,6 +156,7 @@ try {
 		}
 	}
 
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<4, 2> >(reportTestCases), test_tag, "cfloat<4,2>");
 /*
     TODO: normalize for ADD, MUL, DIV are different operators: can they be accessed through the same API?
 	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<3, 1, uint8_t> >(true);
@@ -173,80 +174,80 @@ try {
 #else  // !MANUAL_TESTING
 
 	// es = 1
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<3, 1> >(reportTestCases), tag, "cfloat<3,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<4, 1> >(reportTestCases), tag, "cfloat<4,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 1> >(reportTestCases), tag, "cfloat<5,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 1> >(reportTestCases), tag, "cfloat<6,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 1> >(reportTestCases), tag, "cfloat<7,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 1> >(reportTestCases), tag, "cfloat<8,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<9, 1> >(reportTestCases), tag, "cfloat<9,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 1> >(reportTestCases), tag, "cfloat<10,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 1> >(reportTestCases), tag, "cfloat<12,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<16, 1> >(reportTestCases), tag, "cfloat<16,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 1> >(reportTestCases), tag, "cfloat<18,1>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<3, 1> >(reportTestCases), test_tag, "cfloat<3,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<4, 1> >(reportTestCases), test_tag, "cfloat<4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 1> >(reportTestCases), test_tag, "cfloat<5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 1> >(reportTestCases), test_tag, "cfloat<6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 1> >(reportTestCases), test_tag, "cfloat<7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 1> >(reportTestCases), test_tag, "cfloat<8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<9, 1> >(reportTestCases), test_tag, "cfloat<9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 1> >(reportTestCases), test_tag, "cfloat<10,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 1> >(reportTestCases), test_tag, "cfloat<12,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<16, 1> >(reportTestCases), test_tag, "cfloat<16,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 1> >(reportTestCases), test_tag, "cfloat<18,1>");   // 3 blocks
 
 
 	// es = 2
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<4, 2> >(reportTestCases), tag, "cfloat<4,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 2> >(reportTestCases), tag, "cfloat<5,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 2> >(reportTestCases), tag, "cfloat<6,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 2> >(reportTestCases), tag, "cfloat<7,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 2> >(reportTestCases), tag, "cfloat<8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 2> >(reportTestCases), tag, "cfloat<10,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 2> >(reportTestCases), tag, "cfloat<12,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 2> >(reportTestCases), tag, "cfloat<14,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<16, 2> >(reportTestCases), tag, "cfloat<16,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 2> >(reportTestCases), tag, "cfloat<18,2>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<4, 2> >(reportTestCases), test_tag, "cfloat<4,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 2> >(reportTestCases), test_tag, "cfloat<5,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 2> >(reportTestCases), test_tag, "cfloat<6,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 2> >(reportTestCases), test_tag, "cfloat<7,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 2> >(reportTestCases), test_tag, "cfloat<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 2> >(reportTestCases), test_tag, "cfloat<10,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 2> >(reportTestCases), test_tag, "cfloat<12,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 2> >(reportTestCases), test_tag, "cfloat<14,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<16, 2> >(reportTestCases), test_tag, "cfloat<16,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 2> >(reportTestCases), test_tag, "cfloat<18,2>");   // 3 blocks
 
 
 	// es = 3
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 3> >(reportTestCases), tag, "cfloat<5,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 3> >(reportTestCases), tag, "cfloat<6,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 3> >(reportTestCases), tag, "cfloat<7,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 3> >(reportTestCases), tag, "cfloat<8,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 3> >(reportTestCases), tag, "cfloat<10,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 3> >(reportTestCases), tag, "cfloat<12,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 3> >(reportTestCases), tag, "cfloat<14,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 3> >(reportTestCases), tag, "cfloat<18,3>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 3> >(reportTestCases), test_tag, "cfloat<5,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 3> >(reportTestCases), test_tag, "cfloat<6,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 3> >(reportTestCases), test_tag, "cfloat<7,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 3> >(reportTestCases), test_tag, "cfloat<8,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 3> >(reportTestCases), test_tag, "cfloat<10,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 3> >(reportTestCases), test_tag, "cfloat<12,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 3> >(reportTestCases), test_tag, "cfloat<14,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 3> >(reportTestCases), test_tag, "cfloat<18,3>");   // 3 blocks
 
 
 	// es = 4
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 4> >(reportTestCases), tag, "cfloat<6,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 4> >(reportTestCases), tag, "cfloat<7,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 4> >(reportTestCases), tag, "cfloat<8,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 4> >(reportTestCases), tag, "cfloat<10,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 4> >(reportTestCases), tag, "cfloat<12,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 4> >(reportTestCases), tag, "cfloat<14,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 4> >(reportTestCases), tag, "cfloat<18,4>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 4> >(reportTestCases), test_tag, "cfloat<6,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 4> >(reportTestCases), test_tag, "cfloat<7,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 4> >(reportTestCases), test_tag, "cfloat<8,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 4> >(reportTestCases), test_tag, "cfloat<10,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 4> >(reportTestCases), test_tag, "cfloat<12,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 4> >(reportTestCases), test_tag, "cfloat<14,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 4> >(reportTestCases), test_tag, "cfloat<18,4>");   // 3 blocks
 
 
 	// es = 5
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 5> >(reportTestCases), tag, "cfloat<7,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 5> >(reportTestCases), tag, "cfloat<8,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 5> >(reportTestCases), tag, "cfloat<10,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 5> >(reportTestCases), tag, "cfloat<12,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 5> >(reportTestCases), tag, "cfloat<14,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 5> >(reportTestCases), tag, "cfloat<18,5>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 5> >(reportTestCases), test_tag, "cfloat<7,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 5> >(reportTestCases), test_tag, "cfloat<8,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 5> >(reportTestCases), test_tag, "cfloat<10,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 5> >(reportTestCases), test_tag, "cfloat<12,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 5> >(reportTestCases), test_tag, "cfloat<14,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 5> >(reportTestCases), test_tag, "cfloat<18,5>");   // 3 blocks
 
 
 	// es = 6
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 6> >(reportTestCases), tag, "cfloat<8,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<9, 6> >(reportTestCases), tag, "cfloat<9,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 6> >(reportTestCases), tag, "cfloat<10,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 6> >(reportTestCases), tag, "cfloat<12,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 6> >(reportTestCases), tag, "cfloat<14,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 6> >(reportTestCases), test_tag, "cfloat<8,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<9, 6> >(reportTestCases), test_tag, "cfloat<9,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 6> >(reportTestCases), test_tag, "cfloat<10,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 6> >(reportTestCases), test_tag, "cfloat<12,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 6> >(reportTestCases), test_tag, "cfloat<14,6>");
 
 
 	// es = 7
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat< 9, 7> >(reportTestCases), tag, "cfloat<9,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 7> >(reportTestCases), tag, "cfloat<10,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 7> >(reportTestCases), tag, "cfloat<12,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 7> >(reportTestCases), tag, "cfloat<14,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat< 9, 7> >(reportTestCases), test_tag, "cfloat<9,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 7> >(reportTestCases), test_tag, "cfloat<10,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 7> >(reportTestCases), test_tag, "cfloat<12,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 7> >(reportTestCases), test_tag, "cfloat<14,7>");
 
 	// es = 8
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<11, 8> >(reportTestCases), tag, "cfloat<11,8>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 8> >(reportTestCases), tag, "cfloat<12,8>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 8> >(reportTestCases), tag, "cfloat<14,8>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<11, 8> >(reportTestCases), test_tag, "cfloat<11,8>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 8> >(reportTestCases), test_tag, "cfloat<12,8>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 8> >(reportTestCases), test_tag, "cfloat<14,8>");
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
