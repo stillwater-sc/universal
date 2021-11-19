@@ -14,118 +14,106 @@
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 #include <universal/number/cfloat/cfloat.hpp>
-
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
-#endif
+#include <universal/verification/test_suite.hpp>
 
 int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite = "cfloat<> Application Programming Interface tests";
 	int nrOfFailedTestCases = 0;
-
-	std::cout << "cfloat<> Application Programming Interface tests\n";
-
-#if MANUAL_TESTING
 
 	// default behavior
 	{
-		std::cout << "Default cfloat has subnormals, supernormals and is not saturating\n";
+		std::cout << "Default cfloat has no subnormals, no supernormals and is not saturating\n";
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
-		using bt = uint8_t;
-		constexpr bool hasSubnormals = true;
-		constexpr bool hasSupernormals = true;
-		constexpr bool isSaturating = false;
-		using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
+
 		Real a(1.0f), b(0.5f), c(0.0);
+		std::cout << type_tag(a) << '\n';
 		c = a + b;
-		std::cout << "c = " << c << std::endl;
+		std::cout << "c = " << c << '\n';
 		c = c - a;
-		std::cout << "c = " << c << std::endl;
+		std::cout << "c = " << c << '\n';
 		c = c * b;
-		std::cout << "c = " << c << std::endl;
+		std::cout << "c = " << c << '\n';
 		std::cout << "---\n";
 	}
+
+	// explicit configuration
 	{
+		std::cout << "Explicit configuration of a cfloat\n";
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
 		using bt = uint8_t;
-		constexpr bool hasSubnormals = true;
+		constexpr bool hasSubnormals   = true;
 		constexpr bool hasSupernormals = true;
-		constexpr bool isSaturating = false;
+		constexpr bool isSaturating    = false;
 		using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
-		CONSTEXPRESSION Real a(1.0f + 0.5f + 0.25f + 0.125f + 0.0625f);
-		Real b(-1.0f - 0.5f - 0.25f - 0.125f - 0.0625f);
-		constexpr size_t fbits = Real::fbits;
-		//constexpr size_t abits = Real::abits;
-		//constexpr size_t mbits = Real::mbits;
-		//constexpr size_t divbits = Real::divbits;
-		{
-			// emulate conversion to blocktriple
-			blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt> _a, _b;
-			a.normalize(_a);
-			b.normalize(_b);
-			std::cout << to_binary(a) << " : " << to_triple(_a) << '\n';
-			std::cout << to_binary(b) << " : " << to_triple(_b) << '\n';
-			std::cout << hex_print(a) << '\n';
-			std::cout << "========  end of representation  =========\n\n";
-		}
 
-		{
-			Real c = a + b;
-			std::cout << "Result of addition       : " << color_print(c) << '\n';
-
-			// emulate addition
-			blocktriple<fbits, BlockTripleOperator::ADD, bt> _a, _b, _c;
-			a.normalizeAddition(_a);
-			b.normalizeAddition(_b);
-			_c.add(_a, _b);
-			std::cout << to_binary(a) << " : " << to_triple(_a) << std::endl;
-			std::cout << to_binary(b) << " : " << to_triple(_b) << std::endl;
-			std::cout << to_binary(c) << " : " << to_triple(_c) << std::endl;
-			std::cout << "+++++++++    end of addition    ++++++++++\n\n";
-		}
-
-		{
-			Real c = a * b;
-			std::cout << "result of multiplication : " << color_print(c) << '\n';
-
-			// emulate multiplication
-			blocktriple<fbits, BlockTripleOperator::MUL, bt> _a, _b, _c;
-			a.normalizeMultiplication(_a);
-			b.normalizeMultiplication(_b);
-			_c.mul(_a, _b);
-			std::cout << to_binary(a) << " : " << to_triple(_a) << std::endl;
-			std::cout << to_binary(b) << " : " << to_triple(_b) << std::endl;
-			std::cout << to_binary(c) << " : " << to_triple(_c) << std::endl;
-			std::cout << "********* end of multiplication **********\n\n";
-		}
-
-		{
-			Real c = a / b;
-			std::cout << "Result of division       : " << color_print(c) << '\n';
-
-			// emulate division
-			blocktriple<fbits, BlockTripleOperator::DIV, bt> _a, _b, _c;
-			a.normalizeDivision(_a);
-			b.normalizeDivision(_b);
-			_c.div(_a, _b);
-			std::cout << to_binary(a) << " : " << to_triple(_a) << std::endl;
-			std::cout << to_binary(b) << " : " << to_triple(_b) << std::endl;
-			std::cout << to_binary(c) << " : " << to_triple(_c) << std::endl;
-			std::cout << "/////////    end of division    //////////\n\n";
-		}
+		Real a(1.0f), b(0.5f), c(0.0);
+		std::cout << type_tag(a) << '\n';
+		c = a + b;
+		std::cout << "c = " << c << '\n';
+		c = c - a;
+		std::cout << "c = " << c << '\n';
+		c = c * b;
+		std::cout << "c = " << c << '\n';
+		std::cout << "---\n";
 	}
+
+	// report on the dynamic range of some standard configurations
+	{
+		std::cout << "Dynamic ranges of some standard cfloat<> configurations\n";
+		using quarter = cfloat<  8,  2, uint8_t, false, false, false>;
+		using half    = cfloat< 16,  5, uint8_t, false, false, false>;
+		using single  = cfloat< 32,  8, uint8_t, true, false, false>;
+		using dual    = cfloat< 64, 11, uint8_t, true, false, false>;
+		using quad    = cfloat<128, 15, uint8_t, true, false, false>;
+		using octo    = cfloat<256, 18, uint8_t, true, false, false>;
+		report_range<quarter>(std::cout);
+		report_range<half>(std::cout);
+		report_range<single>(std::cout);
+		report_range<dual>(std::cout);
+		report_range<quad>(std::cout);
+		report_range<octo>(std::cout);
+
+		std::cout << "---\n";
+
+		quarter q;
+		q.setbits(0x01);  // smallest subnormal
+		std::cout << "minpos  cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
+		q.setbits(0x5f);  // max normal
+		std::cout << "maxnorm cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
+		q.setbits(0x7d);  // max supernormal
+		std::cout << "maxpos  cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
+
+		half h;
+		h.setbits(0x0001); // smallest subnormal
+		std::cout << "minpos  cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
+		h.setbits(0x7bff);  // max normal
+		std::cout << "maxnorm cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
+		h.setbits(0x7ffd);  // max supernormal
+		std::cout << "maxpos  cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
+
+		using QuarterNormal = cfloat<  8, 2, uint8_t, false, false, false>; // no sub or supernormals
+		QuarterNormal qn;
+		qn.minpos();
+		std::cout << "minpos quarterNormal: " << to_binary(qn) << " : " << qn << '\n';
+		qn.maxpos();
+		std::cout << "maxpos quarterNormal: " << to_binary(qn) << " : " << qn << '\n';
+
+		using halfNormal = cfloat< 16, 5, uint16_t, false, false, false>; // no sub or supernormals
+		halfNormal hn;
+		hn.minpos();
+		std::cout << "minpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
+		hn.maxpos();
+		std::cout << "maxpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
+
+		std::cout << "---\n";
+	}
+
 	return 0;
 	{
 		using BlockType = uint32_t;
@@ -158,7 +146,6 @@ try {
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
-#else // !MANUAL_TESTING
 
 	// construction
 	{
@@ -166,32 +153,37 @@ try {
 		cfloat<8, 2, uint8_t> zero, a(2.0), b(2.0), c(1.0), d(4.0);
 		if (zero != (a - b)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << endl;
+			std::cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
 	}
 
 	{
 		cfloat<8, 2> a;
-		std::cout << "maxpos : " << maxpos(a) << " : " << scale(a) << '\n';
-		std::cout << "minpos : " << minpos(a) << " : " << scale(a) << '\n';
-		std::cout << "zero   : " << zero(a) << " : " << scale(a) << '\n';
-		std::cout << "minneg : " << minneg(a) << " : " << scale(a) << '\n';
-		std::cout << "maxneg : " << maxneg(a) << " : " << scale(a) << '\n';
+		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
+		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
+		std::cout << "zero   : " << a.zero() << " : " << scale(a) << '\n';
+		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
+		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
 		std::cout << dynamic_range(a) << std::endl;
 	}
 
-#endif // MANUAL_TESTING
-
-	std::cout << "\nCFLOAT API test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

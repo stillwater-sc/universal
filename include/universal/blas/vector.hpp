@@ -54,7 +54,7 @@
 #define _NODISCARD
 #endif // _HAS_NODISCARD
 
-namespace sw { namespace universal { namespace blas {
+namespace sw::universal::blas {
 
 template<typename Scalar>
 class vector {
@@ -323,9 +323,11 @@ typename std::enable_if<std::is_integral<Scalar>::value, Scalar>::type operator*
 	return sum;
 }
 
+
 // fused dot product for posits
 template<typename Scalar>
-typename std::enable_if<sw::universal::is_posit<Scalar>,Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+// typename enable_if_posit<Scalar, Scalar> operator*(const vector<Scalar>& a, const vector<Scalar>& b) { // doesn't compile with gcc
+typename std::enable_if<sw::universal::is_posit<Scalar>, Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
 //	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
 	size_t N = size(a);
 	if (size(a) != size(b)) {
@@ -344,4 +346,4 @@ typename std::enable_if<sw::universal::is_posit<Scalar>,Scalar>::type operator*(
 	return p;
 }
 
-}}}  // namespace sw::universal::blas
+}  // namespace sw::universal::blas

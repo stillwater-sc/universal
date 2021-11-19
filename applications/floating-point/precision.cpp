@@ -50,7 +50,7 @@ Relative error =
 				  |ln(computed value/ correct value)|,
 
  where we require that the correct value is finite and nonzero, and the computed
- value has the sign sign as the correct value. Relative error is otherwise treated
+ value has the same sign as the correct value. Relative error is otherwise treated
  as undefined. Peter Lindstrom notes that the natural logarithm is the right one to use,
  because the relative error of 1 + 𝜀 is close to 𝜀 when the correct value is 1,
  which agrees with our intuition and also closely matches the traditional definition
@@ -84,20 +84,16 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught an unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught an unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& err) {
-	std::cerr << err.what() << std::endl;
+	std::cerr << "Caught an unexpected runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

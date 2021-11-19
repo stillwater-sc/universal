@@ -31,19 +31,20 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "rational arithmetic exceptions ";
-	std::string test_tag = "exceptions";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "rational arithmetic exceptions ";
+	std::string test_tag    = "exceptions";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
 	using Number = sw::universal::rational;
 
-	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
+	nrOfFailedTestCases += TestDivisionByZero<Number>(reportTestCases);
 
-	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
+	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(reportTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

@@ -73,7 +73,7 @@ void TestConversion() {
 
 	std::cout << "\nTestConversion\n";
 
-	integer<128, uint32_t> i1, i2, i3;
+	integer<128, uint32_t> i1, i2;
 
 	bool pass = true;
 	constexpr int iconst = 123456789;
@@ -83,6 +83,9 @@ void TestConversion() {
 	if (iconst != ll) pass = false;
 	i2 = 1.23456789e8;
 	std::cout << "double   " << i2 << " TBD\n";
+
+	// TODO
+	//integer<128, uint32_t> i3;
 	//i3.parse("123456789");
 
 	std::cout << (pass ? "PASS\n" : "FAIL\n");
@@ -130,11 +133,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "integer class API ";
-	std::string test_tag = "integer";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "integer class API ";
+	std::string test_tag    = "integer";
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -175,11 +179,6 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else // !MANUAL_TESTING
-
-	std::cout << "Miscellaneous integer function verfication\n";
-
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
 
 #if REGRESSION_LEVEL_1
 	TestSizeof();

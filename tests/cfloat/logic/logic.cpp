@@ -240,30 +240,37 @@ namespace sw::universal {
 
 } // namespace sw::universal
 
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
-
+	std::string test_suite  = "cfloat<> logic operator validation";
+	std::string test_tag    = "logic";
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
-	// generate individual testcases to hand trace/debug
 
-	// manual exhaustive test
-	
-	nrOfFailedTestCases = 0;
 
 #else
-	std::cout << "classic floating-point logic operator validation\n";
 
-	//bool bReportIndividualTestCases = false;
-	std::string tag = "Comparison failed: ";
 
 	cfloat<16, 1> a;
 
@@ -435,15 +442,19 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_divide_by_zero& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

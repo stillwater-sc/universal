@@ -11,12 +11,22 @@
 #include <tuple>
 #include <algorithm> // std::max
 
+#include <universal/common/exceptions.hpp>
 #include <universal/number/support/decimal.hpp>
 #include <universal/native/nonconstexpr754.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 
 namespace sw::universal::internal {
+
+struct value_internal_exception : public universal_internal_exception {
+	value_internal_exception(const std::string& error)
+		: universal_internal_exception(std::string("value internal exception: ") + error) {};
+};
+
+struct value_shift_too_large : public value_internal_exception {
+	value_shift_too_large() : value_internal_exception("shift value too large") {}
+};
 
 using namespace sw::universal;
 
@@ -368,7 +378,7 @@ public:
 #if VALUE_THROW_ARITHMETIC_EXCEPTION
 		// Check range
 		if (int(fbits) + shift >= int(Size))
-			throw shift_too_large{};
+			throw value_shift_too_large{};
 #else
 		// Check range
 		if (int(fbits) + shift >= int(Size)) {
@@ -540,6 +550,14 @@ private:
 	friend bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs);
 };
 
+/*
+ n fraction bits represent a sampling of 2^n samples of a 10^n domain.
+
+ if you need to represent a smaller decimal than n digits, you need to
+ round in the fraction domain, and then convert the rounded bit string.
+ */
+
+// convert a value to a decimal representation
 template<size_t fbits>
 inline std::string convert_to_decimal_string(const value<fbits>& v) {
 	std::cout << to_triple(v) << '\n';
@@ -549,34 +567,41 @@ inline std::string convert_to_decimal_string(const value<fbits>& v) {
 	support::decimal bitValue;
 
 	// construct the value of the fraction
+	// step 1: calculate the decimal value of the smallest discretization step of the range
 	support::decimal range, discretizationLevels, step, partial, multiplier, one;
 	// create the decimal range we are discretizing
 	range.setdigit(1);
-	range.shiftLeft(fbits);
+	range.shiftLeft(fbits); // == 10^fbits
 	// calculate the discretization levels of this range
 	discretizationLevels.setdigit(1);
-	for (size_t i = 0; i < fbits; ++i) {
-		support::add(discretizationLevels, discretizationLevels);
-	}
-	step = div(range, discretizationLevels);
-	// now construct the value of this range by adding the fraction samples
+	for (size_t i = 0; i < fbits; ++i) support::add(discretizationLevels, discretizationLevels);
+	step = support::div(range, discretizationLevels);
+	// step 2: construct the value of fraction in terms of discretization samples
 	partial.setzero();
 	multiplier.setdigit(1);
 	// convert the fraction part
 	for (unsigned i = 0; i < fbits; ++i) {
-		std::cout << multiplier << '\n';
-		if (bits[i]) {
-			support::add(partial, multiplier);
-			std::cout << "-> " << partial << '\n';
-		}
+		if (bits[i]) support::add(partial, multiplier);
 		support::add(multiplier, multiplier);
 	}
-	support::add(partial, multiplier);
-	std::cout << "hb " << partial << '\n';
+	support::add(partial, multiplier); // add the hidden bit value
 
+	// step 3: calculate the value of fraction = nrOfSamples * discretizationStep
 	support::mul(partial, step);
-	std::cout << partial << '\n';
 
+	// construct a decimal fixed-point
+	if (scale > 0) {
+		support::decimal scaleUp;
+		scaleUp.setdigit(1);
+		for (auto i = 0; i < scale; ++i) support::add(scaleUp, scaleUp);
+		support::mul(partial, scaleUp);
+	}
+	else if (scale < 0) {
+		support::decimal scaleDown;
+		scaleDown.setdigit(1);
+		for (auto i = 0; i < -scale; ++i) support::add(scaleDown, scaleDown);
+		partial = support::div(partial, scaleDown);
+	}
 	std::stringstream str;
 	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
 		str << (int)*rit;

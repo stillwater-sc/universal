@@ -29,7 +29,7 @@ int main()
 try {;
 	using namespace sw::universal;
 
-	int nrOfFailedTestCases = 0;
+//	int nrOfFailedTestCases = 0;
 #if LATER
 #if MANUAL_TESTING
 
@@ -361,25 +361,19 @@ try {;
 #endif // LATER
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-/*
-catch (const sw::universal::valid_arithmetic_exception& err) {
-	std::cerr << "Uncaught valid arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::valid_internal_exception& err) {
-	std::cerr << "Uncaught valid internal exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-*/
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

@@ -663,7 +663,7 @@ namespace sw::universal {
 				try {
 					psum = pa + pb;
 				}
-				catch (const operand_is_nar& err) {
+				catch (const posit_operand_is_nar& err) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
 						psum.setnar();
@@ -708,7 +708,7 @@ namespace sw::universal {
 					psum = pa;
 					psum += pb;
 				}
-				catch (const operand_is_nar& err) {
+				catch (const posit_operand_is_nar& err) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
 						psum.setnar();
@@ -754,7 +754,7 @@ namespace sw::universal {
 				try {
 					pdif = pa - pb;
 				}
-				catch (const operand_is_nar&) {
+				catch (const posit_operand_is_nar&) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
 						pdif.setnar();
@@ -798,7 +798,7 @@ namespace sw::universal {
 					pdif = pa;
 					pdif -= pb;
 				}
-				catch (const operand_is_nar& err) {
+				catch (const posit_operand_is_nar& err) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
 						pdif.setnar();
@@ -842,7 +842,7 @@ namespace sw::universal {
 				try {
 					pmul = pa * pb;
 				}
-				catch (const operand_is_nar&) {
+				catch (const posit_operand_is_nar&) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
 						pmul.setnar();
@@ -885,7 +885,7 @@ namespace sw::universal {
 					pmul = pa;
 					pmul *= pb;
 				}
-				catch (const operand_is_nar& err) {
+				catch (const posit_operand_is_nar& err) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
 						pmul.setnar();
@@ -963,7 +963,7 @@ namespace sw::universal {
 				try {
 					pdiv = pa / pb;
 				}
-				catch (const divide_by_zero&) {
+				catch (const posit_divide_by_zero&) {
 					if (pb.iszero()) {
 						// correctly caught the divide by zero condition
 						continue;
@@ -974,7 +974,7 @@ namespace sw::universal {
 						throw; // rethrow
 					}
 				}
-				catch (const divide_by_nar&) {
+				catch (const posit_divide_by_nar&) {
 					if (pb.isnar()) {
 						// correctly caught the divide by nar condition
 						continue;
@@ -985,7 +985,7 @@ namespace sw::universal {
 						throw; // rethrow
 					}
 				}
-				catch (const numerator_is_nar&) {
+				catch (const posit_numerator_is_nar&) {
 					if (pa.isnar()) {
 						// correctly caught the numerator is nar condition
 						continue;
@@ -1037,7 +1037,7 @@ namespace sw::universal {
 					pdiv = pa;
 					pdiv /= pb;
 				}
-				catch (const divide_by_zero& err) {
+				catch (const posit_divide_by_zero& err) {
 					if (pb.iszero()) {
 						// correctly caught the divide by zero condition
 						continue;
@@ -1048,7 +1048,7 @@ namespace sw::universal {
 						throw err; // rethrow
 					}
 				}
-				catch (const divide_by_nar& err) {
+				catch (const posit_divide_by_nar& err) {
 					if (pb.isnar()) {
 						// correctly caught the divide by nar condition
 						continue;
@@ -1059,7 +1059,7 @@ namespace sw::universal {
 						throw err; // rethrow
 					}
 				}
-				catch (const numerator_is_nar& err) {
+				catch (const posit_numerator_is_nar& err) {
 					if (pa.isnar()) {
 						// correctly caught the numerator is nar condition
 						continue;

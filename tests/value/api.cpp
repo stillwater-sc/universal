@@ -30,6 +30,10 @@ int Check(const value<fbits>& v, double ref, bool bReportIndividualTestCases) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -45,7 +49,7 @@ try {
 	std::string test_tag = "value";
 	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 
 	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
 
@@ -53,6 +57,14 @@ try {
 
 	{
 		value<4> a;
+		a = 0.03125f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 0.0625f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 0.125f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 0.25f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
 		a = 0.5f;
 		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
 		a = 1.0f;
@@ -60,6 +72,14 @@ try {
 		a = 1.5f;
 		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
 		a = 1.0625f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 2.0f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 4.0f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 8.0f;
+		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+		a = 16.0f;
 		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
 	}
 

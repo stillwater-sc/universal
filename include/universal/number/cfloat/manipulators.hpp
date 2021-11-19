@@ -21,12 +21,12 @@ template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSuper
 std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	std::stringstream s;
 	s << "cfloat<"
-		<< nbits << ", "
-		<< es << ", "
+		<< std::setw(3) << nbits << ", "
+		<< std::setw(3) << es << ", "
 		<< typeid(bt).name() << ", "
-		<< (hasSubnormals ? "hasSubnormals, " : "noSubnormals, ")
-		<< (hasSupernormals ? "hasSupernormals, " : "noSupernormals, ")
-		<< (isSaturating ? "Saturating>" : "notSaturating>");
+		<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
+		<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
+		<< (isSaturating ? "   Saturating>" : "notSaturating>");
 	if (v.iszero()) s << ' ';
 	return s.str();
 }
@@ -186,7 +186,7 @@ std::string info_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 // generate a binary, color-coded representation of the cfloat
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
-	using Real = cfloat<nbits, es, bt>;
+	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	std::stringstream s;
 	bool sign{ false };
 	blockbinary<es,bt> e;

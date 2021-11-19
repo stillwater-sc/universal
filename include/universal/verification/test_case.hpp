@@ -9,7 +9,7 @@
 
 namespace sw::universal {
 
-	enum class TestCaseOperator { ADD, SUB, MUL, DIV, REM };
+	enum class TestCaseOperator { ADD, SUB, MUL, DIV };  // basic arithmetic operators supported by all number systems
 
 	// generate an arithmetic test case
 	template<typename Number, typename Ty>
@@ -45,14 +45,6 @@ namespace sw::universal {
 			op = " / ";
 			opName = "DIV";
 			break;
-			/*
-		case TestCaseOperator::REM:
-			c = a % b;
-			_c = _a % _b;
-			op     = " % ";
-			opName = "REM";
-			break;
-			*/
 		default:
 			std::cout << "Unknown operator: exiting\n";
 			return;
@@ -64,9 +56,9 @@ namespace sw::universal {
 		std::cout << std::setprecision(10);
 		std::cout << "+--------  Test Case: " << opName << "\ninput operands : " << typeid(Ty).name() << '\n';
 		std::cout << std::setw(nbits) << _a << op << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
-		std::cout << sw::universal::to_binary(_a) << " : " << _a << '\n';
-		std::cout << sw::universal::to_binary(_b) << " : " << _b << '\n';
-		std::cout << sw::universal::to_binary(_c) << " : " << _c << '\n';
+		std::cout << to_binary(_a) << " : " << _a << '\n';
+		std::cout << to_binary(_b) << " : " << _b << '\n';
+		std::cout << to_binary(_c) << " : " << _c << '\n';
 		std::cout << "+--------\ntarget number : " << typeid(Number).name() << '\n';
 		std::cout << a << op << b << " = " << c << " (reference: " << reference << ")\n";
 		std::cout << to_binary(a, true) << op << to_binary(b, true) << " = " << to_binary(c, true) << " (reference: " << to_binary(reference, true) << ")   ";
