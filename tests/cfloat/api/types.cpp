@@ -16,10 +16,6 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/table.hpp>
 
-// conditional compile flags
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
 int main()
 try {
 	using namespace sw::universal;
@@ -28,12 +24,12 @@ try {
 
 	std::cout << "comparison of different cfloat types\n\n";
 
-	constexpr bool hasSubnormals = true;
-	constexpr bool noSubnormals = false;
+	constexpr bool hasSubnormals   = true;
+	constexpr bool noSubnormals    = false;
 	constexpr bool hasSupernormals = true;
-	constexpr bool noSupernormals = false;
-	//constexpr bool isSaturating = true;
-	constexpr bool notSaturating = false;
+	constexpr bool noSupernormals  = false;
+	constexpr bool isSaturating    = true;
+	constexpr bool notSaturating   = false;
 
 	// if you  have 1 exponent bits, then all encodings are either subnormals or supernormals.
 	// In the following set of cfloat<5,1> types, the last type with subnormals and supernormals 
@@ -53,22 +49,25 @@ try {
 	GenerateTable<cfloat<5, 3, uint8_t, noSubnormals , hasSupernormals, notSaturating> >(std::cout);
 	GenerateTable<cfloat<5, 3, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(std::cout);
 
+	// saturing is a property of the arithmetic, not the encoding, and thus the tables of values are identical
+	GenerateTable<cfloat<5, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(std::cout);
+
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_internal_exception& err) {
-	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

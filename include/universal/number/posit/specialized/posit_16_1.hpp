@@ -129,7 +129,7 @@ public:
 		// process special cases
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || b.isnar()) {
-			throw operand_is_nar{};
+			throw posit_operand_is_nar{};
 		}
 #else
 		if (isnar() || b.isnar()) {
@@ -195,7 +195,7 @@ public:
 		// process special cases
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || b.isnar()) {
-			throw operand_is_nar{};
+			throw posit_operand_is_nar{};
 		}
 #else
 		if (isnar() || b.isnar()) {
@@ -274,7 +274,7 @@ public:
 		// process special cases
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || b.isnar()) {
-			throw operand_is_nar{};
+			throw posit_operand_is_nar{};
 		}
 #else
 		if (isnar() || b.isnar()) {
@@ -331,13 +331,13 @@ public:
 	// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (b.iszero()) {
-			throw divide_by_zero{};    // not throwing is a quiet signalling NaR
+			throw posit_divide_by_zero{};    // not throwing is a quiet signalling NaR
 		}
 		if (b.isnar()) {
-			throw divide_by_nar{};
+			throw posit_divide_by_nar{};
 		}
 		if (isnar()) {
-			throw numerator_is_nar{};
+			throw posit_numerator_is_nar{};
 		}
 #else
 		if (isnar() || b.isnar() || b.iszero()) {
@@ -497,17 +497,17 @@ private:
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 	int         to_int() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return int(to_float());
 	}
 	long        to_long() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return long(to_double());
 	}
 	long long   to_long_long() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return long(to_long_double());
 	}
 #else

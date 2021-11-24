@@ -25,7 +25,7 @@ try {
 		pc = pa / pb;
 		std::cout << "Incorrect: division by zero exception didn't fire\n"; // just in case the exception doesn't fire
 	}
-	catch (const divide_by_zero& err) {
+	catch (const posit_divide_by_zero& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
 	}
 
@@ -35,7 +35,7 @@ try {
 		pc = pa / pb;
 		std::cout << "Incorrect: division by nar exception didn't fire\n";
 	}
-	catch (const divide_by_nar& err) {
+	catch (const posit_divide_by_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
 	}
 
@@ -45,7 +45,7 @@ try {
 		pc = pa / pb;
 		std::cout << "Incorrect: numerator is nar exception didn't fire\n";
 	}
-	catch (const numerator_is_nar& err) {
+	catch (const posit_numerator_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
 	}
 
@@ -55,7 +55,7 @@ try {
 		pc = pa + pb;
 		std::cout << "Incorrect: operand is nar exception didn't fire\n";
 	}
-	catch (const operand_is_nar& err) {
+	catch (const posit_operand_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
 	}
 
@@ -65,7 +65,7 @@ try {
 		pc = pa - pb;
 		std::cout << "Incorrect: operand is nar exception didn't fire\n";
 	}
-	catch (const operand_is_nar& err) {
+	catch (const posit_operand_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
 	}
 
@@ -75,7 +75,7 @@ try {
 		pc = pa * pb;	// TODO: operator *= throws the same exception, but for some reason we can't catch it here
 		std::cout << "Incorrect: operand is nar exception didn't fire\n";
 	}
-	catch (const operand_is_nar& err) {
+	catch (const posit_operand_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
 	}
 	catch (const posit_arithmetic_exception& err) {

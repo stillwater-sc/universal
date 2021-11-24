@@ -105,10 +105,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Fixed-point saturating subnormal conversion ";
-	std::string test_tag = "conversion of IEEE-754 subnormals";
-//	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "Fixed-point saturating subnormal conversion ";
+	std::string test_tag    = "conversion of IEEE-754 subnormals";
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// minpos_subnormal value
@@ -130,7 +132,7 @@ try {
 	DoubleGenerateFixedPointValues<8, 4>();
 
 	// can't use the regular exhaustive test suites for these very large fixed-points
-	// nrOfFailedTestCases = ReportTestResult(ValidateAssignment<256, 150, Modular, uint32_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0, Modular, uint32_t>");
+	// nrOfFailedTestCases = ReportTestResult(ValidateAssignment<256, 150, Modular, uint32_t, float>(reportTestCases), tag, "fixpnt<4,0, Modular, uint32_t>");
 	
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

@@ -107,10 +107,11 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "areal constexpr ";
-	std::cout << test_suite << '\n';
+	std::string test_suite  = "areal constexpr ";
 	int nrOfFailedTestCases = 0;
-	
+
+	std::cout << test_suite << '\n';
+
 	using Real = areal<12, 2>;
 	Real a;
 	a.constexprClassParameters();
@@ -123,22 +124,22 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::areal_arithmetic_exception& err) {
-	std::cerr << "Uncaught areal arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::areal_internal_exception& err) {
-	std::cerr << "Uncaught areal internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << std::endl;
+	std::cerr << "Caught unknown exception" << '\n';
 	return EXIT_FAILURE;
 }

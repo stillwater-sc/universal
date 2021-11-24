@@ -31,21 +31,23 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "lns arithmetic exceptions ";
-	std::string test_tag = "exceptions";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "lns arithmetic exceptions ";
+	std::string test_tag    = "exceptions";
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
+	// TODO: implement arithmetic operators for lns
+/*
 	using Number = sw::universal::lns<16, uint16_t>;
 
-	// TODO: implement arithmetic operators for lns
-//	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
+	nrOfFailedTestCases += TestDivisionByZero<Number>(reportTestCases);
 
-//	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
-
+	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(reportTestCases);
+*/
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else // !MANUAL_TESTING

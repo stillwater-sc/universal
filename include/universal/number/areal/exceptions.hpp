@@ -13,11 +13,6 @@ struct areal_arithmetic_exception : public universal_arithmetic_exception {
 	areal_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("areal arithmetic exception: ") + err) {};
 };
 
-// base class for areal quire arithmetic exceptions
-struct areal_quire_exception : public areal_arithmetic_exception {
-	areal_quire_exception(const std::string& err) : areal_arithmetic_exception(std::string("areal quire exception: ") + err) {}
-};
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// specialized exceptions to aid application level exception handling
 
@@ -44,16 +39,6 @@ struct areal_operand_is_nan : public areal_arithmetic_exception {
 // negative argument to sqrt
 struct areal_negative_sqrt_arg : public areal_arithmetic_exception {
 	areal_negative_sqrt_arg() : areal_arithmetic_exception("negative sqrt argument") {}
-};
-
-// quire_operand_is_nan is thrown when an rvar in a binary operator is NaN
-struct areal_quire_operand_is_nan : public areal_quire_exception {
-	areal_quire_operand_is_nan() : areal_quire_exception("quire operand is nan") {}
-};
-
-// negative argument to sqrt
-struct areal_quire_negative_sqrt_arg : public areal_quire_exception {
-	areal_quire_negative_sqrt_arg() : areal_quire_exception("quire negative sqrt argument") {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

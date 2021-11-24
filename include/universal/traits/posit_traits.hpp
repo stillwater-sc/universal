@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/traits/integral_constant.hpp>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // define a trait for posit types
 template<typename _Ty>
@@ -26,4 +26,4 @@ constexpr bool is_posit = is_posit_trait<_Ty>::value;
 template<typename _Ty, typename Type = void>
 using enable_if_posit = std::enable_if_t<is_posit<_Ty>, Type>;
 
-}} // namespace sw::universal
+} // namespace sw::universal

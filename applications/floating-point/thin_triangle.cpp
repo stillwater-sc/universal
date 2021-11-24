@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
+#include <universal/utility/directives.hpp>
 // pull in the posit number system
 #include <universal/number/posit/posit.hpp>
 
@@ -225,7 +225,7 @@ void printTriangleConfiguration(std::ostream& ostr, const Scalar& a, const Scala
 	ostr << "    c  = " << sw::universal::to_binary(c) << " " << sw::universal::to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << '\n';
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

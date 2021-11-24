@@ -8,27 +8,27 @@
 namespace sw::universal {
 
 // Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> trunc(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::trunc(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> trunc(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::trunc(double(x)));
 }
 
 // Round to nearest: returns the integral value that is nearest to x, with halfway cases rounded away from zero
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> round(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::round(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> round(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::round(double(x)));
 }
 
 // Round x downward, returning the largest integral value that is not greater than x
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> floor(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::floor(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> floor(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::floor(double(x)));
 }
 
 // Round x upward, returning the smallest integral value that is greater than x
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es,bt> ceil(cfloat<nbits,es,bt> x) {
-	return cfloat<nbits,es,bt>(std::ceil(double(x)));
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ceil(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::ceil(double(x)));
 }
 
 #ifdef NOW

@@ -24,11 +24,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "fixed-point logic operators ";
-	std::string test_tag = "comparisons";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = true;
+	std::string test_suite  = "fixed-point logic operators ";
+	std::string test_tag    = "comparisons";
+//	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 

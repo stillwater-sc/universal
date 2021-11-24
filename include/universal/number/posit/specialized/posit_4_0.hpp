@@ -332,17 +332,17 @@ private:
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 	int         to_int() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return int(to_float());
 	}
 	long        to_long() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return long(to_double());
 	}
 	long long   to_long_long() const {
 		if (iszero()) return 0;
-		if (isnar()) throw not_a_real{};
+		if (isnar()) throw posit_nar{};
 		return long(to_long_double());
 	}
 #else

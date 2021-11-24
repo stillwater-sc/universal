@@ -31,20 +31,21 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "valid arithmetic exceptions ";
-	std::string test_tag = "exceptions";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "valid arithmetic exceptions ";
+	std::string test_tag    = "exceptions";
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
-	using Number = sw::universal::valid<16,2>;
+//	using Number = sw::universal::valid<16,2>;
 
 	// TODO: implement arithmetic operators for valid<>
-//	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
+//	nrOfFailedTestCases += TestDivisionByZero<Number>(reportTestCases);
 
-//	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
+//	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(reportTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -67,22 +68,22 @@ try {
 #endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::valid_arithmetic_exception& err) {
-	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::valid_internal_exception& err) {
-	std::cerr << "Uncaught internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << '\n';
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

@@ -161,10 +161,10 @@ double haversine(double lat1, double lon1, double lat2, double lon2, double radi
 
 // generate specific test case that you can trace with the trace conditions in cfloat.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::universal::cfloat<nbits, es> pa, pref, psin;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> pa, pref, psin;
 	pa = a;
 	ref = std::sin(a);
 	pref = ref;
@@ -176,18 +176,18 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setprecision(5);
 }
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
+#define MANUAL_TESTING 0
 
 int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "cfloat<> mathlib trigonometry validation";
+	std::string test_tag    = "exponentiation";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -206,54 +206,49 @@ try {
 	std::cout << "haversine(0.0, 0.0, 90.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 90.0, 0.0, 1.0) << '\n';
 	std::cout << "haversine(0.0, 0.0, 180.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 180, 0.0, 1.0) << '\n';
 
-	GenerateTestCase<16, 1, double>(m_pi_2);
+	GenerateTestCase<16, 1, uint16_t, true, true, false, double>(m_pi_2);
 
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySine< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "asin");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifySine   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "tan");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;  // ignore failures in manual testing mode
 #else
 
-	std::cout << "cfloat sine function validation\n";
+	nrOfFailedTestCases += ReportTestResult(VerifySine   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos   < cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat< 8,2>", "acos");
 
-
-#if STRESS_TESTING
 	// nbits=64 requires long double compiler support
-	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "cfloat<64,2>", "sin");
+	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(reportTestCases, OPCODE_SQRT, 1000), "cfloat<64,2>", "sin");
 
+	nrOfFailedTestCases += ReportTestResult(VerifySine   < cfloat<16, 5> >(reportTestCases), "cfloat<16,5>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine < cfloat<16, 5> >(reportTestCases), "cfloat<16,5>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< cfloat<16, 5> >(reportTestCases), "cfloat<16,5>", "tan");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(bReportIndividualTestCases), "cfloat<10,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 1>(bReportIndividualTestCases), "cfloat<12,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<14, 1>(bReportIndividualTestCases), "cfloat<14,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(bReportIndividualTestCases), "cfloat<16,1>", "sin");
-	
-#endif  // STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::cfloat_quire_exception& err) {
-	std::cerr << "Uncaught cfloat quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::cfloat_internal_exception& err) {
-	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
