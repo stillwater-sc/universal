@@ -37,17 +37,23 @@ class chebfun {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> edit chebmat
+=======
+>>>>>>> 470c41f5163ce5c58bf47eea26d5dbbd28755adf
         // chebfun(Scalar(*f)(Scalar)) {
         //     std::cout << "Chebfun constructor test =  " << f(1.5) << std::endl;
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> edit chebmat
 =======
 >>>>>>> edit chebmat
+=======
+>>>>>>> 470c41f5163ce5c58bf47eea26d5dbbd28755adf
         Scalar operator[](size_type i){return domain[i];}
 
    

@@ -27,11 +27,15 @@ namespace chebyshev {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 470c41f5163ce5c58bf47eea26d5dbbd28755adf
 			for(size_t i = 2;i<n;++i){
 				T(i,0) = -T(i-2,0);
 			}
 		}
         for(size_t i = 2;i < n; ++i){
+<<<<<<< HEAD
  
 =======
 =======
@@ -59,6 +63,8 @@ namespace chebyshev {
 		}
         for(size_t i = 2;i < n; ++i){
 >>>>>>> n+1 -> n
+=======
+>>>>>>> 470c41f5163ce5c58bf47eea26d5dbbd28755adf
                 for(size_t j = 1;j < i+1; ++j){
                     T(i,j) = 2*T(i-1,j-1) - T(i-2,j);
                 }

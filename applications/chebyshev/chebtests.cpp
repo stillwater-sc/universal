@@ -125,9 +125,6 @@ try {
 	//std::cout << chebpoly<Scalar>(3) + rpad<Scalar>(chebpoly<Scalar>(1), 3-1) << std::endl;
 	//chebpoly<Scalar>(n);
 
- 
- 
-
 
 	// 13.
  
@@ -146,8 +143,6 @@ try {
  	auto A = chebyshev::chebmat<float>(8);
 	std::cout << A << std::endl;
  
-	 
-
 	auto A = chebyshev::chebmat<float>(3);
 	blas::vector<Scalar> x(3);
 	x(0)=6;x(1)=-5;x(2)=1;
