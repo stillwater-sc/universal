@@ -136,7 +136,8 @@ void GRKSpanDemo(Scalar b_table[5][5],
 
 }
 
-int main() {
+int main() 
+try {
     using namespace sw::universal;
     using Scalar = double;
 
@@ -183,5 +184,24 @@ int main() {
         };
         ofs.close();  
     }
-
+}
+catch (char const* msg) {
+    std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+    return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+    std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+    std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (std::runtime_error& err) {
+    std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (...) {
+    std::cerr << "Caught unknown exception" << std::endl;
+    return EXIT_FAILURE;
 }

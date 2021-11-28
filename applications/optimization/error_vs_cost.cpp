@@ -34,11 +34,13 @@ typename std::enable_if_t<sw::universal::is_posit<Scalar>, Scalar > Dot(const sw
 
 template<typename Scalar>
 typename sw::universal::enable_if_posit<Scalar, Scalar> Dot(const sw::universal::blas::vector<Scalar>& x, const sw::universal::blas::vector<Scalar>& y) {
+	std::cerr << "fused dot product\n";
 	return sw::universal::fdp(x, y);
 }
 
 template<typename Scalar>
 typename std::enable_if_t<std::is_floating_point<Scalar>::value, Scalar> Dot(const sw::universal::blas::vector<Scalar>& x, const sw::universal::blas::vector<Scalar>& y) {
+	std::cerr << "regular dot product\n";
 	return sw::universal::blas::dot(x, y);
 }
 
@@ -78,6 +80,13 @@ try {
 	std::cout << "Pareto frontier for mixed-precision number selection\n";
 
 	// first algorithm: dot product
+	// integer : if dynamic range insufficient needs a quire to avoid overflow
+	// fixpnt  : if dynamic range insufficient needs a quire to avoid overflow
+	// ieee-754: FMA and large dynamic range 
+	// posit   : quire 
+
+	// if the sum overflows it implies that the dynamic range of the representation
+	// is insufficient.
 	Enumerate();
 	
 	return EXIT_SUCCESS;
@@ -94,8 +103,8 @@ catch (const sw::universal::universal_internal_exception& err) {
 	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const std::runtime_error& err) {
-	std::cerr << "Caught unexpected runtime exception: " << err.what() << std::endl;
+catch (std::runtime_error& err) {
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

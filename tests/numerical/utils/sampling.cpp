@@ -31,12 +31,12 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::setprecision(5);
 }
 
-template<typename Real, typename cfloatConfiguration>
-void Sample(cfloatConfiguration start, cfloatConfiguration stop, Real sample) {
+template<typename Real, typename CfloatConfiguration>
+void Sample(CfloatConfiguration start, CfloatConfiguration stop, Real sample) {
 	using namespace sw::universal;
-	constexpr size_t nbits = cfloatConfiguration::nbits;
-	constexpr size_t es = cfloatConfiguration::es;
-	cfloatConfiguration a;
+	constexpr size_t nbits = CfloatConfiguration::nbits;
+	constexpr size_t es = CfloatConfiguration::es;
+	CfloatConfiguration a;
 	sw::universal::cfloat<nbits+1, es> b;
 	a = start;
 	if (a < 0.0f) {
@@ -131,11 +131,23 @@ try {
 
 	return EXIT_SUCCESS;
 }
-catch (const char* const msg) {
-	std::cerr << msg << std::endl;
+catch (char const* msg) {
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (std::runtime_error& err) {
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "caught unknown exception" << std::endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
