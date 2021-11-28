@@ -1,28 +1,24 @@
-// fibonacci.cpp: experiments with representing Fibonacci sequences
+﻿// accurate_sum_and_dot.cpp: twosum/twomul 
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/number/integer/integer.hpp>
-#include <universal/sequences/fibonacci.hpp>
+// This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/number/posit/posit.hpp>
+#include <universal/functions/twosum.hpp>
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::sequences;
+	using namespace sw::function;
 
-	int nrOfFailedTestCases = 0;
+	// preserve the existing ostream precision
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(12);
 
-	using int256 = sw::universal::integer<256>;
-	auto v = Fibonacci<int256>(100);
-	std::cout << "Fibonacci sequence\n";
-	for (auto e: v) { std::cout << e << '\n'; }
+	// restore the previous ostream precision
+	std::cout << std::setprecision(precision);
 
-	//streamsize precision = cout.precision();
-	// ...
-	//cout << setprecision(precision);
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

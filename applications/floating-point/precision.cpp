@@ -81,19 +81,19 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::universal_arithmetic_exception& err) {
-	std::cerr << "Caught an unexpected universal arithmetic exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::universal_internal_exception& err) {
-	std::cerr << "Caught an unexpected universal internal exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& err) {
-	std::cerr << "Caught an unexpected runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
