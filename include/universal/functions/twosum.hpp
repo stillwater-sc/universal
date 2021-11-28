@@ -4,11 +4,10 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <vector>
 #include <tuple>
 
-namespace sw {
-namespace function {
+namespace sw::function {
 
 /*
 TwoSum denotes an algorithm introduced by Knuth in "The Art of Computer Programming", vol 2, Seminumerical Algorithms.
@@ -23,6 +22,20 @@ floating point arithmetic :
 	- float(x / 2) = x / 2 barring underflow
 */
 template<typename Scalar>
+void twoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
+	s = a + b;
+	Scalar bdiff = s - a;
+	Scalar adiff = s - bdiff;
+	std::cout << "adiff " << adiff << '\n';
+	std::cout << "bdiff " << bdiff << '\n';
+	Scalar aerr = a - adiff;
+	Scalar berr = b - bdiff;
+	std::cout << "aerr " << aerr << '\n';
+	std::cout << "berr " << berr << '\n';
+	r = aerr + berr;
+}
+
+template<typename Scalar>
 std::pair<Scalar, Scalar> twoSum(const Scalar& a, const Scalar& b) {
 	Scalar s = a + b;
 	Scalar aApproximate = s - b;
@@ -33,6 +46,18 @@ std::pair<Scalar, Scalar> twoSum(const Scalar& a, const Scalar& b) {
 	return std::make_pair(s, r);
 }
 
-}  // namespace function
-}  // namespace sw
+template<typename Scalar>
+void cascadingSum(const std::vector<Scalar>& v, Scalar& s, Scalar& r) {
+	Scalar p, q;
+	size_t N = v.size();
+	p = v[0];
+	r = 0;
+	for (size_t i = 1; i < N; ++i) {
+		twoSum(p, v[i], s, q);
+		p = s;
+		r += q;
+		std::cout << s << " + " << r << '\n';
+	}
+}
 
+}  // namespace sw::function
