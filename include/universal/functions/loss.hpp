@@ -55,8 +55,7 @@ loss functions.In contrast, we show that the Bregman based construction introduc
 indeed proper, which is a requirement for many real - world applications.
  */
 
-namespace sw {
-namespace function {
+namespace sw::universal {
 
 // tempered logarithm
 template<typename Scalar>
@@ -73,6 +72,5 @@ Scalar expt(const Scalar& temp, const Scalar& x) {
 	return (pow(Scalar(1) + one_minus_temp, (Scalar(1) / one_minus_temp)));
 }
 
-}  // namespace function
-}  // namespace sw
+}  // namespace sw::universal
 

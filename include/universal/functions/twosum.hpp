@@ -7,7 +7,9 @@
 #include <vector>
 #include <tuple>
 
-namespace sw::function {
+#undef TRACE_TWOSUM
+
+namespace sw::universal {
 
 /*
 TwoSum denotes an algorithm introduced by Knuth in "The Art of Computer Programming", vol 2, Seminumerical Algorithms.
@@ -21,43 +23,70 @@ floating point arithmetic :
 	- float(2x) = 2x barring overflow
 	- float(x / 2) = x / 2 barring underflow
 */
+#ifdef TRACE_TWOSUM
 template<typename Scalar>
 void twoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
+	std::cout << "twosum\n";
+	std::cout << "a     " << a << '\n';
+	std::cout << "b     " << b << '\n';
 	s = a + b;
+	std::cout << "s     " << s << '\n';
 	Scalar bdiff = s - a;
 	Scalar adiff = s - bdiff;
 	std::cout << "adiff " << adiff << '\n';
 	std::cout << "bdiff " << bdiff << '\n';
-	Scalar aerr = a - adiff;
-	Scalar berr = b - bdiff;
+	volatile Scalar aerr = a - adiff;
+	volatile Scalar berr = b - bdiff;
 	std::cout << "aerr " << aerr << '\n';
 	std::cout << "berr " << berr << '\n';
 	r = aerr + berr;
 }
 
 template<typename Scalar>
-std::pair<Scalar, Scalar> twoSum(const Scalar& a, const Scalar& b) {
-	Scalar s = a + b;
-	Scalar aApproximate = s - b;
-	Scalar bApproximate = s - aApproximate;
-	Scalar aDiff = a - aApproximate;
-	Scalar bDiff = b - bApproximate;
-	Scalar r = aDiff + bDiff;
-	return std::make_pair(s, r);
-}
-
-template<typename Scalar>
 void cascadingSum(const std::vector<Scalar>& v, Scalar& s, Scalar& r) {
-	Scalar p, q;
+	Scalar a, b, p, q;
 	size_t N = v.size();
 	p = v[0];
 	r = 0;
 	for (size_t i = 1; i < N; ++i) {
-		twoSum(p, v[i], s, q);
-		p = s;
+		a = p;
+		b = v[i];
+		twoSum(a, v[i], p, q);
 		r += q;
-		std::cout << s << " + " << r << '\n';
+		std::cout << "stage " << i << " : " << a << " + " << b << " = " << p << " + " << q << " cumulative err: " << r << '\n';
 	}
+	s = p;
 }
 
-}  // namespace sw::function
+#else
+
+// twoSum generates the relationship a + b = s + r, where s is the sum, and r is the remainder, for any faithful number system
+// All arguments must be distinct variables, so for example you can't do this: twoSum(s, bprime, s, rprime) as s is being used as both input and output.
+template<typename Scalar>
+void twoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
+	s = a + b;
+	Scalar bdiff = s - a;
+	Scalar adiff = s - bdiff;
+	volatile Scalar aerr = a - adiff;
+	volatile Scalar berr = b - bdiff;
+	r = aerr + berr;
+}
+
+// cascadingSum generates a cumulative twoSum on a vector
+template<typename Vector, typename Scalar>
+void cascadingSum(const Vector& v, Scalar& s, Scalar& r) {
+	Scalar a, b, p, q;
+	size_t N = v.size();
+	p = v[0];
+	r = 0;
+	for (size_t i = 1; i < N; ++i) {
+		a = p;
+		b = v[i];
+		twoSum(a, v[i], p, q);
+		r += q;
+	}
+	s = p;
+}
+#endif
+
+}  // namespace sw::universal

@@ -8,8 +8,7 @@
 #include <type_traits>
 #include <universal/traits/posit_traits.hpp>
 
-namespace sw {
-namespace function {
+namespace sw::universal {
 
 #if (__cplusplus < 202002L)
 
@@ -19,16 +18,13 @@ namespace function {
 	}
 
 	template<typename Real>
-	// sw::unum::enable_if_posit<Real> // as return type, when not a posit it would be a void
-	Real
-	lerp(Real a, Real b) noexcept {
-		return (a + b) * Real(0.5);
+	Real lerp(Real a, Real b) noexcept {
+		return (a + b) * Real(0.5f);
 	}
 
 #else
 using std::lerp;
 #endif
 
-}  // namespace function
-}  // namespace sw
+}  // namespace sw::universal
 

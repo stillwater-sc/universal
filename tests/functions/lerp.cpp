@@ -45,7 +45,6 @@ void printSamples(std::ostream& ostr, std::vector<Real>& samples) {
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-	using namespace sw::function;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;

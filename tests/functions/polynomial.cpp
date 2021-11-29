@@ -10,7 +10,6 @@
 int main()
 try {
 	using namespace sw::universal;
-	using namespace sw::function;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
