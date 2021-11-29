@@ -30,7 +30,7 @@ try {
 		Posit step = ub / nrSamples;
 		Posit x = Posit(0); // minpos<nbits, es>();
 		for (unsigned i = 0; i <= nrSamples; ++i) {
-			std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << sw::function::logt(t, x) << '\n';
+			std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << logt(t, x) << '\n';
 			x += step;
 		}
 	}

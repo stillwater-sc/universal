@@ -4,8 +4,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-namespace sw {
-namespace function {
+namespace sw::universal {
 
 #if defined(__clang__)
 	/* Clang/LLVM. ---------------------------------------------- */
@@ -78,6 +77,5 @@ void ddpoly(const Scalar& x, const Vector& c, Vector& pd) {
 	}
 }
 
-}  // namespace function
-}  // namespace sw
+}  // namespace sw::universal
 
