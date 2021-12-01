@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "weather" "Applications/Weather Modeling" "${SOURCES}")
+compile_all("true" "weather" "Applications/Performance/Weather Modeling" "${SOURCES}")

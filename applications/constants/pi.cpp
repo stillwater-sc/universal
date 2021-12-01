@@ -1,4 +1,4 @@
-// arbitrary_precision_pi.cpp: generating a 'perfect' approximation of pi for a given number system
+// pi.cpp: generating a 'perfect' approximation of pi for a given number system
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
