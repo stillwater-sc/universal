@@ -8,7 +8,7 @@
 
 | **System** | **Status** | **More information** |
 |------------|------------|----------------------|
-| [Codeship](https://app.codeship.com/projects/123289)  | [![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)] | Docker container build |
+| [Codeship](https://app.codeship.com/projects/286490)  | ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master) | Docker container build |
 | [GitHub Actions](https://github.com/stillwater-sc/universal/actions) | [![Build Status](https://github.com/stillwater-sc/universal/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/stillwater-sc/universal) | Latest Linux/MacOS/Windows |
 
 The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point that are more efficient and mathematically robust.
