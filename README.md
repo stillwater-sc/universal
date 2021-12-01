@@ -6,6 +6,11 @@
 [ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)](https://app.codeship.com/projects/286490)
 [![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master)
 
+| **System** | **Status** | **More information** |
+|------------|------------|----------------------|
+| [Codeship](https://app.codeship.com/projects/123289)  | [ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)] | |
+| [GitHub Actions](https://github.com/stillwater-sc/universal/actions) | [![Build Status](https://github.com/stillwater-sc/universal/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/stillwater-sc/universal) | Latest Linux/MacOS/Windows |
+
 The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point that are more efficient and mathematically robust.
 
 The motivation to find improvements to IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound and computational scientists were looking for alternatives that provided more granularity in precision and dynamic range. Even though the inefficiency of IEEE floating-point had been measured and agreed upon in the HPC community, it was the commercial demands of Deep Learning that provided the incentive to replace IEEE-754 with alternatives, such as half-floats, and bfloats. These alternatives are tailored to the application and yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
@@ -15,7 +20,7 @@ The Universal library is a ready-to-use header-only library that provides plug-i
 The basic use pattern is as simple as:
 
 ```code
-#include <universal/number/posit/posit>
+#include <universal/number/posit/posit.hpp>
 
 template<typename Real>
 Real MyKernel(const Real& a, const Real& b) {
