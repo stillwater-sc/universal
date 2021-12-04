@@ -100,33 +100,6 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 	return scale;
 }
 
-#ifdef FIXPNT_SCALE_TRACKING
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-class FixpntScaleTracker : public scaleTracker {
-public:
-	FixpntScaleTracker(FixpntScaleTracker& fst) = delete; // can't be clonable
-	void operator=(const FixpntScaleTracker& fst) = delete; // can't be assignable
-
-	static FixpntScaleTracker* instance() {
-		if (pInstance == nullptr) {
-			constexpr fixpnt<nbits, rbits, arithmetic, bt> a(SpecificValue::minpos), b(SpecificValue::maxpos);
-			int lb = scale(a);
-			int ub = scale(b);
-			pInstance = new FixpntScaleTracker(lb, ub);
-		}
-		return pInstance;
-	}
-protected:
-	FixpntScaleTracker(int minScale, int maxScale) : scaleTracker(minScale, maxScale) {}
-	static FixpntScaleTracker* pInstance;
-};
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-static FixpntScaleTracker<nbits, rbits, arithmetic, bt>* pInstance = nullptr;
-
-#endif
-
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
 // The value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits.
 // For example, the encoding 0100.0100 is the value 01000100 with an implicit scaling of 2^4 = 16

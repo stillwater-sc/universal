@@ -36,12 +36,6 @@ void SqrtWorkload(size_t NR_OPS) {
 	if (a == c) std::cout << "amazing\n";
 }
 
-// type_tag for native types
-template<typename Float>
-std::string type_tag(Float v) {
-	return typeid(v).name();
-}
-
 template<typename Scalar>
 void Sqrt(double v) {
 	Scalar s{ v };
@@ -68,6 +62,7 @@ try {
 
 	std::cout << "high-precision constants\n";
 
+	using Doubl = double;
 	using Longd = long double;
 	using Fixed = fixpnt<80,75>;
 	using Posit = posit<64,2>;
@@ -85,10 +80,15 @@ try {
 
 //	Compare<Fixed>(2.0);
 
+	// MSVC doesn't support proper long double: this is guarded with a compile guard: LONG_DOUBLE_SUPPORT
 	{
 		std::cout << "sqrt(2)\n";
 		float f = 2.0f;
+#if LONG_DOUBLE_SUPPORT
 		std::cout << sqrt(Longd(f)) << " : " << type_tag(Longd()) << '\n';
+#else
+		std::cout << sqrt(Doubl(f)) << " : " << type_tag(Doubl()) << '\n';
+#endif
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}
@@ -96,7 +96,11 @@ try {
 	{
 		std::cout << "sqrt(3)\n";
 		float f = 3.0f;
+#if LONG_DOUBLE_SUPPORT
 		std::cout << sqrt(Longd(f)) << " : " << type_tag(Longd()) << '\n';
+#else
+		std::cout << sqrt(Doubl(f)) << " : " << type_tag(Doubl()) << '\n';
+#endif
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}
@@ -104,7 +108,11 @@ try {
 	{
 		std::cout << "sqrt(5)\n";
 		float f = 5.0f;
+#if LONG_DOUBLE_SUPPORT
 		std::cout << sqrt(Longd(f)) << " : " << type_tag(Longd()) << '\n';
+#else
+		std::cout << sqrt(Doubl(f)) << " : " << type_tag(Doubl()) << '\n';
+#endif
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}
@@ -112,7 +120,11 @@ try {
 	{
 		std::cout << "sqrt(7)\n";
 		float f = 7.0f;
+#if LONG_DOUBLE_SUPPORT
 		std::cout << sqrt(Longd(f)) << " : " << type_tag(Longd()) << '\n';
+#else
+		std::cout << sqrt(Doubl(f)) << " : " << type_tag(Doubl()) << '\n';
+#endif
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}

@@ -6,7 +6,7 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <random>
-#define FIXPNT_SCALE_TRACKING
+// #define FIXPNT_SCALE_TRACKING
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/utility/scale_tracker.hpp>
 
@@ -33,6 +33,38 @@ void GenerateRandomScales(int lowerbound = -8, int upperbound = 7)
 	s.report(std::cout);
 	s.clear();
 }
+
+#ifdef FIXPNT_SCALE_TRACKING
+
+namespace sw::universal {
+	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	class FixpntScaleTracker : public scaleTracker {
+	public:
+		FixpntScaleTracker(FixpntScaleTracker& fst) = delete; // can't be clonable
+		void operator=(const FixpntScaleTracker& fst) = delete; // can't be assignable
+
+		static FixpntScaleTracker* instance() {
+			if (pInstance == nullptr) {
+				constexpr fixpnt<nbits, rbits, arithmetic, bt> a(SpecificValue::minpos), b(SpecificValue::maxpos);
+				int lb = scale(a);
+				int ub = scale(b);
+				pInstance = new FixpntScaleTracker(lb, ub);
+			}
+			return pInstance;
+		}
+	public:
+		FixpntScaleTracker(int minScale, int maxScale) : scaleTracker(minScale, maxScale) {}
+		static FixpntScaleTracker* pInstance;
+	};
+
+	//template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	//static FixpntScaleTracker<nbits, rbits, arithmetic, bt>* pInstance = nullptr;
+
+	static FixpntScaleTracker<16, 8, sw::universal::Modulo, uint8_t>* pInstance = nullptr;
+}
+
+#endif
+
 
 int main()
 try {
@@ -76,6 +108,7 @@ try {
 		s.clear();
 	}
 
+#ifdef FIXPNT_SCALE_TRACKING
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t rbits =  8;
@@ -83,6 +116,7 @@ try {
 		FixpntScaleTracker<nbits, rbits, Modulo, uint8_t>* fst = FixpntScaleTracker<nbits, rbits, Modulo, uint8_t>::instance();
 		fst->report(std::cout);
 	}
+#endif
 
 	return EXIT_SUCCESS;
 }
