@@ -10,21 +10,22 @@
 #include <cmath>
 #include <complex>
 
+#include <universal/native/ieee754.hpp>
+
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/fixpnt/fixpnt.hpp>
-/*
-#include <universal/number/areal/areal.hpp>
+
 // Configure the cfloat template environment
 // first: enable general or specialized cfloat configurations
 #define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/cfloat/cfloat>
-*/
+#include <universal/number/cfloat/cfloat.hpp>
+
 // Configure the posit template environment
 // first: enable general or specialized posit configurations
 //#define POSIT_FAST_SPECIALIZATION
@@ -35,15 +36,16 @@
 
 
 template<typename Scalar>
-void TestComplexConjugate() 
-{
+void TestComplexConjugate(float r = 0.25f, float i = 0.5f) {
 	constexpr bool nibbleMarker = true;
-	std::complex<Scalar> c(0.25, 0.5);
-	std::complex<Scalar> cconj(0.25, -0.5);
+	std::cout << "TestComplexConjugate for type " << sw::universal::type_tag<Scalar, Scalar>() << '\n';
+	std::complex<Scalar> c(r, i);
+	std::complex<Scalar> cconj(r, -i);
 	std::cout << sw::universal::to_binary(c, nibbleMarker) << " : " << c << '\n';
 	std::cout << sw::universal::to_binary(cconj, nibbleMarker) << " : " << cconj << '\n';
 	std::complex<Scalar> product = c * cconj;
-	std::cout << "(0.25+0.5i)*(0.25-0.5i) = " << sw::universal::to_binary(product, nibbleMarker) << " : " << product << '\n';
+	std::cout << '(' << r << '+' << i << ")*(" << r << '-' << i << ") = " << sw::universal::to_binary(product, nibbleMarker) << " : " << product << '\n';
+	std::cout << "----\n";
 }
 
 namespace special {
@@ -105,23 +107,15 @@ namespace special {
 
 	/////////////////////////////////            CFLOAT          ////////////////////////////////////////////////   
 	
-	/*
 	template<size_t nbits, size_t es, typename BlockType>
-	bool isnan(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x) {
-		return (isnan(x.real()) || isnan(x.imag()));
-	}
+	bool isnan(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x) { return (isnan(x.real()) || isnan(x.imag())); }
 	template<size_t nbits, size_t es, typename BlockType>
-	bool isinf(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x) {
-		return (isinf(x.real()) || isinf(x.imag()));
-	}
+	bool isinf(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x) { return (isinf(x.real()) || isinf(x.imag())); }
 	template<size_t nbits, size_t es, typename BlockType>
-	std::complex<sw::universal::cfloat<nbits, es, BlockType> >
-	copysign(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x, 
-		 std::complex<sw::universal::cfloat<nbits, es, BlockType> > y) {
-		return std::complex<sw::universal::cfloat<nbits, es, BlockType> >
-			(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
+	std::complex<sw::universal::cfloat<nbits, es, BlockType> > copysign(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x, 
+		std::complex<sw::universal::cfloat<nbits, es, BlockType> > y) {
+		return std::complex<sw::universal::cfloat<nbits, es, BlockType> > (copysign(x.real(), y.real()), copysign(x.real(), y.real()));
 	}
-	*/
 
 	/////////////////////////////////            POSIT           ////////////////////////////////////////////////   
 	bool isnan(std::complex<sw::universal::posit<2, 0>> x) { return (isnan(x.real()) || isnan(x.imag())); }
@@ -169,32 +163,22 @@ namespace special {
 	std::complex<sw::universal::posit<256, 5>> copysign(std::complex<sw::universal::posit<256, 5>> x, std::complex<sw::universal::posit<256, 5>> y) { return std::complex<sw::universal::posit<256, 5>>(copysign(x.real(), y.real()), copysign(x.real(), y.real())); }
 }
 
-// conditional compilation
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
 int main() 
 try {
-	using namespace std; // needed for the imagenary literals
+	using namespace std; // needed for the imaginary literals
 	using namespace sw::universal;
 
-#if MANUAL_TESTING
+	{
+		// check if imaginary literals compile
+		std::complex<double> c = 0.25 + 0.5i;
+		std::cout << "complex variable: " << c << '\n';
+	}
 
-	std::complex<double> c = 0.25 + 0.5i;
-	std::cout << "complex variable: " << c << '\n';
-
+	std::cout << "----\ntesting complex conjugate operations for different number types\n";
 	TestComplexConjugate<float>();
-//	TestComplexConjugate<fixpnt<4, 3> >();
-	TestComplexConjugate<posit<8, 0> >();
-
-#else // MANUAL_TESTING
-
-
-#if STRESS_TESTING
-
-#endif // STRESS_TESTING
-#endif // MANUAL_TESTING
-
+	TestComplexConjugate<fixpnt<8, 4> >();
+	TestComplexConjugate<cfloat<8, 3> >();  // <-- at this small a float you need subnormals when es < 3 to represent 0.25
+	TestComplexConjugate<posit<8, 2> >();
 
 	return EXIT_SUCCESS;
 }

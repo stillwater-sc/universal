@@ -757,6 +757,7 @@ add_subdirectory("applications/roots")
 add_subdirectory("applications/science")
 add_subdirectory("applications/sequences")
 add_subdirectory("applications/stl")
+add_subdirectory("applications/stream")
 add_subdirectory("applications/weather")
 endif(BUILD_APPLICATIONS)
 

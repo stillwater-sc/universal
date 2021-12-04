@@ -39,6 +39,9 @@ You need the exception types defined, but you have the option to throw them
 // composition types used by fixpnt
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/number/support/decimal.hpp>
+#ifdef FIXPNT_SCALE_TRACKING
+#include <universal/utility/scale_tracker.hpp>
+#endif
 
 namespace sw::universal {
 
@@ -81,20 +84,48 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 	if (i.sign()) { // special case handling
 		v = twosComplement(v);
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
-			return long(nbits - rbits);
+			return long(nbits - rbits - 1);
 		}
 	}
 	// calculate scale
 	long scale = 0;
-	if constexpr (nbits > rbits + 1) {  // subtle bug: in fixpnt numbers with only 1 bit before the radix point, '1' is maxneg, and thus while (v > 1) never completes
-		v >>= rbits;
-		while (v > 1) {
-			++scale;
-			v >>= 1;
+	if (!v.iszero()) {
+		for (int bitIndex = nbits - 2; bitIndex >= 0; --bitIndex) {
+			if (v.test(bitIndex)) {
+				scale = bitIndex - rbits;
+				break;
+			}
 		}
 	}
 	return scale;
 }
+
+#ifdef FIXPNT_SCALE_TRACKING
+
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+class FixpntScaleTracker : public scaleTracker {
+public:
+	FixpntScaleTracker(FixpntScaleTracker& fst) = delete; // can't be clonable
+	void operator=(const FixpntScaleTracker& fst) = delete; // can't be assignable
+
+	static FixpntScaleTracker* instance() {
+		if (pInstance == nullptr) {
+			constexpr fixpnt<nbits, rbits, arithmetic, bt> a(SpecificValue::minpos), b(SpecificValue::maxpos);
+			int lb = scale(a);
+			int ub = scale(b);
+			pInstance = new FixpntScaleTracker(lb, ub);
+		}
+		return pInstance;
+	}
+protected:
+	FixpntScaleTracker(int minScale, int maxScale) : scaleTracker(minScale, maxScale) {}
+	static FixpntScaleTracker* pInstance;
+};
+
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+static FixpntScaleTracker<nbits, rbits, arithmetic, bt>* pInstance = nullptr;
+
+#endif
 
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
 // The value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits.
@@ -166,29 +197,6 @@ public:
 	// assignment operator for blockbinary type
 	template<size_t nnbits, typename Bbt>
 	constexpr fixpnt& operator=(const blockbinary<nnbits, Bbt>& rhs) { bb = rhs; return *this; }
-
-#ifdef DEPRECATED
-	// conversion operator between different fixed point formats with the same rbits
-	template<size_t src_bits>
-	fixpnt& operator=(const fixpnt<src_bits, rbits, arithmetic, bt>& src) {
-		if (src_bits <= nbits) {
-			// simple copy of the bytes
-			for (unsigned i = 0; i < unsigned(src.nrBlocks); ++i) {
-				bb[i] = src.block(i);
-			}
-			if (src < 0) {
-				// we need to sign extent
-				for (unsigned i = nbits; i < unsigned(src_bits); ++i) {
-					this->set(i, true);
-				}
-			}
-		}
-		else {
-			throw "to be implemented";
-		}
-		return *this;
-	}
-#endif
 
 	// fixpnt size adapter
 	template<size_t src_nbits, size_t src_rbits>
@@ -433,7 +441,7 @@ public:
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) throw fixpnt_divide_by_zero();
 #else
-		std::cerr << "fixpnt_divide_by_zero" << std::endl;
+		if (rhs.iszero()) std::cerr << "fixpnt_divide_by_zero" << std::endl;
 #endif
 		if constexpr (arithmetic == Modulo) {
 			bool positive = (ispos() & rhs.ispos()) | (isneg() & rhs.isneg());  // XNOR
@@ -461,7 +469,7 @@ public:
 			this->bb = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
-			std::cerr << "saturating divide not implemented yet\n";
+			std::cerr << "TBD: saturating divide not implemented yet\n";
 		}
 		return *this;
 	}

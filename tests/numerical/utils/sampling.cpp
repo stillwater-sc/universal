@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <universal/native/ieee754.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
@@ -72,7 +73,7 @@ void Sample(CfloatConfiguration start, CfloatConfiguration stop, Real sample) {
 	}
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
