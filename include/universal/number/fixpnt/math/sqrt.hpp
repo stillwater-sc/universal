@@ -133,9 +133,9 @@ namespace sw::universal {
 			y = a / x;
 			diff = x - y;
 //			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
-			if (++iterations > rbits) break;
+			if (++iterations > static_cast<int>(rbits)) break;
 		}
-		if (iterations > rbits) std::cerr << "sqrt(" << double(a) << ") failed to converge\n";
+		if (iterations > static_cast<int>(rbits)) std::cerr << "sqrt(" << double(a) << ") failed to converge\n";
 		return x;
 	}
 #else
