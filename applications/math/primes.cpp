@@ -21,7 +21,7 @@ try {
 	constexpr size_t nbits = 1024;
 	using BlockType = uint32_t;
 	using Integer = integer<nbits, BlockType>;
-	Integer a, b, c;
+	Integer a, b;
 	std::vector<Integer> v;
 
 #if MANUAL_TESTING

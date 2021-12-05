@@ -24,7 +24,7 @@
 #define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/cfloat/cfloat.hpp>
+//#include <universal/number/cfloat/cfloat.hpp>
 
 // Configure the posit template environment
 // first: enable general or specialized posit configurations
@@ -107,15 +107,30 @@ namespace special {
 
 	/////////////////////////////////            CFLOAT          ////////////////////////////////////////////////   
 	
-	template<size_t nbits, size_t es, typename BlockType>
-	bool isnan(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x) { return (isnan(x.real()) || isnan(x.imag())); }
-	template<size_t nbits, size_t es, typename BlockType>
-	bool isinf(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x) { return (isinf(x.real()) || isinf(x.imag())); }
-	template<size_t nbits, size_t es, typename BlockType>
-	std::complex<sw::universal::cfloat<nbits, es, BlockType> > copysign(std::complex<sw::universal::cfloat<nbits, es, BlockType> > x, 
-		std::complex<sw::universal::cfloat<nbits, es, BlockType> > y) {
-		return std::complex<sw::universal::cfloat<nbits, es, BlockType> > (copysign(x.real(), y.real()), copysign(x.real(), y.real()));
+/*  disabling for clang as it is assuming an IEEE-754 type
+/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/include/c++/v1/complex:636:23: error: no matching function for call to 'copysign'
+                __d = copysign(_Tp(0), __d);
+                      ^~~~~~~~
+/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/include/math.h:512:15: note: candidate function not viable: no known conversion from 'sw::universal::cfloat<8, 3, unsigned char, false, false, false>' to 'double' for 1st argument
+extern double copysign(double, double);
+              ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/include/c++/v1/math.h:1102:40: note: candidate function not viable: no known conversion from 'sw::universal::cfloat<8, 3, unsigned char, false, false, false>' to 'float' for 1st argument
+inline _LIBCPP_INLINE_VISIBILITY float copysign(float __lcpp_x,
+                                       ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/include/c++/v1/math.h:1107:1: note: candidate function not viable: no known conversion from 'sw::universal::cfloat<8, 3, unsigned char, false, false, false>' to 'long double' for 1st argument
+copysign(long double __lcpp_x, long double __lcpp_y) _NOEXCEPT {
+
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+	bool isnan(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) { return (isnan(x.real()) || isnan(x.imag())); }
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+	bool isinf(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) { return (isinf(x.real()) || isinf(x.imag())); }
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+	std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > copysign(std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x, 
+		std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > y) {
+		return std::complex<sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > (copysign(x.real(), y.real()), copysign(x.real(), y.real()));
 	}
+
+*/
 
 	/////////////////////////////////            POSIT           ////////////////////////////////////////////////   
 	bool isnan(std::complex<sw::universal::posit<2, 0>> x) { return (isnan(x.real()) || isnan(x.imag())); }
@@ -177,7 +192,7 @@ try {
 	std::cout << "----\ntesting complex conjugate operations for different number types\n";
 	TestComplexConjugate<float>();
 	TestComplexConjugate<fixpnt<8, 4> >();
-	TestComplexConjugate<cfloat<8, 3> >();  // <-- at this small a float you need subnormals when es < 3 to represent 0.25
+	//TestComplexConjugate<cfloat<8, 3> >();  // <-- at this small a float you need subnormals when es < 3 to represent 0.25
 	TestComplexConjugate<posit<8, 2> >();
 
 	return EXIT_SUCCESS;

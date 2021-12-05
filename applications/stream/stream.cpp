@@ -183,7 +183,7 @@ try {
 
 	std::string test_suite  = "STREAM performance measurement";
 	std::string test_tag    = "stream";
-	bool reportTestCases    = true;
+	//bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';

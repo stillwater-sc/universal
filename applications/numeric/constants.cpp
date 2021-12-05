@@ -62,13 +62,13 @@ try {
 
 	std::cout << "high-precision constants\n";
 
-	using Doubl = double;
+	//using Doubl = double;
 	using Longd = long double;
 	using Fixed = fixpnt<80,75>;
 	using Posit = posit<64,2>;
-	using Float = cfloat<128, 15, uint32_t>;
-	using Areal = areal<128, 15,uint32_t>;
-	using Lns   = lns<128, uint32_t>;
+	//using Float = cfloat<128, 15, uint32_t>;
+	//using Areal = areal<128, 15,uint32_t>;
+	//using Lns   = lns<128, uint32_t>;
 
 
 	std::streamsize precision = std::cout.precision();

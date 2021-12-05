@@ -96,7 +96,6 @@ void SquareRootSquared(std::ostream& ostr) {
 		c12_2 v12(v);
 		c14_2 v14(v);
 		c16_2 v16(v);
-		c16_2 w, z;
 		ostr << std::setw(COLUMN_WIDTH) << x << ','
 			<< std::setw(COLUMN_WIDTH) << v8 << ','
 			<< std::setw(COLUMN_WIDTH) << pow(pow(v8, 0.5), 2.0) << ','
