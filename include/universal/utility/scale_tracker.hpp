@@ -31,7 +31,7 @@ public:
 				++overflows;
 			}
 			else {
-				int index = scale - minScale;
+				size_t index = static_cast<int64_t>(scale) - static_cast<int64_t>(minScale);
 				scales[index] += 1;
 			}
 		}

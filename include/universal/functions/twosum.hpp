@@ -44,13 +44,12 @@ void twoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
 
 template<typename Scalar>
 void cascadingSum(const std::vector<Scalar>& v, Scalar& s, Scalar& r) {
-	Scalar a, b, p, q;
+	Scalar a, p, q;
 	size_t N = v.size();
 	p = v[0];
 	r = 0;
 	for (size_t i = 1; i < N; ++i) {
 		a = p;
-		b = v[i];
 		twoSum(a, v[i], p, q);
 		r += q;
 		std::cout << "stage " << i << " : " << a << " + " << b << " = " << p << " + " << q << " cumulative err: " << r << '\n';
@@ -75,13 +74,12 @@ void twoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
 // cascadingSum generates a cumulative twoSum on a vector
 template<typename Vector, typename Scalar>
 void cascadingSum(const Vector& v, Scalar& s, Scalar& r) {
-	Scalar a, b, p, q;
+	Scalar a, p, q;
 	size_t N = v.size();
 	p = v[0];
 	r = 0;
 	for (size_t i = 1; i < N; ++i) {
 		a = p;
-		b = v[i];
 		twoSum(a, v[i], p, q);
 		r += q;
 	}

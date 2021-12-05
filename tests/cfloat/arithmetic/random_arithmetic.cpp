@@ -12,37 +12,50 @@
 #include <universal/verification/test_suite_random.hpp>
 
 template<typename Cfloat>
-int Randoms(bool bReportIndividualTestCases, const std::string& tag, size_t nrTests) 
+int Randoms(bool reportTestCases, const std::string& test_tag, size_t nrTests) 
 {
 	using namespace sw::universal;
 
 	int fails{ 0 };
 	std::stringstream s;
-	s << tag << ' ' << nrTests;
-	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(bReportIndividualTestCases, OPCODE_ADD, nrTests), s.str(), "addition      ");
-	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(bReportIndividualTestCases, OPCODE_SUB, nrTests), s.str(), "subtraction   ");
-//	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(bReportIndividualTestCases, OPCODE_MUL, nrTests), s.str(), "multiplication");
-//	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(bReportIndividualTestCases, OPCODE_DIV, nrTests), s.str(), "division      ");
+	s << test_tag << ' ' << nrTests;
+	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, OPCODE_ADD, nrTests), s.str(), "addition      ");
+	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, OPCODE_SUB, nrTests), s.str(), "subtraction   ");
+//	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, OPCODE_MUL, nrTests), s.str(), "multiplication");
+//	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, OPCODE_DIV, nrTests), s.str(), "division      ");
 	return fails;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
-
+	std::string test_suite  = "Random test generation for large classic floatint-point configurations";
+	std::string test_tag    = "randoms";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
-	std::string tag = "randoms";
 
-	std::cout << "Random test generation for large classic floatint-point configurations\n";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
-	// bool bReportIndividualTestCases = true;
+	// bool reportTestCases = true;
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = true;
@@ -50,7 +63,7 @@ try {
 
 	{
 		using Cfloat = cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-//		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 1000);
+//		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000);
 		/*
 		FAIL - 1.439613800092129973e+30 + -4.6796573332097633664e+38 != -4.6796573332097633664e+38 golden reference is - 3.4028236692093846346e+38
 			result 0b1.11111111.01100000000011101110110 vs ref 0b1.11111111.00000000000000000000000
@@ -73,7 +86,7 @@ try {
 
 	{
 		using Cfloat = cfloat<40, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-//		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 10);
+//		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 10);
 
 	/*
 FAIL -0.021134873604751192033 +         407433878912 != 15.431546136736869812 golden reference is         407433878912
@@ -94,42 +107,63 @@ FAIL -0.021134873604751192033 +         407433878912 != 15.431546136736869812 go
 
 		std::cout << to_binary(c) << '\n' << to_binary(dc) << '\n' << to_binary(float(dc)) << '\n';
 	}
-	nrOfFailedTestCases = 0; // manual testing ignores any test failures
 
-#else // !MANUAL_TESTING
+	{
+		using Cfloat = cfloat<16, 5, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
+		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 100);
+	}
 
-	bool bReportIndividualTestCases = false;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
+
+#else
+
+#if REGRESSION_LEVEL_1
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = true;
 
 	{
 		using Cfloat = cfloat<16, 5, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 1000000);
+		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
 		using Cfloat = cfloat<16, 7, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 1000000);
+		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
 		using Cfloat = cfloat<16, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 1000000);
+		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
 		using Cfloat = cfloat<20, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 1000000);
+		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
 		using Cfloat = cfloat<24, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 1000000);
+		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 	{
 		using Cfloat = cfloat<28, 8, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		nrOfFailedTestCases += Randoms<Cfloat>(bReportIndividualTestCases, tag, 1000000);
+		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000000);
 	}
 #endif
 
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

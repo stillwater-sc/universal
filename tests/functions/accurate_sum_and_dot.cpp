@@ -3,6 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <limits>
 #include <vector>
 #include <universal/native/ieee754.hpp>
@@ -20,7 +22,7 @@ int DemonstrateCascadeSum()
 	for (size_t i = 2; i < N; ++i) {
 		v[i] = 1.0f + std::numeric_limits<Real>::epsilon();
 	}
-	int i = 0;
+	size_t i = 0;
 	for (Real e : v) {
 		std::cout << "v[" << i++ << "] = " << e << '\n';
 	}

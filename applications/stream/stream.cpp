@@ -31,8 +31,8 @@
 #include <universal/number/posit/posit.hpp>
 
 #include <universal/verification/performance_runner.hpp>
-
-
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 template<typename Scalar>
 void Copy(std::vector<Scalar>& c, const std::vector<Scalar>& a, size_t start, size_t end) {
@@ -79,23 +79,21 @@ void Reset(std::vector<Scalar>& v, Scalar resetValue) {
 }
 
 template<typename Scalar>
-void Sweep() {
+void Sweep(size_t startSample = 13, size_t endSample = 28) {
 	using namespace std;
 	using namespace std::chrono;
 	constexpr double pi = 3.14159265358979323846;
 	Scalar alpha(pi);
 
 	// create storage
-	constexpr size_t leftShift = 28;
-	constexpr size_t SIZE = (1ull << leftShift);
+	size_t leftShift = endSample;
+	size_t SIZE = (1ull << leftShift);
 	std::vector<Scalar> a(SIZE), b(SIZE), c(SIZE);
 	for (size_t i = 0; i < SIZE; ++i) {
 		a[i] = Scalar(1.0f);
 		b[i] = Scalar(0.5f);
 		c[i] = Scalar(0.0f);
 	}
-	size_t startSample = 13;
-	size_t endSample = leftShift - 2;
 
 	// benchmark different vector sizes
 	for (size_t i = startSample; i < endSample; ++i) {
@@ -163,18 +161,61 @@ void Sweep() {
 	}
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
+
 int main() 
 try {
 	using namespace sw::universal;
 
-	// generate the STREAM performance results
+	std::string test_suite  = "STREAM performance measurement";
+	std::string test_tag    = "stream";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
 
-	// COPY
-	// size  perf (operands/sec)
+	std::cout << test_suite << '\n';
+
+#if MANUAL_TESTING
 	Sweep<float>();
 	Sweep < fixpnt<8, 4> >();
 
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
+
+#else
+
+#if REGRESSION_LEVEL_1
+	Sweep<float>(13, 15);
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
