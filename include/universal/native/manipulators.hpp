@@ -12,22 +12,22 @@ namespace sw::universal {
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 	>
 	std::string type_tag(const Real f) {
-		constexpr size_t nbits = ieee754_parameter<Real>::nbits;
+		constexpr size_t nrBytes = sizeof(f);
 		std::string realType;
-		switch (nbits) {
-		case 16:
+		switch (nrBytes) {
+		case 2:
 			realType = "half";
 			break;
-		case 32:
+		case 4:
 			realType = "float";
 			break;
-		case 64:
+		case 8:
 			realType = "double";
 			break;
-		case 80:
+		case 10:
 			realType = "extended precision";
 			break;
-		case 128:
+		case 16:
 			realType = "quad";
 			break;
 		default:
