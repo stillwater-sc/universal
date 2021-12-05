@@ -2414,12 +2414,23 @@ protected:
 	constexpr cfloat& convert_unsigned_integer(const Ty& rhs) noexcept {
 		clear();
 		if (0 == rhs) return *this;
-		uint64_t raw = static_cast<uint64_t>(rhs);
-		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - exponent - 1;
-		raw <<= shift;
-		raw = round<sizeInBits, uint64_t>(raw, exponent);
+		int scale = int(findMostSignificantBit(rhs)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		if constexpr (fbits < 64) {
+			uint64_t raw = static_cast<uint64_t>(rhs);
+			constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
+			uint32_t shift = sizeInBits - scale - 1;
+			raw <<= shift;
+			raw = round<sizeInBits, uint64_t>(raw, scale);
+		}
+		else {
+			// all the bits can be received
+			size_t mask = ~(1ull << scale);
+			uint64_t raw = mask & rhs; // remove the msb
+			setbits(raw);
+			shiftLeft(static_cast<int>(fbits - scale)); // shift the bits in place
+			setexponent(scale); // add the exponent segment
+		}
+;
 		return *this;
 	}
 	// convert a signed integer into a cfloat

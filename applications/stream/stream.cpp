@@ -198,18 +198,19 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	Sweep<float>(13, 15);
+	Sweep<float>(10, 15);
 #endif
 
 #if REGRESSION_LEVEL_2
-
+	Sweep<float>(12, 18);
 #endif
 
 #if REGRESSION_LEVEL_3
-
+	Sweep<float>(13, 22);
 #endif
 
 #if REGRESSION_LEVEL_4
+	Sweep<float>(10, 28);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

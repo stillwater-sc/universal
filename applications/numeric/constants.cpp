@@ -28,9 +28,11 @@
 template<typename Scalar>
 void SqrtWorkload(size_t NR_OPS) {
 	Scalar a{ 0 }, c{ 0 };
-	size_t maxpos = (1ull << (Scalar::nbits - Scalar::rbits - 1));
+	Scalar maxpos(sw::universal::SpecificValue::maxpos);
+	size_t maxval = 1024*1024*1024;
 	for (size_t i = 0; i < NR_OPS; ++i) {
-		a = (i % maxpos);
+		a = (i % maxval);
+		a = (a < 0 ? -a : a);
 		c = sw::universal::sqrt(a);
 	}
 	if (a == c) std::cout << "amazing\n";
@@ -64,24 +66,27 @@ try {
 
 #if LONG_DOUBLE_SUPPORT
 	using Native = long double;
+	std::string native = "long double";
 #else
 	using Native = double;
+	std::string native = "double";
+
 #endif
 	using Fixed = fixpnt<80,75>;
 	using Posit = posit<64,2>;
-	//using Float = cfloat<128, 15, uint32_t>;
+	using Float = cfloat<128, 15, uint32_t>;
 	//using Areal = areal<128, 15,uint32_t>;
 	//using Lns   = lns<128, uint32_t>;
 
-
 	std::streamsize precision = std::cout.precision();
 	std::cout << std::setprecision(std::numeric_limits<Native>::max_digits10);
-	std::cout << "long double digits of precision : " << std::numeric_limits<Native>::max_digits10 << '\n';
+	std::cout << native << " digits of precision : " << std::numeric_limits<Native>::max_digits10 << '\n';
 
 	constexpr size_t NR_OPS = 1024;
 	PerformanceRunner(type_tag(Fixed()) + "::sqrt ", SqrtWorkload< Fixed >, NR_OPS);
+	PerformanceRunner(type_tag(Float()) + "::sqrt ", SqrtWorkload< Float >, NR_OPS);
 
-//	Compare<Fixed>(2.0);
+	Compare<Fixed>(2.0);
 
 	// MSVC doesn't support proper long double: this is guarded with a compile guard: LONG_DOUBLE_SUPPORT
 	{

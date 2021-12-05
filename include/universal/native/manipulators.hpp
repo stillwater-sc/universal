@@ -14,6 +14,7 @@ namespace sw::universal {
 	std::string type_tag(const Real f) {
 		std::stringstream s;
 		s << typeid(Real).name();
+		if (f == 0.0) s << ' '; // to get rid of unreferenced formal parameter warning
 		return s.str();
 	}
 

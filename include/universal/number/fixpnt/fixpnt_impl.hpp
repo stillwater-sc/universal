@@ -291,7 +291,14 @@ public:
 #endif
 
 	// prefix operators
-	constexpr fixpnt operator-() const { return sw::universal::twosComplement(*this); }
+	constexpr fixpnt operator-() const {
+		fixpnt a = sw::universal::twosComplement(*this);
+		constexpr fixpnt maxnegative(SpecificValue::maxneg);
+		if (a == maxnegative) {
+			a.flip(); // approximate but closed to negated value
+		}
+		return a; 
+	}
 	// one's complement
 	constexpr fixpnt operator~() const { 
 		fixpnt complement(*this);
