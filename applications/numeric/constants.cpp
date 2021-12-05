@@ -62,8 +62,11 @@ try {
 
 	std::cout << "high-precision constants\n";
 
-	//using Doubl = double;
-	using Longd = long double;
+#if LONG_DOUBLE_SUPPORT
+	using Native = long double;
+#else
+	using Native = double;
+#endif
 	using Fixed = fixpnt<80,75>;
 	using Posit = posit<64,2>;
 	//using Float = cfloat<128, 15, uint32_t>;
@@ -72,8 +75,8 @@ try {
 
 
 	std::streamsize precision = std::cout.precision();
-	std::cout << std::setprecision(std::numeric_limits<Longd>::max_digits10);
-	std::cout << "long double digits of precision : " << std::numeric_limits<Longd>::max_digits10 << '\n';
+	std::cout << std::setprecision(std::numeric_limits<Native>::max_digits10);
+	std::cout << "long double digits of precision : " << std::numeric_limits<Native>::max_digits10 << '\n';
 
 	constexpr size_t NR_OPS = 1024;
 	PerformanceRunner(type_tag(Fixed()) + "::sqrt ", SqrtWorkload< Fixed >, NR_OPS);
@@ -84,11 +87,7 @@ try {
 	{
 		std::cout << "sqrt(2)\n";
 		float f = 2.0f;
-#if LONG_DOUBLE_SUPPORT
-		std::cout << sqrt(Longd(f)) << " : " << type_tag(Longd()) << '\n';
-#else
-		std::cout << sqrt(Doubl(f)) << " : " << type_tag(Doubl()) << '\n';
-#endif
+		std::cout << sqrt(Native(f)) << " : " << type_tag(Native()) << '\n';
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}
@@ -96,11 +95,7 @@ try {
 	{
 		std::cout << "sqrt(3)\n";
 		float f = 3.0f;
-#if LONG_DOUBLE_SUPPORT
-		std::cout << sqrt(Longd(f)) << " : " << type_tag(Longd()) << '\n';
-#else
-		std::cout << sqrt(Doubl(f)) << " : " << type_tag(Doubl()) << '\n';
-#endif
+		std::cout << sqrt(Native(f)) << " : " << type_tag(Native()) << '\n';
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}
@@ -108,11 +103,7 @@ try {
 	{
 		std::cout << "sqrt(5)\n";
 		float f = 5.0f;
-#if LONG_DOUBLE_SUPPORT
-		std::cout << sqrt(Longd(f)) << " : " << type_tag(Longd()) << '\n';
-#else
-		std::cout << sqrt(Doubl(f)) << " : " << type_tag(Doubl()) << '\n';
-#endif
+		std::cout << sqrt(Native(f)) << " : " << type_tag(Native()) << '\n';
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}
@@ -120,11 +111,7 @@ try {
 	{
 		std::cout << "sqrt(7)\n";
 		float f = 7.0f;
-#if LONG_DOUBLE_SUPPORT
-		std::cout << sqrt(Longd(f)) << " : " << type_tag(Longd()) << '\n';
-#else
-		std::cout << sqrt(Doubl(f)) << " : " << type_tag(Doubl()) << '\n';
-#endif
+		std::cout << sqrt(Native(f)) << " : " << type_tag(Native()) << '\n';
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 	}
