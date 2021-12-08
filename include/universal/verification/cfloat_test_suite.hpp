@@ -688,49 +688,105 @@ namespace sw::universal {
 		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
 		BlockTripleConfiguration b;
 		std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << ", smallest scale = " << minposScale << ", largest scale = " << maxposScale << '\n';
-		for (int scale = minposScale; scale <= maxposScale; ++scale) {
-			// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
-			// if MUL, patterns is  ii.fffff, without  00.fffff
-			// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
-			size_t fractionBits{ 0 };
-			size_t integerSet{ 0 };
-			if constexpr (op == BlockTripleOperator::ADD) {
-				fractionBits = fbits; // make it explicit for ease of understanding
-				integerSet = 4;
+		// test the special cases first
+		b.setbits(0x0ull); // propagate the proper radix position to the blocktriple significant
+		// the quiet and signalling nan
+		for (int sign = 0; sign < 2; ++sign) {
+			b.setnan(sign == 1);
+			convert(b, nut);
+			a = double(b);
+			if (a != nut) {
+				++nrOfTestFailures;
+				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 			}
-			if constexpr (op == BlockTripleOperator::MUL) {
-				fractionBits = 2 * fbits;
-				integerSet = 4;
-			}
-			size_t NR_VALUES = (1ull << fractionBits);
-			b.setscale(scale);
-			for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
-				size_t integerBits = i * NR_VALUES;
-				for (size_t f = 0; f < NR_VALUES; ++f) {
-					b.setbits(integerBits + f);
-
-					//					std::cout << "blocktriple: " << to_binary(b) << " : " << b << '\n';
-
-					convert(b, nut);
-
-					// get the reference by marshalling the blocktriple value through a double value and assigning it to the cfloat
-					a = double(b);
-					if (a != nut) {
-						//						std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
-
-						if (a.isnan() && b.isnan()) continue;
-						if (a.isinf() && b.isinf()) continue;
-
-						++nrOfTestFailures;
-						if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
-					}
-					else {
+			else {
 #ifndef VERBOSE_POSITIVITY
-						if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+				if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
 #endif
+			}
+		}
+		// plus and minus infinity
+		for (int sign = 0; sign < 2; ++sign) {
+			b.setinf(sign == 1);
+			convert(b, nut);
+			a = double(b);
+			if (a != nut) {
+				++nrOfTestFailures;
+				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
+			}
+			else {
+#ifndef VERBOSE_POSITIVITY
+				if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+#endif
+			}
+		}
+		// plus and minus zero
+		for (int sign = 0; sign < 2; ++sign) {
+			b.setzero(sign == 1);
+			convert(b, nut);
+			a = double(b);
+			if (a != nut) {
+				++nrOfTestFailures;
+				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
+			}
+			else {
+#ifndef VERBOSE_POSITIVITY
+				if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+#endif
+			}
+		}
+
+		// non-special cases of values that need to be mapped to encodings
+		b.setnan(false);
+		b.setinf(false);
+		b.setzero(false);
+		for (int sign = 0; sign < 2; ++sign) {
+			b.setsign(sign);
+			for (int scale = minposScale; scale <= maxposScale; ++scale) {
+				// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
+				// if MUL, patterns is  ii.fffff, without  00.fffff
+				// blocktriples are normal or overflown, so we need to enumerate 2^2 * 2^fbits cases
+				size_t fractionBits{ 0 };
+				size_t integerSet{ 0 };
+				if constexpr (op == BlockTripleOperator::ADD) {
+					fractionBits = fbits; // make it explicit for ease of understanding
+					integerSet = 4;
+				}
+				if constexpr (op == BlockTripleOperator::MUL) {
+					fractionBits = 2 * fbits;
+					integerSet = 4;
+				}
+				size_t NR_VALUES = (1ull << fractionBits);
+				b.setscale(scale);
+				for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
+					size_t integerBits = i * NR_VALUES;
+					for (size_t f = 0; f < NR_VALUES; ++f) {
+						b.setbits(integerBits + f);
+
+						//					std::cout << "blocktriple: " << to_binary(b) << " : " << b << '\n';
+
+						convert(b, nut);
+
+						// get the reference by marshalling the blocktriple value through a double value and assigning it to the cfloat
+						a = double(b);
+						if (a != nut) {
+							//						std::cout << "blocktriple: " << to_binary(b) << " : " << b << " vs " << to_binary(nut) << " : " << nut << '\n';
+
+							if (a.isnan() && b.isnan()) continue;
+							if (a.isinf() && b.isinf()) continue;
+
+							++nrOfTestFailures;
+							if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
+						}
+						else {
+#ifndef VERBOSE_POSITIVITY
+							if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
+#endif
+						}
 					}
 				}
 			}
+
 		}
 		return nrOfTestFailures;
 	}

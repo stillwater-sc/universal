@@ -720,17 +720,6 @@ template<size_t nbits, typename bt, BitEncoding encoding>
 std::string to_binary(const blockfraction<nbits, bt, encoding>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
-#ifdef DEPRECATED
-	int i = nbits - 1;
-	s << (number.at(size_t(i--)) ? '1' : '0'); // sign indicator of 2's complement
-	s << (number.at(size_t(i--)) ? '1' : '0'); // overflow indicator to trigger right shift
-	s << (number.at(size_t(i--)) ? '1' : '0'); // the hidden bit
-	s << '.';
-	for (; i >= 0; --i) {
-		s << (number.at(size_t(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-	}
-#endif
 	for (int i = nbits - 1; i >= 0; --i) {
 		s << (number.at(size_t(i)) ? '1' : '0');
 		if (i == number.radix()) {

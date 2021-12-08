@@ -112,8 +112,8 @@ try {
 	constexpr bool hasSupernormals = false;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "Conversion from blocktriple to cfloat";
-	std::string test_tag           = "conversion ";
+	std::string test_suite         = "blocktriple to cfloat conversion validation";
+	std::string test_tag           = "conversion bt->cfloat";
 	bool reportTestCases           = true;
 	int nrOfFailedTestCases        = 0;
 
@@ -125,30 +125,32 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
-
 	// how do you round a non-normalized blocktriple, i.e. >= 2.0?
 	// you would need to modify the lsb/guard/round/sticky bit masks
 	// so that you use all info to make the rounding decision,
 	// then normalize and apply the rounding decision.
 	{
-		// FAIL: (+, -3, 0b010.0) :   0.25  -> 0b0.00.1 != ref 0b0.00.0 or -0 != -0
-		// FAIL: (+, -3, 0b011.0) :   0.375 -> 0b0.00.0 != ref 0b0.00.1 or 0 != 0
-		// 
-		// FAIL: (+, -2, 0b010.0) :   0.5   -> 0b0.01.0 != ref 0b0.00.1 or 1 != 0
-		// FAIL: (+, -2, 0b010.1) :   0.625 -> 0b0.01.0 != ref 0b0.00.1 or 1 != 0
-		// FAIL: (+, -2, 0b011.0) :   0.75  -> 0b0.01.1 != ref 0b0.01.0 or 1.5 != 1
-		// FAIL: (+, -2, 0b011.1) :   0.875 -> 0b0.01.1 != ref 0b0.01.0 or 1.5 != 1
-		// PASS: (+, -1, 0b001.0) :   0.5   -> 0b0.00.1 == ref 0b0.00.1 or 0 == 0
-		// FAIL: (+, -1, 0b001.1) :   0.75  -> 0b0.00.1 != ref 0b0.01.0 or 0 != 1
-		// FAIL: (+, -1, 0b010.0) :   1     -> 0b0.10.0 != ref 0b0.01.0 or 2 != 1
-		// FAIL: (+, -1, 0b010.1) :   1.25  -> 0b0.10.1 != ref 0b0.01.0 or 3 != 1
-		// FAIL: (+, -1, 0b011.0) :   1.5   -> 0b0.11.0 != ref 0b0.01.1 or nan != 1.5
-		// FAIL: (+, -1, 0b011.1) :   1.75  -> 0b0.11.1 != ref 0b0.10.0 or nan != 2
+		/*
+	    PASS: (+, 0, 0b001.0) : 1 -> 0b0.01.0 == ref 0b0.01.0 or 1 == 1
+		PASS : (+, 0, 0b001.1) : 1.5 -> 0b0.01.1 == ref 0b0.01.1 or 1.5 == 1.5
+		PASS : (+, 0, 0b010.0) : 2 -> 0b0.10.0 == ref 0b0.10.0 or 2 == 2
+		PASS : (+, 0, 0b010.1) : 2.5 -> 0b0.10.0 == ref 0b0.10.0 or 2 == 2
+		PASS : (+, 0, 0b011.0) : 3 -> 0b0.10.1 == ref 0b0.10.1 or 3 == 3
+		FAIL : (+, 0, 0b011.1) : 3.5 -> 0b0.11.1 != ref 0b0.11.0 or nan != nan
+		PASS : (+, 1, 0b001.0) : 2 -> 0b0.10.0 == ref 0b0.10.0 or 2 == 2
+		PASS : (+, 1, 0b001.1) : 3 -> 0b0.10.1 == ref 0b0.10.1 or 3 == 3
+		PASS : (+, 1, 0b010.0) : 4 -> 0b0.11.0 == ref 0b0.11.0 or nan == nan
+		PASS : (+, 1, 0b010.1) : 5 -> 0b0.11.0 == ref 0b0.11.0 or nan == nan
+		FAIL : (+, 1, 0b011.0) : 6 -> 0b0.11.1 != ref 0b0.11.0 or nan != nan
+		FAIL : (+, 1, 0b011.1) : 7 -> 0b1.00.1 != ref 0b0.11.0 or -0 != nan
+		*/
 		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-		// FAIL: (+, -1, 0b001.1) :   0.75  -> 0b0.00.1 != ref 0b0.01.0 or 0 != 1
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0x03ull, -1);
+		// FAIL : (+, 0, 0b011.1) : 3.5 -> 0b0.11.1 != ref 0b0.11.0 or nan != nan
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0x07ull, 0);
 	}
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
 
+	return 0;
 	{
 		using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 		//FAIL: (+,  -2, 0b0'10.10) :           0.625 -> 0b0.00.01 != ref 0b0.00.10 or 0 != 0
@@ -183,18 +185,15 @@ try {
 	// es = 1 is invalid as a configuration when you do not have subnormals or supernormals as ALL values will be subnormals or supernormals
 	// how do you deal with this?
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<5,2,uint8_t,0,0,0> from blocktriple ADD");
 
 
-#define STRESS_TESTING 0
-#if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<8,2,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<8,3,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<8,4,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<8,5,uint8_t,0,0,0> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<8,6,uint8_t,0,0,0> from blocktriple ADD");
-#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

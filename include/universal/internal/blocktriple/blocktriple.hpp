@@ -883,8 +883,6 @@ private:
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<nnbits, oop, bbt>& a);
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
 	friend std::istream& operator>> (std::istream& istr, blocktriple<nnbits, oop, bbt>& a);
 
 	// declare as friends to avoid needing a marshalling function to get significant bits out
@@ -910,6 +908,7 @@ private:
 
 ////////////////////// operators
 
+// BlockTripleOperator ostream operator
 inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& op) {
 	switch (op) {
 	case BlockTripleOperator::ADD:
@@ -932,13 +931,30 @@ inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& o
 	}
 	return ostr;
 }
+
+// blocktriple ostream operator
 template<size_t nbits, BlockTripleOperator op, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<nbits, op, bt>& a) {
-	if (a._inf) {
-		ostr << FP_INFINITE;
+	if (a.isnan()) {
+		if (a.isneg()) {
+			ostr << "snan";
+		}
+		else {
+			ostr << "qnan";
+		}
 	}
 	else {
-		ostr << double(a);
+		if (a.isinf()) {
+			if (a.isneg()) {
+				ostr << "-inf";
+			}
+			else {
+				ostr << "+inf";
+			}
+		}
+		else {
+			ostr << double(a);
+		}
 	}
 	return ostr;
 }
