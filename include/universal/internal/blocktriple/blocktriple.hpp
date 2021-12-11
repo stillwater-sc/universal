@@ -875,7 +875,15 @@ private:
 	constexpr Real to_native() const noexcept {
 		if (_nan) { if (_sign) return std::numeric_limits<Real>::signaling_NaN(); else return std::numeric_limits<Real>::quiet_NaN(); }
 		if (_inf) { if (_sign) return -std::numeric_limits<Real>::infinity(); else return std::numeric_limits<Real>::infinity(); }
-		if (_zero) { if (_sign) return -Real(0.0f); else return Real(0.0f); }
+		if (_zero) {
+			Real v(0);
+			if (_sign) {
+				return -v;
+			}
+			else {
+				return v;
+			}
+		}
 		Real v = Real(_significant);
 		v *= std::pow(Real(2.0f), Real(_scale));
 		return (_sign ? -v : v);

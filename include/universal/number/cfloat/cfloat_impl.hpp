@@ -209,32 +209,36 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			// process sign
 			uint64_t raw = (src.sign() ? 1ull : 0ull);
 //			std::cout << "raw bits (sign)  " << to_binary(raw) << '\n';
+
 			// get the rounding direction and the LSB right shift: 
 			// TODO: do we want to support arbitrary blocktriples instead of the ALU output versions?
 			std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
 			bool roundup = alignment.first;
 			size_t rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
-			std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
-			std::cout << "rightShift       " << rightShift << '\n';
+//			std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
+//			std::cout << "rightShift       " << rightShift << '\n';
 
 			// process exponent
 			uint64_t expBits = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
 			raw <<= es; // shift sign to make room for the exponent bits
 			raw |= (roundup ? (expBits+1) : expBits);
-			std::cout << "raw bits (exp)   " << to_binary(raw) << '\n';
+//			std::cout << "raw bits (exp)   " << to_binary(raw) << '\n';
 			// process fraction bits
 			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
-			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
+//			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
 			raw <<= cfloatType::fbits;
 //			int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(exponent) + (srcbits - cfloatType::fbits);
 //			std::cout << "right shift      " << rightShift << '\n';
 			fracbits >>= rightShift;
-			std::cout << "fracbits shifted " << to_binary(fracbits) << '\n';
+//			std::cout << "fracbits shifted " << to_binary(fracbits) << '\n';
 			fracbits &= cfloatType::ALL_ONES_FR;
-			std::cout << "fracbits masked  " << to_binary(fracbits) << '\n';
+//			std::cout << "fracbits masked  " << to_binary(fracbits) << '\n';
 			raw |= fracbits;
 			tgt.setbits(raw);
-			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';
+//			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';
+			// when you get too far, map it back to +-inf: TBD: this doesn't appear to be the right algorithm to catch all overflow patterns
+			if (tgt.isnan()) tgt.setinf(src.sign());	// map back to +-inf
+
 		}
 		else {
 			// TODO
