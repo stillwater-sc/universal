@@ -52,11 +52,11 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
 /// <summary>
 /// decode an cfloat value into its constituent parts
 /// </summary>
-/// <typeparam name="bt"></typeparam>
-/// <param name="v"></param>
-/// <param name="s"></param>
-/// <param name="e"></param>
-/// <param name="f"></param>
+/// <typeparam name="bt">block type</typeparam>
+/// <param name="v">cfloat value to decode (input: const ref)</param>
+/// <param name="s">sign (output: bool ref)</param>
+/// <param name="e">exponent (output: blockbinary ref)</param>
+/// <param name="f">fraction (output: blockbinary ref)</param>
 template<size_t nbits, size_t es, size_t fbits, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 void decode(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
@@ -214,27 +214,27 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
 			bool roundup = alignment.first;
 			size_t rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
-//			std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
-//			std::cout << "rightShift       " << rightShift << '\n';
-			// process exponent
+			std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
+			std::cout << "rightShift       " << rightShift << '\n';
 
+			// process exponent
 			uint64_t expBits = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
 			raw <<= es; // shift sign to make room for the exponent bits
 			raw |= (roundup ? (expBits+1) : expBits);
-//			std::cout << "raw bits (exp)   " << to_binary(raw) << '\n';
+			std::cout << "raw bits (exp)   " << to_binary(raw) << '\n';
 			// process fraction bits
 			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
-//			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
+			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
 			raw <<= cfloatType::fbits;
 //			int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(exponent) + (srcbits - cfloatType::fbits);
 //			std::cout << "right shift      " << rightShift << '\n';
 			fracbits >>= rightShift;
-//			std::cout << "fracbits shifted " << to_binary(fracbits) << '\n';
+			std::cout << "fracbits shifted " << to_binary(fracbits) << '\n';
 			fracbits &= cfloatType::ALL_ONES_FR;
-//			std::cout << "fracbits masked  " << to_binary(fracbits) << '\n';
+			std::cout << "fracbits masked  " << to_binary(fracbits) << '\n';
 			raw |= fracbits;
 			tgt.setbits(raw);
-//			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';
+			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';
 		}
 		else {
 			// TODO
@@ -1403,19 +1403,25 @@ public:
 				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
 	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
+		bool isNaN    = false;
+		bool isNegNaN = false;
+		bool isPosNaN = false;
 		if constexpr (hasSupernormals) {
 			return isnanencoding(NaNType);
 		}
 		else {
-			bool isNaN = true;
-			bool isNegNaN = false;
-			bool isPosNaN = false;
-			if (!issupernormal()) { isNaN = false; }
-			isNegNaN = isNaN && sign();
-			isPosNaN = isNaN && !sign();
-			return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
-				(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
-					(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+			if (issupernormal()) {
+				// all these supernormal encodings are NANs, except for the encoding representing INF
+				bool isNaN = isinf() ? false : true;
+				bool isNegNaN = isNaN && isneg();
+				bool isPosNaN = isNaN && ispos();
+				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
+					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
+						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+			}
+			else {
+				return false;
+			}
 		}
 	}
 	// isnormal returns true if exponent bits are not all zero or one, false otherwise
@@ -1715,8 +1721,9 @@ public:
 	// make conversions to native types explicit
 	explicit operator int() const { return to_long_long(); }
 	explicit operator long long() const { return to_long_long(); }
-	explicit operator double() const { return to_native<double>(); }
+
 	explicit operator float() const { return to_native<float>(); }
+	explicit operator double() const { return to_native<double>(); }
 
 	// convert a cfloat to a blocktriple with the fraction format 1.ffff
 	// we are using the same block type so that we can use block copies to move bits around.

@@ -61,18 +61,18 @@ namespace sw::universal {
 
 	////////////////////////////////  generate individual test cases //////////////////////// 
 
-	// Generate a conversion test given raw bits and a scale
+	// Generate a conversion test given the scale of the number and raw bits of the fraction
 	template<typename Cfloat, sw::universal::BlockTripleOperator op>
-	void GenerateConversionTest(uint64_t rawBits, int scale) {
+	void GenerateConversionTest(int scale, uint64_t rawBits) {
 		using namespace sw::universal;
 		Cfloat nut, ref;
 		std::cout << type_tag(nut) << '\n';
 		constexpr size_t fbits = Cfloat::fbits;
 		using bt = typename Cfloat::BlockType;
 		blocktriple<fbits, op, bt> b;
-		// set the bits and scale
-		b.setbits(rawBits);
+		// set the scale and fraction bits of the blocktriple
 		b.setscale(scale);
+		b.setbits(rawBits);
 		convert(b, nut);
 		float v = float(b);
 		ref = v; // set the reference through a conversion value
@@ -649,7 +649,9 @@ namespace sw::universal {
 #endif
 
 	////////////////    cfloat <-> blocktriple
-	
+
+// include the PASS side for reporting
+#define VERBOSE_POSITIVITY
 
 	/// <summary>
 	/// convert a blocktriple to a cfloat
@@ -700,7 +702,7 @@ namespace sw::universal {
 				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 			}
 			else {
-#ifndef VERBOSE_POSITIVITY
+#ifdef VERBOSE_POSITIVITY
 				if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
 #endif
 			}
@@ -715,7 +717,7 @@ namespace sw::universal {
 				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 			}
 			else {
-#ifndef VERBOSE_POSITIVITY
+#ifdef VERBOSE_POSITIVITY
 				if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
 #endif
 			}
@@ -730,7 +732,7 @@ namespace sw::universal {
 				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 			}
 			else {
-#ifndef VERBOSE_POSITIVITY
+#ifdef VERBOSE_POSITIVITY
 				if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
 #endif
 			}
@@ -779,7 +781,7 @@ namespace sw::universal {
 							if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 						}
 						else {
-#ifndef VERBOSE_POSITIVITY
+#ifdef VERBOSE_POSITIVITY
 							if (reportTestCases) std::cout << "PASS: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " == ref " << to_binary(a) << " or " << nut << " == " << a << '\n';
 #endif
 						}
