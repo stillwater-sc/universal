@@ -59,7 +59,7 @@ try {
 
 	std::string test_suite         = "blocktriple to cfloat conversion validation";
 	std::string test_tag           = "conversion bt->cfloat";
-	bool reportTestCases           = false;
+	bool reportTestCases           = true;
 	int nrOfFailedTestCases        = 0;
 
 	std::cout << test_suite << '\n';
@@ -70,27 +70,60 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
+	if constexpr(true) {
+		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		Cfloat a;
+		std::cout << "------------- 2.5\n";
+		a = 2.5f;
+		std::cout << "------------- 3.5\n";
+		a = 3.5f;
+		std::cout << "------------- 4.5\n";
+		a = 4.5f;
+		std::cout << "------------- 5.5\n";
+		a = 5.5f;
+		std::cout << "------------- 6.5\n";
+		a = 6.5f;
+		std::cout << "------------- 7.0\n";
+		a = 7.0f;
+		std::cout << "------------- 7.5\n";
+		a = 7.5f;
+		std::cout << "------------- 8.0\n";
+		a = 8.0f;
+	}
+	else {
+		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		std::cout << "------------- 3.5\n";
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x07ull);
+		std::cout << "------------- 4.0\n";
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x04ull);
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x02ull);
+//		std::cout << "------------- 4.5\n";
+//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x09ull);
+		std::cout << "------------- 5.0\n";
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x05ull);
+//		std::cout << "------------- 5.5\n";
+//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x0Bull);
+		std::cout << "------------- 6.0\n";
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x03ull);
+//		std::cout << "------------- 6.5\n";
+//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x0Dull);
+		std::cout << "------------- 7.0\n";
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x07ull);
+//		std::cout << "------------- 7.5\n";
+//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x0Full);
+		std::cout << "------------- 8.0\n";
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x04ull);
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(3, 0x02ull);
+	}
+
 	// how do you round a non-normalized blocktriple, i.e. >= 2.0?
 	// you would need to modify the lsb/guard/round/sticky bit masks
 	// so that you use all info to make the rounding decision,
 	// then normalize and apply the rounding decision.
 	{
-		/*
-	    PASS: (+, 0, 0b001.0) : 1 -> 0b0.01.0 == ref 0b0.01.0 or 1 == 1
-		PASS : (+, 0, 0b001.1) : 1.5 -> 0b0.01.1 == ref 0b0.01.1 or 1.5 == 1.5
-		PASS : (+, 0, 0b010.0) : 2 -> 0b0.10.0 == ref 0b0.10.0 or 2 == 2
-		PASS : (+, 0, 0b010.1) : 2.5 -> 0b0.10.0 == ref 0b0.10.0 or 2 == 2
-		PASS : (+, 0, 0b011.0) : 3 -> 0b0.10.1 == ref 0b0.10.1 or 3 == 3
-		FAIL : (+, 0, 0b011.1) : 3.5 -> 0b0.11.1 != ref 0b0.11.0 or nan != nan
-		PASS : (+, 1, 0b001.0) : 2 -> 0b0.10.0 == ref 0b0.10.0 or 2 == 2
-		PASS : (+, 1, 0b001.1) : 3 -> 0b0.10.1 == ref 0b0.10.1 or 3 == 3
-		PASS : (+, 1, 0b010.0) : 4 -> 0b0.11.0 == ref 0b0.11.0 or nan == nan
-		PASS : (+, 1, 0b010.1) : 5 -> 0b0.11.0 == ref 0b0.11.0 or nan == nan
-		FAIL : (+, 1, 0b011.0) : 6 -> 0b0.11.1 != ref 0b0.11.0 or nan != nan
-		FAIL : (+, 1, 0b011.1) : 7 -> 0b1.00.1 != ref 0b0.11.0 or -0 != nan
-		*/
 		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-		Cfloat a; a.constexprClassParameters();
+		Cfloat a; 
+		a.constexprClassParameters();
 		std::cout << dynamic_range(a) << '\n';
 		std::cout << "maxpos : " << a.maxpos() << '\n';
 		a.setinf(false); // +inf
@@ -98,11 +131,10 @@ try {
 		a.setinf(true); // -inf
 		std::cout << "-inf   : " << a << '\n';
 		// FAIL : (+, 0, 0b011.1) : 3.5 -> 0b0.11.1 != ref 0b0.11.0 or nan != nan
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x07ull);
+//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x07ull);
 		nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
-
 	}
-
+	return 0;
 	{
 		using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 		//FAIL: (+,  -2, 0b0'10.10) :           0.625 -> 0b0.00.01 != ref 0b0.00.10 or 0 != 0

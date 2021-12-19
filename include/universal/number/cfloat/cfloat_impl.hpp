@@ -26,6 +26,7 @@
 #ifndef CFLOAT_THROW_ARITHMETIC_EXCEPTION
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+
 #ifndef TRACE_CONVERSION
 #define TRACE_CONVERSION 0
 #endif
@@ -238,7 +239,6 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 //			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';
 			// when you get too far, map it back to +-inf: TBD: this doesn't appear to be the right algorithm to catch all overflow patterns
 			if (tgt.isnan()) tgt.setinf(src.sign());	// map back to +-inf
-
 		}
 		else {
 			// TODO
@@ -1407,9 +1407,6 @@ public:
 				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
 	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
-		bool isNaN    = false;
-		bool isNegNaN = false;
-		bool isPosNaN = false;
 		if constexpr (hasSupernormals) {
 			return isnanencoding(NaNType);
 		}
@@ -2483,9 +2480,8 @@ protected:
 public:
 	template<typename Real>
 	CONSTEXPRESSION cfloat& convert_ieee754(Real rhs) noexcept {
-		// when we are a perfect match to single precision IEEE-754
-		// take the bits verbatim as a cfloat is a superset of IEEE-754 in all configurations
 		if constexpr (nbits == 32 && es == 8) {
+			// when our cfloat is a perfect match to single precision IEEE-754
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
@@ -2498,8 +2494,8 @@ public:
 			setbits(raw);
 			return *this;
 		}
-		// when we are a perfect match to double precision IEEE-754
 		else if constexpr (nbits == 64 && es == 11) {
+			// when our cfloat is a perfect match to double precision IEEE-754
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
@@ -2725,6 +2721,12 @@ public:
 					bits |= biasedExponent;
 					bits <<= fbits;
 					bits |= rawFraction;
+#if TRACE_CONVERSION
+					std::cout << "sign bit          : " << (s ? '1' : '0') << '\n';
+					std::cout << "biased exponent   : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
+					std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
+					std::cout << "cfloat bits       : " << to_binary(bits, nbits, true) << '\n';
+#endif
 					setbits(bits);
 				}
 				else {
@@ -2767,7 +2769,7 @@ public:
 				if constexpr (nbits < 65) {
 					// we can compose the bits in a native 64-bit unsigned integer
 					// common case: normal to normal
-					// nbits = 40, es = 8, fbits = 31: rhs = float fbits = 23; shift left by (31 - 23) = 8
+					// reference example: nbits = 40, es = 8, fbits = 31: rhs = float fbits = 23; shift left by (31 - 23) = 8
 
 					if (rawExponent != 0) {
 						// rhs is a normal encoding
@@ -2795,7 +2797,7 @@ public:
 					// 
 					// common case: normal to normal
 					if (rawExponent != 0) {
-						// nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
+						// reference example: nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
 						setbits(biasedExponent);
 						shiftLeft(fbits);
 						bt fractionBlock[nrBlocks]{ 0 };

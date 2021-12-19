@@ -93,12 +93,10 @@ void GenerateTestCase(const sw::universal::blockfraction<nbits, BlockType, encod
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
-	
+		
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
@@ -107,7 +105,7 @@ try {
 #if MANUAL_TESTING
 
 	{
-		blockfraction<8, uint32_t> a;
+		blockfraction<8, uint32_t, BitEncoding::Twos> a;
 		a.setbits(0x41);
 		cout << a << " : " << to_binary(a) << " : " << float(a) << endl;
 	}
@@ -118,9 +116,9 @@ try {
 	GenerateTestCase(a, b);
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<8, uint8_t> >(bReportIndividualTestCases),   "blockfraction<  8, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint8_t> >(bReportIndividualTestCases),  "blockfraction< 12, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint16_t> >(bReportIndividualTestCases), "blockfraction< 12, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<8, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),   "blockfraction<  8, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction< 12, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 12, uint16_t>", "addition");
 
 #if STRESS_TESTING
 

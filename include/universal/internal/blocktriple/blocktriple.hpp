@@ -270,7 +270,7 @@ public:
 			roundup = _significant.roundingMode(shift);
 		}
 #endif
-		bool roundup = _significant.roundingMode(shift + adjustment);
+		bool roundup = _significant.roundingDirection(shift + adjustment);
 		return std::pair<bool, size_t>(roundup, shift + adjustment);
 	}
 	// apply a 2's complement recoding of the fraction bits

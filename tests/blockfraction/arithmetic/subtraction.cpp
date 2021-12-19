@@ -99,12 +99,10 @@ void GenerateMaxValues() {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 
 	using namespace sw::universal;
-
-	if (argc > 1) std::cout << argv[0] << std::endl; 
 	
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

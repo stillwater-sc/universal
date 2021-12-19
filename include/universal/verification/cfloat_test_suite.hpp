@@ -66,7 +66,7 @@ namespace sw::universal {
 	void GenerateConversionTest(int scale, uint64_t rawBits) {
 		using namespace sw::universal;
 		Cfloat nut, ref;
-		std::cout << type_tag(nut) << '\n';
+//		std::cout << type_tag(nut) << '\n';
 		constexpr size_t fbits = Cfloat::fbits;
 		using bt = typename Cfloat::BlockType;
 		blocktriple<fbits, op, bt> b;
@@ -743,7 +743,7 @@ namespace sw::universal {
 		b.setinf(false);
 		b.setzero(false);
 		for (int sign = 0; sign < 2; ++sign) {
-			b.setsign(sign);
+			b.setsign(sign == 1);
 			for (int scale = minposScale; scale <= maxposScale; ++scale) {
 				// if ADD, pattern is  0ii.fffff, without 000.fffff     // convert does not expect negative 2's complement numbers
 				// if MUL, patterns is  ii.fffff, without  00.fffff

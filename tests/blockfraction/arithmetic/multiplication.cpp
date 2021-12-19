@@ -71,13 +71,11 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	if (argc > 1) std::cout << argv[0] << std::endl; 
 	int nrOfFailedTestCases = 0;
-
 	std::string tag = "block multiplication: ";
 
 #if MANUAL_TESTING

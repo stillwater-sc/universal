@@ -653,13 +653,9 @@ public:
 		return (long double)to_double();
 	}
 
-	// determine the rounding mode: up if true, down if false
-	// fraction bits:    bbbbbbbbbbb
-	// target LSB   :         |
-	// guard        :          |
-	// round        :           |
-	// sticky       :            ---
-	bool roundingMode(size_t targetLsb) const {
+	// determine the rounding direction for round-to-even: returns true if we need to round up, false if we need to truncate
+	// Function argument is the bit position of the LSB of the target number.
+	bool roundingDirection(size_t targetLsb) const {
 		bool lsb    = at(targetLsb);
 		bool guard  = (targetLsb == 0 ? false : at(targetLsb - 1));
 		bool round  = (targetLsb <= 1 ? false : at(targetLsb - 2));
