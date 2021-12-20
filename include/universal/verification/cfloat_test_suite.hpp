@@ -673,7 +673,7 @@ namespace sw::universal {
 		int nrOfTestFailures{ 0 };
 
 		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
-		std::cout << dynamic_range(a) << '\n';
+//		std::cout << dynamic_range(a) << '\n';
 		int minposScale = minpos_scale(a);
 		int maxposScale = maxpos_scale(a);
 
@@ -689,7 +689,7 @@ namespace sw::universal {
 
 		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
 		BlockTripleConfiguration b;
-		std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << ", smallest scale = " << minposScale << ", largest scale = " << maxposScale << '\n';
+		if (reportTestCases) std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << ", smallest scale = " << minposScale << ", largest scale = " << maxposScale << '\n';
 		// test the special cases first
 		b.setbits(0x0ull); // propagate the proper radix position to the blocktriple significant
 		// the quiet and signalling nan

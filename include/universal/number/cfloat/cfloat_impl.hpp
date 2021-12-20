@@ -219,21 +219,31 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 //			std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
 //			std::cout << "rightShift       " << rightShift << '\n';
 
-			// process exponent
-			uint64_t expBits = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
-			raw <<= es; // shift sign to make room for the exponent bits
-			raw |= (roundup ? (expBits+1) : expBits);
-//			std::cout << "raw bits (exp)   " << to_binary(raw) << '\n';
-			// process fraction bits
+			// construct exponent
+			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
+//			std::cout << "exponent         " << to_binary(biasedExponent) << '\n';																																	  // construct the fraction bits
 			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
 //			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
-			raw <<= cfloatType::fbits;
-//			int rightShift = cfloatType::MIN_EXP_NORMAL - static_cast<int>(exponent) + (srcbits - cfloatType::fbits);
-//			std::cout << "right shift      " << rightShift << '\n';
 			fracbits >>= rightShift;
 //			std::cout << "fracbits shifted " << to_binary(fracbits) << '\n';
-			fracbits &= cfloatType::ALL_ONES_FR;
+			fracbits &= cfloatType::ALL_ONES_FR; // remove the hidden bit
 //			std::cout << "fracbits masked  " << to_binary(fracbits) << '\n';
+			if (roundup) ++fracbits;
+			if (fracbits == (1ull << cfloatType::fbits)) { // check for overflow
+				if (biasedExponent == cfloatType::ALL_ONES_ES) {
+					fracbits = cfloatType::INF_ENCODING; // project to INF
+				}
+				else {
+					++biasedExponent;
+					fracbits = 0;
+				}
+			}
+
+			raw <<= es; // shift sign to make room for the exponent bits
+			raw |= biasedExponent;
+//			std::cout << "raw bits (exp)   " << to_binary(raw) << '\n';
+			raw <<= cfloatType::fbits; // make room for the fraction bits
+//			std::cout << "raw bits (s+exp) " << to_binary(raw) << '\n';
 			raw |= fracbits;
 			tgt.setbits(raw);
 //			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';

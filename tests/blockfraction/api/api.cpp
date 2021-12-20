@@ -77,20 +77,22 @@ try {
 		std::cout << to_binary(fractionBits, 9) << '\n';
 	}
 
-	// rounding 
-	// 0000'0000  lsb target is at(3)
-	blockfraction<8, uint8_t, BitEncoding::Ones> a;
-	size_t lsbTarget = 3;
-	a.setbits(0x0F);	// 00001111  up
-	PrintRoundingDirection(a, lsbTarget);
-	a.setbits(0x07); 	// 00000111  up
-	PrintRoundingDirection(a, lsbTarget);
-	a.setbits(0x03);	// 00000011  down
-	PrintRoundingDirection(a, lsbTarget);
-	a.setbits(0x04); 	// 00000100  up: tie, round to even, which is down in this case
-	PrintRoundingDirection(a, lsbTarget);
-	a.setbits(0x0C); 	// 00001100  up: tie, round to even, which is up in this case
-	PrintRoundingDirection(a, lsbTarget);
+	{
+		// ad-hoc rounding test 
+		// 0000'0000  lsb target is at(3)
+		blockfraction<8, uint8_t, BitEncoding::Ones> a;
+		size_t lsbTarget = 3;
+		a.setbits(0x0F);	// 00001111  up
+		PrintRoundingDirection(a, lsbTarget);
+		a.setbits(0x07); 	// 00000111  up
+		PrintRoundingDirection(a, lsbTarget);
+		a.setbits(0x03);	// 00000011  down
+		PrintRoundingDirection(a, lsbTarget);
+		a.setbits(0x04); 	// 00000100  up: tie, round to even, which is down in this case
+		PrintRoundingDirection(a, lsbTarget);
+		a.setbits(0x0C); 	// 00001100  up: tie, round to even, which is up in this case
+		PrintRoundingDirection(a, lsbTarget);
+	}
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

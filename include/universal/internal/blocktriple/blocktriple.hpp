@@ -267,7 +267,7 @@ public:
 			roundup = (guard && (lsb || (round || sticky)));
 		}
 		else {
-			roundup = _significant.roundingMode(shift);
+			roundup = _significant.roundingDirection(shift);
 		}
 #endif
 		bool roundup = _significant.roundingDirection(shift + adjustment);

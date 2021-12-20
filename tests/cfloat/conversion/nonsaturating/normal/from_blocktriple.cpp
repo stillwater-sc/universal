@@ -33,7 +33,7 @@ Compare the operator=() and convert() cfloat patterns to check correctness
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -59,7 +59,7 @@ try {
 
 	std::string test_suite         = "blocktriple to cfloat conversion validation";
 	std::string test_tag           = "conversion bt->cfloat";
-	bool reportTestCases           = true;
+	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
 	std::cout << test_suite << '\n';
@@ -70,7 +70,7 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
-	if constexpr(true) {
+	if constexpr(false) {
 		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 		Cfloat a;
 		std::cout << "------------- 2.5\n";
@@ -92,6 +92,8 @@ try {
 	}
 	else {
 		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+		std::cout << "------------- 3.0\n";
+		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x06ull);
 		std::cout << "------------- 3.5\n";
 		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x07ull);
 		std::cout << "------------- 4.0\n";
@@ -134,7 +136,7 @@ try {
 //		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x07ull);
 		nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
 	}
-	return 0;
+
 	{
 		using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 		//FAIL: (+,  -2, 0b0'10.10) :           0.625 -> 0b0.00.01 != ref 0b0.00.10 or 0 != 0
