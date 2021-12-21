@@ -144,15 +144,15 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 //			std::cout << "exponent = " << exponent << " bias = " << cfloatType::EXP_BIAS << " exp subnormal = " << cfloatType::MIN_EXP_SUBNORMAL << '\n';
 			//if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1) || exponent + cfloatType::EXP_BIAS < 0) { // this culls subnormal values too much
 			if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
-
 				tgt.setzero();
+				tgt.setsign(src.sign());
 				return;
 			}
 		}
 		else {
-			if (exponent < (cfloatType::MIN_EXP_NORMAL - 1) || exponent + cfloatType::EXP_BIAS < 0) {
-			//if (exponent < (cfloatType::MIN_EXP_NORMAL - 1)) {
+			if (exponent + cfloatType::EXP_BIAS <= 0) {  // value is in the subnormal range, which maps to 0
 				tgt.setzero();
+				tgt.setsign(src.sign());
 				return;
 			}
 		}
@@ -1842,6 +1842,7 @@ public:
 	// capture the smallest normal value in aligned form. There is a faster/smaller
 	// implementation where the input is constrainted to just the round, guard, and sticky bits.
 	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
+		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -1865,6 +1866,7 @@ public:
 				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits); // add the hidden bit
+					raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
 					tgt.setbits(raw);
 				}
 				else {
@@ -2633,6 +2635,13 @@ public:
 			// input fbits >= cfloat fbits                 <-- need to round
 			// input fbits < cfloat fbits                  <-- no need to round
 
+			// quick check if we are truncating to 0 for all subnormal values
+			if constexpr (!hasSubnormals) {
+				if (exponent < MIN_EXP_NORMAL) {
+					setsign(s); // rest of the bits, exponent and fraction, are already set correctly
+					return *this;
+				}
+			}
 			if constexpr (fbits < ieee754_parameter<Real>::fbits) {
 				// this is the common case for cfloats that are smaller in size compared to single and double precision IEEE-754
 				constexpr int rightShift = ieee754_parameter<Real>::fbits - fbits; // this is the bit shift to get the MSB of the src to the MSB of the tgt

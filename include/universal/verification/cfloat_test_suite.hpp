@@ -662,13 +662,13 @@ namespace sw::universal {
 	template<typename CfloatConfiguration, BlockTripleOperator op>
 	int VerifyCfloatFromBlocktripleConversion(bool reportTestCases) {
 		using namespace sw::universal;
-		constexpr size_t nbits = CfloatConfiguration::nbits;
-		constexpr size_t es = CfloatConfiguration::es;
-		using bt = typename CfloatConfiguration::BlockType;
-		constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
+		constexpr size_t nbits         = CfloatConfiguration::nbits;
+		constexpr size_t es            = CfloatConfiguration::es;
+		using bt                       = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals   = CfloatConfiguration::hasSubnormals;
 		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
-		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
-		constexpr size_t fbits = CfloatConfiguration::fbits;
+		constexpr bool isSaturating    = CfloatConfiguration::isSaturating;
+		constexpr size_t fbits         = CfloatConfiguration::fbits;
 
 		int nrOfTestFailures{ 0 };
 
@@ -688,6 +688,8 @@ namespace sw::universal {
 		/// BlockTripleOperator::DIV  blocktriple type that comes out of a division operation
 
 		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
+		constexpr size_t rbits = BlockTripleConfiguration::rbits;
+		constexpr size_t abits = BlockTripleConfiguration::abits;
 		BlockTripleConfiguration b;
 		if (reportTestCases) std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << ", smallest scale = " << minposScale << ", largest scale = " << maxposScale << '\n';
 		// test the special cases first
@@ -761,11 +763,13 @@ namespace sw::universal {
 				size_t NR_VALUES = (1ull << fractionBits);
 				b.setscale(scale);
 				for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
-					size_t integerBits = i * NR_VALUES;
+					size_t integerBits = (i << abits);
 					for (size_t f = 0; f < NR_VALUES; ++f) {
-						b.setbits(integerBits + f);
+						size_t btbits = integerBits | (f << rbits);
+						b.setbits(btbits);
+//						b.setbits(integerBits + f);
 
-						//					std::cout << "blocktriple: " << to_binary(b) << " : " << b << '\n';
+//						std::cout << "blocktriple: " << to_binary(b) << " : " << b << '\n';
 
 						convert(b, nut);
 
@@ -1098,12 +1102,12 @@ namespace sw::universal {
 	/// <returns>nr of failed test cases</returns>
 	template<typename TestType>
 	int VerifyCfloatAddition(bool reportTestCases) {
-		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
-		constexpr size_t es = TestType::es;
-		using BlockType = typename TestType::BlockType;
-		constexpr bool hasSubnormals = TestType::hasSubnormals;
+		constexpr size_t nbits         = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es            = TestType::es;
+		using BlockType                = typename TestType::BlockType;
+		constexpr bool hasSubnormals   = TestType::hasSubnormals;
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
-		constexpr bool isSaturating = TestType::isSaturating;
+		constexpr bool isSaturating    = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
 		constexpr size_t NR_VALUES = (size_t(1) << nbits);
@@ -1135,7 +1139,6 @@ namespace sw::universal {
 						nrOfFailedTests++;
 					}
 				}
-
 #else
 				nut = a + b;
 				if (a.isnan() || b.isnan()) {

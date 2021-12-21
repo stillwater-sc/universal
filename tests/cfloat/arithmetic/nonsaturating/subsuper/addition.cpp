@@ -113,7 +113,6 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatAddition< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<4,1,uint8_t, t,t,f>", "addition");
-	return 0;
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatAddition< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,2,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(

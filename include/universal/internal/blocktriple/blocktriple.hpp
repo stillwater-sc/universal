@@ -132,20 +132,21 @@ public:
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
 	static constexpr size_t fhbits = fbits + 1;            // size of all bits
-	static constexpr size_t abits = fbits + 3ull;          // size of the addend
+	static constexpr size_t rbits = 2 * (fbits + 1);       // rounding bits
+	static constexpr size_t abits = fbits + rbits;         // size of the addend = fbits + rbits extra bits to capture required rounding bits
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
 	static constexpr size_t sqrtbits = 2ull * fhbits;      // size of the square root output
 	// we transform input operands into the operation's target output size
 	// so that everything is aligned correctly before the operation starts.
 	static constexpr size_t bfbits =
-		(op == BlockTripleOperator::ADD ? abits :
+		(op == BlockTripleOperator::ADD ? (3 + abits) :   // we need 3 integer bits (bits left of the radix point) to capture 2's complement and overflow
 			(op == BlockTripleOperator::MUL ? mbits :
 				(op == BlockTripleOperator::DIV ? divbits :
 					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits))));  // REPRESENTATION is the fall through condition
 	// radix point of the OUTPUT of an operator
 	static constexpr int radix =
-		(op == BlockTripleOperator::ADD ? static_cast<int>(fbits) :
+		(op == BlockTripleOperator::ADD ? static_cast<int>(abits) :
 			(op == BlockTripleOperator::MUL ? static_cast<int>(2*fbits) :
 				(op == BlockTripleOperator::DIV ? static_cast<int>(fbits) :
 					(op == BlockTripleOperator::SQRT ? static_cast<int>(sqrtbits) : static_cast<int>(fbits)))));  // REPRESENTATION is the fall through condition
