@@ -15,22 +15,6 @@
 #include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/number/cfloat/table.hpp>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
-
 /*
   Minimum number of operand bits for the adder = <abits> 
   to yield correctly rounded addition
@@ -56,6 +40,22 @@
 
 */
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
@@ -65,8 +65,8 @@ try {
 	constexpr bool hasSupernormals = false;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat_fff addition validation";
-	std::string test_tag           = "addition";
+	std::string test_suite         = "classic cfloat addition validation with just normals, no sub or supernormals";
+	std::string test_tag           = "cfloat_fff addition";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -74,9 +74,8 @@ try {
 
 #if MANUAL_TESTING
 
-	GenerateCfloatExponentBounds();	
-	using TestType = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	TestCase< TestType, float>(TestCaseOperator::ADD, 1.0f, -1.75f);
+//	GenerateCfloatExponentBounds();	
+//	using TestType = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 //	GenerateTable<TestType>(std::cout);
 
 	{

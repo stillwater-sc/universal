@@ -36,8 +36,8 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat_ttf multiplication validation";
-	std::string test_tag           = "cfloat_ttf addition";
+	std::string test_suite         = "classic cfloat multiplication validation with normals, supernormals, but no subnormals";
+	std::string test_tag           = "cfloat_ttf multiplication";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 

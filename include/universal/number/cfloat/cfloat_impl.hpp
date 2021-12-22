@@ -192,10 +192,14 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		int adjustment{ 0 }; 
 		if constexpr (btType::bfbits < 65) {			
 			// we can use a uint64_t to construct the cfloat
+
+			// construct exponent
+			uint64_t biasedExponent{ 0 }; // default is a subnormal encoding
+//			std::cout << "exponent         " << to_binary(biasedExponent) << '\n';	
 			if constexpr (hasSubnormals) {
 				if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
 					// the value is in the subnormal range of the cfloat
-
+					// biasedExponent = 0;
 					// -exponent because we are right shifting and exponent in this range is negative
 					adjustment = -(exponent + subnormal_reciprocal_shift[es]);
 					// this is the right shift adjustment required for subnormal representation due 
@@ -203,9 +207,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 				}
 				else {
 					// the value is in the normal range of the cfloat
+					biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
 				}
 			}
-
+			else {
+				biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
+			}
 
 			// process sign
 			uint64_t raw = (src.sign() ? 1ull : 0ull);
@@ -218,10 +225,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			size_t rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
 //			std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
 //			std::cout << "rightShift       " << rightShift << '\n';
-
-			// construct exponent
-			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
-//			std::cout << "exponent         " << to_binary(biasedExponent) << '\n';																																	  // construct the fraction bits
+																																  // construct the fraction bits
 			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
 //			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
 			fracbits >>= rightShift;
@@ -1938,6 +1942,7 @@ public:
 							uint64_t raw = fraction_ull();
 							int shift = MIN_EXP_NORMAL - scale;
 							raw <<= shift; // shift but do NOT add a hidden bit as the MSB of the subnormal is shifted in the hidden bit position
+							raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
 							tgt.setbits(raw);
 						}
 						else {
@@ -2013,6 +2018,7 @@ public:
 							if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 								uint64_t raw = fraction_ull();
 								raw |= (1ull << fbits); // add the hidden bit
+								raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
 								tgt.setbits(raw);
 							}
 							else {
@@ -3139,6 +3145,18 @@ inline std::istream& operator>>(std::istream& istr, const cfloat<nbits,es,bt,has
 	return istr;
 }
 
+////////////////////// debug helpers
+
+// convenience method to gain access to the values of the constexpr variables that govern the cfloat behavior
+template<size_t nbits, size_t es, typename bt = uint8_t, bool hasSubnormals = false, bool hasSupernormals = false, bool isSaturating = false>
+void ReportCfloatClassParameters() {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
+	a.constexprClassParameters();
+}
+
+//////////////////////////////////////////////////////
+/// posit - posit binary logic operators
+
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
@@ -3159,7 +3177,9 @@ inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const c
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator< (lhs, rhs); }
 
-// posit - posit binary arithmetic operators
+//////////////////////////////////////////////////////
+/// posit - posit binary arithmetic operators
+
 // BINARY ADDITION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
