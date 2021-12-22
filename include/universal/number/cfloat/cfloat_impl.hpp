@@ -514,7 +514,7 @@ public:
 		return *this -= cfloat(rhs);
 	}
 	cfloat& operator*=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+		if constexpr (cfloat_trace_mul) std::cout << "---------------------- MUL -------------------\n";
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -567,12 +567,10 @@ public:
 		normalizeMultiplication(a);
 		rhs.normalizeMultiplication(b);
 		product.mul(a, b);
-
 		convert(product, *this);
 
-		if constexpr (cfloat_trace_mul) {
-			std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(product) << '\n';
-		}
+		if constexpr (cfloat_trace_mul) std::cout << to_binary(a) << " : " << a << " *\n" << to_binary(b) << " : " << b << " =\n" << to_binary(product) << " : " << product << '\n';
+
 		return *this;
 	}
 	cfloat& operator*=(double rhs) {
@@ -2111,7 +2109,7 @@ public:
 			int scale = this->scale();
 			tgt.setsign(sign());
 			tgt.setscale(scale);
-			tgt.setradix(fbits);
+
 			// set significant
 			// we are going to unify to the format 01.ffffeeee
 			// where 'f' is a fraction bit, and 'e' is an extension bit
@@ -2331,6 +2329,7 @@ public:
 
 				}
 			}
+			tgt.setradix(fbits); // override the radix with the input scale for accurate value printing
 		}
 	}
 

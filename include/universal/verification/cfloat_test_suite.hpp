@@ -1499,7 +1499,7 @@ namespace sw::universal {
 #endif
 				}
 				else {
-					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
 				}
 			}
 			if constexpr (NR_VALUES > 256 * 256) {

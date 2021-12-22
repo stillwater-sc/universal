@@ -65,7 +65,7 @@ try {
 	constexpr bool hasSupernormals = false;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat addition validation with just normals, no sub or supernormals";
+	std::string test_suite         = "classic cfloat addition validation with just normals, no subnormals or supernormals";
 	std::string test_tag           = "cfloat_fff addition";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;

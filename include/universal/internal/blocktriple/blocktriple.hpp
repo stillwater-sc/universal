@@ -503,20 +503,17 @@ public:
 			_zero = false;
 			_scale = scale_of_result;
 			_sign = (lhs.sign() == rhs.sign()) ? false : true;
-			if (_significant.test(bfbits - 1)) { // test for carry
-				bool roundup = _significant.test(1) && _significant.test(0);
-				_scale += 1;
-				_significant >>= 1;
-				if (roundup) _significant.increment();
-			}
-			else if (_significant.test(bfbits - 2)) {
-//				all good, found a normal form
-			}
-			else {
+			// the result may overflow, but we can't normalize the overflow as
+			// this would remove an lsb that might impact the rounding.
+			// The design we use here is that the raw ALUs do not normalize overflow
+			// that is left to the conversion stage were we need to apply rounding rules
+
+			// we also may have gotten a denormalized number, which we do need
+			// to normalize. This constitutes a left shift and thus we would
+			// not lose any rounding information by doing so.
+			if (!_significant.test(bfbits - 1) && !_significant.test(bfbits - 2) ) {
 				// found a denormalized form, thus need to normalize: find MSB
 				int msb = _significant.msb(); // zero case has been taken care off above
-//				std::cout << "mul : " << to_binary(*this) << std::endl;
-//				std::cout << "msb : " << msb << std::endl;
 				int leftShift = static_cast<int>(bfbits) - 3 - msb;
 				_significant <<= leftShift;
 				_scale -= leftShift;
