@@ -6,7 +6,7 @@
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #define CFLOAT_VERBOSE_OUTPUT
-#define CFLOAT_TRACE_MUL
+//#define CFLOAT_TRACE_MUL
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
@@ -36,7 +36,7 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat multiplication validation with normals, supernormals, but no subnormals";
+	std::string test_suite         = "classic cfloat multiplication validation with subnormals, normals, and supernormals";
 	std::string test_tag           = "cfloat_ttf multiplication";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
@@ -45,56 +45,13 @@ try {
 
 #if MANUAL_TESTING
 
-	{
-		float fa = 0.25f; 
-//		float fb = std::numeric_limits<float>::signaling_NaN();
-//		float fb = std::numeric_limits<float>::quiet_NaN();
-//		float fb = std::numeric_limits<float>::infinity();
-		float fb = 0.75f;
-		float fc = fa * fb;
+	TestCase< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.5f, 0.5f);
+	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.5f);
 
-		constexpr size_t nbits = 5;
-		constexpr size_t es = 2;
-		using Cfloat = cfloat < nbits, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating >;
-
-		TestCase< Cfloat, float>(TestCaseOperator::MUL, fa, fb);
-		Cfloat c; 
-		// c.constexprClassParameters();
-		c = fc;
-		std::cout << "c = " << c << " : " << to_binary(c) << '\n';
-	}
-	return 0;
-	{ // special cases of snan/qnan
-		constexpr float fa = std::numeric_limits<float>::quiet_NaN();
-		constexpr float fb = std::numeric_limits<float>::signaling_NaN();
-		std::cout << fa << " * " << fa << " = " << (fa * fa) << '\n';
-		std::cout << fa << " * " << fb << " = " << (fa * fb) << '\n';
-		std::cout << fb << " * " << fa << " = " << (fb * fa) << '\n';
-		std::cout << fb << " * " << fb << " = " << (fb * fb) << '\n';
-		std::cout << to_binary(fa * fb) << '\n';
-	}
-
-	{ // special cases of +-inf
-		constexpr float fa = std::numeric_limits<float>::infinity();
-		float fb = -fa;
-		std::cout << fa << " * " << fa << " = " << (fa * fa) << '\n';
-		std::cout << fa << " * " << fb << " = " << (fa * fb) << '\n';
-		std::cout << fb << " * " << fa << " = " << (fb * fa) << '\n';
-		std::cout << fb << " * " << fb << " = " << (fb * fb) << '\n';
-		std::cout << 0.0f << " * " << fa << " = " << (0.0f * fa) << '\n';
-		std::cout << to_binary(fa * fb) << '\n';
-	}
-
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatMultiplication< 
-		cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), 
-		"cfloat<5,2,uint8_t,t,t,f>", 
-		"multiplication");
-//	nrOfFailedTestCases += ReportTestResult(
-//		VerifyCfloatMultiplication<
-//		cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true),
-//		"cfloat<4,1,uint8_t,t,t,f>",
-//		"multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 4, 1,uint8_t,t,t,f>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 4, 2,uint8_t,t,t,f>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 6, 1,uint8_t,t,t,f>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 6, 2,uint8_t,t,t,f>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

@@ -142,8 +142,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		// special case of underflow
 		if constexpr (hasSubnormals) {
 //			std::cout << "exponent = " << exponent << " bias = " << cfloatType::EXP_BIAS << " exp subnormal = " << cfloatType::MIN_EXP_SUBNORMAL << '\n';
-			//if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1) || exponent + cfloatType::EXP_BIAS < 0) { // this culls subnormal values too much
-			if (exponent < (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
+			if (exponent < cfloatType::MIN_EXP_SUBNORMAL) {
 				tgt.setzero();
 				tgt.setsign(src.sign());
 				return;
