@@ -39,12 +39,25 @@
  */
 namespace sw::universal {
 
-	// Encoding of the BlockFraction
-	enum class BitEncoding {
-		Flex,        // placeholder for flexible use cases
-		Ones,        // 1's complement encoding
-		Twos         // 2's complement encoding
-	};
+// Encoding of the BlockFraction
+enum class BitEncoding {
+	Flex,        // placeholder for flexible use cases
+	Ones,        // 1's complement encoding
+	Twos         // 2's complement encoding
+};
+std::ostream& operator<<(std::ostream& ostr, const BitEncoding& encoding) {
+	switch (encoding) {
+		case BitEncoding::Ones:
+			ostr << "1's complement";
+			break;
+		case BitEncoding::Twos:
+			ostr << "2's complement";
+			break;
+		case BitEncoding::Flex:
+			ostr << "adaptive";
+	}
+	return ostr;
+}
 
 // forward references
 template<size_t nbits, typename bt, BitEncoding encoding> class blockfraction;
@@ -192,11 +205,15 @@ public:
 	}
 #endif
 
-	/// conversion operators
-	explicit operator float() const              { return float(to_float()); }
-	explicit operator double() const             { return double(to_double()); }
+	/// explicit conversion operators
+	explicit operator float()       const noexcept { return float(to_float()); }
+	explicit operator double()      const noexcept { return double(to_double()); }
+
 #if LONG_DOUBLE_SUPPORT
-	explicit operator long double() const        { return (long double)to_long_double(); }
+	explicit operator long double() const noexcept { return (long double)to_long_double(); }
+	inline constexpr long double to_long_double() const noexcept {
+		return (long double)to_double();
+	}
 #endif
 
 	/// prefix operators
@@ -619,6 +636,7 @@ public:
 	}
 	inline constexpr double to_double() const noexcept {
 		double d{ 0.0 };
+		double s{ 1.0 };
 		blockfraction<nbits, bt, encoding> tmp(*this);
 		int bit = static_cast<int>(nbits - 1);
 		int shift = static_cast<int>(nbits - 1 - radixPoint);
@@ -626,7 +644,10 @@ public:
 		// special case preprocessing for 2's complement encodings
 		if constexpr (encoding == BitEncoding::Twos) {
 			// nbits in the target form 00h.fffff, check msb and if set take 2's complement
-			if (test(static_cast<size_t>(bit--))) tmp.twosComplement();
+			if (test(static_cast<size_t>(bit--))) {
+				tmp.twosComplement();
+				s = -1.0;
+			}
 			--shift; // and remove the MSB from the value computation
 		}
 
@@ -647,11 +668,9 @@ public:
 //			std::cerr << "to_double() will yield inaccurate result since blockfraction has more precision than native IEEE-754 double\n";
 //		}
 
-		return d;
+		return s * d;
 	}
-	inline constexpr long double to_long_double() const noexcept {
-		return (long double)to_double();
-	}
+
 
 	// determine the rounding direction for round-to-even: returns true if we need to round up, false if we need to truncate
 	// Function argument is the bit position of the LSB of the target number.

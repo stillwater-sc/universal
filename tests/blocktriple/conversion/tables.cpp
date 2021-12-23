@@ -26,12 +26,12 @@ namespace sw::universal {
 	/// <param name="csvFormat">if true present as a comma separated value format, text otherwise</param>
 	template<typename TestType>
 	void GenerateTable(std::ostream& ostr, bool csvFormat = false) {
-		constexpr size_t nbits = TestType::nbits;  // nbits of a blocktriple represent the number of fraction bits of the representation
-		constexpr size_t bfbits = TestType::bfbits;
+		constexpr size_t  fbits = TestType::fbits;  // fbits of a blocktriple represent the number of fraction bits of the representation
+		constexpr size_t bfbits = TestType::bfbits; // bfbits represents the number of bits in the blockfraction that is used for arithmetic
 		using bt = typename TestType::BlockType;
 		constexpr sw::universal::BitEncoding encoding = TestType::encoding;
 
-		constexpr size_t NR_VALUES = (1 << nbits);
+		constexpr size_t NR_VALUES = (1 << fbits);
 		TestType v;
 
 		// we are going to enumerate the blocktriple's fraction bits.

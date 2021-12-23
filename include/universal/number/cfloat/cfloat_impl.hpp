@@ -294,9 +294,6 @@ public:
 	static constexpr size_t es = _es;
 	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
-	static constexpr size_t abits = 2 * fhbits;            // size of the addend
-	static constexpr size_t mbits = 2ull * fbits + 1ull;   // size of the multiplier output
-	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
@@ -426,7 +423,7 @@ public:
 #if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{ 0 } { *this = iv; }
 	CONSTEXPRESSION cfloat& operator=(long double rhs)  noexcept { return convert_ieee754(rhs); }
-	explicit operator long double() const { return to_native<long double>(); }
+	explicit operator long double()               const noexcept { return to_native<long double>(); }
 #endif
 
 	// arithmetic operators
@@ -759,10 +756,6 @@ public:
 
 	// modifiers
 	
-	/// <summary>
-	/// clear the content of this cfloat to zero
-	/// </summary>
-	/// <returns>void</returns>
 	inline constexpr void clear() noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
@@ -825,16 +818,7 @@ public:
 			}
 		}
 	}
-	/// <summary>
-	/// set the number to +0
-	/// </summary>
-	/// <returns>void</returns>
 	inline constexpr void setzero() noexcept { clear(); }
-	/// <summary>
-	/// set the number to +inf
-	/// </summary>
-	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
-	/// <returns>void</returns> 
 	inline constexpr void setinf(bool sign = true) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
@@ -899,11 +883,6 @@ public:
 			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 		}	
 	}
-	/// <summary>
-	/// set the number to a quiet NaN (+nan) or a signalling NaN (-nan, default)
-	/// </summary>
-	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
-	/// <returns>void</returns> 
 	inline constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
@@ -1000,10 +979,6 @@ public:
 		}
 		return true;
 	}
-	/// <summary>
-	/// set the fraction bits given a significant in the form ???
-	/// </summary>
-	/// <param name="significant"></param>
 	inline constexpr void setfraction(const blockbinary<fbits, bt>& fraction) {
 		for (size_t i = 0; i < fbits; ++i) {
 			setbit(i, fraction.test(i));
@@ -1019,7 +994,8 @@ public:
 			}
 		}
 	}
-	// specific number system values of interest
+
+	// create specific number system values of interest
 	inline constexpr cfloat& maxpos() noexcept {
 		if constexpr (hasSupernormals) {
 			// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
@@ -1086,12 +1062,7 @@ public:
 		return *this;
 	}
 
-	/// <summary>
-	/// set a specific bit in the encoding to true or false. If bit index is out of bounds, no modification takes place.
-	/// </summary>
-	/// <param name="i">bit index to set</param>
-	/// <param name="v">boolean value to set the bit to. Default is true.</param>
-	/// <returns>void</returns>
+
 	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
@@ -1102,14 +1073,6 @@ public:
 			return;
 		}
 	}
-	/// <summary>
-	/// set the raw bits of the cfloat. This is a required API function for number systems in the Universal Numbers Library
-	/// This enables verification test suites to inject specific test bit patterns using a common interface.
-	//  This is a memcpy type operator, but the target number system may not have a linear memory layout and
-	//  thus needs to steer the bits in potentially more complicated ways then memcpy.
-	/// </summary>
-	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the cfloat</param>
-	/// <returns>reference to the cfloat</returns>
 	inline constexpr cfloat& setbits(uint64_t raw_bits) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return *this;
@@ -1282,7 +1245,6 @@ public:
 		}
 		return e;
 	}
-	// tests
 	inline constexpr bool isneg() const noexcept { return sign(); }
 	inline constexpr bool ispos() const noexcept { return !sign(); }
 	inline constexpr bool iszeroencoding() const noexcept {
@@ -1326,13 +1288,6 @@ public:
 		}
 		return false;
 	}
-	/// <summary>
-	/// check if value is infinite, -inf, or +inf. 
-	/// +inf = 0-1111-11111-0: sign = 0, uncertainty = 0, es/fraction bits = 1
-	/// -inf = 1-1111-11111-0: sign = 1, uncertainty = 0, es/fraction bits = 1
-	/// </summary>
-	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
-	/// <returns>true if +-inf, false otherwise</returns>
 	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
 		// the bit pattern encoding of Inf is independent of gradual overflow (supernormal) configuration
 		bool isNegInf = false;
@@ -1375,13 +1330,6 @@ public:
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
-	/// <summary>
-	/// check if a value is a quiet or a signalling NaN
-	/// quiet NaN      = 0-1111-11111-1: sign = 0, uncertainty = 1, es/fraction bits = 1
-	/// signalling NaN = 1-1111-11111-1: sign = 1, uncertainty = 1, es/fraction bits = 1
-	/// </summary>
-	/// <param name="NaNType">default is 0, both types, 1 checks for Signalling NaN, -1 checks for Quiet NaN</param>
-	/// <returns>true if the right kind of NaN, false otherwise</returns>
 	inline constexpr bool isnanencoding(int NaNType = NAN_TYPE_EITHER) const noexcept {
 		// the bit encoding of NaN is independent of the gradual overflow configuration
 		bool isNaN = true;
@@ -1436,25 +1384,25 @@ public:
 			}
 		}
 	}
-	// isnormal returns true if exponent bits are not all zero or one, false otherwise
+
 	inline constexpr bool isnormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
 //		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
+		// isnormal returns true if exponent bits are not all zero or one, false otherwise
 		return !e.iszero() && !e.isallones();
 	}
-	// isdenormal returns true if exponent bits are all zero, false otherwise
 	inline constexpr bool isdenormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
-		return e.iszero();
+		return e.iszero(); // isdenormal returns true if exponent bits are all zero, false otherwise
 	}
-	// issupernormal returns true if exponent bits are all one, false otherwise
 	inline constexpr bool issupernormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
-		return e.isallones();
+		return e.isallones();// issupernormal returns true if exponent bits are all one, false otherwise
 	}
+	
 	template<typename NativeReal>
 	inline constexpr bool inrange(NativeReal v) {
 		// the valid range for this cfloat includes the interval between 
@@ -1505,43 +1453,10 @@ public:
 		return 0;
 	}
 
-	// helper debug function
-	void constexprClassParameters() const {
-		std::cout << "-------------------------------------------------------------\n";
-		std::cout << "type              : " << typeid(*this).name() << '\n';
-		std::cout << "nbits             : " << nbits << '\n';
-		std::cout << "es                : " << es << std::endl;
-		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false") << '\n';
-		std::cout << "hasSupernormals   : " << (hasSupernormals ? "true" : "false") << '\n';
-		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false") << '\n';
-		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
-		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
-		std::cout << "nrBlocks          : " << nrBlocks << '\n';
-		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
-		std::cout << "MSU               : " << MSU << '\n';
-		std::cout << "MSU MASK          : " << to_binary(MSU_MASK, 0, true) << '\n';
-		std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, 0, true) << '\n';
-		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, 0, true) << '\n';
-		std::cout << "MSU CAPTURES_EXP  : " << (MSU_CAPTURES_EXP ? "yes\n" : "no\n");
-		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
-		std::cout << "MSU EXP MASK      : " << to_binary(MSU_EXP_MASK, 0, true) << '\n';
-		std::cout << "ALL_ONE_MASK_ES   : " << to_binary(ALL_ONES_ES) << '\n';
-		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
-		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
-		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
-		std::cout << "MIN_EXP_SUBNORMAL : " << MIN_EXP_SUBNORMAL << '\n';
-		std::cout << "fraction Blocks   : " << fBlocks << '\n';
-		std::cout << "bits in FSU       : " << bitsInFSU << '\n';
-		std::cout << "FSU               : " << FSU << '\n';
-		std::cout << "FSU MASK          : " << to_binary(FSU_MASK, 0, true) << '\n';
-		std::cout << "topfbits          : " << topfbits << '\n';
-		std::cout << "ALL_ONE_MASK_FR   : " << to_binary(ALL_ONES_FR) << '\n';
-	}
-	// extract the sign field from the encoding
+
 	inline constexpr void sign(bool& s) const {
 		s = sign();
 	}
-	// extract the exponent field from the encoding
 	inline constexpr void exponent(blockbinary<es, bt>& e) const {
 		e.clear();
 		if constexpr (0 == nrBlocks) return;
@@ -1559,7 +1474,6 @@ public:
 			}
 		}
 	}
-	// extract the fraction field from the encoding
 	inline constexpr void fraction(blockbinary<fbits, bt>& f) const {
 		f.clear();
 		if constexpr (0 == nrBlocks) return;
@@ -1645,11 +1559,11 @@ public:
 		}
 		return shift;
 	}
-	// get the raw bits from the encoding
 	inline constexpr void getbits(blockbinary<nbits, bt>& b) const {
 		b.clear();
 		for (size_t i = 0; i < nbits; ++i) { b.setbit(i, at(i)); }
 	}
+
 	// casts to native types
 	long to_long() const { return long(to_native<double>()); }
 	long long to_long_long() const { return (long long)(to_native<double>()); }
@@ -1731,11 +1645,10 @@ public:
 	}
 
 	// make conversions to native types explicit
-	explicit operator int() const { return to_long_long(); }
-	explicit operator long long() const { return to_long_long(); }
-
-	explicit operator float() const { return to_native<float>(); }
-	explicit operator double() const { return to_native<double>(); }
+	explicit operator int()       const noexcept { return to_long_long(); }
+	explicit operator long long() const noexcept { return to_long_long(); }
+	explicit operator float()     const noexcept { return to_native<float>(); }
+	explicit operator double()    const noexcept { return to_native<double>(); }
 
 	// convert a cfloat to a blocktriple with the fraction format 1.ffff
 	// we are using the same block type so that we can use block copies to move bits around.
@@ -2427,6 +2340,39 @@ public:
 				}
 			}
 		}
+	}
+
+	// helper debug function
+	void constexprClassParameters() const noexcept {
+		std::cout << "-------------------------------------------------------------\n";
+		std::cout << "type              : " << typeid(*this).name() << '\n';
+		std::cout << "nbits             : " << nbits << '\n';
+		std::cout << "es                : " << es << std::endl;
+		std::cout << "hasSubnormals     : " << (hasSubnormals ? "true" : "false") << '\n';
+		std::cout << "hasSupernormals   : " << (hasSupernormals ? "true" : "false") << '\n';
+		std::cout << "isSaturating      : " << (isSaturating ? "true" : "false") << '\n';
+		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
+		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
+		std::cout << "nrBlocks          : " << nrBlocks << '\n';
+		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
+		std::cout << "MSU               : " << MSU << '\n';
+		std::cout << "MSU MASK          : " << to_binary(MSU_MASK, 0, true) << '\n';
+		std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, 0, true) << '\n';
+		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, 0, true) << '\n';
+		std::cout << "MSU CAPTURES_EXP  : " << (MSU_CAPTURES_EXP ? "yes\n" : "no\n");
+		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
+		std::cout << "MSU EXP MASK      : " << to_binary(MSU_EXP_MASK, 0, true) << '\n';
+		std::cout << "ALL_ONE_MASK_ES   : " << to_binary(ALL_ONES_ES) << '\n';
+		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
+		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
+		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
+		std::cout << "MIN_EXP_SUBNORMAL : " << MIN_EXP_SUBNORMAL << '\n';
+		std::cout << "fraction Blocks   : " << fBlocks << '\n';
+		std::cout << "bits in FSU       : " << bitsInFSU << '\n';
+		std::cout << "FSU               : " << FSU << '\n';
+		std::cout << "FSU MASK          : " << to_binary(FSU_MASK, 0, true) << '\n';
+		std::cout << "topfbits          : " << topfbits << '\n';
+		std::cout << "ALL_ONE_MASK_FR   : " << to_binary(ALL_ONES_FR) << '\n';
 	}
 
 protected:
