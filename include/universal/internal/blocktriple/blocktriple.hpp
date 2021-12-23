@@ -59,6 +59,28 @@ namespace sw::universal {
 
  // operator specialization tag for blocktriple
 enum class BlockTripleOperator { ADD, MUL, DIV, SQRT, REPRESENTATION };
+inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& op) {
+	switch (op) {
+	case BlockTripleOperator::ADD:
+		ostr << "ADD";
+		break;
+	case BlockTripleOperator::MUL:
+		ostr << "MUL";
+		break;
+	case BlockTripleOperator::DIV:
+		ostr << "DIV";
+		break;
+	case BlockTripleOperator::SQRT:
+		ostr << "SQRT";
+		break;
+	case BlockTripleOperator::REPRESENTATION:
+		ostr << "REP";
+		break;
+	default:
+		ostr << "NOP";
+	}
+	return ostr;
+}
 
 // Forward definitions
 template<size_t fbits, BlockTripleOperator op, typename bt> class blocktriple;
@@ -942,30 +964,6 @@ private:
 };
 
 ////////////////////// operators
-
-// BlockTripleOperator ostream operator
-inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& op) {
-	switch (op) {
-	case BlockTripleOperator::ADD:
-		ostr << "ADD";
-		break;
-	case BlockTripleOperator::MUL:
-		ostr << "MUL";
-		break;
-	case BlockTripleOperator::DIV:
-		ostr << "DIV";
-		break;
-	case BlockTripleOperator::SQRT:
-		ostr << "SQRT";
-		break;
-	case BlockTripleOperator::REPRESENTATION:
-		ostr << "REP";
-		break;
-	default:
-		ostr << "NOP";
-	}
-	return ostr;
-}
 
 // blocktriple ostream operator
 template<size_t fbits, BlockTripleOperator op, typename bt>
