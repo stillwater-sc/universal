@@ -13,7 +13,6 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
-
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
@@ -30,26 +29,29 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	constexpr bool isSaturating = false;
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, b;
 	// b1.00111111.00011001011010001001001 != b1.01111111.00011001011010001001001
-	a = parse<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>("b1.00111111.00011001011010001001001");
+	a = parse<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>("0b1.00111111.00011001011010001001001");
 	std::cout << "cfloat   : " << to_binary(a) << '\n';
 	float f = float(a);
 	std::cout << "float    : " << to_binary(f) << '\n';
 	b = f;
 	std::cout << "cfloat b : " << to_binary(b) << '\n';
 
-	blockbinary<nbits, bt> bits;
-	a.getbits(bits);
-	std::cout << "bits     : " << to_binary(bits, false) << '\n';
+	//blockbinary<nbits, bt> bits;
+	//a.getbits(bits);
+	//std::cout << "bits     : " << to_binary(bits, false) << '\n';
+
 	// bit cast
-	uint64_t bc = std::bit_cast<uint32_t, float>(f);
+	uint32_t bc = std::bit_cast<uint32_t, float>(f);
 	std::cout << "float    : " << to_binary(f) << '\n';
+	std::cout << "smask    : " << to_binary(ieee754_parameter<float>::smask, 32, false) << '\n';
 	std::cout << "emask    : " << to_binary(ieee754_parameter<float>::emask, 32, false) << '\n';
-	std::cout << "raw bits : " << to_binary(bc, 32, false) << '\n';
 	std::cout << "fmask    : " << to_binary(ieee754_parameter<float>::fmask, 32, false) << '\n';
+	std::cout << "smask+bc : " << to_binary((ieee754_parameter<float>::smask & bc), 32, false) << '\n';
 	std::cout << "emask+bc : " << to_binary((ieee754_parameter<float>::emask & bc), 32, false) << '\n';
-	bool s = (ieee754_parameter<float>::smask & bc);
-	uint64_t rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
-	uint64_t rawFractionBits = (ieee754_parameter<float>::fmask & bc);
+	std::cout << "fmask+bc : " << to_binary((ieee754_parameter<float>::fmask & bc), 32, false) << '\n';
+//	uint32_t rawSignbits     = (ieee754_parameter<float>::smask & bc);
+	uint32_t rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
+	uint32_t rawFractionBits = (ieee754_parameter<float>::fmask & bc);
 	std::cout << "raw exp  : " << to_binary(rawExponentBits) << '\n';
 	std::cout << "raw frac : " << to_binary(rawFractionBits) << '\n';
 }
@@ -181,8 +183,8 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "Conversion from float to cfloat: ";
-	std::string test_tag           = "conversion ";
+	std::string test_suite         = "ieee754 float conversion to cfloat";
+	std::string test_tag           = "float conversion ";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -196,6 +198,9 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
+	//	ToNativeBug();
+	// 
+	// 
 	// test case harnass
 	{
 		using Cfloat = cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating>;
@@ -222,14 +227,18 @@ try {
 		}
 	}
 	{
-		float f = 2.7500005f;
-		f = 2.5f;
+		float f = 0.0625f + std::pow(2.0f, -20.0f);
+		f = 0.125f; // - std::pow(2.0f, -20.0f);
 		std::cout << to_binary(f) << " : " << f << std::endl;
 
-		cfloat<5, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> a;
+		cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> a;
 		a.convert_ieee754(f);
 		std::cout << to_binary(a, true) << " : " << a << '\n';
 	}
+
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(true), test_tag, "cfloat<  4,  1, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(true), test_tag, "cfloat<  6,  1, uint8_t>");
+
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<  4,  1, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatConversion< cfloat< 6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float >(reportTestCases), test_tag, "cfloat<  6,  2, uint8_t>");
@@ -251,7 +260,7 @@ try {
 
 	std::cerr << "                                                     ignoring subnormals for the moment\n";
 
-	int NR_RNDS = 10000;
+	size_t NR_RNDS = 10000;
 
 #if REGRESSION_LEVEL_1
 

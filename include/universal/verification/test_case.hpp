@@ -13,7 +13,7 @@ namespace sw::universal {
 
 	// generate an arithmetic test case
 	template<typename Number, typename Ty>
-	void TestCase(TestCaseOperator _operator, Ty _a, Ty _b) {
+	int TestCase(TestCaseOperator _operator, Ty _a, Ty _b) {
 		constexpr size_t nbits = Number::nbits;
 		Number c(0);
 		Ty _c(0);
@@ -47,7 +47,7 @@ namespace sw::universal {
 			break;
 		default:
 			std::cout << "Unknown operator: exiting\n";
-			return;
+			return 1;
 		}
 		// sample the reference into the target Number to be the golden value
 		Number reference = _c;
@@ -61,10 +61,14 @@ namespace sw::universal {
 		std::cout << to_binary(_c) << " : " << _c << '\n';
 		std::cout << "+--------\ntarget number : " << typeid(Number).name() << '\n';
 		std::cout << a << op << b << " = " << c << " (reference: " << reference << ")\n";
-		std::cout << to_binary(a, true) << op << to_binary(b, true) << " = " << to_binary(c, true) << " (reference: " << to_binary(reference, true) << ")   ";
+		std::cout << "a    " << to_binary(a, true) << op << '\n';
+		std::cout << "b    " << to_binary(b, true) << " =\n";
+		std::cout << "c    " << to_binary(c, true) << '\n';
+		std::cout << "ref  " << to_binary(reference, true) << ")   ";
 		std::cout << (reference == c ? "PASS" : "FAIL");
 		std::cout << "\n+--------  Test Case: Done\n";
 		std::cout << std::setprecision(oldprecision);
+		return (reference == c) ? 0 : 1;  // return 1 to indicate 1 test failure
 	}
 
 } // namespace sw::universal

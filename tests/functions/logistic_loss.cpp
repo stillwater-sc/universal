@@ -7,7 +7,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/functions/loss.hpp>
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

@@ -142,8 +142,16 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		// special case of underflow
 		if constexpr (hasSubnormals) {
 //			std::cout << "exponent = " << exponent << " bias = " << cfloatType::EXP_BIAS << " exp subnormal = " << cfloatType::MIN_EXP_SUBNORMAL << '\n';
+			// why must exponent be less than (minExpSubnormal - 1) to be rounded to zero? 
+			// because the half-way value that would round up to minpos is at exp = (minExpSubnormal - 1)
 			if (exponent < cfloatType::MIN_EXP_SUBNORMAL) {
 				tgt.setzero();
+				if (exponent == (cfloatType::MIN_EXP_SUBNORMAL - 1)) {
+					// -exponent because we are right shifting and exponent in this range is negative
+					int adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+					std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
+					if (alignment.first) ++tgt; // we are minpos
+				}
 				tgt.setsign(src.sign());
 				return;
 			}
@@ -193,12 +201,13 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			// we can use a uint64_t to construct the cfloat
 
 			// construct exponent
-			uint64_t biasedExponent{ 0 }; // default is a subnormal encoding
+			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive if exponent in encoding range
 //			std::cout << "exponent         " << to_binary(biasedExponent) << '\n';	
 			if constexpr (hasSubnormals) {
-				if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
-					// the value is in the subnormal range of the cfloat
-					// biasedExponent = 0;
+				//if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
+				if (exponent < cfloatType::MIN_EXP_NORMAL) {
+						// the value is in the subnormal range of the cfloat
+					biasedExponent = 0;
 					// -exponent because we are right shifting and exponent in this range is negative
 					adjustment = -(exponent + subnormal_reciprocal_shift[es]);
 					// this is the right shift adjustment required for subnormal representation due 
@@ -210,7 +219,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 				}
 			}
 			else {
-				biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
+				if (exponent < cfloatType::MIN_EXP_NORMAL) biasedExponent = 1ull; // fixup biasedExponent if we are in the subnormal region
 			}
 
 			// process sign
@@ -2507,6 +2516,7 @@ public:
 				setbit(nbits - 1ull, s);
 				return *this;
 			}
+	
 			// normal number consists of fbits fraction bits and one hidden bit
 			// subnormal number has no hidden bit
 			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
@@ -2569,7 +2579,7 @@ public:
 			std::cout << "segments          : " << to_binary(rhs) << '\n';
 			std::cout << "sign     bit      : " << (s ? '1' : '0') << '\n';
 			std::cout << "exponent bits     : " << to_binary(rawExponent, ieee754_parameter<Real>::ebits, true) << '\n';
-			std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::fbits, true) << std::endl;
+			std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::fbits, true) << '\n';
 			std::cout << "exponent value    : " << exponent << '\n';
 #endif
 
@@ -2600,7 +2610,9 @@ public:
 				uint64_t mask;
 				if (rawExponent != 0) {
 					// the source real is a normal number, 
-					if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
+//					if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
+					if (exponent < MIN_EXP_NORMAL) {
+//						exponent = (exponent < MIN_EXP_SUBNORMAL ? MIN_EXP_SUBNORMAL : exponent); // clip to the smallest subnormal exponent, otherwise the adjustment is off
 						// the value is a subnormal number in this representation: biasedExponent = 0
 						// add the hidden bit to the fraction bits so the denormalization has the correct MSB
 						rawFraction |= ieee754_parameter<Real>::hmask;
@@ -2633,20 +2645,32 @@ public:
 						//       x     1       1     0        up
 						//       x     1       1     1        up
 						// collect lsb, guard, round, and sticky bits
-//						std::cout << "shift to LSB " << (rightShift + adjustment) << " adjustment = " << adjustment << '\n';
+
+
+#if TRACE_CONVERSION
+						std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::nbits, true) << '\n';
+						std::cout << "lsb mask bits     : " << to_binary(mask, ieee754_parameter<Real>::nbits, true) << '\n';
+#endif
 						mask = (1ull << (rightShift + adjustment)); // bit mask for the lsb bit
 						bool lsb = (mask & rawFraction);
 						mask >>= 1;
 						bool guard = (mask & rawFraction);
 						mask >>= 1;
 						bool round = (mask & rawFraction);
-						if constexpr (rightShift > 1) {
-							mask = (0xFFFF'FFFF'FFFF'FFFFull << (rightShift - 2));
+						if ((rightShift + adjustment) > 1) {
+							mask = (0xFFFF'FFFF'FFFF'FFFFull << (rightShift + adjustment - 2));
 							mask = ~mask;
 						}
 						else {
 							mask = 0;
 						}
+#if TRACE_CONVERSION
+						std::cout << "right shift       : " << rightShift << '\n';
+						std::cout << "adjustment        : " << adjustment << '\n';
+						std::cout << "shift to LSB      : " << (rightShift + adjustment) << '\n';
+						std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::nbits, true) << '\n';
+						std::cout << "sticky mask bits  : " << to_binary(mask, ieee754_parameter<Real>::nbits, true) << '\n';
+#endif
 						bool sticky = (mask & rawFraction);
 						rawFraction >>= (static_cast<int64_t>(rightShift) + static_cast<int64_t>(adjustment));
 

@@ -14,8 +14,6 @@
 
 // enable/disable special hex format I/O
 #define CFLOAT_ROUNDING_ERROR_FREE_IO_FORMAT 1
-// if you want to trace conversion: NOTE: tracing will destroy the constexpr-ness of operator=()
-#define TRACE_CONVERSION 0
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/table.hpp>
 
@@ -78,49 +76,45 @@ try {
 //	constexpr bool isSaturating = true;
 	constexpr bool notSaturating = false;
 
-#if MANUAL_TESTING
-
-	constexpr size_t nbits = 5;
-	constexpr size_t es = 2;
 	std::ofstream ostr;
-	ostr.open("cfloat_5_2_subnormal_supernormal_notsaturating.csv");
-	GenerateTable< cfloat<nbits, es, uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(ostr, true);
-	ostr.close();
-	ostr.open("cfloat_5_2_subnormal_nosupernormal_notsaturating.csv");
-	GenerateTable< cfloat<nbits, es, uint8_t, hasSubnormals, noSupernormals, notSaturating> >(ostr, true);
-	ostr.close();
-	ostr.open("cfloat_5_2_nosubnormal_supernormal_notsaturating.csv");
-	GenerateTable< cfloat<nbits, es, uint8_t, noSubnormals, hasSupernormals, notSaturating> >(ostr, true);
-	ostr.close();
-	ostr.open("cfloat_5_2_nosubnormal_nosupernormal_notsaturating.csv");
-	GenerateTable< cfloat<nbits, es, uint8_t, noSubnormals, noSupernormals, notSaturating> >(ostr, true);
+	std::string filename, extension;
+	extension = (csv ? ".csv" : ".txt");
+	filename = std::string("cfloat_fff") + extension;
+	ostr.open(filename);
+	// no subnormals, has normals, no supernormals, not saturating
+	GenerateCfloatTables<noSubnormals, noSupernormals, notSaturating, uint8_t>(ostr, csv);
+	std::cout << "Created cfloat tables for noSubnormals, Normals, noSupernormals in " << filename << '\n';
 	ostr.close();
 
-	ostr.open("cfloat_5_2_nosubnormal_nosupernormal_notsaturating.txt");
-	GenerateTable< cfloat<nbits, es, uint8_t, noSubnormals, noSupernormals, notSaturating> >(ostr, false);
+	filename = std::string("cfloat_tff") + extension;
+	ostr.open(filename);
+	// has subnormals, has normals, no supernormals, not saturating
+	GenerateCfloatTables<hasSubnormals, noSupernormals, notSaturating>(ostr, csv);
+	std::cout << "Created cfloat tables for Subnormals, Normals, noSupernormals in " << filename << '\n';
 	ostr.close();
 
-#else // !MANUAL_TESTING
+	filename = std::string("cfloat_ftf") + extension;
+	ostr.open(filename);
+	// no subnormals, has normals, has supernormals, not saturating
+	GenerateCfloatTables<noSubnormals, hasSupernormals, notSaturating, uint8_t>(ostr, csv);
+	std::cout << "Created cfloat tables for noSubnormals, Normals, Supernormals in " << filename << '\n';
+	ostr.close();
 
-	// no subnormals, no supernormals, not saturating
-	GenerateCfloatTables<noSubnormals, noSupernormals, notSaturating, uint8_t>(std::cout, csv);
-
-	// subnormals, no supernormals, not saturating
-	GenerateCfloatTables<hasSubnormals, noSupernormals, notSaturating>(std::cout, csv);
-
-	// subnormals, supernormals, not saturating
-	GenerateCfloatTables<hasSubnormals, hasSupernormals, notSaturating>(std::cout, csv);
-
-#endif
+	filename = std::string("cfloat_ttf") + extension;
+	ostr.open(filename);
+	// has subnormals, has normals, has supernormals, not saturating
+	GenerateCfloatTables<hasSubnormals, hasSupernormals, notSaturating>(ostr, csv);
+	std::cout << "Created cfloat tables for Subnormals, Normals, and Supernormals in " << filename << '\n';
+	ostr.close();
 
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc error: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& e) {
-	std::cerr << e.what() << std::endl;
+	std::cerr << "Caught unexpected runtime error: " << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

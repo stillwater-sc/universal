@@ -539,11 +539,10 @@ public:
 
 		if constexpr (_trace_btriple_mul) {
 			std::cout << "blockfraction unrounded mul\n";
-			std::cout << typeid(lhs._significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
 			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "mul significant : " << to_binary(*this) << " : " << *this << '\n';  // <-- the scale of this representation is not yet set
+			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
+			std::cout << "mul significant : " << to_binary(_significant) << " : " << _significant << '\n';
 		}
 		if (_significant.iszero()) {
 			clear();
@@ -570,10 +569,9 @@ public:
 		}
 		if constexpr (_trace_btriple_mul) {
 			std::cout << "blocktriple normalized mul\n";
-			std::cout << typeid(lhs).name() << '\n';
+			std::cout << typeid(*this).name() << '\n';
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << typeid(*this).name() << '\n';
 			std::cout << "mul : " << to_binary(*this) << " : " << *this << '\n';
 		}
 	}
