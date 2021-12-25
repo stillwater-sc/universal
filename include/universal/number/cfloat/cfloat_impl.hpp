@@ -583,6 +583,12 @@ public:
 	}
 	cfloat& operator/=(const cfloat& rhs) {
 		if constexpr (cfloat_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+
+		// special case handling of the inputs
+		// qnan / qnan = qnan
+		// qnan / snan = qnan
+		// snan / qnan = snan
+		// snan / snan = snan
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) throw cfloat_divide_by_zero();
 		if (rhs.isnan()) throw cfloat_divide_by_nan();
@@ -591,7 +597,58 @@ public:
 		if (rhs.iszero()) std::cerr << "cfloat_negative_sqrt_argument" << std::endl;
 		if (rhs.isnan()) std::cerr << "cfloat_divide_by_nan" << std::endl;
 		if (isnan()) std::cerr << "cfloat_operand_is_nan" << std::endl;
+
+		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
+			setnan(NAN_TYPE_SIGNALLING);
+			return *this;
+		}
+		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+			setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
 #endif
+		//  inf /  inf = -nan(ind)
+		//  inf / -inf = -nan(ind)
+		// -inf /  inf = -nan(ind)
+		// -inf / -inf = -nan(ind)
+		//	1.0 /  inf = 0
+		bool resultSign = sign() != rhs.sign();
+		if (isinf()) {
+			if (rhs.isinf()) {
+				setsign(resultSign);
+				return *this;
+			}
+			else {
+				setnan(NAN_TYPE_SIGNALLING);
+				return *this;
+			}
+		}
+		else {
+			if (rhs.isinf()) {
+				setnan(NAN_TYPE_SIGNALLING);
+				return *this;
+			}
+		}
+
+		if (iszero()) {
+			setzero();
+			setsign(resultSign); // deal with negative 0
+			return *this;
+		}
+
+		// arithmetic operation
+		blocktriple<fbits, BlockTripleOperator::DIV, bt> a, b, product;
+
+		// transform the inputs into (sign,scale,significant) 
+		// triples of the correct width
+		normalizeDivision(a);
+		rhs.normalizeDivision(b);
+		product.div(a, b);
+		convert(product, *this);
+
+		if constexpr (cfloat_trace_div) std::cout << to_binary(a) << " : " << a << " /\n" << to_binary(b) << " : " << b << " =\n" << to_binary(product) << " : " << product << '\n';
+
+		return *this;
 		return *this;
 	}
 	cfloat& operator/=(double rhs) {
