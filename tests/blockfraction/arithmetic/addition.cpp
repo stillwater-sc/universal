@@ -1,4 +1,4 @@
-// addition.cpp: functional tests for blockfraction addition
+// addition.cpp: functional tests for blocksignificant addition
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -10,26 +10,26 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/internal/blockfraction/blockfraction.hpp>
+#include <universal/internal/blocksignificant/blocksignificant.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
-// enumerate all addition cases for an blockfraction<nbits,BlockType> configuration
-template<typename BlockFractionConfiguration>
+// enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
+template<typename blocksignificantConfiguration>
 int VerifyAddition(bool bReportIndividualTestCases) {
-	constexpr size_t nbits = BlockFractionConfiguration::nbits;
-	using BlockType = typename BlockFractionConfiguration::BlockType;
-	constexpr sw::universal::BitEncoding encoding = BlockFractionConfiguration::encoding;
+	constexpr size_t nbits = blocksignificantConfiguration::nbits;
+	using BlockType = typename blocksignificantConfiguration::BlockType;
+	constexpr sw::universal::BitEncoding encoding = blocksignificantConfiguration::encoding;
 
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
 	
 //	cout << endl;
-//	cout << "blockfraction<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
-	blockfraction<nbits, BlockType, encoding> a, b, c;
+	blocksignificant<nbits, BlockType, encoding> a, b, c;
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
@@ -59,13 +59,13 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
-// generate specific test case that you can trace with the trace conditions in blockfraction
+// generate specific test case that you can trace with the trace conditions in blocksignificant
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, typename BlockType, sw::universal::BitEncoding encoding>
-void GenerateTestCase(const sw::universal::blockfraction<nbits, BlockType, encoding>& lhs, const sw::universal::blockfraction <nbits, BlockType, encoding>& rhs) {
+void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType, encoding>& lhs, const sw::universal::blocksignificant <nbits, BlockType, encoding>& rhs) {
 	using namespace sw::universal;
 
-	blockfraction<nbits, BlockType, encoding> a, b, c;
+	blocksignificant<nbits, BlockType, encoding> a, b, c;
 
 	a = lhs;
 	b = rhs;
@@ -100,25 +100,25 @@ try {
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "blockfraction addition failed: ";
+	std::string tag = "blocksignificant addition failed: ";
 
 #if MANUAL_TESTING
 
 	{
-		blockfraction<8, uint32_t, BitEncoding::Twos> a;
+		blocksignificant<8, uint32_t, BitEncoding::Twos> a;
 		a.setbits(0x41);
 		cout << a << " : " << to_binary(a) << " : " << float(a) << endl;
 	}
 
-	blockfraction<23, uint32_t> a, b;
+	blocksignificant<23, uint32_t> a, b;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase(a, b);
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<8, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),   "blockfraction<  8, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blockfraction< 12, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blockfraction< 12, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<8, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),   "blocksignificant<  8, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<12, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blocksignificant< 12, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<12, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant< 12, uint16_t>", "addition");
 
 #if STRESS_TESTING
 
@@ -126,32 +126,32 @@ try {
 
 #else
 
-	std::cout << "blockfraction addition validation\n";
+	std::cout << "blocksignificant addition validation\n";
 	constexpr BitEncoding twos = BitEncoding::Twos;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<4, uint8_t, twos> >(bReportIndividualTestCases),  "blockfraction< 4, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<4, uint16_t, twos> >(bReportIndividualTestCases), "blockfraction< 4, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<4, uint32_t, twos> >(bReportIndividualTestCases), "blockfraction< 4, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<4, uint8_t, twos> >(bReportIndividualTestCases),  "blocksignificant< 4, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<4, uint16_t, twos> >(bReportIndividualTestCases), "blocksignificant< 4, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<4, uint32_t, twos> >(bReportIndividualTestCases), "blocksignificant< 4, uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<8, uint8_t, twos> >(bReportIndividualTestCases),  "blockfraction< 8, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<8, uint16_t, twos> >(bReportIndividualTestCases), "blockfraction< 8, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<8, uint32_t, twos> >(bReportIndividualTestCases), "blockfraction< 8, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<8, uint8_t, twos> >(bReportIndividualTestCases),  "blocksignificant< 8, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<8, uint16_t, twos> >(bReportIndividualTestCases), "blocksignificant< 8, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<8, uint32_t, twos> >(bReportIndividualTestCases), "blocksignificant< 8, uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<9, uint8_t, twos> >(bReportIndividualTestCases),  "blockfraction< 9, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<9, uint16_t, twos> >(bReportIndividualTestCases), "blockfraction< 9, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<9, uint32_t, twos> >(bReportIndividualTestCases), "blockfraction< 9, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<9, uint8_t, twos> >(bReportIndividualTestCases),  "blocksignificant< 9, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<9, uint16_t, twos> >(bReportIndividualTestCases), "blocksignificant< 9, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<9, uint32_t, twos> >(bReportIndividualTestCases), "blocksignificant< 9, uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<10, uint8_t, twos> >(bReportIndividualTestCases),  "blockfraction<10, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<10, uint16_t, twos> >(bReportIndividualTestCases), "blockfraction<10, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<10, uint32_t, twos> >(bReportIndividualTestCases), "blockfraction<10, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<10, uint8_t, twos> >(bReportIndividualTestCases),  "blocksignificant<10, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<10, uint16_t, twos> >(bReportIndividualTestCases), "blocksignificant<10, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<10, uint32_t, twos> >(bReportIndividualTestCases), "blocksignificant<10, uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<11, uint8_t, twos> >(bReportIndividualTestCases),  "blockfraction<11, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<11, uint16_t, twos> >(bReportIndividualTestCases), "blockfraction<11, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<11, uint32_t, twos> >(bReportIndividualTestCases), "blockfraction<11, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<11, uint8_t, twos> >(bReportIndividualTestCases),  "blocksignificant<11, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<11, uint16_t, twos> >(bReportIndividualTestCases), "blocksignificant<11, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<11, uint32_t, twos> >(bReportIndividualTestCases), "blocksignificant<11, uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint8_t, twos> >(bReportIndividualTestCases),  "blockfraction<12, uint8_t >", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint16_t, twos> >(bReportIndividualTestCases), "blockfraction<12, uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blockfraction<12, uint32_t, twos> >(bReportIndividualTestCases), "blockfraction<12, uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<12, uint8_t, twos> >(bReportIndividualTestCases),  "blocksignificant<12, uint8_t >", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<12, uint16_t, twos> >(bReportIndividualTestCases), "blocksignificant<12, uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocksignificant<12, uint32_t, twos> >(bReportIndividualTestCases), "blocksignificant<12, uint32_t>", "addition");
 
 #if STRESS_TESTING
 

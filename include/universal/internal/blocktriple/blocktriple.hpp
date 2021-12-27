@@ -50,7 +50,7 @@ namespace sw::universal {
 	accordingly.
 
 	for add and subtract
-	blockfraction = 00h.ffffeee <- three bits before radix point, fraction bits plus 3 rounding bits
+	blocksignificant = 00h.ffffeee <- three bits before radix point, fraction bits plus 3 rounding bits
 	size_t bfbits = fbits + 3;
 
 	for multiply
@@ -142,6 +142,7 @@ template<size_t _fbits, BlockTripleOperator _op = BlockTripleOperator::ADD, type
 class blocktriple {
 public:
 	static constexpr size_t fbits = _fbits;  // a convenience and consistency alias
+	static constexpr size_t nbits = fbits;
 	typedef bt BlockType;
 	static constexpr BlockTripleOperator op = _op;
 
@@ -156,7 +157,7 @@ public:
 	static constexpr size_t rbits = 2 * (fbits + 1);       // rounding bits
 	static constexpr size_t abits = fbits + rbits;         // size of the addend = fbits + rbits extra bits to capture required rounding bits
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
-	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
+	static constexpr size_t divbits = 2ull * fhbits;       // size of the divider output
 	static constexpr size_t sqrtbits = 2ull * fhbits;      // size of the square root output
 	// we transform input operands into the operation's target output size
 	// so that everything is aligned correctly before the operation starts.
@@ -169,7 +170,7 @@ public:
 	static constexpr int radix =
 		(op == BlockTripleOperator::ADD ? static_cast<int>(abits) :
 			(op == BlockTripleOperator::MUL ? static_cast<int>(2*fbits) :
-				(op == BlockTripleOperator::DIV ? static_cast<int>(fbits) :
+				(op == BlockTripleOperator::DIV ? static_cast<int>(2*fbits) :
 					(op == BlockTripleOperator::SQRT ? static_cast<int>(sqrtbits) : static_cast<int>(fbits)))));  // REPRESENTATION is the fall through condition
 	static constexpr BitEncoding encoding =
 		(op == BlockTripleOperator::ADD ? BitEncoding::Twos :
@@ -181,7 +182,7 @@ public:
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using intrinsics/assembly code
-	using Frac = sw::universal::blockfraction<bfbits, bt, encoding>;
+	using Significant = sw::universal::blocksignificant<bfbits, bt, encoding>;
 
 	static constexpr bt ALL_ONES = bt(~0);
 	// generate the special case overflow pattern mask when representation is fbits + 1 < 64
@@ -224,8 +225,8 @@ public:
 	constexpr blocktriple& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
-	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_float(rhs); }
-	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_double(rhs); }
+	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
 	// explicit conversion operators
 	explicit operator float()                          const noexcept { return to_native<float>(); }
@@ -234,7 +235,7 @@ public:
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION blocktriple(long double iv)				noexcept { *this = iv; }
-	CONSTEXPRESSION blocktriple& operator=(long double rhs) noexcept { return *this = (long double)(rhs); };
+	CONSTEXPRESSION blocktriple& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()                   const noexcept { return to_native<long double>(); }
 #endif
 
@@ -265,39 +266,10 @@ public:
 		size_t significantScale = static_cast<size_t>(significantscale());
 		// find the shift that gets us to the lsb
 		size_t shift = significantScale + static_cast<size_t>(radix) - fbits;
-#ifdef PERFORMANCE_OPTIMIZATION
-		if constexpr (bfbits < 65) {
-			uint64_t fracbits = _significant.get_ull(); // get all the bits, including the integer bits
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			uint64_t mask = (1ull << (shift + adjustment);
-			bool lsb = fracbits & mask;
-			mask >>= 1;
-			bool guard = fracbits & mask;
-			mask >>= 1;
-			bool round = fracbits & mask;
-			if (shift < 2) {
-				mask = 0xFFFF'FFFF'FFFF'FFFFull;
-			}
-			else {
-				mask = 0xFFFF'FFFF'FFFF'FFFFull << (shift - 2);
-			}
-			mask = ~mask;
-			//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
-			//				std::cout << "sticky mask : " << to_binary(mask) << std::endl;
-			bool sticky = fracbits & mask;
-			roundup = (guard && (lsb || (round || sticky)));
-		}
-		else {
-			roundup = _significant.roundingDirection(shift);
-		}
-#endif
 		bool roundup = _significant.roundingDirection(shift + adjustment);
 		return std::pair<bool, size_t>(roundup, shift + adjustment);
 	}
+
 	// apply a 2's complement recoding of the fraction bits
 	inline constexpr blocktriple& twosComplement() noexcept {
 		_significant.twosComplement();
@@ -384,12 +356,12 @@ public:
 		}
 		return sigScale;
 	}
-	inline constexpr Frac significant()      const noexcept { return _significant; }
-	// specialty function to offer a fast path to get the fraction bits out of the representation
+	inline constexpr Significant significant()      const noexcept { return _significant; }
+	// specialty function to offer a fast path to get the significant bits out of the representation
 	// to convert to a target number system: only valid for bfbits <= 64
 	inline constexpr uint64_t fraction_ull() const noexcept { return _significant.fraction_ull(); }
 	inline constexpr uint64_t get_ull()      const noexcept { return _significant.get_ull(); }
-	// fraction bit accessors
+	// significant bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
 	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }
 
@@ -414,12 +386,12 @@ public:
 		std::cout << "sqrtbits          : " << sqrtbits << "      size of the square root output\n";
 		// we transform input operands into the operation's target output size
 		// so that everything is aligned correctly before the operation starts.
-		std::cout << "bfbits            : " << bfbits << "      bits in the blockfraction representation\n";
+		std::cout << "bfbits            : " << bfbits << "      bits in the blocksignificant representation\n";
 		std::cout << "radix             : " << radix << "      position of the radix point of the ALU operator result\n";
 		std::cout << "encoding          : " << encoding << '\n';
 		std::cout << "normalBits        : " << normalBits << "      normal bits to track: metaprogramming trick to remove warnings\n";
 		std::cout << "normalFormMask    : " << to_binary(normalFormMask) << "   normalFormMask for small configurations\n";
-		std::cout << "fraction type     : " << typeid(Frac).name() << '\n';
+		std::cout << "significant type  : " << typeid(Significant).name() << '\n';
 
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES) << '\n';
 		std::cout << "maxbits           : " << maxbits << "        bit to check for overflow: metaprogramming trick\n";
@@ -432,7 +404,7 @@ public:
 	// ALU operators
 
 	/// <summary>
-	/// add two fixed-point numbers with fbits fraction bits 
+	/// add two fixed-point numbers with fbits fraction bits and a leading 1
 	/// yielding an unrounded sum of 3+fbits. (currently we generate a 3+(2*fbits) result as we haven't implemented the sticky bit optimization)
 	/// This sum can overflow, be normal, or denormal. 
 	/// Since we are not rounding
@@ -467,7 +439,7 @@ public:
 		_significant.setradix(radix);                          // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_add) {
-			std::cout << "blockfraction unrounded add: just the significant values\n";
+			std::cout << "blocksignificant unrounded add: just the significant values\n";
 			std::cout << typeid(_significant).name() << '\n';
 			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
 			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
@@ -538,7 +510,7 @@ public:
 		_significant.setradix(2*fbits);                        // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_mul) {
-			std::cout << "blockfraction unrounded mul\n";
+			std::cout << "blocksignificant unrounded mul\n";
 			std::cout << typeid(_significant).name() << '\n';
 			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
 			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
@@ -585,12 +557,11 @@ public:
 		_significant.div(lhs._significant, rhs._significant);
 
 		if constexpr (_trace_btriple_div) {
-			std::cout << "blockfraction unrounded div\n";
-			std::cout << typeid(lhs._significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << "blocksignificant unrounded div\n";
 			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "div significant : " << to_binary(*this) << " : " << *this << '\n';  // <-- the scale of this representation is not yet set
+			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << _significant << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << _significant << '\n';
+			std::cout << "div significant : " << to_binary(_significant) << " : " << _significant << '\n';  // <-- the scale of this representation is not yet set
 		}
 		if (_significant.iszero()) {
 			clear();
@@ -637,7 +608,7 @@ private:
 	int  _scale;
 
 protected:
-	Frac _significant;
+	Significant _significant;
 
 	// helpers
 
@@ -647,11 +618,10 @@ private:
 	/// srcbits is the number of bits of significant in the source representation
 	/// round<> is intended only for rounding raw IEEE-754 bits
 	/// </summary>
-	/// <typeparam name="StorageType">type of incoming bits</typeparam>
 	/// <param name="raw">the raw unrounded bits</param>
 	/// <returns></returns>
-	template<size_t srcbits, typename StorageType>
-	constexpr StorageType round(StorageType raw) noexcept {
+	template<size_t srcbits, typename Real>
+	constexpr uint64_t round(uint64_t raw) noexcept {
 		if constexpr (fbits < srcbits) {
 			// round to even: lsb guard round sticky
 			// collect guard, round, and sticky bits
@@ -664,29 +634,29 @@ private:
 			// blocktriple target: 10bits: 0bhfff'ffff'fff    hidden bit is implicit, 10 fraction bits
 			//                                           lg'rs
 			//                             0b0000'0000'0001'0000'0000'0000; guard mask == 1 << srcbits - fbits - 2: 24 - 10 - 2 = 12
-			constexpr uint32_t upper = 8 * sizeof(StorageType) + 2;
+			constexpr uint32_t upper = ieee754_parameter<Real>::nbits + 2;
 			constexpr uint32_t shift = srcbits - fbits - 2ull;  // srcbits includes the hidden bit, fbits does not
-			StorageType mask = (StorageType{ 1ull } << shift);
+			uint64_t mask = (1ull << shift);
 //			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType)*8, true) << '\n';
 //			std::cout << "guard : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
 			bool guard = (mask & raw);
 			mask >>= 1;
-//			std::cout << "round : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
+//			std::cout << "round : " << to_binary(mask, ieee754_parameter<Real>::nbits, true) << '\n';
 			bool round = (mask & raw);
 			if constexpr (shift > 1 && shift < upper) { // protect against a negative shift
-				StorageType allones(StorageType(~0));
-				mask = StorageType(allones << (shift - 1));
+				uint64_t allones(uint64_t(~0));
+				mask = uint64_t(allones << (shift - 1));
 				mask = ~mask;
 			}
 			else {
 				mask = 0;
 			}
-//			std::cout << "sticky: " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
+//			std::cout << "sticky: " << to_binary(mask, ieee754_parameter<Real>::nbits, true) << '\n';
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
 			bool lsb = (raw & 0x1);
-//			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType) * 8, true) << '\n';
+//			std::cout << "raw   : " << to_binary(raw, ieee754_parameter<Real>::nbits, true) << '\n';
 
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -706,17 +676,16 @@ private:
 		}
 		else {
 			constexpr size_t shift = fbits - srcbits;
-			if constexpr (shift < sizeof(StorageType)) {
+			if constexpr (shift < ieee754_parameter<Real>::nbits) {
 				raw <<= shift;
 			}
 			else {
 #if !BIT_CAST_SUPPORT
-				std::cerr << "round: shift " << shift << " is too large (>= " << sizeof(StorageType) << ")\n";
+				std::cerr << "round: shift " << shift << " is too large (>= 64)\n";
 #endif
 			}
 		}
-//		std::cout << "final : " << to_binary(raw, sizeof(StorageType) * 8, true) << '\n';
-		return static_cast<StorageType>(raw);
+		return static_cast<uint64_t>(raw);
 	}
 
 	template<typename Ty>
@@ -741,7 +710,7 @@ private:
 			_significant.setradix(fbits);
 			break;
 		case BlockTripleOperator::DIV:
-			_significant.setradix(3 * fbits);
+			_significant.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::SQRT:
 			_significant.setradix(2 * fbits);
@@ -775,10 +744,10 @@ private:
 			_significant.setradix(fbits);
 			break;
 		case BlockTripleOperator::DIV:
-			_significant.setradix(3*fbits);
+			_significant.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::SQRT:
-			_significant.setradix(2*fbits);
+			_significant.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::REPRESENTATION:
 			_significant.setradix(fbits);
@@ -788,47 +757,42 @@ private:
 		return *this;
 	}
 
-	inline CONSTEXPRESSION blocktriple& convert_float(float rhs) noexcept {   // TODO: deal with subnormals and inf
-#if BIT_CAST_SUPPORT
-		// normal number
-		uint32_t bc = std::bit_cast<uint32_t>(rhs);
-		bool s = (0x8000'0000ul & bc);
-		uint32_t raw_exp = static_cast<uint32_t>((0x7F80'0000ul & bc) >> 23);
-		uint32_t raw = (1ul << 23) | (0x007F'FFFFul & bc);
-#else // !BIT_CAST_SUPPORT
-		float_decoder decoder;
-		decoder.f = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		uint32_t raw_exp = decoder.parts.exponent;
-		uint32_t raw = (1ul << 23) | decoder.parts.fraction;
-#endif // !BIT_CAST_SUPPORT
+	template<typename Real>
+	inline CONSTEXPRESSION blocktriple& convert_ieee754(Real rhs) noexcept {   // TODO: deal with subnormals and inf
+
+		// extract raw IEEE-754 bits
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction);
 
 		// special case handling
-		if (raw_exp == 0xFFu) { // special cases
-			if (raw == 1ul || raw == 0x00C0'0001ul) {
-				// 1.11111111.00000000000000000000001 signalling nan
+		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
+			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
+				rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
+				// 1.11111111.00000000.......00000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
 				// MSVC
-				// 1.11111111.10000000000000000000001 signalling nan
-				// 0.11111111.10000000000000000000001 signalling nan
+				// 1.11111111.10000000.......00000001 signalling nan
+				// 0.11111111.10000000.......00000001 signalling nan
 				// NAN_TYPE_SIGNALLING;
 				_nan = true;
 				_inf = false; 
 				_sign = true; // this is the encoding of a signalling NaN
 				return *this;
 			}
-			if (raw == 0x00C0'0000ul) {
-				// 1.11111111.10000000000000000000000 quiet nan
-				// 0.11111111.10000000000000000000000 quiet nan
+			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
+				// 1.11111111.10000000.......00000000 quiet nan
+				// 0.11111111.10000000.......00000000 quiet nan
 				// NAN_TYPE_QUIET);
 				_nan = true;
 				_inf = false; 
 				_sign = false; // this is the encoding of a quiet NaN
 				return *this;
 			}
-			if (raw == 0ul) {
-				// 1.11111111.00000000000000000000000 -inf
-				// 0.11111111.00000000000000000000000 +inf
+			if (rawFraction == 0ull) {
+				// 1.11111111.0000000.......000000000 -inf
+				// 0.11111111.0000000.......000000000 +inf
 				_nan = false;
 				_inf = true;
 				_sign = s;  // + or - infinity
@@ -842,78 +806,39 @@ private:
 			_sign = s;
 			return *this;
 		}
+
+		int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
+
 		// normal number, not zero
 		_nan = false;
 		_inf = false;
 		_zero = false;
 		_sign = s;
-		_scale = static_cast<int>(raw_exp) - 127;
-		uint32_t rounded_bits = round<24, uint32_t>(raw);
-		_significant.setradix(fbits); // round maps the fraction bits to the radix at fbits
+		_scale = exponent;
+		uint64_t rounded_bits = round<ieee754_parameter<Real>::fbits+1, Real>(rawFraction);
 		_significant.setbits(rounded_bits);
-		return *this;
-	}
-
-	inline CONSTEXPRESSION blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
-#if BIT_CAST_SUPPORT
-		uint64_t bc = std::bit_cast<uint64_t>(rhs);
-		bool s = (0x8000'0000'0000'0000ull & bc);
-		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
-		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-#else
-		double_decoder decoder;
-		decoder.d = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		uint64_t raw_exp = decoder.parts.exponent;
-		uint64_t raw = (1ull << 52) | decoder.parts.fraction;
-#endif // !BIT_CAST_SUPPORT
-
-		// special case handling
-		if (raw_exp == 0x7FFu) { // special cases
-			if (raw == 1ul || raw == 0x0040'0001ul) {
-				// 1.111'1111'1111.0000000000...0000000001 signalling nan
-				// 0.111'1111'1111.0000000000...0000000001 signalling nan
-				// MSVC
-				// 1.111'1111'1111.1000000000...0000000001 signalling nan
-				// 0.111'1111'1111.1000000000...0000000001 signalling nan
-				// NAN_TYPE_SIGNALLING;
-				_nan = true;
-				_inf = true; // this is the encoding of a signalling NaN
-				return *this;
-	}
-			if (raw == 0x0008'0000'0000'0000ull) {
-				// 1.111'1111'1111.1000000000...0000000000 quiet nan
-				// 0.111'1111'1111.1000000000...0000000000 quiet nan
-				// NAN_TYPE_QUIET);
-				_nan = true;
-				_inf = false; // this is the encoding of a quiet NaN
-				return *this;
-			}
-			if (raw == 0ul) {
-				// 1.11111111.00000000000000000000000 -inf
-				// 0.11111111.00000000000000000000000 +inf
-				_nan = false;
-				_inf = true;
-				_sign = s;  // + or - infinity
-				return *this;
-			}
+		switch(op) {
+		case BlockTripleOperator::REPRESENTATION:
+			_significant.setradix(fbits);
+			break;
+		case BlockTripleOperator::ADD:
+			_significant.setradix(abits);
+			_significant <<= rbits;
+			break;
+		case BlockTripleOperator::MUL:
+			_significant.setradix(2*fbits);
+			_significant <<= fbits;
+			break;
+		case BlockTripleOperator::DIV:
+			_significant.setradix(2*fbits);
+			_significant <<= fbits;
+			break;
+		case BlockTripleOperator::SQRT:
+			_significant.setradix(2 * fbits);
+			_significant <<= fbits;
+			break;
 		}
-		if (rhs == 0.0f) { // IEEE rule: this is valid for + and - 0.0
-			_nan = false;
-			_inf = false;
-			_zero = true;
-			_sign = s;
-			return *this;
-		}
-		// normal number
-		_nan = false;
-		_inf = false;
-		_zero = false;
-		_sign = s;
-		_scale = static_cast<int>(raw_exp) - 1023;
-		uint64_t rounded_bits = round<53, uint64_t>(raw); // round manipulates _scale if needed
-		_significant.setradix(fbits); // round maps the fraction bits to the radix at fbits
-		_significant.setbits(rounded_bits);
+
 		return *this;
 	}
 

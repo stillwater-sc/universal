@@ -10,15 +10,15 @@
 #include <iomanip>
 
 // temporary
-#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/internal/bitblock/bitblock.hpp>
-// minimum set of include files to reflect source code dependencies                    
+//#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+//#include <universal/internal/bitblock/bitblock.hpp>
+                  
 #include <universal/native/ieee754.hpp>
 // uncomment to enable operator tracing
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
 //#define BLOCKTRIPLE_TRACE_MUL
 #include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 // enumerate all multiplication cases for an blocktriple<nbits,BlockType> configuration
@@ -35,10 +35,10 @@ int VerifyMultiplication(bool reportTestCases) {
 		return 1;
 	}
 //	constexpr size_t mbits = BlockTripleConfiguration::mbits;
-//	cout << endl;
-//	cout << "blocktriple<" <<fbits << ',' << op << ',' << typeid(BlockType).name() << '>' << endl;
-//	cout << "Fraction        bits : " << fbits << endl;
-//	cout << "Multiplication  bits : " << mbits << endl;
+//	std::cout << '\n';
+//	std::cout << "blocktriple<" <<fbits << ',' << op << ',' << typeid(BlockType).name() << '>' << '\n';
+//	std::cout << "Fraction        bits : " << fbits <<'\n';
+//	std::cout << "Multiplication  bits : " << mbits << '\n';
 
 	/*
 		blocktriple<fbits> has fbits fraction bits in the form h.<fbits>
@@ -135,7 +135,7 @@ int VerifyMultiplication(bool reportTestCases) {
 // generate specific test case that you can trace with the trace conditions in blocktriple
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t fbits, typename ArgumentType>
-void GenerateTestCase(ArgumentType lhs, ArgumentType rhs) {
+void TestCase(ArgumentType lhs, ArgumentType rhs) {
 	using namespace sw::universal;
 	blocktriple<fbits, BlockTripleOperator::MUL> a, b, result;  // MUL creates a blockfraction of mbits = 2*fhbits and set the initial radix at mbits
 
@@ -174,7 +174,7 @@ void GenerateTestCase(ArgumentType lhs, ArgumentType rhs) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -202,7 +202,7 @@ try {
 
 #if MANUAL_TESTING
 
-	GenerateTestCase<2, float>(0.375f, 1.5f);
+	TestCase<2>(0.375f, 1.5f);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple< 2, BlockTripleOperator::MUL, uint8_t > >(reportTestCases), "blocktriple< 2, BlockTripleOperator::MUL, uint8_t >", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blocktriple< 4, BlockTripleOperator::MUL, uint8_t > >(reportTestCases), "blocktriple< 4, BlockTripleOperator::MUL, uint8_t >", "multiplication");
@@ -259,7 +259,7 @@ catch (char const* msg) {
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
