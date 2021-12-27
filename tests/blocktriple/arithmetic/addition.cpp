@@ -16,7 +16,7 @@
 #include <universal/native/ieee754.hpp>
 // uncomment to enable operator tracing
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
-//#define BLOCKTRIPLE_TRACE_ADD
+#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
@@ -205,9 +205,9 @@ int main()
 try {
 	using namespace sw::universal;
 	
-	std::string test_suite = "blocktriple addition validation";
-	std::string test_tag = "blocktriple addition";
-	bool reportTestCases = false;
+	std::string test_suite  = "blocktriple addition validation";
+	std::string test_tag    = "blocktriple addition";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
@@ -216,10 +216,9 @@ try {
 
 	TestCase<4>(1.0f, 1.0f);
 
-
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 1, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<1, BlockTripleOperator::ADD, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 4, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<4, BlockTripleOperator::ADD, uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<8, BlockTripleOperator::ADD, uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 4, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<4, BlockTripleOperator::ADD, uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<8, BlockTripleOperator::ADD, uint8_t>", "addition");
 
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<10, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<10, BlockTripleOperator::ADD, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, BlockTripleOperator::ADD, uint8_t> >(reportTestCases), "blocktriple<12, BlockTripleOperator::ADD, uint8_t>", "addition");

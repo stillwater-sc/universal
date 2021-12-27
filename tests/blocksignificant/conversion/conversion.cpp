@@ -1,4 +1,4 @@
-//  conversion.cpp : test suite runner for blockfraction construction and conversion from float/double
+//  conversion.cpp : test suite runner for blocksignificant construction and conversion from float/double
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -7,10 +7,10 @@
 #include <universal/utility/long_double.hpp>
 #include <iostream>
 
-#include <universal/internal/blockfraction/blockfraction.hpp>
+#include <universal/internal/blocksignificant/blocksignificant.hpp>
 
 /*
-A blockfraction is a 1's or 2's complement binary encoding with a radix point 
+A blocksignificant is a 1's or 2's complement binary encoding with a radix point 
 that is aligned with the hidden bit of the fraction encoding in a 
 floating-point representation. 
   - multiplication uses a 1's complement encoding.
@@ -19,7 +19,7 @@ floating-point representation.
   - square root uses a 1's complement encoding.
 
 
-The main goal of the blockfraction abstraction is to support arbitrary floating-point 
+The main goal of the blocksignificant abstraction is to support arbitrary floating-point 
 number systems with a high-quality, high-performance arithmetic engine.
 
 The expensive part in these abstractions is the need to receive, expand, and align
@@ -27,12 +27,12 @@ bit strings, so special attention must be given to fast implementations.
 Implementations that use copies leads to cleaner code, and is ok for small representations. 
 However, for larger representations these copies become prohibitive, 
 and implementations that do not copy the fraction bits are superior.
-The current blockfraction implementation avoids copies but the block storage
-is assumed to be allocated on the stack. This implies that blockfraction
+The current blocksignificant implementation avoids copies but the block storage
+is assumed to be allocated on the stack. This implies that blocksignificant
 is useful for representing fixed-size number systems with good performance
 for sizes up to several thousands of bits. 
 
-For arbitrary and adaptive size number systems, blockfraction is not the
+For arbitrary and adaptive size number systems, blocksignificant is not the
 right abstraction. High-performance arbitrary precision systems use a
 dynamic data structure and a custom memory manager to avoid copies.
 
@@ -41,10 +41,10 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "blockfraction storage class value conversion testing";
+	std::string tag = "blocksignificant storage class value conversion testing";
 
-	// we have deprecated the blockfraction copy constructor to catch any
-	// unsuspecting conversion copies in blockfraction use-cases
+	// we have deprecated the blocksignificant copy constructor to catch any
+	// unsuspecting conversion copies in blocksignificant use-cases
 	{
 		// scenario that happens in unrounded add/sub
 		//  0b0'10.00'0000 : 2
@@ -62,7 +62,7 @@ try {
 		//constexpr size_t sumbits = abits + 1;
 		size_t msbMask = (1 << (fbits-1));
 		size_t frac = msbMask;
-		blockfraction<fhbits, uint8_t, BitEncoding::Twos> a;
+		blocksignificant<fhbits, uint8_t, BitEncoding::Twos> a;
 		a.setradix(fhbits - 3);
 		for (size_t i = 0; i < fbits; ++i) {
 			a.setbits(frac);
@@ -98,7 +98,7 @@ try {
 		//	0b11.111111 : 3.98438
 		//	0b1.1111111 : 1.99219
 		constexpr size_t nbits = 8;
-		blockfraction<nbits, uint8_t, BitEncoding::Ones> a(0xff, 1);
+		blocksignificant<nbits, uint8_t, BitEncoding::Ones> a(0xff, 1);
 		for (int radix = 1; radix < static_cast<int>(nbits); ++radix) {
 			a.setradix(radix);
 			std::cout << to_binary(a) << " : " << a << '\n';

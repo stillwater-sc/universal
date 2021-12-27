@@ -1,4 +1,4 @@
-// division.cpp: functional tests for blockfraction division
+// division.cpp: functional tests for blocksignificant division
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -10,11 +10,11 @@
 #include <typeinfo>
 
 #include <universal/native/integers.hpp>
-#include <universal/internal/blockfraction/blockfraction.hpp>
+#include <universal/internal/blocksignificant/blocksignificant.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
-// enumerate all multiplication cases for an blockfraction<nbits,BlockType> configuration
+// enumerate all multiplication cases for an blocksignificant<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyDivision(bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
@@ -23,13 +23,13 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	using namespace sw::universal;
 
 	cout << endl;
-	cout << "blockfraction<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	bool bReportOverflowCondition = false;
 
 	int nrOfOverflows = 0;   // ref > maxpos
 	int nrOfUnderflows = 0;  // ref < maxneg
-	blockfraction<nbits, BlockType> a, b, result, refResult;
+	blocksignificant<nbits, BlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
@@ -73,7 +73,7 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 template<size_t nbits, typename BlockType, sw::universal::BitEncoding encoding>
 void TestMostSignificantBit() {
 	using namespace sw::universal;
-	blockfraction<nbits, BlockType, encoding> a;
+	blocksignificant<nbits, BlockType, encoding> a;
 	std::cout << to_binary(a) << ' ' << a.msb() << '\n';
 	a.setbits(0x01ull);
 	for (size_t i = 0; i < nbits; ++i) {
@@ -92,7 +92,7 @@ try {
 	
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "blockfraction division: ";
+	std::string tag = "blocksignificant division: ";
 
 #if MANUAL_TESTING
 
@@ -100,8 +100,8 @@ try {
 	TestMostSignificantBit<27, uint16_t, BitEncoding::Twos>();
 	TestMostSignificantBit<33, uint32_t, BitEncoding::Twos>();
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockfraction<4>", "division");
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockfraction<8>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blocksignificant<4>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blocksignificant<8>", "division");
 
 
 #if STRESS_TESTING
@@ -111,27 +111,27 @@ try {
 #else
 	bool bReportIndividualTestCases = true;
 
-	cout << "blockfraction division validation" << endl;
+	cout << "blocksignificant division validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockfraction<4,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, uint8_t>(bReportIndividualTestCases), "blockfraction<5,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(bReportIndividualTestCases), "blockfraction<6,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, uint8_t>(bReportIndividualTestCases), "blockfraction<7,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockfraction<8,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint8_t>(bReportIndividualTestCases), "blockfraction<9,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(bReportIndividualTestCases), "blockfraction<10,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(bReportIndividualTestCases), "blockfraction<12,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blocksignificant<4,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, uint8_t>(bReportIndividualTestCases), "blocksignificant<5,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(bReportIndividualTestCases), "blocksignificant<6,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, uint8_t>(bReportIndividualTestCases), "blocksignificant<7,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blocksignificant<8,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint8_t>(bReportIndividualTestCases), "blocksignificant<9,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(bReportIndividualTestCases), "blocksignificant<10,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(bReportIndividualTestCases), "blocksignificant<12,uint8_t>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint16_t>(bReportIndividualTestCases), "blockfraction<9,uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(bReportIndividualTestCases), "blockfraction<11,uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(bReportIndividualTestCases), "blockfraction<13,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint16_t>(bReportIndividualTestCases), "blocksignificant<9,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(bReportIndividualTestCases), "blocksignificant<11,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(bReportIndividualTestCases), "blocksignificant<13,uint16_t>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint32_t>(bReportIndividualTestCases), "blockfraction<12,uint32_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint32_t>(bReportIndividualTestCases), "blocksignificant<12,uint32_t>", "division");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(bReportIndividualTestCases), "blockfraction<16,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint16_t>(bReportIndividualTestCases), "blockfraction<16,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(bReportIndividualTestCases), "blocksignificant<16,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint16_t>(bReportIndividualTestCases), "blocksignificant<16,uint16_t>", "division");
 
 
 #endif  // STRESS_TESTING

@@ -1,4 +1,4 @@
-// rounding.cpp: functional tests for blockfraction rounding
+// rounding.cpp: functional tests for blocksignificant rounding
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -11,28 +11,28 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/internal/blockfraction/blockfraction.hpp>
+#include <universal/internal/blocksignificant/blocksignificant.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
-// enumerate all rounding cases for an blockfraction<nbits,BlockType> configuration
-template<typename BlockFractionConfiguration>
+// enumerate all rounding cases for an blocksignificant<nbits,BlockType> configuration
+template<typename blocksignificantConfiguration>
 int VerifyRounding(bool bReportIndividualTestCases) {
-	constexpr size_t nbits = BlockFractionConfiguration::nbits;
-	using BlockType = typename BlockFractionConfiguration::BlockType;
-	constexpr sw::universal::BitEncoding encoding = BlockFractionConfiguration::encoding;
+	constexpr size_t nbits = blocksignificantConfiguration::nbits;
+	using BlockType = typename blocksignificantConfiguration::BlockType;
+	constexpr sw::universal::BitEncoding encoding = blocksignificantConfiguration::encoding;
 
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
 	
 //	std::cout << endl;
-//	std::cout << "blockfraction<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+//	std::cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
-	// two's complement blockfractions will have the form: 0ii.fffff
+	// two's complement blocksignificants will have the form: 0ii.fffff
 	// 
 	int nrOfFailedTests = 0;
 
-	blockfraction<nbits, BlockType, encoding> a;
+	blocksignificant<nbits, BlockType, encoding> a;
 	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -52,7 +52,7 @@ try {
 	using namespace sw::universal;
 	
 	int nrOfFailedTestCases = 0;
-	std::string tag = "blockfraction rounding";
+	std::string tag = "blocksignificant rounding";
 	constexpr BitEncoding twos = BitEncoding::Twos;
 
 	std::cout << tag << '\n';
@@ -64,7 +64,7 @@ try {
 			//       1     1       0     0        up   round to even
 			//       x     1       0     1        up
 	{
-		blockfraction<10, uint32_t, twos> a;
+		blocksignificant<10, uint32_t, twos> a;
 		// test rounding of 0b00'0lgr'ssss
 		//                        |          position of the lsb
 		// lsb is 6

@@ -28,7 +28,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
-#include <universal/internal/blockfraction/blockfraction.hpp>
+#include <universal/internal/blocksignificant/blocksignificant.hpp>
 // blocktriple operation trace options
 #include <universal/internal/blocktriple/trace_constants.hpp>
 
@@ -806,37 +806,46 @@ private:
 			_sign = s;
 			return *this;
 		}
+		if (rawExponent == 0ull) {
+			// value is a subnormal: TBD
+			std::cerr << "subnormal value TBD\n";
+		}
+		else {
+			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
 
-		int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
+			// normal number, not zero
+			_nan = false;
+			_inf = false;
+			_zero = false;
+			_sign = s;
+			_scale = exponent;
 
-		// normal number, not zero
-		_nan = false;
-		_inf = false;
-		_zero = false;
-		_sign = s;
-		_scale = exponent;
-		uint64_t rounded_bits = round<ieee754_parameter<Real>::fbits+1, Real>(rawFraction);
-		_significant.setbits(rounded_bits);
-		switch(op) {
-		case BlockTripleOperator::REPRESENTATION:
-			_significant.setradix(fbits);
-			break;
-		case BlockTripleOperator::ADD:
-			_significant.setradix(abits);
-			_significant <<= rbits;
-			break;
-		case BlockTripleOperator::MUL:
-			_significant.setradix(2*fbits);
-			_significant <<= fbits;
-			break;
-		case BlockTripleOperator::DIV:
-			_significant.setradix(2*fbits);
-			_significant <<= fbits;
-			break;
-		case BlockTripleOperator::SQRT:
-			_significant.setradix(2 * fbits);
-			_significant <<= fbits;
-			break;
+			// add the hidden bit
+			rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
+			uint64_t rounded_bits = round<ieee754_parameter<Real>::fbits+1, Real>(rawFraction);
+			_significant.setbits(rounded_bits);
+			switch(op) {
+			case BlockTripleOperator::REPRESENTATION:
+				_significant.setradix(fbits);
+//				std::cout << "rhs = " << rhs << " : significant = " << _significant << '\n';
+				break;
+			case BlockTripleOperator::ADD:
+				_significant.setradix(abits);
+				_significant <<= rbits;
+				break;
+			case BlockTripleOperator::MUL:
+				_significant.setradix(2*fbits);
+				_significant <<= fbits;
+				break;
+			case BlockTripleOperator::DIV:
+				_significant.setradix(2*fbits);
+				_significant <<= fbits;
+				break;
+			case BlockTripleOperator::SQRT:
+				_significant.setradix(2 * fbits);
+				_significant <<= fbits;
+				break;
+			}
 		}
 
 		return *this;

@@ -850,9 +850,28 @@ namespace sw::universal {
 				if (double(ref) != double(b)) {
 					if (a.isnan() && b.isnan()) continue;
 					if (a.isinf() && b.isinf()) continue;
-
 					++nrOfTestFailures;
 					if (reportTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+
+				}
+			}
+		}
+
+		// DIV
+		if constexpr (op == BlockTripleOperator::DIV) {
+			constexpr size_t fbits = CfloatConfiguration::fbits;
+			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
+			blocktriple<2 * fbits, BlockTripleOperator::REPRESENTATION, bt> ref;
+			for (size_t i = 0; i < NR_VALUES; ++i) {
+				a.setbits(i);
+				a.normalizeDivision(b);
+				ref = double(b);
+				if (double(ref) != double(b)) {
+					if (a.isnan() && b.isnan()) continue;
+					if (a.isinf() && b.isinf()) continue;
+					++nrOfTestFailures;
+					if (reportTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
+
 				}
 			}
 		}

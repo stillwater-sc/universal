@@ -613,7 +613,7 @@ if(BUILD_NUMBER_ARITHMETIC_CLASSES)
 add_subdirectory("tests/bitblock")
 add_subdirectory("tests/value")
 add_subdirectory("tests/blockbinary")
-add_subdirectory("tests/blockfraction")
+add_subdirectory("tests/blocksignificant")
 add_subdirectory("tests/blocktriple")
 endif(BUILD_NUMBER_ARITHMETIC_CLASSES)
 

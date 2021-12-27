@@ -163,11 +163,11 @@ public:
 		}
 	}
 
-	blocksignificant(const blocksignificant&) noexcept = default;
-	blocksignificant(blocksignificant&&) noexcept = default;
+	constexpr blocksignificant(const blocksignificant&) noexcept = default;
+	constexpr blocksignificant(blocksignificant&&) noexcept = default;
 
-	blocksignificant& operator=(const blocksignificant&) noexcept = default;
-	blocksignificant& operator=(blocksignificant&&) noexcept = default;
+	constexpr blocksignificant& operator=(const blocksignificant&) noexcept = default;
+	constexpr blocksignificant& operator=(blocksignificant&&) noexcept = default;
 
 #ifdef NEVER
 	// disable the ability to copy different blocksignificants to catch any
@@ -218,7 +218,7 @@ public:
 	//
 	// 
 	// one's complement
-	blocksignificant operator~() const {
+	constexpr blocksignificant operator~() const {
 		blocksignificant complement(*this);
 		complement.flip();
 		return complement;
@@ -299,7 +299,7 @@ public:
 #endif
 
 	// shift left operator
-	blocksignificant& operator<<=(int bitsToShift) {
+	constexpr blocksignificant& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
@@ -330,7 +330,7 @@ public:
 	}
 
 	// shift right operator
-	blocksignificant& operator>>=(int bitsToShift) {
+	constexpr blocksignificant& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {

@@ -89,24 +89,27 @@ try {
 		{
 			using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			//Cfloat a; a.constexprClassParameters();
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), tag, "cfloat<4,2> to blocktriple ADD");
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), tag, "cfloat<4,2> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2> to blocktriple ADD");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), test_tag, "cfloat<4,2> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::DIV>(reportTestCases), test_tag, "cfloat<4,2> to blocktriple DIV");
 		}
 		{
 			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			//Cfloat a; a.constexprClassParameters();
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), tag, "cfloat<5,2> to blocktriple ADD");
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), tag, "cfloat<5,2> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<5,2> to blocktriple ADD");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), test_tag, "cfloat<5,2> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::DIV>(reportTestCases), test_tag, "cfloat<5,2> to blocktriple DIV");
 		}
 
 		{
 			using Cfloat = cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			//Cfloat a; a.constexprClassParameters();
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), tag, "cfloat<8,3> to blocktriple ADD");
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), tag, "cfloat<8,3> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<8,3> to blocktriple ADD");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), test_tag, "cfloat<8,3> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::DIV>(reportTestCases), test_tag, "cfloat<8,3> to blocktriple DIV");
 		}
 
-		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), tag, "cfloat<10,2> ADD");
+		nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD >(reportTestCases), test_tag, "cfloat<10,2> ADD");
 
 	}
 
