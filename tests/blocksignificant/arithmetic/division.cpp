@@ -103,7 +103,7 @@ try {
 	TestMostSignificantBit<27, uint16_t>();
 	TestMostSignificantBit<33, uint32_t>();
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "blocksignificant<4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "blocksignificant<4>", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(reportTestCases), "blocksignificant<8>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

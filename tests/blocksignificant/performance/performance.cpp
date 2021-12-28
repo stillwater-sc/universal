@@ -35,7 +35,7 @@ void TestBlockPerformanceOnConstruction() {
 	std::cout << "\nConstruction performance\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull + 1;
-	constexpr BitEncoding flex = BitEncoding::Flex;
+//	constexpr BitEncoding flex = BitEncoding::Flex;
 
 	PerformanceRunner("blocksignificant<8>    construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
 	PerformanceRunner("blocksignificant<16>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
@@ -53,7 +53,7 @@ void TestShiftOperatorPerformance() {
 	std::cout << "\nLogical shift operator performance\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
-	constexpr BitEncoding flex = BitEncoding::Flex;
+//	constexpr BitEncoding flex = BitEncoding::Flex;
 
 	PerformanceRunner("blocksignificant<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
 	PerformanceRunner("blocksignificant<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
@@ -71,7 +71,7 @@ void TestBlockPerformanceOnShift() {
 	std::cout << "\nBlock size performance on logical shift operators\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
-	constexpr BitEncoding flex = BitEncoding::Flex;
+//	constexpr BitEncoding flex = BitEncoding::Flex;
 
 	PerformanceRunner("blocksignificant<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
 
@@ -225,7 +225,7 @@ void TestBlockPerformanceOnAdd() {
 	std::cout << "\nADDITION: blocksignificant arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 2ull * 1024ull * 1024ull;
-	constexpr BitEncoding twos = BitEncoding::Twos;
+//	constexpr BitEncoding twos = BitEncoding::Twos;
 
 	PerformanceRunner("blocksignificant<4,uint8>      add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
 	PerformanceRunner("blocksignificant<8,uint8>      add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
@@ -258,7 +258,7 @@ void TestBlockPerformanceOnDiv() {
 	std::cout << "\nDIVISION: blocksignificant arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 1024ull * 1024;
-	constexpr BitEncoding ones = BitEncoding::Ones;
+//	constexpr BitEncoding ones = BitEncoding::Ones;
 
 	PerformanceRunner("blocksignificant<4,uint8>      div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
 	PerformanceRunner("blocksignificant<8,uint8>      div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
@@ -324,7 +324,7 @@ void TestBlockPerformanceOnMul() {
 	std::cout << "\nMULTIPLICATION: blocksignificant arithemetic performance as a function of size and BlockType\n";
 
 	constexpr size_t NR_OPS = 512ull * 1024;
-	constexpr BitEncoding ones = BitEncoding::Ones;
+//	constexpr BitEncoding ones = BitEncoding::Ones;
 
 	PerformanceRunner("blocksignificant<4,uint8>      mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
 	PerformanceRunner("blocksignificant<8,uint8>      mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
@@ -358,7 +358,7 @@ try {
 
 	std::string test_suite  = "blocksignificant operator performance benchmarking";
 	std::string test_tag    = "blocksignificant performance";
-	bool reportTestCases    = false;
+//	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';

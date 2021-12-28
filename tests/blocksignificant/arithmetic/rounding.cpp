@@ -15,12 +15,12 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
+#ifdef LATER
 // enumerate all rounding cases for an blocksignificant<nbits,BlockType> configuration
 template<typename blocksignificantConfiguration>
-int VerifyRounding(bool bReportIndividualTestCases) {
+int VerifyRounding(bool reportTestCases) {
 	constexpr size_t nbits = blocksignificantConfiguration::nbits;
 	using BlockType = typename blocksignificantConfiguration::BlockType;
-	constexpr sw::universal::BitEncoding encoding = blocksignificantConfiguration::encoding;
 
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
@@ -32,7 +32,7 @@ int VerifyRounding(bool bReportIndividualTestCases) {
 	// 
 	int nrOfFailedTests = 0;
 
-	blocksignificant<nbits, BlockType, encoding> a;
+	blocksignificant<nbits, BlockType> a;
 	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -46,6 +46,7 @@ int VerifyRounding(bool bReportIndividualTestCases) {
 //	std::cout << endl;
 	return nrOfFailedTests;
 }
+#endif
 
 int main()
 try {
