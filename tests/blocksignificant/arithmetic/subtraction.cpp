@@ -11,12 +11,12 @@
 #include <universal/native/integers.hpp> // for to_binary(int)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
+#include <universal/verification/test_suite.hpp>
+
 
 // enumerate all addition cases for an blocksignificant configuration
 template<typename blocksignificantConfiguration>
-int VerifySubtraction(bool bReportIndividualTestCases) {
+int VerifyBlockSignificantSubtraction(bool reportTestCases) {
 	constexpr size_t nbits = blocksignificantConfiguration::nbits;
 	using BlockType = typename blocksignificantConfiguration::BlockType;
 
@@ -28,7 +28,7 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 
 	int nrOfFailedTests = 0;
 
-	blocksignificant<nbits, BlockType, sw::universal::BitEncoding::Twos> a, b, c;
+	blocksignificant<nbits, BlockType> a, b, c;
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
@@ -43,10 +43,10 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 			}
 			if (refResult != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, c, cref);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, c, cref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, cref);
+				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, cref);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -58,11 +58,11 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 
 // generate specific test case that you can trace with the trace conditions in blocksignificant
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename BlockType, sw::universal::BitEncoding encoding>
-void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType, encoding>& lhs, const sw::universal::blocksignificant <nbits, BlockType, encoding>& rhs) {
+template<size_t nbits, typename BlockType>
+void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType>& lhs, const sw::universal::blocksignificant <nbits, BlockType>& rhs) {
 	using namespace sw::universal;
 
-	blocksignificant<nbits, BlockType, encoding> a, b, c;
+	blocksignificant<nbits, BlockType> a, b, c;
 
 	a = lhs;
 	b = rhs;
@@ -95,19 +95,33 @@ void GenerateMaxValues() {
 	std::cout << "max = " << max << std::endl;
 }
 
-// conditional compile flags
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 
 	using namespace sw::universal;
 	
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "blocksignificant subtraction validation";
+	std::string test_tag    = "blocksignificant subtraction";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "modular subtraction failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -124,55 +138,53 @@ try {
 	b = twosComplement(a);
 	cout << to_hex(a) << ' ' << to_hex(b) << ' ' << to_hex(twosComplement(b)) << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<4, uint8_t> >(true),  "blocksignificant<4, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<4, uint16_t> >(true), "blocksignificant<4, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<4, uint32_t> >(true), "blocksignificant<4, uint32_t>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<4, uint64_t> >(true), "blocksignificant<4, uint64_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<4, uint8_t> >(true),  "blocksignificant<4, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<4, uint16_t> >(true), "blocksignificant<4, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<4, uint32_t> >(true), "blocksignificant<4, uint32_t>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<4, uint64_t> >(true), "blocksignificant<4, uint64_t>", "subtraction");
 
-	nrOfFailedTestCases = (bReportIndividualTestCases ? 0 : -1);
+	nrOfFailedTestCases = (reportTestCases ? 0 : -1);
 
-#if STRESS_TESTING
-
-#endif
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
-	std::cout << "block subtraction validation\n";
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 4, uint8_t> >(reportTestCases),  "blocksignificant< 4, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 4, uint16_t> >(reportTestCases), "blocksignificant< 4, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 4, uint32_t> >(reportTestCases), "blocksignificant< 4, uint32_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 4, uint64_t> >(reportTestCases), "blocksignificant< 4, uint64_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 4, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blocksignificant< 4, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 4, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant< 4, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 4, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant< 4, uint32_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 4, uint64_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant< 4, uint64_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 8, uint8_t> >(reportTestCases),  "blocksignificant< 8, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 8, uint16_t> >(reportTestCases), "blocksignificant< 8, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 8, uint32_t> >(reportTestCases), "blocksignificant< 8, uint32_t>", "subtraction");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 8, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blocksignificant< 8, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 8, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant< 8, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 8, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant< 8, uint32_t>", "subtraction");
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 9, uint8_t> >(reportTestCases),  "blocksignificant< 9, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 9, uint16_t> >(reportTestCases), "blocksignificant< 9, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant< 9, uint32_t> >(reportTestCases), "blocksignificant< 9, uint32_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 9, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blocksignificant< 9, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 9, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant< 9, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant< 9, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant< 9, uint32_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<10, uint8_t> >(reportTestCases),  "blocksignificant<10, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<10, uint16_t> >(reportTestCases), "blocksignificant<10, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<10, uint32_t> >(reportTestCases), "blocksignificant<10, uint32_t>", "subtraction");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<10, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blocksignificant<10, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<10, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant<10, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<10, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant<10, uint32_t>", "subtraction");
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<11, uint8_t> >(reportTestCases),  "blocksignificant<11, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<11, uint16_t> >(reportTestCases), "blocksignificant<11, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<11, uint32_t> >(reportTestCases), "blocksignificant<11, uint32_t>", "subtraction");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<11, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blocksignificant<11, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<11, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant<11, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<11, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant<11, uint32_t>", "subtraction");
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<12, uint8_t> >(reportTestCases),  "blocksignificant<12, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<12, uint16_t> >(reportTestCases), "blocksignificant<12, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantSubtraction< blocksignificant<12, uint32_t> >(reportTestCases), "blocksignificant<12, uint32_t>", "subtraction");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<12, uint8_t, BitEncoding::Twos> >(bReportIndividualTestCases),  "blocksignificant<12, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<12, uint16_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant<12, uint16_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< blocksignificant<12, uint32_t, BitEncoding::Twos> >(bReportIndividualTestCases), "blocksignificant<12, uint32_t>", "subtraction");
-
-#if STRESS_TESTING
-
-
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

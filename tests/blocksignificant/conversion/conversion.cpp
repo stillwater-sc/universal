@@ -62,7 +62,7 @@ try {
 		//constexpr size_t sumbits = abits + 1;
 		size_t msbMask = (1 << (fbits-1));
 		size_t frac = msbMask;
-		blocksignificant<fhbits, uint8_t, BitEncoding::Twos> a;
+		blocksignificant<fhbits, uint8_t> a;
 		a.setradix(fhbits - 3);
 		for (size_t i = 0; i < fbits; ++i) {
 			a.setbits(frac);
@@ -98,7 +98,7 @@ try {
 		//	0b11.111111 : 3.98438
 		//	0b1.1111111 : 1.99219
 		constexpr size_t nbits = 8;
-		blocksignificant<nbits, uint8_t, BitEncoding::Ones> a(0xff, 1);
+		blocksignificant<nbits, uint8_t> a(0xff, 1);
 		for (int radix = 1; radix < static_cast<int>(nbits); ++radix) {
 			a.setradix(radix);
 			std::cout << to_binary(a) << " : " << a << '\n';

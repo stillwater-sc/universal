@@ -37,7 +37,7 @@ try {
 	std::string tag = "blocksignificant storage class construction/conversion testing";
 
 	{
-		blocksignificant<7, uint8_t, BitEncoding::Twos> a, b, c;
+		blocksignificant<7, uint8_t> a, b, c; // BitEncoding::Twos
 		a.setbits(0x11); // 1.0 in 7-bit blocksignificant form
 		b.setbits(0x11);
 		std::cout << to_binary(a) << " : " << a << '\n';
@@ -53,7 +53,7 @@ try {
 		// a 00h.fffff format is thus 8 bits
 		// By design, the 00h.fffff format contains all the valid values
 		// for addition and subtraction.
-		blocksignificant<8, uint8_t, BitEncoding::Twos> a, b, c;
+		blocksignificant<8, uint8_t> a, b, c; // BitEncoding::Twos
 		a.setbits(0x21); // 1.0 in 8-bit blocksignificant form
 		b.setbits(0x21);
 		std::cout << to_binary(a) << " : " << a << '\n';
@@ -65,7 +65,7 @@ try {
 	}
 
 	{
-		blocksignificant<12, uint8_t, BitEncoding::Twos> a, b, c;
+		blocksignificant<12, uint8_t> a, b, c; // BitEncoding::Twos
 		a.setbits(0x100);
 		b.setbits(0x200);
 		b.twosComplement();
@@ -80,7 +80,7 @@ try {
 	{
 		// ad-hoc rounding test 
 		// 0000'0000  lsb target is at(3)
-		blocksignificant<8, uint8_t, BitEncoding::Ones> a;
+		blocksignificant<8, uint8_t> a;  // BitEncoding::Ones
 		size_t lsbTarget = 3;
 		a.setbits(0x0F);	// 00001111  up
 		PrintRoundingDirection(a, lsbTarget);

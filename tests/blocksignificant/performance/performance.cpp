@@ -10,8 +10,24 @@
 #include <chrono>
 
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/performance_runner.hpp>
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 // test construction peformance
 void TestBlockPerformanceOnConstruction() {
@@ -21,14 +37,14 @@ void TestBlockPerformanceOnConstruction() {
 	constexpr size_t NR_OPS = 1024ull * 1024ull + 1;
 	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blocksignificant<8>    construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<64, uint64_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<256>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<512>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<512, uint32_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<1024> construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blocksignificant<8>    construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64>   construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<64, uint64_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<128>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<256>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<512>  construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<1024> construction  ", ConstructionPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS);
 }
 
 // test performance of shift operator on blocksignificant<> class
@@ -39,13 +55,15 @@ void TestShiftOperatorPerformance() {
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
 	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blocksignificant<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint32_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t, flex> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t, flex> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<512, uint32_t, flex> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t, flex> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+#if REGRESSION_LEVEL_4
+	PerformanceRunner("blocksignificant<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+#endif
 }
 
 void TestBlockPerformanceOnShift() {
@@ -55,43 +73,44 @@ void TestBlockPerformanceOnShift() {
 	constexpr size_t NR_OPS = 1024ull * 1024ull;
 	constexpr BitEncoding flex = BitEncoding::Flex;
 
-	PerformanceRunner("blocksignificant<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t, flex> >, NR_OPS);
+	PerformanceRunner("blocksignificant<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
 
-	PerformanceRunner("blocksignificant<16,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint8_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t, flex> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
 
-	PerformanceRunner("blocksignificant<32,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint8_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint16_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
 
-	PerformanceRunner("blocksignificant<64,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint8_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint16_t, flex> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint32_t, flex> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+#if REGRESSION_LEVEL_4
+	PerformanceRunner("blocksignificant<128,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
 
-	PerformanceRunner("blocksignificant<128,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint8_t, flex> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint16_t, flex> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<128, uint32_t, flex> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<256,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
 
-	PerformanceRunner("blocksignificant<256,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint8_t, flex> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint16_t, flex> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<256, uint32_t, flex> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 8);
 
-	PerformanceRunner("blocksignificant<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint8_t, flex> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint16_t, flex> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t, flex> >, NR_OPS / 8);
-
-	PerformanceRunner("blocksignificant<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint8_t, flex> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint16_t, flex> >, NR_OPS /16);
-	PerformanceRunner("blocksignificant<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t, flex> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS /16);
+	PerformanceRunner("blocksignificant<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+#endif
 }
 
 // Generic set of adds and subtracts for a given number system type
 template<typename Scalar>
-void BFAdditionWorkload(size_t NR_OPS) {
+void BlockSignificantAdditionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
-	sw::universal::blocksignificant<nbits, bt, encoding> a, b, c, d;
+//	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
+	sw::universal::blocksignificant<nbits, bt> a, b, c, d;
 	a.setradix(nbits);
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
@@ -102,11 +121,11 @@ void BFAdditionWorkload(size_t NR_OPS) {
 }
 
 template<typename Scalar>
-void BFSubtractionWorkload(size_t NR_OPS) {
+void BlockSignificantSubtractionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
-	sw::universal::blocksignificant<nbits, bt, encoding> a, b, c, d;
+//	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Twos;
+	sw::universal::blocksignificant<nbits, bt> a, b, c, d;
 	a.setradix(nbits);
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
 	a = b;
@@ -117,11 +136,11 @@ void BFSubtractionWorkload(size_t NR_OPS) {
 }
 
 template<typename Scalar>
-void BFMultiplicationWorkload(size_t NR_OPS) {
+void BlockSignificantMultiplicationWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
-	sw::universal::blocksignificant<nbits, bt, encoding> a, b;
+//	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
+	sw::universal::blocksignificant<nbits, bt> a, b;
 	a.setradix(nbits);
 	Scalar c, d;
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
@@ -134,11 +153,11 @@ void BFMultiplicationWorkload(size_t NR_OPS) {
 }
 
 template<typename Scalar>
-void BFDivisionWorkload(size_t NR_OPS) {
+void BlockSignificantDivisionWorkload(size_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
-	sw::universal::blocksignificant<nbits, bt, encoding> a, b;
+//	constexpr sw::universal::BitEncoding encoding = sw::universal::BitEncoding::Ones;
+	sw::universal::blocksignificant<nbits, bt> a, b;
 	a.setradix(nbits);
 	Scalar c, d;
 	a.setbits(0xFFFF'FFFF'FFFF'FFFFull);
@@ -155,49 +174,49 @@ void TestArithmeticOperatorPerformance() {
 	std::cout << "\nArithmetic operator performance\n";
 
 	size_t NR_OPS = 1024ull * 1024ull * 2ull;
-	constexpr BitEncoding ones = BitEncoding::Ones;
-	constexpr BitEncoding twos = BitEncoding::Twos;
+//	constexpr BitEncoding ones = BitEncoding::Ones;
+//	constexpr BitEncoding twos = BitEncoding::Twos;
 
-	PerformanceRunner("blocksignificant<16>   add           ", BFAdditionWorkload< sw::universal::blocksignificant<16, uint32_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   add           ", BFAdditionWorkload< sw::universal::blocksignificant<32, uint32_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   add           ", BFAdditionWorkload< sw::universal::blocksignificant<64, uint32_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128>  add           ", BFAdditionWorkload< sw::universal::blocksignificant<128, uint32_t, twos> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256>  add           ", BFAdditionWorkload< sw::universal::blocksignificant<256, uint32_t, twos> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>  add           ", BFAdditionWorkload< sw::universal::blocksignificant<512, uint32_t, twos> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024> add           ", BFAdditionWorkload< sw::universal::blocksignificant<1024, uint32_t, twos> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<16>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64>   add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<128>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<256>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512>  add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<1024> add           ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
 
-	PerformanceRunner("blocksignificant<16>       subtract  ", BFSubtractionWorkload< sw::universal::blocksignificant<16, uint32_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>       subtract  ", BFSubtractionWorkload< sw::universal::blocksignificant<32, uint32_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>       subtract  ", BFSubtractionWorkload< sw::universal::blocksignificant<64, uint32_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128>      subtract  ", BFSubtractionWorkload< sw::universal::blocksignificant<128, uint32_t, twos> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256>      subtract  ", BFSubtractionWorkload< sw::universal::blocksignificant<256, uint32_t, twos> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>      subtract  ", BFSubtractionWorkload< sw::universal::blocksignificant<512, uint32_t, twos> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024>     subtract  ", BFSubtractionWorkload< sw::universal::blocksignificant<1024, uint32_t, twos> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<16>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64>       subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<128>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<256>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512>      subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<1024>     subtract  ", BlockSignificantSubtractionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
 
 	NR_OPS = 1024ull * 1024ull;
-	PerformanceRunner("blocksignificant<16>   multiplication", BFMultiplicationWorkload< sw::universal::blocksignificant<16, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   multiplication", BFMultiplicationWorkload< sw::universal::blocksignificant<32, uint32_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<64>   multiplication", BFMultiplicationWorkload< sw::universal::blocksignificant<64, uint32_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<128>  multiplication", BFMultiplicationWorkload< sw::universal::blocksignificant<128, uint32_t, ones> >, NR_OPS / 64);
-	PerformanceRunner("blocksignificant<512>  multiplication", BFMultiplicationWorkload< sw::universal::blocksignificant<512, uint32_t, ones> >, NR_OPS / 512);     // TODO: why is this so slow?
-	PerformanceRunner("blocksignificant<1024> multiplication", BFMultiplicationWorkload< sw::universal::blocksignificant<1024, uint32_t, ones> >, NR_OPS / 1024);   // TODO: why is this so slow?
+	PerformanceRunner("blocksignificant<16>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<64>   multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<128>  multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 64);
+	PerformanceRunner("blocksignificant<512>  multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 512);     // TODO: why is this so slow?
+	PerformanceRunner("blocksignificant<1024> multiplication", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 1024);   // TODO: why is this so slow?
 
 	NR_OPS = 1024ull * 512ull;
-	PerformanceRunner("blocksignificant<16>   division      ", BFDivisionWorkload< sw::universal::blocksignificant<16, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   division      ", BFDivisionWorkload< sw::universal::blocksignificant<32, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   division      ", BFDivisionWorkload< sw::universal::blocksignificant<64, uint32_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128>  division      ", BFDivisionWorkload< sw::universal::blocksignificant<128, uint32_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>  division      ", BFDivisionWorkload< sw::universal::blocksignificant<512, uint32_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024> division      ", BFDivisionWorkload< sw::universal::blocksignificant<1024, uint32_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<16>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64>   division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128>  division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512>  division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<1024> division      ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
 
 #ifdef FRACTION_REMAINDER
 	NR_OPS = 1024ull * 512ull;
-	PerformanceRunner("blocksignificant<16>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<16, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<32, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<64, uint32_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128>  remainder     ", RemainderWorkload< sw::universal::blocksignificant<128, uint32_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512>  remainder     ", RemainderWorkload< sw::universal::blocksignificant<512, uint32_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024> remainder     ", RemainderWorkload< sw::universal::blocksignificant<1024, uint32_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<16>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<16, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64>   remainder     ", RemainderWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128>  remainder     ", RemainderWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512>  remainder     ", RemainderWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<1024> remainder     ", RemainderWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
 #endif
 }
 
@@ -208,28 +227,30 @@ void TestBlockPerformanceOnAdd() {
 	constexpr size_t NR_OPS = 2ull * 1024ull * 1024ull;
 	constexpr BitEncoding twos = BitEncoding::Twos;
 
-	PerformanceRunner("blocksignificant<4,uint8>      add   ", BFAdditionWorkload< sw::universal::blocksignificant<4, uint8_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<8,uint8>      add   ", BFAdditionWorkload< sw::universal::blocksignificant<8, uint8_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint8>     add   ", BFAdditionWorkload< sw::universal::blocksignificant<16, uint8_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>    add   ", BFAdditionWorkload< sw::universal::blocksignificant<16, uint16_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint8>     add   ", BFAdditionWorkload< sw::universal::blocksignificant<32, uint8_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>    add   ", BFAdditionWorkload< sw::universal::blocksignificant<32, uint16_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>    add   ", BFAdditionWorkload< sw::universal::blocksignificant<32, uint32_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint8>     add   ", BFAdditionWorkload< sw::universal::blocksignificant<64, uint8_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>    add   ", BFAdditionWorkload< sw::universal::blocksignificant<64, uint16_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>    add   ", BFAdditionWorkload< sw::universal::blocksignificant<64, uint32_t, twos> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128,uint8>    add   ", BFAdditionWorkload< sw::universal::blocksignificant<128, uint8_t, twos> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>   add   ", BFAdditionWorkload< sw::universal::blocksignificant<128, uint16_t, twos> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>   add   ", BFAdditionWorkload< sw::universal::blocksignificant<128, uint32_t, twos> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256,uint8>    add   ", BFAdditionWorkload< sw::universal::blocksignificant<256, uint8_t, twos> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint16>   add   ", BFAdditionWorkload< sw::universal::blocksignificant<256, uint16_t, twos> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint32>   add   ", BFAdditionWorkload< sw::universal::blocksignificant<256, uint32_t, twos> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512,uint8>    add   ", BFAdditionWorkload< sw::universal::blocksignificant<512, uint8_t, twos> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint16>   add   ", BFAdditionWorkload< sw::universal::blocksignificant<512, uint16_t, twos> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint32>   add   ", BFAdditionWorkload< sw::universal::blocksignificant<512, uint32_t, twos> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024,uint8>   add   ", BFAdditionWorkload< sw::universal::blocksignificant<1024, uint8_t, twos> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint16>  add   ", BFAdditionWorkload< sw::universal::blocksignificant<1024, uint16_t, twos> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint32>  add   ", BFAdditionWorkload< sw::universal::blocksignificant<1024, uint32_t, twos> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<4,uint8>      add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<8,uint8>      add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint32>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint8>     add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint16>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint32>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+#if REGRESSION_LEVEL_4
+	PerformanceRunner("blocksignificant<128,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<256,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<256,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<256,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512,uint8>    add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<512,uint16>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<512,uint32>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<1024,uint8>   add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<1024,uint16>  add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<1024,uint32>  add   ", BlockSignificantAdditionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+#endif
 }
 
 void TestBlockPerformanceOnDiv() {
@@ -239,28 +260,30 @@ void TestBlockPerformanceOnDiv() {
 	constexpr size_t NR_OPS = 1024ull * 1024;
 	constexpr BitEncoding ones = BitEncoding::Ones;
 
-	PerformanceRunner("blocksignificant<4,uint8>      div   ", BFDivisionWorkload< sw::universal::blocksignificant<4, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<8,uint8>      div   ", BFDivisionWorkload< sw::universal::blocksignificant<8, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint8>     div   ", BFDivisionWorkload< sw::universal::blocksignificant<16, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>    div   ", BFDivisionWorkload< sw::universal::blocksignificant<16, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint8>     div   ", BFDivisionWorkload< sw::universal::blocksignificant<32, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>    div   ", BFDivisionWorkload< sw::universal::blocksignificant<32, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>    div   ", BFDivisionWorkload< sw::universal::blocksignificant<32, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint8>     div   ", BFDivisionWorkload< sw::universal::blocksignificant<64, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>    div   ", BFDivisionWorkload< sw::universal::blocksignificant<64, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>    div   ", BFDivisionWorkload< sw::universal::blocksignificant<64, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128,uint8>    div   ", BFDivisionWorkload< sw::universal::blocksignificant<128, uint8_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>   div   ", BFDivisionWorkload< sw::universal::blocksignificant<128, uint16_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>   div   ", BFDivisionWorkload< sw::universal::blocksignificant<128, uint32_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256,uint8>    div   ", BFDivisionWorkload< sw::universal::blocksignificant<256, uint8_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint16>   div   ", BFDivisionWorkload< sw::universal::blocksignificant<256, uint16_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint32>   div   ", BFDivisionWorkload< sw::universal::blocksignificant<256, uint32_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512,uint8>    div   ", BFDivisionWorkload< sw::universal::blocksignificant<512, uint8_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint16>   div   ", BFDivisionWorkload< sw::universal::blocksignificant<512, uint16_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint32>   div   ", BFDivisionWorkload< sw::universal::blocksignificant<512, uint32_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024,uint8>   div   ", BFDivisionWorkload< sw::universal::blocksignificant<1024, uint8_t, ones> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint16>  div   ", BFDivisionWorkload< sw::universal::blocksignificant<1024, uint16_t, ones> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint32>  div   ", BFDivisionWorkload< sw::universal::blocksignificant<1024, uint32_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<4,uint8>      div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<8,uint8>      div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint32>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint8>     div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint16>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint32>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+#if REGRESSION_LEVEL_4
+	PerformanceRunner("blocksignificant<128,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<256,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<256,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<256,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512,uint8>    div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<512,uint16>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<512,uint32>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<1024,uint8>   div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<1024,uint16>  div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<1024,uint32>  div   ", BlockSignificantDivisionWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
+#endif
 }
 
 #if FRACTION_REMAINDER
@@ -271,28 +294,28 @@ void TestBlockPerformanceOnRem() {
 	constexpr size_t NR_OPS = 1024ull * 1024;
 	constexpr BitEncoding ones = BitEncoding::Ones;
 
-	PerformanceRunner("blocksignificant<4,uint8>      rem   ", RemainderWorkload< sw::universal::blocksignificant<4, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<8,uint8>      rem   ", RemainderWorkload< sw::universal::blocksignificant<8, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<16, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<16, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>    rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>    rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint8_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint16_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint32_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint8_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint16_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<256,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint32_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint8_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint16_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<512,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint32_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<1024,uint8>   rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint8_t, ones> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint16>  rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint16_t, ones> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<1024,uint32>  rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint32_t, ones> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<4,uint8>      rem   ", RemainderWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<8,uint8>      rem   ", RemainderWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint32>    rem   ", RemainderWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint8>     rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint16>    rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint32>    rem   ", RemainderWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<128,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<256,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<256,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<256,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512,uint8>    rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<512,uint16>   rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<512,uint32>   rem   ", RemainderWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<1024,uint8>   rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<1024,uint16>  rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<1024,uint32>  rem   ", RemainderWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 16);
 }
 #endif
 
@@ -303,39 +326,42 @@ void TestBlockPerformanceOnMul() {
 	constexpr size_t NR_OPS = 512ull * 1024;
 	constexpr BitEncoding ones = BitEncoding::Ones;
 
-	PerformanceRunner("blocksignificant<4,uint8>      mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<4, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<8,uint8>      mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<8, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<16, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<16,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<16, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<32, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<32, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<32,uint32>    mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<32, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint8>     mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<64, uint8_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint16>    mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<64, uint16_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<64,uint32>    mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<64, uint32_t, ones> >, NR_OPS);
-	PerformanceRunner("blocksignificant<128,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<128, uint8_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<128, uint16_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<128,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<128, uint32_t, ones> >, NR_OPS / 2);
-	PerformanceRunner("blocksignificant<256,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<256, uint8_t, ones> >, NR_OPS / 16);
-	PerformanceRunner("blocksignificant<256,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<256, uint16_t, ones> >, NR_OPS / 8);
-	PerformanceRunner("blocksignificant<256,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<256, uint32_t, ones> >, NR_OPS / 4);
-	PerformanceRunner("blocksignificant<512,uint8>    mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<512, uint8_t, ones> >, NR_OPS / 512);
-	PerformanceRunner("blocksignificant<512,uint16>   mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<512, uint16_t, ones> >, NR_OPS / 256);
-	PerformanceRunner("blocksignificant<512,uint32>   mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<512, uint32_t, ones> >, NR_OPS / 128);
-	PerformanceRunner("blocksignificant<1024,uint8>   mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<1024, uint8_t, ones> >, NR_OPS / 1024);
-	PerformanceRunner("blocksignificant<1024,uint16>  mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<1024, uint16_t, ones> >, NR_OPS / 512);
-	PerformanceRunner("blocksignificant<1024,uint32>  mul   ", BFMultiplicationWorkload< sw::universal::blocksignificant<1024, uint32_t, ones> >, NR_OPS / 256);
-
+	PerformanceRunner("blocksignificant<4,uint8>      mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<8,uint8>      mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<16,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<32,uint32>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint8>     mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint16>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blocksignificant<64,uint32>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<64, uint32_t> >, NR_OPS);
+#if REGRESSION_LEVEL_4
+	PerformanceRunner("blocksignificant<128,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<128,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blocksignificant<256,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<256, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blocksignificant<256,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<256, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blocksignificant<256,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blocksignificant<512,uint8>    mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<512, uint8_t> >, NR_OPS / 512);
+	PerformanceRunner("blocksignificant<512,uint16>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<512, uint16_t> >, NR_OPS / 256);
+	PerformanceRunner("blocksignificant<512,uint32>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<512, uint32_t> >, NR_OPS / 128);
+	PerformanceRunner("blocksignificant<1024,uint8>   mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<1024, uint8_t> >, NR_OPS / 1024);
+	PerformanceRunner("blocksignificant<1024,uint16>  mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<1024, uint16_t> >, NR_OPS / 512);
+	PerformanceRunner("blocksignificant<1024,uint32>  mul   ", BlockSignificantMultiplicationWorkload< sw::universal::blocksignificant<1024, uint32_t> >, NR_OPS / 256);
+#endif
 }
-
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "blocksignificant operator performance benchmarking";
+	std::string test_suite  = "blocksignificant operator performance benchmarking";
+	std::string test_tag    = "blocksignificant performance";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -344,16 +370,9 @@ try {
 
 	ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >(1);
 	
-	std::cout << "done\n";
-
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << tag << std::endl;
-
-	int nrOfFailedTestCases = 0;
-
-	TestShiftOperatorPerformance();
-	TestArithmeticOperatorPerformance();
 
 	TestBlockPerformanceOnConstruction();
 	TestBlockPerformanceOnShift();
@@ -364,12 +383,9 @@ try {
 	TestBlockPerformanceOnRem();
 #endif
 
-#if STRESS_TESTING
-
-#endif // STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif // MANUAL_TESTING
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

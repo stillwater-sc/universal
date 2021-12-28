@@ -90,7 +90,7 @@ try {
 			using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			//Cfloat a; a.constexprClassParameters();
 			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2> to blocktriple ADD");
-			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(reportTestCases), test_tag, "cfloat<4,2> to blocktriple MUL");
+			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::MUL>(true), test_tag, "cfloat<4,2> to blocktriple MUL");
 			nrOfFailedTestCases += ReportTestResult(VerifyCfloatToBlocktripleConversion<Cfloat, BlockTripleOperator::DIV>(reportTestCases), test_tag, "cfloat<4,2> to blocktriple DIV");
 		}
 		{

@@ -53,7 +53,7 @@ try {
 	
 	int nrOfFailedTestCases = 0;
 	std::string tag = "blocksignificant rounding";
-	constexpr BitEncoding twos = BitEncoding::Twos;
+//	constexpr BitEncoding twos = BitEncoding::Twos;
 
 	std::cout << tag << '\n';
 
@@ -64,7 +64,7 @@ try {
 			//       1     1       0     0        up   round to even
 			//       x     1       0     1        up
 	{
-		blocksignificant<10, uint32_t, twos> a;
+		blocksignificant<10, uint32_t> a;
 		// test rounding of 0b00'0lgr'ssss
 		//                        |          position of the lsb
 		// lsb is 6

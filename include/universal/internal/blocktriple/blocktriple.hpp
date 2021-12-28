@@ -165,24 +165,24 @@ public:
 		(op == BlockTripleOperator::ADD ? (3 + abits) :   // we need 3 integer bits (bits left of the radix point) to capture 2's complement and overflow
 			(op == BlockTripleOperator::MUL ? mbits :
 				(op == BlockTripleOperator::DIV ? divbits :
-					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits))));  // REPRESENTATION is the fall through condition
+					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits+1))));  // REPRESENTATION is the fall through condition and adds a bit to accomodate 2's complement encodings
 	// radix point of the OUTPUT of an operator
 	static constexpr int radix =
 		(op == BlockTripleOperator::ADD ? static_cast<int>(abits) :
 			(op == BlockTripleOperator::MUL ? static_cast<int>(2*fbits) :
 				(op == BlockTripleOperator::DIV ? static_cast<int>(2*fbits) :
 					(op == BlockTripleOperator::SQRT ? static_cast<int>(sqrtbits) : static_cast<int>(fbits)))));  // REPRESENTATION is the fall through condition
-	static constexpr BitEncoding encoding =
-		(op == BlockTripleOperator::ADD ? BitEncoding::Twos :
-			(op == BlockTripleOperator::MUL ? BitEncoding::Ones :
-				(op == BlockTripleOperator::DIV ? BitEncoding::Ones :
-					(op == BlockTripleOperator::SQRT ? BitEncoding::Ones : BitEncoding::Ones))));
+//	static constexpr BitEncoding encoding =
+//		(op == BlockTripleOperator::ADD ? BitEncoding::Twos :
+//			(op == BlockTripleOperator::MUL ? BitEncoding::Ones :
+//				(op == BlockTripleOperator::DIV ? BitEncoding::Ones :
+//					(op == BlockTripleOperator::SQRT ? BitEncoding::Ones : BitEncoding::Ones))));
 	static constexpr size_t normalBits = (bfbits < 64 ? bfbits : 64);
 	static constexpr size_t normalFormMask = (normalBits == 64) ? 0xFFFF'FFFF'FFFF'FFFFull : (~(0xFFFF'FFFF'FFFF'FFFFull << (normalBits - 1)));
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using intrinsics/assembly code
-	using Significant = sw::universal::blocksignificant<bfbits, bt, encoding>;
+	using Significant = sw::universal::blocksignificant<bfbits, bt>;
 
 	static constexpr bt ALL_ONES = bt(~0);
 	// generate the special case overflow pattern mask when representation is fbits + 1 < 64
@@ -388,7 +388,7 @@ public:
 		// so that everything is aligned correctly before the operation starts.
 		std::cout << "bfbits            : " << bfbits << "      bits in the blocksignificant representation\n";
 		std::cout << "radix             : " << radix << "      position of the radix point of the ALU operator result\n";
-		std::cout << "encoding          : " << encoding << '\n';
+//		std::cout << "encoding          : " << encoding << '\n';
 		std::cout << "normalBits        : " << normalBits << "      normal bits to track: metaprogramming trick to remove warnings\n";
 		std::cout << "normalFormMask    : " << to_binary(normalFormMask) << "   normalFormMask for small configurations\n";
 		std::cout << "significant type  : " << typeid(Significant).name() << '\n';
@@ -551,7 +551,7 @@ public:
 	void div(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
-		int scale_of_result = lhs_scale + rhs_scale;
+		int scale_of_result = lhs_scale - rhs_scale;
 
 		// avoid copy by directly manipulating the fraction bits of the arguments
 		_significant.div(lhs._significant, rhs._significant);

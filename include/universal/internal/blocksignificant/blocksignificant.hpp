@@ -60,18 +60,18 @@ std::ostream& operator<<(std::ostream& ostr, const BitEncoding& encoding) {
 }
 
 // forward references
-template<size_t nbits, typename bt, BitEncoding encoding> class blocksignificant;
-template<size_t nbits, typename bt, BitEncoding encoding> constexpr blocksignificant<nbits, bt, encoding> twosComplement(const blocksignificant<nbits, bt, encoding>&);
-template<size_t nbits, typename bt, BitEncoding encoding> struct bfquorem;
-template<size_t nbits, typename bt, BitEncoding encoding> bfquorem<nbits, bt, encoding> longdivision(const blocksignificant<nbits, bt, encoding>&, const blocksignificant<nbits, bt, encoding>&);
+template<size_t nbits, typename bt> class blocksignificant;
+template<size_t nbits, typename bt> constexpr blocksignificant<nbits, bt> twosComplement(const blocksignificant<nbits, bt>&);
+template<size_t nbits, typename bt> struct bfquorem;
+template<size_t nbits, typename bt> bfquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>&, const blocksignificant<nbits, bt>&);
 
 // idiv_t for blocksignificant<nbits> to capture quotient and remainder during long division
-template<size_t nbits, typename bt, BitEncoding encoding>
+template<size_t nbits, typename bt>
 struct bfquorem {
 	bfquorem() {} // default constructors
 	int exceptionId;
-	blocksignificant<nbits, bt, encoding> quo; // quotient
-	blocksignificant<nbits, bt, encoding> rem; // remainder
+	blocksignificant<nbits, bt> quo; // quotient
+	blocksignificant<nbits, bt> rem; // remainder
 };
 
 /*
@@ -115,12 +115,11 @@ What is the required API of blocksignificant to support that semantic?
 /// simplifies the copying of exponent and fraction bits from and to the client.
 /// </summary>
 /// <typeparam name="bt"></typeparam>
-template<size_t _nbits, typename bt, BitEncoding _encoding>
+template<size_t _nbits, typename bt>
 class blocksignificant {
 public:
 	typedef bt BlockType;
 	static constexpr size_t nbits = _nbits;
-	static constexpr BitEncoding encoding = _encoding;
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
@@ -136,8 +135,8 @@ public:
 	static constexpr bt OVERFLOW_BIT = ~(MSU_MASK >> 1) & MSU_MASK;
 
 	// constructors
-	constexpr blocksignificant() noexcept : radixPoint{ nbits }, _block { 0 } {}
-	constexpr blocksignificant(uint64_t raw, int radixPoint) noexcept : radixPoint{ radixPoint }, _block { 0 } {
+	constexpr blocksignificant() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block { 0 } {}
+	constexpr blocksignificant(const uint64_t raw, int radixPoint) noexcept : radixPoint{ radixPoint }, encoding{ BitEncoding::Flex }, _block{ 0 } {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = static_cast<bt>(storageMask & raw);;
 		}
@@ -265,10 +264,12 @@ public:
 		add(lhs, rhs.twosComplement());
 	}
 	void mul(const blocksignificant& lhs, const blocksignificant& rhs) {
-		blocksignificant<nbits, bt, encoding> base(lhs);
-		blocksignificant<nbits, bt, encoding> multiplicant(rhs);
+		blocksignificant<nbits, bt> base(lhs);
+		blocksignificant<nbits, bt> multiplicant(rhs);
 		clear();
 		for (size_t i = 0; i < nbits; ++i) {
+//			std::cout << "base         : " << to_binary(base) << " : " << base << '\n';
+//			std::cout << "multiplicant : " << to_binary(multiplicant) << " : " << multiplicant << '\n';
 			if (base.at(i)) {
 				add(*this, multiplicant);
 			}
@@ -278,12 +279,14 @@ public:
 		// we don't need to null here
 	}
 	void div(const blocksignificant& lhs, const blocksignificant& rhs) {
-		blocksignificant<nbits, bt, encoding> decimator(lhs);
-		blocksignificant<nbits, bt, encoding> divider(rhs);
+		blocksignificant<nbits, bt> base(lhs);
+		blocksignificant<nbits, bt> divider(rhs);
 		clear();
 		for (size_t i = 0; i < nbits; ++i) {
-			if (divider <= decimator) {
-				sub(decimator, divider);
+//			std::cout << "base    : " << to_binary(base) << " : " << base << '\n';
+//			std::cout << "divider : " << to_binary(divider) << " : " << divider << '\n';
+			if (divider <= base) {
+				sub(base, divider);
 			}
 			divider >>= 1;
 		}
@@ -292,7 +295,7 @@ public:
 #ifdef FRACTION_REMAINDER
 	// remainder operator
 	blocksignificant& operator%=(const blocksignificant& rhs) {
-		bfquorem<nbits, bt, encoding> result = longdivision(*this, rhs);
+		bfquorem<nbits, bt> result = longdivision(*this, rhs);
 		*this = result.rem;
 		return *this;
 	}
@@ -487,7 +490,7 @@ public:
 	}
 	// in-place 2's complement
 	inline constexpr blocksignificant& twosComplement() noexcept {
-		blocksignificant<nbits, bt, encoding> plusOne;
+		blocksignificant<nbits, bt> plusOne;
 		plusOne.setbit(0);
 		flip();
 		add(*this, plusOne);
@@ -642,19 +645,19 @@ public:
 	inline constexpr double to_double() const noexcept {
 		double d{ 0.0 };
 		double s{ 1.0 };
-		blocksignificant<nbits, bt, encoding> tmp(*this);
+		blocksignificant<nbits, bt> tmp(*this);
 		int bit = static_cast<int>(nbits - 1);
 		int shift = static_cast<int>(nbits - 1 - radixPoint);
 
 		// special case preprocessing for 2's complement encodings
-		if constexpr (encoding == BitEncoding::Twos) {
+//		if (encoding == BitEncoding::Twos) {
 			// nbits in the target form 00h.fffff, check msb and if set take 2's complement
 			if (test(static_cast<size_t>(bit--))) {
 				tmp.twosComplement();
 				s = -1.0;
 			}
 			--shift; // and remove the MSB from the value computation
-		}
+//		}
 
 		// process the value above the radix
 		size_t bitValue = 1ull << shift;
@@ -703,7 +706,8 @@ protected:
 	// none
 
 public:
-	int radixPoint;      
+	int radixPoint;
+	BitEncoding encoding;
 	bt _block[nrBlocks];
 
 private:
@@ -711,22 +715,22 @@ private:
 	// friend functions
 
 	// integer - integer logic comparisons
-	template<size_t N, typename B, BitEncoding C>
-	friend bool operator==(const blocksignificant<N,B,C>& lhs, const blocksignificant<N, B, C>& rhs);
-	template<size_t N, typename B, BitEncoding C>
-	friend bool operator!=(const blocksignificant<N, B, C>& lhs, const blocksignificant<N, B, C>& rhs);
+	template<size_t N, typename B>
+	friend bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs);
+	template<size_t N, typename B>
+	friend bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs);
 	// the other logic operators are defined in terms of arithmetic terms
 
-	template<size_t N, typename B, BitEncoding C>
-	friend std::ostream& operator<<(std::ostream& ostr, const blocksignificant<N, B, C>& v);
+	template<size_t N, typename B>
+	friend std::ostream& operator<<(std::ostream& ostr, const blocksignificant<N, B>& v);
 };
 
 //////////////////////////////////////////////////////////////////////////////////
 // stream operators
 
 // ostream operator
-template<size_t nbits, typename bt, BitEncoding encoding>
-std::ostream& operator<<(std::ostream& ostr, const blocksignificant<nbits, bt, encoding>& number) {
+template<size_t nbits, typename bt>
+std::ostream& operator<<(std::ostream& ostr, const blocksignificant<nbits, bt>& number) {
 	return ostr << double(number);
 }
 
@@ -735,8 +739,8 @@ std::ostream& operator<<(std::ostream& ostr, const blocksignificant<nbits, bt, e
 
 // create a binary representation of the blocksignificant: 00h.ffff
 // by design, the radix point is at nbits-3
-template<size_t nbits, typename bt, BitEncoding encoding>
-std::string to_binary(const blocksignificant<nbits, bt, encoding>& number, bool nibbleMarker = false) {
+template<size_t nbits, typename bt>
+std::string to_binary(const blocksignificant<nbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	for (int i = nbits - 1; i >= 0; --i) {
@@ -752,8 +756,8 @@ std::string to_binary(const blocksignificant<nbits, bt, encoding>& number, bool 
 }
 
 // local helper to display the contents of a byte array
-template<size_t nbits, typename bt, BitEncoding encoding>
-std::string to_hex(const blocksignificant<nbits, bt, encoding>& number, bool wordMarker = true) {
+template<size_t nbits, typename bt>
+std::string to_hex(const blocksignificant<nbits, bt>& number, bool wordMarker = true) {
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -774,8 +778,8 @@ std::string to_hex(const blocksignificant<nbits, bt, encoding>& number, bool wor
 //////////////////////////////////////////////////////////////////////////////////
 // logic operators
 
-template<size_t N, typename B, BitEncoding C>
-inline bool operator==(const blocksignificant<N, B, C>& lhs, const blocksignificant<N, B, C>& rhs) {
+template<size_t N, typename B>
+inline bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -783,46 +787,46 @@ inline bool operator==(const blocksignificant<N, B, C>& lhs, const blocksignific
 	}
 	return true;
 }
-template<size_t N, typename B, BitEncoding C>
-inline bool operator!=(const blocksignificant<N, B, C>& lhs, const blocksignificant<N, B, C>& rhs) {
+template<size_t N, typename B>
+inline bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
 	return !operator==(lhs, rhs);
 }
-template<size_t N, typename B, BitEncoding C>
-inline bool operator<(const blocksignificant<N, B, C>& lhs, const blocksignificant<N, B, C>& rhs) {
+template<size_t N, typename B>
+inline bool operator<(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
 //	blocksignificant<N, B, C> diff = sub(lhs, rhs);
 	return true; // diff.isneg();
 }
-template<size_t N, typename B, BitEncoding C>
-inline bool operator<=(const blocksignificant<N, B, C>& lhs, const blocksignificant<N, B, C>& rhs) {
+template<size_t N, typename B>
+inline bool operator<=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
 	return (lhs < rhs || lhs == rhs);
 }
-template<size_t N, typename B, BitEncoding C>
-inline bool operator>(const blocksignificant<N, B, C>& lhs, const blocksignificant<N, B, C>& rhs) {
+template<size_t N, typename B>
+inline bool operator>(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
 	return !(lhs <= rhs);
 }
-template<size_t N, typename B, BitEncoding C>
-inline bool operator>=(const blocksignificant<N, B, C>& lhs, const blocksignificant<N, B, C>& rhs) {
+template<size_t N, typename B>
+inline bool operator>=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
 	return !(lhs < rhs);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // binary operators
 
-template<size_t nbits, typename bt, BitEncoding encoding>
-inline blocksignificant<nbits, bt, encoding> operator<<(const blocksignificant<nbits, bt, encoding>& a, const long b) {
-	blocksignificant<nbits, bt, encoding> c(a);
+template<size_t nbits, typename bt>
+inline blocksignificant<nbits, bt> operator<<(const blocksignificant<nbits, bt>& a, const long b) {
+	blocksignificant<nbits, bt> c(a);
 	return c <<= b;
 }
-template<size_t nbits, typename bt, BitEncoding encoding>
-inline blocksignificant<nbits, bt, encoding> operator>>(const blocksignificant<nbits, bt, encoding>& a, const long b) {
-	blocksignificant<nbits, bt, encoding> c(a);
+template<size_t nbits, typename bt>
+inline blocksignificant<nbits, bt> operator>>(const blocksignificant<nbits, bt>& a, const long b) {
+	blocksignificant<nbits, bt> c(a);
 	return c >>= b;
 }
 
 // divide a by b and return both quotient and remainder
-template<size_t nbits, typename bt, BitEncoding encoding>
-bfquorem<nbits, bt, encoding> longdivision(const blocksignificant<nbits, bt, encoding>& _a, const blocksignificant<nbits, bt, encoding>& _b) {
-	bfquorem<nbits, bt, encoding> result;
+template<size_t nbits, typename bt>
+bfquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const blocksignificant<nbits, bt>& _b) {
+	bfquorem<nbits, bt> result;
 	if (_b.iszero()) {
 		result.exceptionId = 1; // division by zero
 		return result;
@@ -834,8 +838,8 @@ bfquorem<nbits, bt, encoding> longdivision(const blocksignificant<nbits, bt, enc
 	bool b_sign = _b.sign();
 	bool result_negative = (a_sign ^ b_sign);
 	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
-	blocksignificant<nbits + 1, bt, encoding> a(_a);
-	blocksignificant<nbits + 1, bt, encoding> b(_b);
+	blocksignificant<nbits + 1, bt> a(_a);
+	blocksignificant<nbits + 1, bt> b(_b);
 	if (a_sign) a.twosComplement();
 	if (b_sign) b.twosComplement();
 
@@ -844,9 +848,9 @@ bfquorem<nbits, bt, encoding> longdivision(const blocksignificant<nbits, bt, enc
 		return result;   // a / b = 0 when b > a
 	}
 	// initialize the long division
-	blocksignificant<nbits + 1, bt, encoding> decimator = a;
+	blocksignificant<nbits + 1, bt> decimator = a;
 	// prepare the subtractand
-	blocksignificant<nbits + 1, bt, encoding> subtractand = b;
+	blocksignificant<nbits + 1, bt> subtractand = b;
 	int msb_b = b.msb();
 	int msb_a = a.msb();
 	int shift = msb_a - msb_b;
@@ -882,8 +886,8 @@ bfquorem<nbits, bt, encoding> longdivision(const blocksignificant<nbits, bt, enc
 
 #define TRACE_DIV 0
 // unrounded division, returns a blocksignificant that is of size 2*nbits
-template<size_t nbits, size_t roundingBits, typename bt, BitEncoding encoding>
-inline blocksignificant<2 * nbits + roundingBits, bt, encoding> urdiv(const blocksignificant<nbits, bt, encoding>& a, const blocksignificant<nbits, bt, encoding>& b, blocksignificant<roundingBits, bt, encoding>& r) {
+template<size_t nbits, size_t roundingBits, typename bt>
+inline blocksignificant<2 * nbits + roundingBits, bt> urdiv(const blocksignificant<nbits, bt>& a, const blocksignificant<nbits, bt>& b, blocksignificant<roundingBits, bt>& r) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";
@@ -895,15 +899,15 @@ inline blocksignificant<2 * nbits + roundingBits, bt, encoding> urdiv(const bloc
 	bool result_negative = (a_sign ^ b_sign);
 
 	// normalize both arguments to positive in new size
-	blocksignificant<nbits + 1, bt, encoding> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
-	blocksignificant<nbits + 1, bt, encoding> b_new(b);
+	blocksignificant<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blocksignificant<nbits + 1, bt> b_new(b);
 	if (a_sign) a_new.twoscomplement();
 	if (b_sign) b_new.twoscomplement();
 
 	// initialize the long division
-	blocksignificant<2 * nbits + roundingBits, bt, encoding> decimator(a_new);
-	blocksignificant<2 * nbits + roundingBits, bt, encoding> subtractand(b_new); // prepare the subtractand
-	blocksignificant<2 * nbits + roundingBits, bt, encoding> result;
+	blocksignificant<2 * nbits + roundingBits, bt> decimator(a_new);
+	blocksignificant<2 * nbits + roundingBits, bt> subtractand(b_new); // prepare the subtractand
+	blocksignificant<2 * nbits + roundingBits, bt> result;
 
 	int msp = nbits + roundingBits - 1; // msp = most significant position
 	decimator <<= msp; // scale the decimator to the largest possible positive value
@@ -942,9 +946,9 @@ inline blocksignificant<2 * nbits + roundingBits, bt, encoding> urdiv(const bloc
 }
 
 // free function generator of the 2's complement of a blocksignificant
-template<size_t nbits, typename bt, BitEncoding encoding>
-inline constexpr blocksignificant<nbits, bt, encoding> twosComplement(const blocksignificant<nbits, bt, encoding>& a) {
-	blocksignificant<nbits, bt, encoding> b(a);
+template<size_t nbits, typename bt>
+inline constexpr blocksignificant<nbits, bt> twosComplement(const blocksignificant<nbits, bt>& a) {
+	blocksignificant<nbits, bt> b(a);
 	return b.twosComplement();
 }
 

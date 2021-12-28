@@ -244,7 +244,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple<11, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple<11, BlockTripleOperator::DIV, uint8_t >", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple<11, BlockTripleOperator::DIV, uint16_t> >(reportTestCases), "blocktriple<11, BlockTripleOperator::DIV, uint16_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple<11, BlockTripleOperator::DIV, uint32_t> >(reportTestCases), "blocktriple<11, BlockTripleOperator::DIV, uint32_t>", "division");
-
 #endif
 
 #if REGRESSION_LEVEL_4
