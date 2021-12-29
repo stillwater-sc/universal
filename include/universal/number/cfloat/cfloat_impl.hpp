@@ -2104,7 +2104,7 @@ public:
 			// we are going to unify to the format 01.ffffeeee
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
-			if (isnormal()) {
+			if (isnormal() || issupernormal()) {
 				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits);
@@ -2173,85 +2173,12 @@ public:
 				}
 			}
 			else { 
-				if (isdenormal()) { // it is a subnormal encoding in this target cfloat
-					if constexpr (hasSubnormals) {
-						if constexpr (fbits < 64) {
-							uint64_t raw = fraction_ull();
-							int shift = MIN_EXP_NORMAL - scale;
-							raw <<= shift;
-							raw |= (1ull << fbits);
-							tgt.setbits(raw);
-						}
-						else {
-							// brute force copy of blocks
-							if constexpr (1 == fBlocks) {
-								tgt.setblock(0, _block[0] & FSU_MASK);
-							}
-							else if constexpr (2 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1] & FSU_MASK);
-							}
-							else if constexpr (3 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2] & FSU_MASK);
-							}
-							else if constexpr (4 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3] & FSU_MASK);
-							}
-							else if constexpr (5 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4] & FSU_MASK);
-							}
-							else if constexpr (6 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5] & FSU_MASK);
-							}
-							else if constexpr (7 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5]);
-								tgt.setblock(6, _block[6] & FSU_MASK);
-							}
-							else if constexpr (8 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5]);
-								tgt.setblock(6, _block[6]);
-								tgt.setblock(7, _block[7] & FSU_MASK);
-							}
-							else {
-								for (size_t i = 0; i < FSU; ++i) {
-									tgt.setblock(i, _block[i]);
-								}
-								tgt.setblock(FSU, _block[FSU] & FSU_MASK);
-							}
-						}
-					}
-					else { // this cfloat has no subnormals
-						tgt.setzero(tgt.sign()); // preserve the sign
-					}
-				}
-				else {
-					// by design, a cfloat is either normal, subnormal, or supernormal, so this else clause is by deduction covering a supernormal
-					if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+				// it is a subnormal encoding in this target cfloat
+				if constexpr (hasSubnormals) {
+					if constexpr (fbits < 64) {
 						uint64_t raw = fraction_ull();
+						int shift = MIN_EXP_NORMAL - scale;
+						raw <<= shift;
 						raw |= (1ull << fbits);
 						tgt.setbits(raw);
 					}
@@ -2316,7 +2243,9 @@ public:
 							tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 						}
 					}
-
+				}
+				else { // this cfloat has no subnormals
+					tgt.setzero(tgt.sign()); // preserve the sign
 				}
 			}
 		}
@@ -2348,7 +2277,7 @@ public:
 			// we are going to unify to the format 01.ffffeeee
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
-			if (isnormal()) {
+			if (isnormal() || issupernormal()) {
 				if constexpr (divshift < (64 - fbits)) {
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits);
@@ -2468,23 +2397,34 @@ protected:
 	constexpr cfloat& convert_unsigned_integer(const Ty& rhs) noexcept {
 		clear();
 		if (0 == rhs) return *this;
-		int scale = int(findMostSignificantBit(rhs)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		if constexpr (fbits < 64) {
-			uint64_t raw = static_cast<uint64_t>(rhs);
-			constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-			uint32_t shift = sizeInBits - scale - 1;
-			raw <<= shift;
-			raw = round<sizeInBits, uint64_t>(raw, scale);
+
+		uint64_t raw = static_cast<uint64_t>(rhs);
+		int msb = findMostSignificantBit(raw) - 1; // msb > 0 due to zero test above 
+		int exponent = msb;
+		// remove the MSB as it represents the hidden bit in the cfloat representation
+		uint64_t hmask = ~(1ull << msb);
+		raw &= hmask;
+
+		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
+		uint32_t shift = sizeInBits - exponent - 1;
+		raw <<= shift;
+		raw = round<sizeInBits, uint64_t>(raw, exponent);
+
+		// construct the target cfloat
+		if constexpr (fbits < (64 - es)) {
+			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(EXP_BIAS));
+			uint64_t bits = 0;
+			bits <<= es;
+			bits |= biasedExponent;
+			bits <<= fbits;
+			bits |= raw;
+			setbits(bits);
 		}
 		else {
-			// all the bits can be received
-			size_t mask = ~(1ull << scale);
-			uint64_t raw = mask & rhs; // remove the msb
-			setbits(raw);
-			shiftLeft(static_cast<int>(fbits - scale)); // shift the bits in place
-			setexponent(scale); // add the exponent segment
+			setsign(false);
+			setexponent(exponent);
+			setfraction(raw);
 		}
-;
 		return *this;
 	}
 	// convert a signed integer into a cfloat
@@ -2495,31 +2435,34 @@ protected:
 		if (0 == rhs) return *this;
 		bool s = (rhs < 0);
 		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
-		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+
+		int msb = findMostSignificantBit(raw) - 1; // msb > 0 due to zero test above 
+		int exponent = msb;
+		// remove the MSB as it represents the hidden bit in the cfloat representation
+		uint64_t hmask = ~(1ull << msb);
+		raw &= hmask;
+
+		// shift the msb to the msb of the fraction
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - exponent - 1;
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
-#ifdef TODO
+
 		// construct the target cfloat
-		if constexpr (64 >= nbits - es - 1ull) {
-			uint64_t bits = (s ? 1u : 0u);
+		if constexpr (fbits < (64 - es)) {
+			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(EXP_BIAS));
+			uint64_t bits = (s ? 1ull : 0ull);
 			bits <<= es;
-			bits |= exponent + EXP_BIAS;
-			bits <<= nbits - 1ull - es;
+			bits |= biasedExponent;
+			bits <<= fbits;
 			bits |= raw;
-			bits &= 0xFFFF'FFFF;
-			if constexpr (1 == nrBlocks) {
-				_block[MSU] = bt(bits);
-			}
-			else {
-				copyBits(bits);
-			}
+			setbits(bits);
 		}
 		else {
-			std::cerr << "TBD\n";
+			setsign(s);
+			setexponent(exponent);
+			setfraction(raw);
 		}
-#endif
 		return *this;
 	}
 
@@ -3196,6 +3139,72 @@ inline std::istream& operator>>(std::istream& istr, const cfloat<nbits,es,bt,has
 	return istr;
 }
 
+// encoding helpers
+
+// return the Unit in the Last Position
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(a);
+	return ++b - a;
+}
+
+// convert to std::string
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+	std::stringstream s;
+	if (v.iszero()) {
+		s << " zero b";
+		return s.str();
+	}
+	else if (v.isinf()) {
+		s << " infinite b";
+		return s.str();
+	}
+	//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
+	return s.str();
+}
+
+// transform cfloat to a binary representation
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << "0b";
+	size_t index = nbits;
+	s << (number.at(--index) ? '1' : '0') << '.';
+
+	for (int i = int(es) - 1; i >= 0; --i) {
+		s << (number.at(--index) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+
+	s << '.';
+
+	constexpr int fbits = nbits - 1ull - es;
+	for (int i = fbits - 1; i >= 0; --i) {
+		s << (number.at(--index) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+
+	return s.str();
+}
+
+// transform a cfloat into a triple representation
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = true) {
+	std::stringstream s;
+	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, BlockTripleOperator::REPRESENTATION, bt> triple;
+	number.normalize(triple);
+	s << to_triple(triple, nibbleMarker);
+	return s.str();
+}
+
+// Magnitude of a cfloat (equivalent to turning the sign bit off).
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
+abs(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(false, v.scale(), v.fraction(), v.isZero());
+}
+
 ////////////////////// debug helpers
 
 // convenience method to gain access to the values of the constexpr variables that govern the cfloat behavior
@@ -3206,7 +3215,7 @@ void ReportCfloatClassParameters() {
 }
 
 //////////////////////////////////////////////////////
-/// posit - posit binary logic operators
+/// cfloat - cfloat binary logic operators
 
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
@@ -3229,30 +3238,26 @@ template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsa
 inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator< (lhs, rhs); }
 
 //////////////////////////////////////////////////////
-/// posit - posit binary arithmetic operators
+/// cfloat - cfloat binary arithmetic operators
 
-// BINARY ADDITION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-// BINARY SUBTRACTION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-// BINARY MULTIPLICATION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-// BINARY DIVISION
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
@@ -3260,70 +3265,332 @@ inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> opera
 	return ratio;
 }
 
-// encoding helpers
+/// binary cfloat - literal arithmetic operators
 
-// return the Unit in the Last Position
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(a);
-	return ++b - a;
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(float lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
 }
 
-// convert to std::string
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_string(const cfloat<nbits,es,bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << " zero b";
-		return s.str();
-	}
-	else if (v.isinf()) {
-		s << " infinite b";
-		return s.str();
-	}
-//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
-	return s.str();
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(double lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
 }
 
-// transform cfloat to a binary representation
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	s << "0b";
-	size_t index = nbits;
-	s << (number.at(--index) ? '1' : '0') << '.';
-
-	for (int i = int(es)-1; i >= 0; --i) {
-		s << (number.at(--index) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-	}
-
-	s << '.';
-
-	constexpr int fbits = nbits - 1ull - es;
-	for (int i = fbits-1; i >= 0; --i) {
-		s << (number.at(--index) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-	}
-
-	return s.str();
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
 }
 
-// transform a cfloat into a triple representation
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = true) {
-	std::stringstream s;
-	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, BlockTripleOperator::REPRESENTATION, bt> triple;
-	number.normalize(triple);
-	s << to_triple(triple, nibbleMarker);
-	return s.str();
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(unsigned int lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
 }
 
-// Magnitude of a cfloat (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
-abs(const cfloat<nbits,es,bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	return cfloat<nbits,es,bt, hasSubnormals, hasSupernormals, isSaturating>(false, v.scale(), v.fraction(), v.isZero());
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(unsigned long long lhs, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
+}
+
+///  binary cfloat - literal arithmetic operators
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat sum(lhs);
+	sum += Cfloat(rhs);
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat mul(lhs);
+	mul *= Cfloat(rhs);
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, float rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat ratio(lhs);
+	ratio /= Cfloat(rhs);
+	return ratio;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat sum(lhs);
+	sum += Cfloat(rhs);
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat mul(lhs);
+	mul *= Cfloat(rhs);
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, double rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat ratio(lhs);
+	ratio /= Cfloat(rhs);
+	return ratio;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat sum(lhs);
+	sum += Cfloat(rhs);
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat mul(lhs);
+	mul *= Cfloat(rhs);
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat ratio(lhs);
+	ratio /= Cfloat(rhs);
+	return ratio;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat sum(lhs);
+	sum += Cfloat(rhs);
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat mul(lhs);
+	mul *= Cfloat(rhs);
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned int rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat ratio(lhs);
+	ratio /= Cfloat(rhs);
+	return ratio;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat sum(lhs);
+	sum += Cfloat(rhs);
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat mul(lhs);
+	mul *= Cfloat(rhs);
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat ratio(lhs);
+	ratio /= Cfloat(rhs);
+	return ratio;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator+(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat sum(lhs);
+	sum += Cfloat(rhs);
+	return sum;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator-(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator*(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat mul(lhs);
+	mul *= Cfloat(rhs);
+	return mul;
+}
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> operator/(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, unsigned long long rhs) {
+	using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat ratio(lhs);
+	ratio /= Cfloat(rhs);
+	return ratio;
 }
 
 ///////////////////////////////////////////////////////////////////////
