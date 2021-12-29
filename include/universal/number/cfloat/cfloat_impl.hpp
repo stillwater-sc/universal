@@ -604,8 +604,8 @@ public:
 		}
 		if (rhs.iszero()) {
 			if (iszero()) {
-				// zero divide by zero yields signalling NaN
-				setnan(NAN_TYPE_SIGNALLING);
+				// zero divide by zero yields quiet NaN (in MSVC it is labeled -nan(ind) for indeterminate)
+				setnan(NAN_TYPE_QUIET);
 			}
 			else {
 				// non-zero divide by zero yields INF
@@ -623,11 +623,12 @@ public:
 		bool resultSign = sign() != rhs.sign();
 		if (isinf()) {
 			if (rhs.isinf()) {
-				setnan(NAN_TYPE_SIGNALLING);
-				setsign(resultSign);
+				// inf divide by inf yields quiet NaN (in MSVC it is labeled -nan(ind) for indeterminate)
+				setnan(NAN_TYPE_QUIET);
 				return *this;
 			}
 			else {
+				// we stay an infinite but may change sign
 				setsign(resultSign);
 				return *this;
 			}
@@ -2326,6 +2327,7 @@ public:
 	// the result radix will go to 2*fbits after multiplication.
 	// TODO: needs implementation
 	constexpr void normalizeDivision(blocktriple<fbits, BlockTripleOperator::DIV, bt>& tgt) const {
+		constexpr size_t divshift = blocktriple<fbits, BlockTripleOperator::DIV, bt>::divshift;
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -2349,7 +2351,7 @@ public:
 				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits);
-					raw <<= fbits; // shift the input value to the output radix
+					raw <<= divshift; // shift the input value to the output radix
 					tgt.setbits(raw);
 				}
 				else {
@@ -2378,7 +2380,7 @@ public:
 						}
 						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 					}
-					tgt <<= fbits; // shift the input value to the output radix
+					tgt <<= divshift; // shift the input value to the output radix
 				}
 			}
 			else { // it is a subnormal encoding in this target cfloat
@@ -2387,7 +2389,7 @@ public:
 					int shift = MIN_EXP_NORMAL - scale;
 					raw <<= shift;
 					raw |= (1ull << fbits);
-					raw <<= fbits; // shift the input value to the output radix
+					raw <<= divshift; // shift the input value to the output radix
 					tgt.setbits(raw);
 				}
 				else {
@@ -2416,7 +2418,7 @@ public:
 						}
 						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 					}
-					tgt <<= fbits; // shift the input value to the output radix
+					tgt <<= divshift; // shift the input value to the output radix
 				}
 			}
 		}

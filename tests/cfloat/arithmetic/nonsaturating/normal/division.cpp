@@ -5,10 +5,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-#define CFLOAT_VERBOSE_OUTPUT
-#define CFLOAT_TRACE_DIV
-#define BLOCKTRIPLE_VERBOSE_OUTPUT
-#define BLOCKTRIPLE_TRACE_DIV
+//#define CFLOAT_VERBOSE_OUTPUT
+//#define CFLOAT_TRACE_DIV
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT
+//#define BLOCKTRIPLE_TRACE_DIV
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
@@ -102,7 +102,7 @@ void ReportIeee754SpecialCases()
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -139,14 +139,14 @@ try {
 //	ReportIeee754NotANumberArithmetic();
 //	ReportIeee754SpecialCases();
 
-	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::DIV, 1.0f, 1.5f);
-	return 0;
+	TestCase< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::DIV, 1.0f, 1.0f);
+	TestCase< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::DIV, 2.0f, 1.5f);
 	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::DIV, 1.0f, -1.0f);
 	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::DIV, 1.625f, -1.625f);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<4,2,uint8_t,f,f,f>", "division");
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<5,2,uint8_t,f,f,f>", "division");
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision<cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<6,2,uint8_t,f,f,f>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<5,2,uint8_t,f,f,f>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision<cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<6,2,uint8_t,f,f,f>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

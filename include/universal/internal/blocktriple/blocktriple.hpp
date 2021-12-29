@@ -156,21 +156,22 @@ public:
 	static constexpr size_t fhbits = fbits + 1;            // size of all bits
 	static constexpr size_t rbits = 2 * (fbits + 1);       // rounding bits
 	static constexpr size_t abits = fbits + rbits;         // size of the addend = fbits + rbits extra bits to capture required rounding bits
-	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
-	static constexpr size_t divbits = 2ull * fhbits;       // size of the divider output
-	static constexpr size_t sqrtbits = 2ull * fhbits;      // size of the square root output
+	static constexpr size_t mbits = 2 * fbits;             // size of the fraction bits of the multiplier
+	static constexpr size_t divbits = 3 * fbits + 4;       // size of the fraction bits of the divider
+	static constexpr size_t divshift = divbits - fbits;    // alignment shift for divider operands
+	static constexpr size_t sqrtbits = 2 * fhbits;      // size of the square root output
 	// we transform input operands into the operation's target output size
 	// so that everything is aligned correctly before the operation starts.
 	static constexpr size_t bfbits =
-		(op == BlockTripleOperator::ADD ? (3 + abits) :   // we need 3 integer bits (bits left of the radix point) to capture 2's complement and overflow
-			(op == BlockTripleOperator::MUL ? mbits :
-				(op == BlockTripleOperator::DIV ? divbits :
+		(op == BlockTripleOperator::ADD ? (3 + abits) :           // we need 3 integer bits (bits left of the radix point) to capture 2's complement and overflow
+			(op == BlockTripleOperator::MUL ? (2 + mbits) :       // we need 2 integer bits to capture overflow: multiply happens in 1's complement
+				(op == BlockTripleOperator::DIV ? (2 + divbits) : // we need 2 integer bits to capture overflow: divide happens in 1's complement
 					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits+1))));  // REPRESENTATION is the fall through condition and adds a bit to accomodate 2's complement encodings
 	// radix point of the OUTPUT of an operator
 	static constexpr int radix =
 		(op == BlockTripleOperator::ADD ? static_cast<int>(abits) :
-			(op == BlockTripleOperator::MUL ? static_cast<int>(2*fbits) :
-				(op == BlockTripleOperator::DIV ? static_cast<int>(2*fbits) :
+			(op == BlockTripleOperator::MUL ? static_cast<int>(mbits) :
+				(op == BlockTripleOperator::DIV ? static_cast<int>(divbits) :
 					(op == BlockTripleOperator::SQRT ? static_cast<int>(sqrtbits) : static_cast<int>(fbits)))));  // REPRESENTATION is the fall through condition
 //	static constexpr BitEncoding encoding =
 //		(op == BlockTripleOperator::ADD ? BitEncoding::Twos :
@@ -555,12 +556,13 @@ public:
 
 		// avoid copy by directly manipulating the fraction bits of the arguments
 		_significant.div(lhs._significant, rhs._significant);
+		_significant.setradix(radix);
 
 		if constexpr (_trace_btriple_div) {
 			std::cout << "blocksignificant unrounded div\n";
 			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << _significant << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << _significant << '\n';
+			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
 			std::cout << "div significant : " << to_binary(_significant) << " : " << _significant << '\n';  // <-- the scale of this representation is not yet set
 		}
 		if (_significant.iszero()) {
@@ -583,17 +585,16 @@ public:
 				int msb = _significant.msb(); // zero case has been taken care off above
 //				std::cout << "div : " << to_binary(*this) << std::endl;
 //				std::cout << "msb : " << msb << std::endl;
-				int leftShift = static_cast<int>(bfbits) - 3 - msb;
+				int leftShift = static_cast<int>(bfbits) - 2 - msb;
 				_significant <<= leftShift;
 				_scale -= leftShift;
 			}
 		}
 		if constexpr (_trace_btriple_div) {
 			std::cout << "blocktriple normalized div\n";
-			std::cout << typeid(lhs).name() << '\n';
+			std::cout << typeid(*this).name() << '\n';
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << typeid(*this).name() << '\n';
 			std::cout << "div : " << to_binary(*this) << " : " << *this << '\n';
 		}
 	}

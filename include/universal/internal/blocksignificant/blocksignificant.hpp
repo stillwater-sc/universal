@@ -283,7 +283,7 @@ public:
 		clear();
 		size_t outputRadix = static_cast<size_t>(lhs.radix());
 		size_t fbits = (outputRadix >> 1);
-		for (size_t i = 0; i <= fbits; ++i) {
+		for (size_t i = 0; i <= 2*fbits; ++i) {
 //			std::cout << "base    : " << to_binary(base) << " : " << base << '\n';
 //			std::cout << "divider : " << to_binary(divider) << " : " << divider << '\n';
 			if (divider <= base) {

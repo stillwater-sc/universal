@@ -651,7 +651,7 @@ namespace sw::universal {
 	////////////////    cfloat <-> blocktriple
 
 // include the PASS side for reporting
-#define VERBOSE_POSITIVITY
+#undef VERBOSE_POSITIVITY
 
 	/// <summary>
 	/// convert a blocktriple to a cfloat
@@ -1549,6 +1549,13 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
+// optimizing compilers manipulate NaN(ind) and the sign of infinite on a division by zero
+// when defined, this compiler guard adds a filter to the CFLOAT division test regression
+// to filter out these discrepancies. In debug builds, the compiler is compliant and you
+// can undefine this guard and add the test comparisons for divide by zero to catch any
+// errors that the implementation might have.
+#define FILTER_OUT_DIVIDE_BY_ZERO
+
 	/// <summary>
 	/// Enumerate all division cases for a cfloat configuration.
 	/// Uses doubles to create a reference to compare to.
@@ -1638,7 +1645,7 @@ namespace sw::universal {
 				}
 				else {
 					if (!nut.inrange(ref)) {
-						// the result of the multiplication is outside of the range
+						// the result of the division is outside of the range
 						// of the NUT (number system under test)
 						if constexpr (isSaturating) {
 							if (ref > 0) cref.maxpos(); else cref.maxneg();
@@ -1656,6 +1663,9 @@ namespace sw::universal {
 
 				if (nut != cref) {
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
+#ifdef FILTER_OUT_DIVIDE_BY_ZERO
+					if (b.iszero()) continue; // optimization alters nan(ind) and +-inf
+#endif
 					nrOfFailedTests++;
 					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, nut, cref);
 #ifdef TRACE_ROUNDING

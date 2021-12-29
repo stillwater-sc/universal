@@ -12,10 +12,10 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
+#include <universal/verification/test_status.hpp> 
+#include <universal/verification/test_reporters.hpp> 
 
-#ifdef LATER
+#ifdef TBD
 // enumerate all rounding cases for an blocksignificant<nbits,BlockType> configuration
 template<typename blocksignificantConfiguration>
 int VerifyRounding(bool reportTestCases) {
