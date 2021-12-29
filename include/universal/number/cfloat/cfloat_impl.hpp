@@ -196,17 +196,17 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		// our value needs to go through rounding to be correctly interpreted
 		// 
 		// tgt.clear();  // no need as all bits are going to be set by the code below
-		int adjustment{ 0 }; 
+
 		if constexpr (btType::bfbits < 65) {			
 			// we can use a uint64_t to construct the cfloat
-
+			int adjustment{ 0 };
 			// construct exponent
 			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive if exponent in encoding range
 //			std::cout << "exponent         " << to_binary(biasedExponent) << '\n';	
 			if constexpr (hasSubnormals) {
 				//if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
 				if (exponent < cfloatType::MIN_EXP_NORMAL) {
-						// the value is in the subnormal range of the cfloat
+					// the value is in the subnormal range of the cfloat
 					biasedExponent = 0;
 					// -exponent because we are right shifting and exponent in this range is negative
 					adjustment = -(exponent + subnormal_reciprocal_shift[es]);
@@ -1855,7 +1855,7 @@ public:
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
 			if (isnormal()) {
-				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+				if constexpr (BlockTripleConfiguration::rbits < (64 - fbits)) {
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits); // add the hidden bit
 					raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
@@ -1926,7 +1926,7 @@ public:
 			else {
 				if (isdenormal()) { // it is a subnormal encoding in this target cfloat
 					if constexpr (hasSubnormals) {
-						if constexpr (fbits < 64) {
+						if constexpr (BlockTripleConfiguration::rbits < (64 - fbits)) {
 							uint64_t raw = fraction_ull();
 							int shift = MIN_EXP_NORMAL - scale;
 							raw <<= shift; // shift but do NOT add a hidden bit as the MSB of the subnormal is shifted in the hidden bit position
@@ -2002,7 +2002,7 @@ public:
 				else {
 					// by design, a cfloat is either normal, subnormal, or supernormal, so this else clause is by deduction covering a supernormal
 					if constexpr (hasSupernormals) {
-						if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+						if constexpr (BlockTripleConfiguration::rbits < (64 - fbits)) {
 							uint64_t raw = fraction_ull();
 							raw |= (1ull << fbits); // add the hidden bit
 							raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
@@ -2348,7 +2348,7 @@ public:
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
 			if (isnormal()) {
-				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+				if constexpr (divshift < (64 - fbits)) {
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits);
 					raw <<= divshift; // shift the input value to the output radix
@@ -2384,7 +2384,7 @@ public:
 				}
 			}
 			else { // it is a subnormal encoding in this target cfloat
-				if constexpr (fbits < 64) {
+				if constexpr (divshift < (64 - fbits)) {
 					uint64_t raw = fraction_ull();
 					int shift = MIN_EXP_NORMAL - scale;
 					raw <<= shift;
@@ -2865,57 +2865,62 @@ public:
 					// we need to write the fields and then shifting them in place
 					// 
 					// common case: normal to normal
-					if (rawExponent != 0) {
-						// reference example: nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
-						setbits(biasedExponent);
-						shiftLeft(fbits);
-						bt fractionBlock[nrBlocks]{ 0 };
-						// copy fraction bits
-						size_t blocksRequired = (8 * sizeof(rawFraction) + 1) / bitsInBlock;
-						size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
-						uint64_t mask = static_cast<uint64_t>(ALL_ONES); // set up the block mask
-						size_t shift = 0;
-						for (size_t i = 0; i < maxBlockNr; ++i) {
-							fractionBlock[i] = bt((mask & rawFraction) >> shift);
-							mask <<= bitsInBlock;
-							shift += bitsInBlock;
-						}
-						// shift fraction bits
-						int bitsToShift = upshift;
-						if (bitsToShift >= static_cast<int>(bitsInBlock)) {
-							int blockShift = static_cast<int>(bitsToShift / bitsInBlock);
-							for (int i = MSU; i >= blockShift; --i) {
-								fractionBlock[i] = fractionBlock[i - blockShift];
+					if constexpr (bitsInBlock < 64) {
+						if (rawExponent != 0) {
+							// reference example: nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
+							setbits(biasedExponent);
+							shiftLeft(fbits);
+							bt fractionBlock[nrBlocks]{ 0 };
+							// copy fraction bits
+							size_t blocksRequired = (8 * sizeof(rawFraction) + 1) / bitsInBlock;
+							size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
+							uint64_t mask = static_cast<uint64_t>(ALL_ONES); // set up the block mask
+							size_t shift = 0;
+							for (size_t i = 0; i < maxBlockNr; ++i) {
+								fractionBlock[i] = bt((mask & rawFraction) >> shift);
+								mask <<= bitsInBlock;
+								shift += bitsInBlock;
 							}
-							for (int i = blockShift - 1; i >= 0; --i) {
-								fractionBlock[i] = bt(0);
+							// shift fraction bits
+							int bitsToShift = upshift;
+							if (bitsToShift >= static_cast<int>(bitsInBlock)) {
+								int blockShift = static_cast<int>(bitsToShift / bitsInBlock);
+								for (int i = MSU; i >= blockShift; --i) {
+									fractionBlock[i] = fractionBlock[i - blockShift];
+								}
+								for (int i = blockShift - 1; i >= 0; --i) {
+									fractionBlock[i] = bt(0);
+								}
+								// adjust the shift
+								bitsToShift -= blockShift * bitsInBlock;
 							}
-							// adjust the shift
-							bitsToShift -= blockShift * bitsInBlock;
-						}
-						if (bitsToShift > 0) {
-							// construct the mask for the upper bits in the block that need to move to the higher word
-							bt bitsToMoveMask = bt(ALL_ONES << (bitsInBlock - bitsToShift));
-							for (size_t i = MSU; i > 0; --i) {
-								fractionBlock[i] <<= bitsToShift;
-								// mix in the bits from the right
-								bt bits = static_cast<bt>(bitsToMoveMask & fractionBlock[i - 1]); // operator & yields an int
-								fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
+							if (bitsToShift > 0) {
+								// construct the mask for the upper bits in the block that need to move to the higher word
+								bt bitsToMoveMask = bt(ALL_ONES << (bitsInBlock - bitsToShift));
+								for (size_t i = MSU; i > 0; --i) {
+									fractionBlock[i] <<= bitsToShift;
+									// mix in the bits from the right
+									bt bits = static_cast<bt>(bitsToMoveMask & fractionBlock[i - 1]); // operator & yields an int
+									fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
+								}
+								fractionBlock[0] <<= bitsToShift;
 							}
-							fractionBlock[0] <<= bitsToShift;
+							// OR the bits in
+							for (size_t i = 0; i <= MSU; ++i) {
+								_block[i] |= fractionBlock[i];
+							}
+							// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+							_block[MSU] &= MSU_MASK;
+							// finally, set the sign bit
+							setsign(s);
 						}
-						// OR the bits in
-						for (size_t i = 0; i <= MSU; ++i) {
-							_block[i] |= fractionBlock[i];
+						else {
+							// rhs is a subnormal
+		//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
 						}
-						// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-						_block[MSU] &= MSU_MASK;
-						// finally, set the sign bit
-						setsign(s);
 					}
-					else { 
-						// rhs is a subnormal
-	//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
+					else {
+						// BlockType is incorrect
 					}
 				}
 			}

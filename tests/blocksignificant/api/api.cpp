@@ -47,10 +47,10 @@ void TestRounding()
 	std::cout << to_binary(a) << " : " << a << '\n';
 	size_t bit = lsbTarget;
 	std::cout << "lsb target = " << lsbTarget << '\n';
-	std::cout << " = a[" << bit << "] = " << (a.test(bit--) ? '1' : '0') << '\n';
-	std::cout << " = a[" << bit << "] = " << (a.test(bit--) ? '1' : '0') << '\n';
-	std::cout << " = a[" << bit << "] = " << (a.test(bit--) ? '1' : '0') << '\n';
-	std::cout << " = a[" << bit << "] = " << (a.test(bit--) ? '1' : '0') << '\n';
+	std::cout << " = a[" << bit << "] = " << (a.test(bit) ? '1' : '0') << '\n'; --bit;
+	std::cout << " = a[" << bit << "] = " << (a.test(bit) ? '1' : '0') << '\n'; --bit;
+	std::cout << " = a[" << bit << "] = " << (a.test(bit) ? '1' : '0') << '\n'; --bit;
+	std::cout << " = a[" << bit << "] = " << (a.test(bit) ? '1' : '0') << '\n';
 	PrintRoundingDirection(a, lsbTarget);
 	a.setbits(0x27); 	// 0b001.00111  up
 	PrintRoundingDirection(a, lsbTarget);
