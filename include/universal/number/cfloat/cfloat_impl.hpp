@@ -197,7 +197,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		// 
 		// tgt.clear();  // no need as all bits are going to be set by the code below
 
-		if constexpr (btType::bfbits < 65) {			
+		if constexpr (btType::bfbits < 65) {
 			// we can use a uint64_t to construct the cfloat
 			int adjustment{ 0 };
 			// construct exponent
@@ -268,7 +268,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			tgt.setsign(src.sign());
 			tgt.setexponent(src.scale());
 			// this api doesn't work: tgt.setfraction(src.significant());
-			std::cerr << "convert nbits > 64 TBD\n";
+			std::cerr << "bfbits = " << btType::bfbits << " nbits = " << nbits << '\n';
+			std::cerr << "convert to a cfloat with nbits > 64 is TBD\n";
 		}
 	}
 }
@@ -1855,7 +1856,7 @@ public:
 			// where 'f' is a fraction bit, and 'e' is an extension bit
 			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
 			if (isnormal()) {
-				if constexpr (BlockTripleConfiguration::rbits < (64 - fbits)) {
+				if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits); // add the hidden bit
 					raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
@@ -3011,7 +3012,7 @@ protected:
 			if (guard) {
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
-				if (raw == (1ull << nbits)) { // overflow
+				if (raw == (1ull << fbits)) { // overflow
 					++exponent;
 					raw >>= 1u;
 				}
@@ -3030,6 +3031,7 @@ protected:
 		uint64_t significant = raw;
 		return significant;
 	}
+
 	template<typename ArgumentBlockType>
 	constexpr void copyBits(ArgumentBlockType v) {
 		size_t blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;

@@ -31,8 +31,11 @@ void SqrtWorkload(size_t NR_OPS) {
 	Scalar maxpos(sw::universal::SpecificValue::maxpos);
 	size_t maxval = 1024*1024*1024;
 	for (size_t i = 0; i < NR_OPS; ++i) {
-		a = (i % maxval);
+		a = Scalar(i % maxval);
 		a = (a < 0 ? -a : a);
+		// std::cout << "a = " << a << '\n';
+		a += Scalar(1.0f);
+		if (a < 0) continue;
 		c = sw::universal::sqrt(a);
 	}
 	if (a == c) std::cout << "amazing\n";
@@ -74,7 +77,11 @@ try {
 #endif
 	using Fixed = fixpnt<80,75>;
 	using Posit = posit<64,2>;
-	using Float = cfloat<128, 15, uint32_t>;
+	using HP = cfloat< 16,  5, uint32_t, true>;
+	using SP = cfloat< 32,  8, uint32_t, true>;
+	using DP = cfloat< 64, 11, uint32_t, true>;
+	using EP = cfloat< 80, 11, uint32_t, true>;
+	using QP = cfloat<128, 15, uint32_t, true>;
 	//using Areal = areal<128, 15,uint32_t>;
 	//using Lns   = lns<128, uint32_t>;
 
@@ -84,7 +91,11 @@ try {
 
 	constexpr size_t NR_OPS = 1024;
 	PerformanceRunner(type_tag(Fixed()) + "::sqrt ", SqrtWorkload< Fixed >, NR_OPS);
-	PerformanceRunner(type_tag(Float()) + "::sqrt ", SqrtWorkload< Float >, NR_OPS);
+	PerformanceRunner(type_tag(HP()) + "::sqrt ", SqrtWorkload< HP >, NR_OPS);
+	PerformanceRunner(type_tag(SP()) + "::sqrt ", SqrtWorkload< SP >, NR_OPS);
+	PerformanceRunner(type_tag(DP()) + "::sqrt ", SqrtWorkload< DP >, NR_OPS);
+//	PerformanceRunner(type_tag(EP()) + "::sqrt ", SqrtWorkload< EP >, NR_OPS);
+//	PerformanceRunner(type_tag(QP()) + "::sqrt ", SqrtWorkload< QP >, NR_OPS);
 
 	Compare<Fixed>(2.0);
 
@@ -95,6 +106,11 @@ try {
 		std::cout << sqrt(Native(f)) << " : " << type_tag(Native()) << '\n';
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
+		std::cout << sqrt(HP(f)) << " : " << type_tag(HP()) << '\n';
+		std::cout << sqrt(SP(f)) << " : " << type_tag(SP()) << '\n';
+		std::cout << sqrt(DP(f)) << " : " << type_tag(DP()) << '\n';
+		std::cout << sqrt(EP(f)) << " : " << type_tag(EP()) << '\n';
+		std::cout << sqrt(QP(f)) << " : " << type_tag(QP()) << '\n';
 	}
 
 	{
