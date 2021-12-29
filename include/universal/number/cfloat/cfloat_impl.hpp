@@ -594,16 +594,24 @@ public:
 		if (rhs.isnan()) throw cfloat_divide_by_nan();
 		if (isnan()) throw cfloat_operand_is_nan();
 #else
-		if (rhs.iszero()) std::cerr << "cfloat_negative_sqrt_argument" << std::endl;
-		if (rhs.isnan()) std::cerr << "cfloat_divide_by_nan" << std::endl;
-		if (isnan()) std::cerr << "cfloat_operand_is_nan" << std::endl;
-
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
 			setnan(NAN_TYPE_SIGNALLING);
 			return *this;
 		}
 		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
 			setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
+		if (rhs.iszero()) {
+			if (iszero()) {
+				// zero divide by zero yields signalling NaN
+				setnan(NAN_TYPE_SIGNALLING);
+			}
+			else {
+				// non-zero divide by zero yields INF
+				bool resultSign = sign() != rhs.sign();
+				setinf(resultSign);
+			}
 			return *this;
 		}
 #endif
@@ -615,17 +623,19 @@ public:
 		bool resultSign = sign() != rhs.sign();
 		if (isinf()) {
 			if (rhs.isinf()) {
+				setnan(NAN_TYPE_SIGNALLING);
 				setsign(resultSign);
 				return *this;
 			}
 			else {
-				setnan(NAN_TYPE_SIGNALLING);
+				setsign(resultSign);
 				return *this;
 			}
 		}
 		else {
 			if (rhs.isinf()) {
-				setnan(NAN_TYPE_SIGNALLING);
+				setzero();
+				setsign(resultSign);
 				return *this;
 			}
 		}
@@ -637,18 +647,19 @@ public:
 		}
 
 		// arithmetic operation
-		blocktriple<fbits, BlockTripleOperator::DIV, bt> a, b, product;
+		using BlockTriple = blocktriple<fbits, BlockTripleOperator::DIV, bt>;
+		BlockTriple a, b, quotient;
 
 		// transform the inputs into (sign,scale,significant) 
 		// triples of the correct width
 		normalizeDivision(a);
 		rhs.normalizeDivision(b);
-		product.div(a, b);
-		convert(product, *this);
+		quotient.div(a, b);
+		quotient.setradix(BlockTriple::radix);
+		convert(quotient, *this);
 
-		if constexpr (cfloat_trace_div) std::cout << to_binary(a) << " : " << a << " /\n" << to_binary(b) << " : " << b << " =\n" << to_binary(product) << " : " << product << '\n';
+		if constexpr (cfloat_trace_div) std::cout << to_binary(a) << " : " << a << " /\n" << to_binary(b) << " : " << b << " =\n" << to_binary(quotient) << " : " << quotient << '\n';
 
-		return *this;
 		return *this;
 	}
 	cfloat& operator/=(double rhs) {
@@ -1989,83 +2000,82 @@ public:
 				}
 				else {
 					// by design, a cfloat is either normal, subnormal, or supernormal, so this else clause is by deduction covering a supernormal
-//					if (issupernormal()) { // it is a supernormal encoding
-						if constexpr (hasSupernormals) {
-							if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
-								uint64_t raw = fraction_ull();
-								raw |= (1ull << fbits); // add the hidden bit
-								raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
-								tgt.setbits(raw);
+					if constexpr (hasSupernormals) {
+						if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+							uint64_t raw = fraction_ull();
+							raw |= (1ull << fbits); // add the hidden bit
+							raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
+							tgt.setbits(raw);
+						}
+						else {
+							// brute force copy of blocks
+							if constexpr (1 == fBlocks) {
+								tgt.setblock(0, _block[0] & FSU_MASK);
+							}
+							else if constexpr (2 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1] & FSU_MASK);
+							}
+							else if constexpr (3 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2] & FSU_MASK);
+							}
+							else if constexpr (4 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3] & FSU_MASK);
+							}
+							else if constexpr (5 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4] & FSU_MASK);
+							}
+							else if constexpr (6 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5] & FSU_MASK);
+							}
+							else if constexpr (7 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5]);
+								tgt.setblock(6, _block[6] & FSU_MASK);
+							}
+							else if constexpr (8 == fBlocks) {
+								tgt.setblock(0, _block[0]);
+								tgt.setblock(1, _block[1]);
+								tgt.setblock(2, _block[2]);
+								tgt.setblock(3, _block[3]);
+								tgt.setblock(4, _block[4]);
+								tgt.setblock(5, _block[5]);
+								tgt.setblock(6, _block[6]);
+								tgt.setblock(7, _block[7] & FSU_MASK);
 							}
 							else {
-								// brute force copy of blocks
-								if constexpr (1 == fBlocks) {
-									tgt.setblock(0, _block[0] & FSU_MASK);
+								for (size_t i = 0; i < FSU; ++i) {
+									tgt.setblock(i, _block[i]);
 								}
-								else if constexpr (2 == fBlocks) {
-									tgt.setblock(0, _block[0]);
-									tgt.setblock(1, _block[1] & FSU_MASK);
-								}
-								else if constexpr (3 == fBlocks) {
-									tgt.setblock(0, _block[0]);
-									tgt.setblock(1, _block[1]);
-									tgt.setblock(2, _block[2] & FSU_MASK);
-								}
-								else if constexpr (4 == fBlocks) {
-									tgt.setblock(0, _block[0]);
-									tgt.setblock(1, _block[1]);
-									tgt.setblock(2, _block[2]);
-									tgt.setblock(3, _block[3] & FSU_MASK);
-								}
-								else if constexpr (5 == fBlocks) {
-									tgt.setblock(0, _block[0]);
-									tgt.setblock(1, _block[1]);
-									tgt.setblock(2, _block[2]);
-									tgt.setblock(3, _block[3]);
-									tgt.setblock(4, _block[4] & FSU_MASK);
-								}
-								else if constexpr (6 == fBlocks) {
-									tgt.setblock(0, _block[0]);
-									tgt.setblock(1, _block[1]);
-									tgt.setblock(2, _block[2]);
-									tgt.setblock(3, _block[3]);
-									tgt.setblock(4, _block[4]);
-									tgt.setblock(5, _block[5] & FSU_MASK);
-								}
-								else if constexpr (7 == fBlocks) {
-									tgt.setblock(0, _block[0]);
-									tgt.setblock(1, _block[1]);
-									tgt.setblock(2, _block[2]);
-									tgt.setblock(3, _block[3]);
-									tgt.setblock(4, _block[4]);
-									tgt.setblock(5, _block[5]);
-									tgt.setblock(6, _block[6] & FSU_MASK);
-								}
-								else if constexpr (8 == fBlocks) {
-									tgt.setblock(0, _block[0]);
-									tgt.setblock(1, _block[1]);
-									tgt.setblock(2, _block[2]);
-									tgt.setblock(3, _block[3]);
-									tgt.setblock(4, _block[4]);
-									tgt.setblock(5, _block[5]);
-									tgt.setblock(6, _block[6]);
-									tgt.setblock(7, _block[7] & FSU_MASK);
-								}
-								else {
-									for (size_t i = 0; i < FSU; ++i) {
-										tgt.setblock(i, _block[i]);
-									}
-									tgt.setblock(FSU, _block[FSU] & FSU_MASK);
-								}
+								tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 							}
 						}
-						else {  // this cfloat has no supernormals and thus this represents a nan, signalling or quiet determined by the sign
-							tgt.setnan(tgt.sign());
-						}
-//					}				
+					}
+					else {  // this cfloat has no supernormals and thus this represents a nan, signalling or quiet determined by the sign
+						tgt.setnan(tgt.sign());
+					}			
 				}
 			}
 		}
+		// tgt.setradix(radix);
 	}
 
 	// Normalize a cfloat to a blocktriple used in mul, which has the form 0'00001.fffff
@@ -2307,8 +2317,8 @@ public:
 
 				}
 			}
-			tgt.setradix(fbits); // override the radix with the input scale for accurate value printing
 		}
+		tgt.setradix(fbits); // override the radix with the input scale for accurate value printing
 	}
 
 	// normalize a cfloat to a blocktriple used in div, which has the form 0'00000'00001.fffff
@@ -2339,6 +2349,7 @@ public:
 				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
 					uint64_t raw = fraction_ull();
 					raw |= (1ull << fbits);
+					raw <<= fbits; // shift the input value to the output radix
 					tgt.setbits(raw);
 				}
 				else {
@@ -2367,6 +2378,7 @@ public:
 						}
 						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 					}
+					tgt <<= fbits; // shift the input value to the output radix
 				}
 			}
 			else { // it is a subnormal encoding in this target cfloat
@@ -2375,6 +2387,7 @@ public:
 					int shift = MIN_EXP_NORMAL - scale;
 					raw <<= shift;
 					raw |= (1ull << fbits);
+					raw <<= fbits; // shift the input value to the output radix
 					tgt.setbits(raw);
 				}
 				else {
@@ -2403,9 +2416,11 @@ public:
 						}
 						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 					}
+					tgt <<= fbits; // shift the input value to the output radix
 				}
 			}
 		}
+		tgt.setradix(blocktriple<fbits, BlockTripleOperator::DIV, bt>::radix);
 	}
 
 	// helper debug function
@@ -2554,12 +2569,14 @@ public:
 					// 1.11111111.10000000.......00000001 signalling nan
 					// 0.11111111.10000000.......00000001 signalling nan
 					setnan(NAN_TYPE_SIGNALLING);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
 					return *this;
 				}
 				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
 					// 1.11111111.10000000.......00000000 quiet nan
 					// 0.11111111.10000000.......00000000 quiet nan
 					setnan(NAN_TYPE_QUIET);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
 					return *this;
 				}
 				if (rawFraction == 0ull) {

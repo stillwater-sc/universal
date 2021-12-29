@@ -569,6 +569,7 @@ public:
 		else {
 			_zero = false;
 			_scale = scale_of_result;
+			_sign = lhs.sign() != rhs.sign();
 			// the result may overflow, but we can't normalize the overflow as
 			// this would remove an lsb that might impact the rounding.
 			// The design we use here is that the raw ALUs do not normalize overflow

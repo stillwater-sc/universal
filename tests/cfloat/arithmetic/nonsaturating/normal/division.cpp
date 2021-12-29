@@ -5,10 +5,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-//#define CFLOAT_VERBOSE_OUTPUT
-//#define CFLOAT_TRACE_DIV
-//#define BLOCKTRIPLE_VERBOSE_OUTPUT
-//#define BLOCKTRIPLE_TRACE_DIV
+#define CFLOAT_VERBOSE_OUTPUT
+#define CFLOAT_TRACE_DIV
+#define BLOCKTRIPLE_VERBOSE_OUTPUT
+#define BLOCKTRIPLE_TRACE_DIV
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
@@ -26,20 +26,79 @@ void ReportIeee754NotANumberArithmetic()
 	std::cout << sw::universal::to_binary(fa / fb) << '\n';
 }
 
+/*
+   0 /  inf =    0 : 0b0.00000000.00000000000000000000000
+   0 / -inf =   -0 : 0b1.00000000.00000000000000000000000
+   1 /  inf =    0 : 0b0.00000000.00000000000000000000000
+   1 / -inf =   -0 : 0b1.00000000.00000000000000000000000
+ inf /    0 =  inf : 0b0.11111111.00000000000000000000000
+ inf /   -0 = -inf : 0b1.11111111.00000000000000000000000
+-inf /    0 = -inf : 0b1.11111111.00000000000000000000000
+-inf /   -0 =  inf : 0b0.11111111.00000000000000000000000
+ inf /  inf = -nan(ind) : 0b1.11111111.10000000000000000000000
+ inf / -inf = -nan(ind) : 0b1.11111111.10000000000000000000000
+-inf /  inf = -nan(ind) : 0b1.11111111.10000000000000000000000
+-inf / -inf = -nan(ind) : 0b1.11111111.10000000000000000000000
+   0 /  inf =  0
+ */
+
 void ReportIeee754InfinityArithmetic()
 { // special cases of +-inf
 	constexpr float fa = std::numeric_limits<float>::infinity();
 	float fb = -fa;
+	float zero = 0.0f;
 	std::cout << 0.0f << " / " << fa << " = " << (0.0f / fa) << " : " << sw::universal::to_binary(0.0f / fa) << '\n';
 	std::cout << 0.0f << " / " << fb << " = " << (0.0f / fb) << " : " << sw::universal::to_binary(0.0f / fb) << '\n';
 	std::cout << 1.0f << " / " << fa << " = " << (1.0f / fa) << " : " << sw::universal::to_binary(1.0f / fa) << '\n';
 	std::cout << 1.0f << " / " << fb << " = " << (1.0f / fb) << " : " << sw::universal::to_binary(1.0f / fb) << '\n';
+	std::cout << fa << " / " <<  0.0f << " = " << (fa / zero) << " : " << sw::universal::to_binary(fa / zero) << '\n';
+	std::cout << fa << " / " << -0.0f << " = " << (fa / -zero) << " : " << sw::universal::to_binary(fa / -zero) << '\n';
+	std::cout << fb << " / " << 0.0f << " = " << (fb / zero) << " : " << sw::universal::to_binary(fb / zero) << '\n';
+	std::cout << fb << " / " << -0.0f << " = " << (fb / -zero) << " : " << sw::universal::to_binary(fb / -zero) << '\n';
 	std::cout << fa << " / " << fa << " = " << (fa / fa) << " : " << sw::universal::to_binary(fa / fa) << '\n';
 	std::cout << fa << " / " << fb << " = " << (fa / fb) << " : " << sw::universal::to_binary(fa / fb) << '\n';
 	std::cout << fb << " / " << fa << " = " << (fb / fa) << " : " << sw::universal::to_binary(fb / fa) << '\n';
 	std::cout << fb << " / " << fb << " = " << (fb / fb) << " : " << sw::universal::to_binary(fb / fb) << '\n';
 	std::cout << 0.0f << " / " << fa << " = " << (0.0f / fa) << '\n';
 	std::cout << sw::universal::to_binary(fa * fb) << '\n';
+}
+
+/*
+ 0 /  0 = -nan(ind) : 0b1.11111111.10000000000000000000000
+ 0 / -0 = -nan(ind) : 0b1.11111111.10000000000000000000000
+-0 /  0 = -nan(ind) : 0b1.11111111.10000000000000000000000
+-0 / -0 = -nan(ind) : 0b1.11111111.10000000000000000000000
+
+ 1 /  0 =  inf : 0b0.11111111.00000000000000000000000
+ 1 / -0 = -inf : 0b1.11111111.00000000000000000000000
+-1 /  0 = -inf : 0b1.11111111.00000000000000000000000
+-1 / -0 =  inf : 0b0.11111111.00000000000000000000000
+
+ 0 /  1 =  0 : 0b0.00000000.00000000000000000000000
+ 0 / -1 = -0 : 0b1.00000000.00000000000000000000000
+-0 /  1 = -0 : 0b1.00000000.00000000000000000000000
+-0 / -1 =  0 : 0b0.00000000.00000000000000000000000
+ */
+
+void ReportIeee754SpecialCases()
+{
+	float fa = 0.0f;
+	float fb = 0.0f;
+	std::cout <<  fa << " / " <<  fb << " = " << ( fa /  fb) << " : " << sw::universal::to_binary( fa /  fb) << '\n';
+	std::cout <<  fa << " / " << -fb << " = " << ( fa / -fb) << " : " << sw::universal::to_binary( fa / -fb) << '\n';
+	std::cout << -fa << " / " <<  fb << " = " << (-fa /  fb) << " : " << sw::universal::to_binary(-fa /  fb) << '\n';	
+	std::cout << -fa << " / " << -fb << " = " << (-fa / -fb) << " : " << sw::universal::to_binary(-fa / -fb) << '\n';
+	fa = 1.0f;
+	std::cout <<  fa << " / " <<  fb << " = " << ( fa /  fb) << " : " << sw::universal::to_binary( fa /  fb) << '\n';
+	std::cout <<  fa << " / " << -fb << " = " << ( fa / -fb) << " : " << sw::universal::to_binary( fa / -fb) << '\n';
+	std::cout << -fa << " / " <<  fb << " = " << (-fa /  fb) << " : " << sw::universal::to_binary(-fa /  fb) << '\n';
+	std::cout << -fa << " / " << -fb << " = " << (-fa / -fb) << " : " << sw::universal::to_binary(-fa / -fb) << '\n';
+	fa = 0.0f;
+	fb = 1.0f;
+	std::cout <<  fa << " / " <<  fb << " = " << ( fa /  fb) << " : " << sw::universal::to_binary( fa /  fb) << '\n';
+	std::cout <<  fa << " / " << -fb << " = " << ( fa / -fb) << " : " << sw::universal::to_binary( fa / -fb) << '\n';
+	std::cout << -fa << " / " <<  fb << " = " << (-fa /  fb) << " : " << sw::universal::to_binary(-fa /  fb) << '\n';
+	std::cout << -fa << " / " << -fb << " = " << (-fa / -fb) << " : " << sw::universal::to_binary(-fa / -fb) << '\n';
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -76,9 +135,12 @@ try {
 
 #if MANUAL_TESTING
 
-	ReportIeee754InfinityArithmetic();
-	ReportIeee754NotANumberArithmetic();
+//	ReportIeee754InfinityArithmetic();
+//	ReportIeee754NotANumberArithmetic();
+//	ReportIeee754SpecialCases();
 
+	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::DIV, 1.0f, 1.5f);
+	return 0;
 	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::DIV, 1.0f, -1.0f);
 	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::DIV, 1.625f, -1.625f);
 

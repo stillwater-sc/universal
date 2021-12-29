@@ -10,63 +10,58 @@
 #include <typeinfo>
 
 #include <universal/native/integers.hpp>
+#include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
-// enumerate all multiplication cases for an blocksignificant<nbits,BlockType> configuration
-template<size_t nbits, typename BlockType = uint8_t>
-int VerifyDivision(bool reportTestCases) {
-	int nrOfFailedTests = 0;
-	/*
+// enumerate all division cases for an blocksignificant<nbits,BlockType> configuration
+template<typename blocksignificantConfiguration>
+int VerifyBlockSignificantDivision(bool reportTestCases) {
+	constexpr size_t nbits = blocksignificantConfiguration::nbits;
+	using BlockType = typename blocksignificantConfiguration::BlockType;
+
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
 
-	cout << endl;
-	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	//	cout << endl;
+	//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
-	bool bReportOverflowCondition = false;
+	int nrOfFailedTests = 0;
 
-	int nrOfOverflows = 0;   // ref > maxpos
-	int nrOfUnderflows = 0;  // ref < maxneg
-	blocksignificant<nbits, BlockType> a, b, result, refResult;
-	int64_t aref, bref, cref;
+	blocksignificant<nbits, BlockType> a, b, c;
+	// nbits = 2 * fhbits
+	constexpr size_t fhbits = (nbits >> 1);
+	constexpr size_t fbits = fhbits - 1;
+	a.setradix(2 * fbits);
+	b.setradix(2 * fbits);
+	a.setradix(2 * fbits);
+	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
+	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
-		aref = int64_t(a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
+		a.setbits(i);
+		aref.setbits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
-			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
-//			result = a / b;
-		
-			if (bref == 0) continue;
+			b.setbits(j);
+			bref.setbits(j);
 			cref = aref / bref;
-
-			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) cout << setw(5) << aref << " / " << setw(5) << bref << " = " << setw(5) << cref << " : ";
-				if (bReportOverflowCondition) cout << "underflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
-				++nrOfUnderflows;
-			}
-			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) cout << setw(5) << aref << " / " << setw(5) << bref << " = " << setw(5) << cref << " : ";
-				if (bReportOverflowCondition) cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
-				++nrOfOverflows;
+			c.div(a, b);
+			for (size_t k = 0; k < nrBlocks; ++k) {
+				refResult.setblock(k, c.block(k));
 			}
 
-			refResult.set_raw_bits(static_cast<uint64_t>(cref));
-			if (result != refResult) {
+			if (refResult != cref) {
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, result, cref);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
 			}
 			else {
-				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, result, cref);
+				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, cref);
 			}
-			if (nrOfFailedTests > 24) return nrOfFailedTests;
+			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		//		if (i % 1024 == 0) std::cout << '.';
+		//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 	}
-	cout << "Total State Space: " << setw(10) << NR_VALUES * NR_VALUES << " Overflows: " << setw(10) << nrOfOverflows << " Underflows " << setw(10) << nrOfUnderflows << endl;
-	*/
+	//	cout << endl;
 	return nrOfFailedTests;
 }
 
@@ -82,9 +77,21 @@ void TestMostSignificantBit() {
 	}
 }
 
-// conditional compile flags
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -99,42 +106,47 @@ try {
 
 #if MANUAL_TESTING
 
+	{
+		blocksignificant<4, uint8_t> a, b, c;
+		c.div(a, b);
+	}
+
 	TestMostSignificantBit<27, uint8_t>();
 	TestMostSignificantBit<27, uint16_t>();
 	TestMostSignificantBit<33, uint32_t>();
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "blocksignificant<4>", "division");
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(reportTestCases), "blocksignificant<8>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "blocksignificant<4,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, uint8_t>(reportTestCases), "blocksignificant<5,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(reportTestCases), "blocksignificant<6,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, uint8_t>(reportTestCases), "blocksignificant<7,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(reportTestCases), "blocksignificant<8,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<5, uint8_t> >(reportTestCases), "blocksignificant<5,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<6, uint8_t> >(reportTestCases), "blocksignificant<6,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<7, uint8_t> >(reportTestCases), "blocksignificant<7,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8,uint8_t>", "division");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint8_t>(reportTestCases), "blocksignificant<9,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(reportTestCases), "blocksignificant<10,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(reportTestCases), "blocksignificant<12,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<9, uint8_t> >(reportTestCases), "blocksignificant<9,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<10, uint8_t> >(reportTestCases), "blocksignificant<10,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<12, uint8_t> >(reportTestCases), "blocksignificant<12,uint8_t>", "division");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint16_t>(reportTestCases), "blocksignificant<9,uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(reportTestCases), "blocksignificant<11,uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(reportTestCases), "blocksignificant<13,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<9, uint16_t> >(reportTestCases), "blocksignificant<9,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<11, uint16_t> >(reportTestCases), "blocksignificant<11,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<13, uint16_t> >(reportTestCases), "blocksignificant<13,uint16_t>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint32_t>(reportTestCases), "blocksignificant<12,uint32_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<12, uint32_t> >(reportTestCases), "blocksignificant<12,uint32_t>", "division");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(reportTestCases), "blocksignificant<16,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint16_t>(reportTestCases), "blocksignificant<16,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<16, uint8_t> >(reportTestCases), "blocksignificant<16,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<16, uint16_t> >(reportTestCases), "blocksignificant<16,uint16_t>", "division");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

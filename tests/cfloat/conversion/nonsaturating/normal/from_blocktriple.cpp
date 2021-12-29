@@ -134,9 +134,9 @@ try {
 		std::cout << "-inf   : " << a << '\n';
 		// FAIL : (+, 0, 0b011.1) : 3.5 -> 0b0.11.1 != ref 0b0.11.0 or nan != nan
 		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x70ull);
-		nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
+		nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(true), test_tag, "cfloat<4,2,uint8_t,0,0,0> from blocktriple ADD");
 	}
-	return 0;
+
 	{
 		// checking the other side of the exponential adjustments with cfloats
 		// that expand on the dynamic range of IEEE-754

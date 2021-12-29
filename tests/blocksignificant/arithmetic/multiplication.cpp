@@ -16,10 +16,11 @@
 
 // enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
 template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantMultiplication(bool bReportIndividualTestCases) {
+int VerifyBlockSignificantMultiplication(bool reportTestCases) {
 	constexpr size_t nbits = blocksignificantConfiguration::nbits;
 	using BlockType = typename blocksignificantConfiguration::BlockType;
-
+	constexpr size_t fhbits = (nbits >> 1);
+	constexpr size_t fbits = fhbits - 1;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
 
@@ -28,7 +29,10 @@ int VerifyBlockSignificantMultiplication(bool bReportIndividualTestCases) {
 
 	int nrOfFailedTests = 0;
 
-	blocksignificant<nbits, BlockType> a, b, c;
+	blocksignificantConfiguration a, b, c;
+	a.setradix(fbits);
+	b.setradix(fbits);
+	a.setradix(2 * fbits);
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
@@ -45,10 +49,10 @@ int VerifyBlockSignificantMultiplication(bool bReportIndividualTestCases) {
 
 			if (refResult != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, c, refResult);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, cref);
+				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, cref);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -59,7 +63,7 @@ int VerifyBlockSignificantMultiplication(bool bReportIndividualTestCases) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -119,44 +123,43 @@ try {
 	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4,uint8>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8,uint8>", "multiplication");
-//	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint16_t> >(reportTestCases), "blocksignificant<8,uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8,uint8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint16_t> >(reportTestCases), "blocksignificant<8,uint16>", "multiplication");
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
+	// NOTE blocksignificant<nbits, ...>   nbits must be even as it represents 2 * fhbits of the multiplier
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint8_t, BitEncoding::Ones> >(bReportIndividualTestCases),  "blocksignificant< 8, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint16_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant< 8, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint32_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant< 8, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint8_t> >(reportTestCases),  "blocksignificant< 8, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint16_t> >(reportTestCases), "blocksignificant< 8, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<4, uint32_t> >(reportTestCases), "blocksignificant< 8, uint32>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint8_t, BitEncoding::Ones> >(bReportIndividualTestCases),  "blocksignificant< 8, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint16_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant< 8, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint32_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant< 8, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint8_t> >(reportTestCases),  "blocksignificant< 8, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint16_t> >(reportTestCases), "blocksignificant< 8, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<8, uint32_t> >(reportTestCases), "blocksignificant< 8, uint32>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint32_t> >(reportTestCases), "blocksignificant<10, uint32>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_2	 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<9, uint8_t, BitEncoding::Ones> >(bReportIndividualTestCases),  "blocksignificant< 9, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<9, uint16_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant< 9, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<9, uint32_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant< 9, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint8_t> >(reportTestCases),  "blocksignificant< 9, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint16_t> >(reportTestCases), "blocksignificant< 9, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint32_t> >(reportTestCases), "blocksignificant< 9, uint32>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint8_t, BitEncoding::Ones> >(bReportIndividualTestCases),  "blocksignificant<10, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint16_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant<10, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<10, uint32_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant<10, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint8_t> >(reportTestCases),  "blocksignificant<10, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint16_t> >(reportTestCases), "blocksignificant<10, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint32_t> >(reportTestCases), "blocksignificant<10, uint32>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<11, uint8_t, BitEncoding::Ones> >(bReportIndividualTestCases),  "blocksignificant<11, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<11, uint16_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant<11, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<11, uint32_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant<11, uint32>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint8_t, BitEncoding::Ones> >(bReportIndividualTestCases),  "blocksignificant<12, uint8 >", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint16_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant<12, uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<12, uint32_t, BitEncoding::Ones> >(bReportIndividualTestCases), "blocksignificant<12, uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<14, uint8_t> >(reportTestCases),  "blocksignificant<12, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<14, uint16_t> >(reportTestCases), "blocksignificant<12, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantMultiplication< blocksignificant<14, uint32_t> >(reportTestCases), "blocksignificant<12, uint32>", "multiplication");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

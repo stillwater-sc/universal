@@ -61,7 +61,7 @@ std::ostream& operator<<(std::ostream& ostr, const BitEncoding& encoding) {
 
 // forward references
 template<size_t nbits, typename bt> class blocksignificant;
-template<size_t nbits, typename bt> constexpr blocksignificant<nbits, bt> twosComplement(const blocksignificant<nbits, bt>&);
+template<size_t nbits, typename bt> constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>&);
 template<size_t nbits, typename bt> struct bfquorem;
 template<size_t nbits, typename bt> bfquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>&, const blocksignificant<nbits, bt>&);
 
@@ -260,16 +260,15 @@ public:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
 	}
-	void sub(const blocksignificant& lhs, blocksignificant& rhs) {
-		add(lhs, rhs.twosComplement());
+	void sub(const blocksignificant& lhs, const blocksignificant& rhs) {
+		blocksignificant<nbits, bt> b(twosComplementFree(rhs)); 
+		add(lhs, b);
 	}
 	void mul(const blocksignificant& lhs, const blocksignificant& rhs) {
 		blocksignificant<nbits, bt> base(lhs);
 		blocksignificant<nbits, bt> multiplicant(rhs);
 		clear();
 		for (size_t i = 0; i < nbits; ++i) {
-//			std::cout << "base         : " << to_binary(base) << " : " << base << '\n';
-//			std::cout << "multiplicant : " << to_binary(multiplicant) << " : " << multiplicant << '\n';
 			if (base.at(i)) {
 				add(*this, multiplicant);
 			}
@@ -282,11 +281,14 @@ public:
 		blocksignificant<nbits, bt> base(lhs);
 		blocksignificant<nbits, bt> divider(rhs);
 		clear();
-		for (size_t i = 0; i < nbits; ++i) {
+		size_t outputRadix = static_cast<size_t>(lhs.radix());
+		size_t fbits = (outputRadix >> 1);
+		for (size_t i = 0; i <= fbits; ++i) {
 //			std::cout << "base    : " << to_binary(base) << " : " << base << '\n';
 //			std::cout << "divider : " << to_binary(divider) << " : " << divider << '\n';
 			if (divider <= base) {
-				sub(base, divider);
+				base.sub(base, divider);
+				this->setbit(outputRadix - i);
 			}
 			divider >>= 1;
 		}
@@ -301,7 +303,6 @@ public:
 	}
 #endif
 
-	// shift left operator
 	constexpr blocksignificant& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
@@ -331,8 +332,6 @@ public:
 		_block[0] <<= bitsToShift;
 		return *this;
 	}
-
-	// shift right operator
 	constexpr blocksignificant& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
@@ -505,7 +504,8 @@ public:
 	inline constexpr int  radix() const { return radixPoint; }
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool sign() const { return false; } // dummy to unify the API with other number systems in Universal 
+	inline constexpr bool sign() const { return test(nbits - 1); } 
+	inline constexpr bool isneg() const { return sign(); }
 	inline constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
 	inline constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false;
@@ -793,8 +793,9 @@ inline bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant
 }
 template<size_t N, typename B>
 inline bool operator<(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
-//	blocksignificant<N, B, C> diff = sub(lhs, rhs);
-	return true; // diff.isneg();
+	blocksignificant<N, B> diff;
+	diff.sub(lhs, rhs);
+	return diff.isneg();
 }
 template<size_t N, typename B>
 inline bool operator<=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
@@ -947,7 +948,7 @@ inline blocksignificant<2 * nbits + roundingBits, bt> urdiv(const blocksignifica
 
 // free function generator of the 2's complement of a blocksignificant
 template<size_t nbits, typename bt>
-inline constexpr blocksignificant<nbits, bt> twosComplement(const blocksignificant<nbits, bt>& a) {
+inline constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>& a) {
 	blocksignificant<nbits, bt> b(a);
 	return b.twosComplement();
 }

@@ -832,9 +832,11 @@ namespace sw::universal {
 					++nrOfTestFailures;
 					if (reportTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
 				}
+#ifdef VERBOSE_POSITIVITY
 				else {
 					if (reportTestCases) std::cout << "PASS: " << to_binary(a) << " : " << a << " == " << to_triple(b) << " : " << b << '\n';
 				}
+#endif
 			}
 		}
 
@@ -855,6 +857,11 @@ namespace sw::universal {
 					++nrOfTestFailures;
 					if (reportTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
 				}
+#ifdef VERBOSE_POSITIVITY
+				else {
+					if (reportTestCases) std::cout << "PASS: " << to_binary(a) << " : " << a << " == " << to_triple(b) << " : " << b << '\n';
+				}
+#endif
 			}
 		}
 
@@ -874,8 +881,12 @@ namespace sw::universal {
 					if (a.isinf() && b.isinf()) continue;
 					++nrOfTestFailures;
 					if (reportTestCases) std::cout << "FAIL: " << to_binary(a) << " : " << a << " != " << to_triple(b) << " : " << b << '\n';
-
 				}
+#ifdef VERBOSE_POSITIVITY
+				else {
+					if (reportTestCases) std::cout << "PASS: " << to_binary(a) << " : " << a << " == " << to_triple(b) << " : " << b << '\n';
+				}
+#endif
 			}
 		}
 		return nrOfTestFailures;
@@ -1246,9 +1257,11 @@ namespace sw::universal {
 					if (nrOfFailedTests > 9) return nrOfFailedTests;
 #endif
 				}
+#ifdef VERBOSE_POSITIVITY
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, nut, cref);
+					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, nut, cref);
 				}
+#endif
 			}
 			if constexpr (NR_VALUES > 256 * 256) {
 				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
@@ -1390,9 +1403,11 @@ namespace sw::universal {
 					if (nrOfFailedTests > 9) return nrOfFailedTests;
 #endif
 				}
+#ifdef VERBOSE_POSITIVITY
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, nut, cref);
+					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, nut, cref);
 				}
+#endif
 			}
 			if constexpr (NR_VALUES > 256 * 256) {
 				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
@@ -1520,9 +1535,11 @@ namespace sw::universal {
 					if (nrOfFailedTests > 9) return nrOfFailedTests;
 #endif
 				}
+#ifdef VERBOSE_POSITIVITY
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
+					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, nut, cref);
 				}
+#endif
 			}
 			if constexpr (NR_VALUES > 256 * 256) {
 				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
@@ -1567,7 +1584,7 @@ namespace sw::universal {
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 				// catching overflow
 				try {
-					result = a / b;
+					nut = a / b;
 				}
 				catch (...) {
 					if (!nut.inrange(ref)) {
@@ -1580,7 +1597,8 @@ namespace sw::universal {
 				}
 
 #else
-				nut = a * b;
+				nut = a / b;
+				bool resultSign = a.sign() != b.sign();
 				if (a.isnan() || b.isnan()) {
 					// nan-type propagates
 					if (a.isnan(NAN_TYPE_SIGNALLING) || b.isnan(NAN_TYPE_SIGNALLING)) {
@@ -1591,22 +1609,31 @@ namespace sw::universal {
 					}
 				}
 				else if (a.isinf() || b.isinf()) {
-					// a      b  =  ref
-					// +inf +inf = +inf
-					// +inf -inf = -inf
-					// -inf +inf = -inf
-					// -inf -inf = +inf
-					//  0   +inf = snan
+					//     a /   b  =  ref
+					//     0 /  inf =  0 : 0b0.00000000.00000000000000000000000
+					//	   0 / -inf = -0 : 0b1.00000000.00000000000000000000000
+					//	   1 /  inf =  0 : 0b0.00000000.00000000000000000000000
+					//	   1 / -inf = -0 : 0b1.00000000.00000000000000000000000
+					//	 inf /    0 =  inf : 0b0.11111111.00000000000000000000000
+					//	 inf /   -0 = -inf : 0b1.11111111.00000000000000000000000
+					//	-inf /    0 = -inf : 0b1.11111111.00000000000000000000000
+					//	-inf /   -0 =  inf : 0b0.11111111.00000000000000000000000
+					//	 inf /  inf = -nan(ind) : 0b1.11111111.10000000000000000000000
+					//	 inf / -inf = -nan(ind) : 0b1.11111111.10000000000000000000000
+					//	-inf /  inf = -nan(ind) : 0b1.11111111.10000000000000000000000
+					//	-inf / -inf = -nan(ind) : 0b1.11111111.10000000000000000000000
 					if (a.isinf()) {
 						if (b.isinf()) {
-							cref.setinf(a.sign() != b.sign());
+							cref.setnan(NAN_TYPE_QUIET);
+							cref.setsign(false);  // MSVC NaN/indeterminate
 						}
 						else {
-							cref.setnan(NAN_TYPE_SIGNALLING);
+							cref.setinf(resultSign);
 						}
 					}
 					else {
-						cref.setnan(NAN_TYPE_SIGNALLING);
+						cref.setzero();
+						cref.setsign(resultSign);
 					}
 				}
 				else {
@@ -1650,9 +1677,11 @@ namespace sw::universal {
 					if (nrOfFailedTests > 9) return nrOfFailedTests;
 #endif
 				}
+#ifdef VERBOSE_POSITIVITY
 				else {
 					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, nut, cref);
 				}
+#endif
 			}
 			if constexpr (NR_VALUES > 256 * 256) {
 				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
