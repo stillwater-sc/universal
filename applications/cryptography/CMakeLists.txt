@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "crypto" "Applications/Cryptography" "${SOURCES}")
+compile_all("true" "crypto" "Applications/Reproducibility/Cryptography" "${SOURCES}")

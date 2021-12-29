@@ -122,7 +122,7 @@ inline constexpr Real ipow() {
 	return result;
 }
 
-// fast power of 2
+// fast power of 2 with positive exponent
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 >

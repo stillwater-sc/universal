@@ -52,7 +52,7 @@ RUN cmake -DBUILD_ALL=ON .. && make
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Builder Version 3.48.1"]
+CMD ["echo", "Universal Numbers Library Builder Version 3.49.1"]
 
 
 # RELEASE stage
@@ -110,4 +110,4 @@ WORKDIR /home/stillwater/universal/build
 
 # the command 'make test' is run as part of the CI test pipeline of this release container
 
-CMD ["echo", "Universal Numbers Library Version 3.48.1"]
+CMD ["echo", "Universal Numbers Library Version 3.49.1"]

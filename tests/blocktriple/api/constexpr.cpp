@@ -145,8 +145,6 @@ try {
 #endif // BIT_CAST_SUPPORT
 	}
 
-
-
 	if (nrOfFailedTestCases > 0) {
 		std::cout << "FAIL\n";
 	}

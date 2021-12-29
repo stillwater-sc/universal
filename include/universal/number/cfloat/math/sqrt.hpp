@@ -76,31 +76,33 @@ namespace sw::universal {
 
 #if CFLOAT_NATIVE_SQRT
 	// sqrt for arbitrary cfloat
-	template<size_t nbits, size_t es, typename bt>
-	inline cfloat<nbits, es, bt> sqrt(const cfloat<nbits, es, bt>& a) {
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();
 #else
-		std::cerr << "cfloat_negative_sqrt_argument" << std::endl;
+		if (a.isneg()) std::cerr << "cfloat argument to sqrt is negative: " << a << std::endl;
 #endif
-		return a;
+		if (a.iszero()) return a;
+		return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::sqrt((double)a));  // TBD
 	}
 #else
-	template<size_t nbits, size_t es, typename bt>
-	inline cfloat<nbits, es, bt> sqrt(const cfloat<nbits, es, bt>& a) {
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();
 #else
-		std::cerr << "cfloat_negative_sqrt_argument" << std::endl;
+		if (a.isneg()) std::cerr << "cfloat argument to sqrt is negative: " << a << std::endl;
 #endif
-		return cfloat<nbits, es, bt>(std::sqrt((double)a));
+		if (a.iszero()) return a;
+		return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::sqrt((double)a));
 	}
 #endif
 
 	// reciprocal sqrt
-	template<size_t nbits, size_t es, typename bt>
-	inline cfloat<nbits, es, bt> rsqrt(const cfloat<nbits, es, bt>& a) {
-		cfloat<nbits, es, bt> v = sqrt(a);
+	template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> rsqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
+		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> v = sqrt(a);
 		return v.reciprocate();
 	}
 

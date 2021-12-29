@@ -23,14 +23,6 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t es = 2;
-	using Posit32 = posit<32, es>;
-	using Posit56 = posit<56, es>;
-	using Posit64 = posit<64, es>;
-	using Integer64 = integer<64, uint64_t>;
-	using Integer80 = integer<80, uint32_t>;
-	using Integer96 = integer<96, uint32_t>;
-
 	// print detailed bit-level computational intermediate results
 	// since we are summing integers, the max upperbound is pow(10,9), which is a billion
 
@@ -54,6 +46,14 @@ try {
 	}
 
 #if STRESS_TESTING
+	constexpr size_t es = 2;
+	using Posit32 = posit<32, es>;
+	using Posit56 = posit<56, es>;
+	using Posit64 = posit<64, es>;
+	using Integer64 = integer<64, uint64_t>;
+	using Integer80 = integer<80, uint32_t>;
+	using Integer96 = integer<96, uint32_t>;
+
 	std::cout << "SumOfIntegers using 64-bit Universal integer\n";
 	for (int i = 1; i < 10; ++i) {
 		std::cout << std::setw(3) << i << " 0 - " << pow(10, i) << " : " << NaiveSumOfIntegers<Integer64>(0, (long)pow(10, i)) << '\n';
@@ -91,23 +91,19 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& err) {
-	std::cerr << err.what() << std::endl;
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

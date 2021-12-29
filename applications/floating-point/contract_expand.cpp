@@ -96,7 +96,6 @@ void SquareRootSquared(std::ostream& ostr) {
 		c12_2 v12(v);
 		c14_2 v14(v);
 		c16_2 v16(v);
-		c16_2 w, z;
 		ostr << std::setw(COLUMN_WIDTH) << x << ','
 			<< std::setw(COLUMN_WIDTH) << v8 << ','
 			<< std::setw(COLUMN_WIDTH) << pow(pow(v8, 0.5), 2.0) << ','
@@ -180,22 +179,22 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << "Caught an ad-hoc exception: " << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::universal_arithmetic_exception& err) {
-	std::cerr << "Caught an unexpected universal arithmetic exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::universal_internal_exception& err) {
-	std::cerr << "Caught an unexpected universal internal exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& err) {
-	std::cerr << "Caught a runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught an unknown exception" << std::endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

@@ -114,13 +114,13 @@ try {
 
 	std::cout << "Douglas Priest arbitrary precision arithmetic experiments\n";
 
-	using Sngle = float;
+	//using Sngle = float;
 	using Longd = long double;
-	using Fixed = fixpnt<32,16>;
-	using Posit = posit<32,2>;
+	//using Fixed = fixpnt<32,16>;
+	//using Posit = posit<32,2>;
 	using Float = cfloat<32, 8, uint32_t>;
-	using Areal = areal<32, 8, uint32_t>;
-	using Lns   = lns<32, uint32_t>;
+	//using Areal = areal<32, 8, uint32_t>;
+	//using Lns   = lns<32, uint32_t>;
 
 
 	std::streamsize precision = std::cout.precision();
@@ -152,7 +152,7 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::universal_arithmetic_exception& err) {
@@ -163,8 +163,8 @@ catch (const sw::universal::universal_internal_exception& err) {
 	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const std::runtime_error& err) {
-	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+catch (std::runtime_error& err) {
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

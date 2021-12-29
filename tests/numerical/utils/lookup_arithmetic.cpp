@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 #include <chrono>
 #include <universal/number/posit/posit.hpp>
 
@@ -292,7 +292,7 @@ int MeasureAdditionPerformance(int &positives, int &negatives) {
 }
 
 // receive a float and print the components of a double representation
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 	using namespace std::chrono;
@@ -348,11 +348,23 @@ try {
 
 	return EXIT_SUCCESS;
 }
-catch (const char* const msg) {
-	std::cerr << msg << std::endl;
+catch (char const* msg) {
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (std::runtime_error& err) {
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "caught unknown exception" << std::endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

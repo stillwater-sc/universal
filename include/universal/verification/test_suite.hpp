@@ -12,6 +12,7 @@
 #include <string>
 
 #include <universal/verification/test_status.hpp>
+#include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 #include <universal/verification/test_case.hpp>
 #include <universal/verification/test_suite_exceptions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>

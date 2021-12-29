@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "fp" "Applications/Floating Point Arithmetic" "${SOURCES}")
+compile_all("true" "fp" "Applications/Precision/Floating Point Arithmetic" "${SOURCES}")

@@ -28,7 +28,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
-#include <universal/internal/blockfraction/blockfraction.hpp>
+#include <universal/internal/blocksignificant/blocksignificant.hpp>
 // blocktriple operation trace options
 #include <universal/internal/blocktriple/trace_constants.hpp>
 
@@ -50,7 +50,7 @@ namespace sw::universal {
 	accordingly.
 
 	for add and subtract
-	blockfraction = 00h.ffffeee <- three bits before radix point, fraction bits plus 3 rounding bits
+	blocksignificant = 00h.ffffeee <- three bits before radix point, fraction bits plus 3 rounding bits
 	size_t bfbits = fbits + 3;
 
 	for multiply
@@ -59,6 +59,28 @@ namespace sw::universal {
 
  // operator specialization tag for blocktriple
 enum class BlockTripleOperator { ADD, MUL, DIV, SQRT, REPRESENTATION };
+inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& op) {
+	switch (op) {
+	case BlockTripleOperator::ADD:
+		ostr << "ADD";
+		break;
+	case BlockTripleOperator::MUL:
+		ostr << "MUL";
+		break;
+	case BlockTripleOperator::DIV:
+		ostr << "DIV";
+		break;
+	case BlockTripleOperator::SQRT:
+		ostr << "SQRT";
+		break;
+	case BlockTripleOperator::REPRESENTATION:
+		ostr << "REP";
+		break;
+	default:
+		ostr << "NOP";
+	}
+	return ostr;
+}
 
 // Forward definitions
 template<size_t fbits, BlockTripleOperator op, typename bt> class blocktriple;
@@ -114,56 +136,58 @@ std::string type_tag(const blocktriple<fbits, op, bt>& v) {
 /// obtain the rounding direction, and the alignmentShift(targetFbits) method to 
 /// obtain the shift required to normalize the fraction bits.
 /// </summary>
-/// <typeparam name="fractionbits">number of fraction bits in the significant</typeparam>
+/// <typeparam name="fbits">number of fraction bits in the significant</typeparam>
 /// <typeparam name="bt">block type: one of [uint8_t, uint16_t, uint32_t, uint64_t]</typeparam>
-template<size_t fractionbits, BlockTripleOperator _op = BlockTripleOperator::ADD, typename bt = uint32_t>
+template<size_t _fbits, BlockTripleOperator _op = BlockTripleOperator::ADD, typename bt = uint32_t>
 class blocktriple {
 public:
-	static constexpr size_t nbits = fractionbits;  // a convenience and consistency alias
-	static constexpr size_t fbits = fractionbits;
+	static constexpr size_t fbits = _fbits;  // a convenience and consistency alias
+	static constexpr size_t nbits = fbits;
 	typedef bt BlockType;
 	static constexpr BlockTripleOperator op = _op;
 
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
-	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr size_t nrBlocks = 1ull + ((fbits - 1ull) / bitsInBlock);
 	static constexpr size_t storageMask = (0xFFFF'FFFF'FFFF'FFFFull >> (64ull - bitsInBlock));
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
 	static constexpr size_t fhbits = fbits + 1;            // size of all bits
-	static constexpr size_t abits = fbits + 3ull;          // size of the addend
-	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
-	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
-	static constexpr size_t sqrtbits = 2ull * fhbits;      // size of the square root output
+	static constexpr size_t rbits = 2 * (fbits + 1);       // rounding bits
+	static constexpr size_t abits = fbits + rbits;         // size of the addend = fbits + rbits extra bits to capture required rounding bits
+	static constexpr size_t mbits = 2 * fbits;             // size of the fraction bits of the multiplier
+	static constexpr size_t divbits = 3 * fbits + 4;       // size of the fraction bits of the divider
+	static constexpr size_t divshift = divbits - fbits;    // alignment shift for divider operands
+	static constexpr size_t sqrtbits = 2 * fhbits;      // size of the square root output
 	// we transform input operands into the operation's target output size
 	// so that everything is aligned correctly before the operation starts.
 	static constexpr size_t bfbits =
-		(op == BlockTripleOperator::ADD ? abits :
-			(op == BlockTripleOperator::MUL ? mbits :
-				(op == BlockTripleOperator::DIV ? divbits :
-					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits))));  // REPRESENTATION is the fall through condition
+		(op == BlockTripleOperator::ADD ? (3 + abits) :           // we need 3 integer bits (bits left of the radix point) to capture 2's complement and overflow
+			(op == BlockTripleOperator::MUL ? (2 + mbits) :       // we need 2 integer bits to capture overflow: multiply happens in 1's complement
+				(op == BlockTripleOperator::DIV ? (2 + divbits) : // we need 2 integer bits to capture overflow: divide happens in 1's complement
+					(op == BlockTripleOperator::SQRT ? sqrtbits : fhbits+1))));  // REPRESENTATION is the fall through condition and adds a bit to accomodate 2's complement encodings
 	// radix point of the OUTPUT of an operator
 	static constexpr int radix =
-		(op == BlockTripleOperator::ADD ? static_cast<int>(fbits) :
-			(op == BlockTripleOperator::MUL ? static_cast<int>(2*fbits) :
-				(op == BlockTripleOperator::DIV ? static_cast<int>(fbits) :
+		(op == BlockTripleOperator::ADD ? static_cast<int>(abits) :
+			(op == BlockTripleOperator::MUL ? static_cast<int>(mbits) :
+				(op == BlockTripleOperator::DIV ? static_cast<int>(divbits) :
 					(op == BlockTripleOperator::SQRT ? static_cast<int>(sqrtbits) : static_cast<int>(fbits)))));  // REPRESENTATION is the fall through condition
-	static constexpr BitEncoding encoding =
-		(op == BlockTripleOperator::ADD ? BitEncoding::Twos :
-			(op == BlockTripleOperator::MUL ? BitEncoding::Ones :
-				(op == BlockTripleOperator::DIV ? BitEncoding::Ones :
-					(op == BlockTripleOperator::SQRT ? BitEncoding::Ones : BitEncoding::Ones))));
+//	static constexpr BitEncoding encoding =
+//		(op == BlockTripleOperator::ADD ? BitEncoding::Twos :
+//			(op == BlockTripleOperator::MUL ? BitEncoding::Ones :
+//				(op == BlockTripleOperator::DIV ? BitEncoding::Ones :
+//					(op == BlockTripleOperator::SQRT ? BitEncoding::Ones : BitEncoding::Ones))));
 	static constexpr size_t normalBits = (bfbits < 64 ? bfbits : 64);
 	static constexpr size_t normalFormMask = (normalBits == 64) ? 0xFFFF'FFFF'FFFF'FFFFull : (~(0xFFFF'FFFF'FFFF'FFFFull << (normalBits - 1)));
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using intrinsics/assembly code
-	using Frac = sw::universal::blockfraction<bfbits, bt, encoding>;
+	using Significant = sw::universal::blocksignificant<bfbits, bt>;
 
 	static constexpr bt ALL_ONES = bt(~0);
-	// generate the special case overflow pattern mask when representation is nbits + 1 < 64
-	static constexpr size_t maxbits = (nbits + 1) < 63 ? (nbits + 1) : 63;
+	// generate the special case overflow pattern mask when representation is fbits + 1 < 64
+	static constexpr size_t maxbits = (fbits + 1) < 63 ? (fbits + 1) : 63;
 	static constexpr size_t overflowPattern = (maxbits < 63) ? (1ull << maxbits) : 0ull; // overflow of 1.11111 to 10.0000
 
 	constexpr blocktriple(const blocktriple&) noexcept = default;
@@ -202,18 +226,21 @@ public:
 	constexpr blocktriple& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
-	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_float(rhs); }
-	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_double(rhs); }
+	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
+	// explicit conversion operators
+	explicit operator float()                          const noexcept { return to_native<float>(); }
+	explicit operator double()                         const noexcept { return to_native<double>(); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION blocktriple(long double iv)				noexcept { *this = iv; }
-	CONSTEXPRESSION blocktriple& operator=(long double rhs) noexcept { return *this = (long double)(rhs); };
-	explicit operator long double() const noexcept { return to_native<long double>(); }
+	CONSTEXPRESSION blocktriple& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
+	explicit operator long double()                   const noexcept { return to_native<long double>(); }
 #endif
 
-	// operators
+	// logical bit shift operators
 	constexpr blocktriple& operator<<=(int leftShift) noexcept {
 		if (leftShift == 0) return *this;
 		if (leftShift < 0) return operator>>=(-leftShift);
@@ -240,39 +267,10 @@ public:
 		size_t significantScale = static_cast<size_t>(significantscale());
 		// find the shift that gets us to the lsb
 		size_t shift = significantScale + static_cast<size_t>(radix) - fbits;
-#ifdef PERFORMANCE_OPTIMIZATION
-		if constexpr (bfbits < 65) {
-			uint64_t fracbits = _significant.get_ull(); // get all the bits, including the integer bits
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			uint64_t mask = (1ull << (shift + adjustment);
-			bool lsb = fracbits & mask;
-			mask >>= 1;
-			bool guard = fracbits & mask;
-			mask >>= 1;
-			bool round = fracbits & mask;
-			if (shift < 2) {
-				mask = 0xFFFF'FFFF'FFFF'FFFFull;
-			}
-			else {
-				mask = 0xFFFF'FFFF'FFFF'FFFFull << (shift - 2);
-			}
-			mask = ~mask;
-			//				std::cout << "fracbits    : " << to_binary(fracbits) << std::endl;
-			//				std::cout << "sticky mask : " << to_binary(mask) << std::endl;
-			bool sticky = fracbits & mask;
-			roundup = (guard && (lsb || (round || sticky)));
-		}
-		else {
-			roundup = _significant.roundingMode(shift);
-		}
-#endif
-		bool roundup = _significant.roundingMode(shift + adjustment);
+		bool roundup = _significant.roundingDirection(shift + adjustment);
 		return std::pair<bool, size_t>(roundup, shift + adjustment);
 	}
+
 	// apply a 2's complement recoding of the fraction bits
 	inline constexpr blocktriple& twosComplement() noexcept {
 		_significant.twosComplement();
@@ -315,11 +313,6 @@ public:
 	constexpr void setscale(int scale) noexcept { _scale = scale; }
 	constexpr void setradix(int _radix) noexcept { _significant.setradix(_radix); }
 	constexpr void setbit(size_t index, bool v = true) noexcept { _significant.setbit(index, v); }
-	/// <summary>
-	/// set the bits of the significant, given raw fraction bits. only works for bfbits < 64
-	/// </summary>
-	/// <param name="raw">raw bit pattern representing the fraction bits</param>
-	/// <returns></returns>
 	constexpr void setbits(uint64_t raw) noexcept {
 		// the setbits() api cannot be modified as it is shared by all number systems
 		// as a standard mechanism for the test suites to set bits.
@@ -364,25 +357,55 @@ public:
 		}
 		return sigScale;
 	}
-	inline constexpr Frac significant()      const noexcept { return _significant; }
-	// specialty function to offer a fast path to get the fraction bits out of the representation
+	inline constexpr Significant significant()      const noexcept { return _significant; }
+	// specialty function to offer a fast path to get the significant bits out of the representation
 	// to convert to a target number system: only valid for bfbits <= 64
 	inline constexpr uint64_t fraction_ull() const noexcept { return _significant.fraction_ull(); }
 	inline constexpr uint64_t get_ull()      const noexcept { return _significant.get_ull(); }
-	// fraction bit accessors
+	// significant bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
 	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }
 
-	// conversion operators
-	explicit operator float()       const noexcept { return to_native<float>(); }
-	explicit operator double()      const noexcept { return to_native<double>(); }
+	// helper debug function
+	void constexprClassParameters() const {
+		std::cout << "-------------------------------------------------------------\n";
+		std::cout << "type              : " << typeid(*this).name() << '\n';
+		std::cout << "fbits             : " << fbits << '\n';
+		std::cout << "operator          : " << op << '\n';
+		std::cout << "bitsInByte        : " << bitsInByte << '\n';
+		std::cout << "bitsInBlock       : " << bitsInBlock << '\n';
+		std::cout << "nrBlocks          : " << nrBlocks << '\n';
+		std::cout << "storageMask       : " << to_binary(storageMask) << '\n';
 
+		std::cout << "MSU               : " << MSU << '\n';
+
+		std::cout << "fhbits            : " << fhbits << '\n';
+		std::cout << "rbits             : " << rbits << "      rounding bits for addition/subtraction\n";
+		std::cout << "abits             : " << abits << "      size of the addend = fbits + rbits\n";
+		std::cout << "mbits             : " << mbits << "      size of the multiplier output\n";
+		std::cout << "divbits           : " << divbits << "      size of the divider output\n";
+		std::cout << "sqrtbits          : " << sqrtbits << "      size of the square root output\n";
+		// we transform input operands into the operation's target output size
+		// so that everything is aligned correctly before the operation starts.
+		std::cout << "bfbits            : " << bfbits << "      bits in the blocksignificant representation\n";
+		std::cout << "radix             : " << radix << "      position of the radix point of the ALU operator result\n";
+//		std::cout << "encoding          : " << encoding << '\n';
+		std::cout << "normalBits        : " << normalBits << "      normal bits to track: metaprogramming trick to remove warnings\n";
+		std::cout << "normalFormMask    : " << to_binary(normalFormMask) << "   normalFormMask for small configurations\n";
+		std::cout << "significant type  : " << typeid(Significant).name() << '\n';
+
+		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES) << '\n';
+		std::cout << "maxbits           : " << maxbits << "        bit to check for overflow: metaprogramming trick\n";
+		std::cout << "overflowPattern   : " << to_binary(overflowPattern) << '\n';
+
+		std::cout << std::endl;
+	}
 
 	/////////////////////////////////////////////////////////////
 	// ALU operators
 
 	/// <summary>
-	/// add two fixed-point numbers with fbits fraction bits 
+	/// add two fixed-point numbers with fbits fraction bits and a leading 1
 	/// yielding an unrounded sum of 3+fbits. (currently we generate a 3+(2*fbits) result as we haven't implemented the sticky bit optimization)
 	/// This sum can overflow, be normal, or denormal. 
 	/// Since we are not rounding
@@ -417,13 +440,13 @@ public:
 		_significant.setradix(radix);                          // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_add) {
-			std::cout << "blockfraction unrounded add\n";
-			std::cout << typeid(lhs._significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << "blocksignificant unrounded add: just the significant values\n";
 			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "sum significant : " << to_binary(*this) << " : " << *this << '\n';
+			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
+			std::cout << "sum significant : " << to_binary(_significant) << " : " << _significant << '\n';
 		}
+
 		if (_significant.iszero()) {
 			clear();
 		}
@@ -447,12 +470,12 @@ public:
 				_scale -= leftShift;
 			}
 		}
+
 		if constexpr (_trace_btriple_add) {
 			std::cout << "blocktriple normalized add\n";
-			std::cout << typeid(lhs).name() << '\n';
+			std::cout << typeid(*this).name() << '\n';
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << typeid(*this).name() << '\n';
 			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
 		}
 	}
@@ -488,12 +511,11 @@ public:
 		_significant.setradix(2*fbits);                        // set the radix interpretation of the output
 
 		if constexpr (_trace_btriple_mul) {
-			std::cout << "blockfraction unrounded mul\n";
-			std::cout << typeid(lhs._significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << "blocksignificant unrounded mul\n";
 			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "mul significant : " << to_binary(*this) << " : " << *this << '\n';  // <-- the scale of this representation is not yet set
+			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
+			std::cout << "mul significant : " << to_binary(_significant) << " : " << _significant << '\n';
 		}
 		if (_significant.iszero()) {
 			clear();
@@ -502,20 +524,17 @@ public:
 			_zero = false;
 			_scale = scale_of_result;
 			_sign = (lhs.sign() == rhs.sign()) ? false : true;
-			if (_significant.test(bfbits - 1)) { // test for carry
-				bool roundup = _significant.test(1) && _significant.test(0);
-				_scale += 1;
-				_significant >>= 1;
-				if (roundup) _significant.increment();
-			}
-			else if (_significant.test(bfbits - 2)) {
-//				all good, found a normal form
-			}
-			else {
+			// the result may overflow, but we can't normalize the overflow as
+			// this would remove an lsb that might impact the rounding.
+			// The design we use here is that the raw ALUs do not normalize overflow
+			// that is left to the conversion stage were we need to apply rounding rules
+
+			// we also may have gotten a denormalized number, which we do need
+			// to normalize. This constitutes a left shift and thus we would
+			// not lose any rounding information by doing so.
+			if (!_significant.test(bfbits - 1) && !_significant.test(bfbits - 2) ) {
 				// found a denormalized form, thus need to normalize: find MSB
 				int msb = _significant.msb(); // zero case has been taken care off above
-//				std::cout << "mul : " << to_binary(*this) << std::endl;
-//				std::cout << "msb : " << msb << std::endl;
 				int leftShift = static_cast<int>(bfbits) - 3 - msb;
 				_significant <<= leftShift;
 				_scale -= leftShift;
@@ -523,10 +542,9 @@ public:
 		}
 		if constexpr (_trace_btriple_mul) {
 			std::cout << "blocktriple normalized mul\n";
-			std::cout << typeid(lhs).name() << '\n';
+			std::cout << typeid(*this).name() << '\n';
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << typeid(*this).name() << '\n';
 			std::cout << "mul : " << to_binary(*this) << " : " << *this << '\n';
 		}
 	}
@@ -534,18 +552,18 @@ public:
 	void div(blocktriple& lhs, blocktriple& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
-		int scale_of_result = lhs_scale + rhs_scale;
+		int scale_of_result = lhs_scale - rhs_scale;
 
 		// avoid copy by directly manipulating the fraction bits of the arguments
-		_significant.mul(lhs._significant, rhs._significant);
+		_significant.div(lhs._significant, rhs._significant);
+		_significant.setradix(radix);
 
 		if constexpr (_trace_btriple_div) {
-			std::cout << "blockfraction unrounded div\n";
-			std::cout << typeid(lhs._significant).name() << '\n';
-			std::cout << "lhs significant : " << to_binary(lhs) << " : " << lhs << '\n';
-			std::cout << "rhs significant : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << "blocksignificant unrounded div\n";
 			std::cout << typeid(_significant).name() << '\n';
-			std::cout << "div significant : " << to_binary(*this) << " : " << *this << '\n';  // <-- the scale of this representation is not yet set
+			std::cout << "lhs significant : " << to_binary(lhs._significant) << " : " << lhs._significant << '\n';
+			std::cout << "rhs significant : " << to_binary(rhs._significant) << " : " << rhs._significant << '\n';
+			std::cout << "div significant : " << to_binary(_significant) << " : " << _significant << '\n';  // <-- the scale of this representation is not yet set
 		}
 		if (_significant.iszero()) {
 			clear();
@@ -553,29 +571,30 @@ public:
 		else {
 			_zero = false;
 			_scale = scale_of_result;
-			if (_significant.test(bfbits - 1)) { // test for carry
-				_scale += 1;
-				_significant >>= 2; // TODO: do we need to round on bits shifted away?
-			}
-			else if (_significant.test(bfbits - 2)) { // check for the hidden bit
-				_significant >>= 1;
-			}
-			else {
+			_sign = lhs.sign() != rhs.sign();
+			// the result may overflow, but we can't normalize the overflow as
+			// this would remove an lsb that might impact the rounding.
+			// The design we use here is that the raw ALUs do not normalize overflow
+			// that is left to the conversion stage were we need to apply rounding rules
+
+			// we also may have gotten a denormalized number, which we do need
+			// to normalize. This constitutes a left shift and thus we would
+			// not lose any rounding information by doing so.
+			if (!_significant.test(bfbits - 1) && !_significant.test(bfbits - 2)) {
 				// found a denormalized form, thus need to normalize: find MSB
 				int msb = _significant.msb(); // zero case has been taken care off above
 //				std::cout << "div : " << to_binary(*this) << std::endl;
 //				std::cout << "msb : " << msb << std::endl;
-				int leftShift = static_cast<int>(bfbits) - 3 - msb;
+				int leftShift = static_cast<int>(bfbits) - 2 - msb;
 				_significant <<= leftShift;
 				_scale -= leftShift;
 			}
 		}
 		if constexpr (_trace_btriple_div) {
 			std::cout << "blocktriple normalized div\n";
-			std::cout << typeid(lhs).name() << '\n';
+			std::cout << typeid(*this).name() << '\n';
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
-			std::cout << typeid(*this).name() << '\n';
 			std::cout << "div : " << to_binary(*this) << " : " << *this << '\n';
 		}
 	}
@@ -591,56 +610,55 @@ private:
 	int  _scale;
 
 protected:
-	Frac _significant;
+	Significant _significant;
 
 	// helpers
 
 private:
 	/// <summary>
-/// round a set of source bits to the present representation.
-/// srcbits is the number of bits of significant in the source representation
-/// round<> is intended only for rounding raw IEEE-754 bits
-/// </summary>
-/// <typeparam name="StorageType">type of incoming bits</typeparam>
-/// <param name="raw">the raw unrounded bits</param>
-/// <returns></returns>
-	template<size_t srcbits, typename StorageType>
-	constexpr StorageType round(StorageType raw) noexcept {
-		if constexpr (nbits < srcbits) {
+	/// round a set of source bits to the present representation.
+	/// srcbits is the number of bits of significant in the source representation
+	/// round<> is intended only for rounding raw IEEE-754 bits
+	/// </summary>
+	/// <param name="raw">the raw unrounded bits</param>
+	/// <returns></returns>
+	template<size_t srcbits, typename Real>
+	constexpr uint64_t round(uint64_t raw) noexcept {
+		if constexpr (fbits < srcbits) {
 			// round to even: lsb guard round sticky
 			// collect guard, round, and sticky bits
 			// this same logic will work for the case where
 			// we only have a guard bit and no round and/or sticky bits
 			// because the mask logic will make round and sticky both 0
 
-			// example: rounding the bits of a float to our nbits 
+			// example: rounding the bits of a float to our fbits 
 			// float significant: 24bits : 0bhfff'ffff'ffff'ffff'ffff'ffff; h is hidden, f is fraction bit
 			// blocktriple target: 10bits: 0bhfff'ffff'fff    hidden bit is implicit, 10 fraction bits
 			//                                           lg'rs
-			//                             0b0000'0000'0001'0000'0000'0000; guard mask == 1 << srcbits - nbits - 2: 24 - 10 - 2 = 12
-			constexpr uint32_t upper = 8 * sizeof(StorageType) + 2;
-			constexpr uint32_t shift = srcbits - nbits - 2ull;  // srcbits includes the hidden bit, nbits does not
-			StorageType mask = (StorageType{ 1ull } << shift);
+			//                             0b0000'0000'0001'0000'0000'0000; guard mask == 1 << srcbits - fbits - 2: 24 - 10 - 2 = 12
+			constexpr uint32_t upper = ieee754_parameter<Real>::nbits + 2;
+			constexpr uint32_t shift = srcbits - fbits - 2ull;  // srcbits includes the hidden bit, fbits does not
+			uint64_t mask = (1ull << shift);
 //			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType)*8, true) << '\n';
 //			std::cout << "guard : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
 			bool guard = (mask & raw);
 			mask >>= 1;
-//			std::cout << "round : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
+//			std::cout << "round : " << to_binary(mask, ieee754_parameter<Real>::nbits, true) << '\n';
 			bool round = (mask & raw);
 			if constexpr (shift > 1 && shift < upper) { // protect against a negative shift
-				StorageType allones(StorageType(~0));
-				mask = StorageType(allones << (shift - 1));
+				uint64_t allones(uint64_t(~0));
+				mask = uint64_t(allones << (shift - 1));
 				mask = ~mask;
 			}
 			else {
 				mask = 0;
 			}
-//			std::cout << "sticky: " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
+//			std::cout << "sticky: " << to_binary(mask, ieee754_parameter<Real>::nbits, true) << '\n';
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
 			bool lsb = (raw & 0x1);
-//			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType) * 8, true) << '\n';
+//			std::cout << "raw   : " << to_binary(raw, ieee754_parameter<Real>::nbits, true) << '\n';
 
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -659,18 +677,17 @@ private:
 			}
 		}
 		else {
-			constexpr size_t shift = nbits - srcbits;
-			if constexpr (shift < sizeof(StorageType)) {
+			constexpr size_t shift = fbits - srcbits;
+			if constexpr (shift < ieee754_parameter<Real>::nbits) {
 				raw <<= shift;
 			}
 			else {
 #if !BIT_CAST_SUPPORT
-				std::cerr << "round: shift " << shift << " is too large (>= " << sizeof(StorageType) << ")\n";
+				std::cerr << "round: shift " << shift << " is too large (>= 64)\n";
 #endif
 			}
 		}
-//		std::cout << "final : " << to_binary(raw, sizeof(StorageType) * 8, true) << '\n';
-		return static_cast<StorageType>(raw);
+		return static_cast<uint64_t>(raw);
 	}
 
 	template<typename Ty>
@@ -695,7 +712,7 @@ private:
 			_significant.setradix(fbits);
 			break;
 		case BlockTripleOperator::DIV:
-			_significant.setradix(3 * fbits);
+			_significant.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::SQRT:
 			_significant.setradix(2 * fbits);
@@ -729,10 +746,10 @@ private:
 			_significant.setradix(fbits);
 			break;
 		case BlockTripleOperator::DIV:
-			_significant.setradix(3*fbits);
+			_significant.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::SQRT:
-			_significant.setradix(2*fbits);
+			_significant.setradix(2 * fbits);
 			break;
 		case BlockTripleOperator::REPRESENTATION:
 			_significant.setradix(fbits);
@@ -742,47 +759,42 @@ private:
 		return *this;
 	}
 
-	inline CONSTEXPRESSION blocktriple& convert_float(float rhs) noexcept {   // TODO: deal with subnormals and inf
-#if BIT_CAST_SUPPORT
-		// normal number
-		uint32_t bc = std::bit_cast<uint32_t>(rhs);
-		bool s = (0x8000'0000ul & bc);
-		uint32_t raw_exp = static_cast<uint32_t>((0x7F80'0000ul & bc) >> 23);
-		uint32_t raw = (1ul << 23) | (0x007F'FFFFul & bc);
-#else // !BIT_CAST_SUPPORT
-		float_decoder decoder;
-		decoder.f = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		uint32_t raw_exp = decoder.parts.exponent;
-		uint32_t raw = (1ul << 23) | decoder.parts.fraction;
-#endif // !BIT_CAST_SUPPORT
+	template<typename Real>
+	inline CONSTEXPRESSION blocktriple& convert_ieee754(Real rhs) noexcept {   // TODO: deal with subnormals and inf
+
+		// extract raw IEEE-754 bits
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction);
 
 		// special case handling
-		if (raw_exp == 0xFFu) { // special cases
-			if (raw == 1ul || raw == 0x00C0'0001ul) {
-				// 1.11111111.00000000000000000000001 signalling nan
+		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
+			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
+				rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
+				// 1.11111111.00000000.......00000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
 				// MSVC
-				// 1.11111111.10000000000000000000001 signalling nan
-				// 0.11111111.10000000000000000000001 signalling nan
+				// 1.11111111.10000000.......00000001 signalling nan
+				// 0.11111111.10000000.......00000001 signalling nan
 				// NAN_TYPE_SIGNALLING;
 				_nan = true;
 				_inf = false; 
 				_sign = true; // this is the encoding of a signalling NaN
 				return *this;
 			}
-			if (raw == 0x00C0'0000ul) {
-				// 1.11111111.10000000000000000000000 quiet nan
-				// 0.11111111.10000000000000000000000 quiet nan
+			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
+				// 1.11111111.10000000.......00000000 quiet nan
+				// 0.11111111.10000000.......00000000 quiet nan
 				// NAN_TYPE_QUIET);
 				_nan = true;
 				_inf = false; 
 				_sign = false; // this is the encoding of a quiet NaN
 				return *this;
 			}
-			if (raw == 0ul) {
-				// 1.11111111.00000000000000000000000 -inf
-				// 0.11111111.00000000000000000000000 +inf
+			if (rawFraction == 0ull) {
+				// 1.11111111.0000000.......000000000 -inf
+				// 0.11111111.0000000.......000000000 +inf
 				_nan = false;
 				_inf = true;
 				_sign = s;  // + or - infinity
@@ -796,78 +808,48 @@ private:
 			_sign = s;
 			return *this;
 		}
-		// normal number, not zero
-		_nan = false;
-		_inf = false;
-		_zero = false;
-		_sign = s;
-		_scale = static_cast<int>(raw_exp) - 127;
-		uint32_t rounded_bits = round<24, uint32_t>(raw);
-		_significant.setradix(fbits); // round maps the fraction bits to the radix at fbits
-		_significant.setbits(rounded_bits);
-		return *this;
-	}
-
-	inline CONSTEXPRESSION blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
-#if BIT_CAST_SUPPORT
-		uint64_t bc = std::bit_cast<uint64_t>(rhs);
-		bool s = (0x8000'0000'0000'0000ull & bc);
-		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
-		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-#else
-		double_decoder decoder;
-		decoder.d = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		uint64_t raw_exp = decoder.parts.exponent;
-		uint64_t raw = (1ull << 52) | decoder.parts.fraction;
-#endif // !BIT_CAST_SUPPORT
-
-		// special case handling
-		if (raw_exp == 0x7FFu) { // special cases
-			if (raw == 1ul || raw == 0x0040'0001ul) {
-				// 1.111'1111'1111.0000000000...0000000001 signalling nan
-				// 0.111'1111'1111.0000000000...0000000001 signalling nan
-				// MSVC
-				// 1.111'1111'1111.1000000000...0000000001 signalling nan
-				// 0.111'1111'1111.1000000000...0000000001 signalling nan
-				// NAN_TYPE_SIGNALLING;
-				_nan = true;
-				_inf = true; // this is the encoding of a signalling NaN
-				return *this;
-	}
-			if (raw == 0x0008'0000'0000'0000ull) {
-				// 1.111'1111'1111.1000000000...0000000000 quiet nan
-				// 0.111'1111'1111.1000000000...0000000000 quiet nan
-				// NAN_TYPE_QUIET);
-				_nan = true;
-				_inf = false; // this is the encoding of a quiet NaN
-				return *this;
-			}
-			if (raw == 0ul) {
-				// 1.11111111.00000000000000000000000 -inf
-				// 0.11111111.00000000000000000000000 +inf
-				_nan = false;
-				_inf = true;
-				_sign = s;  // + or - infinity
-				return *this;
-			}
+		if (rawExponent == 0ull) {
+			// value is a subnormal: TBD
+			std::cerr << "subnormal value TBD\n";
 		}
-		if (rhs == 0.0f) { // IEEE rule: this is valid for + and - 0.0
+		else {
+			int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
+
+			// normal number, not zero
 			_nan = false;
 			_inf = false;
-			_zero = true;
+			_zero = false;
 			_sign = s;
-			return *this;
+			_scale = exponent;
+
+			// add the hidden bit
+			rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
+			uint64_t rounded_bits = round<ieee754_parameter<Real>::fbits+1, Real>(rawFraction);
+			_significant.setbits(rounded_bits);
+			switch(op) {
+			case BlockTripleOperator::REPRESENTATION:
+				_significant.setradix(fbits);
+//				std::cout << "rhs = " << rhs << " : significant = " << _significant << '\n';
+				break;
+			case BlockTripleOperator::ADD:
+				_significant.setradix(abits);
+				_significant <<= rbits;
+				break;
+			case BlockTripleOperator::MUL:
+				_significant.setradix(2*fbits);
+				_significant <<= fbits;
+				break;
+			case BlockTripleOperator::DIV:
+				_significant.setradix(2*fbits);
+				_significant <<= fbits;
+				break;
+			case BlockTripleOperator::SQRT:
+				_significant.setradix(2 * fbits);
+				_significant <<= fbits;
+				break;
+			}
 		}
-		// normal number
-		_nan = false;
-		_inf = false;
-		_zero = false;
-		_sign = s;
-		_scale = static_cast<int>(raw_exp) - 1023;
-		uint64_t rounded_bits = round<53, uint64_t>(raw); // round manipulates _scale if needed
-		_significant.setradix(fbits); // round maps the fraction bits to the radix at fbits
-		_significant.setbits(rounded_bits);
+
 		return *this;
 	}
 
@@ -875,86 +857,87 @@ private:
 	constexpr Real to_native() const noexcept {
 		if (_nan) { if (_sign) return std::numeric_limits<Real>::signaling_NaN(); else return std::numeric_limits<Real>::quiet_NaN(); }
 		if (_inf) { if (_sign) return -std::numeric_limits<Real>::infinity(); else return std::numeric_limits<Real>::infinity(); }
-		if (_zero) { if (_sign) return -Real(0.0f); else return Real(0.0f); }
+		if (_zero) {
+			Real v(0);
+			if (_sign) {
+				return -v;
+			}
+			else {
+				return v;
+			}
+		}
 		Real v = Real(_significant);
 		v *= std::pow(Real(2.0f), Real(_scale));
-		return (_sign ? -v : v);
+		Real s = (_sign ? Real(-1.0) : Real(1.0));
+		return s * v;
 	}
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<nnbits, oop, bbt>& a);
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend std::istream& operator>> (std::istream& istr, blocktriple<nnbits, oop, bbt>& a);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend std::istream& operator>> (std::istream& istr, blocktriple<ffbits, oop, bbt>& a);
 
 	// declare as friends to avoid needing a marshalling function to get significant bits out
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend std::string to_binary(const blocktriple<nnbits, oop, bbt>&, bool);
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend std::string to_triple(const blocktriple<nnbits, oop, bbt>&, bool);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend std::string to_binary(const blocktriple<ffbits, oop, bbt>&, bool);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend std::string to_triple(const blocktriple<ffbits, oop, bbt>&, bool);
 
 	// logic operators
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend bool operator==(const blocktriple<nnbits, oop, bbt>& lhs, const blocktriple<nnbits, oop, bbt>& rhs);
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend bool operator!=(const blocktriple<nnbits, oop, bbt>& lhs, const blocktriple<nnbits, oop, bbt>& rhs);
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend bool operator< (const blocktriple<nnbits, oop, bbt>& lhs, const blocktriple<nnbits, oop, bbt>& rhs);
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend bool operator> (const blocktriple<nnbits, oop, bbt>& lhs, const blocktriple<nnbits, oop, bbt>& rhs);
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend bool operator<=(const blocktriple<nnbits, oop, bbt>& lhs, const blocktriple<nnbits, oop, bbt>& rhs);
-	template<size_t nnbits, BlockTripleOperator oop, typename bbt>
-	friend bool operator>=(const blocktriple<nnbits, oop, bbt>& lhs, const blocktriple<nnbits, oop, bbt>& rhs);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend bool operator==(const blocktriple<ffbits, oop, bbt>& lhs, const blocktriple<ffbits, oop, bbt>& rhs);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend bool operator!=(const blocktriple<ffbits, oop, bbt>& lhs, const blocktriple<ffbits, oop, bbt>& rhs);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend bool operator< (const blocktriple<ffbits, oop, bbt>& lhs, const blocktriple<ffbits, oop, bbt>& rhs);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend bool operator> (const blocktriple<ffbits, oop, bbt>& lhs, const blocktriple<ffbits, oop, bbt>& rhs);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend bool operator<=(const blocktriple<ffbits, oop, bbt>& lhs, const blocktriple<ffbits, oop, bbt>& rhs);
+	template<size_t ffbits, BlockTripleOperator oop, typename bbt>
+	friend bool operator>=(const blocktriple<ffbits, oop, bbt>& lhs, const blocktriple<ffbits, oop, bbt>& rhs);
 };
 
 ////////////////////// operators
 
-inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& op) {
-	switch (op) {
-	case BlockTripleOperator::ADD:
-		ostr << "ADD";
-		break;
-	case BlockTripleOperator::MUL:
-		ostr << "MUL";
-		break;
-	case BlockTripleOperator::DIV:
-		ostr << "DIV";
-		break;
-	case BlockTripleOperator::SQRT:
-		ostr << "SQRT";
-		break;
-	case BlockTripleOperator::REPRESENTATION:
-		ostr << "REP";
-		break;
-	default:
-		ostr << "NOP";
-	}
-	return ostr;
-}
-template<size_t nbits, BlockTripleOperator op, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<nbits, op, bt>& a) {
-	if (a._inf) {
-		ostr << FP_INFINITE;
+// blocktriple ostream operator
+template<size_t fbits, BlockTripleOperator op, typename bt>
+inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<fbits, op, bt>& a) {
+	if (a.isnan()) {
+		if (a.isneg()) {
+			ostr << "snan";
+		}
+		else {
+			ostr << "qnan";
+		}
 	}
 	else {
-		ostr << double(a);
+		if (a.isinf()) {
+			if (a.isneg()) {
+				ostr << "-inf";
+			}
+			else {
+				ostr << "+inf";
+			}
+		}
+		else {
+			ostr << double(a);
+		}
 	}
 	return ostr;
 }
 
-template<size_t nbits, BlockTripleOperator op, typename bt>
-inline std::istream& operator>> (std::istream& istr, const blocktriple<nbits, op, bt>& a) {
+template<size_t fbits, BlockTripleOperator op, typename bt>
+inline std::istream& operator>> (std::istream& istr, const blocktriple<fbits, op, bt>& a) {
 	istr >> a._fraction;
 	return istr;
 }
 
-template<size_t nbits, BlockTripleOperator op, typename bt>
-inline bool operator==(const blocktriple<nbits, op, bt>& lhs, const blocktriple<nbits, op, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significant == rhs._significant && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
-template<size_t nbits, BlockTripleOperator op, typename bt>
-inline bool operator!=(const blocktriple<nbits, op, bt>& lhs, const blocktriple<nbits, op, bt>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nbits, BlockTripleOperator op, typename bt>
-inline bool operator< (const blocktriple<nbits, op, bt>& lhs, const blocktriple<nbits, op, bt>& rhs) {
+template<size_t fbits, BlockTripleOperator op, typename bt>
+inline bool operator==(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significant == rhs._significant && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
+template<size_t fbits, BlockTripleOperator op, typename bt>
+inline bool operator!=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator==(lhs, rhs); }
+template<size_t fbits, BlockTripleOperator op, typename bt>
+inline bool operator< (const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) {
 	if (lhs._inf) {
 		if (rhs._inf) return false; else return true; // everything is less than -infinity
 	}
@@ -1020,23 +1003,23 @@ inline bool operator< (const blocktriple<nbits, op, bt>& lhs, const blocktriple<
 		}
 	}
 }
-template<size_t nbits, BlockTripleOperator op, typename bt>
-inline bool operator> (const blocktriple<nbits, op, bt>& lhs, const blocktriple<nbits, op, bt>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nbits, BlockTripleOperator op, typename bt>
-inline bool operator<=(const blocktriple<nbits, op, bt>& lhs, const blocktriple<nbits, op, bt>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nbits, BlockTripleOperator op, typename bt>
-inline bool operator>=(const blocktriple<nbits, op, bt>& lhs, const blocktriple<nbits, op, bt>& rhs) { return !operator< (lhs, rhs); }
+template<size_t fbits, BlockTripleOperator op, typename bt>
+inline bool operator> (const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return  operator< (rhs, lhs); }
+template<size_t fbits, BlockTripleOperator op, typename bt>
+inline bool operator<=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator> (lhs, rhs); }
+template<size_t fbits, BlockTripleOperator op, typename bt>
+inline bool operator>=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator< (lhs, rhs); }
 
 
 ////////////////////////////////// string conversion functions //////////////////////////////
 
-template<size_t nbits, BlockTripleOperator op, typename bt>
-std::string to_binary(const sw::universal::blocktriple<nbits, op, bt>& a, bool nibbleMarker = true) {
+template<size_t fbits, BlockTripleOperator op, typename bt>
+std::string to_binary(const sw::universal::blocktriple<fbits, op, bt>& a, bool nibbleMarker = false) {
 	return to_triple(a, nibbleMarker);
 }
 
-template<size_t nbits, BlockTripleOperator op, typename bt>
-std::string to_triple(const blocktriple<nbits, op, bt>& a, bool nibbleMarker = true) {
+template<size_t fbits, BlockTripleOperator op, typename bt>
+std::string to_triple(const blocktriple<fbits, op, bt>& a, bool nibbleMarker = true) {
 	std::stringstream s;
 	s << (a._sign ? "(-, " : "(+, ");
 	s << std::setw(3) << a._scale << ", ";
@@ -1044,9 +1027,9 @@ std::string to_triple(const blocktriple<nbits, op, bt>& a, bool nibbleMarker = t
 	return s.str();
 }
 
-template<size_t nbits, BlockTripleOperator op, typename bt>
-blocktriple<nbits> abs(const blocktriple<nbits, op, bt>& a) {
-	blocktriple<nbits> absolute(a);
+template<size_t fbits, BlockTripleOperator op, typename bt>
+blocktriple<fbits> abs(const blocktriple<fbits, op, bt>& a) {
+	blocktriple<fbits, op, bt> absolute(a);
 	absolute.setpos();
 	return absolute;
 }

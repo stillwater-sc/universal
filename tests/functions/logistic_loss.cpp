@@ -7,7 +7,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/functions/loss.hpp>
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -30,7 +30,7 @@ try {
 		Posit step = ub / nrSamples;
 		Posit x = Posit(0); // minpos<nbits, es>();
 		for (unsigned i = 0; i <= nrSamples; ++i) {
-			std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << sw::function::logt(t, x) << '\n';
+			std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << logt(t, x) << '\n';
 			x += step;
 		}
 	}
@@ -41,23 +41,19 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& err) {
-	std::cerr << err.what() << std::endl;
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

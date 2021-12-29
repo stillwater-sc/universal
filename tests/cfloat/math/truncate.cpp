@@ -18,11 +18,15 @@ int VerifyFloor(bool reportTestCases) {
 	TestType a;
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
-		auto l1 = floor(a);
+		TestType l1 = floor(a);
 		// generate the reference
-		float f = float(a);
-		auto l2 = std::floor(f);
-		if (l1 != l2) {             // TODO: fix float to int64 comparison
+		float f = float(a);         // we can stay with floats as the state space NR_VALUES is always going to be small to be practical (nbits < 16)
+		float l2 = std::floor(f);
+		if (l1 != l2) {
+			if (a.isnan() || l1.isnan()) continue;
+			std::cout << to_binary(a) << " : " << a << '\n';
+//			std::cout << to_binary(l1) << " : " << l1 << '\n';
+			std::cout << "floor(" << f << ") = " << l2 << " vs result " << l1 << '\n';
 			++nrOfFailedTestCases;
 			if (reportTestCases) ReportOneInputFunctionError("floor", "floor", a, TestType(l1), TestType(l2));
 		}
@@ -40,11 +44,15 @@ int VerifyCeil(bool reportTestCases) {
 	TestType a;
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
-		auto l1 = ceil(a);
+		TestType l1 = ceil(a);
 		// generate the reference
 		float f = float(a);
-		auto l2 = std::ceil(f);
-		if (l1 != l2) {             // TODO: fix float to int64 comparison
+		float l2 = std::ceil(f);
+		if (l1 != l2) {
+			if (a.isnan() || l1.isnan()) continue;
+			std::cout << to_binary(a) << " : " << a << '\n';
+//			std::cout << to_binary(l1) << " : " << l1 << '\n';
+			std::cout << "ceil(" << f << ") = " << l2 << " vs result " << l1 << '\n';
 			++nrOfFailedTestCases;
 			if (reportTestCases) ReportOneInputFunctionError("ceil", "ceil", a, TestType(l1), TestType(l2));
 		}

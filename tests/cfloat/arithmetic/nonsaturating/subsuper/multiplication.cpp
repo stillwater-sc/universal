@@ -5,14 +5,17 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-#define CFLOAT_VERBOSE_OUTPUT
-#define CFLOAT_TRACE_MUL
+//#define CFLOAT_VERBOSE_OUTPUT
+//#define CFLOAT_TRACE_MUL
+#define BLOCKTRIPLE_VERBOSE_OUTPUT
+//#define BLOCKTRIPLE_TRACE_MUL
+//#define TRACE_CONVERSION 1
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -36,8 +39,8 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat_ttf multiplication validation";
-	std::string test_tag           = "cfloat_ttf addition";
+	std::string test_suite         = "classic cfloat multiplication validation with subnormals, normals, and supernormals";
+	std::string test_tag           = "cfloat_ttf multiplication";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -45,56 +48,49 @@ try {
 
 #if MANUAL_TESTING
 
+	/*
+	cfloat<32, 8, uint32_t, true, true, false> a = 0.078125f;
+	std::cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+	a = 0.125f * 0.5f;
+	std::cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+	a = 0.125f - 0.078125f;
+	std::cout << "diff " << a << '\n';
+	a = 0.125f - 0.0625f;
+	std::cout << "diff " << a << '\n';
+	*/
 	{
-		float fa = 0.25f; 
-//		float fb = std::numeric_limits<float>::signaling_NaN();
-//		float fb = std::numeric_limits<float>::quiet_NaN();
-//		float fb = std::numeric_limits<float>::infinity();
-		float fb = 0.75f;
-		float fc = fa * fb;
-
-		constexpr size_t nbits = 5;
-		constexpr size_t es = 2;
-		using Cfloat = cfloat < nbits, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating >;
-
-		TestCase< Cfloat, float>(TestCaseOperator::MUL, fa, fb);
-		Cfloat c; 
-		// c.constexprClassParameters();
-		c = fc;
-		std::cout << "c = " << c << " : " << to_binary(c) << '\n';
-	}
-	return 0;
-	{ // special cases of snan/qnan
-		constexpr float fa = std::numeric_limits<float>::quiet_NaN();
-		constexpr float fb = std::numeric_limits<float>::signaling_NaN();
-		std::cout << fa << " * " << fa << " = " << (fa * fa) << '\n';
-		std::cout << fa << " * " << fb << " = " << (fa * fb) << '\n';
-		std::cout << fb << " * " << fa << " = " << (fb * fa) << '\n';
-		std::cout << fb << " * " << fb << " = " << (fb * fb) << '\n';
-		std::cout << to_binary(fa * fb) << '\n';
+		float f;
+		cfloat<6, 1, uint8_t, true, true, false> b;
+		f = 0.0625f;
+		b = f;
+		std::cout << to_binary(b) << " : " << to_triple(b) << " : " << b << " : input " << f << '\n';
+		f = 0.078125f;
+		b = f;
+		std::cout << to_binary(b) << " : " << to_triple(b) << " : " << b << " : input " << to_binary(f) << " : " << f << '\n';
+		f = 0.08f;
+		b = f;
+		std::cout << to_binary(b) << " : " << to_triple(b) << " : " << b << " : input " << f << '\n';
+		f = 0.09375f;
+		b = f;
+		std::cout << to_binary(b) << " : " << to_triple(b) << " : " << b << " : input " << f << '\n';
 	}
 
-	{ // special cases of +-inf
-		constexpr float fa = std::numeric_limits<float>::infinity();
-		float fb = -fa;
-		std::cout << fa << " * " << fa << " = " << (fa * fa) << '\n';
-		std::cout << fa << " * " << fb << " = " << (fa * fb) << '\n';
-		std::cout << fb << " * " << fa << " = " << (fb * fa) << '\n';
-		std::cout << fb << " * " << fb << " = " << (fb * fb) << '\n';
-		std::cout << 0.0f << " * " << fa << " = " << (0.0f * fa) << '\n';
-		std::cout << to_binary(fa * fb) << '\n';
-	}
+//	nrOfFailedTestCases += TestCase< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.5f, 0.5f);
+//	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.25f); // exp is smaller than min_exp_subnormal
+//	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.5f);  // round down to 0
+	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.625f);
+	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, -0.625f);
+//	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125, 0.625);	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.75f); // round up to minpos 0.125
+//	nrOfFailedTestCases += TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.25f);
+//	nrOfFailedTestCases += TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.5f);
+   	nrOfFailedTestCases += TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.625f);
+	nrOfFailedTestCases += TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, -0.625f);
+//	nrOfFailedTestCases += TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.75f);
 
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatMultiplication< 
-		cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), 
-		"cfloat<5,2,uint8_t,t,t,f>", 
-		"multiplication");
-//	nrOfFailedTestCases += ReportTestResult(
-//		VerifyCfloatMultiplication<
-//		cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true),
-//		"cfloat<4,1,uint8_t,t,t,f>",
-//		"multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 4, 1,uint8_t,t,t,f>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 4, 2,uint8_t,t,t,f>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat< 6, 1,uint8_t,t,t,f>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat< 6, 2,uint8_t,t,t,f>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

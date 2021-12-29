@@ -274,32 +274,6 @@ try {
 
 #if MANUAL_TESTING
 
-#undef quick
-#ifdef quick
-	{
-		fixpnt<5, 0> a, b, c;
-		a = 2;
-		b = 2;
-		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
-		TestDivisionAlgorithm(a, b, c);
-	}
-	{
-		fixpnt<5, 1> a, b, c;
-		a = 2;
-		b = 2;
-		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
-	}
-	{
-		fixpnt<5, 2> a, b, c;
-		a = 2;
-		b = 2;
-		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " : " << c << std::endl;
-	}
-#endif
-
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", test_tag);
@@ -313,15 +287,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", test_tag);
-
-#if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", test_tag);
-
-#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

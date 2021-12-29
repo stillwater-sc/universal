@@ -87,7 +87,7 @@ void TestMostSignificantBit() {
 // generate specific test case that you can trace with the trace conditions in blockbinary
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, typename BlockType = uint8_t>
-void GenerateTestCase(int64_t lhs, int64_t rhs) {
+void TestCase(int64_t lhs, int64_t rhs) {
 	using namespace sw::universal;
 	blockbinary<nbits, BlockType> a, b, result, reference;
 
@@ -143,7 +143,7 @@ try {
 //	TestMostSignificantBit<27, uint16_t>();
 //	TestMostSignificantBit<33, uint32_t>();
 
-	GenerateTestCase<4>(0x1,0x8);  // 1 / -8 => 0
+	TestCase<4>(0x1,0x8);  // 1 / -8 => 0
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8>", test_tag);

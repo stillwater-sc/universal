@@ -117,37 +117,38 @@ namespace sw::universal {
 #if FIXPNT_NATIVE_SQRT
 	// sqrt for arbitrary cfloat
 	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
-		if (f < 0) throw fixpnt_arithmetic_exception("argument to sqrt is negative");
+	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
+		if (a < 0) std::cout << "sqrt arg is negative: " << a << std::endl;
+		if (a < 0) throw fixpnt_arithmetic_exception("argument to sqrt is negative");
 		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
 		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
-		Fixed y(f);
-		Fixed x(f);
+		Fixed y(a);
+		Fixed x(a);
 		x >>= 1; // divide by 2
 		Fixed diff = (x * x - y);
 		int iterations = 0;
 		while (sw::universal::abs(diff) > eps) {
 			x = (x + y);
 			x >>= 1;
-			y = f / x;
+			y = a / x;
 			diff = x - y;
 //			std::cout << " x: " << x << " y: " << y << " diff " << diff << '\n';
-			if (++iterations > rbits) break;
+			if (++iterations > static_cast<int>(rbits)) break;
 		}
-		if (iterations > rbits) std::cerr << "sqrt(" << double(f) << ") failed to converge\n";
+		if (iterations > static_cast<int>(rbits)) std::cerr << "sqrt(" << double(a) << ") failed to converge\n";
 		return x;
 	}
 #else
 	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
+	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
-		if (f.isneg()) {
+		if (a.isneg()) {
 			throw fixpnt_negative_sqrt_arg();
 		}
 #else 
-		std::cerr << "fixpnt_negative_sqrt_arg\n";
+		if (a.isneg()) std::cerr << "fixpnt_negative_sqrt_arg\n";
 #endif
-			return fixpnt<nbits, rbits, arithmetic, bt>(std::sqrt((double)f));
+			return fixpnt<nbits, rbits, arithmetic, bt>(std::sqrt((double)a));
 	}
 #endif
 

@@ -167,7 +167,7 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "cfloat<> ieee754 double conversion";
+	std::string test_suite         = "ieee754 double conversion to cfloat";
 	std::string test_tag           = "conversion";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
@@ -240,7 +240,7 @@ try {
 
 	std::cerr << "                                                     ignoring subnormals for the moment\n";
 
-	int NR_RNDS = 10000;
+	size_t NR_RNDS = 10000;
 
 	// conversion of an IEEE-754 double to a smaller cfloat exhibits many overflow and underflow situations that destroy information
 #ifdef FLOATING_POINT_CONTRACTION_TESTS

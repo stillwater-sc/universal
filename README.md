@@ -1,15 +1,15 @@
 # Universal: a header-only C++ template library for universal number arithmetic
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/25452f0319d34bc2a553cd1857d7dfae)](https://app.codacy.com/gh/stillwater-sc/universal?utm_source=github.com&utm_medium=referral&utm_content=stillwater-sc/universal&utm_campaign=Badge_Grade_Dashboard)
-[![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fstillwater-sc%2Funiversal.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fstillwater-sc%2Funiversal?ref=badge_shield)
-[ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)](https://app.codeship.com/projects/286490)
-[![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master)
 
 | **System** | **Status** | **More information** |
 |------------|------------|----------------------|
-| [Codeship](https://app.codeship.com/projects/286490)  | ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master) | Docker container build |
-| [GitHub Actions](https://github.com/stillwater-sc/universal/actions) | [![Build Status](https://github.com/stillwater-sc/universal/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/stillwater-sc/universal) | Latest Linux/MacOS/Windows |
+| [Codacy Code Quality](https://app.codacy.com/gh/stillwater-sc/universal/dashboard) | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/25452f0319d34bc2a553cd1857d7dfae)](https://app.codacy.com/gh/stillwater-sc/universal?utm_source=github.com&utm_medium=referral&utm_content=stillwater-sc/universal&utm_campaign=Badge_Grade_Dashboard) | Code Quality Assessment |
+| [FOSSA Status](https://app.fossa.com/projects/git%2Bgithub.com%2Fstillwater-sc%2Funiversal) | [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fstillwater-sc%2Funiversal.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fstillwater-sc%2Funiversal?ref=badge_shield) | Open-source license dependency scanner |
+| [Codeship](https://app.codeship.com/projects/286490)  | ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master) | Docker container build and regression |
+| [GitHub Actions](https://github.com/stillwater-sc/universal/actions) | [![Build Status](https://github.com/stillwater-sc/universal/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/stillwater-sc/universal) | Latest Linux/MacOS/Windows builds and regression tests |
+| [Code Coverage](https://coveralls.io) | [![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master) | Code coverage scanner |
+
+[![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
 
 The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point that are more efficient and mathematically robust.
 
@@ -383,20 +383,27 @@ Arithmetic tests 200000 randoms each
 
 ## Structure of the tree
 
-The universal library contains a set of functional groups to deal with different number systems. In the examples shown above, we have seen the ".../universal/include/universal/posit" group and its test suite, ".../universal/tests/posit". 
+The universal library contains a set of functional groups to organize the development and validation of different number systems. 
+In the examples shown above, we have seen the ".../universal/include/universal/number/posit/posit.hpp" group and its test suite, ".../universal/tests/posit". 
 
 Here is a complete list:
 
+### fixed-sized configurations
+
 - *universal/number/integer* - arbitrary configuration fixed-size integer
 - *universal/number/fixpnt* - arbitrary configuration fixed-size fixed-point number system
-- *universal/number/areal* - arbitrary configuration fixed-size linear floating-point
-- *universal/number/posit* - arbitrary configuration fixed-size posit number system
-- *universal/number/valid* - arbitrary configuration fixed-size valid number system
+- *universal/number/areal* - arbitrary configuration fixed-size faithful floating-point with uncertainty bit
+- *universal/number/cfloat* - arbitrary configuration fixed-size classic floating-point number system
+- *universal/number/posit* - arbitrary configuration fixed-size posit number system, a tapered floating-point
+- *universal/number/valid* - arbitrary configuration fixed-size valid number system, a tapered floating-point interval number system
 - *universal/number/quire* - arbitrary configuration fixed-size super accumulator number system (add/sub/abs/sqrt)
 - *universal/number/unum* - flexible configuration unum Type 1 number system
 - *universal/number/unum2* - flexible configuration unum Type 2 number system
 - *universal/number/lns* - logarithmic number system
 - *universal/number/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
+
+### adaptive precision configurations
+
 - *universal/number/decimal* - adaptive-precision decimal
 - *universal/number/rational* - adaptive-precision rational number system
 - *universal/number/adaptiveint* - adaptive-precision binary integer

@@ -12,22 +12,6 @@
 #include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/number/cfloat/table.hpp>
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 0
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
-#endif
-
 /*
   Minimum number of operand bits for the adder = <abits> 
   to yield correctly rounded subtraction
@@ -53,6 +37,22 @@
 
 */
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 0
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
@@ -62,8 +62,8 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat_ttf subtraction validation";
-	std::string test_tag           = "cfloat_ttf addition";
+	std::string test_suite         = "classic cfloat subtraction validation with subnormals, normals, and supernormals";
+	std::string test_tag           = "cfloat_ttf subtraction";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -71,7 +71,6 @@ try {
 
 #if MANUAL_TESTING
 
-	std::cout << "Manual Testing\n";
 	{
 		float fa = 0.017578125;
 //		float fa = std::numeric_limits<float>::infinity();

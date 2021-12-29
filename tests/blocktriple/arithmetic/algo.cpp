@@ -20,21 +20,12 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 // #include <universal/verification/test_reporters.hpp>
 
-
-// conditional compile flags
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
 	
 //	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-#if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
 
@@ -51,7 +42,7 @@ try {
 		// add is adding 3 bits to the mantissa to 
 		// have all rounding bits available after alignment
 		internal::value<sumbits> c;
-		internal::module_add<fbits, abits>(a, b, c);  // this API is too confusing: caused by the <abits + 1> argument
+		internal::module_add<fbits, abits>(a, b, c);  // this API with the <abits + 1> argument is too confusing 
 		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
@@ -68,33 +59,45 @@ try {
 	// shifts information into these bits.
 	// The output of the add/sub is nbits + 3 + 1 representing the unrounded result.
 	{
-		constexpr size_t nbits = 8;  // hidden + fraction bits
+		constexpr size_t fbits = 4;  // the number of fraction bits in the representation
 
-		blocktriple<nbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
-		a = 1.0f;
-		b = 1.0f;
+		blocktriple<fbits, BlockTripleOperator::ADD, uint32_t> a, b, c;
+		a.constexprClassParameters();
+
+		std::cout << "-----------  1 + 1 = 2 -----------\n";
+		// we have fbits fraction bits
+		// an ADD needs 2*(fbits + 1) fraction bits to accomodate correct rounding on argument alignment
+		// an ADD needs 3 extra bits to capture the integer bits cases of overflow and 2's complement
+		a.setbits(1ull << (a.abits));
+		b.setbits(1ull << (b.abits));
+		c.add(a, b);
 		std::cout << to_triple(a) << " : " << a << '\n';
 		std::cout << to_triple(b) << " : " << b << '\n';
+		std::cout << to_triple(c) << " : " << c << '\n';
+
+		std::cout << "-----------  1 - 1 = 0 -----------\n";
+//		a = 1.0f;
+//		b = -1.0f;
+		a.setbits(1ull << (a.abits));
+		b.setbits(1ull << (b.abits));
+		b.setsign(true);
 		c.add(a, b);
+		std::cout << to_triple(a) << " : " << a << '\n';
+		std::cout << to_triple(b) << " : " << b << '\n';
+		std::cout << to_triple(c) << " : " << c << '\n';
+
+		std::cout << "-----------  0 - 1 = -1 -----------\n";
+//		a = 0.0f;
+//		b = -1.0f;
+		a.setbits(0ull);
+		b.setbits(1ull << (b.abits));
+		b.setsign(true);
+		c.add(a, b);
+		std::cout << to_triple(a) << " : " << a << '\n';
+		std::cout << to_triple(b) << " : " << b << '\n';
 		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
-#if STRESS_TESTING
-
-#endif
-
-#else
-
-	cout << "block addition validation" << endl;
-
-
-#if STRESS_TESTING
-
-
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

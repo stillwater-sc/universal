@@ -5,30 +5,14 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-#define CFLOAT_VERBOSE_OUTPUT
-#define CFLOAT_TRACE_ADD
-#define BLOCKTRIPLE_VERBOSE_OUTPUT
-#define BLOCKTRIPLE_TRACE_ADD
+//#define CFLOAT_VERBOSE_OUTPUT
+//#define CFLOAT_TRACE_ADD
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT
+//#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/number/cfloat/table.hpp>
-
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 0
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
-#endif
 
 /*
   Minimum number of operand bits for the adder = <abits> 
@@ -55,6 +39,34 @@
 
 */
 
+void InfinityArithmetic()
+{
+	constexpr float fa = std::numeric_limits<float>::infinity();
+	constexpr float fb = -fa;
+	std::cout << fa << " + " << fa << " = " << (fa + fa) << '\n';
+	std::cout << fa << " + " << fb << " = " << (fa + fb) << '\n';
+	std::cout << fb << " + " << fa << " = " << (fb + fa) << '\n';
+	std::cout << fb << " + " << fb << " = " << (fb + fb) << '\n';
+	std::cout << sw::universal::to_binary(fa + fb) << '\n';
+}
+
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
@@ -64,7 +76,7 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite         = "classic cfloat_ttf addition validation";
+	std::string test_suite         = "classic cfloat addition validation with subnormals, normals, and supernormals";
 	std::string test_tag           = "cfloat_ttf addition";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
@@ -73,53 +85,37 @@ try {
 
 #if MANUAL_TESTING
 
-	GenerateCfloatExponentBounds();
+//  debug helpers
+//	ReportCfloatClassParameters<8, 2>();
+//	GenerateCfloatExponentBounds();
+//	GenerateTable< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(std::cout);
 
-	TestCase< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 0.5f, 1.5f);
-
-	return 0;
-	{
-		float fa = 0.017578125;
-//		float fa = std::numeric_limits<float>::infinity();
-//		float fb = std::numeric_limits<float>::signaling_NaN();
-//		float fb = std::numeric_limits<float>::quiet_NaN();
-		float fb = -0.5f;
-
-		using Cfloat = cfloat < 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating >;
-		Cfloat a, b, c;
-		a.constexprClassParameters();
-		a = fa;
-		b = fb;
-		c = a + b;
-		std::cout << a << " + " << b << " = " << c << '\n';
-		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
-
-		TestCase< Cfloat, float>(TestCaseOperator::ADD, fa, fb);
-	}
-
-	{
-		constexpr float fa = std::numeric_limits<float>::infinity();
-		constexpr float fb = -fa;
-		std::cout << fa << " + " << fa << " = " << (fa + fa) << '\n';
-		std::cout << fa << " + " << fb << " = " << (fa + fb) << '\n';
-		std::cout << fb << " + " << fa << " = " << (fb + fa) << '\n';
-		std::cout << fb << " + " << fb << " = " << (fb + fb) << '\n';
-		std::cout << to_binary(fa + fb) << '\n';
-	}
+	/*
+	source is subnormal : TBD
+		shift to LSB    52
+		adjustment      1
+		exponent - 1023
+		subnormal shift 1022
+	cfloat<13, 11, uint8_t, t, t, f>                       addition FAIL 20 failed test cases
+	cfloat<14, 11, uint8_t, t, t, f>                       addition FAIL 134209524 failed test cases
+	cfloat<15, 11, uint8_t, t, t, f>                       addition FAIL 537116614 failed test cases
+	*/
 
 	// generate individual testcases to hand trace/debug
-	TestCase< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
-	TestCase< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+//	TestCase< cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::ADD, 1.0f, 1.0f);
+	TestCase< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 0.5f, 0.5f);
+	TestCase< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 0.5f, 1.0f);
+	TestCase< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 0.5f, -1.0f);
+//	TestCase< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 0.5f, 0.5f);
+//	TestCase< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
+//	TestCase< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
 
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatAddition< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<4,1,uint8_t, t,t,f>", "addition");
-	return 0;
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatAddition< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,2,uint8_t, t,t,f>", "addition");
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatAddition< cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,3,uint8_t, t,t,f>", "addition");
-	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,4,uint8_t, t,t,f>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<3,1,uint8_t, t,t,f>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<4,1,uint8_t, t,t,f>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<4,2,uint8_t, t,t,f>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<8,2,uint8_t, t,t,f>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<8,3,uint8_t, t,t,f>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<8,4,uint8_t, t,t,f>", "addition");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

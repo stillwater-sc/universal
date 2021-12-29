@@ -162,8 +162,8 @@ catch (const sw::universal::universal_internal_exception& err) {
 	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const std::runtime_error& err) {
-	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
+catch (std::runtime_error& err) {
+	std::cerr << "Caught unexpected runtime error: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
