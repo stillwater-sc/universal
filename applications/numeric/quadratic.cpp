@@ -68,8 +68,8 @@ try {
 	std::cout << std::setprecision(15);
 
 	using Float16 = cfloat<16,  5, uint16_t, true, true, false>;
-	using Float32 = cfloat<32,  8, uint16_t, true, true, false>;
-	using Float64 = cfloat<64, 11, uint16_t, true, true, false>;
+	using Float32 = cfloat<32,  8, uint32_t, true, true, false>;
+	using Float64 = cfloat<64, 11, uint32_t, true, true, false>;
 	using FloatSP = float;
 	using FloatDP = double;
 	using Posit32 = sw::universal::posit<32, 2>;
@@ -80,6 +80,12 @@ try {
 	float b = 1.0e5f;
 	float c = 1.0f;
 
+	{
+		Float32 x = 1.1f;
+		Float32 y = 1.1f;
+		Float32 z = x / y;
+	}
+	return 0;
 	std::cout << "half precision floating-point\n";
 	CompareTerms<Float16>(a, b, c);
 	std::cout << '\n';

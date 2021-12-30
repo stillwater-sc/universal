@@ -933,6 +933,51 @@ inline std::istream& operator>> (std::istream& istr, const blocktriple<fbits, op
 }
 
 template<size_t fbits, BlockTripleOperator op, typename bt>
+inline blocktriple<fbits, op, bt> parse(const std::string& bitPattern) {
+	using Btriple = blocktriple<fbits, op, bt>;
+	Btriple a;
+	size_t nrChars = bitPattern.size();
+	std::string bits;
+
+	if (bitPattern[0] == '0' && bitPattern[1] == 'b') {
+		for (size_t i = 2; i < nrChars; ++i) {
+			char c = bitPattern[i];
+			switch (c) {
+			case '0':
+			case '1':
+				bits += c;
+				break;
+			case '\'':
+				// simply ignore this delimiting character
+				break;
+			default:
+				std::cerr << "bitPattern contained a non-standard character: " << c << '\n';
+				return a;
+			}
+		}
+
+	}
+	else {
+		std::cerr << "bitPattern must start with 0b: instead input pattern was " << bitPattern << '\n';
+		return a;
+	}
+
+	size_t nrBits = bits.size();
+	if (nrBits != Btriple::bfbits) {
+		std::cerr << "nr of bits in bitPattern is " << nrBits << " and needs to be " << Btriple::bfbits << '\n';
+		return a;
+	}
+	// parse the bits
+	size_t bit = nrBits - 1;
+	for (size_t i = 0; i < bits.size(); ++i) {
+		char c = bits[i];
+		a.setbit(bit - i, bits[i] == '1');
+	}
+
+	return a;
+}
+
+template<size_t fbits, BlockTripleOperator op, typename bt>
 inline bool operator==(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._significant == rhs._significant && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
 template<size_t fbits, BlockTripleOperator op, typename bt>
 inline bool operator!=(const blocktriple<fbits, op, bt>& lhs, const blocktriple<fbits, op, bt>& rhs) { return !operator==(lhs, rhs); }

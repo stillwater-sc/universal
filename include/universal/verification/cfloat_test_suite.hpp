@@ -654,7 +654,7 @@ namespace sw::universal {
 #undef VERBOSE_POSITIVITY
 
 	/// <summary>
-	/// convert a blocktriple to a cfloat
+	/// verify convertion of a blocktriple into a cfloat
 	/// </summary>
 	/// <typeparam name="CfloatConfiguration"></typeparam>
 	/// <param name="reportTestCases"></param>
@@ -795,6 +795,60 @@ namespace sw::universal {
 
 		}
 		return nrOfTestFailures;
+	}
+
+	/// <summary>
+	/// verify convertion of a blocktriple into a cfloat
+	/// </summary>
+	/// <typeparam name="CfloatConfiguration"></typeparam>
+	/// <param name="reportTestCases"></param>
+	/// <returns></returns>
+	template<typename CfloatConfiguration, BlockTripleOperator op>
+	int VerifyBigCfloatFromBlocktripleConversion(bool reportTestCases) {
+		using namespace sw::universal;
+		constexpr size_t nbits         = CfloatConfiguration::nbits;
+		constexpr size_t es            = CfloatConfiguration::es;
+		constexpr size_t fbits         = CfloatConfiguration::fbits;
+		using bt                       = typename CfloatConfiguration::BlockType;
+		constexpr bool hasSubnormals   = CfloatConfiguration::hasSubnormals;
+		constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
+		constexpr bool isSaturating    = CfloatConfiguration::isSaturating;
+
+		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
+		constexpr size_t bfbits        = BlockTripleConfiguration::bfbits;
+		constexpr size_t rbits         = BlockTripleConfiguration::rbits;
+		constexpr size_t abits         = BlockTripleConfiguration::abits;
+
+		int nrOfTestFailures{ 0 };
+
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+		//		std::cout << dynamic_range(a) << '\n';
+		int minposScale = minpos_scale(a);
+		int maxposScale = maxpos_scale(a);
+
+		/// blocktriple addition and subtraction is done in a 2's complement format 0ii.fffff.
+		/// blocktriple multiplication is done in a 1's complement format of ii.fffff
+		/// blocktriple division is done in a ?'s complement format of ???????
+		/// 
+		/// blocktriples can be in overflow configuration, but not in denormalized form
+		/// 
+		/// BlockTripleOperator::ADD  blocktriple type that comes out of an addition or subtraction operation
+		/// BlockTripleOperator::MUL  blocktriple type that comes out of a multiplication operation
+		/// BlockTripleOperator::DIV  blocktriple type that comes out of a division operation
+		/// significant blocks are organized like this:
+		///   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
+		///   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
+		///   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits
+
+		BlockTripleConfiguration b;
+		if (reportTestCases) std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << ", smallest scale = " << minposScale << ", largest scale = " << maxposScale << '\n';
+	
+		if constexpr (op == BlockTripleOperator::ADD) {
+		}
+		if constexpr (op == BlockTripleOperator::MUL) {
+		}
+		if constexpr (op == BlockTripleOperator::DIV) {
+		}
 	}
 
 	/// <summary>

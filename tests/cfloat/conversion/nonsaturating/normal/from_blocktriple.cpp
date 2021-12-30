@@ -33,7 +33,7 @@ Compare the operator=() and convert() cfloat patterns to check correctness
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -58,7 +58,7 @@ try {
 	constexpr bool isSaturating    = false;
 
 	std::string test_suite         = "blocktriple to cfloat conversion validation";
-	std::string test_tag           = "conversion bt->cfloat";
+	std::string test_tag           = "conversion blocktriple->cfloat";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -70,53 +70,23 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
-	if constexpr(false) {
-		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 2;
+		constexpr size_t fbits = nbits - es - 1ull;
+		using BlockType = uint8_t;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		constexpr BlockTripleOperator op = BlockTripleOperator::ADD;
+		using Btriple = blocktriple<fbits, op, BlockType>;
+
 		Cfloat a;
-		std::cout << "------------- 2.5\n";
-		a = 2.5f;
-		std::cout << "------------- 3.5\n";
-		a = 3.5f;
-		std::cout << "------------- 4.5\n";
-		a = 4.5f;
-		std::cout << "------------- 5.5\n";
-		a = 5.5f;
-		std::cout << "------------- 6.5\n";
-		a = 6.5f;
-		std::cout << "------------- 7.0\n";
-		a = 7.0f;
-		std::cout << "------------- 7.5\n";
-		a = 7.5f;
-		std::cout << "------------- 8.0\n";
-		a = 8.0f;
+		std::string input("0b1111'0000'1111'0000'1111");
+		Btriple b = parse<fbits, op, BlockType>(input);
+		std::cout << to_binary(b) << " : " << input << '\n';
+//		b.constexprClassParameters();
 	}
-	else {
-		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-		std::cout << "------------- 3.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x60ull);
-		std::cout << "------------- 3.5\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x70ull);
-		std::cout << "------------- 4.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x40ull);
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x20ull);
-//		std::cout << "------------- 4.5\n";
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x90ull);
-		std::cout << "------------- 5.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x50ull);
-//		std::cout << "------------- 5.5\n";
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0xB0ull);
-		std::cout << "------------- 6.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x30ull);
-//		std::cout << "------------- 6.5\n";
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0xD0ull);
-		std::cout << "------------- 7.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x70ull);
-//		std::cout << "------------- 7.5\n";
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0xF0ull);
-		std::cout << "------------- 8.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x40ull);
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(3, 0x20ull);
-	}
+
+	return 0;
 
 	// how do you round a non-normalized blocktriple, i.e. >= 2.0?
 	// you would need to modify the lsb/guard/round/sticky bit masks

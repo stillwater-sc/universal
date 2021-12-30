@@ -197,43 +197,44 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		// 
 		// tgt.clear();  // no need as all bits are going to be set by the code below
 
-		if constexpr (btType::bfbits < 65) {
-			// we can use a uint64_t to construct the cfloat
-			int adjustment{ 0 };
-			// construct exponent
-			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive if exponent in encoding range
+		// exponent construction
+		int adjustment{ 0 };
+		// construct exponent
+		uint64_t biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive if exponent in encoding range
 //			std::cout << "exponent         " << to_binary(biasedExponent) << '\n';	
-			if constexpr (hasSubnormals) {
-				//if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
-				if (exponent < cfloatType::MIN_EXP_NORMAL) {
-					// the value is in the subnormal range of the cfloat
-					biasedExponent = 0;
-					// -exponent because we are right shifting and exponent in this range is negative
-					adjustment = -(exponent + subnormal_reciprocal_shift[es]);
-					// this is the right shift adjustment required for subnormal representation due 
-					// to the scale of the input number, i.e. the exponent of 2^-adjustment
-				}
-				else {
-					// the value is in the normal range of the cfloat
-					biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
-				}
+		if constexpr (hasSubnormals) {
+			//if (exponent >= cfloatType::MIN_EXP_SUBNORMAL && exponent < cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::MIN_EXP_NORMAL) {
+			if (exponent < cfloatType::MIN_EXP_NORMAL) {
+				// the value is in the subnormal range of the cfloat
+				biasedExponent = 0;
+				// -exponent because we are right shifting and exponent in this range is negative
+				adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+				// this is the right shift adjustment required for subnormal representation due 
+				// to the scale of the input number, i.e. the exponent of 2^-adjustment
 			}
 			else {
-				if (exponent < cfloatType::MIN_EXP_NORMAL) biasedExponent = 1ull; // fixup biasedExponent if we are in the subnormal region
+				// the value is in the normal range of the cfloat
+				biasedExponent = static_cast<uint64_t>(static_cast<long long>(exponent) + static_cast<long long>(cfloatType::EXP_BIAS)); // this is guaranteed to be positive
 			}
+		}
+		else {
+			if (exponent < cfloatType::MIN_EXP_NORMAL) biasedExponent = 1ull; // fixup biasedExponent if we are in the subnormal region
+		}
 
-			// process sign
-			uint64_t raw = (src.sign() ? 1ull : 0ull);
-//			std::cout << "raw bits (sign)  " << to_binary(raw) << '\n';
 
-			// get the rounding direction and the LSB right shift: 
-			// TODO: do we want to support arbitrary blocktriples instead of the ALU output versions?
-			std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
-			bool roundup = alignment.first;
-			size_t rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
-//			std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
-//			std::cout << "rightShift       " << rightShift << '\n';
-																																  // construct the fraction bits
+		// get the rounding direction and the LSB right shift: 
+		// TODO: do we want to support arbitrary blocktriples instead of the ALU output versions?
+		std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
+		bool roundup = alignment.first;
+		size_t rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
+		// std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
+		// std::cout << "rightShift       " << rightShift << '\n';
+
+		if constexpr (btType::bfbits < 65) {
+			// we can use a uint64_t to construct the cfloat
+			uint64_t raw = (src.sign() ? 1ull : 0ull); // process sign
+			//	std::cout << "raw bits (sign)  " << to_binary(raw) << '\n';
+			// construct the fraction bits
 			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
 //			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
 			fracbits >>= rightShift;
@@ -263,13 +264,27 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			if (tgt.isnan()) tgt.setinf(src.sign());	// map back to +-inf
 		}
 		else {
-			// TODO
 			// compose the segments
+
+			auto fracbits = src.significant(); // get all the bits, including the integer bits
+//			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
+			fracbits >>= rightShift;
+//			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
+//			tgt.setfraction(fracbits);
+			// copy the blocks that contain fraction bits
+			// significant blocks are organized like this:
+			//   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
+			//   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
+			//   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits
+
+			for (size_t b = 0; b < btType::nrBlocks; ++b) {
+				tgt.setblock(src.block(b));
+			}
 			tgt.setsign(src.sign());
-			tgt.setexponent(src.scale());
-			// this api doesn't work: tgt.setfraction(src.significant());
-			std::cerr << "bfbits = " << btType::bfbits << " nbits = " << nbits << '\n';
-			std::cerr << "convert to a cfloat with nbits > 64 is TBD\n";
+			int srcScale = src.scale();
+			if (tgt.setexponent(srcScale)) {
+				std::cerr << "exponent value is out of range: " << srcScale << '\n';
+			}
 		}
 	}
 }
@@ -1058,7 +1073,7 @@ public:
 		}
 		return true;
 	}
-	inline constexpr void setfraction(const blockbinary<fbits, bt>& fraction) {
+	inline constexpr void setfraction_(const blockbinary<fbits, bt>& fraction) {
 		for (size_t i = 0; i < fbits; ++i) {
 			setbit(i, fraction.test(i));
 		}
