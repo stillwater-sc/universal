@@ -31,7 +31,7 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 	return s.str();
 }
 
-// generate and tabulate subnormals of the cfloat configuration
+// generate and tabulate subnormals of a cfloat configuration
 template<typename cfloatConfiguration>
 void subnormals() {
 	constexpr size_t nbits         = cfloatConfiguration::nbits;
@@ -56,6 +56,7 @@ void subnormals() {
 			}
 		}
 		else {
+#ifdef DEPRECATED
 			blockbinary<fbits, bt> fraction{ 0 };
 			for (size_t i = 0; i < fbits; ++i) {
 				std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
@@ -63,6 +64,8 @@ void subnormals() {
 				fraction <<= 1;
 				a.setfraction(fraction);
 			}
+#endif
+			std::cerr << "big cfloat subnormals TBD\n";
 		}
 	}
 	else {

@@ -276,15 +276,18 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			//   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
 			//   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
 			//   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits
-
+			std::cout << "initial state : " << to_binary(tgt) << '\n';
 			for (size_t b = 0; b < btType::nrBlocks; ++b) {
-				tgt.setblock(src.block(b));
+				tgt.setblock(b, fracbits.block(b));
 			}
+			std::cout << "fraction bits : " << to_binary(tgt) << '\n';
 			tgt.setsign(src.sign());
+			std::cout << "sign bit      : " << to_binary(tgt) << '\n';
 			int srcScale = src.scale();
-			if (tgt.setexponent(srcScale)) {
+			if (!tgt.setexponent(srcScale)) {
 				std::cerr << "exponent value is out of range: " << srcScale << '\n';
 			}
+			std::cout << "exponent bits : " << to_binary(tgt) << '\n';
 		}
 	}
 }
@@ -1088,7 +1091,11 @@ public:
 			}
 		}
 	}
-
+	inline constexpr void setblock(size_t b, const bt& data) noexcept {
+		if (b < nrBlocks) {
+			_block[b] = data;
+		}
+	}
 	// create specific number system values of interest
 	inline constexpr cfloat& maxpos() noexcept {
 		if constexpr (hasSupernormals) {
@@ -1253,16 +1260,89 @@ public:
 	/// <returns>reference to this cfloat</returns>
 	inline constexpr cfloat& assign(const std::string& str) noexcept {
 		clear();
-		if (str.length() == 0) return *this;
-		// TODO: regex based determination of scientific form or binary form
+		size_t nrChars = str.size();
+		size_t nrBits = 0;
+		size_t nrDots = 0;
+		std::string bits;
+		if (nrChars > 2) {
+			if (str[0] == '0' && str[1] == 'b') {
+				for (size_t i = 2; i < nrChars; ++i) {
+					char c = str[i];
+					switch (c) {
+					case '0':
+					case '1':
+						++nrBits;
+						bits += c;
+						break;
+					case '.':
+						++nrDots;
+						bits += c;
+						break;
+					case '\'':
+						// consume this delimiting character
+						break;
+					default:
+						std::cerr << "string contained a non-standard character: " << c << '\n';
+						return *this;
+					}
+				}
+			}
+			else {
+				std::cerr << "string must start with 0b: instead input pattern was " << str << '\n';
+				return *this;
+			}
+		}
+		else {
+			std::cerr << "string is too short\n";
+			return *this;
+		}
 
+		if (nrBits != nbits) {
+			std::cerr << "number of bits in the string is " << nrBits << " and needs to be " << nbits << '\n';
+			return *this;
+		}
+		if (nrDots != 2) {
+			std::cerr << "number of segment delimiters in string is " << nrDots << " and needs to be 2 for a cfloat<>\n";
+			return *this;
+		}
+
+		// assign the bits
+		int field{ 0 };  // three fields: sign, exponent, mantissa: fields are separated by a '.'
+		int nrExponentBits{ -1 };
+		size_t bit = nrBits;
+		for (size_t i = 0; i < bits.size(); ++i) {
+			char c = bits[i];
+			if (c == '.') {
+				++field;
+				if (field == 2) { // just finished parsing exponent field: we can now check the number of exponent bits
+					if (nrExponentBits != es) {
+						std::cerr << "provided binary string representation does not contain " << es << " exponent bits. Found " << nrExponentBits << ". Reset to 0\n";
+						clear();
+						return *this;
+					}
+				}
+			}
+			else {
+				setbit(--bit, c == '1');
+			}
+			if (field == 1) { // exponent field
+				++nrExponentBits;
+			}
+		}
+		if (field != 2) {
+			std::cerr << "provided binary string did not contain three fields separated by '.': Reset to 0\n";
+			clear();
+			return *this;
+		}
+
+#ifdef LATER
 		if (str.length() > 2) {
 			if (str[0] == '0' && str[1] == 'b') {
 				// binary string needs to be at least nbits+4 characters
 				int field(0);
 				int exponentBits(-1); // we start the field with a '.'
 				if (str.size() != (nbits + 4)) {
-					std::cerr << "provided binary string representation does not contain " << nbits << " bits. Reset to 0\n";
+					std::cerr << "provided binary string representation contains does not contain " << nbits << " bits. Reset to 0\n";
 					return *this;
 				}
 				size_t index = nbits;
@@ -1291,10 +1371,14 @@ public:
 					return *this;
 				}
 			}
+			else {
+				std::cerr << "parse/assign currently only parse binary string formats that start with 0b\n";
+			}
 		}
 		else {
-			std::cerr << "parse/assign currently only parse binary string formats that start with 0b\n";
+			std::cerr << "bit pattern doesn't follow the pattern: 0b1111'0000: -" << str << "-\n";
 		}
+#endif
 		return *this;
 	}
 

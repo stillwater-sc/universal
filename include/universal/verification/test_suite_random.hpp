@@ -11,7 +11,7 @@
 #include <random>
 #include <limits>
 
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 namespace sw::universal {
@@ -27,14 +27,15 @@ namespace sw::universal {
 
 	// operation opcodes
 	const int OPCODE_NOP   =  0;
-	const int OPCODE_ADD   =  1;
-	const int OPCODE_SUB   =  2;
-	const int OPCODE_MUL   =  3;
-	const int OPCODE_DIV   =  4;
-	const int OPCODE_IPA   =  5;         // in-place addition
-	const int OPCODE_IPS   =  6;
-	const int OPCODE_IPM   =  7;
-	const int OPCODE_IPD   =  8;
+	const int OPCODE_ASSIGN = 1;
+	const int OPCODE_ADD   =  2;
+	const int OPCODE_SUB   =  3;
+	const int OPCODE_MUL   =  4;
+	const int OPCODE_DIV   =  5;
+	const int OPCODE_IPA   =  6;         // in-place addition
+	const int OPCODE_IPS   =  7;
+	const int OPCODE_IPM   =  8;
+	const int OPCODE_IPD   =  9;
 	// elementary functions with one operand
 	const int OPCODE_SQRT  = 20;
 	const int OPCODE_EXP   = 21;
@@ -60,10 +61,7 @@ namespace sw::universal {
 
 	// Execute a binary operator
 	template<typename TestType>
-	void executeBinary(int opcode, 
-		double da, double db, 
-		const TestType& testa, const TestType& testb, 
-		TestType& testresult, TestType& testref) {
+	void executeBinary(int opcode, double da, double db, const TestType& testa, const TestType& testb, TestType& testresult, TestType& testref) {
 		double reference = 0.0;
 		switch (opcode) {
 		case OPCODE_ADD:
@@ -119,6 +117,10 @@ namespace sw::universal {
 	void executeUnary(int opcode, double da, const TestType& testa, TestType& testref, TestType& testresult, double dminpos) {
 		double reference = 0.0;
 		switch (opcode) {
+ 		case OPCODE_ASSIGN:
+			testresult = da;
+			reference = da;
+			break;
 		case OPCODE_SQRT:
 			testresult = sw::universal::sqrt(testa);
 			reference = std::sqrt(da);
@@ -195,17 +197,17 @@ namespace sw::universal {
 			break;
 		case OPCODE_NOP:
 		default:
-			std::cerr << "Unsupported binary operator: operation ignored\n";
+			std::cerr << "Unsupported unary operator: operation ignored\n";
 			break;
 		}
 		testref = reference;
 	}
 
-	// generate a random set of operands to test the binary operators for a posit configuration
+	// generate a random set of operands to test the binary operators for a number system configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<typename TestType>
-	int VerifyBinaryOperatorThroughRandoms(bool bReportIndividualTestCases, int opcode, size_t nrOfRandoms) {
+	int VerifyBinaryOperatorThroughRandoms(bool reportTestCases, int opcode, size_t nrOfRandoms) {
 		std::cerr << typeid(TestType).name() << " : ";
 
 		std::string operation_string;
@@ -238,6 +240,7 @@ namespace sw::universal {
 			operation_string = "pow";
 			break;
 		case OPCODE_NOP:
+		case OPCODE_ASSIGN:
 		default:
 			std::cerr << "Unsupported unary operator, test cancelled\n";
 			return 1;
@@ -248,7 +251,7 @@ namespace sw::universal {
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
-		if (bReportIndividualTestCases) std::cerr << '\n';
+		if (reportTestCases) std::cerr << '\n';
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType testa, testb, testresult, testref;
 			testa.setbits(distr(eng));
@@ -263,10 +266,10 @@ namespace sw::universal {
 			// check the result
 			if (testresult != testref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testresult, testref);
+				if (reportTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testresult, testref);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, testa, testb, testresult, testref);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, testa, testb, testresult, testref);
 			}
 		}
 		return nrOfFailedTests;
@@ -277,13 +280,15 @@ namespace sw::universal {
 	// We will then execute the binary operator nrOfRandom combinations.
 	// provide 		double dminpos = double(minpos<nbits, es>(pminpos));
 	template<typename TestType>
-	int VerifyUnaryOperatorThroughRandoms(bool bReportIndividualTestCases, int opcode, size_t nrOfRandoms, double dminpos) {
+	int VerifyUnaryOperatorThroughRandoms(bool reportTestCases, int opcode, size_t nrOfRandoms, double dminpos) {
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
 		default:
 		case OPCODE_NOP:
 			return 0;
+		case OPCODE_ASSIGN:
+			break;
 		case OPCODE_ADD:
 		case OPCODE_SUB:
 		case OPCODE_MUL:
@@ -349,10 +354,10 @@ namespace sw::universal {
 
 			if (testresult != testref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", operation_string, testa, testresult, testref);
+				if (reportTestCases) ReportUnaryArithmeticError("FAIL", operation_string, testa, testresult, testref);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", operation_string, testa, testresult, testref);
+				if (reportTestCases) ReportUnaryArithmeticSuccess<TestType>("PASS", operation_string, testa, testresult, testref);
 			}
 		}
 
@@ -360,11 +365,11 @@ namespace sw::universal {
 	}
 
 	template<typename TestType>
-	int Compare(long double input, const TestType& testresult, const TestType& ptarget, const TestType& pref, bool bReportIndividualTestCases) {
+	int Compare(long double input, const TestType& testresult, const TestType& ptarget, const TestType& pref, bool reportTestCases) {
 		int fail = 0;
 		if (testresult != ptarget) {
 			fail++;
-			if (bReportIndividualTestCases) {
+			if (reportTestCases) {
 				ReportConversionError("FAIL", "=", input, (long double)(ptarget), testresult);
 				std::cout << "reference   : " << pref.get() << std::endl;
 				std::cout << "target bits : " << ptarget.get() << std::endl;

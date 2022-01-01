@@ -31,6 +31,34 @@ Use convert() to convert to a cfloat.
 Compare the operator=() and convert() cfloat patterns to check correctness
  */
 
+template<size_t nbits, size_t es>
+void Test() 
+{
+	using BlockType = uint8_t;
+	constexpr bool hasSubnormals = false;
+	constexpr bool hasSupernormals = false;
+	constexpr bool isSaturating = false;
+	using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+//	constexpr BlockTripleOperator op = BlockTripleOperator::ADD;
+// 	constexpr size_t fbits = nbits - es - 1ull;
+//	using Btriple = blocktriple<fbits, op, BlockType>;
+
+	Cfloat a;
+	std::cout << "\n-----------------\n" << sw::universal::type_tag(a) << '\n';
+
+	Cfloat eps = std::numeric_limits<Cfloat>::epsilon();
+	a = -1.0f - eps;
+	std::cout << "a = -1.0 - eps : " << to_binary(a) << " : " << a << '\n';
+	a = -eps;
+	std::cout << "a =      - eps : " << to_binary(a) << " : " << a << '\n';
+	a = 0;
+	std::cout << "a =  0.0       : " << to_binary(a) << " : " << a << '\n';
+	a =  eps;
+	std::cout << "a =        eps : " << to_binary(a) << " : " << a << '\n';
+	a = 1.0f + eps;
+	std::cout << "a = +1.0 + eps : " << to_binary(a) << " : " << a << '\n';
+	std::cout << '\n';
+}
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -70,9 +98,27 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
+
+	Test<24, 8>();
+	Test<28, 8>();
+	Test<30, 8>();
+	Test<32, 8>();
+
 	{
-		constexpr size_t nbits = 8;
-		constexpr size_t es = 2;
+		constexpr size_t nbits = 30;		// nbits = 28 is the last size that fits in the fast path
+		constexpr size_t es = 8;
+		constexpr size_t fbits = nbits - es - 1ull;
+		using BlockType = uint8_t;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		Cfloat a;
+		a.assign(std::string("0b0.0111'1111.0'0000'0000'0000'0000'0001"));
+		std::cout << "a =        eps : " << to_binary(a) << " : " << a << '\n';
+	}
+	return 0;
+
+	{
+		constexpr size_t nbits = 32;		// nbits = 28 is the last size that fits in the fast path
+		constexpr size_t es = 8;
 		constexpr size_t fbits = nbits - es - 1ull;
 		using BlockType = uint8_t;
 		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
@@ -80,12 +126,37 @@ try {
 		using Btriple = blocktriple<fbits, op, BlockType>;
 
 		Cfloat a;
-		std::string input("0b1111'0000'1111'0000'1111");
-		Btriple b = parse<fbits, op, BlockType>(input);
-		std::cout << to_binary(b) << " : " << input << '\n';
-//		b.constexprClassParameters();
-	}
+		a = std::numeric_limits<Cfloat>::epsilon();
 
+		std::cout << '\n';
+		a += -1.0f;
+		std::cout << "a = -1.0: " << to_binary(a) << " : " << a << '\n';
+		a = 0;
+		std::cout << "a =  0.0: " << to_binary(a) << " : " << a << '\n';
+		a += 1.0f;
+		std::cout << "a = +1.0: " << to_binary(a) << " : " << a << '\n';
+
+		/// btriple manipulation to support a cfloat<32,8>
+		std::string input("0b11'0000'1111'0000'1111'1111'0000'1111'0000'1111'0000'1111'0000'1111'0000'1111'0000'1111'0000");
+		Btriple b;
+		b.assign(input);
+		std::cout << to_binary(b) << " : " << input << '\n';
+		b.constexprClassParameters();
+	}
+	return 0;
+
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 2;
+		constexpr size_t fbits = nbits - es - 1ull;
+		using BlockType = uint8_t;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+
+		int fails = 0;
+		size_t nrTests = 10;
+		Cfloat minpos(SpecificValue::minpos);
+		fails += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Cfloat >(true, OPCODE_ASSIGN, nrTests, double(minpos)), "random assignment test", "assignment      ");
+	}
 	return 0;
 
 	// how do you round a non-normalized blocktriple, i.e. >= 2.0?

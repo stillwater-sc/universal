@@ -18,6 +18,7 @@
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/test_suite_logic.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/verification/test_suite_random.hpp>
 
 template<typename TestType>
 int ExhaustiveNumberSystemTest(const std::string& tag, bool bReportIndividualTestCases) {

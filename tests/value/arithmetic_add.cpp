@@ -23,17 +23,17 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 	int scale_ub = (int(1) << (sbits - 1)) - 1;
 	size_t max_fract = (size_t(1) << fbits);
 	bitblock<fbits> afraction, bfraction;
-	for (size_t sign = 0; sign < 2; ++sign) {
+	for (size_t lhssign = 0; lhssign < 2; ++lhssign) {
 		for (int scale = scale_lb; scale < scale_ub; ++scale) {
 			for (size_t afrac = 0; afrac < max_fract; ++afrac) {
 				afraction = convert_to_bitblock<fbits>(afrac);
-				a.set(sign == 1, scale, afraction, false, false);
+				a.set(lhssign == 1, scale, afraction, false, false);
 				// std::cout << to_triple(a) << std::endl;
-				for (size_t sign = 0; sign < 2; ++sign) {
+				for (size_t rhssign = 0; rhssign < 2; ++rhssign) {
 					for (int scale = scale_lb; scale < scale_ub; ++scale) {
 						for (size_t bfrac = 0; bfrac < max_fract; ++bfrac) {
 							bfraction = convert_to_bitblock<fbits>(bfrac);
-							b.set(sign == 1, scale, bfraction, false, false);
+							b.set(rhssign == 1, scale, bfraction, false, false);
 							module_add<fbits, abits>(a, b, sum);
 							//std::cout << to_triple(a) << " + " << to_triple(b) << " = " << to_triple(sum) << std::endl;
 

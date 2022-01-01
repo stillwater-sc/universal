@@ -229,6 +229,47 @@ public:
 	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
 	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
+	// type conversion
+	constexpr blocktriple& assign(const std::string& bitPattern) noexcept {
+		clear();
+		size_t nrChars = bitPattern.size();
+		std::string bits;
+		if (nrChars > 2 && bitPattern[0] == '0' && bitPattern[1] == 'b') {
+			for (size_t i = 2; i < nrChars; ++i) {
+				char c = bitPattern[i];
+				switch (c) {
+				case '0':
+				case '1':
+					bits += c;
+					break;
+				case '\'':
+					// simply ignore this delimiting character
+					break;
+				default:
+					std::cerr << "bitPattern contained a non-standard character: " << c << '\n';
+					return *this;
+				}
+			}
+		}
+		else {
+			std::cerr << "bitPattern must start with 0b: instead input pattern was " << bitPattern << '\n';
+			return *this;
+		}
+
+		size_t nrBits = bits.size();
+		if (nrBits != bfbits) {
+			std::cerr << "nr of bits in bitPattern is " << nrBits << " and needs to be " << bfbits << '\n';
+			return *this;
+		}
+		// assign the bits
+		size_t bit = nrBits - 1;
+		for (size_t i = 0; i < bits.size(); ++i) {
+			char c = bits[i];
+			setbit(bit - i, c == '1');
+		}
+		return *this;
+	}
+
 	// explicit conversion operators
 	explicit operator float()                          const noexcept { return to_native<float>(); }
 	explicit operator double()                         const noexcept { return to_native<double>(); }
@@ -365,7 +406,7 @@ public:
 	// significant bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
 	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }
-
+	inline constexpr bt block(size_t b)      const noexcept { return _significant.block(b); }
 	// helper debug function
 	void constexprClassParameters() const {
 		std::cout << "-------------------------------------------------------------\n";
@@ -930,51 +971,6 @@ template<size_t fbits, BlockTripleOperator op, typename bt>
 inline std::istream& operator>> (std::istream& istr, const blocktriple<fbits, op, bt>& a) {
 	istr >> a._fraction;
 	return istr;
-}
-
-template<size_t fbits, BlockTripleOperator op, typename bt>
-inline blocktriple<fbits, op, bt> parse(const std::string& bitPattern) {
-	using Btriple = blocktriple<fbits, op, bt>;
-	Btriple a;
-	size_t nrChars = bitPattern.size();
-	std::string bits;
-
-	if (bitPattern[0] == '0' && bitPattern[1] == 'b') {
-		for (size_t i = 2; i < nrChars; ++i) {
-			char c = bitPattern[i];
-			switch (c) {
-			case '0':
-			case '1':
-				bits += c;
-				break;
-			case '\'':
-				// simply ignore this delimiting character
-				break;
-			default:
-				std::cerr << "bitPattern contained a non-standard character: " << c << '\n';
-				return a;
-			}
-		}
-
-	}
-	else {
-		std::cerr << "bitPattern must start with 0b: instead input pattern was " << bitPattern << '\n';
-		return a;
-	}
-
-	size_t nrBits = bits.size();
-	if (nrBits != Btriple::bfbits) {
-		std::cerr << "nr of bits in bitPattern is " << nrBits << " and needs to be " << Btriple::bfbits << '\n';
-		return a;
-	}
-	// parse the bits
-	size_t bit = nrBits - 1;
-	for (size_t i = 0; i < bits.size(); ++i) {
-		char c = bits[i];
-		a.setbit(bit - i, bits[i] == '1');
-	}
-
-	return a;
 }
 
 template<size_t fbits, BlockTripleOperator op, typename bt>

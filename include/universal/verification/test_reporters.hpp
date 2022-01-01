@@ -67,7 +67,7 @@ void ReportUnaryArithmeticError(const std::string& test_case, const std::string&
 }
 
 template<typename TestType>
-void ReportUnaryArithmeticSucces(const std::string& test_case, const std::string& op, const TestType& argument, const TestType& result, const TestType& ref) {
+void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const TestType& argument, const TestType& result, const TestType& ref) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< " " << op << " "

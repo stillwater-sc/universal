@@ -10,8 +10,8 @@
 #include <typeinfo>
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_reporters.hpp>
 #include <universal/verification/blockbinary_test_status.hpp>
 
 // enumerate all division cases for a blockbinary<nbits,BlockType> configuration

@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include <universal/verification/test_suite.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/verification/test_suite.hpp>
 
 /*
  *  From Wikipedia:
@@ -33,14 +33,15 @@
  * 
  */
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
 	std::string test_suite = "Experiments with Taylor Series Expansion";
 	std::string test_tag = "operator";
-	std::cout << test_suite << '\n';
 	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
