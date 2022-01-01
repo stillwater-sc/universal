@@ -12,13 +12,17 @@
 #include <string>
 
 #include <universal/verification/test_status.hpp>
-#include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
+#include <universal/verification/test_reporters.hpp>
 #include <universal/verification/test_case.hpp>
 #include <universal/verification/test_suite_exceptions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/test_suite_logic.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-#include <universal/verification/test_suite_random.hpp>
+
+// test_suite_random depends on a number systems math library
+// so cannot be included here as this include is used also
+// for number systems that do not have a math library.
+//#include <universal/verification/test_suite_random.hpp>
 
 template<typename TestType>
 int ExhaustiveNumberSystemTest(const std::string& tag, bool bReportIndividualTestCases) {
