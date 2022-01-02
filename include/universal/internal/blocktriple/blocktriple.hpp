@@ -230,7 +230,7 @@ public:
 	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
 	// type conversion
-	constexpr blocktriple& assign(const std::string& bitPattern) noexcept {
+	CONSTEXPRESSION blocktriple& assign(const std::string& bitPattern) noexcept {
 		clear();
 		size_t nrChars = bitPattern.size();
 		std::string bits;
@@ -296,6 +296,11 @@ public:
 		_significant >>= rightShift;
 		return *this;
 	}
+	
+	constexpr blocktriple& bitShift(int leftShift) noexcept {
+		_significant <<= leftShift;  // only manipulate the bits, not the scale
+		return *this;
+	}
 
 	/// <summary>
 	/// roundingDecision returns a pair<bool, size_t> to direct the rounding and right shift
@@ -319,7 +324,7 @@ public:
 	}
 
 	// modifiers
-	constexpr void clear() noexcept {
+	constexpr void clear()                             noexcept {
 		_nan = false;
 		_inf = false;
 		_zero = true;
@@ -327,34 +332,35 @@ public:
 		_scale = 0;
 		_significant.clear();
 	}
-	constexpr void setzero(bool sign = false) noexcept {
+	constexpr void setzero(bool sign = false)          noexcept {
 		clear();
 		_sign = sign;
 	}
-	constexpr void setnan(bool sign = true) noexcept {
+	constexpr void setnan(bool sign = true)            noexcept {
 		clear();
 		_nan = true;
 		_inf = false;
 		_zero = false;
 		_sign = sign;   // if true, signalling NaN, otherwise quiet
 	}
-	constexpr void setinf(bool sign = true) noexcept {
+	constexpr void setinf(bool sign = true)            noexcept {
 		clear();
 		_inf = true;
 		_zero = false;
 		_sign = sign;
 	}
-	constexpr void setpos() noexcept { _sign = false; }
-	constexpr void setnormal() noexcept {
+	constexpr void setpos()                            noexcept { _sign = false; }
+	constexpr void setnormal()                         noexcept {
 		_nan = false;
 		_inf = false;
 		_zero = false;
 	}
-	constexpr void setsign(bool s) noexcept { _sign = s; }
-	constexpr void setscale(int scale) noexcept { _scale = scale; }
-	constexpr void setradix(int _radix) noexcept { _significant.setradix(_radix); }
+	constexpr void setsign(bool s)                     noexcept { _sign = s; }
+	constexpr void setscale(int scale)                 noexcept { _scale = scale; }
+	constexpr void setradix()                          noexcept { _significant.setradix(radix); }
+	constexpr void setradix(int _radix)                noexcept { _significant.setradix(_radix); }
 	constexpr void setbit(size_t index, bool v = true) noexcept { _significant.setbit(index, v); }
-	constexpr void setbits(uint64_t raw) noexcept {
+	constexpr void setbits(uint64_t raw)               noexcept {
 		// the setbits() api cannot be modified as it is shared by all number systems
 		// as a standard mechanism for the test suites to set bits.
 		// However, blocktriple uses extra state to encode the special values,
@@ -376,19 +382,17 @@ public:
 			_significant.setbits(raw);
 		}
 	}
-	constexpr void setblock(size_t i, const bt& block) {
-		_significant.setblock(i, block);
-	}
+	constexpr void setblock(size_t i, const bt& block) noexcept { _significant.setblock(i, block); }
 
 	// selectors
-	inline constexpr bool isnan()            const noexcept { return _nan; }
-	inline constexpr bool isinf()            const noexcept { return _inf; }
-	inline constexpr bool iszero()           const noexcept { return _zero; }
-	inline constexpr bool ispos()            const noexcept { return !_sign; }
-	inline constexpr bool isneg()            const noexcept { return _sign; }
-	inline constexpr bool sign()             const noexcept { return _sign; }
-	inline constexpr int  scale()            const noexcept { return _scale; }
-	inline constexpr int  significantscale() const noexcept {
+	inline constexpr bool isnan()                const noexcept { return _nan; }
+	inline constexpr bool isinf()                const noexcept { return _inf; }
+	inline constexpr bool iszero()               const noexcept { return _zero; }
+	inline constexpr bool ispos()                const noexcept { return !_sign; }
+	inline constexpr bool isneg()                const noexcept { return _sign; }
+	inline constexpr bool sign()                 const noexcept { return _sign; }
+	inline constexpr int  scale()                const noexcept { return _scale; }
+	inline constexpr int  significantscale()     const noexcept {
 		int sigScale = 0;
 		for (int i = bfbits - 1; i >= radix; --i) {
 			if (_significant.at(static_cast<size_t>(i))) {
@@ -398,15 +402,14 @@ public:
 		}
 		return sigScale;
 	}
-	inline constexpr Significant significant()      const noexcept { return _significant; }
-	// specialty function to offer a fast path to get the significant bits out of the representation
-	// to convert to a target number system: only valid for bfbits <= 64
-	inline constexpr uint64_t fraction_ull() const noexcept { return _significant.fraction_ull(); }
-	inline constexpr uint64_t get_ull()      const noexcept { return _significant.get_ull(); }
-	// significant bit accessors
-	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
-	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }
-	inline constexpr bt block(size_t b)      const noexcept { return _significant.block(b); }
+	inline constexpr Significant significant()   const noexcept { return _significant; }
+	inline constexpr Significant fraction()      const noexcept { return _significant.fraction(); }
+	inline constexpr uint64_t significant_ull()  const noexcept { return _significant.significant_ull(); } // fast path when bfbits <= 64 to get the significant bits out of the representation
+	inline constexpr uint64_t fraction_ull()     const noexcept { return _significant.fraction_ull(); }
+	inline constexpr bool at(size_t index)       const noexcept { return _significant.at(index); }
+	inline constexpr bool test(size_t index)     const noexcept { return _significant.at(index); }
+	inline constexpr bt block(size_t b)          const noexcept { return _significant.block(b); }
+
 	// helper debug function
 	void constexprClassParameters() const {
 		std::cout << "-------------------------------------------------------------\n";
@@ -504,8 +507,6 @@ public:
 			if (!_significant.test(bfbits-2) && !_significant.test(bfbits-3)) {
 				// found a denormalized form to normalize: find MSB
 				int msb = _significant.msb(); // zero case has been taken care off above
-//				std::cout << "sum : " << to_binary(*this) << std::endl;
-//				std::cout << "msb : " << msb << std::endl;
 				int leftShift = static_cast<int>(bfbits) - 3 - msb;
 				_significant <<= leftShift;
 				_scale -= leftShift;

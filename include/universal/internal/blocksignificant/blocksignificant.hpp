@@ -530,14 +530,20 @@ public:
 		if (b >= nrBlocks) return bt{ 0 };
 		return _block[b];
 	}
+	constexpr blocksignificant fraction() const {
+		// return a copy of the significant with the integer bits removed
+		blocksignificant fractionBits(*this);
+		fractionBits.setbit(radixPoint, false);
+		return fractionBits;
+	}
 	inline constexpr uint64_t fraction_ull() const noexcept {
-		uint64_t raw = get_ull();
+		uint64_t raw = significant_ull();
 		// remove the non-fraction bits
 		uint64_t fractionBits = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - radixPoint));
 		raw &= fractionBits;
 		return raw;
 	}
-	inline constexpr uint64_t get_ull() const noexcept {
+	inline constexpr uint64_t significant_ull() const noexcept {
 		uint64_t raw{ 0 };
 		if constexpr (bitsInBlock < 64) {
 			if constexpr (1 == nrBlocks) {

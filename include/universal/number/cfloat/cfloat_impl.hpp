@@ -235,7 +235,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 			uint64_t raw = (src.sign() ? 1ull : 0ull); // process sign
 			//	std::cout << "raw bits (sign)  " << to_binary(raw) << '\n';
 			// construct the fraction bits
-			uint64_t fracbits = src.get_ull(); // get all the bits, including the integer bits
+			uint64_t fracbits = src.significant_ull(); // get all the bits, including the integer bits
 //			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
 			fracbits >>= rightShift;
 //			std::cout << "fracbits shifted " << to_binary(fracbits) << '\n';
@@ -266,28 +266,33 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		else {
 			// compose the segments
 
-			auto fracbits = src.significant(); // get all the bits, including the integer bits
-//			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
+			auto sigBits = src.significant();
+			auto fracbits = src.fraction();
+//			std::cout << "significant   : " << to_binary(sigBits) << '\n';
+//			std::cout << "fraction      : " << to_binary(fracbits) << '\n';
 			fracbits >>= rightShift;
-//			std::cout << "fracbits         " << to_binary(fracbits) << '\n';
-//			tgt.setfraction(fracbits);
+//			std::cout << "aligned fbits : " << to_binary(fracbits) << '\n';
+
 			// copy the blocks that contain fraction bits
 			// significant blocks are organized like this:
 			//   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
 			//   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
 			//   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits
-			std::cout << "initial state : " << to_binary(tgt) << '\n';
+//			std::cout << "initial state : " << to_binary(src) << " : " << src << '\n';
+//			std::cout << "significant   : " << to_binary(fracbits, true) << '\n';
+			tgt.clear();
+//			std::cout << "initial state : " << to_binary(tgt) << " : " << tgt << '\n';
 			for (size_t b = 0; b < btType::nrBlocks; ++b) {
 				tgt.setblock(b, fracbits.block(b));
 			}
-			std::cout << "fraction bits : " << to_binary(tgt) << '\n';
+//			std::cout << "fraction bits : " << to_binary(tgt, true) << '\n';
 			tgt.setsign(src.sign());
-			std::cout << "sign bit      : " << to_binary(tgt) << '\n';
+//			std::cout << "sign bit      : " << to_binary(tgt) << '\n';
 			int srcScale = src.scale();
 			if (!tgt.setexponent(srcScale)) {
 				std::cerr << "exponent value is out of range: " << srcScale << '\n';
 			}
-			std::cout << "exponent bits : " << to_binary(tgt) << '\n';
+//			std::cout << "exponent bits : " << to_binary(tgt) << '\n';
 		}
 	}
 }
@@ -1334,51 +1339,6 @@ public:
 			clear();
 			return *this;
 		}
-
-#ifdef LATER
-		if (str.length() > 2) {
-			if (str[0] == '0' && str[1] == 'b') {
-				// binary string needs to be at least nbits+4 characters
-				int field(0);
-				int exponentBits(-1); // we start the field with a '.'
-				if (str.size() != (nbits + 4)) {
-					std::cerr << "provided binary string representation contains does not contain " << nbits << " bits. Reset to 0\n";
-					return *this;
-				}
-				size_t index = nbits;
-				for (size_t i = 1; i < str.size(); ++i) {
-					if (str[i] == '1') {
-						setbit(--index, true);
-					}
-					else if (str[i] == '0') {
-						setbit(--index, false);
-					}
-					else if (str[i] == '.' || str[i] == '\'') {
-						++field;
-						if (field == 2) { // just finished parsing exponent field: we can now check the number of exponent bits
-							if (exponentBits != es) {
-								std::cerr << "provided binary string representation does not contain " << es << " exponent bits. Found " << exponentBits << ". Reset to 0\n";
-								return *this;
-							}
-						}
-					}
-					if (field == 1) { // exponent field
-						++exponentBits;
-					}
-				}
-				if (field != 2) {
-					std::cerr << "provided binary string did not contain three fields separated by '.': Reset to 0\n";
-					return *this;
-				}
-			}
-			else {
-				std::cerr << "parse/assign currently only parse binary string formats that start with 0b\n";
-			}
-		}
-		else {
-			std::cerr << "bit pattern doesn't follow the pattern: 0b1111'0000: -" << str << "-\n";
-		}
-#endif
 		return *this;
 	}
 
@@ -2021,6 +1981,9 @@ public:
 						}
 						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 					}
+					tgt.setradix();
+					tgt.setbit(fbits); // add the hidden bit
+					tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
 				}
 			}
 			else {
@@ -2093,6 +2056,9 @@ public:
 								}
 								tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 							}
+							tgt.setradix();
+							int shift = MIN_EXP_NORMAL - scale;
+							tgt.bitShift(shift + BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
 						}
 					}
 					else {  // this cfloat has no subnormals
@@ -2168,6 +2134,9 @@ public:
 								}
 								tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 							}
+							tgt.setradix();
+							tgt.setbit(fbits); // add the hidden bit
+							tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
 						}
 					}
 					else {  // this cfloat has no supernormals and thus this represents a nan, signalling or quiet determined by the sign
@@ -2269,6 +2238,8 @@ public:
 						}
 						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 					}
+					tgt.setradix();
+					tgt.setbit(fbits); // add the hidden bit
 				}
 			}
 			else { 
@@ -2341,6 +2312,9 @@ public:
 							}
 							tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 						}
+						int shift = MIN_EXP_NORMAL - scale;
+						tgt.bitShift(shift);
+						tgt.setbit(fbits);
 					}
 				}
 				else { // this cfloat has no subnormals
@@ -2409,7 +2383,8 @@ public:
 						}
 						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 					}
-					tgt <<= divshift; // shift the input value to the output radix
+					tgt.setbit(fbits);
+					tgt.bitShift(divshift); // shift the input value to the output radix
 				}
 			}
 			else { // it is a subnormal encoding in this target cfloat
@@ -2447,7 +2422,10 @@ public:
 						}
 						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
 					}
-					tgt <<= divshift; // shift the input value to the output radix
+					int shift = MIN_EXP_NORMAL - scale;
+					tgt.bitShift(shift);
+					tgt.setbit(fbits);
+					tgt.bitShift(divshift); // shift the input value to the output radix
 				}
 			}
 		}
