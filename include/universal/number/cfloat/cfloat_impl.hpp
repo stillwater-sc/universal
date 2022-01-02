@@ -1081,11 +1081,6 @@ public:
 		}
 		return true;
 	}
-	inline constexpr void setfraction_(const blockbinary<fbits, bt>& fraction) {
-		for (size_t i = 0; i < fbits; ++i) {
-			setbit(i, fraction.test(i));
-		}
-	}
 	inline constexpr void setfraction(uint64_t raw_bits) {
 		// unoptimized as it is not meant to be an end-user API, it is a test API
 		if constexpr (fbits < 65) {
@@ -1096,79 +1091,6 @@ public:
 			}
 		}
 	}
-	inline constexpr void setblock(size_t b, const bt& data) noexcept {
-		if (b < nrBlocks) {
-			_block[b] = data;
-		}
-	}
-	// create specific number system values of interest
-	inline constexpr cfloat& maxpos() noexcept {
-		if constexpr (hasSupernormals) {
-			// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
-			clear();
-			flip();
-			setbit(nbits - 1ull, false); // sign = 0
-			setbit(1ull, false); // bit1 = 0
-		}
-		else {
-			// maximum positive value has this bit pattern: 0-1...0-111...111, that is, sign = 0, e = 11..10, f = 111...111
-			clear();
-			flip();
-			setbit(fbits, false); // set least significant exponent bit to 0
-			setbit(nbits - 1ull, false); // set sign to 0
-		}
-		return *this;
-	}
-	inline constexpr cfloat& minpos() noexcept {
-		if constexpr (hasSubnormals) {
-			// minimum positive value has this bit pattern: 0-000-00...01, that is, sign = 0, e = 000, f = 00001
-			clear();
-			setbit(0);
-		}
-		else {
-			// minimum positive value has this bit pattern: 0-001-00...0, that is, sign = 0, e = 001, f = 0000
-			clear();
-			setbit(fbits);
-		}
-		return *this;
-	}
-	inline constexpr cfloat& zero() noexcept {
-		// the zero value
-		clear();
-		return *this;
-	}
-	inline constexpr cfloat& minneg() noexcept {
-		if constexpr (hasSubnormals) {
-			// minimum negative value has this bit pattern: 1-000-00...01, that is, sign = 1, e = 00, f = 00001
-			clear();
-			setbit(nbits - 1ull);
-			setbit(0);
-		}
-		else {
-			// minimum negative value has this bit pattern: 1-001-00...0, that is, sign = 1, e = 001, f = 0000
-			clear();
-			setbit(fbits);
-			setbit(nbits - 1ull);
-		}
-		return *this;
-	}
-	inline constexpr cfloat& maxneg() noexcept {
-		if constexpr (hasSupernormals) {
-			// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1..1, f = 111...101
-			clear();
-			flip();
-			setbit(1ull, false);
-		}
-		else {
-			// maximum negative value has this bit pattern: 1-1...0-111...111, that is, sign = 1, e = 11..10, f = 111...111
-			clear();
-			flip();
-			setbit(fbits, false);
-		}
-		return *this;
-	}
-
-
 	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
@@ -1245,6 +1167,78 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;
 	}
+	inline constexpr void setblock(size_t b, const bt& data) noexcept {
+		if (b < nrBlocks) {
+			_block[b] = data;
+		}
+	}
+	
+	// create specific number system values of interest
+	inline constexpr cfloat& maxpos() noexcept {
+		if constexpr (hasSupernormals) {
+			// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
+			clear();
+			flip();
+			setbit(nbits - 1ull, false); // sign = 0
+			setbit(1ull, false); // bit1 = 0
+		}
+		else {
+			// maximum positive value has this bit pattern: 0-1...0-111...111, that is, sign = 0, e = 11..10, f = 111...111
+			clear();
+			flip();
+			setbit(fbits, false); // set least significant exponent bit to 0
+			setbit(nbits - 1ull, false); // set sign to 0
+		}
+		return *this;
+	}
+	inline constexpr cfloat& minpos() noexcept {
+		if constexpr (hasSubnormals) {
+			// minimum positive value has this bit pattern: 0-000-00...01, that is, sign = 0, e = 000, f = 00001
+			clear();
+			setbit(0);
+		}
+		else {
+			// minimum positive value has this bit pattern: 0-001-00...0, that is, sign = 0, e = 001, f = 0000
+			clear();
+			setbit(fbits);
+		}
+		return *this;
+	}
+	inline constexpr cfloat& zero() noexcept {
+		// the zero value
+		clear();
+		return *this;
+	}
+	inline constexpr cfloat& minneg() noexcept {
+		if constexpr (hasSubnormals) {
+			// minimum negative value has this bit pattern: 1-000-00...01, that is, sign = 1, e = 00, f = 00001
+			clear();
+			setbit(nbits - 1ull);
+			setbit(0);
+		}
+		else {
+			// minimum negative value has this bit pattern: 1-001-00...0, that is, sign = 1, e = 001, f = 0000
+			clear();
+			setbit(fbits);
+			setbit(nbits - 1ull);
+		}
+		return *this;
+	}
+	inline constexpr cfloat& maxneg() noexcept {
+		if constexpr (hasSupernormals) {
+			// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1..1, f = 111...101
+			clear();
+			flip();
+			setbit(1ull, false);
+		}
+		else {
+			// maximum negative value has this bit pattern: 1-1...0-111...111, that is, sign = 1, e = 11..10, f = 111...111
+			clear();
+			flip();
+			setbit(fbits, false);
+		}
+		return *this;
+	}
 
 	/// <summary>
 	/// 1's complement of the encoding
@@ -1263,7 +1257,8 @@ public:
 	/// </summary>
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
-	inline constexpr cfloat& assign(const std::string& str) noexcept {
+	/// CLANG doesn't support a constexpr basic_string, so constexpr is conditional
+	inline CONSTEXPRESSION cfloat& assign(const std::string& str) noexcept {
 		clear();
 		size_t nrChars = str.size();
 		size_t nrBits = 0;

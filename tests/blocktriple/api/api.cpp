@@ -3,10 +3,10 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <fstream>
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
 #include <universal/utility/bit_cast.hpp>
+#include <fstream>
 #include <universal/verification/test_reporters.hpp>
 
 // minimum set of include files to reflect source code dependencies
@@ -68,28 +68,16 @@ void TestConversionRounding()
 	std::cout << to_triple(e) << " : " << e << '\n';
 }
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "blocktriple<> class interface test suite: ";
+	std::string test_suite = "blocktriple<> class interface test suite";
 	std::cout << test_suite << '\n';
 
 	int nrOfFailedTestCases = 0;
 
-#if MANUAL_TESTING
 
 	// relationship between native float/double and blocktriple
 	{
@@ -141,14 +129,8 @@ try {
 		std::cout << to_triple(c) << " : " << c << '\n';
 	}
 
-#else // !MANUAL_TESTING
 
-
-
-#endif // MANUAL_TESTING
-
-	std::cout << test_suite << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
