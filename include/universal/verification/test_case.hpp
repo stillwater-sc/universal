@@ -64,7 +64,7 @@ namespace sw::universal {
 		std::cout << "a    " << to_binary(a, true) << op << '\n';
 		std::cout << "b    " << to_binary(b, true) << " =\n";
 		std::cout << "c    " << to_binary(c, true) << '\n';
-		std::cout << "ref  " << to_binary(reference, true) << ")   ";
+		std::cout << "ref  " << to_binary(reference, true) << "   ";
 		std::cout << (reference == c ? "PASS" : "FAIL");
 		std::cout << "\n+--------  Test Case: Done\n";
 		std::cout << std::setprecision(oldprecision);

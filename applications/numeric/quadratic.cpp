@@ -80,12 +80,6 @@ try {
 	float b = 1.0e5f;
 	float c = 1.0f;
 
-	{
-		Float32 x = 1.1f;
-		Float32 y = 1.1f;
-		Float32 z = x / y;
-	}
-	return 0;
 	std::cout << "half precision floating-point\n";
 	CompareTerms<Float16>(a, b, c);
 	std::cout << '\n';

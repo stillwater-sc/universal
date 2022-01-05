@@ -6,7 +6,7 @@
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
-// #define BLOCKTRIPLE_TRACE_ADD
+//#define BLOCKTRIPLE_TRACE_ADD
 #define TRACE_CONVERSION 0
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_status.hpp>
@@ -17,7 +17,13 @@
 
 /*
   Minimum number of operand bits for the adder = <abits> 
-  to yield correctly rounded addition
+  to yield correctly rounded addition if you don't use sticky bit consolidation
+  during argument normalization.
+
+  You would never build the adder without the sticky bit consolidation
+  but I am leaving this comment/table here to call out the computational
+  dynamics of what is going on. The alignment will shift out an ULP of a
+  small value that will be needed to break a tie. 
 
                           number of exponent bits = <es>
   nbits   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16
@@ -67,7 +73,7 @@ try {
 
 	std::string test_suite         = "classic cfloat addition validation with just normals, no subnormals or supernormals";
 	std::string test_tag           = "cfloat_fff addition";
-	bool reportTestCases           = false;
+	bool reportTestCases           = true;
 	int nrOfFailedTestCases        = 0;
 
 	std::cout << test_suite << '\n';
@@ -77,7 +83,13 @@ try {
 //	GenerateCfloatExponentBounds();	
 //	using TestType = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 //	GenerateTable<TestType>(std::cout);
-
+	// generate individual testcases to hand trace/debug
+	TestCase< cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 2.0f, -1.0f);
+	TestCase< cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 1.0f, -2.0f);
+//	TestCase< cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 15.0f, 0.265625f);
+//	TestCase< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 4,uint8_t,f,f,f>", "addition");
+	return 0;
 	{
 		constexpr float fa = std::numeric_limits<float>::infinity();
 		float fb = -fa;
@@ -87,11 +99,6 @@ try {
 		std::cout << fb << " + " << fb << " = " << (fb + fb) << '\n';
 		std::cout << to_binary(fa + fb) << '\n';
 	}
-
-	// generate individual testcases to hand trace/debug
-	TestCase< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
-	TestCase< cfloat<16, 8, uint16_t, hasSubnormals, hasSupernormals, isSaturating>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-
 
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 4, 2,uint8_t,f,f,f>", "addition");
 

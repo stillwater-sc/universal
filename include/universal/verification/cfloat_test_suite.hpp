@@ -815,9 +815,9 @@ namespace sw::universal {
 		constexpr bool isSaturating    = CfloatConfiguration::isSaturating;
 
 		using BlockTripleConfiguration = blocktriple<fbits, op, bt>;
-		constexpr size_t bfbits        = BlockTripleConfiguration::bfbits;
-		constexpr size_t rbits         = BlockTripleConfiguration::rbits;
-		constexpr size_t abits         = BlockTripleConfiguration::abits;
+//		constexpr size_t bfbits        = BlockTripleConfiguration::bfbits;
+//		constexpr size_t rbits         = BlockTripleConfiguration::rbits;
+//		constexpr size_t abits         = BlockTripleConfiguration::abits;
 
 		int nrOfTestFailures{ 0 };
 
@@ -844,6 +844,11 @@ namespace sw::universal {
 		if (reportTestCases) std::cout << "\n+-----\n" << type_tag(b) << "  radix point at " << BlockTripleConfiguration::radix << ", smallest scale = " << minposScale << ", largest scale = " << maxposScale << '\n';
 	
 		if constexpr (op == BlockTripleOperator::ADD) {
+			// create a specific test value
+			BlockTripleConfiguration b;
+			b.setsign(false);
+			b.setscale(0);
+
 		}
 		if constexpr (op == BlockTripleOperator::MUL) {
 		}

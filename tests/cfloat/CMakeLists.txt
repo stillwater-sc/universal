@@ -4,6 +4,7 @@ file (GLOB CONVERSION_SRC "conversion/*.cpp")
 file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
 file (GLOB STANDARD_SRC "standard/*.cpp")
 file (GLOB MATH_SRC "./math/*.cpp")
+file (GLOB PERFORMANCE_SRC "./performance/*.cpp")
 
 # cfloat API test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/api" "${API_SRC}")
@@ -22,6 +23,9 @@ compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfl
 
 # math library test suites
 compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/math" "${MATH_SRC}")
+
+# performance test suites
+compile_all("true" "cfloat" "Number Systems/fixed size/floating-point/linear/cfloat/performance" "${PERFORMANCE_SRC}")
 
 # non-saturating varieties
 # conversion

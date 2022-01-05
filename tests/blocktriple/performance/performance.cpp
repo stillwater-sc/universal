@@ -11,7 +11,8 @@
 #include <chrono>
 
 #include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_reporters.hpp>
 #include <universal/verification/blockbinary_test_status.hpp>
 #include <universal/verification/performance_runner.hpp>
 
@@ -28,6 +29,7 @@ namespace sw::universal::internal {
 		a = b;
 		for (size_t i = 0; i < NR_OPS; ++i) {
 			c.add(a, b);
+			b = c;
 		}
 		if (c == d) std::cout << "amazing\n";
 	}
@@ -43,8 +45,9 @@ namespace sw::universal::internal {
 		a = b;
 		for (size_t i = 0; i < NR_OPS; ++i) {
 			c.mul(a, b);
-			d = c;
+			b = c;
 		}
+		if (c == d) std::cout << "amazing\n";
 	}
 
 	// Generic set of divides for a given number system type
@@ -57,10 +60,10 @@ namespace sw::universal::internal {
 		b = c;
 		a = b;
 		for (size_t i = 0; i < NR_OPS; ++i) {
-			//c = a / b;
-			c.clear(); // reset to zero so d = c is fast
-			d = c;
+			c.div(a, b);
+			b = c;
 		}
+		if (c == d) std::cout << "amazing\n";
 	}
 
 	void TestSmallArithmeticOperatorPerformance() {
@@ -68,12 +71,16 @@ namespace sw::universal::internal {
 		std::cout << "\nArithmetic operator performance\n";
 
 		size_t NR_OPS = 1024ull * 1024ull * 4ull;
-		PerformanceRunner("blocktriple<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<32, sw::universal::BlockTripleOperator::MUL, uint32_t> >, NR_OPS);
+		PerformanceRunner("blocktriple<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::ADD, uint8_t> >, NR_OPS);
+		PerformanceRunner("blocktriple<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blocktriple<32, sw::universal::BlockTripleOperator::ADD, uint32_t> >, NR_OPS);
 
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("blocktriple<16>   multiplication", MultiplicationWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<32>   multiplication", MultiplicationWorkload< sw::universal::blocktriple<32, sw::universal::BlockTripleOperator::MUL, uint32_t> >, NR_OPS / 2);
+
+		NR_OPS = 1024ull * 1024ull;
+		PerformanceRunner("blocktriple<16>   division      ", DivisionWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS);
+		PerformanceRunner("blocktriple<32>   division      ", DivisionWorkload< sw::universal::blocktriple<32, sw::universal::BlockTripleOperator::DIV, uint32_t> >, NR_OPS / 2);
 
 	}
 
@@ -139,6 +146,28 @@ namespace sw::universal::internal {
 	blocktriple<256,uint64_t>   add       8388608 per        0.097388sec ->  86 Mops/sec
 	blocktriple<512,uint64_t>   add       4194304 per        0.101417sec ->  41 Mops/sec
 	blocktriple<1024,uint64_t>  add       2097152 per       0.0758496sec ->  27 Mops/sec
+
+	January, 2022, Dell i7 desktop
+	blocktriple operator performance benchmarking
+	blocktriple<16>   add/subtract      4194304 per        0.183834sec ->  22 Mops/sec
+	blocktriple<32>   add/subtract      4194304 per        0.215027sec ->  19 Mops/sec
+	blocktriple<64>   add/subtract      4194304 per       0.0425988sec ->  98 Mops/sec
+	blocktriple<128>  add/subtract      2097152 per        0.387862sec ->   5 Mops/sec
+	blocktriple<256>  add/subtract      1048576 per        0.434191sec ->   2 Mops/sec
+	blocktriple<512>  add/subtract       524288 per        0.446962sec ->   1 Mops/sec
+	blocktriple<1024> add/subtract       262144 per        0.475721sec -> 551 Kops/sec
+	blocktriple<16>   multiplication    1048576 per        0.152838sec ->   6 Mops/sec
+	blocktriple<32>   multiplication     524288 per       0.0828581sec ->   6 Mops/sec
+	blocktriple<64>   multiplication     262144 per       0.0363935sec ->   7 Mops/sec
+	blocktriple<128>  multiplication      16384 per       0.0164197sec -> 997 Kops/sec
+	blocktriple<512>  multiplication       2048 per       0.0588853sec ->  34 Kops/sec
+	blocktriple<1024> multiplication       1024 per        0.109377sec ->   9 Kops/sec
+	blocktriple<16>   division           524288 per        0.389545sec ->   1 Mops/sec
+	blocktriple<32>   division           524288 per        0.506002sec ->   1 Mops/sec
+	blocktriple<64>   division           262144 per        0.285299sec -> 918 Kops/sec
+	blocktriple<128>  division           131072 per           1.466sec ->  89 Kops/sec
+	blocktriple<512>  division            65536 per         16.9605sec ->   3 Kops/sec
+	blocktriple<1024> division            32768 per         33.7386sec -> 971  ops/sec
 	*/
 	void TestBlockPerformanceOnAdd() {
 		using namespace sw::universal;
@@ -211,41 +240,57 @@ namespace sw::universal::internal {
 	}
 }
 
-// to generate a test report, set MANUAL_TESTING to 0 and STRESS_TESTING to 1
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
+	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
-	std::string tag = "blocktriple operator performance benchmarking";
+	std::string test_suite = "blocktriple operator performance benchmarking";
+//	std::string test_tag = "blocktriple performance";
+//	bool reportTestCases = true;
+	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
 	TestSmallArithmeticOperatorPerformance();
 	
-	std::cout << "done" << std::endl;
-
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << tag << std::endl;
 
-	int nrOfFailedTestCases = 0;
+#if REGRESSION_LEVEL_1
+	TestSmallArithmeticOperatorPerformance();
+#endif
 
+#if REGRESSION_LEVEL_4
 	TestArithmeticOperatorPerformance();
-
-#if STRESS_TESTING
 
 	TestBlockPerformanceOnAdd();
 	TestBlockPerformanceOnMul();
 	TestBlockPerformanceOnDiv();
+#endif
 
-#endif // STRESS_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif // MANUAL_TESTING
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

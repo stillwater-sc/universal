@@ -153,11 +153,11 @@ public:
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
-	static constexpr size_t fhbits = fbits + 1;            // size of all bits
-	static constexpr size_t rbits = 2 * (fbits + 1);       // rounding bits
-	static constexpr size_t abits = fbits + rbits;         // size of the addend = fbits + rbits extra bits to capture required rounding bits
-	static constexpr size_t mbits = 2 * fbits;             // size of the fraction bits of the multiplier
-	static constexpr size_t divbits = 3 * fbits + 4;       // size of the fraction bits of the divider
+	static constexpr size_t fhbits   = fbits + 1;          // size of all bits
+	static constexpr size_t rbits    = 3;                  // rounding bits assumes you have sticky bit consolidation in normalize, otherwise you need 2 * (fbits + 1) to capture the tie breaking ULPs
+	static constexpr size_t abits    = fbits + rbits;      // size of the addend = fbits plus an additional rbits to capture required rounding bits
+	static constexpr size_t mbits    = 2 * fbits;          // size of the fraction bits of the multiplier
+	static constexpr size_t divbits  = 3 * fbits + 4;      // size of the fraction bits of the divider
 	static constexpr size_t divshift = divbits - fbits;    // alignment shift for divider operands
 	static constexpr size_t sqrtbits = 2 * fhbits;      // size of the square root output
 	// we transform input operands into the operation's target output size
@@ -408,6 +408,7 @@ public:
 	inline constexpr uint64_t fraction_ull()     const noexcept { return _significant.fraction_ull(); }
 	inline constexpr bool at(size_t index)       const noexcept { return _significant.at(index); }
 	inline constexpr bool test(size_t index)     const noexcept { return _significant.at(index); }
+	inline constexpr bool any(size_t index)      const noexcept { return _significant.any(index); }
 	inline constexpr bt block(size_t b)          const noexcept { return _significant.block(b); }
 
 	// helper debug function
@@ -470,12 +471,23 @@ public:
 		int scale_of_result = std::max(lhs_scale, rhs_scale);
 
 		// avoid copy by directly manipulating the fraction bits of the arguments
-		int expDiff = lhs_scale - rhs_scale;
-		if (expDiff < 0) {
-			lhs >>= -expDiff;
+		int scaleDiff = lhs_scale - rhs_scale;
+		// sticky bit calculation: abits = 1 hidden, f fraction, and r rounding bits: 1+f+r
+		// lhs ->  h.ffffrrr     h = hidden, f = fraction, and r is rounding bits
+		// rhs ->  h.ffffrrr
+		// some shift of say rhs
+		// rhs ->       hffffrrr
+		//                 | this is our sticky bit in the normalized argument
+		// sticky = righShift
+		if (scaleDiff < 0) {
+			bool sticky = lhs.any(-scaleDiff);
+			lhs >>= -scaleDiff;
+			lhs.setbit(0, sticky);
 		}
-		else if (expDiff > 0) {
-			rhs >>= expDiff;
+		else { //if (scaleDiff > 0) {
+			bool sticky = rhs.any(scaleDiff);
+			rhs >>= scaleDiff;
+			rhs.setbit(0, sticky);
 		}
 		if (lhs.isneg()) lhs._significant.twosComplement();
 		if (rhs.isneg()) rhs._significant.twosComplement();
