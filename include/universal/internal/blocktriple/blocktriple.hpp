@@ -480,12 +480,12 @@ public:
 		//                 | this is our sticky bit in the normalized argument
 		// sticky = righShift
 		if (scaleDiff < 0) {
-			bool sticky = lhs.any(-scaleDiff);
+			bool sticky = lhs.any(static_cast<size_t>(-scaleDiff));
 			lhs >>= -scaleDiff;
 			lhs.setbit(0, sticky);
 		}
 		else { //if (scaleDiff > 0) {
-			bool sticky = rhs.any(scaleDiff);
+			bool sticky = rhs.any(static_cast<size_t>(scaleDiff));
 			rhs >>= scaleDiff;
 			rhs.setbit(0, sticky);
 		}

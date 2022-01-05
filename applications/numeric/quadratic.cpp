@@ -67,12 +67,14 @@ try {
 	auto precision = std::cout.precision();
 	std::cout << std::setprecision(15);
 
-	using Float16 = cfloat<16,  5, uint16_t, true, true, false>;
-	using Float32 = cfloat<32,  8, uint32_t, true, true, false>;
-	using Float64 = cfloat<64, 11, uint32_t, true, true, false>;
+	using Float16 = cfloat<16,  5, uint16_t>; // , true, true, false > ;
+	using Float32 = cfloat<32,  8, uint32_t>; // , true, true, false > ;
+	using Float48 = cfloat<48,  8, uint32_t>; // , true, true, false > ;
+	using Float64 = cfloat<64, 11, uint32_t>; // , true, true, false > ;
 	using FloatSP = float;
 	using FloatDP = double;
 	using Posit32 = sw::universal::posit<32, 2>;
+	using Posit48 = sw::universal::posit<48, 2>;
 	using Posit64 = sw::universal::posit<64, 2>;
 	using Fixed64 = sw::universal::fixpnt<64, 16>;
 
@@ -80,11 +82,11 @@ try {
 	float b = 1.0e5f;
 	float c = 1.0f;
 
-	std::cout << "half precision floating-point\n";
+	std::cout << "16-bit floating-point\n";
 	CompareTerms<Float16>(a, b, c);
 	std::cout << '\n';
 
-	std::cout << "single precision floating-point\n";
+	std::cout << "32-bit floating-point\n";
 	CompareTerms<Float32>(a, b, c);
 	std::cout << '\n';
 
@@ -92,7 +94,11 @@ try {
 	CompareTerms<FloatSP>(a, b, c);
 	std::cout << '\n';
 
-	std::cout << "double precision floating-point\n";
+	std::cout << "48-bit floating-point\n";
+	CompareTerms<Float48>(a, b, c);
+	std::cout << '\n';
+
+	std::cout << "64-bit floating-point\n";
 	CompareTerms<Float64>(a, b, c);
 	std::cout << '\n';
 
@@ -104,8 +110,8 @@ try {
 	CompareTerms<Posit32>(a, b, c);
 	std::cout << '\n';
 
-	std::cout << "custom precision posit<40, 2>\n";
-	CompareTerms<posit<40,2>>(a, b, c);
+	std::cout << "custom precision posit<48, 2>\n";
+	CompareTerms<Posit48>(a, b, c);
 	std::cout << '\n';
 
 	std::cout << "double precision posit<64, 2>\n";

@@ -533,7 +533,7 @@ public:
 	constexpr blocksignificant fraction() const {
 		// return a copy of the significant with the integer bits removed
 		blocksignificant fractionBits(*this);
-		fractionBits.setbit(radixPoint, false);
+		fractionBits.setbit(static_cast<size_t>(radixPoint), false);
 		return fractionBits;
 	}
 	inline constexpr uint64_t fraction_ull() const noexcept {

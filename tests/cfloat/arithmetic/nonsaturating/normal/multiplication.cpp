@@ -70,11 +70,11 @@ try {
 
 #if MANUAL_TESTING
 
-	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 1.0f, -1.0f);
-	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 1.625f, -1.625f);
+	TestCase< cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, -1.0e5f, 1.0e5f);
+	TestCase< cfloat<48, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, -1.0e5f, 1.0e5f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<5,2,uint8_t,f,f,f>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication<cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<6,2,uint8_t,f,f,f>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<5,2,uint8_t,f,f,f>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication<cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<6,2,uint8_t,f,f,f>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

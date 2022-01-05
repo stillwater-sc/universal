@@ -267,33 +267,31 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src,
 		else {
 			// compose the segments
 
-			auto sigBits = src.significant();
-			auto fracbits = src.fraction();
+//			auto sigBits = src.significant();
 //			std::cout << "significant   : " << to_binary(sigBits) << '\n';
-//			std::cout << "fraction      : " << to_binary(fracbits) << '\n';
-			fracbits >>= rightShift;
-//			std::cout << "aligned fbits : " << to_binary(fracbits) << '\n';
+			auto fracbits = src.fraction();
+			//std::cout << "fraction      : " << to_binary(fracbits, true) << '\n';
+			fracbits >>= static_cast<int>(rightShift);
+			//std::cout << "aligned fbits : " << to_binary(fracbits, true) << '\n';
 
 			// copy the blocks that contain fraction bits
 			// significant blocks are organized like this:
 			//   ADD        iii.ffffrrrrrrrrr          3 integer bits, f fraction bits, and 2*fhbits rounding bits
 			//   MUL         ii.ffff'ffff              2 integer bits, 2*f fraction bits
 			//   DIV         ii.ffff'ffff'ffff'rrrr    2 integer bits, 3*f fraction bits, and r rounding bits
-//			std::cout << "initial state : " << to_binary(src) << " : " << src << '\n';
-//			std::cout << "significant   : " << to_binary(fracbits, true) << '\n';
+			//std::cout << "fraction bits : " << to_binary(fracbits, true) << '\n';
 			tgt.clear();
-//			std::cout << "initial state : " << to_binary(tgt) << " : " << tgt << '\n';
+			//std::cout << "initial state : " << to_binary(tgt) << " : " << tgt << '\n';
 			for (size_t b = 0; b < btType::nrBlocks; ++b) {
 				tgt.setblock(b, fracbits.block(b));
 			}
-//			std::cout << "fraction bits : " << to_binary(tgt, true) << '\n';
+			//std::cout << "fraction bits : " << to_binary(tgt, true) << '\n';
 			tgt.setsign(src.sign());
-//			std::cout << "sign bit      : " << to_binary(tgt) << '\n';
-			int srcScale = src.scale();
-			if (!tgt.setexponent(srcScale)) {
-				std::cerr << "exponent value is out of range: " << srcScale << '\n';
+			//std::cout << "adding sign   : " << to_binary(tgt) << '\n';
+			if (!tgt.setexponent(exponent)) {
+				std::cerr << "exponent value is out of range: " << exponent << '\n';
 			}
-//			std::cout << "exponent bits : " << to_binary(tgt) << '\n';
+			//std::cout << "add exponent  : " << to_binary(tgt) << '\n';
 		}
 	}
 }
@@ -2359,28 +2357,28 @@ public:
 				else {
 					// brute force copy of blocks
 					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, _block[0] & FSU_MASK);
+						tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
 					}
 					else if constexpr (2 == fBlocks) {
 						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1] & FSU_MASK);
+						tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
 					}
 					else if constexpr (3 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2] & FSU_MASK);
+						tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
 					}
 					else if constexpr (4 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
 						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3] & FSU_MASK);
+						tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
 					}
 					else {
 						for (size_t i = 0; i < FSU; ++i) {
 							tgt.setblock(i, _block[i]);
 						}
-						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+						tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
 					}
 					tgt.setbit(fbits);
 					tgt.bitShift(divshift); // shift the input value to the output radix
@@ -2398,28 +2396,28 @@ public:
 				else {
 					// brute force copy of blocks
 					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, _block[0] & FSU_MASK);
+						tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
 					}
 					else if constexpr (2 == fBlocks) {
 						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1] & FSU_MASK);
+						tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
 					}
 					else if constexpr (3 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2] & FSU_MASK);
+						tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
 					}
 					else if constexpr (4 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
 						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3] & FSU_MASK);
+						tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
 					}
 					else {
 						for (size_t i = 0; i < FSU; ++i) {
 							tgt.setblock(i, _block[i]);
 						}
-						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+						tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
 					}
 					int shift = MIN_EXP_NORMAL - scale;
 					tgt.bitShift(shift);
@@ -2512,7 +2510,7 @@ protected:
 		bool s = (rhs < 0);
 		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
 
-		int msb = findMostSignificantBit(raw) - 1; // msb > 0 due to zero test above 
+		int msb = static_cast<int>(findMostSignificantBit(raw)) - 1; // msb > 0 due to zero test above 
 		int exponent = msb;
 		// remove the MSB as it represents the hidden bit in the cfloat representation
 		uint64_t hmask = ~(1ull << msb);
@@ -3039,7 +3037,7 @@ protected:
 		}
 		else {
 			constexpr size_t shift = fhbits - srcbits;
-			if constexpr (shift < (sizeof(StorageType))) {
+			if constexpr (shift < (sizeof(StorageType) * 8)) {
 				raw <<= shift;
 			}
 			else {
