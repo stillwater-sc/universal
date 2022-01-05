@@ -1,4 +1,4 @@
-//  performance.cpp : performance benchmarking for cfloat arithmetic operators
+//  perf.cpp : baseline performance benchmarking for cfloat arithmetic operators
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
