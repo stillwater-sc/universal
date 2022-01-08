@@ -79,20 +79,6 @@ int scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturati
 }
 
 /// <summary>
-/// parse a text string into a cfloat value
-/// </summary>
-/// <typeparam name="bt"></typeparam>
-/// <param name="str"></param>
-/// <returns></returns>
-template<size_t nbits, size_t es, typename bt,
-	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
-parse(const std::string& stringRep) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{ 0 };
-	return a.assign(stringRep);
-}
-
-/// <summary>
 /// convert a blocktriple to a cfloat. blocktriples come out of the arithmetic
 /// engine in the form ii.ff...ff and a scale. The conversion must take this
 /// denormalized form into account during conversion.
@@ -120,9 +106,7 @@ parse(const std::string& stringRep) {
 /// <param name="tgt">the resulting cfloat</param>
 template<size_t srcbits, BlockTripleOperator op, size_t nbits, size_t es, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, 
-	                              cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& tgt) {
-//	std::cout << "convert: " << to_binary(src) << std::endl;
+inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& tgt) {
 	using btType = blocktriple<srcbits, op, bt>;
 	using cfloatType = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	// test special cases
@@ -1921,29 +1905,29 @@ public:
 				else {
 					// brute force copy of blocks
 					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, _block[0] & FSU_MASK);
+						tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
 					}
 					else if constexpr (2 == fBlocks) {
 						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1] & FSU_MASK);
+						tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
 					}
 					else if constexpr (3 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2] & FSU_MASK);
+						tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
 					}
 					else if constexpr (4 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
 						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3] & FSU_MASK);
+						tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
 					}
 					else if constexpr (5 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
 						tgt.setblock(2, _block[2]);
 						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4] & FSU_MASK);
+						tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
 					}
 					else if constexpr (6 == fBlocks) {
 						tgt.setblock(0, _block[0]);
@@ -1951,7 +1935,7 @@ public:
 						tgt.setblock(2, _block[2]);
 						tgt.setblock(3, _block[3]);
 						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5] & FSU_MASK);
+						tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
 					}
 					else if constexpr (7 == fBlocks) {
 						tgt.setblock(0, _block[0]);
@@ -1960,7 +1944,7 @@ public:
 						tgt.setblock(3, _block[3]);
 						tgt.setblock(4, _block[4]);
 						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, _block[6] & FSU_MASK);
+						tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
 					}
 					else if constexpr (8 == fBlocks) {
 						tgt.setblock(0, _block[0]);
@@ -1970,13 +1954,13 @@ public:
 						tgt.setblock(4, _block[4]);
 						tgt.setblock(5, _block[5]);
 						tgt.setblock(6, _block[6]);
-						tgt.setblock(7, _block[7] & FSU_MASK);
+						tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
 					}
 					else {
 						for (size_t i = 0; i < FSU; ++i) {
 							tgt.setblock(i, _block[i]);
 						}
-						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+						tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
 					}
 					tgt.setradix();
 					tgt.setbit(fbits); // add the hidden bit
@@ -1996,29 +1980,29 @@ public:
 						else {
 							// brute force copy of blocks
 							if constexpr (1 == fBlocks) {
-								tgt.setblock(0, _block[0] & FSU_MASK);
+								tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
 							}
 							else if constexpr (2 == fBlocks) {
 								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1] & FSU_MASK);
+								tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
 							}
 							else if constexpr (3 == fBlocks) {
 								tgt.setblock(0, _block[0]);
 								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2] & FSU_MASK);
+								tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
 							}
 							else if constexpr (4 == fBlocks) {
 								tgt.setblock(0, _block[0]);
 								tgt.setblock(1, _block[1]);
 								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3] & FSU_MASK);
+								tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
 							}
 							else if constexpr (5 == fBlocks) {
 								tgt.setblock(0, _block[0]);
 								tgt.setblock(1, _block[1]);
 								tgt.setblock(2, _block[2]);
 								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4] & FSU_MASK);
+								tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
 							}
 							else if constexpr (6 == fBlocks) {
 								tgt.setblock(0, _block[0]);
@@ -2026,7 +2010,7 @@ public:
 								tgt.setblock(2, _block[2]);
 								tgt.setblock(3, _block[3]);
 								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5] & FSU_MASK);
+								tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
 							}
 							else if constexpr (7 == fBlocks) {
 								tgt.setblock(0, _block[0]);
@@ -2035,7 +2019,7 @@ public:
 								tgt.setblock(3, _block[3]);
 								tgt.setblock(4, _block[4]);
 								tgt.setblock(5, _block[5]);
-								tgt.setblock(6, _block[6] & FSU_MASK);
+								tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
 							}
 							else if constexpr (8 == fBlocks) {
 								tgt.setblock(0, _block[0]);
@@ -2045,13 +2029,13 @@ public:
 								tgt.setblock(4, _block[4]);
 								tgt.setblock(5, _block[5]);
 								tgt.setblock(6, _block[6]);
-								tgt.setblock(7, _block[7] & FSU_MASK);
+								tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
 							}
 							else {
 								for (size_t i = 0; i < FSU; ++i) {
 									tgt.setblock(i, _block[i]);
 								}
-								tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+								tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
 							}
 							tgt.setradix();
 							int shift = MIN_EXP_NORMAL - scale;
@@ -2074,29 +2058,29 @@ public:
 						else {
 							// brute force copy of blocks
 							if constexpr (1 == fBlocks) {
-								tgt.setblock(0, _block[0] & FSU_MASK);
+								tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
 							}
 							else if constexpr (2 == fBlocks) {
 								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1] & FSU_MASK);
+								tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
 							}
 							else if constexpr (3 == fBlocks) {
 								tgt.setblock(0, _block[0]);
 								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2] & FSU_MASK);
+								tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
 							}
 							else if constexpr (4 == fBlocks) {
 								tgt.setblock(0, _block[0]);
 								tgt.setblock(1, _block[1]);
 								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3] & FSU_MASK);
+								tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
 							}
 							else if constexpr (5 == fBlocks) {
 								tgt.setblock(0, _block[0]);
 								tgt.setblock(1, _block[1]);
 								tgt.setblock(2, _block[2]);
 								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4] & FSU_MASK);
+								tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
 							}
 							else if constexpr (6 == fBlocks) {
 								tgt.setblock(0, _block[0]);
@@ -2104,7 +2088,7 @@ public:
 								tgt.setblock(2, _block[2]);
 								tgt.setblock(3, _block[3]);
 								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5] & FSU_MASK);
+								tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
 							}
 							else if constexpr (7 == fBlocks) {
 								tgt.setblock(0, _block[0]);
@@ -2113,7 +2097,7 @@ public:
 								tgt.setblock(3, _block[3]);
 								tgt.setblock(4, _block[4]);
 								tgt.setblock(5, _block[5]);
-								tgt.setblock(6, _block[6] & FSU_MASK);
+								tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
 							}
 							else if constexpr (8 == fBlocks) {
 								tgt.setblock(0, _block[0]);
@@ -2123,13 +2107,13 @@ public:
 								tgt.setblock(4, _block[4]);
 								tgt.setblock(5, _block[5]);
 								tgt.setblock(6, _block[6]);
-								tgt.setblock(7, _block[7] & FSU_MASK);
+								tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
 							}
 							else {
 								for (size_t i = 0; i < FSU; ++i) {
 									tgt.setblock(i, _block[i]);
 								}
-								tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+								tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
 							}
 							tgt.setradix();
 							tgt.setbit(fbits); // add the hidden bit
@@ -2178,29 +2162,29 @@ public:
 				else {
 					// brute force copy of blocks
 					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, _block[0] & FSU_MASK);
+						tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
 					}
 					else if constexpr (2 == fBlocks) {
 						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1] & FSU_MASK);
+						tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
 					}
 					else if constexpr (3 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2] & FSU_MASK);
+						tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
 					}
 					else if constexpr (4 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
 						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3] & FSU_MASK);
+						tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
 					}
 					else if constexpr (5 == fBlocks) {
 						tgt.setblock(0, _block[0]);
 						tgt.setblock(1, _block[1]);
 						tgt.setblock(2, _block[2]);
 						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4] & FSU_MASK);
+						tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
 					}
 					else if constexpr (6 == fBlocks) {
 						tgt.setblock(0, _block[0]);
@@ -2208,7 +2192,7 @@ public:
 						tgt.setblock(2, _block[2]);
 						tgt.setblock(3, _block[3]);
 						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5] & FSU_MASK);
+						tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
 					}
 					else if constexpr (7 == fBlocks) {
 						tgt.setblock(0, _block[0]);
@@ -2217,7 +2201,7 @@ public:
 						tgt.setblock(3, _block[3]);
 						tgt.setblock(4, _block[4]);
 						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, _block[6] & FSU_MASK);
+						tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
 					}
 					else if constexpr (8 == fBlocks) {
 						tgt.setblock(0, _block[0]);
@@ -2227,13 +2211,13 @@ public:
 						tgt.setblock(4, _block[4]);
 						tgt.setblock(5, _block[5]);
 						tgt.setblock(6, _block[6]);
-						tgt.setblock(7, _block[7] & FSU_MASK);
+						tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
 					}
 					else {
 						for (size_t i = 0; i < FSU; ++i) {
 							tgt.setblock(i, _block[i]);
 						}
-						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+						tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
 					}
 					tgt.setradix();
 					tgt.setbit(fbits); // add the hidden bit
@@ -2252,29 +2236,29 @@ public:
 					else {
 						// brute force copy of blocks
 						if constexpr (1 == fBlocks) {
-							tgt.setblock(0, _block[0] & FSU_MASK);
+							tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
 						}
 						else if constexpr (2 == fBlocks) {
 							tgt.setblock(0, _block[0]);
-							tgt.setblock(1, _block[1] & FSU_MASK);
+							tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
 						}
 						else if constexpr (3 == fBlocks) {
 							tgt.setblock(0, _block[0]);
 							tgt.setblock(1, _block[1]);
-							tgt.setblock(2, _block[2] & FSU_MASK);
+							tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
 						}
 						else if constexpr (4 == fBlocks) {
 							tgt.setblock(0, _block[0]);
 							tgt.setblock(1, _block[1]);
 							tgt.setblock(2, _block[2]);
-							tgt.setblock(3, _block[3] & FSU_MASK);
+							tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
 						}
 						else if constexpr (5 == fBlocks) {
 							tgt.setblock(0, _block[0]);
 							tgt.setblock(1, _block[1]);
 							tgt.setblock(2, _block[2]);
 							tgt.setblock(3, _block[3]);
-							tgt.setblock(4, _block[4] & FSU_MASK);
+							tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
 						}
 						else if constexpr (6 == fBlocks) {
 							tgt.setblock(0, _block[0]);
@@ -2282,7 +2266,7 @@ public:
 							tgt.setblock(2, _block[2]);
 							tgt.setblock(3, _block[3]);
 							tgt.setblock(4, _block[4]);
-							tgt.setblock(5, _block[5] & FSU_MASK);
+							tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
 						}
 						else if constexpr (7 == fBlocks) {
 							tgt.setblock(0, _block[0]);
@@ -2291,7 +2275,7 @@ public:
 							tgt.setblock(3, _block[3]);
 							tgt.setblock(4, _block[4]);
 							tgt.setblock(5, _block[5]);
-							tgt.setblock(6, _block[6] & FSU_MASK);
+							tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
 						}
 						else if constexpr (8 == fBlocks) {
 							tgt.setblock(0, _block[0]);
@@ -2301,13 +2285,13 @@ public:
 							tgt.setblock(4, _block[4]);
 							tgt.setblock(5, _block[5]);
 							tgt.setblock(6, _block[6]);
-							tgt.setblock(7, _block[7] & FSU_MASK);
+							tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
 						}
 						else {
 							for (size_t i = 0; i < FSU; ++i) {
 								tgt.setblock(i, _block[i]);
 							}
-							tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+							tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
 						}
 						int shift = MIN_EXP_NORMAL - scale;
 						tgt.bitShift(shift);

@@ -29,7 +29,7 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	constexpr bool isSaturating = false;
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, b;
 	// b1.00111111.00011001011010001001001 != b1.01111111.00011001011010001001001
-	a = parse<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>("0b1.00111111.00011001011010001001001");
+	a.assign("0b1.00111111.00011001011010001001001");
 	std::cout << "cfloat   : " << to_binary(a) << '\n';
 	float f = float(a);
 	std::cout << "float    : " << to_binary(f) << '\n';

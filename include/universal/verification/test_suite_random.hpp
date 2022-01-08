@@ -208,7 +208,7 @@ namespace sw::universal {
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<typename TestType>
 	int VerifyBinaryOperatorThroughRandoms(bool reportTestCases, int opcode, size_t nrOfRandoms) {
-		std::cerr << typeid(TestType).name() << " : ";
+		///std::cerr << typeid(TestType).name() << " : ";
 
 		std::string operation_string;
 		switch (opcode) {
@@ -251,7 +251,6 @@ namespace sw::universal {
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
-		if (reportTestCases) std::cerr << '\n';
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			TestType testa, testb, testresult, testref;
 			testa.setbits(distr(eng));
