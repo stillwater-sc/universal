@@ -9,8 +9,8 @@
 //#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
-#include <universal/number/cfloat/table.hpp>
 
 /*
   Minimum number of operand bits for the adder = <abits> 

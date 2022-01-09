@@ -87,6 +87,9 @@ try {
 	using c96  = cfloat< 96, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 	using c128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 
+	// driving the intensity of the randomized arithmetic tests
+	size_t nrRandoms = 0;
+
 #if MANUAL_TESTING
 
 //	GenerateCfloatExponentBounds();	
@@ -142,7 +145,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<6, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 6, 3,uint8_t, f,f,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<6, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 6, 4,uint8_t, f,f,f>", "addition");
 
-	size_t nrRandoms = 5;
+	nrRandoms = 5;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c16).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c32).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c48).name(), "addition");
@@ -156,8 +159,6 @@ try {
 	return EXIT_SUCCESS; // ignore failures
 
 #else
-
-	size_t nrRandoms{ 0 };
 
 #if REGRESSION_LEVEL_1
 //	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 3, 1,uint8_t, f,f,f>", "addition");

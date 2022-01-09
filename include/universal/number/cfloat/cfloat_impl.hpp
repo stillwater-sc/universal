@@ -2049,7 +2049,7 @@ public:
 				else {
 					// by design, a cfloat is either normal, subnormal, or supernormal, so this else clause is by deduction covering a supernormal
 					if constexpr (hasSupernormals) {
-						if constexpr (BlockTripleConfiguration::rbits < (64 - fbits)) {
+						if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
 							uint64_t raw = fraction_ull();
 							raw |= (1ull << fbits); // add the hidden bit
 							raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
@@ -2527,13 +2527,16 @@ protected:
 public:
 	template<typename Real>
 	CONSTEXPRESSION cfloat& convert_ieee754(Real rhs) noexcept {
-		if constexpr (nbits == 32 && es == 8) {
+		if constexpr (nbits == 32 && es == 8 && sizeof(Real) == 4) {
+			// we CANNOT use the native conversion to float as cfloats have supernormals
+			// which IEEE-754 does not have and thus a native conversion would destroy
+			// only if the Real type is a float can we use the direct conversion
+
 			// when our cfloat is a perfect match to single precision IEEE-754
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
-			// use native conversion
-			extractFields(float(rhs), s, rawExponent, rawFraction);
+			extractFields(rhs, s, rawExponent, rawFraction);
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 31;
 			raw |= (rawExponent << fbits);
@@ -2541,13 +2544,13 @@ public:
 			setbits(raw);
 			return *this;
 		}
-		else if constexpr (nbits == 64 && es == 11) {
+		else if constexpr (nbits == 64 && es == 11 && sizeof(Real) == 8) {
 			// when our cfloat is a perfect match to double precision IEEE-754
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
 			// use native conversion
-			extractFields(double(rhs), s, rawExponent, rawFraction);
+			extractFields(rhs, s, rawExponent, rawFraction);
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 63;
 			raw |= (rawExponent << fbits);

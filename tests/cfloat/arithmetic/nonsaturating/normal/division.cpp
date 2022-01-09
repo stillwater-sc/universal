@@ -11,6 +11,7 @@
 //#define BLOCKTRIPLE_TRACE_DIV
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 void ReportIeee754NotANumberArithmetic()
@@ -133,6 +134,18 @@ try {
 
 	std::cout << test_suite << '\n';
 
+	// shorthand alias types
+	using c16  = cfloat< 16,  5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c32  = cfloat< 32,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c48  = cfloat< 48,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c64  = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c80  = cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c96  = cfloat< 96, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+
+	// driving the intensity of the randomized arithmetic tests
+	size_t nrRandoms = 0;
+
 #if MANUAL_TESTING
 
 //	ReportIeee754InfinityArithmetic();
@@ -147,6 +160,33 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<4,2,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<5,2,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision<cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<6,2,uint8_t,f,f,f>", "division");
+
+	/*
+	FAIL 1702370575.361328125 / -432761276130        != -0.0039337405383932377845 golden reference is -0.0039337405384003432118
+	 result 0b1.01110111.000000011100110100110110111101101001111
+	 vs ref 0b1.01110111.000000011100110100110110111101101010000
+	0b0.10011101.100101011110000001110100001111010111001 / 0b1.10100101.100100110000101001010100000110111000100
+	FAIL 5049.5983105227351189 / -0.00050054487194728380928 != -10088203.063339233398 golden reference is -10088203.063354492188
+	 result 0b1.10010110.001100111101111000010110001000000110111
+	 vs ref 0b1.10010110.001100111101111000010110001000000111000
+	0b0.10001011.001110111001100110010010101011100000111 / 0b1.01110100.000001100110110111111110110101110111000
+	class sw::universal::cfloat<48,8,unsigned char,0,0,0>        division FAIL 2 failed test cases
+	FAIL 1.0024906696341774124e-240 / 1.1573432905441821972e-19 != 8.6619992341495038935e-222 golden reference is 8.6619992341495051221e-222
+	 result 0b0.00100100000.1001000011000111011010100011111101000001100010001110
+	 vs ref 0b0.00100100000.1001000011000111011010100011111101000001100010001111
+	0b0.00011100001.1010101111010000110110011101101110110100100010001000 / 0b0.01111000000.0001000101000101000110111111101101100110110000011110
+	class sw::universal::cfloat<64,11,unsigned char,0,0,0>       division FAIL 1 failed test case
+	*/
+	reportTestCases = true;
+	nrRandoms = 5;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c16).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c32).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c48).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c64).name(), "division");
+	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c80).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c96).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c128).name(), "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -179,6 +219,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 4,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 5,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t,f,f,f>", "division");
+
+	reportTestCases = true;
+	nrRandoms = 0;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c16).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c32).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c48).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c64).name(), "division");
+	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c80).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c96).name(), "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, OPCODE_DIV, nrRandoms), typeid(c128).name(), "division");
+
 #endif
 
 #if REGRESSION_LEVEL_2
