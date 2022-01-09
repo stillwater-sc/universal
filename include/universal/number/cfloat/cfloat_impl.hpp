@@ -207,7 +207,6 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 
 
 		// get the rounding direction and the LSB right shift: 
-		// TODO: do we want to support arbitrary blocktriples instead of the ALU output versions?
 		std::pair<bool, size_t> alignment = src.roundingDecision(adjustment);
 		bool roundup = alignment.first;
 		size_t rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
@@ -250,10 +249,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 		}
 		else {
 			// compose the segments
-
-//			auto sigBits = src.significant();
-//			std::cout << "significant   : " << to_binary(sigBits) << '\n';
-			auto fracbits = src.fraction();
+			auto fracbits = src.significant();  // why significant? cheesy optimization: we are going to overwrite the hidden bit position anyway when we write the exponent below, so no need to pay the overhead of generating the fraction here.
 			//std::cout << "fraction      : " << to_binary(fracbits, true) << '\n';
 			fracbits >>= static_cast<int>(rightShift);
 			//std::cout << "aligned fbits : " << to_binary(fracbits, true) << '\n';
@@ -1035,26 +1031,19 @@ public:
 	inline constexpr bool setexponent(int scale) {
 		if (scale < MIN_EXP_SUBNORMAL || scale > MAX_EXP) return false; // this scale cannot be represented
 		if constexpr (nbits < 65) {
-			// we can use a uint64_t to construct the cfloat
-			//uint64_t raw{ 0 };
+			uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
 			if (scale >= MIN_EXP_SUBNORMAL && scale < MIN_EXP_NORMAL) {
-				// we are a subnormal number: all exponent bits are 1
-				// what do you do know? If you set them all to 1, you still
-				// don't have the right scale
-				return false;
+				// we are a subnormal number: all exponent bits are 0
+				exponentBits = 0;
 			}
-			else {
-				// TODO: optimize
-				uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
-				uint32_t mask = (1ul << (es - 1));
-				for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
-					setbit(i, (mask & exponentBits));
-					mask >>= 1;
-				}
+			// TODO: optimize
+			uint32_t mask = (1ul << (es - 1));
+			for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
+				setbit(i, (mask & exponentBits));
+				mask >>= 1;
 			}
 		}
 		else {
-			// TODO: optimize
 			uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
 			uint32_t mask = (1ul << (es - 1));
 			for (size_t i = nbits - 2; i > nbits - 2 - es; --i) {
@@ -1799,67 +1788,22 @@ public:
 					tgt.setbits(raw);
 				}
 				else {
-					// brute force copy of blocks
-					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, _block[0] & FSU_MASK);
-					}
-					else if constexpr (2 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1] & FSU_MASK);
-					}
-					else if constexpr (3 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2] & FSU_MASK);
-					}
-					else if constexpr (4 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3] & FSU_MASK);
-					}
-					else {
-						for (size_t i = 0; i < FSU; ++i) {
-							tgt.setblock(i, _block[i]);
-						}
-						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
-					}
+					blockcopy(tgt);
+					tgt.setbit(fbits);
 				}
 			}
 			else { // it is a subnormal encoding in this target cfloat
+				int shift = MIN_EXP_NORMAL - scale;
 				if constexpr (fbits < 64) {
 					uint64_t raw = fraction_ull();
-					int shift = MIN_EXP_NORMAL - scale;
 					raw <<= shift;
 					raw |= (1ull << fbits);
 					tgt.setbits(raw);
 				}
 				else {
-					// brute force copy of blocks
-					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, _block[0] & FSU_MASK);
-					}
-					else if constexpr (2 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1] & FSU_MASK);
-					}
-					else if constexpr (3 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2] & FSU_MASK);
-					}
-					else if constexpr (4 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3] & FSU_MASK);
-					}
-					else {
-						for (size_t i = 0; i < FSU; ++i) {
-							tgt.setblock(i, _block[i]);
-						}
-						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
-					}
+					blockcopy(tgt);
+					tgt <<= shift;
+					tgt.setbit(fbits);
 				}
 			}
 		}
@@ -1903,65 +1847,7 @@ public:
 					tgt.setbits(raw);
 				}
 				else {
-					// brute force copy of blocks
-					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
-					}
-					else if constexpr (2 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
-					}
-					else if constexpr (3 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
-					}
-					else if constexpr (4 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
-					}
-					else if constexpr (5 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
-					}
-					else if constexpr (6 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
-					}
-					else if constexpr (7 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
-					}
-					else if constexpr (8 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, _block[6]);
-						tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
-					}
-					else {
-						for (size_t i = 0; i < FSU; ++i) {
-							tgt.setblock(i, _block[i]);
-						}
-						tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
-					}
+					blockcopy(tgt);
 					tgt.setradix();
 					tgt.setbit(fbits); // add the hidden bit
 					tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
@@ -1978,65 +1864,7 @@ public:
 							tgt.setbits(raw);
 						}
 						else {
-							// brute force copy of blocks
-							if constexpr (1 == fBlocks) {
-								tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
-							}
-							else if constexpr (2 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
-							}
-							else if constexpr (3 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
-							}
-							else if constexpr (4 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
-							}
-							else if constexpr (5 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
-							}
-							else if constexpr (6 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
-							}
-							else if constexpr (7 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5]);
-								tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
-							}
-							else if constexpr (8 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5]);
-								tgt.setblock(6, _block[6]);
-								tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
-							}
-							else {
-								for (size_t i = 0; i < FSU; ++i) {
-									tgt.setblock(i, _block[i]);
-								}
-								tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
-							}
+							blockcopy(tgt);
 							tgt.setradix();
 							int shift = MIN_EXP_NORMAL - scale;
 							tgt.bitShift(shift + BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
@@ -2056,65 +1884,7 @@ public:
 							tgt.setbits(raw);
 						}
 						else {
-							// brute force copy of blocks
-							if constexpr (1 == fBlocks) {
-								tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
-							}
-							else if constexpr (2 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
-							}
-							else if constexpr (3 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
-							}
-							else if constexpr (4 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
-							}
-							else if constexpr (5 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
-							}
-							else if constexpr (6 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
-							}
-							else if constexpr (7 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5]);
-								tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
-							}
-							else if constexpr (8 == fBlocks) {
-								tgt.setblock(0, _block[0]);
-								tgt.setblock(1, _block[1]);
-								tgt.setblock(2, _block[2]);
-								tgt.setblock(3, _block[3]);
-								tgt.setblock(4, _block[4]);
-								tgt.setblock(5, _block[5]);
-								tgt.setblock(6, _block[6]);
-								tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
-							}
-							else {
-								for (size_t i = 0; i < FSU; ++i) {
-									tgt.setblock(i, _block[i]);
-								}
-								tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
-							}
+							blockcopy(tgt);
 							tgt.setradix();
 							tgt.setbit(fbits); // add the hidden bit
 							tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
@@ -2160,65 +1930,7 @@ public:
 					tgt.setbits(raw);
 				}
 				else {
-					// brute force copy of blocks
-					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
-					}
-					else if constexpr (2 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
-					}
-					else if constexpr (3 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
-					}
-					else if constexpr (4 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
-					}
-					else if constexpr (5 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
-					}
-					else if constexpr (6 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
-					}
-					else if constexpr (7 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
-					}
-					else if constexpr (8 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, _block[3]);
-						tgt.setblock(4, _block[4]);
-						tgt.setblock(5, _block[5]);
-						tgt.setblock(6, _block[6]);
-						tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
-					}
-					else {
-						for (size_t i = 0; i < FSU; ++i) {
-							tgt.setblock(i, _block[i]);
-						}
-						tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
-					}
+					blockcopy(tgt);
 					tgt.setradix();
 					tgt.setbit(fbits); // add the hidden bit
 				}
@@ -2234,65 +1946,7 @@ public:
 						tgt.setbits(raw);
 					}
 					else {
-						// brute force copy of blocks
-						if constexpr (1 == fBlocks) {
-							tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
-						}
-						else if constexpr (2 == fBlocks) {
-							tgt.setblock(0, _block[0]);
-							tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
-						}
-						else if constexpr (3 == fBlocks) {
-							tgt.setblock(0, _block[0]);
-							tgt.setblock(1, _block[1]);
-							tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
-						}
-						else if constexpr (4 == fBlocks) {
-							tgt.setblock(0, _block[0]);
-							tgt.setblock(1, _block[1]);
-							tgt.setblock(2, _block[2]);
-							tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
-						}
-						else if constexpr (5 == fBlocks) {
-							tgt.setblock(0, _block[0]);
-							tgt.setblock(1, _block[1]);
-							tgt.setblock(2, _block[2]);
-							tgt.setblock(3, _block[3]);
-							tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
-						}
-						else if constexpr (6 == fBlocks) {
-							tgt.setblock(0, _block[0]);
-							tgt.setblock(1, _block[1]);
-							tgt.setblock(2, _block[2]);
-							tgt.setblock(3, _block[3]);
-							tgt.setblock(4, _block[4]);
-							tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
-						}
-						else if constexpr (7 == fBlocks) {
-							tgt.setblock(0, _block[0]);
-							tgt.setblock(1, _block[1]);
-							tgt.setblock(2, _block[2]);
-							tgt.setblock(3, _block[3]);
-							tgt.setblock(4, _block[4]);
-							tgt.setblock(5, _block[5]);
-							tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
-						}
-						else if constexpr (8 == fBlocks) {
-							tgt.setblock(0, _block[0]);
-							tgt.setblock(1, _block[1]);
-							tgt.setblock(2, _block[2]);
-							tgt.setblock(3, _block[3]);
-							tgt.setblock(4, _block[4]);
-							tgt.setblock(5, _block[5]);
-							tgt.setblock(6, _block[6]);
-							tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
-						}
-						else {
-							for (size_t i = 0; i < FSU; ++i) {
-								tgt.setblock(i, _block[i]);
-							}
-							tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
-						}
+						blockcopy(tgt);
 						int shift = MIN_EXP_NORMAL - scale;
 						tgt.bitShift(shift);
 						tgt.setbit(fbits);
@@ -2340,30 +1994,7 @@ public:
 				}
 				else {
 					// brute force copy of blocks
-					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
-					}
-					else if constexpr (2 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
-					}
-					else if constexpr (3 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
-					}
-					else if constexpr (4 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
-					}
-					else {
-						for (size_t i = 0; i < FSU; ++i) {
-							tgt.setblock(i, _block[i]);
-						}
-						tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
-					}
+					blockcopy(tgt);
 					tgt.setbit(fbits);
 					tgt.bitShift(divshift); // shift the input value to the output radix
 				}
@@ -2378,31 +2009,7 @@ public:
 					tgt.setbits(raw);
 				}
 				else {
-					// brute force copy of blocks
-					if constexpr (1 == fBlocks) {
-						tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
-					}
-					else if constexpr (2 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
-					}
-					else if constexpr (3 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
-					}
-					else if constexpr (4 == fBlocks) {
-						tgt.setblock(0, _block[0]);
-						tgt.setblock(1, _block[1]);
-						tgt.setblock(2, _block[2]);
-						tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
-					}
-					else {
-						for (size_t i = 0; i < FSU; ++i) {
-							tgt.setblock(i, _block[i]);
-						}
-						tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
-					}
+					blockcopy(tgt);
 					int shift = MIN_EXP_NORMAL - scale;
 					tgt.bitShift(shift);
 					tgt.setbit(fbits);
@@ -2551,6 +2158,33 @@ public:
 			uint64_t rawFraction{ 0 };
 			// use native conversion
 			extractFields(rhs, s, rawExponent, rawFraction);
+			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
+					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
+					// 1.11111111.00000000.......00000001 signalling nan
+					// 0.11111111.00000000000000000000001 signalling nan
+					// MSVC
+					// 1.11111111.10000000.......00000001 signalling nan
+					// 0.11111111.10000000.......00000001 signalling nan
+					setnan(NAN_TYPE_SIGNALLING);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					return *this;
+				}
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
+					// 1.11111111.10000000.......00000000 quiet nan
+					// 0.11111111.10000000.......00000000 quiet nan
+					setnan(NAN_TYPE_QUIET);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					return *this;
+				}
+				if (rawFraction == 0ull) {
+					// 1.11111111.0000000.......000000000 -inf
+					// 0.11111111.0000000.......000000000 +inf
+					setinf(s);
+					return *this;
+				}
+			}
+			// normal and subnormal handling
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 63;
 			raw |= (rawExponent << fbits);
@@ -3158,6 +2792,69 @@ protected:
 			base *= base;
 		}
 		return (negative ? (1.0 / result) : result);
+	}
+
+	template<BlockTripleOperator btop>
+	constexpr void blockcopy(blocktriple<fbits, btop, bt>& tgt) const {
+		// brute force copy of blocks
+		if constexpr (1 == fBlocks) {
+			tgt.setblock(0, static_cast<bt>(_block[0] & FSU_MASK));
+		}
+		else if constexpr (2 == fBlocks) {
+			tgt.setblock(0, _block[0]);
+			tgt.setblock(1, static_cast<bt>(_block[1] & FSU_MASK));
+		}
+		else if constexpr (3 == fBlocks) {
+			tgt.setblock(0, _block[0]);
+			tgt.setblock(1, _block[1]);
+			tgt.setblock(2, static_cast<bt>(_block[2] & FSU_MASK));
+		}
+		else if constexpr (4 == fBlocks) {
+			tgt.setblock(0, _block[0]);
+			tgt.setblock(1, _block[1]);
+			tgt.setblock(2, _block[2]);
+			tgt.setblock(3, static_cast<bt>(_block[3] & FSU_MASK));
+		}
+		else if constexpr (5 == fBlocks) {
+			tgt.setblock(0, _block[0]);
+			tgt.setblock(1, _block[1]);
+			tgt.setblock(2, _block[2]);
+			tgt.setblock(3, _block[3]);
+			tgt.setblock(4, static_cast<bt>(_block[4] & FSU_MASK));
+		}
+		else if constexpr (6 == fBlocks) {
+			tgt.setblock(0, _block[0]);
+			tgt.setblock(1, _block[1]);
+			tgt.setblock(2, _block[2]);
+			tgt.setblock(3, _block[3]);
+			tgt.setblock(4, _block[4]);
+			tgt.setblock(5, static_cast<bt>(_block[5] & FSU_MASK));
+		}
+		else if constexpr (7 == fBlocks) {
+			tgt.setblock(0, _block[0]);
+			tgt.setblock(1, _block[1]);
+			tgt.setblock(2, _block[2]);
+			tgt.setblock(3, _block[3]);
+			tgt.setblock(4, _block[4]);
+			tgt.setblock(5, _block[5]);
+			tgt.setblock(6, static_cast<bt>(_block[6] & FSU_MASK));
+		}
+		else if constexpr (8 == fBlocks) {
+			tgt.setblock(0, _block[0]);
+			tgt.setblock(1, _block[1]);
+			tgt.setblock(2, _block[2]);
+			tgt.setblock(3, _block[3]);
+			tgt.setblock(4, _block[4]);
+			tgt.setblock(5, _block[5]);
+			tgt.setblock(6, _block[6]);
+			tgt.setblock(7, static_cast<bt>(_block[7] & FSU_MASK));
+		}
+		else {
+			for (size_t i = 0; i < FSU; ++i) {
+				tgt.setblock(i, _block[i]);
+			}
+			tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
+		}
 	}
 
 private:

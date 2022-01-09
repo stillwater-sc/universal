@@ -12,14 +12,31 @@ namespace sw::universal {
 	enum class TestCaseOperator { ADD, SUB, MUL, DIV };  // basic arithmetic operators supported by all number systems
 
 	// generate an arithmetic test case
-	template<typename Number, typename Ty>
-	int TestCase(TestCaseOperator _operator, Ty _a, Ty _b) {
-		constexpr size_t nbits = Number::nbits;
-		Number c(0);
-		Ty _c(0);
-		std::string op, opName;
+	template<typename Number, typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type >
+	int TestCase(TestCaseOperator _operator, Real _a, Real _b) {
 		Number a = _a;
 		Number b = _b;
+		return ExecuteTestCase(_a, a, _operator, _b, b);
+	}
+
+	// generate test case for binary string representations of the input values
+	template<typename Number, typename Real>
+	int TestCase(TestCaseOperator _operator, const std::string& aBits, const std::string& bBits) {
+		Number a, b;
+		a.assign(aBits);
+		Real _a = Real(a);
+		b.assign(bBits);
+		Real _b = Real(b);
+		return ExecuteTestCase(_a, a, _operator, _b, b);
+	}
+
+	template<typename Number, typename Real>
+	int ExecuteTestCase(Real _a, const Number& a, const TestCaseOperator _operator, Real _b, const Number& b) {
+		constexpr size_t nbits = Number::nbits;
+		std::string op, opName;
+		Number c;
+		Real _c(0);
 		switch (_operator) {
 		case TestCaseOperator::ADD:
 			c = a + b;
@@ -54,7 +71,7 @@ namespace sw::universal {
 
 		auto oldprecision = std::cout.precision();
 		std::cout << std::setprecision(10);
-		std::cout << "+--------  Test Case: " << opName << "\ninput operands : " << typeid(Ty).name() << '\n';
+		std::cout << "+--------  Test Case: " << opName << "\ninput operands : " << typeid(Real).name() << '\n';
 		std::cout << std::setw(nbits) << _a << op << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
 		std::cout << to_binary(_a) << " : " << _a << '\n';
 		std::cout << to_binary(_b) << " : " << _b << '\n';

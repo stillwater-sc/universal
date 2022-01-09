@@ -48,6 +48,7 @@ try {
 
 	// shorthand alias types
 	using c16  = cfloat< 16,  5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c24  = cfloat< 24, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 	using c32  = cfloat< 32,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 	using c48  = cfloat< 48,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 	using c64  = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
@@ -127,6 +128,7 @@ try {
 	reportTestCases = true;
 	nrRandoms = 1000;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c16).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c24).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c32).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c48).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c64).name(), "addition");
@@ -170,6 +172,7 @@ try {
 
 	nrRandoms = 10000;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c16).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c24).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c32).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c48).name(), "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c64).name(), "addition");

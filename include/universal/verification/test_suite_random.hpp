@@ -287,6 +287,20 @@ namespace sw::universal {
 				default:
 					break;
 				}
+				//if (reportTestCases) std::cerr << "result : " << testresult << '\n';
+				//if (reportTestCases) std::cerr << "ref    : " << testref << '\n';
+				bool resultIsInf = testresult.isinf();
+				bool refIsInf = testref.isinf();
+				if (resultIsInf && refIsInf) {
+					if (reportTestCases) std::cerr << "result and ref are both inf\n";
+					// but ignore the failure
+					continue;
+				}
+				else {
+					if (reportTestCases) std::cerr << "result and/or ref are normal\n";
+					TestType diff = testresult - testref;
+					if (reportTestCases) std::cerr << "diff = " << to_binary(diff) << '\n';
+				}
 				nrOfFailedTests++;
 				if (reportTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testresult, testref);
 			}
