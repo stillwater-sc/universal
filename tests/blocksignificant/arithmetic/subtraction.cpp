@@ -11,8 +11,8 @@
 #include <universal/native/integers.hpp> // for to_binary(int)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_suite.hpp>
-
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 // enumerate all addition cases for an blocksignificant configuration
 template<typename blocksignificantConfiguration>

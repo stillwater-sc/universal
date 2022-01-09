@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <limits>
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
@@ -16,6 +17,7 @@
  */
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 
 #include <cstddef>
@@ -47,6 +49,7 @@ void CompareTerms(Real a, Real b, Real c) {
     std::cout << "4ac                  : " << sw::universal::to_binary(fourac) << " : " << (fourac) << '\n';
 	std::cout << "    (b^2 - 4ac)      : " << sw::universal::to_binary(difference) << " : " << difference << '\n';
 	std::cout << "sqrt(b^2 - 4ac)      : " << sw::universal::to_binary(sqrt_b_square_minus_fourac) << " : " << sqrt_b_square_minus_fourac << '\n';
+	std::cout << "-b                   : " << sw::universal::to_binary(-b) << " : " << (-b) << '\n';
 	Real numerator = -b + sqrt_b_square_minus_fourac;
 	Real denominator = 2 * a;
 	std::cout << "-b + sqrt(b^2 - 4ac) : " << sw::universal::to_binary(numerator) << " : " << numerator << '\n';
@@ -55,7 +58,7 @@ void CompareTerms(Real a, Real b, Real c) {
 	std::cout << "root                 : " << sw::universal::to_binary(root) << " : " << root << '\n';
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -64,9 +67,14 @@ try {
 	auto precision = std::cout.precision();
 	std::cout << std::setprecision(15);
 
-	using Float32 = float;
-	using Float64 = double;
+	using Float16 = cfloat<16,  5, uint16_t>; // , true, true, false > ;
+	using Float32 = cfloat<32,  8, uint32_t>; // , true, true, false > ;
+	using Float48 = cfloat<48,  8, uint32_t>; // , true, true, false > ;
+	using Float64 = cfloat<64, 11, uint32_t>; // , true, true, false > ;
+	using FloatSP = float;
+	using FloatDP = double;
 	using Posit32 = sw::universal::posit<32, 2>;
+	using Posit48 = sw::universal::posit<48, 2>;
 	using Posit64 = sw::universal::posit<64, 2>;
 	using Fixed64 = sw::universal::fixpnt<64, 16>;
 
@@ -74,20 +82,36 @@ try {
 	float b = 1.0e5f;
 	float c = 1.0f;
 
-	std::cout << "single precision floating-point\n";
+	std::cout << "16-bit floating-point\n";
+	CompareTerms<Float16>(a, b, c);
+	std::cout << '\n';
+
+	std::cout << "32-bit floating-point\n";
 	CompareTerms<Float32>(a, b, c);
 	std::cout << '\n';
 
-	std::cout << "double precision floating-point\n";
+	std::cout << "native single precision floating-point\n";
+	CompareTerms<FloatSP>(a, b, c);
+	std::cout << '\n';
+
+	std::cout << "48-bit floating-point\n";
+	CompareTerms<Float48>(a, b, c);
+	std::cout << '\n';
+
+	std::cout << "64-bit floating-point\n";
 	CompareTerms<Float64>(a, b, c);
+	std::cout << '\n';
+
+	std::cout << "native double precision floating-point\n";
+	CompareTerms<FloatDP>(a, b, c);
 	std::cout << '\n';
 
 	std::cout << "single precision posit<32, 2>\n";
 	CompareTerms<Posit32>(a, b, c);
 	std::cout << '\n';
 
-	std::cout << "custom precision posit<40, 2>\n";
-	CompareTerms<posit<40,2>>(a, b, c);
+	std::cout << "custom precision posit<48, 2>\n";
+	CompareTerms<Posit48>(a, b, c);
 	std::cout << '\n';
 
 	std::cout << "double precision posit<64, 2>\n";

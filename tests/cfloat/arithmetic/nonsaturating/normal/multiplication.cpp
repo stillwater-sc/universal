@@ -11,6 +11,7 @@
 //#define BLOCKTRIPLE_TRACE_MUL
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 void ReportIeee754NotANumberArithmetic()
@@ -68,13 +69,47 @@ try {
 
 	std::cout << test_suite << '\n';
 
+	// shorthand alias types
+	using c16  = cfloat< 16,  5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c32  = cfloat< 32,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c48  = cfloat< 48,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c64  = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c80  = cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c96  = cfloat< 96, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+
+	// driving the intensity of the randomized arithmetic tests
+	size_t nrRandoms = 0;
+
 #if MANUAL_TESTING
 
-	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 1.0f, -1.0f);
-	TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 1.625f, -1.625f);
+	TestCase< cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, -1.0e5f, 1.0e5f);
+	TestCase< cfloat<48, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, -1.0e5f, 1.0e5f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<5,2,uint8_t,f,f,f>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication<cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<6,2,uint8_t,f,f,f>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<5,2,uint8_t,f,f,f>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication<cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<6,2,uint8_t,f,f,f>", "multiplication");
+	/*
+	* 32,8
+	FAIL -2.0844715786810215629e+21 * -1.0666293572104141474e-15 != 2223358.5800895690918 golden reference is 2223358.5800933837891
+	 result 0b0.10010100.000011110110011111110100101001000000011
+	 vs ref 0b0.10010100.000011110110011111110100101001000000100
+	0b1.11000101.110000111111111101101010110000110011101 * 0b1.01001101.001100110110111101011010111001111001000
+
+	FAIL -3.9355042126959436387e+24 * -4.9266582915450014326e-26 != 0.13138884460886401939 golden reference is 0.19388884460886401939
+	 result 0b0.01111100.000011010001010110011000001101010011110
+	 vs ref 0b0.01111100.100011010001010110011000001101010011110
+	0b1.11010000.101000001011000000001110001100001011011 * 0b1.00101010.111001111110100110100000011101100111110
+	*/
+	reportTestCases = true;
+	nrRandoms = 5;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c16).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c32).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c48).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c64).name(), "multiplication");
+	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c80).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c96).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c128).name(), "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -107,6 +142,16 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 4,uint8_t,f,f,f>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 5,uint8_t,f,f,f>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t,f,f,f>", "multiplication");
+
+	nrRandoms = 0;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c16).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c32).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c48).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c64).name(), "multiplication");
+	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c80).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c96).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c128).name(), "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_2

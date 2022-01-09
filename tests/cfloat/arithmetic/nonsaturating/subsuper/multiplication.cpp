@@ -7,11 +7,12 @@
 // minimum set of include files to reflect source code dependencies
 //#define CFLOAT_VERBOSE_OUTPUT
 //#define CFLOAT_TRACE_MUL
-#define BLOCKTRIPLE_VERBOSE_OUTPUT
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT
 //#define BLOCKTRIPLE_TRACE_MUL
 //#define TRACE_CONVERSION 1
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -46,41 +47,31 @@ try {
 
 	std::cout << test_suite << '\n';
 
+	// shorthand alias types
+	using c16  = cfloat< 16, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c24  = cfloat< 24, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c32  = cfloat< 32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c48  = cfloat< 48, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c64  = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c80  = cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c96  = cfloat< 96, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+
+	// driving the intensity of the randomized arithmetic tests
+	size_t nrRandoms = 0;
+
 #if MANUAL_TESTING
+	
+//	nrOfFailedTestCases += TestCase< c48, double >(TestCaseOperator::MUL, "0b0.11101100.101101110100011010000110110101110011110", "0b1.10001111.110100000100000110010100100011110100111");
 
-	/*
-	cfloat<32, 8, uint32_t, true, true, false> a = 0.078125f;
-	std::cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
-	a = 0.125f * 0.5f;
-	std::cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
-	a = 0.125f - 0.078125f;
-	std::cout << "diff " << a << '\n';
-	a = 0.125f - 0.0625f;
-	std::cout << "diff " << a << '\n';
-	*/
-	{
-		float f;
-		cfloat<6, 1, uint8_t, true, true, false> b;
-		f = 0.0625f;
-		b = f;
-		std::cout << to_binary(b) << " : " << to_triple(b) << " : " << b << " : input " << f << '\n';
-		f = 0.078125f;
-		b = f;
-		std::cout << to_binary(b) << " : " << to_triple(b) << " : " << b << " : input " << to_binary(f) << " : " << f << '\n';
-		f = 0.08f;
-		b = f;
-		std::cout << to_binary(b) << " : " << to_triple(b) << " : " << b << " : input " << f << '\n';
-		f = 0.09375f;
-		b = f;
-		std::cout << to_binary(b) << " : " << to_triple(b) << " : " << b << " : input " << f << '\n';
-	}
-
+	// some historical debug cases
 //	nrOfFailedTestCases += TestCase< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.5f, 0.5f);
 //	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.25f); // exp is smaller than min_exp_subnormal
 //	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.5f);  // round down to 0
 	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.625f);
 	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, -0.625f);
-//	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125, 0.625);	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.75f); // round up to minpos 0.125
+//	nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125, 0.625);	
+//  nrOfFailedTestCases += TestCase< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.75f); // round up to minpos 0.125
 //	nrOfFailedTestCases += TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.25f);
 //	nrOfFailedTestCases += TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.5f);
    	nrOfFailedTestCases += TestCase< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, 0.125f, 0.625f);
@@ -91,6 +82,26 @@ try {
 //	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 4, 2,uint8_t,t,t,f>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat< 6, 1,uint8_t,t,t,f>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<6, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat< 6, 2,uint8_t,t,t,f>", "multiplication");
+
+	nrOfFailedTestCases += TestCase< c48, double >(TestCaseOperator::MUL, "0b0.11101100.101101110100011010000110110101110011110", "0b1.10001111.110100000100000110010100100011110100111");
+
+	/*
+	 for c48 and c64 we are getting rounding errors: can that be caused by double rounding cases in the test bench? 
+	 The conversion of a c48 operarnd value into a double will have a rounding event, then the reference calculation might round slightly differently.
+	 Why does this happen for nbits > 32?
+	*/
+	reportTestCases = true;
+	nrRandoms = 100000;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c16).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c24).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c32).name(), "multiplication");
+	nrRandoms = 10;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c48).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c64).name(), "multiplication");
+	// TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c80).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c96).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c128).name(), "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -123,6 +134,19 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 4,uint8_t,t,t,f>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 5,uint8_t,t,t,f>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t,t,t,f>", "multiplication");
+
+	nrRandoms = 10000;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c16).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c24).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c32).name(), "multiplication");
+	nrRandoms = 0; // TBD -> there are double rounding errors in the test bench
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c48).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c64).name(), "multiplication");
+	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c80).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c96).name(), "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, OPCODE_MUL, nrRandoms), typeid(c128).name(), "multiplication");
+
 #endif
 
 #if REGRESSION_LEVEL_2

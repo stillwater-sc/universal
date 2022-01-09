@@ -11,45 +11,8 @@
 //#define BLOCKTRIPLE_TRACE_ADD
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
-#include <universal/number/cfloat/table.hpp>
-
-/*
-  Minimum number of operand bits for the adder = <abits> 
-  to yield correctly rounded addition
-
-                          number of exponent bits = <es>
-  nbits   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16
-	 1    -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-	 2    -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-	 3    2   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-	 4    3   3   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-	 5    4   4   4   -   -   -   -   -   -   -   -   -   -   -   -   -
-	 6    5   5   6   4   -   -   -   -   -   -   -   -   -   -   -   -
-	 7    6   6   8   6   4   -   -   -   -   -   -   -   -   -   -   -
-	 8    7   7  10   8   6   4   -   -   -   -   -   -   -   -   -   -
-	 9    8   8  11  10   8   6   4   -   -   -   -   -   -   -   -   -
-	10    9   9  12  12  10   8   6   4   -   -   -   -   -   -   -   -
-	11   10  10  13  14  12  10   8   6   4   -   -   -   -   -   -   -
-	12   11  11  14  16  14  12  10   8   6   4   -   -   -   -   -   -
-	13   12  12  15  18  16  14  12  10   8   6   ?   -   -   -   -   -
-	14   13  13  16  20  18  16  14  12  10   8   ?   ?   -   -   -   -
-	15   14  14  17  22  20  18  16  14  12  10   ?   ?   ?   -   -   -
-	16   15  15  18  24  22  20  18  16  14  12   ?   ?   ?   ?   -   -
-
-*/
-
-void InfinityArithmetic()
-{
-	constexpr float fa = std::numeric_limits<float>::infinity();
-	constexpr float fb = -fa;
-	std::cout << fa << " + " << fa << " = " << (fa + fa) << '\n';
-	std::cout << fa << " + " << fb << " = " << (fa + fb) << '\n';
-	std::cout << fb << " + " << fa << " = " << (fb + fa) << '\n';
-	std::cout << fb << " + " << fb << " = " << (fb + fb) << '\n';
-	std::cout << sw::universal::to_binary(fa + fb) << '\n';
-}
-
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -83,23 +46,24 @@ try {
 
 	std::cout << test_suite << '\n';
 
+	// shorthand alias types
+	using c16  = cfloat< 16,  5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c24  = cfloat< 24, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c32  = cfloat< 32,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c48  = cfloat< 48,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c64  = cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c80  = cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c96  = cfloat< 96, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using c128 = cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+
+	// driving the intensity of the randomized arithmetic tests
+	size_t nrRandoms = 0;
+
 #if MANUAL_TESTING
 
 //  debug helpers
 //	ReportCfloatClassParameters<8, 2>();
 //	GenerateCfloatExponentBounds();
-//	GenerateTable< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(std::cout);
-
-	/*
-	source is subnormal : TBD
-		shift to LSB    52
-		adjustment      1
-		exponent - 1023
-		subnormal shift 1022
-	cfloat<13, 11, uint8_t, t, t, f>                       addition FAIL 20 failed test cases
-	cfloat<14, 11, uint8_t, t, t, f>                       addition FAIL 134209524 failed test cases
-	cfloat<15, 11, uint8_t, t, t, f>                       addition FAIL 537116614 failed test cases
-	*/
 
 	// generate individual testcases to hand trace/debug
 //	TestCase< cfloat<3, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::ADD, 1.0f, 1.0f);
@@ -116,6 +80,63 @@ try {
 //	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<8,2,uint8_t, t,t,f>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<8,3,uint8_t, t,t,f>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<8,4,uint8_t, t,t,f>", "addition");
+
+	/*
+	FAIL -6.4456353792503362653e+38 + -1.0196798390402521646e-21 != -6.4456353792503362653e+38 golden reference is -3.4028236692093846346e+38
+	 result 0b1.11111111.11100100111010100110110
+	 vs ref 0b1.11111111.00000000000000000000000
+	0b1.11111111.11100100111010100110110 + 0b1.00111001.00110100001011011110100
+	class sw::universal::cfloat<32,8,unsigned char,1,1,0>        addition FAIL 1 failed test cases
+	*/
+	{
+		c32 a, b, c;
+		a.assign("0b1.11111111.11100100111010100110110");
+		b.assign("0b1.00111001.00110100001011011110100");
+		c = a + b;
+		std::cout << a << " + " << b << " = " << c << '\n';
+		double da = double(a);
+		double db = double(b);
+		double dc = da + db;
+		std::cout << da << " + " << db << " = " << dc << '\n';
+		std::cout << to_binary(c) << '\n';
+		std::cout << to_binary(dc) << '\n';
+		c = dc;
+		std::cout << to_binary(c) << '\n';
+	}
+	/*
+	FAIL 4.5090873941731668264e+273 + -inf                 != -inf                 golden reference is -inf
+	 result 0b1.11111111111.0011001010101101001101111011011101010010011011100000
+	 vs ref 0b1.11111111111.0000000000000000000000000000000000000000000000000000
+	0b0.11110001100.0000101010111001011010101011110101001100010010011001 + 0b1.11111111111.0011001010101101001101111011011101010010011011100000
+	 */
+	{
+		c64 a, b, c;
+		a.assign("0b0.11110001100.0000101010111001011010101011110101001100010010011001");
+		b.assign("0b1.11111111111.0011001010101101001101111011011101010010011011100000");
+		c = a + b;
+		std::cout << a << " + " << b << " = " << c << '\n';
+		double da = double(a);
+		double db = double(b);
+		double dc = da + db;
+		std::cout << da << " + " << db << " = " << dc << '\n';
+		std::cout << to_binary(c) << '\n';
+		std::cout << to_binary(dc) << '\n';
+		c = dc;
+		std::cout << to_binary(c) << '\n';
+	}
+
+	reportTestCases = true;
+	nrRandoms = 1000;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c16).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c24).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c32).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c48).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c64).name(), "addition");
+	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c80).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c96).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c128).name(), "addition");
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -148,6 +169,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 4,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 5,uint8_t, t,t,f>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatAddition< cfloat<8, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 8, 6,uint8_t, t,t,f>", "addition");
+
+	nrRandoms = 10000;
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c16  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c16).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c24  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c24).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c32  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c32).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c48  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c48).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c64  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c64).name(), "addition");
+	nrRandoms = 0; // TBD > double precision requires a vector of 64bit words to construct the random bits
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c80  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c80).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c96  >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c96).name(), "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms< c128 >(reportTestCases, OPCODE_ADD, nrRandoms), typeid(c128).name(), "addition");
+
 #endif
 
 #if REGRESSION_LEVEL_2

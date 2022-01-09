@@ -114,7 +114,49 @@ try {
 		std::cout << "---\n";
 	}
 
-	return 0;
+	// constexpr and specific values
+	{
+		std::cout << "constexpr and specific values\n";
+		constexpr size_t nbits = 10;
+		constexpr size_t es = 3;
+		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
+
+		CONSTEXPRESSION Real a; // zero constexpr
+		std::cout << type_tag(a) << '\n';
+
+		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
+		std::cout << to_binary(b) << " : " << b << '\n';
+
+		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
+		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
+
+		CONSTEXPRESSION Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding
+		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
+	}
+
+	// set bit patterns
+	{
+		std::cout << "set bit patterns API\n";
+		constexpr size_t nbits = 16;
+		constexpr size_t es = 5;
+		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
+
+		Real a;
+		std::cout << type_tag(a) << '\n';
+
+		a.setbits(0x0000);
+		std::cout << to_binary(a) << " : " << a << '\n';
+
+		a.setbits(0xAAAA);
+		std::cout << to_binary(a) << " : " << a << '\n';
+
+		a.assign(std::string("0b1.01010.1010'1010'10"));
+		std::cout << to_binary(a) << " : " << a << '\n';
+
+		a.assign(std::string("0b1.01010.10'1010'1010"));
+		std::cout << to_binary(a) << " : " << a << '\n';
+	}
+
 	{
 		using BlockType = uint32_t;
 		float subnormal = std::nextafter(0.0f, 1.0f);
@@ -134,13 +176,15 @@ try {
 		}
 	}
 
-	std::cout << "Subnormal exponent values\n";
-	// we are not using element [0] as es = 0 is not supported in the cfloat spec
-	int exponents[] = {
-		0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022
-	};
-	for (int i = 1; i < 12; ++i) {
-		std::cout << "es = " << i << " = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
+	{
+		std::cout << "Subnormal exponent values\n";
+		// we are not using element [0] as es = 0 is not supported in the cfloat spec
+		int exponents[] = {
+			0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022
+		};
+		for (int i = 1; i < 12; ++i) {
+			std::cout << "es = " << i << " = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
+		}
 	}
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;

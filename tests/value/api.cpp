@@ -8,7 +8,8 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value.hpp>  // INTERNAL class: not part of the public Universal API
-#include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 using namespace sw::universal::internal;
 

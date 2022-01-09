@@ -9,7 +9,7 @@
 #include <iomanip>
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_status.hpp>
 #include <universal/verification/blockbinary_test_status.hpp>
 
 // enumerate all addition cases for an blockbinary<nbits,BlockType> configuration

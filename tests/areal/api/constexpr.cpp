@@ -17,8 +17,10 @@
 #include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_reporters.hpp> 
 
+#if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an areal
 constexpr double pi = 3.14159265358979323846;
+#endif
 
 template<typename Real>
 void TestConstexprConstruction() {

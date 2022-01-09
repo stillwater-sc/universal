@@ -151,7 +151,7 @@ Real MethodOfViete(size_t N) {
 	 return pi;
  }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

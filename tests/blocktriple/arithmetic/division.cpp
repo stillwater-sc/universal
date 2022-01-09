@@ -207,6 +207,8 @@ try {
 
 	TestCase<4>(1.0f, 1.0f);
 
+	// TBD: design and implement a proper blocktriple test suite for DIV
+	// 
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple< 2, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple< 2, BlockTripleOperator::DIV, uint8_t >", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple< 4, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple< 4, BlockTripleOperator::DIV, uint8_t >", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple< 8, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple< 8, BlockTripleOperator::DIV, uint8_t >", "division");

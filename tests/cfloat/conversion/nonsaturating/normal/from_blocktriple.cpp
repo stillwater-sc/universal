@@ -13,9 +13,9 @@
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
-
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 #include <universal/number/cfloat/table.hpp>
 
@@ -31,6 +31,34 @@ Use convert() to convert to a cfloat.
 Compare the operator=() and convert() cfloat patterns to check correctness
  */
 
+template<size_t nbits, size_t es>
+void Test() 
+{
+	using BlockType = uint8_t;
+	constexpr bool hasSubnormals = false;
+	constexpr bool hasSupernormals = false;
+	constexpr bool isSaturating = false;
+	using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+//	constexpr BlockTripleOperator op = BlockTripleOperator::ADD;
+// 	constexpr size_t fbits = nbits - es - 1ull;
+//	using Btriple = blocktriple<fbits, op, BlockType>;
+
+	Cfloat a;
+	std::cout << "\n-----------------\n" << sw::universal::type_tag(a) << '\n';
+
+	Cfloat eps = std::numeric_limits<Cfloat>::epsilon();
+	a = -1.5f - eps;
+	std::cout << "a = -1.5 - eps : " << to_binary(a) << " : " << a << '\n';
+	a = -eps;
+	std::cout << "a =  0.0 - eps : " << to_binary(a) << " : " << a << '\n';
+	a = 0;
+	std::cout << "a =  0.0       : " << to_binary(a) << " : " << a << '\n';
+	a = 0.0f + eps;
+	std::cout << "a =  0.0   eps : " << to_binary(a) << " : " << a << '\n';
+	a = 1.5f + eps;
+	std::cout << "a = +1.5 + eps : " << to_binary(a) << " : " << a << '\n';
+	std::cout << '\n';
+}
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -58,7 +86,7 @@ try {
 	constexpr bool isSaturating    = false;
 
 	std::string test_suite         = "blocktriple to cfloat conversion validation";
-	std::string test_tag           = "conversion bt->cfloat";
+	std::string test_tag           = "conversion blocktriple->cfloat";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -70,53 +98,58 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
-	if constexpr(false) {
-		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
+	{
+		constexpr size_t nbits = 30;		// nbits = 28 is the last size that fits in the fast path
+		constexpr size_t es = 8;
+		constexpr size_t fbits = nbits - es - 1ull;
+		using BlockType = uint8_t;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 		Cfloat a;
-		std::cout << "------------- 2.5\n";
-		a = 2.5f;
-		std::cout << "------------- 3.5\n";
-		a = 3.5f;
-		std::cout << "------------- 4.5\n";
-		a = 4.5f;
-		std::cout << "------------- 5.5\n";
-		a = 5.5f;
-		std::cout << "------------- 6.5\n";
-		a = 6.5f;
-		std::cout << "------------- 7.0\n";
-		a = 7.0f;
-		std::cout << "------------- 7.5\n";
-		a = 7.5f;
-		std::cout << "------------- 8.0\n";
-		a = 8.0f;
+		a.assign(std::string("0b0.0111'1111.0'0000'0000'0000'0000'0001"));
+		std::cout << "a =        eps : " << to_binary(a) << " : " << a << '\n';
 	}
-	else {
-		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-		std::cout << "------------- 3.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x60ull);
-		std::cout << "------------- 3.5\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x70ull);
-		std::cout << "------------- 4.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x40ull);
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x20ull);
-//		std::cout << "------------- 4.5\n";
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0x90ull);
-		std::cout << "------------- 5.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x50ull);
-//		std::cout << "------------- 5.5\n";
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0xB0ull);
-		std::cout << "------------- 6.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x30ull);
-//		std::cout << "------------- 6.5\n";
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0xD0ull);
-		std::cout << "------------- 7.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x70ull);
-//		std::cout << "------------- 7.5\n";
-//		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(0, 0xF0ull);
-		std::cout << "------------- 8.0\n";
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(2, 0x40ull);
-		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(3, 0x20ull);
+
+	{
+		constexpr size_t nbits = 32;		// nbits = 28 is the last size that fits in the fast path
+		constexpr size_t es = 8;
+		constexpr size_t fbits = nbits - es - 1ull;
+		using BlockType = uint8_t;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		constexpr BlockTripleOperator op = BlockTripleOperator::ADD;
+		using Btriple = blocktriple<fbits, op, BlockType>;
+
+		Cfloat a;
+		a = std::numeric_limits<Cfloat>::epsilon();
+
+		std::cout << '\n';
+		a += -1.0f;
+		std::cout << "a = -1.0: " << to_binary(a) << " : " << a << '\n';
+		a = 0;
+		std::cout << "a =  0.0: " << to_binary(a) << " : " << a << '\n';
+		a += 1.0f;
+		std::cout << "a = +1.0: " << to_binary(a) << " : " << a << '\n';
+
+		/// btriple manipulation to support a cfloat<32,8>
+		std::string input("0b11'0000'1111'0000'1111'1111'0000'1111'0000'1111'0000'1111'0000'1111'0000'1111'0000'1111'0000");
+		Btriple b;
+		b.assign(input);
+		std::cout << to_binary(b) << " : " << input << '\n';
+		b.constexprClassParameters();
 	}
+
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 2;
+		constexpr size_t fbits = nbits - es - 1ull;
+		using BlockType = uint8_t;
+		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+
+		int fails = 0;
+		size_t nrTests = 10;
+		Cfloat minpos(SpecificValue::minpos);
+		fails += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Cfloat >(true, OPCODE_ASSIGN, nrTests, double(minpos)), "random assignment test", "assignment      ");
+	}
+
 
 	// how do you round a non-normalized blocktriple, i.e. >= 2.0?
 	// you would need to modify the lsb/guard/round/sticky bit masks

@@ -12,12 +12,12 @@ namespace sw::universal {
 // test reporting helper
 // takes an int reporting the number of test failures and prints a PASS/FAIL designation
 int ReportTestResult(int nrOfFailedTests, const std::string& description, const std::string& test_operation) {
-	constexpr int TEST_TAG_WIDTH = 30;
+	constexpr int TEST_TAG_WIDTH = 60;
 	if (nrOfFailedTests > 0) {
-		std::cout << description << " " << std::setw(TEST_TAG_WIDTH) << test_operation << " FAIL " << nrOfFailedTests << " failed test cases\n";
+		std::cerr << std::left << std::setw(TEST_TAG_WIDTH) << description << " " << test_operation << " FAIL " << nrOfFailedTests << " failed test cases\n";
 	}
 	else {
-		std::cout << description << " " << std::setw(TEST_TAG_WIDTH) << test_operation << " PASS\n";
+		std::cerr << std::left << std::setw(TEST_TAG_WIDTH) << description << " " << test_operation << " PASS\n";
 	}
 	return nrOfFailedTests;
 }
@@ -27,11 +27,11 @@ int ReportCheck(const std::string& tag, const std::string& test, bool success) {
 	constexpr int TEST_TAG_WIDTH = 30;
 	int nrOfFailedTestCases = 0;
 	if (success) {
-		std::cout << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << " PASS\n";
+		std::cerr << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << " PASS\n";
 	}
 	else {
 		++nrOfFailedTestCases;
-		std::cout << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << " FAIL\n";
+		std::cerr << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << " FAIL\n";
 	}
 	return nrOfFailedTestCases;
 }

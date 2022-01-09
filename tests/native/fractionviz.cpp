@@ -3,12 +3,15 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <iostream>
 #include <string>
 #include <cmath>
 #include <cfenv>
-#pragma STDC_FENV_ACCESS on
 #include <limits>
+
 //#include <universal/native/integers.hpp>
 #include <universal/native/ieee754.hpp>
 
@@ -99,7 +102,7 @@ try {
 	std::cout << "long double precision float: " << color_print(ld) << '\n';
 
 	// special values
-	f = nan("NaN");
+	f = float(nan("NaN"));
 	d = nanf("NaN");
 	ld = nanl("NaN");
 
@@ -111,7 +114,7 @@ try {
 	CheckSignallingNaN<double>();
 	CheckSignallingNaN<long double>();
 
-	double snan = std::numeric_limits<double>::signaling_NaN();
+	constexpr double snan = std::numeric_limits<double>::signaling_NaN();
 	std::cout << "After sNaN was obtained ";
 	show_fe_exceptions();
 	double qnan = snan * 2.0;
