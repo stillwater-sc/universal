@@ -81,6 +81,13 @@ try {
 		std::cout << "gcd of (3, 9) = " << remainder << '\n';
 	}
 
+	a = 1;
+	b = 10;
+	c = a / b;
+	std::cout << "c = " << c << " : " << double(c) << " : " << to_binary(double(c)) << '\n';
+	b = 7;
+	c = a / b;
+	std::cout << "c = " << c << " : " << double(c) << " : " << to_binary(double(c)) << '\n';
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

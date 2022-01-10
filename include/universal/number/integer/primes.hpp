@@ -7,37 +7,7 @@
 #include <vector>
 #include <universal/number/integer/exceptions.hpp>
 
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
-namespace sw { namespace universal {
+namespace sw::universal {
 
 	/* from numerics
 		// FUNCTION TEMPLATE gcd
@@ -112,17 +82,17 @@ template<class _Mt,
  */
 
 // calculate the greatest common divisor of two numbers
-template<size_t nbits, typename BlockType>
-integer<nbits, BlockType> gcd(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
-	return b.iszero() ? a : gcd(b, a % b);
+template<typename IntegerType>
+IntegerType gcd(const IntegerType& a, const IntegerType& b) {
+	return b == 0 ? a : gcd(b, a % b);
 }
 
 // calculate the greatest common divisor of N numbers
-template<size_t nbits, typename BlockType>
-integer<nbits, BlockType> gcd(const std::vector< integer<nbits, BlockType> >& v) {
+template<typename IntegerType>
+IntegerType gcd(const std::vector< IntegerType >& v) {
 	if (v.size() == 0) return 0;
 	if (v.size() == 1) return v[0];
-	integer<nbits, BlockType> gcd_n = v[0];
+	IntegerType gcd_n = v[0];
 	for (size_t i = 1; i < v.size(); ++i) {
 		gcd_n = gcd(gcd_n, v[i]);
 	}
@@ -130,17 +100,17 @@ integer<nbits, BlockType> gcd(const std::vector< integer<nbits, BlockType> >& v)
 }
 
 // calculate the least common multiple of two numbers
-template<size_t nbits, typename BlockType>
-integer<nbits, BlockType> lcm(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
+template<typename IntegerType>
+IntegerType lcm(const IntegerType& a, const IntegerType& b) {
 	return (a * b) / gcd(a, b);
 }
 
 // calculate the least common multiple of N numbers
-template<size_t nbits, typename BlockType>
-integer<nbits, BlockType> lcm(const std::vector< integer<nbits, BlockType> >& v) {
+template<typename IntegerType>
+IntegerType lcm(const std::vector< IntegerType >& v) {
 	if (v.size() == 0) return 0;
 	if (v.size() == 1) return v[0];
-	integer<nbits, BlockType> lcm = v[0];
+	IntegerType lcm = v[0];
 	for (size_t i = 0; i < v.size(); ++i) {
 		lcm = (v[i] * lcm) / gcd(lcm, v[i]);
 	}
@@ -148,18 +118,27 @@ integer<nbits, BlockType> lcm(const std::vector< integer<nbits, BlockType> >& v)
 }
 
 // check if a number is prime
-template<size_t nbits, typename BlockType>
-bool isPrime(const integer<nbits, BlockType>& a) {
-	if (a.iszero() || a == 1) return false; // smallest prime number is 2
-	for (integer<nbits, BlockType> i = 2; i < a / 2; ++i) if ((a % i) == 0) return false;
+template<typename IntegerType>
+bool isPrime_(const IntegerType& a) {
+	if (a <= 1) return false; // smallest prime number is 2
+	for (IntegerType i = 2; i <= a / 2; ++i) if ((a % i) == 0) return false;
+	return true;
+}
+
+template<typename IntegerType>
+bool isPrime(const IntegerType& a) {
+	if (a <= 1) return false; // smallest prime number is 2
+	if (a <= 3) return true; // 2 and 3 are primes
+	if (a % 2 == 0 || a % 3 == 0) return false; // this allows us to skip middle 
+	for (IntegerType i = 5; i*i <= a; i += 6) if ((a % i) == 0 || a % (i + 2) == 0) return false;
 	return true;
 }
 
 // generate prime numbers in a range
-template<size_t nbits, typename BlockType>
-bool primeNumbersInRange(const integer<nbits, BlockType>& low, const integer<nbits, BlockType>& high, std::vector< integer<nbits, BlockType> >& primes) {
+template<typename IntegerType>
+bool primeNumbersInRange(const IntegerType low, const IntegerType high, std::vector< IntegerType >& primes) {
 	bool bFound = false;
-	for (integer<nbits, BlockType> i = low; i < high; ++i) {
+	for (IntegerType i = low; i < high; ++i) {
 		if (isPrime(i)) {
 			primes.push_back(i);
 			bFound = true;
@@ -168,39 +147,67 @@ bool primeNumbersInRange(const integer<nbits, BlockType>& low, const integer<nbi
 	return bFound;
 }
 
+// print the prime numbers in a range
+template<typename IntegerType>
+void printPrimes(const std::vector< IntegerType >& v) {
+	constexpr size_t PAGE_WIDTH = 65;
+	size_t nrPrimes = v.size();
+	if (nrPrimes == 0) return;
+	// determine the size of the largest prime
+	size_t COL_WIDTH = 1;
+	auto largestPrime = v[nrPrimes - 1];
+	while (largestPrime > 1) {
+		++COL_WIDTH;
+		largestPrime /= 10;
+	}
+	std::cout << "largest prime: " << v[nrPrimes - 1] << " is " << COL_WIDTH - 1 << " decades\n";
+	int column = 1;
+	for (auto p : v) {
+		std::cout << std::setw(COL_WIDTH) << p;
+		if (column * COL_WIDTH < PAGE_WIDTH) {
+			++column;
+		}
+		else {
+			column = 1;
+			std::cout << '\n';
+		}
+	}
+	std::cout << '\n';
+}
+
 // prime factors of an arbitrary integer
-template<size_t nbits, typename BlockType>
-class primefactors : public std::vector< std::pair< integer<nbits, BlockType>, integer<nbits, BlockType> > > { };
+template<typename IntegerType>
+class primefactors : public std::vector< std::pair< IntegerType, IntegerType > > { };
+
+
 
 // generate prime factors of an arbitrary integer
-template<size_t nbits, typename BlockType>
-void primeFactorization(const integer<nbits, BlockType>& a, primefactors<nbits, BlockType>& factors) {
-	using Integer = integer<nbits, BlockType>;
-	Integer i(a);
-	Integer factor = 2;
-	Integer power = 0;
+template<typename IntegerType>
+void primeFactorization(const IntegerType& a, primefactors<IntegerType>& factors) {
+	IntegerType i(a);
+	IntegerType factor = 2;
+	IntegerType power = 0;
 	// powers of 2
 	while (i.iseven()) { ++power; i >>= 1; }
-	if (power > 0) factors.push_back(std::pair<Integer, Integer>(factor, power));
+	if (power > 0) factors.push_back(std::pair<IntegerType, IntegerType>(factor, power));
 	// powers of odd numbers > 2
 	for (factor = 3; factor <= sqrt(i); factor += 2) {
 		if (isPrime(factor)) {
 			power = 0;
 			while ((i % factor) == 0) { ++power; i /= factor; }
-			if (power > 0) factors.push_back(std::pair<Integer, Integer>(factor, power));
+			if (power > 0) factors.push_back(std::pair<IntegerType, IntegerType>(factor, power));
 		}
 	}
-	if (i > 2) factors.push_back(std::pair < Integer, Integer>(i, 1));
+	if (i > 2) factors.push_back(std::pair < IntegerType, IntegerType>(i, 1));
 }
 
 // Factorization using Fermat's method: precondition number must be odd
 // trying various values of a with the goal to find a^2 - number = b^2, a square
-template<size_t nbits, typename BlockType>
-integer<nbits, BlockType> fermatFactorization(const integer<nbits, BlockType>& number) {
-	using Integer = integer<nbits, BlockType>;
+template<typename IntegerType>
+IntegerType fermatFactorization(const IntegerType& number) {
 	if (number.iseven()) return 0; // number must be odd
-	Integer a = ceil_sqrt(number);
-	Integer bsquare = a * a - number;
+	IntegerType a = ceil_sqrt(number);
+	IntegerType bsquare = a * a - number;
 	while (!perfect_square(bsquare)) {
 		++a;
 		bsquare = a * a - number;
@@ -208,4 +215,4 @@ integer<nbits, BlockType> fermatFactorization(const integer<nbits, BlockType>& n
 	return a - sqrt(bsquare);
 }
 
-}} // namespace sw::universal
+} // namespace sw::universal

@@ -161,6 +161,13 @@ public:
 		case SpecificValue::maxneg:
 			maxneg();
 			break;
+		case SpecificValue::infneg:
+		case SpecificValue::infpos:
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+		case SpecificValue::nar:
+			zero();
+			break;
 		}
 	}
 

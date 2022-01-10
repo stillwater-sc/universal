@@ -5,7 +5,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
+#include <numeric>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/integer/math_functions.hpp>
 #include <universal/number/integer/primes.hpp>
@@ -15,14 +17,16 @@
 #define STRESS_TESTING 0
 #define ELABORATE_TEST 0
 
+
+
 int main() 
 try {
 	using namespace sw::universal;
-	constexpr size_t nbits = 1024;
+	constexpr size_t nbits = 32;
 	using BlockType = uint32_t;
 	using Integer = integer<nbits, BlockType>;
-	Integer a, b;
-	std::vector<Integer> v;
+
+
 
 #if MANUAL_TESTING
 
@@ -86,17 +90,41 @@ try {
 
 #else // MANUAL_TESTING
 
+	long l1 = 1024l;
+	long l2 = 512;
+	std::cout << "gcd of " << l1 << " and " << l2 << " = " << sw::universal::gcd(l1, l2) << '\n';
+	std::cout << "gcd of " << l1 << " and " << l2 << " = " << std::gcd(l1, l2) << '\n';
+
 	std::cout << "\nFind all prime numbers in a range\n";
-	v.clear();
-	a = 2; b = 100;
-	primeNumbersInRange(a, b, v);
-	std::cout << v.size() << " prime numbers in range [" << a << ", " << b << ")\n";
+#if STRESS_TESTING
+	{
+		// 1 prime numbers in range[9223372036854775776, 9223372036854775807): takes about 6 seconds to find
+		// largest prime : 9223372036854775783 is 19 decades
+		//	9223372036854775783
+		uint64_t a, b;
+		std::vector<uint64_t> v;
+		a = 0x7FFF'FFFF'FFFF'FFE0, b = 0x7FFF'FFFF'FFFF'FFFF;  
+		primeNumbersInRange<uint64_t>(a, b, v);
+		std::cout << v.size() << " prime numbers in range [" << a << ", " << b << ")\n";
+		printPrimes(v);
+	}
+#endif
+	{
+		Integer a, b;
+		std::vector<Integer> v;
+		a = 2; b = 1000;
+		primeNumbersInRange(a, b, v);
+		std::cout << v.size() << " prime numbers in range [" << a << ", " << b << ")\n";
+		printPrimes(v);
+	}
+
 
 	// GCD of three numbers is
 	// gcd(a, b, c) == gcd(a, gcd(b, c)) == gcd(gcd(a, b), c) == gcd(b, gcd(a, c))
 
+	std::cout << "\nFind all prime factors of the number : ";
 	{
-		std::cout << "\nFind all prime factors of the number : ";
+		Integer a, b;
 		// find all prime factors of a number
 		a = ipow(Integer(2), Integer(5))
 			* ipow(Integer(3), Integer(4))
@@ -105,11 +133,16 @@ try {
 			* ipow(Integer(13), Integer(1))
 			* ipow(Integer(37), Integer(1));
 		std::cout << a << '\n';
-		primefactors<nbits, uint32_t> factors;
+		primefactors<Integer> factors;
 		primeFactorization(a, factors);
 		for (size_t i = 0; i < factors.size(); ++i) {
 			std::cout << " factor " << factors[i].first << " exponent " << factors[i].second << '\n';
 		}
+	}
+
+	{
+		constexpr Integer a(SpecificValue::maxpos);
+		std::cout << "maxpos for " << type_tag(a) << " = " << a << '\n' << to_binary(a) << '\n';
 	}
 
 #if STRESS_TESTING
