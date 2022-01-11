@@ -134,6 +134,18 @@ bool isPrime(const IntegerType& a) {
 	return true;
 }
 
+template<typename IntegerType>
+bool isPrimeTracer(const IntegerType& a) {
+	if (a <= 1) return false; // smallest prime number is 2
+	if (a <= 3) return true; // 2 and 3 are primes
+	if (a % 2 == 0 || a % 3 == 0) return false; // this allows us to skip middle 
+	for (IntegerType i = 5; i * i <= a; i += 6) {
+		if ((a % i) == 0 || a % (i + 2) == 0) return false;
+		std::cout << i << '\n';
+	}
+	return true;
+}
+
 // generate prime numbers in a range
 template<typename IntegerType>
 bool primeNumbersInRange(const IntegerType low, const IntegerType high, std::vector< IntegerType >& primes) {
@@ -155,10 +167,10 @@ void printPrimes(const std::vector< IntegerType >& v) {
 	if (nrPrimes == 0) return;
 	// determine the size of the largest prime
 	size_t COL_WIDTH = 1;
-	auto largestPrime = v[nrPrimes - 1];
-	while (largestPrime > 1) {
+	auto number = v[nrPrimes - 1];
+	while (number >= 1) {
 		++COL_WIDTH;
-		largestPrime /= 10;
+		number /= 10;
 	}
 	std::cout << "largest prime: " << v[nrPrimes - 1] << " is " << COL_WIDTH - 1 << " decades\n";
 	int column = 1;

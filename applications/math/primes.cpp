@@ -8,6 +8,7 @@
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <numeric>
+#include <chrono>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/integer/math_functions.hpp>
 #include <universal/number/integer/primes.hpp>
@@ -17,7 +18,55 @@
 #define STRESS_TESTING 0
 #define ELABORATE_TEST 0
 
+	// 1 prime numbers in range [9223372036854775776, 9223372036854775807)
+	// largest prime : 9223372036854775783 is 19 decades
+	//	9223372036854775783
+	//	4.93456sec
 
+
+template<typename Integer>
+void generatePrimes(Integer a, Integer b)
+{
+	std::vector<Integer> v;
+	sw::universal::primeNumbersInRange<Integer>(a, b, v);
+	std::cout << v.size() << " prime numbers in range [" << a << ", " << b << ")\n";
+	sw::universal::printPrimes(v);
+}
+
+template<typename Integer = uint64_t>
+void MeasureElapsedTimeOfPrimeGeneration()
+{
+	using namespace std::chrono;
+	Integer a[] = {
+		0x7FFF'FFFF'FFFF'FF80,
+		0x8FFF'FFFF'FFFF'FF80,
+		0x9FFF'FFFF'FFFF'FF80,
+		0xAFFF'FFFF'FFFF'FF80,
+		0xBFFF'FFFF'FFFF'FF80,
+		0xCFFF'FFFF'FFFF'FF80,
+		0xDFFF'FFFF'FFFF'FF80,
+		0xFFFF'FFFF'FFFF'FF80
+	};
+	Integer b[] = {
+		0x7FFF'FFFF'FFFF'FFFF,
+		0x8FFF'FFFF'FFFF'FFFF,
+		0x9FFF'FFFF'FFFF'FFFF,
+		0xAFFF'FFFF'FFFF'FFFF,
+		0xBFFF'FFFF'FFFF'FFFF,
+		0xCFFF'FFFF'FFFF'FFFF,
+		0xDFFF'FFFF'FFFF'FFFF,
+		0xFFFF'FFFF'FFFF'FFFF
+	};
+	for (size_t i = 0; i < 8; ++i) {
+		steady_clock::time_point begin = steady_clock::now();
+		generatePrimes(a[i], b[i]);
+		steady_clock::time_point end = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>> (end - begin);
+		double elapsed_time = time_span.count();
+
+		std::cout << elapsed_time << "sec\n";
+	}
+}
 
 int main() 
 try {
@@ -25,8 +74,6 @@ try {
 	constexpr size_t nbits = 32;
 	using BlockType = uint32_t;
 	using Integer = integer<nbits, BlockType>;
-
-
 
 #if MANUAL_TESTING
 
@@ -52,6 +99,10 @@ try {
 			std::cout << i << " " << fermatFactorization(i) << '\n';
 		}
 	}
+
+	// this takes a couple of minutes
+
+	MeasureElapsedTimeOfPrimeGeneration();
 #endif
 
 #if ELABORATE
@@ -96,19 +147,6 @@ try {
 	std::cout << "gcd of " << l1 << " and " << l2 << " = " << std::gcd(l1, l2) << '\n';
 
 	std::cout << "\nFind all prime numbers in a range\n";
-#if STRESS_TESTING
-	{
-		// 1 prime numbers in range[9223372036854775776, 9223372036854775807): takes about 6 seconds to find
-		// largest prime : 9223372036854775783 is 19 decades
-		//	9223372036854775783
-		uint64_t a, b;
-		std::vector<uint64_t> v;
-		a = 0x7FFF'FFFF'FFFF'FFE0, b = 0x7FFF'FFFF'FFFF'FFFF;  
-		primeNumbersInRange<uint64_t>(a, b, v);
-		std::cout << v.size() << " prime numbers in range [" << a << ", " << b << ")\n";
-		printPrimes(v);
-	}
-#endif
 	{
 		Integer a, b;
 		std::vector<Integer> v;
@@ -117,7 +155,6 @@ try {
 		std::cout << v.size() << " prime numbers in range [" << a << ", " << b << ")\n";
 		printPrimes(v);
 	}
-
 
 	// GCD of three numbers is
 	// gcd(a, b, c) == gcd(a, gcd(b, c)) == gcd(gcd(a, b), c) == gcd(b, gcd(a, c))
@@ -146,8 +183,9 @@ try {
 	}
 
 #if STRESS_TESTING
+	std::cout << "\nFind all prime factors of a number\n";
 	{
-		std::cout << "\nFind all prime factors of a number\n";
+		Integer a;
 		// find all prime factors of a number
 		a = ipow(Integer(2), Integer(5))
 			* ipow(Integer(3), Integer(4))
@@ -160,7 +198,7 @@ try {
 			* ipow(Integer(29), Integer(1))
 			* ipow(Integer(31), Integer(1))
 			* ipow(Integer(37), Integer(1));
-		primefactors<nbits, uint32_t> factors;
+		primefactors<Integer> factors;
 		primeFactorization(a, factors);
 		for (size_t i = 0; i < factors.size(); ++i) {
 			std::cout << " factor " << factors[i].first << " exponent " << factors[i].second << '\n';
