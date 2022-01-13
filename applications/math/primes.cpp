@@ -33,6 +33,39 @@ void generatePrimes(Integer a, Integer b)
 	sw::universal::printPrimes(v);
 }
 
+/*
+.\math_primes.exe
+gcd of 1024 and 512 = 512
+gcd of 1024 and 512 = 512
+
+Find all prime numbers in a range
+1 prime numbers in range [9223372036854775680, 9223372036854775807)
+largest prime: 9223372036854775783 is 19 decades
+ 9223372036854775783
+5.9541sec
+3 prime numbers in range [10376293541461622656, 10376293541461622783)
+largest prime: 10376293541461622777 is 20 decades
+ 10376293541461622659 10376293541461622771 10376293541461622777
+21.0991sec
+0 prime numbers in range [11529215046068469632, 11529215046068469759)
+5.50648sec
+4 prime numbers in range [12682136550675316608, 12682136550675316735)
+largest prime: 12682136550675316723 is 20 decades
+ 12682136550675316609 12682136550675316691 12682136550675316717 12682136550675316723
+27.7437sec
+3 prime numbers in range [13835058055282163584, 13835058055282163711)
+largest prime: 13835058055282163681 is 20 decades
+ 13835058055282163621 13835058055282163641 13835058055282163681
+30.5823sec
+2 prime numbers in range [14987979559889010560, 14987979559889010687)
+largest prime: 14987979559889010641 is 20 decades
+ 14987979559889010581 14987979559889010641
+14.1723sec
+4 prime numbers in range [16140901064495857536, 16140901064495857663)
+largest prime: 16140901064495857651 is 20 decades
+ 16140901064495857577 16140901064495857597 16140901064495857613 16140901064495857651
+ 28.8434sec
+*/
 template<typename Integer = uint64_t>
 void MeasureElapsedTimeOfPrimeGeneration()
 {
@@ -44,8 +77,8 @@ void MeasureElapsedTimeOfPrimeGeneration()
 		0xAFFF'FFFF'FFFF'FF80,
 		0xBFFF'FFFF'FFFF'FF80,
 		0xCFFF'FFFF'FFFF'FF80,
-		0xDFFF'FFFF'FFFF'FF80,
-		0xFFFF'FFFF'FFFF'FF80
+		0xDFFF'FFFF'FFFF'FF80
+//		0xFFFF'FFFF'FFFF'FF00
 	};
 	Integer b[] = {
 		0x7FFF'FFFF'FFFF'FFFF,
@@ -54,10 +87,10 @@ void MeasureElapsedTimeOfPrimeGeneration()
 		0xAFFF'FFFF'FFFF'FFFF,
 		0xBFFF'FFFF'FFFF'FFFF,
 		0xCFFF'FFFF'FFFF'FFFF,
-		0xDFFF'FFFF'FFFF'FFFF,
-		0xFFFF'FFFF'FFFF'FFFF
+		0xDFFF'FFFF'FFFF'FFFF
+//		0xFFFF'FFFF'FFFF'FFFF  // this yields an infinite loop
 	};
-	for (size_t i = 0; i < 8; ++i) {
+	for (size_t i = 0; i < 7; ++i) {
 		steady_clock::time_point begin = steady_clock::now();
 		generatePrimes(a[i], b[i]);
 		steady_clock::time_point end = steady_clock::now();
@@ -101,7 +134,6 @@ try {
 	}
 
 	// this takes a couple of minutes
-
 	MeasureElapsedTimeOfPrimeGeneration();
 #endif
 
