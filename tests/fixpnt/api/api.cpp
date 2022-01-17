@@ -61,6 +61,26 @@ try {
 		}
 	}
 
+	// extreme cases
+	{
+		int start = nrOfFailedTestCases;
+		fixpnt<8, 0, Modulo> a;  // only integers
+		for (int i = 0; i < 5; ++i) {
+			std::cout << to_binary(a) << " : " << a << '\n';
+			++a;
+		}
+		fixpnt<8, 8, Modulo> b(SpecificValue::minpos);  // only fractions
+		for (int i = 0; i < 8; ++i) {
+			std::cout << to_binary(b) << " : " << b << '\n';
+			b <<= 1;  // move the fraction bit left == multiply by 2
+		}
+		fixpnt<8, 8, Modulo> c(SpecificValue::maxpos);  // only fractions
+		for (int i = 0; i < 8; ++i) {
+			std::cout << to_binary(c) << " : " << c << '\n';
+			c >>= 1;  // move the fraction bit right == divide by 2
+		}
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// SATURATING fixed-point
 

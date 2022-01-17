@@ -22,6 +22,7 @@
 // composition types used by cfloat
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/number/support/decimal.hpp>
 
 #ifndef CFLOAT_THROW_ARITHMETIC_EXCEPTION
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
@@ -2883,13 +2884,102 @@ private:
 	friend bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs);
 };
 
-////////////////////// operators
+///////////////////////////// IOSTREAM operators ///////////////////////////////////////////////
+
+// convert cfloat to decimal fixpnt string, i.e. "-1234.5678"
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
-	// TODO: make it a native conversion
-	ostr << double(v);
-	return ostr;
+std::string convert_to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value) {
+	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+	constexpr size_t bias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
+	std::stringstream str;
+	if (value.iszero()) {
+		str << '0';
+		return str.str();
+	}
+	if (value.sign()) str << '-';
+
+	// construct the discretization levels of the fraction part
+	support::decimal range, discretizationLevels, step;
+	// create the decimal range we are discretizing
+	range.setdigit(1);
+	range.shiftLeft(fbits); // the decimal range of the fraction
+	discretizationLevels.powerOf2(fbits); // calculate the discretization levels of this range
+	step = div(range, discretizationLevels);
+	// now construct the value of this range by adding the fraction samples
+	support::decimal partial, multiplier;
+	partial.setzero();  // if you just want the fraction
+	multiplier.setdigit(1);
+	// convert the fraction part
+	for (unsigned i = 0; i < fbits; ++i) {
+		if (value.at(i)) {
+			support::add(partial, multiplier);
+		}
+		support::add(multiplier, multiplier);
+	}
+	if (value.isdenormal()) {
+		support::mul(partial, step);
+		support::decimal scale;
+		scale.powerOf2(bias - 1ull);
+		partial = support::div(partial, scale);
+	} 
+	else {
+		support::add(partial, multiplier); // add the hidden bit
+		support::mul(partial, step);
+		support::decimal scale;
+		int exponent = value.scale();
+		if (exponent < 0) {
+			scale.powerOf2(static_cast<size_t>(-exponent));
+			partial = support::div(partial, scale);
+		}
+		else {
+			scale.powerOf2(static_cast<size_t>(exponent));
+			support::mul(partial, scale);
+		}
+	}
+
+	// the radix is at fbits
+	// The partial represents the parts in the range, so we can deduce
+	// the number of leading zeros by comparing to the length of range
+	int nrLeadingZeros = static_cast<int>(range.size()) - static_cast<int>(partial.size()) - 1;
+	if (nrLeadingZeros >= 0) str << "0.";
+	for (int i = 0; i < nrLeadingZeros; ++i) str << '0';
+	int digitsWritten = (nrLeadingZeros > 0) ? nrLeadingZeros : 0;
+	int position = static_cast<int>(partial.size()) - 1;
+	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		str << (int)*rit;
+		++digitsWritten;
+		if (position == fbits) str << '.';
+		--position;
+	}
+	if (digitsWritten < fbits) { // deal with trailing 0s
+		for (size_t i = digitsWritten; i < fbits; ++i) {
+			str << '0';
+		}
+	}
+
+	return str.str();
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+/// stream operators
+
+// ostream output generates an ASCII format for the floating-point argument
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+	// to make certain that setw and left/right operators work properly
+	// we need to transform the fixpnt into a string
+	std::stringstream ss;
+
+	std::streamsize prec = ostr.precision();
+	std::streamsize width = ostr.width();
+	std::ios_base::fmtflags ff;
+	ff = ostr.flags();
+	ss.flags(ff);
+//	ss << std::setw(width) << std::setprecision(prec) << convert_to_decimal_fixpnt_string(v) << ' ';
+	ss << std::setw(width) << std::setprecision(prec) << double(v) << ' ';
+	return ostr << ss.str();
+}
+
 
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::istream& operator>>(std::istream& istr, const cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {

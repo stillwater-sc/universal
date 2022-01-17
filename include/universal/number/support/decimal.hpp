@@ -32,14 +32,10 @@ public:
 	decimal& operator=(const decimal&) = default;
 	decimal& operator=(decimal&&) = default;
 
-	inline bool sign() const { return _sign; }
+	inline bool sign()   const { return _sign; }
 	inline bool iszero() const { return (size() == 1 && at(0) == 0) ? true : false; }
-	inline bool ispos() const {
-		return (!iszero() && _sign == false) ? true : false;
-	}
-	inline bool isneg() const {
-		return (!iszero() && _sign == true) ? true : false;
-	}
+	inline bool ispos()  const { return (!iszero() && _sign == false) ? true : false;  }
+	inline bool isneg()  const { return (!iszero() && _sign == true) ? true : false; }
 	inline void setzero() {
 		clear();
 		push_back(0);
@@ -52,6 +48,22 @@ public:
 		clear();
 		push_back(d);
 		_sign = negative;
+	}
+	inline void setvalue(long long v) {
+		setzero();
+		uint64_t absValue = (v < 0) ? static_cast<uint64_t>(-v) : absValue = static_cast<uint64_t>(v);
+
+		uint64_t mask = 1ull;
+		support::decimal multiplier;
+		multiplier.setdigit(1);
+		for (size_t i = 0; i < 64; ++i) {
+			if (absValue & mask) {
+				add(*this, multiplier);
+			}
+			add(multiplier, multiplier);
+			mask <<= 1;
+		}
+		_sign = (v < 0) ? true : false;
 	}
 
 	// remove any leading zeros from a decimal representation
@@ -66,13 +78,12 @@ public:
 			}
 		}
 	}
-	// shift left operator for decimal
+
 	void shiftLeft(size_t orders) {
 		for (size_t i = 0; i < orders; ++i) {
 			this->insert(this->begin(), 0);
 		}
 	}
-	// shift right operator for decimal
 	void shiftRight(size_t orders) {
 		if (size() <= orders) {
 			this->setzero();
@@ -81,6 +92,15 @@ public:
 			for (size_t i = 0; i < orders; ++i) {
 				this->erase(this->begin());
 			}
+		}
+	}
+
+	// in-place power of 2 function 2^exponent, returns result
+	void powerOf2(const size_t exponent) {
+		clear();
+		setdigit(1);
+		for (size_t i = 0; i < exponent; ++i) {
+			support::add(*this, *this);
 		}
 	}
 private:
@@ -155,7 +175,7 @@ bool lessOrEqual(const decimal& lhs, const decimal& rhs) {
 	return true;
 }
 
-// in-place addition (equivalent to +=)
+// in-place addition (equivalent to lhs += rhs)
 void add(decimal& lhs, const decimal& rhs) {
 	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
 	if (lhs.sign() != rhs.sign()) {  // different signs
@@ -189,7 +209,7 @@ void add(decimal& lhs, const decimal& rhs) {
 	}
 	if (carry) lhs.push_back(1);
 }
-// in-place subtraction (equivalent to -=)
+// in-place subtraction (equivalent to lhs -= rhs)
 void sub(decimal& lhs, const decimal& rhs) {
 	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
 	bool sign = lhs.sign();
@@ -241,7 +261,7 @@ void sub(decimal& lhs, const decimal& rhs) {
 		lhs.setsign(sign);
 	}
 }
-// in-place multiplication (equivalent to *=)
+// in-place multiplication (equivalent to lhs *= rhs)
 void mul(decimal& lhs, const decimal& rhs) {
 	// special case
 	if (lhs.iszero() || rhs.iszero()) {
@@ -294,17 +314,17 @@ void mul(decimal& lhs, const decimal& rhs) {
 	lhs = product;
 	lhs.setsign(signOfFinalResult);
 }
-// integer division (equivalent to /=)
-decimal div(const decimal& _a, const decimal& _b) {
-	if (_b.iszero()) {
+// integer division of lhs / rhs, returns new decimal
+decimal div(const decimal& lhs, const decimal& rhs) {
+	if (rhs.iszero()) {
 		throw "Divide by 0";
 	}
 	// generate the absolute values to do long division 
-	bool a_negative = _a.sign();
-	bool b_negative = _b.sign();
+	bool a_negative = lhs.sign();
+	bool b_negative = rhs.sign();
 	bool result_negative = (a_negative ^ b_negative);
-	decimal a(_a); a.setpos();
-	decimal b(_b); b.setpos();
+	decimal a(lhs); a.setpos();
+	decimal b(rhs); b.setpos();
 	decimal quotient; // zero
 	if (less(a, b)) {
 		return quotient; // a / b = 0 when b > a
@@ -370,6 +390,7 @@ void convert_to_decimal(long long v, decimal& d) {
 	// finally set the sign
 	d.setsign(sign);
 }
+
 // generate an ASCII decimal format and send to ostream
 inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 	// to make certain that setw and left/right operators work properly

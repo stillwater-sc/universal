@@ -76,6 +76,9 @@ try {
 
 	p = pow(x, y); std::cout << "  pow(" << x << "," << y << ") = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
+	p = min(x, y); std::cout << "  min(" << x << "," << y << ") = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = max(x, y); std::cout << "  max(" << x << "," << y << ") = " << std::setw(10) << p << " " << color_print(p) << '\n';
+
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 catch (char const* msg) {

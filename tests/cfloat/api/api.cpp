@@ -24,8 +24,8 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// default behavior
+	std::cout << "Default cfloat has no subnormals, no supernormals and is not saturating\n";
 	{
-		std::cout << "Default cfloat has no subnormals, no supernormals and is not saturating\n";
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
 		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
@@ -42,8 +42,8 @@ try {
 	}
 
 	// explicit configuration
+	std::cout << "Explicit configuration of a cfloat\n";
 	{
-		std::cout << "Explicit configuration of a cfloat\n";
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
 		using bt = uint8_t;
@@ -64,8 +64,8 @@ try {
 	}
 
 	// report on the dynamic range of some standard configurations
+	std::cout << "Dynamic ranges of some standard cfloat<> configurations\n";
 	{
-		std::cout << "Dynamic ranges of some standard cfloat<> configurations\n";
 		using quarter = cfloat<  8,  2, uint8_t, false, false, false>;
 		using half    = cfloat< 16,  5, uint8_t, false, false, false>;
 		using single  = cfloat< 32,  8, uint8_t, true, false, false>;
@@ -76,8 +76,8 @@ try {
 		report_range<half>(std::cout);
 		report_range<single>(std::cout);
 		report_range<dual>(std::cout);
-		report_range<quad>(std::cout);
-		report_range<octo>(std::cout);
+//		report_range<quad>(std::cout);
+//		report_range<octo>(std::cout);
 
 		std::cout << "---\n";
 
@@ -115,8 +115,8 @@ try {
 	}
 
 	// constexpr and specific values
+	std::cout << "constexpr and specific values\n";
 	{
-		std::cout << "constexpr and specific values\n";
 		constexpr size_t nbits = 10;
 		constexpr size_t es = 3;
 		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
@@ -135,8 +135,8 @@ try {
 	}
 
 	// set bit patterns
+	std::cout << "set bit patterns API\n";
 	{
-		std::cout << "set bit patterns API\n";
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 5;
 		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
@@ -157,27 +157,68 @@ try {
 		std::cout << to_binary(a) << " : " << a << '\n';
 	}
 
+	std::cout << "set specific values of interest\n";
+	{
+		cfloat<8, 2> a;
+		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
+		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
+		std::cout << "zero   : " << a.zero() << " : " << scale(a) << '\n';
+		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
+		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
+		std::cout << dynamic_range(a) << std::endl;
+	}
+
+	std::cout << "cfloat<16, 5, uint32_t, true>         half-precision subnormals\n";
+	{
+		using BlockType = uint32_t;
+		using Cfloat = cfloat<16, 5, BlockType, true>;
+		constexpr size_t fbits = Cfloat::fbits;
+		Cfloat a, b;
+
+		// enumerate the subnormals
+		uint32_t pattern = 1ul;
+		for (unsigned i = 0; i < fbits; ++i) {
+			a.setbits(pattern);
+			std::cout << color_print(a) << " : " << a << " : " << float(a) << '\n';
+			pattern <<= 1;
+		}
+		// enumerate the normals
+		a.setbits(0x0400);
+		for (size_t i = 0; i < 30; ++i) {
+			std::cout << color_print(a) << " : " <<  a << " : " << std::setw(12) << float(a) << " + 1ULP ";
+			b = a; ++b;
+			std::cout << color_print(b) << " : " << b << " : " << std::setw(12) << float(b) << '\n';
+			a *= 2;
+		}
+	}
+	std::cout << "cfloat<32, 8, uint32_t, true>         IEEE-754 float subnormals\n";
 	{
 		using BlockType = uint32_t;
 		float subnormal = std::nextafter(0.0f, 1.0f);
-		cfloat<32, 8, BlockType> a;
+		using Cfloat = cfloat<32, 8, BlockType, true>;
+		constexpr size_t fbits = Cfloat::fbits; 
+		Cfloat a;
 		blockbinary<a.fhbits, BlockType> significant;
-		std::cout << "   cfloat<32,8,uint32_t>         IEEE-754 float subnormals\n";
+
 		uint32_t pattern = 0x00000001ul;
 		for (unsigned i = 0; i < 24; ++i) {
 			a.setbits(pattern);
 			std::cout << to_binary(a, true) << " " << a << ": ";
 			pattern <<= 1;
-			std::cout << to_binary(subnormal, true) << " : " << subnormal << std::endl;
+			std::cout << color_print(subnormal) << " : " << subnormal << std::endl;
 			subnormal *= 2.0f;
 
-			size_t scale_offset = a.significant(significant);
-			std::cout << to_binary(significant, true) << " : " << a.MIN_EXP_SUBNORMAL << " : " << a.MIN_EXP_NORMAL - scale_offset << " vs " << a.scale() << std::endl;
+			if (i < 23) { // the last iteration is a normal encoding
+				constexpr bool isNormal = false;
+				int scale_offset = static_cast<int>(a.significant(significant, isNormal)); // significant will be in leading 1 format, so not interesting unless you are doing arithmetic
+				int check = a.MIN_EXP_NORMAL - scale_offset;
+				std::cout << a.MIN_EXP_NORMAL << " - " << scale_offset << " = (" << check << ") should be equal to " << a.scale() << std::endl;
+			}
 		}
 	}
 
+	std::cout << "Subnormal exponent values\n";
 	{
-		std::cout << "Subnormal exponent values\n";
 		// we are not using element [0] as es = 0 is not supported in the cfloat spec
 		int exponents[] = {
 			0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022
@@ -187,28 +228,16 @@ try {
 		}
 	}
 
-	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
-	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
-
-
-	// construction
+	std::cout << "human-readable output for large cfloats\n";
 	{
-		int start = nrOfFailedTestCases;
-		cfloat<8, 2, uint8_t> zero, a(2.0), b(2.0), c(1.0), d(4.0);
-		if (zero != (a - b)) ++nrOfFailedTestCases;
-		if (nrOfFailedTestCases - start > 0) {
-			std::cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
-		}
-	}
+		using dp   = cfloat< 64, 11, uint32_t, true, false, false>;
+		using quad = cfloat<128, 15, uint8_t, true, false, false>;
+		using octo = cfloat<256, 18, uint8_t, true, false, false>;
+		using Real = cfloat< 80, 11, uint32_t, true, false, false>;;
 
-	{
-		cfloat<8, 2> a;
-		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
-		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
-		std::cout << "zero   : " << a.zero() << " : " << scale(a) << '\n';
-		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
-		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
-		std::cout << dynamic_range(a) << std::endl;
+		Real minpos(SpecificValue::minpos);
+		std::cout << "quadruple-precision smallest value : " << to_binary(minpos) << " : " << minpos << '\n';
+		
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
