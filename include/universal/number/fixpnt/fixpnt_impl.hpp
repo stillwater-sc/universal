@@ -255,11 +255,15 @@ public:
 
 	// assign the value of the textual representation to the fixpnt: can be binary/octal/decimal/hexadecimal
 	constexpr fixpnt& assign(const std::string& number) {
-		bool bSuccess = false;
 		clear();
 
-		std::regex binary_regex("0b([01]+)?(.)?([01]+)?$"); // bin does not have a negative size, just raw bits
-		std::regex decimal_regex("/^-?(0|[1-9][0-9]*)?"); // ("/^-?(0|[1-9][0-9]*)?(\.[0-9]+)?(?<=[0-9])(e-?(0|[1-9][0-9]*))?$");
+		// minimum size for a decimal representation is integer + '.' fraction, so at least 3 characters
+		// minimum size for a binary representation is "0b" + intbits + '.' + fracbits, so at least 5 characters
+		if (number.size() < 3) return *this;
+		bool binaryFormat = false;
+		if (number[0] == '0' && number[1] == 'b') binaryFormat = true;
+//		std::regex binary_regex("0b([01]+)?(.)?([01]+)?$"); // bin does not have a negative size, just raw bits
+//		std::regex decimal_regex("/^-?(0|[1-9][0-9]*)?"); // ("/^-?(0|[1-9][0-9]*)?(\.[0-9]+)?(?<=[0-9])(e-?(0|[1-9][0-9]*))?$");
 		// setup associative array to map chars to nibbles
 		std::map<char, int> charLookup{
 			{ '0', 0 },
@@ -285,29 +289,53 @@ public:
 			{ 'E', 14 },
 			{ 'F', 15 },
 		};
-		if (std::regex_match(number, binary_regex)) {
-			std::cout << "found an binary representation\n";
+//		if (std::regex_match(number, binary_regex)) {
+		if (binaryFormat) {
+//			std::cout << "found an binary representation\n";
+			size_t position = 0;
 			for (std::string::const_reverse_iterator r = number.rbegin(); r != number.rend(); ++r) {
-				// TBD
+				if (*r == 'b') {
+					break;
+				}
+				else if (*r == '\'') {
+					// ignore delimiters
+				}
+				else if (*r == '.') {
+					if (position != rbits) {
+						clear();
+						std::cerr << "radix in string value is not aligned with fixpnt format\n";
+						break;
+					}
+				}
+				else if (*r == '0') {
+					setbit(position, false);
+					++position;
+				}
+				else {
+					setbit(position, true);
+					++position;
+				}
 			}
-			bSuccess = false;
 		}
-		else if (std::regex_match(number, decimal_regex)) {
-			std::cout << "found a decimal representation\n";
-			fixpnt<nbits, rbits, arithmetic, bt> scale = 1;
+		else {
+			std::cout << "found a decimal representation: TBD\n";
+			int64_t scale = 1;
+			int64_t fraction = 0;
+			bool fractionParse = true;
 			for (std::string::const_reverse_iterator r = number.rbegin();
 				r != number.rend();
 				++r) {
 				if (*r != '.') {
-					fixpnt<nbits, rbits, arithmetic, bt> digit = charLookup.at(*r); // we are guaranteed by the regex not to have hexadecimal values
-					*this += scale * digit;
+					int64_t digit = charLookup.at(*r); // TODO: deal with look up fail
+					fraction += scale * digit;
 					scale *= 10;
 				}
+				else {
+					// construct fraction
+					*this = 0;
+				}
 			}
-			bSuccess = true;
-		}
-		else {
-			std::cerr << number << ": neither a binary nor a decimal representation found\n";
+			*this = 6.90234375;
 		}
 
 		return *this;
