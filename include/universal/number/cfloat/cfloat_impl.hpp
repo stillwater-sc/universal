@@ -2888,7 +2888,7 @@ private:
 
 // convert cfloat to decimal fixpnt string, i.e. "-1234.5678"
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string convert_to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value) {
+std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value, long long precision) {
 	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
 	constexpr size_t bias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
 	std::stringstream str;
@@ -2960,24 +2960,62 @@ std::string convert_to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubn
 	return str.str();
 }
 
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value, long long precision) {
+	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+	constexpr size_t bias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
+	std::stringstream str;
+	if (value.iszero()) {
+		str << '0';
+		return str.str();
+	}
+	if (value.sign()) str << '-';
+
+
+	return str.str();
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 /// stream operators
 
 // ostream output generates an ASCII format for the floating-point argument
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the fixpnt into a string
-	std::stringstream ss;
 
-	std::streamsize prec = ostr.precision();
+
+	std::streamsize precision = ostr.precision();
 	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-//	ss << std::setw(width) << std::setprecision(prec) << convert_to_decimal_fixpnt_string(v) << ' ';
-	ss << std::setw(width) << std::setprecision(prec) << double(v) << ' ';
-	return ostr << ss.str();
+
+	std::ios_base::fmtflags ff = ostr.flags();
+	// extract the format flags that change the representation
+	bool scientific = (ff & std::ios_base::scientific) == std::ios_base::scientific;
+	bool fixed      = !scientific && (ff & std::ios_base::fixed);
+
+	std::string representation;
+	if (fixed) {
+		representation = to_decimal_fixpnt_string(v, precision);
+	}
+	else {
+		std::stringstream ss;
+		ss << double(v);
+		representation = ss.str();
+//		representation = to_string(v, precision);
+	}
+
+	// implement setw and left/right operators work properly
+	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
+	if (width > repWidth) {
+		std::streamsize diff = static_cast<std::string::size_type>(width - representation.size());
+		char fill = ostr.fill();
+		if ((ff & std::ios_base::left) == std::ios_base::left) {
+			representation.append(diff, fill);
+		}
+		else {
+			representation.insert(static_cast<std::string::size_type>(0), diff, fill);
+		}
+	}
+
+	return ostr << representation;
 }
 
 
