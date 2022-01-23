@@ -241,11 +241,19 @@ try {
 		using dp   = cfloat< 64, 11, uint32_t, true, false, false>;
 		using quad = cfloat<128, 15, uint8_t, true, false, false>;
 		using octo = cfloat<256, 18, uint8_t, true, false, false>;
-		using Real = cfloat< 80, 11, uint32_t, true, false, false>;;
+//		using Real = cfloat< 80, 11, uint32_t, true, false, false>;
+		using Real = dp;
 
-		Real minpos(SpecificValue::minpos);
-		std::cout << "quadruple-precision smallest value : " << to_binary(minpos) << " : " << minpos << '\n';
-		
+		auto precision = std::cout.precision();
+		Real v(SpecificValue::minpos);
+		v = 1.0f;
+//		auto s = to_string(v, precision);
+		std::cout << "value : " << to_binary(v) << " : " << v << '\n';
+		std::cout << v << '\n';
+	
+		// this demonstrates that our conversion is WAY TOO SLOW: takes 4 minutes to create the representation: ETLO 1/23
+//		octo o(SpecificValue::maxpos);
+//		std::cout << std::fixed << o << std::scientific << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

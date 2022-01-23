@@ -2971,7 +2971,30 @@ std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals
 	}
 	if (value.sign()) str << '-';
 
+	// denormalize the number to gain access to the most sigificant digits
+	// 1.ffff^e
+	// scale is e
+	// lsbScale is e - fbits
+	// shift to get lsb to position 2^0 = (e - fbits)
+	std::int64_t scale = value.scale();
+	std::int64_t shift = scale + fbits; // we want the lsb at 2^0
+	std::int64_t lsbScale = scale - fbits;  // scale of the lsb
+	support::decimal partial, multiplier;
+	partial.setzero();
 
+	multiplier.powerOf2(lsbScale);
+
+	// convert the fraction bits 
+	for (unsigned i = 0; i < fbits; ++i) {
+		if (value.at(i)) {
+			support::add(partial, multiplier);
+		}
+		support::add(multiplier, multiplier);
+	}
+	if (!value.isdenormal()) {
+		support::add(partial, multiplier); // add the hidden bit
+	}
+	str << partial;
 	return str.str();
 }
 
@@ -2981,8 +3004,6 @@ std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals
 // ostream output generates an ASCII format for the floating-point argument
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-
-
 	std::streamsize precision = ostr.precision();
 	std::streamsize width = ostr.width();
 
@@ -3002,7 +3023,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 //		representation = to_string(v, precision);
 	}
 
-	// implement setw and left/right operators work properly
+	// implement setw and left/right operators
 	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
 	if (width > repWidth) {
 		std::streamsize diff = static_cast<std::string::size_type>(width - representation.size());
@@ -3032,22 +3053,6 @@ template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSuper
 inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(a);
 	return ++b - a;
-}
-
-// convert to std::string
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << " zero b";
-		return s.str();
-	}
-	else if (v.isinf()) {
-		s << " infinite b";
-		return s.str();
-	}
-	//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
-	return s.str();
 }
 
 // transform cfloat to a binary representation

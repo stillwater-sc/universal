@@ -37,13 +37,13 @@ namespace sw { namespace universal {
 	// Generic set of adds and subtracts for a given number system type
 	template<typename Scalar>
 	void AdditionSubtractionWorkload(size_t NR_OPS) {
-		std::vector<Scalar> data = { 0.99999f, -1.00001f };
+		std::vector<Scalar> data = { Scalar(0.99999f), Scalar(-1.00001) };
 		Scalar a, b{ 1.0625f };
 		for (size_t i = 1; i < NR_OPS; ++i) {
 			a = data[i % 2];
 			b = b + a;
 		}
-		if (b == Scalar(1.0625f)) {
+		if (b == Scalar(0.0f)) {
 			std::cout << "dummy case to fool the optimizer\n";
 		}
 	}
@@ -51,13 +51,19 @@ namespace sw { namespace universal {
 	// Generic set of multiplies for a given number system type
 	template<typename Scalar>
 	void MultiplicationWorkload(size_t NR_OPS) {
-		std::vector<Scalar> data = { 0.99999f, 1.00001f };
+		std::vector<Scalar> data = { Scalar(0.99999f), Scalar(1.00001f) };
 		Scalar a, b{ 1.0625f };
 		for (size_t i = 1; i < NR_OPS; ++i) {
 			a = data[i % 2];
 			b = b * a;
 		}
-		if (b == Scalar(1.0625f)) {
+		if (b == Scalar(-1.0f)) {
+			Scalar a, b{ 1.0625f };
+			for (size_t i = 1; i < 10; ++i) {
+				a = data[i % 2];
+				std::cout << a << " : " << b << '\n';
+				b = b * a;
+			}
 			std::cout << "dummy case to fool the optimizer\n";
 		}
 	}
@@ -65,14 +71,14 @@ namespace sw { namespace universal {
 	// Generic set of divides for a given number system type
 	template<typename Scalar>
 	void DivisionWorkload(size_t NR_OPS) {
-		std::vector<Scalar> data = { 0.99999f, 1.00001f };
+		std::vector<Scalar> data = { Scalar(0.99999f), Scalar(1.00001f) };
 		if (data[0] == 0) { data[0] = Scalar(1); }
 		Scalar a, b{ 1.0625f };
 		for (size_t i = 1; i < NR_OPS; ++i) {
 			a = data[i % 2];
 			b = b / a;
 		}
-		if (b == Scalar(1.0625f)) {
+		if (b == Scalar(-1.0f)) {
 			std::cout << "dummy case to fool the optimizer\n";
 		}
 	}
