@@ -7,7 +7,7 @@
 #if defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/C++. ---------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
@@ -35,6 +35,6 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, f
 	std::cerr << "extract_fp_components not implemented for HP compiler");
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // Hewlett-Packard C/C++.

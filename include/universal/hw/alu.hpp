@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 enum class ALU_OPS {
 	NOP,
@@ -43,4 +43,4 @@ NumberSystemType ArithmeticLogicUnit(ALU_OPS op, const NumberSystemType& a, cons
 	return c;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

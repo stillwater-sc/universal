@@ -12,7 +12,7 @@
 
 #include <universal/utility/color_print.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -376,7 +376,7 @@ inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 	);
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // compiler specific long double IEEE floating point

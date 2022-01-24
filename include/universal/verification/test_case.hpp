@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iomanip>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	enum class TestCaseOperator { ADD, SUB, MUL, DIV };  // basic arithmetic operators supported by all number systems
 
@@ -88,4 +88,4 @@ namespace sw::universal {
 		return (reference == c) ? 0 : 1;  // return 1 to indicate 1 test failure
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal

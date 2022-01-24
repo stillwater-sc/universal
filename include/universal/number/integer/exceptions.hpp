@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 struct integer_arithmetic_exception : public universal_arithmetic_exception {
 	integer_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("integer arithmetic exception: ") + err) {}
@@ -33,4 +33,4 @@ struct integer_byte_index_out_of_bounds : public integer_internal_exception {
 	integer_byte_index_out_of_bounds() : integer_internal_exception("byte index out of bounds") {}
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal

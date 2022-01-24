@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/math/math_constants.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // value representing an angle expressed in radians
 // One radian is equivalent to 180/PI degrees
@@ -61,4 +61,4 @@ rational csc(rational x) {
 	return rational(1.0/std::sin(double(x)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

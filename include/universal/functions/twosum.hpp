@@ -9,7 +9,7 @@
 
 #undef TRACE_TWOSUM
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /*
 TwoSum denotes an algorithm introduced by Knuth in "The Art of Computer Programming", vol 2, Seminumerical Algorithms.
@@ -87,4 +87,4 @@ void cascadingSum(const Vector& v, Scalar& s, Scalar& r) {
 }
 #endif
 
-}  // namespace sw::universal
+}} // namespace sw::universal

@@ -43,7 +43,7 @@ You need the exception types defined, but you have the option to throw them
 #include <universal/utility/scale_tracker.hpp>
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 constexpr bool Modulo    = true;
 constexpr bool Saturating = !Modulo;
@@ -2124,4 +2124,4 @@ inline std::string to_triple(const fixpnt<nbits, rbits, arithmetic, bt>& number)
 	return ss.str();
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

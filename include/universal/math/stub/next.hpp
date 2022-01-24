@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /*
 Parameters
@@ -36,4 +36,4 @@ Return Value
 		return std::nexttoward(x, target);
 	}
 
-}  // namespace sw::universal
+}} // namespace sw::universal

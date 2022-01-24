@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Natural logarithm of x
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
@@ -31,4 +31,4 @@ fixpnt<nbits, rbits, arithmetic, bt> log1p(fixpnt<nbits, rbits, arithmetic, bt> 
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::log1p(double(x)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

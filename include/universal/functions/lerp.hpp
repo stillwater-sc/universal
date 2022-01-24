@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <universal/traits/posit_traits.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 #if (__cplusplus < 202002L)
 
@@ -26,5 +26,5 @@ namespace sw::universal {
 using std::lerp;
 #endif
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

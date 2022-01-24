@@ -8,7 +8,7 @@
 #if defined(__riscv)
 /* RISC-V G++ tool chain */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // compiler specific long double IEEE floating point
@@ -185,7 +185,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 }
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // RISC-V G++ tool chain
 

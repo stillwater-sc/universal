@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // base class for fixed-point arithmetic exceptions
 struct fixpnt_arithmetic_exception : public universal_arithmetic_exception {
@@ -42,4 +42,4 @@ struct fixpnt_index_out_of_bounds : public fixpnt_internal_exception {
 	explicit fixpnt_index_out_of_bounds() : fixpnt_internal_exception("index out of bounds") {}
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal

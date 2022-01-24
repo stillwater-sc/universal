@@ -8,7 +8,7 @@
 #include <string>
 #include <type_traits>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // fast power of 2 for integers
 template<typename Integer,
@@ -24,7 +24,7 @@ inline Integer two_to_the_power(Integer n) {
 /// <param name="base"></param>
 /// <param name="exp"></param>
 /// <returns></returns>
-int64_t ipow(int64_t base, unsigned exp) {
+inline int64_t ipow(int64_t base, unsigned exp) {
 	int64_t result = 1;
 	for (;;) {
 		if (exp & 1)
@@ -43,7 +43,7 @@ int64_t ipow(int64_t base, unsigned exp) {
 // github: orlp
 // location: Leiden, Netherlands 
 // email: orsonpeters@gmail.com
-int64_t fastipow(int64_t base, uint8_t exp) {
+inline int64_t fastipow(int64_t base, uint8_t exp) {
 	static const uint8_t highest_bit_set[] = {
 		0, 1, 2, 2, 3, 3, 3, 3,
 		4, 4, 4, 4, 4, 4, 4, 4,
@@ -157,4 +157,4 @@ inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleM
 	return s.str();
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

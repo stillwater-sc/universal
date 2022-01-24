@@ -13,7 +13,7 @@
 #include <map>
 #include <cassert>
 
-namespace sw::universal::support {
+namespace sw { namespace universal { namespace support {
 
 // paired down implementation of a decimal type to generate decimal representations for fixpnt<nbits,rbits> types
 
@@ -51,7 +51,7 @@ public:
 	}
 	inline void setvalue(long long v) {
 		setzero();
-		uint64_t absValue = (v < 0) ? static_cast<uint64_t>(-v) : absValue = static_cast<uint64_t>(v);
+		uint64_t absValue = (v < 0) ? static_cast<uint64_t>(-v) : static_cast<uint64_t>(v);
 
 		uint64_t mask = 1ull;
 		support::decimal multiplier;
@@ -110,7 +110,7 @@ private:
 
 
 // find largest multiplier
-decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
+inline decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
 	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
 	decimal one, remainder, multiplier;
 	one.setdigit(1);
@@ -140,7 +140,7 @@ inline int findMsd(const decimal& v) {
 	return msd;
 }
 
-bool less(const decimal& lhs, const decimal& rhs) {
+inline bool less(const decimal& lhs, const decimal& rhs) {
 	// this logic assumes that there is no padding in the operands
 	size_t l = lhs.size();
 	size_t r = rhs.size();
@@ -157,7 +157,8 @@ bool less(const decimal& lhs, const decimal& rhs) {
 	// at this point we know the two operands are the same
 	return false;
 }
-bool lessOrEqual(const decimal& lhs, const decimal& rhs) {
+
+inline bool lessOrEqual(const decimal& lhs, const decimal& rhs) {
 	// this logic assumes that there is no padding in the operands
 	size_t l = lhs.size();
 	size_t r = rhs.size();
@@ -176,7 +177,7 @@ bool lessOrEqual(const decimal& lhs, const decimal& rhs) {
 }
 
 // in-place addition (equivalent to lhs += rhs)
-void add(decimal& lhs, const decimal& rhs) {
+inline void add(decimal& lhs, const decimal& rhs) {
 	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
 	if (lhs.sign() != rhs.sign()) {  // different signs
 		_rhs.setsign(!rhs.sign());
@@ -210,7 +211,7 @@ void add(decimal& lhs, const decimal& rhs) {
 	if (carry) lhs.push_back(1);
 }
 // in-place subtraction (equivalent to lhs -= rhs)
-void sub(decimal& lhs, const decimal& rhs) {
+inline void sub(decimal& lhs, const decimal& rhs) {
 	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
 	bool sign = lhs.sign();
 	if (lhs.sign() != rhs.sign()) {
@@ -262,7 +263,7 @@ void sub(decimal& lhs, const decimal& rhs) {
 	}
 }
 // in-place multiplication (equivalent to lhs *= rhs)
-void mul(decimal& lhs, const decimal& rhs) {
+inline void mul(decimal& lhs, const decimal& rhs) {
 	// special case
 	if (lhs.iszero() || rhs.iszero()) {
 		lhs.setzero();
@@ -315,7 +316,7 @@ void mul(decimal& lhs, const decimal& rhs) {
 	lhs.setsign(signOfFinalResult);
 }
 // integer division of lhs / rhs, returns new decimal
-decimal div(const decimal& lhs, const decimal& rhs) {
+inline decimal div(const decimal& lhs, const decimal& rhs) {
 	if (rhs.iszero()) {
 		throw "Divide by 0";
 	}
@@ -364,7 +365,7 @@ decimal div(const decimal& lhs, const decimal& rhs) {
 }
 
 // convert a native long long to a decimal representation
-void convert_to_decimal(long long v, decimal& d) {
+inline void convert_to_decimal(long long v, decimal& d) {
 	using namespace std;
 	d.setzero();
 	bool sign = false;
@@ -408,4 +409,4 @@ inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 	return ostr << ss.str();
 }
 
-} // namespace sw::universal::support
+}}} // namespace sw::universal::support

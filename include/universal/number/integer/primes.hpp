@@ -7,7 +7,7 @@
 #include <vector>
 #include <universal/number/integer/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	/* from numerics
 		// FUNCTION TEMPLATE gcd
@@ -227,4 +227,4 @@ IntegerType fermatFactorization(const IntegerType& number) {
 	return a - sqrt(bsquare);
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

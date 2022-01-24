@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
     // MATLAB-style minij returns the n-by-n symmetric positive definite matrix with entries A(i,j) = min(i,j) with i,j range 1..N
     template<typename Scalar>
@@ -25,4 +25,4 @@ namespace sw::universal::blas {
         return A;
     }
 
-} // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

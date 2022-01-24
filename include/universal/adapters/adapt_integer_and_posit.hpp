@@ -17,7 +17,7 @@
 #define ADAPTER_POSIT_AND_INTEGER 0
 #endif // ADAPTER_POSIT_AND_INTEGER
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // forward references
 template<size_t nbits, size_t es> class posit;
@@ -89,4 +89,4 @@ inline void convert_i2p(const integer<ibits, BlockType>& w, posit<nbits, es>& p)
 	p = v;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

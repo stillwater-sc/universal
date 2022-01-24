@@ -13,7 +13,7 @@
 #include <universal/math/stub/classify.hpp>
 #include <universal/verification/test_reporters.hpp>  // error/success reporting
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	static constexpr size_t COLUMN_WIDTH = 20;
 
@@ -1760,5 +1760,5 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal
 

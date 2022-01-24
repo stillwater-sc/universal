@@ -14,7 +14,7 @@
 // This file contains functions that manipulate a cfloat type
 // using cfloat number system knowledge.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Generate a type tag for this cfloat, for example, cfloat<8,1, unsigned char, hasSubnormals, noSupernormals, notSaturating>
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
@@ -222,4 +222,4 @@ std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorma
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

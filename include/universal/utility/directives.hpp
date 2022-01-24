@@ -31,7 +31,7 @@
 #include <string>
 #include <typeinfo>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	/// <summary>
 	/// print the cmd line if there is one or more parameters provided
@@ -100,4 +100,4 @@ namespace sw::universal {
 #endif
 	}
 
-}  // namespace sw::universal
+}} // namespace sw::universal

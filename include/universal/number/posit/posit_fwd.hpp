@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstddef>  // for size_t
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	namespace internal {
 		// generalized floating point type
@@ -23,5 +23,5 @@ template<size_t nbits, size_t es, size_t fbits> posit<nbits, es>& convert(const 
 template<size_t nbits, size_t es, size_t capacity> class quire;
 template<size_t nbits, size_t es, size_t capacity> internal::value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>&, const posit<nbits, es>&);
 
-} // namespace sw::universal
+}} // namespace sw::universal
 

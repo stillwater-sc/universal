@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 struct rational_arithmetic_exception : public universal_arithmetic_exception {
 	rational_arithmetic_exception(const std::string& err)
@@ -35,4 +35,4 @@ struct rational_index_out_of_bounds : public rational_internal_exception {
 	rational_index_out_of_bounds() : rational_internal_exception("index out of bounds") {}
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal

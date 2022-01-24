@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 #define COLUMN_WIDTH 20
 template<size_t nbits, typename bt = uint8_t>
@@ -78,4 +78,4 @@ void ReportArithmeticShiftSuccess(const std::string& test_case, const std::strin
 		<< std::endl;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

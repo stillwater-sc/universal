@@ -14,7 +14,7 @@
 #define POSIT_FAST_POSIT_4_0 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 		// set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_4_0
@@ -513,4 +513,4 @@ inline posit<NBITS_IS_4, ES_IS_0> operator+(const posit<NBITS_IS_4, ES_IS_0>& lh
 
 #endif // POSIT_FAST_POSIT_4_0
 
-} // namespace sw::universal
+}} // namespace sw::universal

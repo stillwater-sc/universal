@@ -8,7 +8,7 @@
 #include <universal/number/posit/posit_fwd.hpp>
 #include <universal/blas/matrix.hpp>
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
 // Jacobi: Solution of x in Ax=b using Jacobi Method
 template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100>
@@ -35,4 +35,4 @@ size_t Jacobi(const Matrix& A, const Vector& b, Vector& x, typename Matrix::valu
 	return itr;
 }
 
-} // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

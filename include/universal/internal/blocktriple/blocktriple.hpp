@@ -32,7 +32,7 @@
 // blocktriple operation trace options
 #include <universal/internal/blocktriple/trace_constants.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	/*
 	  The blocktriple is used as a marshalling class to transform
@@ -1089,4 +1089,4 @@ blocktriple<fbits> abs(const blocktriple<fbits, op, bt>& a) {
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

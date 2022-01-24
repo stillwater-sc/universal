@@ -9,7 +9,7 @@
 #include <sstream>
 #include <universal/number/posit/posit_fwd.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // read a posit ASCII format and make a memory posit out of it
 template<size_t nbits, size_t es>
@@ -61,4 +61,4 @@ bool parse(std::string& txt, posit<nbits, es>& p) {
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

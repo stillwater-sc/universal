@@ -11,7 +11,7 @@
 // isnormal/isinf/isnan
 // isfinite
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -97,4 +97,4 @@ namespace sw::universal {
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 	inline bool issubnorm(const Scalar& v) { return isdenorm(v); }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

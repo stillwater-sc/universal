@@ -6,7 +6,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // need a better code generator for the small posits up to nbits = 8
 // TODO: find if there is any structure in these tables across nbits and es
@@ -26,4 +26,4 @@ void GenerateSqrtTable() {
 	std::cout << std::setprecision(5);
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

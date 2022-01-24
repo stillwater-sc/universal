@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // value representing an angle expressed in radians
 // One radian is equivalent to 180/PI degrees
@@ -53,4 +53,4 @@ namespace sw::universal {
 		return std::asinh(v);
 	}
 
-}  // namespace sw::universal
+}} // namespace sw::universal

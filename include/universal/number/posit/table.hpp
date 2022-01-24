@@ -10,7 +10,7 @@
 #include <cmath>  // for frexp/frexpf
 #include <typeinfo>  // for typeid()
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // generate a full binary representation table for a given posit configuration
 template<size_t nbits, size_t es>
@@ -92,5 +92,5 @@ void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
 	}
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

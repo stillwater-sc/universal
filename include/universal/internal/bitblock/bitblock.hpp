@@ -13,7 +13,7 @@
 #include <universal/native/boolean_logic_operators.hpp>
 #include <universal/internal/bitblock/exceptions.hpp>
 
-namespace sw::universal::internal {
+namespace sw { namespace universal { namespace internal {
 
 // bitblock is a template class implementing efficient multi-precision binary arithmetic and logic
 template<size_t nbits>
@@ -719,4 +719,4 @@ bool anyAfter(const bitblock<nbits>& bits, int msb) {
 	return running;
 }
 
-} // namespace sw::universal::internal
+}}} // namespace sw::universal::internal

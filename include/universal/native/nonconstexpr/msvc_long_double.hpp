@@ -9,7 +9,7 @@
 /* Microsoft Visual Studio. --------------------------------- */
 // Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // compiler specific long double IEEE floating point
@@ -85,7 +85,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 }
 #endif
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // MSVC 
 

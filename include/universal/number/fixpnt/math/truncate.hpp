@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
@@ -31,4 +31,4 @@ fixpnt<nbits, rbits, arithmetic, bt> ceil(fixpnt<nbits, rbits, arithmetic, bt> x
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::ceil(double(x)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

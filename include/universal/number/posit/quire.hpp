@@ -7,7 +7,7 @@
 #include <universal/native/boolean_logic_operators.hpp>
 #include <universal/number/quire/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	using namespace sw::universal::internal;
 
@@ -994,4 +994,4 @@ internal::value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, con
 	return product;
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

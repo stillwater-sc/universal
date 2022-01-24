@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal::internal {
+namespace sw { namespace universal { namespace internal {
 
 template<size_t nbits, size_t rbits>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
@@ -158,4 +158,4 @@ int VerifyBitsetDivision(bool bReportIndividualTestCases = false) {
 	return nrOfFailedTestCases;
 }
 
-} // namespace sw::universal::internal
+}}} // namespace sw::universal::internal

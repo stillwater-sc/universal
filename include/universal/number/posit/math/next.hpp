@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /*
 Parameters
@@ -69,4 +69,4 @@ posit<nbits,es> nexttoward(posit<nbits,es> x, posit<256, 5> target) {
 	return x;
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

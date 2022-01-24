@@ -11,7 +11,7 @@
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Generate a type tag for this lns
 template<size_t nbits, typename bt>
@@ -39,4 +39,4 @@ std::string dynamic_range(const lns<nbits, bt>& a) {
 }
 */
 
-}  // namespace sw::universal
+}} // namespace sw::universal

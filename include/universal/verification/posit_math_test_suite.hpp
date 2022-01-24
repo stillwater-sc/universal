@@ -16,7 +16,7 @@
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 
@@ -487,5 +487,5 @@ int VerifyAcosh(bool bReportIndividualTestCases) {
 //////////////////////////////////// RANDOMIZED TEST SUITE FOR BINARY OPERATORS ////////////////////////
 
 
-} // namespace sw:universal
+}} // namespace sw::universal
 

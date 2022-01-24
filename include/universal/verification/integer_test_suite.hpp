@@ -16,7 +16,7 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
 #include <universal/verification/test_reporters.hpp> 
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// enumerate all addition cases for an integer<16> configuration compared against native short
 	template<typename BlockType, size_t testBits = 12>
@@ -531,4 +531,4 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal

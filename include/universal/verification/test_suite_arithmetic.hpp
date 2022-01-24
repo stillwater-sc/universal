@@ -22,7 +22,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>  // error/success reporting
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
@@ -126,4 +126,4 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 
 
-} // namespace sw::universal
+}} // namespace sw::universal

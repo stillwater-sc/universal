@@ -9,7 +9,7 @@
 /* Microsoft Visual Studio. --------------------------------- */
 // Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // specializations for IEEE-754 parameters
 template<>
@@ -79,7 +79,7 @@ public:
 	static constexpr int         minSubnormalExp = -1074;
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // MSVC 
 

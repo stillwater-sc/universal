@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Generate a type tag for rational type
 std::string type_tag(rational& v) {
@@ -15,4 +15,4 @@ std::string type_tag(rational& v) {
 	return str.str();
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

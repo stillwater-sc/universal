@@ -8,7 +8,7 @@
 #if defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
@@ -32,6 +32,6 @@ inline std::string to_triple(const long double& number) {
 	return std::string("not-implemented");
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // Intel ICC/ICPC.

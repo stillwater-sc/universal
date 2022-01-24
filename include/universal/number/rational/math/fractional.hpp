@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 rational fmod(rational x, rational y) {
 	return rational(std::fmod(double(x), double(y)));
@@ -20,4 +20,4 @@ rational frac(rational x) {
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

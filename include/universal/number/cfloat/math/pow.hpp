@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> pow(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
@@ -22,4 +22,4 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> pow(cfloat<n
 	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::pow(double(x), y));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

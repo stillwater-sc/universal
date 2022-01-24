@@ -12,7 +12,7 @@
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 		
 // Forward definitions
 template<size_t esizesize, size_t fsizesize, typename bt> class unum2;
@@ -317,4 +317,4 @@ unum2<esizesize,fsizesize> abs(const unum2<esizesize,fsizesize,bt>& v) {
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

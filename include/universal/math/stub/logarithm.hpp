@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// Natural logarithm of x
 	template<typename Scalar,
@@ -36,4 +36,4 @@ namespace sw::universal {
 		return std::log1p(v);
 	}
 
-}  // namespace sw::universal
+}} // namespace sw::universal

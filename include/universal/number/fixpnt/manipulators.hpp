@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Generate a type tag for general fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
@@ -36,4 +36,4 @@ std::string type_tag() {
 	return type_tag(fixpnt<nbits, rbits, arithmetic, bt>());
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

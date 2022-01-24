@@ -8,7 +8,7 @@
 #if defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // specializations for IEEE-754 parameters for PGI/NVIDIA C/C++
 template<>
@@ -67,6 +67,6 @@ public:
 };
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // Portland Group PGCC/PGCPP

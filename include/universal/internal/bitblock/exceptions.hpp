@@ -14,7 +14,7 @@
 // TODO: do we want to support the use-case where two seperate classes that use bitblock<> 
 // but desire different exception behavior?
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// BITBLOCK ARITHMETIC EXCEPTIONS
@@ -66,4 +66,4 @@ struct cut_off_leading_bit
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace sw::universal
+}} // namespace sw::universal

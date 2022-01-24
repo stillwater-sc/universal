@@ -16,7 +16,7 @@
 // This file contains functions that manipulate a posit type
 // using posit number system knowledge.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // report dynamic range of a type, specialized for a posit
 template<size_t nbits, size_t es>
@@ -235,5 +235,5 @@ std::string color_print(const posit<nbits, es>& p) {
 	return str.str();
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

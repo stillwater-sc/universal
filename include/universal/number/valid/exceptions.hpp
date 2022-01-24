@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 struct valid_arithmetic_exception : public universal_arithmetic_exception {
 	valid_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("valid arithmetic exception: ") + err) {}
@@ -35,4 +35,4 @@ struct valid_index_out_of_bounds : public valid_internal_exception {
 	valid_index_out_of_bounds() : valid_internal_exception("index out of bounds") {}
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal

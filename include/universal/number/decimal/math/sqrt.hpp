@@ -11,7 +11,7 @@
 #define DECIMAL_NATIVE_SQRT 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 #if DECIMAL_NATIVE_SQRT
 	// native sqrt for decimal
@@ -57,4 +57,4 @@ namespace sw::universal {
 	///////////////////////////////////////////////////////////////////
 	// specialized sqrt configurations
 
-} // namespace sw::universal
+}} // namespace sw::universal

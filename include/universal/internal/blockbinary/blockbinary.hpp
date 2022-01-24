@@ -14,7 +14,7 @@
 #define LONG_DOUBLE_SUPPORT 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // forward references
 template<size_t nbits, typename bt> class blockbinary;
@@ -867,4 +867,4 @@ std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, bt>& numbe
 }
 
 
-} // namespace sw::universal
+}} // namespace sw::universal

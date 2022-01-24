@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	static constexpr double oneOver2p6 = 0.015625;
 	static constexpr double oneOver2p14 = 0.00006103515625;
@@ -152,4 +152,4 @@ namespace sw::universal {
 		 1.112536929253600691545e-308,
 		 2.2250738585072013831e-308        // smallest normal value
 	};
-}  // namespace sw::universal
+}} // namespace sw::universal

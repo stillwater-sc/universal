@@ -13,7 +13,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/utility/scientific.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// standardized structure to hold performance measurement results
 	// 
@@ -380,4 +380,4 @@ namespace sw::universal {
 		report.div = (double(positives) + double(negatives)) / elapsed;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal

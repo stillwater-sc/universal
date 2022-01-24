@@ -8,7 +8,7 @@
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // compiler specific long double IEEE floating point
@@ -201,7 +201,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 #endif
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // CLANG/LLVM
 

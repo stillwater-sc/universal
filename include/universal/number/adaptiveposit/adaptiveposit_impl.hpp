@@ -44,7 +44,7 @@
 
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // forward references
 class adaptiveposit;
@@ -534,4 +534,4 @@ inline adaptiveposit operator/(const long long lhs, const adaptiveposit& rhs) {
 	return operator/(adaptiveposit(lhs), rhs);
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

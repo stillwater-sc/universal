@@ -47,7 +47,7 @@
 #include <universal/number/posit/regime.hpp>
 #include <universal/number/posit/attributes.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // inject internal namespace
 using namespace sw::universal::internal;
@@ -2738,6 +2738,6 @@ using posit256_t = posit<256, 5>;
 */
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 
 

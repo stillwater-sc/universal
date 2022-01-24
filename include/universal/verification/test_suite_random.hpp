@@ -15,7 +15,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	///////////////////////// Randomized Test Case Generation ////////////////////////
 
@@ -418,4 +418,4 @@ namespace sw::universal {
 		return fail;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal

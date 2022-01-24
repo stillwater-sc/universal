@@ -38,7 +38,7 @@ POSIX specifies that underflow may only occur when both arguments are subnormal 
 hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN.
 */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 rational hypot(rational x, rational y) {
 	return rational(std::hypot(double(x),double(y)));
@@ -54,4 +54,4 @@ rational hypotl(rational x, rational y) {
 }
 #endif
 
-}  // namespace sw::universal
+}} // namespace sw::universal

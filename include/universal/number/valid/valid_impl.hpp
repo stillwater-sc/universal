@@ -8,7 +8,7 @@
 #include <limits>
 #include <universal/number/posit/posit_impl.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 template<size_t nbits, size_t es>
 class valid {
@@ -314,4 +314,4 @@ inline valid<nbits, es> operator/(const valid<nbits, es>& lhs, const valid<nbits
 	return ratio;
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

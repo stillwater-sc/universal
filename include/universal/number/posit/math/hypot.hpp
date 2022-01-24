@@ -38,7 +38,7 @@ POSIX specifies that underflow may only occur when both arguments are subnormal 
 hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN.
 */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -58,4 +58,4 @@ posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y) {
 	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

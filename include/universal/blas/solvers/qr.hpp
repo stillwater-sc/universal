@@ -4,7 +4,7 @@
 
 // const double k = 0.0000001;
 
-namespace sw::universal::blas {  
+namespace sw { namespace universal { namespace blas {  
 
 template<typename Scalar>
 void householder_factors(matrix<Scalar>& A, const vector<Scalar>& v){
@@ -62,4 +62,4 @@ std::pair<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A) {
     return std::make_pair(Q, R);
 }
 
-} // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

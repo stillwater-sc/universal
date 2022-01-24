@@ -14,7 +14,7 @@
 // This file contains functions that manipulate a posit type
 // using posit number system knowledge.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Generate a type tag for this posit, for example, posit<8,1>
 template<size_t nbits, size_t es, typename bt>
@@ -146,5 +146,5 @@ std::string color_print(const areal<nbits, es, bt>& r) {
 	return ss.str();
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

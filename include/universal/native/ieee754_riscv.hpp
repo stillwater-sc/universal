@@ -8,7 +8,7 @@
 #if defined(__riscv)
 /* RISC-V G++ tool chain */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // specializations for IEEE-754 parameters RISC-V GCC/G++
 template<>
@@ -66,7 +66,7 @@ public:
 	static constexpr uint64_t snanmask = 0x7FF0'0000'0000'0001ull;
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // RISC-V G++ tool chain
 

@@ -7,7 +7,7 @@
 #if defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/C++. ---------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // specializations for IEEE-754 parameters for HP C/C++
 template<>
@@ -66,6 +66,6 @@ public:
 };
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // Hewlett-Packard C/C++.

@@ -27,7 +27,7 @@ you need the exception types defined, but you have the option to throw them
  // composition types used by integer
 #include <universal/number/support/decimal.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // forward references
 template<size_t nbits, typename BlockType> class integer;
@@ -1323,4 +1323,4 @@ inline integer<nbits, BlockType> operator^(long long lhs, const integer<nbits, B
 	return operator^(integer<nbits, BlockType>(lhs), rhs);
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

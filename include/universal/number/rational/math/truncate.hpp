@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
 rational trunc(rational x) {
@@ -27,4 +27,4 @@ rational ceil(rational x) {
 	return rational(std::ceil(double(x)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

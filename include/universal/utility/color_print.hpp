@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 struct ColorCode {
 	static constexpr int FG_DEFAULT = 39;
@@ -55,5 +55,5 @@ public:
 	}
 };
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

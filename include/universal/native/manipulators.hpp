@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
@@ -49,4 +49,4 @@ namespace sw::universal {
 		return type_tag(f);
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal

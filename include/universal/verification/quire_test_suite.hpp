@@ -10,7 +10,7 @@
 #include <random>
 #include <limits>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descriptor)
 {
@@ -272,5 +272,5 @@ int ValidateQuireAccumulation(bool bReportIndividualTestCases, const std::vector
 }
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 

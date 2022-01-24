@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <exception>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Generate a type tag for general integer
 template<size_t nbits, typename bt>
@@ -45,4 +45,4 @@ inline std::string to_triple(const integer<nbits, bt>& number) {
 	return str.str();
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

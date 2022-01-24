@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ///////////////////////////////////////////////////////////////
 // base universal arithmetic exceptions
@@ -25,4 +25,4 @@ struct universal_internal_exception : public std::runtime_error {
 	universal_internal_exception(const std::string& err) : std::runtime_error(err) {}
 };
 
-}  // namespace sw::universal
+}} // namespace sw::universal

@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 rational pow(rational x, rational y) {
 	return rational(std::pow(double(x), double(y)));
@@ -19,4 +19,4 @@ rational pow(rational x, double y) {
 	return rational(std::pow(double(x), y));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

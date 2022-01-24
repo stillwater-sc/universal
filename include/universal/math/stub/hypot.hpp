@@ -38,7 +38,7 @@ POSIX specifies that underflow may only occur when both arguments are subnormal 
 hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN.
 */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
@@ -48,4 +48,4 @@ namespace sw::universal {
 
 	// hypotf/hypotd/hypotl ?
 
-}  // namespace sw::universal
+}} // namespace sw::universal

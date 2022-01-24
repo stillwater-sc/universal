@@ -12,7 +12,7 @@
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// IEEE-754 parameter constexpressions
 	template<typename Real>
@@ -39,7 +39,7 @@ namespace sw::universal {
 
 	// IEEE-754 parameter specializations are in the compiler specific sections
 
-}
+}} // namespace sw::universal
 
 // compiler specializations for IEEE-754 parameters
 #include <universal/native/ieee754_msvc.hpp>
@@ -58,7 +58,7 @@ namespace sw::universal {
 #include <universal/native/nonconstexpr754.hpp>
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 
 	template<typename Real>
@@ -187,4 +187,4 @@ void valueRepresentations(Real value) {
 	std::cout << "color  : " << color_print(value) << '\n';
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

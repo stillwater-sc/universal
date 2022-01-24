@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /*
 Parameters
@@ -67,4 +67,4 @@ fixpnt<nbits, rbits, arithmetic, bt> nexttoward(fixpnt<nbits, rbits, arithmetic,
 	return x;
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

@@ -9,14 +9,14 @@
 #if defined(__SUNPRO_C) || defined(__SUNPRO_CC)
 /* Oracle Solaris Studio. ----------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // compiler specific long double IEEE floating point
 
 // TBD
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // Oracle Solaris Studio
 

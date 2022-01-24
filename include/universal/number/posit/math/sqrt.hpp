@@ -11,7 +11,7 @@
 #define POSIT_NATIVE_SQRT 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// straight Babylonian
 	inline double babylonian(double v) {
@@ -510,4 +510,4 @@ namespace sw::universal {
 
 #endif // POSIT_FAST_POSIT_256_5
 
-} // namespace sw::universal
+}} // namespace sw::universal

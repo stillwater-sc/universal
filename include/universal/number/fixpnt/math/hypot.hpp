@@ -38,7 +38,7 @@ POSIX specifies that underflow may only occur when both arguments are subnormal 
 hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN.
 */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> hypot(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
@@ -55,4 +55,4 @@ fixpnt<nbits, rbits, arithmetic, bt> hypotl(fixpnt<nbits, rbits, arithmetic, bt>
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::hypotl((long double)(x),(long double)(y)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

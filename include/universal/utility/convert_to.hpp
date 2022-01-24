@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /** Convert from \p Source to \p Target in a functional style using \ref convert.
  * Example: 'convert_to<double>(p)' where 'p' is a posit.
@@ -17,4 +17,4 @@ Target convert_to(const Source& src) {
     return t;
 }
 
-}
+}} // namespace sw::universal

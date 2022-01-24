@@ -5,10 +5,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	static constexpr int INF_TYPE_NEGATIVE = -1;   // -inf
 	static constexpr int INF_TYPE_EITHER = 0;      // any inf
 	static constexpr int INF_TYPE_POSITIVE = 1;    // +inf
 
-} // namespace sw::universal
+}} // namespace sw::universal

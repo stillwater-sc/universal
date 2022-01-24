@@ -8,7 +8,7 @@
 #if defined(__SUNPRO_C) || defined(__SUNPRO_CC)
 /* Oracle Solaris Studio. ----------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // specializations for IEEE-754 parameters Oracle Solaris Studio
 template<>
@@ -67,7 +67,7 @@ public:
 };
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // Oracle Solaris Studio
 

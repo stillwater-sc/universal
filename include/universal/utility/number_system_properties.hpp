@@ -10,7 +10,7 @@
 #include <string>
 #include <limits>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// report the minimum and maximum of a type
 	template<typename Ty>
@@ -70,5 +70,5 @@ namespace sw::universal {
 
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

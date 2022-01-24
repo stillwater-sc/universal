@@ -21,7 +21,7 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 
 ////////////////////////////// VERIFICATION TEST SUITES ///////////////////////////////
@@ -202,4 +202,4 @@ int TestNegativeSqrtArgument(bool bReportIndividualTestCases) {
 	return nrOfFailedTestCases;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

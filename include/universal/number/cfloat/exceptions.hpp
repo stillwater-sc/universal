@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // base class for cfloat arithmetic exceptions
 struct cfloat_arithmetic_exception : public universal_arithmetic_exception {
@@ -75,4 +75,4 @@ struct cfloat_hpos_too_large : public cfloat_internal_exception {
 //	cfloat_rbits_too_large(const std::string& error = "number of remaining bits too large for this fraction") :cfloat_internal_exception(error) {}
 //};
 
-} // namespace sw::universal
+}} // namespace sw::universal

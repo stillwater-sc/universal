@@ -8,7 +8,7 @@
 #include <sstream>
 #include <iomanip>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 template<typename Ty>
 std::string to_scientific(Ty value) {
@@ -31,6 +31,6 @@ std::string to_scientific(Ty value) {
 }
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 

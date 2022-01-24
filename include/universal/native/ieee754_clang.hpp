@@ -8,7 +8,7 @@
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // IEEE-754 specializations for Clang
 //
@@ -81,7 +81,7 @@ public:
 	static constexpr int         minSubnormalExp = -16445;
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // CLANG/LLVM
 

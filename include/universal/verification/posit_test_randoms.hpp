@@ -14,7 +14,7 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	//////////////////////////////////// RANDOMIZED TEST SUITE FOR LARGE POSITS ////////////////////////
 
@@ -480,4 +480,4 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal

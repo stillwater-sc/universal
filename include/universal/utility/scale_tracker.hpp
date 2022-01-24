@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <vector>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 struct scaleTracker {
 public:
@@ -54,4 +54,4 @@ private:
 	size_t overflows;
 };
 
-}  // namespace sw::universal
+}} // namespace sw::universal

@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -34,4 +34,4 @@ posit<nbits,es> log1p(posit<nbits,es> x) {
 	return posit<nbits,es>(std::log1p(double(x)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

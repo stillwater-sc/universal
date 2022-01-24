@@ -11,7 +11,7 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/abstract/triple.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 		
 // Forward definitions
 template<size_t nbits, typename bt> class lns;
@@ -288,4 +288,4 @@ lns<nbits> abs(const lns<nbits,bt>& v) {
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

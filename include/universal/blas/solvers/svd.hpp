@@ -5,7 +5,7 @@
 #include <universal/blas/blas_l1.hpp>
 #include <universal/blas/matrix.hpp>
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
 template<typename Scalar, typename Tolerance = double>
 void svd(const matrix<Scalar>& A, matrix<Scalar>& S, matrix<Scalar>& V, matrix<Scalar>& D, Tolerance tol = 10e-10) {
@@ -60,4 +60,4 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> svd(const matrix<Scal
 
 }   
 
-}  // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

@@ -7,7 +7,7 @@
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
 
-namespace sw::universal::blas { 
+namespace sw { namespace universal { namespace blas { 
 
 // generate identity matrix
 template<typename Scalar>
@@ -124,4 +124,4 @@ matrix<Scalar> triu(const matrix<Scalar>& A, size_t k = 0) {
 	return U;
 }
 
-} // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

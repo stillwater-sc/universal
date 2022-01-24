@@ -11,7 +11,7 @@
 #include <universal/native/integers.hpp>
 #include <universal/utility/color_print.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
@@ -206,5 +206,5 @@ inline std::string color_print(Real number) {
 	return s.str();
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal
 

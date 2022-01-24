@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/integer/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // square root of an arbitrary integer
 template<size_t nbits, typename BlockType>
@@ -75,4 +75,4 @@ bool perfect_square(const integer<nbits, BlockType>& a) {
 	return (a == square * square) ? true : false;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

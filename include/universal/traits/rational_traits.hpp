@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/traits/integral_constant.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// define a trait for the rational number system type
 	template<typename _Ty>
@@ -26,4 +26,4 @@ namespace sw::universal {
 	template<typename _Ty, typename Type = void>
 	using enable_if_rational = std::enable_if_t<is_rational<_Ty>, Type>;
 
-} // namespace sw::universal
+}} // namespace sw::universal

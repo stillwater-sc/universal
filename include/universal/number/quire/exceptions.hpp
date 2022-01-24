@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// QUIRE ARITHMETIC EXCEPTIONS
@@ -32,4 +32,4 @@ struct operand_too_small_for_quire
 	operand_too_small_for_quire(const std::string& error = "operand value too small for quire") : quire_exception(error) {}
 };
 
-}   // namespace sw::universal
+}} // namespace sw::universal

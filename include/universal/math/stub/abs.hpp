@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // return absolute value of a native IEEE-754 type
 template<typename Scalar,
@@ -14,4 +14,4 @@ Scalar abs(Scalar v) {
 	return std::abs(v);
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

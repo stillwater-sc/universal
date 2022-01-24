@@ -13,7 +13,7 @@
 
 // NOTE: reporters write to cerr
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 #define NUMBER_COLUMN_WIDTH 20
 
@@ -218,4 +218,4 @@ void ReportTwoInputFunctionSuccess(const std::string& test_case, const std::stri
 		<< '\n';
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

@@ -13,7 +13,7 @@
 #define POSIT_FAST_POSIT_8_0 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_8_0
@@ -539,4 +539,4 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 
 #endif // POSIT_FAST_POSIT_8_0
 
-} // namespace sw::universal
+}} // namespace sw::universal

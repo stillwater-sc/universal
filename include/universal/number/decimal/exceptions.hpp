@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // base arithmetic error exception for decimal integer number system
 struct decimal_arithmetic_exception : public universal_arithmetic_exception {
@@ -37,4 +37,4 @@ struct decimal_integer_byte_index_out_of_bounds : public decimal_internal_except
 	decimal_integer_byte_index_out_of_bounds() : decimal_internal_exception("byte index out of bounds") {}
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal

@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Natural logarithm of x
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
@@ -31,4 +31,4 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> log1p(cfloat
 	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::log1p(double(x)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

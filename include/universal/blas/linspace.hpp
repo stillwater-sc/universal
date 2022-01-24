@@ -7,7 +7,7 @@
 #include <universal/blas/vector.hpp>
 #include <universal/blas/vmath/power.hpp>
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
 /*
  * arange generates an integer sequence between start and stop with stride
@@ -113,4 +113,4 @@ array([-1.00000000e+00+1.22464680e-16j, -7.07106781e-01+7.07106781e-01j,
 1.00000000e+00+0.00000000e+00j])
 */
 
-}  // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

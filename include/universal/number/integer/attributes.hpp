@@ -7,7 +7,7 @@
 #include <vector>
 #include <universal/number/integer/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
 
@@ -24,4 +24,4 @@ integer<nbits, BlockType> ipow(const integer<nbits, BlockType>& a, const integer
 	return result;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

@@ -7,7 +7,7 @@
 #include <cmath> // for std:pow()
 //#include <universal/internal/bitblock/bitblock.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // functions to provide details about
 // the properties of a fixed-point configuration
@@ -93,4 +93,4 @@ inline fixpnt<nbits, rbits, arithmetic, bt> copysign(const fixpnt<nbits, rbits, 
     return -c; 
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

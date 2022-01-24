@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /*
 Parameters
@@ -69,4 +69,4 @@ cfloat<nbits,es> nexttoward(cfloat<nbits, es, bt> x, cfloat<256, 5, bt> target) 
 	return x;
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

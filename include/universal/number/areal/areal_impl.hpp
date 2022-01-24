@@ -67,7 +67,7 @@
 #define TRACE_CONVERSION 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 		
 	constexpr bool AREAL_NIBBLE_MARKER = true;
 
@@ -1515,4 +1515,4 @@ inline bool operator>=(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return !operator<(lhs, areal<nbits, es, bt>(rhs));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

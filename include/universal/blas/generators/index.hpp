@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <random>
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
 // fill a dense (M, N) matrix with linear index values in row order
 template <typename Scalar>
@@ -45,4 +45,4 @@ matrix<Scalar> column_order_index(size_t M, size_t N, Scalar start = 1) {
 	return A;
 }
 
-} // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

@@ -54,7 +54,7 @@
 #define _NODISCARD
 #endif // _HAS_NODISCARD
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
 template<typename Scalar>
 class vector {
@@ -346,4 +346,4 @@ typename std::enable_if<sw::universal::is_posit<Scalar>, Scalar>::type operator*
 	return p;
 }
 
-}  // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

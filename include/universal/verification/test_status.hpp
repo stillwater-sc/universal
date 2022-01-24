@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iomanip>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // test reporting helper
 // takes an int reporting the number of test failures and prints a PASS/FAIL designation
@@ -36,4 +36,4 @@ int ReportCheck(const std::string& tag, const std::string& test, bool success) {
 	return nrOfFailedTestCases;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

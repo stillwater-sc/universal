@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // functions to provide details about properties of a posit configuration
 
@@ -292,4 +292,4 @@ inline posit<nbits, es> copysign(const posit<nbits, es>& a, const posit<nbits, e
     return -c;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

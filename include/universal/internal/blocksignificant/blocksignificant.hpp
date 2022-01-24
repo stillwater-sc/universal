@@ -37,7 +37,7 @@
    and the placement of the radix point, are directed by the aggregating class,
    such as blocktriple.
  */
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Encoding of the blocksignificant
 enum class BitEncoding {
@@ -959,4 +959,4 @@ inline constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksigni
 	return b.twosComplement();
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <random>
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
 // generate a uniform random MxN matrix
 template<typename Matrix>
@@ -68,4 +68,4 @@ matrix<Scalar>& uniform_random(matrix<Scalar>& A, double lowerbound = 0.0, doubl
 	return A;
 }
 
-} // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

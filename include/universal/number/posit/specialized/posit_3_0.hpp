@@ -12,7 +12,7 @@
 #define POSIT_FAST_POSIT_3_0 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_3_0
@@ -562,4 +562,4 @@ private:
 
 #endif // POSIT_FAST_POSIT_3_0
 	
-} // namespace sw::universal
+}} // namespace sw::universal

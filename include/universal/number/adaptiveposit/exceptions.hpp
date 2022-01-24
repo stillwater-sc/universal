@@ -36,7 +36,7 @@
 
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // base class for adaptiveposit arithmetic exceptions
 struct adaptiveposit_arithmetic_exception
@@ -68,4 +68,4 @@ struct adaptiveposit_word_index_out_of_bounds : public adaptiveposit_internal_ex
 		: adaptiveposit_internal_exception(error) {}
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal

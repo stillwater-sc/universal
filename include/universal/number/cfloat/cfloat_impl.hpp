@@ -32,7 +32,7 @@
 #define TRACE_CONVERSION 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /*
  * classic floats have denorms, but no gradual overflow, and 
@@ -3575,4 +3575,4 @@ inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

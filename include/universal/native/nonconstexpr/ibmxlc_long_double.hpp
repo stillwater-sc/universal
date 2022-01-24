@@ -7,7 +7,7 @@
 #if defined(__IBMC__) || defined(__IBMCPP__)
 /* IBM XL C/C++. -------------------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
@@ -36,6 +36,6 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, f
 }
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // IBM XL C/C++.

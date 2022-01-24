@@ -9,7 +9,7 @@
 #include <sstream>
 #include <complex>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // complex<> type adapter for to_binary() operator
 template<typename NumberType>
@@ -21,4 +21,4 @@ std::string to_binary(const std::complex<NumberType>& c, bool nibbleMarker = fal
 	return ss.str();
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

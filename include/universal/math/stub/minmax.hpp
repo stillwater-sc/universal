@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
@@ -20,4 +20,4 @@ namespace sw::universal {
 		return std::max(x, y);
 	}
 
-}  // namespace sw::universal
+}} // namespace sw::universal

@@ -12,7 +12,7 @@ For example, a fully generalized L1 norm function can now be written as:
 
 #include <universal/math/math>   // injection of native IEEE-754 math library functions into sw::universal namespace
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
 // L1-norm of a vector 
 template<typename Scalar> Scalar normL1(const sw::universal::blas::vector<Scalar>& v) { 
@@ -24,4 +24,4 @@ template<typename Scalar> Scalar normL1(const sw::universal::blas::vector<Scalar
     return L1Norm;
 }
 
-}
+}}} // namespace sw::universal::blas

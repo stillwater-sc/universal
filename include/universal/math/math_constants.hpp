@@ -8,7 +8,7 @@
 // default is double constants
 #undef PI_IN_LONG_DOUBLES
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // best practice for C++11
 // inject mathematical constants in our namespace
@@ -42,4 +42,4 @@ constexpr double m_log10e   = 0.434294481903251827651; // log10(e)
 constexpr double m_ln2      = 0.693147180559945309417; // ln(2)
 constexpr double m_ln10     = 2.30258509299404568402;  // ln(10)
 
-}  // namespace sw::universal
+}} // namespace sw::universal

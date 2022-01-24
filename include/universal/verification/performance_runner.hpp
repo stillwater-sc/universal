@@ -9,7 +9,7 @@
 #include <vector>
 #include <chrono>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// Generic workload for testing construction/destruction performance
 	template<typename Scalar>
@@ -126,4 +126,4 @@ namespace sw::universal {
 		cout << tag << ' ' << setw(10) << NR_OPS << " per " << setw(15) << elapsed_time << "sec -> " << toPowerOfTen(double(NR_OPS) / elapsed_time) << "ops/sec" << endl;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal

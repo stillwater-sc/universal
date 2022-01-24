@@ -12,7 +12,7 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
 #include <universal/verification/test_reporters.hpp> 
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 #if 0
 	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
@@ -1305,5 +1305,5 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal
 

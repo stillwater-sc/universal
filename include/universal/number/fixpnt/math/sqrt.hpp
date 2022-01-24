@@ -12,7 +12,7 @@
 #define FIXPNT_NATIVE_SQRT 0
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /*
 	// straight Babylonian
@@ -162,4 +162,4 @@ namespace sw::universal {
 	///////////////////////////////////////////////////////////////////
 	// specialized sqrt configurations
 
-} // namespace sw::universal
+}} // namespace sw::universal

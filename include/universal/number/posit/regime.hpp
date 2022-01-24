@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 using namespace sw::universal::internal;
 
@@ -211,5 +211,5 @@ inline bool operator<=(const regime<nbits, es>& lhs, const regime<nbits, es>& rh
 template<size_t nbits, size_t es>
 inline bool operator>=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator< (lhs, rhs); }
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

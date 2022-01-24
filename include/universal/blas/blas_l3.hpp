@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal::blas {
+namespace sw { namespace universal { namespace blas {
 
 // sum entire matrix (dim == 0), all rows (dim == 1), or all columns (dim == 2)
 template<typename Matrix>
@@ -178,4 +178,4 @@ vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
 	return vector<value_type>{-1};
 }
 
-}
+}}} // namespace sw::universal::blas

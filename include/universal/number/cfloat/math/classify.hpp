@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // STD LIB function for IEEE floats: Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
@@ -45,4 +45,4 @@ inline bool isnormal(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 #endif
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

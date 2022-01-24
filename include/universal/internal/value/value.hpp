@@ -17,7 +17,7 @@
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 
-namespace sw::universal::internal {
+namespace sw { namespace universal { namespace internal {
 
 struct value_internal_exception : public universal_internal_exception {
 	value_internal_exception(const std::string& error)
@@ -1083,4 +1083,4 @@ value<fbits> sqrt(const value<fbits>& a) {
 	return std::sqrt(double(a));
 }
 
-}  // namespace sw::universal::internal
+}}} // namespace sw::universal::internal

@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 # ifndef CFLOAT_VERBOSE_OUTPUT
 // CFLOAT decode and conversion
@@ -121,4 +121,4 @@ constexpr bool cfloat_trace_quire_add = true;
 
 # endif
 
-}  // namespace sw::universal
+}} // namespace sw::universal

@@ -20,7 +20,7 @@
 #pragma message("Fast specialization of posit<256,4> requested but ignored as fast implemention is TBD")
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	// test the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_256_5
@@ -35,4 +35,4 @@ namespace sw::universal {
 
 #endif // POSIT_FAST_POSIT_256_5
 
-} // namespace sw::universal
+}} // namespace sw::universal

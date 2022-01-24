@@ -7,7 +7,7 @@
 #include <cmath> // for std:pow()
 //#include <universal/internal/bitblock/bitblock.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // functions to provide details about
 // the properties of a cfloat configuration
@@ -47,4 +47,4 @@ void report_range(std::ostream& ostr) {
 		<< c.maxpos() << " ]\n";
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

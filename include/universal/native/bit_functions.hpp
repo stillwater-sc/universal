@@ -7,7 +7,7 @@
 #include <cstdint>
 
 // This file contains bit manipulation functions for native integer types.
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ///////////////////////////////////////////////////////////////////////
 // decoders
@@ -138,4 +138,4 @@ inline constexpr unsigned int findMostSignificantBit(long long x) {
 	return base + bval;
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

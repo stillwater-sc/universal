@@ -19,7 +19,7 @@
 #include <universal/number/rational/exceptions.hpp>
 #include <universal/number/decimal/decimal.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////////////////////
 // Forward references
@@ -522,5 +522,5 @@ rational remainder(const rational& _a, const rational& _b) {
 	return rational_divide(_a, _b).rem;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal
 

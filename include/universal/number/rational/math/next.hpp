@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /*
 Parameters
@@ -50,4 +50,4 @@ rational nexttoward(rational x, rational target) {
 	return x;
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

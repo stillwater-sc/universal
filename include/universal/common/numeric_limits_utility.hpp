@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // a standard table format for numeric_limits<> of type Scalar
 template<typename Scalar, size_t ColumnWidth = 40>
@@ -51,4 +51,4 @@ void compareNumberTraits(std::ostream& ostr) {
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

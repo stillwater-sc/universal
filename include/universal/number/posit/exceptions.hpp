@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// POSIT ARITHMETIC EXCEPTIONS
@@ -71,4 +71,4 @@ struct posit_rbits_too_large : public posit_internal_exception {
 	posit_rbits_too_large() :posit_internal_exception("number of remaining bits too large for this fraction") {}
 };
 
-}   // namespace sw::universal
+}} // namespace sw::universal

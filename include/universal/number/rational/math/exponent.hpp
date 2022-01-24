@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // the current shims are NON-COMPLIANT with the Universal standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -37,4 +37,4 @@ rational expm1(rational x) {
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

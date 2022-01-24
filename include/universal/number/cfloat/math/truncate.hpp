@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Truncate value by rounding toward zero, returning the nearest integral value that is not larger in magnitude than x
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
@@ -92,4 +92,4 @@ cfloat<nbits, es> floor(cfloat<nbits, es> x) {
 }
 #endif //NOW
 
-}  // namespace sw::universal
+}} // namespace sw::universal

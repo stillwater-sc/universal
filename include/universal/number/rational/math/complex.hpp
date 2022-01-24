@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <complex>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Real component of a complex rational
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
@@ -34,4 +34,4 @@ bool isinf(std::complex< rational > x) {
 	return (isinf(x.real()) || isinf(x.imag()));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

@@ -26,7 +26,7 @@
 #include <universal/utility/occurrence.hpp>
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////////////////////
 // Forward references
@@ -876,5 +876,5 @@ decimal remainder(const decimal& _a, const decimal& _b) {
 	return decint_divide(_a, _b).rem;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal
 

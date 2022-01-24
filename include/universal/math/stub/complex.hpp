@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <complex>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -32,4 +32,4 @@ std::complex< Scalar > conj(std::complex< Scalar > x) {
 	return std::conj(x);
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

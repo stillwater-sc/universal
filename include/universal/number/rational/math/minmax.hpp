@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 rational min(rational x, rational y) {
 	return rational(std::min(double(x), double(y)));
@@ -15,4 +15,4 @@ rational max(rational x, rational y) {
 	return rational(std::max(double(x), double(y)));
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

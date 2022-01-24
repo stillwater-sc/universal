@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // base class for areal arithmetic exceptions
 struct areal_arithmetic_exception : public universal_arithmetic_exception {
@@ -56,4 +56,4 @@ struct areal_hpos_too_large : public areal_internal_exception {
 	areal_hpos_too_large() : areal_internal_exception("position of hidden bit too large for given areal") {}
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal

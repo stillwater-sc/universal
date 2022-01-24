@@ -44,7 +44,7 @@
 
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // forward references
 class adaptivefloat;
@@ -534,4 +534,4 @@ inline adaptivefloat operator/(const long long lhs, const adaptivefloat& rhs) {
 	return operator/(adaptivefloat(lhs), rhs);
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

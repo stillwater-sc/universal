@@ -8,13 +8,13 @@
 #if defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // compiler specific long double IEEE floating point
 
 // TBD
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // Portland Group PGCC/PGCPP

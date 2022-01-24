@@ -17,7 +17,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>  // error/success reporting
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
@@ -265,4 +265,4 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
-} // namespace sw::universal
+}} // namespace sw::universal

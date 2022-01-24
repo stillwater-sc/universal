@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <random>
 
-namespace sw::universal::blas {  
+namespace sw { namespace universal { namespace blas {  
 
 template<typename Scalar>
 inline void gaussian_random(matrix<Scalar>& omega, double mean = 100.00, double stddev = 6.00){
@@ -23,4 +23,4 @@ inline void gaussian_random(matrix<Scalar>& omega, double mean = 100.00, double 
     }
 }
 
-} // namespace sw::universal::blas
+}}} // namespace sw::universal::blas

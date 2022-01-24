@@ -37,7 +37,7 @@
 
 #endif
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 
-} // namespace sw::universal
+}} // namespace sw::universal

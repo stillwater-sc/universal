@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Base-e exponential function
 template<typename Scalar,
@@ -35,4 +35,4 @@ template<typename Scalar,
 	return std::expm1(x);
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

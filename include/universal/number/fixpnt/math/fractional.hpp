@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> fmod(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
@@ -23,4 +23,4 @@ fixpnt<nbits, rbits, arithmetic, bt> frac(fixpnt<nbits, rbits, arithmetic, bt> x
 }
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

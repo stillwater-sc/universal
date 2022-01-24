@@ -13,7 +13,7 @@
 #include <universal/math/stub/classify.hpp> // fpclassify, isnormal, issubnormal, isinf, isnan
 #include <universal/verification/test_reporters.hpp> 
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 	template<typename SrcType, typename TestType>
 	void ReportIntervalConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
@@ -252,5 +252,5 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal
 

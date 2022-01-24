@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 # ifndef BLOCKTRIPLE_VERBOSE_OUTPUT
 // blocktriple decode and conversion
@@ -109,4 +109,4 @@ constexpr bool _trace_btriple_quire_add = true;
 # endif
 
 
-}  // namespace sw::universal
+}} // namespace sw::universal

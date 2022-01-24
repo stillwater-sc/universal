@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 struct lns_arithmetic_exception : public universal_arithmetic_exception {
 	lns_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("lns arithmetic exception: ") + err) {}
@@ -35,4 +35,4 @@ struct lns_index_out_of_bounds : public lns_internal_exception {
 	lns_index_out_of_bounds() : lns_internal_exception("index out of bounds") {}
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal

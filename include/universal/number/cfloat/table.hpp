@@ -10,7 +10,7 @@
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /// <summary>
 /// generate a full binary representation table for a given bfloat configuration
@@ -122,5 +122,5 @@ void GenerateCfloatExponentBounds()
 	}
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

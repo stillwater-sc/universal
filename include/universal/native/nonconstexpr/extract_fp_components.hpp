@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 
 // native IEEE-754 component extraction for float
@@ -25,6 +25,6 @@ inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double
 }
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 

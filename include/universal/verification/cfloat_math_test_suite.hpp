@@ -15,7 +15,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 
@@ -533,5 +533,5 @@ int VerifyAcosh(bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
-} // namesace sw:universal
+}} // namespace sw::universal
 

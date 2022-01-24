@@ -10,7 +10,7 @@
 #include <universal/number/areal/areal_impl.hpp>
 #include <universal/number/areal/manipulators.hpp>  // hex_print and the like
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /// <summary>
 /// generate a full binary representation table for a given areal configuration
@@ -92,5 +92,5 @@ void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFor
 	}
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 /// <summary>
 /// Absolute error is the difference between the computed value and the reference value of a quantity.
@@ -34,5 +34,5 @@ ReturnType RelativeError(const ArgumentType& actual, const ArgumentType& referen
 	return (ReturnType(actual) - ReturnType(reference)) / ReturnType(reference);
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

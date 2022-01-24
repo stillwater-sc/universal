@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
 template<typename Scalar,
@@ -21,4 +21,4 @@ Scalar erfc(Scalar x) {
 	return std::erfc(x);
 }
 
-}  // namespace sw::universal
+}} // namespace sw::universal

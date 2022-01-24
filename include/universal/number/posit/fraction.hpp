@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <universal/number/posit/exceptions.hpp>
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 using namespace sw::universal::internal;
 
@@ -297,5 +297,5 @@ inline bool operator<=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs)
 template<size_t nfbits>
 inline bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator< (lhs, rhs); }
 
-}  // namespace sw::universal
+}} // namespace sw::universal
 

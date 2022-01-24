@@ -8,7 +8,7 @@
 #if defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // specializations for IEEE-754 parameters Intel ICC
 template<>
@@ -67,6 +67,6 @@ public:
 };
 
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // Intel ICC/ICPC.

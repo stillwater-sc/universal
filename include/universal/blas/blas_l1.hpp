@@ -9,7 +9,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/blas/vector.hpp>
 
-namespace sw::universal::blas { 
+namespace sw { namespace universal { namespace blas { 
 
 // 1-norm of a vector: sum of magnitudes of the vector elements, default increment stride is 1
 template<typename Vector>
@@ -259,7 +259,7 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 	return norm;
 }
 
-} // namespace sw::universal::blas
+}}} // namespace sw::universal::blas
 
 // specializations for STL vectors
 

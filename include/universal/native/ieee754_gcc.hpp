@@ -8,7 +8,7 @@
 #if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 /* GNU GCC/G++. --------------------------------------------- */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 // specializations of IEEE-754 parameters for GCC
 
@@ -81,6 +81,6 @@ public:
 	static constexpr int         minSubnormalExp = -16445;
 };
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 #endif // GNU GCC/G++
