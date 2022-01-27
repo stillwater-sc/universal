@@ -254,7 +254,7 @@ public:
 #endif
 
 	// assign the value of the textual representation to the fixpnt: can be binary/octal/decimal/hexadecimal
-	constexpr fixpnt& assign(const std::string& number) {
+	fixpnt& assign(const std::string& number) {
 		clear();
 
 		// minimum size for a decimal representation is integer + '.' fraction, so at least 3 characters
