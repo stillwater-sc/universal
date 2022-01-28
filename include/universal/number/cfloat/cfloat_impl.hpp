@@ -2888,7 +2888,7 @@ private:
 
 // convert cfloat to decimal fixpnt string, i.e. "-1234.5678"
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string convert_to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value) {
+std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value, long long precision) {
 	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
 	constexpr size_t bias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
 	std::stringstream str;
@@ -2960,24 +2960,83 @@ std::string convert_to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubn
 	return str.str();
 }
 
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value, long long precision) {
+	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+	constexpr size_t bias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
+	std::stringstream str;
+	if (value.iszero()) {
+		str << '0';
+		return str.str();
+	}
+	if (value.sign()) str << '-';
+
+	// denormalize the number to gain access to the most sigificant digits
+	// 1.ffff^e
+	// scale is e
+	// lsbScale is e - fbits
+	// shift to get lsb to position 2^0 = (e - fbits)
+	std::int64_t scale = value.scale();
+	std::int64_t shift = scale + fbits; // we want the lsb at 2^0
+	std::int64_t lsbScale = scale - fbits;  // scale of the lsb
+	support::decimal partial, multiplier;
+	partial.setzero();
+
+	multiplier.powerOf2(lsbScale);
+
+	// convert the fraction bits 
+	for (unsigned i = 0; i < fbits; ++i) {
+		if (value.at(i)) {
+			support::add(partial, multiplier);
+		}
+		support::add(multiplier, multiplier);
+	}
+	if (!value.isdenormal()) {
+		support::add(partial, multiplier); // add the hidden bit
+	}
+	str << partial;
+	return str.str();
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 /// stream operators
 
 // ostream output generates an ASCII format for the floating-point argument
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the fixpnt into a string
-	std::stringstream ss;
-
-	std::streamsize prec = ostr.precision();
+	std::streamsize precision = ostr.precision();
 	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-//	ss << std::setw(width) << std::setprecision(prec) << convert_to_decimal_fixpnt_string(v) << ' ';
-	ss << std::setw(width) << std::setprecision(prec) << double(v) << ' ';
-	return ostr << ss.str();
+
+	std::ios_base::fmtflags ff = ostr.flags();
+	// extract the format flags that change the representation
+	bool scientific = (ff & std::ios_base::scientific) == std::ios_base::scientific;
+	bool fixed      = !scientific && (ff & std::ios_base::fixed);
+
+	std::string representation;
+	if (fixed) {
+		representation = to_decimal_fixpnt_string(v, precision);
+	}
+	else {
+		std::stringstream ss;
+		ss << double(v);
+		representation = ss.str();
+//		representation = to_string(v, precision);
+	}
+
+	// implement setw and left/right operators
+	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
+	if (width > repWidth) {
+		std::streamsize diff = static_cast<std::string::size_type>(width - representation.size());
+		char fill = ostr.fill();
+		if ((ff & std::ios_base::left) == std::ios_base::left) {
+			representation.append(diff, fill);
+		}
+		else {
+			representation.insert(static_cast<std::string::size_type>(0), diff, fill);
+		}
+	}
+
+	return ostr << representation;
 }
 
 
@@ -2994,22 +3053,6 @@ template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSuper
 inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ulp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(a);
 	return ++b - a;
-}
-
-// convert to std::string
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << " zero b";
-		return s.str();
-	}
-	else if (v.isinf()) {
-		s << " infinite b";
-		return s.str();
-	}
-	//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
-	return s.str();
 }
 
 // transform cfloat to a binary representation

@@ -170,26 +170,34 @@ try {
 
 	std::cout << "cfloat<16, 5, uint32_t, true>         half-precision subnormals\n";
 	{
+		constexpr size_t nbits = 16;
+		constexpr size_t es = 5;
 		using BlockType = uint32_t;
-		using Cfloat = cfloat<16, 5, BlockType, true>;
+		using Cfloat = cfloat<nbits, es, BlockType, true>;
 		constexpr size_t fbits = Cfloat::fbits;
 		Cfloat a, b;
 
 		// enumerate the subnormals
 		uint32_t pattern = 1ul;
+		std::streamsize precision = std::cout.precision();
+		std::cout << std::setw(nbits) << "binary" << " : " << std::setw(nbits) << "native" << " : " << std::setw(nbits) << "conversion\n";
+//		std::cout << std::setprecision(3);
+		std::cout << std::fixed;
 		for (unsigned i = 0; i < fbits; ++i) {
 			a.setbits(pattern);
-			std::cout << color_print(a) << " : " << a << " : " << float(a) << '\n';
+			std::cout << color_print(a) << " : " << std::setw(nbits) << a << " : " << std::setw(nbits) << float(a) << '\n';
 			pattern <<= 1;
 		}
 		// enumerate the normals
 		a.setbits(0x0400);
 		for (size_t i = 0; i < 30; ++i) {
-			std::cout << color_print(a) << " : " <<  a << " : " << std::setw(12) << float(a) << " + 1ULP ";
+			std::cout << color_print(a) << " : " << std::setw(nbits) << a << " : " << std::setw(nbits) << float(a) << " + 1ULP ";
 			b = a; ++b;
-			std::cout << color_print(b) << " : " << b << " : " << std::setw(12) << float(b) << '\n';
+			std::cout << color_print(b) << " : " << std::setw(nbits) << b << " : " << std::setw(nbits) << float(b) << '\n';
 			a *= 2;
 		}
+		std::cout << std::setprecision(precision);
+		std::cout << std::scientific;
 	}
 	std::cout << "cfloat<32, 8, uint32_t, true>         IEEE-754 float subnormals\n";
 	{
@@ -233,11 +241,19 @@ try {
 		using dp   = cfloat< 64, 11, uint32_t, true, false, false>;
 		using quad = cfloat<128, 15, uint8_t, true, false, false>;
 		using octo = cfloat<256, 18, uint8_t, true, false, false>;
-		using Real = cfloat< 80, 11, uint32_t, true, false, false>;;
+//		using Real = cfloat< 80, 11, uint32_t, true, false, false>;
+		using Real = dp;
 
-		Real minpos(SpecificValue::minpos);
-		std::cout << "quadruple-precision smallest value : " << to_binary(minpos) << " : " << minpos << '\n';
-		
+		auto precision = std::cout.precision();
+		Real v(SpecificValue::minpos);
+		v = 1.0f;
+//		auto s = to_string(v, precision);
+		std::cout << "value : " << to_binary(v) << " : " << v << '\n';
+		std::cout << v << '\n';
+	
+		// this demonstrates that our conversion is WAY TOO SLOW: takes 4 minutes to create the representation: ETLO 1/23
+//		octo o(SpecificValue::maxpos);
+//		std::cout << std::fixed << o << std::scientific << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

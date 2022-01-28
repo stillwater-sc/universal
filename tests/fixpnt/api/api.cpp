@@ -220,21 +220,21 @@ try {
 		}
 	}
 
-	#undef FIXPNT_PARSE
-#ifdef FIXPNT_PARSE
 	////////////////////////////////////////////////////////////////////////////////////
-	// parsing of text input
+	// parsing and assignment of text input values
 	{
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		constexpr size_t nbits = 12;
+		constexpr size_t rbits = 8;
 		fixpnt<nbits, rbits, Modulo, uint32_t> a, b;
-		a.assign("7.98765");
-		if (a != 7.98765) ++nrOfFailedTestCases;
-		a.assign("0b0010.1111");
-		b.setbits(0x2F);
+		a.assign("6.90234375");
+		std::cout << to_binary(a, true) << " : " << a << '\n';
+		if (a != 6.90234375) ++nrOfFailedTestCases;
+		a.assign("0b0110.1110'0111");
+		std::cout << to_binary(a, true) << " : " << a << '\n';
+		b.setbits(0x6E7);
 		if (a != b) ++nrOfFailedTestCases;
 	}
-#endif
+
 	///////////////////////////////////////////////////////////////////////////////////
 	// arithmetic
 
