@@ -8,7 +8,7 @@
 | [Codeship](https://app.codeship.com/projects/286490)  | ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master) | Docker container build and regression |
 | [GitHub Actions](https://github.com/stillwater-sc/universal/actions) | [![Build Status](https://github.com/stillwater-sc/universal/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/stillwater-sc/universal) | Latest Linux/MacOS/Windows builds and regression tests |
 | [Code Coverage](https://coveralls.io) | [![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master) | Code coverage scanner |
-| [Docker Pulls](https://hub.docker.com/r/stillwater/universal) | [![Docker Pulls](https://img.shield.io/docker/pulls/stillwater/univers.svg)](https://hub.docker.com/r/stillwater/universal) | Container pulls |
+| [Docker Pulls](https://hub.docker.com/r/stillwater/universal) | [![Docker Pulls](https://img.shields.io/docker/pulls/stillwater/universal.svg)](https://hub.docker.com/r/stillwater/universal) | Container pulls |
 
 [![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
 
