@@ -448,7 +448,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_4, ES_I
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the posit into a string
 	std::stringstream ss;
-#if POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
+#if POSIT_ERROR_FREE_IO_FORMAT
 	ss << NBITS_IS_4 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
 #else
 	std::streamsize prec = ostr.precision();

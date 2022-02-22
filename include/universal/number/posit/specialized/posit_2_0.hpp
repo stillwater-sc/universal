@@ -408,8 +408,8 @@ private:
 				// to make certain that setw and left/right operators work properly
 				// we need to transform the posit into a string
 				std::stringstream ss;
-#if POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
-				ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+#if POSIT_ERROR_FREE_IO_FORMAT
+				ss << NBITS_IS_2 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
 #else
 				std::streamsize prec = ostr.precision();
 				std::streamsize width = ostr.width();
