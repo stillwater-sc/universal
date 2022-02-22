@@ -3123,7 +3123,10 @@ inline bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const c
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
-inline bool operator< (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return (lhs - rhs).isneg(); }
+inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& rhs) {
+	cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
+	return (diff.iszero() || diff.isneg()) ? false : true;  // got to guard against -0
+}
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>

@@ -82,6 +82,13 @@ try {
 	float b = 1.0e5f;
 	float c = 1.0f;
 
+	{
+		Float16 a, b;
+		bool c = (a > b);
+		std::cout << a << " > " << b << " = " << (a > b ? "incorrect" : "correct") << '\n';
+		return 0;
+	}
+
 	std::cout << "16-bit floating-point\n";
 	CompareTerms<Float16>(a, b, c);
 	std::cout << '\n';
