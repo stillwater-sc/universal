@@ -51,10 +51,11 @@ void Test() {
 		{ 4,  3, -5,  7} };
 	Vector b = { -1, 2, 3, 0.5 };
 	Vector x = { 0, 0, 0, 0 };
+	Scalar tolerance = 0.0001;    // <--- how do we make this relative to the Scalar type?
 
 	std::cout << A << '\n';
 	std::cout << b << '\n';
-	size_t iterations = sw::universal::blas::Jacobi(A, b, x);
+	size_t iterations = sw::universal::blas::Jacobi(A, b, x, tolerance);
 	std::cout << "solution in " << iterations << " iterations\n";
 	std::cout << "solution is " << x << '\n';
 	std::cout << A * x << " vs actual " << b << '\n';
@@ -65,6 +66,8 @@ int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
+
+	Test<cfloat<16, 5>>();
 
 	Test<float>();
 

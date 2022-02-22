@@ -1580,7 +1580,7 @@ public:
 			}
 		}
 	}
-	inline constexpr void fraction(blockbinary<fbits, bt>& f) const {
+	inline constexpr blockbinary<fbits, bt>& fraction(blockbinary<fbits, bt>& f) const {
 		f.clear();
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
@@ -1590,6 +1590,7 @@ public:
 		else if constexpr (nrBlocks > 1) {
 			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(i)); } // TODO: TEST!
 		}
+		return f;
 	}
 	inline constexpr uint64_t fraction_ull() const {
 		uint64_t raw{ 0 };
@@ -3093,7 +3094,9 @@ inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
 abs(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(false, v.scale(), v.fraction(), v.isZero());
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a(v);
+	a.setsign(false);
+	return a;
 }
 
 ////////////////////// debug helpers
