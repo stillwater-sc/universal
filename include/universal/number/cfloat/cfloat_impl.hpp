@@ -1582,13 +1582,13 @@ public:
 	}
 	inline constexpr blockbinary<fbits, bt>& fraction(blockbinary<fbits, bt>& f) const {
 		f.clear();
-		if constexpr (0 == nrBlocks) return;
+		if constexpr (0 == nrBlocks) return f;
 		else if constexpr (1 == nrBlocks) {
 			bt fraction = bt(_block[MSU] & ~MSU_EXP_MASK);
 			f.setbits(fraction);
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(i)); } // TODO: TEST!
+			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(i)); }
 		}
 		return f;
 	}
@@ -2952,7 +2952,7 @@ std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, 
 		if (position == fbits) str << '.';
 		--position;
 	}
-	if (digitsWritten < fbits) { // deal with trailing 0s
+	if (static_cast<size_t>(digitsWritten) < fbits) { // deal with trailing 0s
 		for (size_t i = digitsWritten; i < fbits; ++i) {
 			str << '0';
 		}
