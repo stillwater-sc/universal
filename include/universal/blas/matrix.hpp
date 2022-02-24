@@ -191,7 +191,7 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 	size_t n = A.cols();
 	for (size_t i = 0; i < m; ++i) {
 		for (size_t j = 0; j < n; ++j) {
-			ostr << std::fixed << std::setw(width) << A(i, j) << " ";
+			ostr << std::setw(width) << A(i, j) << " ";
 		}
 		ostr << '\n';
 	}

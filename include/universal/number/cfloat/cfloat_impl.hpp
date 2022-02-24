@@ -2952,8 +2952,8 @@ std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, 
 		if (position == fbits) str << '.';
 		--position;
 	}
-	if (static_cast<size_t>(digitsWritten) < fbits) { // deal with trailing 0s
-		for (size_t i = digitsWritten; i < fbits; ++i) {
+	if (digitsWritten < precision) { // deal with trailing 0s
+		for (size_t i = static_cast<size_t>(digitsWritten); i < fbits; ++i) {
 			str << '0';
 		}
 	}
@@ -3027,20 +3027,20 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 	// implement setw and left/right operators
 	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
 	if (width > repWidth) {
-		std::streamsize diff = static_cast<std::string::size_type>(width - representation.size());
+		std::streamsize diff = width - static_cast<std::streamsize>(representation.size());
 		char fill = ostr.fill();
 		if ((ff & std::ios_base::left) == std::ios_base::left) {
-			representation.append(diff, fill);
+			representation.append(static_cast<size_t>(diff), fill);
 		}
 		else {
-			representation.insert(static_cast<std::string::size_type>(0), diff, fill);
+			representation.insert(0ull, static_cast<size_t>(diff), fill);
 		}
 	}
 
 	return ostr << representation;
 }
 
-
+// istream input: TBD
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::istream& operator>>(std::istream& istr, const cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
 	istr >> v._fraction;
@@ -3125,7 +3125,7 @@ inline bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const c
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& rhs) {
 	cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
-	return (diff.iszero() || diff.isneg()) ? false : true;  // got to guard against -0
+	return (!diff.iszero() && diff.isneg()) ? true : false;  // got to guard against -0
 }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return  operator< (rhs, lhs); }
