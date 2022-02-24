@@ -184,7 +184,7 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb) + 1ull);
 	if (msb >= 0) {
 		for (int i = msb; i >= 0; --i) {
-			_frac[fbits - size_t{ 1 } - static_cast<size_t>(msb - i)] = tmp[static_cast<size_t>(i)];
+			_frac[fbits - 1ull - (static_cast<size_t>(msb) - static_cast<size_t>(i))] = tmp[static_cast<size_t>(i)];
 		}
 	}
 	_fraction.set(_frac, nrFractionBits);
