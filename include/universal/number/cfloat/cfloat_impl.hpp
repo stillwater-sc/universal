@@ -3113,6 +3113,7 @@ void ReportCfloatClassParameters() {
 
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -3124,15 +3125,24 @@ template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsa
 inline bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
+	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
 	cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
 	return (!diff.iszero() && diff.isneg()) ? true : false;  // got to guard against -0
 }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
-inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
+	if (lhs.isnan() && rhs.isnan()) return false;
+	return !operator> (lhs, rhs); 
+}
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
-inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
+	if (lhs.isnan() && rhs.isnan()) return false;
+	return !operator< (lhs, rhs); 
+}
 
 //////////////////////////////////////////////////////
 /// cfloat - cfloat binary arithmetic operators

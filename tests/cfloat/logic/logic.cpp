@@ -241,7 +241,7 @@ namespace sw::universal {
 } // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -267,22 +267,111 @@ try {
 
 #if MANUAL_TESTING
 
+	float b = 1.0f;
 
+	std::cout << "correct pattern as defined by IEEE-754 is:\nF F F F F T   <--- correct pattern\n";
+	{
+		float test = std::numeric_limits<float>::quiet_NaN();
+
+		printf("%c %c %c %c %c %c\n",
+			(test < test) ? 'T' : 'F',
+			(test <= test) ? 'T' : 'F',
+			(test == test) ? 'T' : 'F',
+			(test > test) ? 'T' : 'F',
+			(test >= test) ? 'T' : 'F',
+			(test != test) ? 'T' : 'F'
+		);
+
+		printf("%c %c %c %c %c %c\n",
+			(test < b) ? 'T' : 'F',
+			(test <= b) ? 'T' : 'F',
+			(test == b) ? 'T' : 'F',
+			(test > b) ? 'T' : 'F',
+			(test >= b) ? 'T' : 'F',
+			(test != b) ? 'T' : 'F'
+		);
+	}
+
+	{
+		float test = std::numeric_limits<float>::signaling_NaN();
+
+		printf("%c %c %c %c %c %c\n",
+			(test < test) ? 'T' : 'F',
+			(test <= test) ? 'T' : 'F',
+			(test == test) ? 'T' : 'F',
+			(test > test) ? 'T' : 'F',
+			(test >= test) ? 'T' : 'F',
+			(test != test) ? 'T' : 'F'
+		);
+
+		printf("%c %c %c %c %c %c\n",
+			(test < b) ? 'T' : 'F',
+			(test <= b) ? 'T' : 'F',
+			(test == b) ? 'T' : 'F',
+			(test > b) ? 'T' : 'F',
+			(test >= b) ? 'T' : 'F',
+			(test != b) ? 'T' : 'F'
+		);
+	}
+
+	std::cout << "cfloat\n";
+	{
+		cfloat<16, 5> test = std::numeric_limits<cfloat<16, 5>>::quiet_NaN();
+
+		printf("%c %c %c %c %c %c\n",
+			(test < test) ? 'T' : 'F',
+			(test <= test) ? 'T' : 'F',
+			(test == test) ? 'T' : 'F',
+			(test > test) ? 'T' : 'F',
+			(test >= test) ? 'T' : 'F',
+			(test != test) ? 'T' : 'F'
+		);
+
+		printf("%c %c %c %c %c %c\n",
+			(test < b) ? 'T' : 'F',
+			(test <= b) ? 'T' : 'F',
+			(test == b) ? 'T' : 'F',
+			(test > b) ? 'T' : 'F',
+			(test >= b) ? 'T' : 'F',
+			(test != b) ? 'T' : 'F'
+		);
+	}
+
+	{
+		cfloat<16, 5> test = std::numeric_limits<cfloat<16, 5>>::signaling_NaN();
+
+		printf("%c %c %c %c %c %c\n",
+			(test < test) ? 'T' : 'F',
+			(test <= test) ? 'T' : 'F',
+			(test == test) ? 'T' : 'F',
+			(test > test) ? 'T' : 'F',
+			(test >= test) ? 'T' : 'F',
+			(test != test) ? 'T' : 'F'
+		);
+
+		printf("%c %c %c %c %c %c\n",
+			(test < b) ? 'T' : 'F',
+			(test <= b) ? 'T' : 'F',
+			(test == b) ? 'T' : 'F',
+			(test > b) ? 'T' : 'F',
+			(test >= b) ? 'T' : 'F',
+			(test != b) ? 'T' : 'F'
+		);
+	}
 
 #else
 
-
-	cfloat<16, 1> a;
+	cfloat<16, 5> a;
 
 	std::cout << "Logic: operator==()\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 4, 1> >(), "cfloat< 4,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 5, 1> >(), "cfloat< 5,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 6, 1> >(), "cfloat< 6,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 7, 1> >(), "cfloat< 7,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 8, 1> >(), "cfloat< 8,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 9, 1> >(), "cfloat< 9,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<10, 1> >(), "cfloat<10,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 4, 2> >(), "cfloat< 4,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 5, 2> >(), "cfloat< 5,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 6, 2> >(), "cfloat< 6,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 7, 2> >(), "cfloat< 7,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 8, 2> >(), "cfloat< 8,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat< 9, 2> >(), "cfloat< 9,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<10, 2> >(), "cfloat<10,2>", "==");
 
 	if (!(a == 0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "cfloat<16,1> == 0", "== int literal");
@@ -312,14 +401,14 @@ try {
 #endif
 
 	std::cout << "Logic: operator!=()\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 4, 1> >(), "cfloat< 4,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 5, 1> >(), "cfloat< 5,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 6, 1> >(), "cfloat< 6,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 7, 1> >(), "cfloat< 7,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 8, 1> >(), "cfloat< 8,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 9, 1> >(), "cfloat< 9,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<10, 1> >(), "cfloat<10,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<12, 1> >(), "cfloat<12,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 4, 1, uint8_t, true, true, false> >(), "cfloat< 4,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 5, 1, uint8_t, true, true, false> >(), "cfloat< 5,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 6, 1, uint8_t, true, true, false> >(), "cfloat< 6,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 7, 1, uint8_t, true, true, false> >(), "cfloat< 7,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 8, 1, uint8_t, true, true, false> >(), "cfloat< 8,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat< 9, 1, uint8_t, true, true, false> >(), "cfloat< 9,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<10, 1, uint8_t, true, true, false> >(), "cfloat<10,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<12, 1, uint8_t, true, true, false> >(), "cfloat<12,1>", "!=");
 
 	if (a != 0) {
 		nrOfFailedTestCases += ReportTestResult(1, "cfloat<16,1> != 0", "!= int literal");
@@ -348,17 +437,15 @@ try {
 	}
 #endif
 
-#ifdef AREAL_SUBTRACT_IS_IMPLEMENTED
-	cout << "Logic: operator<()" << endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 4, 1> >(), "cfloat< 4,1>", "<");
-	return 0;
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 5, 1> >(), "cfloat< 5,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 6, 1> >(), "cfloat< 6,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 7, 1> >(), "cfloat< 7,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 8, 1> >(), "cfloat< 8,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 9, 1> >(), "cfloat< 9,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat<10, 1> >(), "cfloat<10,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat<12, 1> >(), "cfloat<12,1>", "<");
+	std::cout << "Logic: operator<()\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 4, 1, uint8_t, true, true, false> >(), "cfloat< 4,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 5, 1, uint8_t, true, true, false> >(), "cfloat< 5,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 6, 1, uint8_t, true, true, false> >(), "cfloat< 6,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 7, 1, uint8_t, true, true, false> >(), "cfloat< 7,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 8, 1, uint8_t, true, true, false> >(), "cfloat< 8,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 9, 1, uint8_t, true, true, false> >(), "cfloat< 9,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat<10, 1, uint8_t, true, true, false> >(), "cfloat<10,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat<12, 1, uint8_t, true, true, false> >(), "cfloat<12,1>", "<");
 
 	if (a < 0) {
 		nrOfFailedTestCases += ReportTestResult(1, "cfloat<16,1> < 0", "< int literal");
@@ -387,15 +474,14 @@ try {
 	}
 #endif
 
-	cout << "Logic: operator<=()" << endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 4, 1> >(), "cfloat< 4,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 5, 1> >(), "cfloat< 5,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 6, 1> >(), "cfloat< 6,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 7, 1> >(), "cfloat< 7,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 8, 1> >(), "cfloat< 8,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 9, 1> >(), "cfloat< 9,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat<10, 1> >(), "cfloat<10,1>", "<");
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat<12, 1> >(), "cfloat<12,1>", "<");
+	std::cout << "Logic: operator<=()\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 4, 1, uint8_t, true, true, false> >(), "cfloat< 4,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 5, 1, uint8_t, true, true, false> >(), "cfloat< 5,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 6, 1, uint8_t, true, true, false> >(), "cfloat< 6,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 7, 1, uint8_t, true, true, false> >(), "cfloat< 7,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 8, 1, uint8_t, true, true, false> >(), "cfloat< 8,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat< 9, 1, uint8_t, true, true, false> >(), "cfloat< 9,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicLessThan< cfloat<10, 1, uint8_t, true, true, false> >(), "cfloat<10,1>", "<");
 
 	if (a < 0) {
 		nrOfFailedTestCases += ReportTestResult(1, "cfloat<16,1> < 0", "< int literal");
@@ -424,7 +510,6 @@ try {
 	}
 #endif
 
-#endif //	AREAL_SUBTRACT_IS_IMPLEMENTED
 
 #if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<12, 1> >(), "cfloat<12,1>", "==");
