@@ -59,9 +59,9 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
 /// <param name="s">sign (output: bool ref)</param>
 /// <param name="e">exponent (output: blockbinary ref)</param>
 /// <param name="f">fraction (output: blockbinary ref)</param>
-template<size_t nbits, size_t es, size_t fbits, typename bt,
+template<size_t nbits, size_t es, size_t fbitsPlus1, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-void decode(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
+void decode(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbitsPlus1, bt>& f) {
 	v.sign(s);
 	v.exponent(e);
 	v.fraction(f);
@@ -1580,6 +1580,8 @@ public:
 			}
 		}
 	}
+	// blockbinary is a 2's complement encoding, so we need to 0 extend the fraction, hence the fbits+1 size
+	template<size_t fbits>
 	inline constexpr blockbinary<fbits, bt>& fraction(blockbinary<fbits, bt>& f) const {
 		f.clear();
 		if constexpr (0 == nrBlocks) return f;
@@ -3126,21 +3128,54 @@ inline bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const c
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& rhs) {
 	if (lhs.isnan() || rhs.isnan()) return false;
+	// need this as arithmetic difference is defined as snan(indeterminate)
 	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
 	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
-	cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
-	return (!diff.iszero() && diff.isneg()) ? true : false;  // got to guard against -0
+	if constexpr (nsub) {
+		cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
+		return (!diff.iszero() && diff.isneg()) ? true : false;  // got to guard against -0
+	}
+	if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
+	if (lhs.isneg() && rhs.ispos()) return true;
+	if (lhs.ispos() && rhs.isneg()) return false;
+	bool positive = lhs.ispos();
+	if (positive) {
+		if (lhs.scale() < rhs.scale()) return true;
+		if (lhs.scale() > rhs.scale()) return false;
+	}
+	else {
+		if (lhs.scale() > rhs.scale()) return true;
+		if (lhs.scale() < rhs.scale()) return false;
+	}
+	// sign and scale are the same
+	if (lhs.scale() == rhs.scale()) {
+		// compare fractions: we do not have subnormals, so we can ignore the hidden bit
+		blockbinary<nnbits - 1ull - nes, nbt> l, r; 
+		lhs.fraction(l);
+		rhs.fraction(r);
+		blockbinary<nnbits - nes, nbt> ll, rr; // fbits + 1 so we can 0 extend to honor 2's complement encoding of blockbinary
+		ll.assignWithoutSignExtend(l);
+		rr.assignWithoutSignExtend(r);
+		return (positive ? (ll < rr) : (ll > rr));
+	}
+	return false;
 }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
-inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return  operator< (rhs, lhs); }
+inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
+	if (lhs.isnan() || rhs.isnan()) return false;
+	// need this as arithmetic difference is defined as snan(indeterminate)
+	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
+	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
+	return  operator< (rhs, lhs); 
+}
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
-	if (lhs.isnan() && rhs.isnan()) return false;
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return !operator> (lhs, rhs); 
 }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
-	if (lhs.isnan() && rhs.isnan()) return false;
+	if (lhs.isnan() || rhs.isnan()) return false;
 	return !operator< (lhs, rhs); 
 }
 

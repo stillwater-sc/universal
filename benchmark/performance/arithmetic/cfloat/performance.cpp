@@ -143,7 +143,7 @@ void DecodeWorkload(size_t NR_OPS) {
 		a.setbits(i);
 		bool s{ false };
 		blockbinary<a.es, typename Scalar::BlockType> e;
-		blockbinary<a.fbits, typename Scalar::BlockType> f;
+		blockbinary<a.fbits+1, typename Scalar::BlockType> f;
 		sw::universal::decode(a, s, e, f);
 		if ((i%2) == f.at(0)) {
 			++success;

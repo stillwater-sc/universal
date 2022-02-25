@@ -36,7 +36,7 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;
-			sw::universal::decode<nbits, es, fbits, bt>(v, s, e, f);
+			decode(v, s, e, f);
 			ostr << i << ','
 				<< to_binary(v) << ','
 				<< s << ','
@@ -74,7 +74,7 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;
-			sw::universal::decode<nbits, es, fbits, bt>(v, s, e, f);
+			decode(v, s, e, f);
 			ostr << std::setw(4) << i << ": "
 				<< std::setw(bin_column) << to_binary(v)
 				<< std::setw(sign_column) << s

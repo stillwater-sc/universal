@@ -157,10 +157,10 @@ inline std::string hex_print(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
 	std::stringstream s;
-	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+	constexpr size_t fhbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fhbits;
 	bool sign{ false };
 	blockbinary<es, bt> e;
-	blockbinary<fbits, bt> f;
+	blockbinary<fhbits, bt> f;
 	decode(r, sign, e, f);
 
 	// sign bit
@@ -193,7 +193,7 @@ std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorma
 	std::stringstream s;
 	bool sign{ false };
 	blockbinary<es,bt> e;
-	blockbinary<Real::fbits,bt> f;
+	blockbinary<Real::fbits+1,bt> f;
 	decode(r, sign, e, f);
 
 	Color red(ColorCode::FG_RED);

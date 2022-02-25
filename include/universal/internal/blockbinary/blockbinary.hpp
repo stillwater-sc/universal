@@ -404,7 +404,7 @@ public:
 		}
 		return retval;
 	}
-	inline constexpr bt block(size_t b) const noexcept { // TODO: convert to noexcept function?
+	inline constexpr bt block(size_t b) const noexcept {
 		if (b < nrBlocks) return _block[b]; 
 		return bt(0); // return 0 when block index out of bounds
 	}
