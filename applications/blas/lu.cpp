@@ -11,6 +11,7 @@
 // enable fast posits
 #define POSIT_FAST_SPECIALIZATION
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
@@ -66,10 +67,10 @@ void GaussianEliminationTest() {
 	using Scalar = sw::universal::posit<nbits, es>;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
-	std::cout << "Using " << dynamic_range<nbits, es>() << '\n';
+	Scalar a;
+	std::cout << "Using " << dynamic_range(a) << '\n';
 
-	// repeat set up for posits
-	std::cout << "Posit inputs\n";
+
 	Matrix U = {     // define the upper triangular matrix
 		{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 },
 		{ 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 },
@@ -92,7 +93,7 @@ void GaussianEliminationTest() {
 	Scalar epsplus = Scalar(1) + std::numeric_limits<Scalar>::epsilon();
 	Vector x(N);
 	x = epsplus;
-	auto b = fmv(A, x);   // construct the right hand side
+	auto b = sw::universal::blas::fmv(A, x);   // construct the right hand side
 	std::cout << "b" << b << '\n';
 	std::cout << "\n>>>>>>>>>>>>>>>>\n";
 
@@ -111,14 +112,40 @@ void LUTest() {
 	{ 0, 0, 0, 1, 1 }
 	};
 
+	std::cout << "---------------- LUTest ------------------\n";
+	std::cout << "Original matrix\n" << A << '\n';
 	auto LU = lu(A);
-	std::cout << "\n---------------- result ------------------\n";
+	std::cout << "---------------- result ------------------\n";
 	std::cout << "Combined matrix\n" << LU << '\n';
 	auto D = diag(diag(LU));
 	auto L = tril(LU) - D + sw::universal::blas::eye<Scalar>(num_cols(A));
 	auto U = triu(LU);
 	std::cout << "Lower Triangular matrix\n" << L << '\n';
 	std::cout << "Upper Triangular matrix\n" << U << '\n';
+}
+
+template<typename Scalar>
+void LUwithoutQuire() 
+{
+	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
+
+	const size_t N = 5;
+	Matrix A = {
+	{ 5, 4, 3, 2, 1 },
+	{ 4, 4, 3, 2, 1 },
+	{ 0, 3, 3, 2, 1 },
+	{ 0, 0, 2, 2, 1 },
+	{ 0, 0, 0, 1, 1 }
+	};
+	Vector x(N), b(N);
+	// define a difficult solution
+	Scalar epsplus = Scalar(1) + std::numeric_limits<Scalar>::epsilon();
+	x = epsplus;
+	matvec(b, A, x);
+	std::cout << "reference x = " << x << '\n';
+	x = solve(A, b);
+	std::cout << "solution  x = " << x << '\n';
 }
 
 template<typename Scalar>
@@ -217,7 +244,7 @@ void MagicSquareMatrix() {
 	MagicSquareTest<float>(501);
 	MagicSquareTest<double>(501);
 	MagicSquareTest<sw::universal::posit<32, 2> >(51);
-	MagicSquareTest<sw::universal::posit<32, 2> >(251);
+	// MagicSquareTest<sw::universal::posit<32, 2> >(251);
 }
 
 template<typename Posit>
@@ -250,10 +277,10 @@ try {
 	using namespace sw::universal::blas;
 
 	// We want to solve the system Ax=b
-	// GaussianEliminationTest<32, 2>();
+	GaussianEliminationTest<32, 2>();
 
-	int nrOfFailedTestCases = 0;
-;
+	LUwithoutQuire<cfloat<40, 8, uint32_t, true, false, false>>();
+
 	std::cout << std::setprecision(std::numeric_limits<float>::max_digits10);
 	FloatVsPositAroundOne();
 
@@ -263,13 +290,15 @@ try {
 	std::cout << '\n';
 	MagicSquareMatrix();
 
-
 	// basic workflow used in MATLAB
 	//	[L U P] = lu(A);
 	//	y = L\(P*b);
 	//	x = U\y;
 
-	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+	std::cout << '\n';
+	LUTest<posit<32, 2>>();
+
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

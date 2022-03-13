@@ -30,9 +30,13 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 
 	if (csvFormat) {
 		ostr << "\"Generate Lookup table for a " << type_tag(v) << " in CSV format\"" << std::endl;
-		ostr << "#, Binary, sign, scale, exponent, fraction, value, hex\n";
+		ostr << "#, Binary, sign, scale, exponent, fraction, value, hex, unsigned, signed\n";
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			v.setbits(i);
+			blockbinary<nbits, bt> signedValue;
+			v.getbits(signedValue);  // blockbinary is a 2's complement integer
+			blockbinary<nbits + 1, bt > unsignedValue; // keep MSB 0 to reflect an unsigned value
+			v.getbits(unsignedValue);
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;
@@ -43,7 +47,10 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 				<< scale(v) << ','
 				<< std::right << to_binary(e) << ','
 				<< std::right << to_binary(f) << ','
-				<< v
+				<< v << ','
+				<< hex_print(v) << ','
+				<< signedValue << ','
+				<< unsignedValue
 				<< '\n';
 		}
 		ostr << std::endl;
@@ -59,6 +66,7 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 		const size_t fraction_column = 16;
 		const size_t value_column = 30;
 		const size_t hex_format_column = 16;
+		const size_t integer_column = 10;
 
 		ostr << std::setw(index_column) << " # "
 			<< std::setw(bin_column) << "Binary"
@@ -68,9 +76,20 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 			<< std::setw(fraction_column) << "fraction"
 			<< std::setw(value_column) << "value"
 			<< std::setw(hex_format_column) << "hex_format"
+			<< std::setw(integer_column) << "signed"
+			<< std::setw(integer_column) << "positive"
+			<< std::setw(integer_column) << "unsigned"
 			<< std::endl;
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			v.setbits(i);
+			blockbinary<nbits, bt> signedValue, positiveProjection;
+			v.getbits(signedValue);  // blockbinary is a 2's complement integer
+			positiveProjection = signedValue;
+			if (signedValue.isneg()) {
+				positiveProjection.twosComplement();
+			}
+			blockbinary<nbits + 1, bt > unsignedValue; // keep MSB 0 to reflect an unsigned value
+			v.getbits(unsignedValue);
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;
@@ -83,6 +102,9 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 				<< std::setw(fraction_column) << std::right << to_binary(f, true)
 				<< std::setw(value_column) << v
 				<< std::setw(hex_format_column) << std::right << hex_print(v)
+				<< std::setw(integer_column) << std::right << signedValue
+				<< std::setw(integer_column) << std::right << positiveProjection
+				<< std::setw(integer_column) << std::right << unsignedValue
 				<< std::endl;
 		}
 	}

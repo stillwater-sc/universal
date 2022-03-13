@@ -15,6 +15,8 @@
 #define BLAS_TRACE_ROUNDING_EVENTS 0
 #endif
 
+namespace sw { namespace universal { namespace blas {
+
 // Matrix-vector product: b = A * x, no quire for posit values
 template<typename Matrix, typename Vector>
 void matvec(Vector& b, const Matrix& A, const Vector& x) {
@@ -109,3 +111,5 @@ sw::universal::blas::vector< sw::universal::posit<nbits, es> > fmv(const sw::uni
 #endif
 	return b;
 }
+
+}}}  // namespace sw::universal::blas

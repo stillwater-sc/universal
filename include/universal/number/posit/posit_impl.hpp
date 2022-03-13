@@ -2621,18 +2621,15 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, Value rhs) {
 
 #endif // POSIT_ENABLE_LITERALS
 
-// Magnitude of a posit (equivalent to turning the sign bit off).
+// Magnitude of a posit (expensive as we are creating a new posit).
 template<size_t nbits, size_t es> 
 posit<nbits, es> abs(const posit<nbits, es>& p) {
 	return p.abs();
 }
 template<size_t nbits, size_t es>
-posit<nbits, es> fabs(const posit<nbits, es>& p) {
+posit<nbits, es> fabs(const posit<nbits, es>& v) {
+	posit<nbits, es> p(v);
 	return p.abs();
-}
-template<typename Scalar>
-Scalar fabs(Scalar s) {
-	return std::fabs(s);
 }
 
 // Atomic fused operators

@@ -31,7 +31,6 @@
 // Finite Difference test: CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<typename Scalar, size_t MAX_ITERATIONS>
 size_t fdTest(size_t DoF = 64) {
-	using namespace sw::universal::blas;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 	using Vector = sw::universal::blas::vector<Scalar>;
 

@@ -1559,7 +1559,6 @@ public:
 		return 0;
 	}
 
-
 	inline constexpr void sign(bool& s) const {
 		s = sign();
 	}
@@ -1668,9 +1667,11 @@ public:
 		}
 		return shift;
 	}
-	inline constexpr void getbits(blockbinary<nbits, bt>& b) const {
+	template<size_t targetbits>
+	inline constexpr void getbits(blockbinary<targetbits, bt>& b) const {
+		size_t upperbound = (nbits > targetbits ? targetbits : nbits);
 		b.clear();
-		for (size_t i = 0; i < nbits; ++i) { b.setbit(i, at(i)); }
+		for (size_t i = 0; i < upperbound; ++i) { b.setbit(i, at(i)); }
 	}
 
 	// casts to native types
@@ -3099,6 +3100,12 @@ abs(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a(v);
 	a.setsign(false);
 	return a;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
+fabs(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> v) {
+	return abs(v);
 }
 
 ////////////////////// debug helpers
