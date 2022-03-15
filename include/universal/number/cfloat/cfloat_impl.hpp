@@ -296,49 +296,49 @@ public:
 	static_assert(_es < 21ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a classic floating point number");
 	// how do you assert on the condition that if es == 1 then subnormals and supernormals must be true?
-	static constexpr bool subsuper = (_hasSubnormals && _hasSupernormals);
-	static constexpr bool special = (subsuper ? true : (_es > 1));
+	static constexpr bool     subsuper = (_hasSubnormals && _hasSupernormals);
+	static constexpr bool     special = (subsuper ? true : (_es > 1));
 	static_assert(special, "when es == 1, cfloat must have both subnormals and supernormals");
-	static constexpr size_t bitsInByte = 8ull;
-	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr size_t   bitsInByte = 8ull;
+	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
 
-	static constexpr size_t nbits = _nbits;
-	static constexpr size_t es = _es;
-	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
-	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
+	static constexpr size_t   nbits = _nbits;
+	static constexpr size_t   es = _es;
+	static constexpr size_t   fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
+	static constexpr size_t   fhbits = nbits - es;           // number of fraction bits including the hidden bit
 
-	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
-	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
+	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
 	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
 	static constexpr uint64_t topfbits = fbits % 64;
 	static constexpr uint64_t FR_SHIFT = (topfbits > 0 ? (64 - topfbits) : 0);
 	static constexpr uint64_t ALL_ONES_FR = (topfbits > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> FR_SHIFT) : 0ull); // special case for nbits <= 64
 	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
 
-	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
-	static constexpr bt     MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
-	static constexpr size_t fBlocks = 1ull + ((fbits - 1ull) / bitsInBlock); // nr of blocks with fraction bits
-	static constexpr size_t FSU = fBlocks - 1ull;  // FSU = Fraction Significant Unit: the index of the block that contains the most significant fraction bits
-	static constexpr bt     FSU_MASK = (ALL_ONES >> (fBlocks * bitsInBlock - fbits));
-	static constexpr size_t bitsInFSU = bitsInBlock - (fBlocks * bitsInBlock - fbits);
+	static constexpr size_t   nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr size_t   MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+	static constexpr bt       MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr size_t   bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
+	static constexpr size_t   fBlocks = 1ull + ((fbits - 1ull) / bitsInBlock); // nr of blocks with fraction bits
+	static constexpr size_t   FSU = fBlocks - 1ull;  // FSU = Fraction Significant Unit: the index of the block that contains the most significant fraction bits
+	static constexpr bt       FSU_MASK = (ALL_ONES >> (fBlocks * bitsInBlock - fbits));
+	static constexpr size_t   bitsInFSU = bitsInBlock - (fBlocks * bitsInBlock - fbits);
 
-	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
-	static constexpr bt LSB_BIT_MASK = bt(1ull);
-	static constexpr bool MSU_CAPTURES_EXP = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_EXP ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
-	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
-	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
-	static constexpr int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
-	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
-	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
-	static constexpr bt BLOCK_MASK = bt(~0);
+	static constexpr bt       SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
+	static constexpr bt       LSB_BIT_MASK = bt(1ull);
+	static constexpr bool     MSU_CAPTURES_EXP = (1ull + es) <= bitsInMSU;
+	static constexpr size_t   EXP_SHIFT = (MSU_CAPTURES_EXP ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
+	static constexpr bt       MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
+	static constexpr int      EXP_BIAS = ((1l << (es - 1ull)) - 1l);
+	static constexpr int      MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
+	static constexpr int      MIN_EXP_NORMAL = 1 - EXP_BIAS;
+	static constexpr int      MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
+	static constexpr bt       BLOCK_MASK = bt(~0);
 
-	static constexpr bool hasSubnormals   = _hasSubnormals;
-	static constexpr bool hasSupernormals = _hasSupernormals;
-	static constexpr bool isSaturating    = _isSaturating;
+	static constexpr bool     hasSubnormals   = _hasSubnormals;
+	static constexpr bool     hasSupernormals = _hasSupernormals;
+	static constexpr bool     isSaturating    = _isSaturating;
 	typedef bt BlockType;
 
 	// constructors
@@ -1140,10 +1140,8 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;
 	}
-	inline constexpr void setblock(size_t b, const bt& data) noexcept {
-		if (b < nrBlocks) {
-			_block[b] = data;
-		}
+	inline constexpr void setblock(size_t b, bt data) noexcept {
+		if (b < nrBlocks) _block[b] = data;
 	}
 	
 	// create specific number system values of interest
