@@ -514,7 +514,7 @@ public:
 	template<size_t src_nbits>
 	inline constexpr void bitcopy(const integer<src_nbits, BlockType>& src) noexcept {
 		clear();
-		for (unsigned i = 0; i < MSU; ++i) {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = src.block(i);
 		}
 		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits

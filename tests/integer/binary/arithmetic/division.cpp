@@ -206,7 +206,7 @@ void ExamplePattern() {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -227,21 +227,23 @@ try {
 
 	std::string test_suite  = "Integer Arithmetic Division verfication\n";
 	std::string test_tag    = "integer<> division";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
-	integer<12> a, b, c;
-	a = 10000;
+	integer<20, uint16_t> a, b, c;
+	a = 0;
 	b = 100;
 	GenerateDivTest(a, b, c);
 
 //	TestFastdiv();
 	ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "integer<4, uint8_t>", test_tag);
 	ReportTestResult(VerifyDivision<11, uint8_t>(reportTestCases), "integer<11, uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t >(reportTestCases), "integer<16, uint8_t >", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

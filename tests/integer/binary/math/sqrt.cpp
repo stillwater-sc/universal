@@ -70,7 +70,7 @@ int VerifyIntegerCeilSqrt(bool bReportIndividualTestCases) {
 		a = i;
 		result = ceil_sqrt(a);
 		ref = size_t(std::ceil(std::sqrt(double(i))));
-		std::cout << "sqrt of " << a << " " << result << " vs " << ref << " vs " << Integer(ref) << std::endl;
+//		std::cout << "sqrt of " << a << " " << result << " vs " << ref << " vs " << Integer(ref) << std::endl;
 		if (result != ref) {
 			++nrOfTestFailures;
 			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "ceil_sqrt", a, result, Integer(ref));
@@ -81,7 +81,7 @@ int VerifyIntegerCeilSqrt(bool bReportIndividualTestCases) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -102,15 +102,15 @@ try {
 
 #if MANUAL_TESTING
 
-	std::cout << floor(sqrt(5.0)) << " - " << ceil(sqrt(5.0)) << "\n\n";
-	std::cout << floor_sqrt(integer<8, uint8_t>(5)) << '\n';
-	std::cout << '\n';
-	std::cout << ceil_sqrt(integer<8, uint8_t>(5)) << '\n';
+	{
+		integer<10, uint8_t> a(256);
+		std::cout << floor(sqrt(256)) << " - " << ceil(sqrt(256)) << '\n';
+		std::cout << floor(sqrt(257)) << " - " << ceil(sqrt(257)) << '\n';
+		std::cout << floor_sqrt(a - 1) << '\n';
+		std::cout << floor_sqrt(a) << '\n';
+		std::cout << ceil_sqrt(a) << '\n';
 
-	integer<8> c = ceil_sqrt(integer<8>(2));
-	std::cout << c << '\n';
-
-	return 0;
+	}
 
 	{
 		// examples of the Babylonian algorithm for approximating sqrt

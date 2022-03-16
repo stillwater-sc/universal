@@ -181,7 +181,6 @@ namespace sw { namespace universal {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
 				short i16b = short(ib);
-				if (j > 0) iref = i16a / i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				if (j == 0) {
 					try {
@@ -192,11 +191,12 @@ namespace sw { namespace universal {
 						continue;
 					}
 					catch (...) {
-						nrOfFailedTests++;
+						++nrOfFailedTests;
 					}
 				}
+				if (j > 0) iref = i16a / i16b;
 				Integer max_int(SpecificValue::maxpos), min_int(SpecificValue::maxneg);
-				if (iref > max_int || iref < min_int) {
+				if (iref < min_int || iref > max_int) {
 					try {
 						iresult = ia / ib;
 					}
@@ -205,12 +205,16 @@ namespace sw { namespace universal {
 						continue;
 					}
 					catch (...) {
-						nrOfFailedTests++;
+						++nrOfFailedTests;
 					}
+				}
+				else {
+					iresult = ia / ib;
 				}
 #else
 				if (j == 0) continue;
 				iresult = ia / ib;
+				iref = i16a / i16b;
 #endif
 
 				if (iresult != iref) {

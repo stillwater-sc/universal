@@ -21,13 +21,15 @@ integer<nbits, BlockType> sqrt(const integer<nbits, BlockType>& a) {
 template<size_t nbits, typename BlockType>
 integer<nbits, BlockType> floor_sqrt(const integer<nbits, BlockType>& a) {
 	if (a.iszero() || a.isone()) return a;
-	if (a < 0) throw "negative argument to floor_sqrt";
+	// if (a < 0) is very inefficient as it will do a diff between a and 0
+	// instead, use the isneg() function which simply checks the sign bit
+	if (a.isneg()) throw "negative argument to floor_sqrt";
 
 	using Integer = integer<nbits, BlockType>;
 	Integer start(1), end(a), v(a), root(0);
 	while (start <= end) {
 		Integer midpoint = start + (end - start) / 2;
-//		std::cout << start << " : " << midpoint << " : " << end << " = " << root << std::endl;
+//		std::cout << start << " : " << midpoint << " : " << end << " = " << root << '\n';
 		if (midpoint == v / midpoint) return midpoint;
 		if (midpoint  < v / midpoint) {   // midpoint * midpoint can overflow badly hence the use of divide to stay in the numerical range of Integer
 			start = midpoint + 1;
@@ -36,7 +38,7 @@ integer<nbits, BlockType> floor_sqrt(const integer<nbits, BlockType>& a) {
 		else {
 			end = midpoint - 1;
 		}
-//		std::cout << start << " : " << midpoint << " : " << end << " = " << root << " <--- update" << std::endl;
+//		std::cout << start << " : " << midpoint << " : " << end << " = " << root << " <--- update" << '\n';
 	}
 	return root; 
 }
@@ -44,27 +46,9 @@ integer<nbits, BlockType> floor_sqrt(const integer<nbits, BlockType>& a) {
 // square root of an arbitrary integer does a binary search for the ceil(sqrt(a))
 template<size_t nbits, typename BlockType>
 integer<nbits, BlockType> ceil_sqrt(const integer<nbits, BlockType>& a) {
-	if (a.iszero() || a.isone()) return a;
-	if (a < 0) throw "negative argument to ceil_sqrt";
-
-	using Integer = integer<2*nbits, BlockType>;
-	Integer start(1), end(a), v(a);
-	integer<nbits, BlockType> root(0);
-	while (start <= end) {
-		Integer midpoint = start + (end - start) / 2;
-//		std::cout << start << " : " << midpoint << " : " << end << " = " << root << std::endl;
-		if (midpoint*midpoint == v) return midpoint;
-		if (midpoint*midpoint < v) {   // midpoint * midpoint can overflow badly hence the use of 
-			start = midpoint + 1;
-			root.bitcopy(midpoint);
-		}
-		else {
-			end = midpoint - 1;
-		}
-//		std::cout << start << " : " << midpoint << " : " << end << " = " << root << " <--- update" << std::endl;
-	}
-	++root;
-	return root;
+	integer<nbits, BlockType> c = floor_sqrt(a);
+	if (c * c != a) ++c;
+	return c;
 }
 
 // test if the argument is a perfect square
