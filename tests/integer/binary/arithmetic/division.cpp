@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <string>
 // configure the integer arithmetic class
@@ -75,9 +76,9 @@ private:
 		}
 
 		int p;
-		unsigned int ad, anc, delta, q1, r1, q2, r2, t;
-		const unsigned two31 = 0x80000000;
-		ad = (d == 0) ? 1 : abs(d);
+		unsigned ad, anc, delta, q1, r1, q2, r2, t;
+		const unsigned two31 = 0x80000000u;
+		ad = static_cast<unsigned>(d == 0) ? 1u : abs(d);
 		t = two31 + ((unsigned int)d >> 31);
 		anc = t - 1 - t % ad;
 		p = 31;
@@ -101,7 +102,7 @@ private:
 			}
 			delta = ad - r2;
 		} while (q1 < delta || (q1 == delta && r1 == 0));
-		this->M = q2 + 1;
+		this->M = static_cast<int>(q2 + 1u);
 		if (d < 0)		this->M = -this->M;
 		this->s = p - 32;
 
@@ -119,12 +120,12 @@ private:
 	friend int operator/(const int dividend, const fastdiv& divisor);
 };
 
-int operator/(const int dividend, const fastdiv& divisor) {
-	int q = (((unsigned long long)((long long)divisor.M * (long long)dividend)) >> 32);
+int operator/(int dividend, const fastdiv& divisor) {
+	int q = static_cast<int>((static_cast<unsigned long long>(divisor.M) * static_cast<unsigned long long>(dividend)) >> 32ull);
 	q += dividend * divisor.n_add_sign;
 	if (divisor.s >= 0)	{
 		q >>= divisor.s; // we rely on this to be implemented as arithmetic shift
-		q += (((unsigned int)q) >> 31);
+		q += (((unsigned)q) >> 31);
 	}
 	return q;
 }
@@ -180,9 +181,9 @@ void TestFastdiv() {
 
 	std::cout << "\nTestFastdiv\n";
 	// fast integer division by transformation to multiply with magic constant followed by a shift
-	fid::fastdiv fast_divisor(1);
-	std::cout << "size of fastdiv: " << sizeof(fast_divisor) << '\n';
-	fast_divisor.info();
+	fid::fastdiv dummy(1);
+	std::cout << "size of fastdiv: " << sizeof(dummy) << '\n';
+	dummy.info();
 
 	// int q = dividend / divisor;
 	// int q = hi32bits(dividend * M) >> s;
@@ -205,22 +206,31 @@ void ExamplePattern() {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 0
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "Integer Arithmetic tests failed";
+	std::string test_suite  = "Integer Arithmetic Division verfication\n";
+	std::string test_tag    = "integer<> division";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -230,47 +240,42 @@ try {
 	GenerateDivTest(a, b, c);
 
 //	TestFastdiv();
-	ReportTestResult(VerifyDivision<4, uint8_t>("manual test", true), "integer<4, uint8_t>", "divisio");
-	ReportTestResult(VerifyDivision<11, uint8_t>("manual test", true), "integer<11, uint8_t>", "divisio");
+	ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "integer<4, uint8_t>", test_tag);
+	ReportTestResult(VerifyDivision<11, uint8_t>(reportTestCases), "integer<11, uint8_t>", test_tag);
 
-	std::cout << "done" << std::endl;
-
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << "Integer Division Arithmetic verfication" << std::endl;
-
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(bReportIndividualTestCases), "integer<4, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(bReportIndividualTestCases), "integer<6, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(bReportIndividualTestCases), "integer<8, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "integer<4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(reportTestCases), "integer<6, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(reportTestCases), "integer<8, uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint8_t >(bReportIndividualTestCases), "integer< 9, uint8_t >", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint16_t>(bReportIndividualTestCases), "integer< 9, uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint8_t >(bReportIndividualTestCases), "integer<11, uint8_t >", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(bReportIndividualTestCases), "integer<11, uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint8_t >(reportTestCases), "integer< 9, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint16_t>(reportTestCases), "integer< 9, uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint8_t >(reportTestCases), "integer<11, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(reportTestCases), "integer<11, uint16_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint8_t >(bReportIndividualTestCases), "integer<13, uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(bReportIndividualTestCases), "integer<13, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint8_t >(reportTestCases), "integer<13, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(reportTestCases), "integer<13, uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t >(reportTestCases), "integer<16, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint16_t>(reportTestCases), "integer<16, uint16_t>", test_tag);
 	// this is a 'standard' comparision against a native int64_t
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(reportTestCases), "integer<16, uint8_t>", test_tag);
 #endif
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif // MANUAL_TESTING
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

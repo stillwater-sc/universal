@@ -19,10 +19,10 @@
 namespace sw { namespace universal {
 
 	// enumerate all addition cases for an integer<16> configuration compared against native short
-	template<typename BlockType, size_t testBits = 12>
-	int VerifyShortAddition(bool bReportIndividualTestCases) {
+	template<typename BlockType>
+	int VerifyShortAddition(bool reportTestCases) {
 		constexpr size_t nbits = 16; 
-		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
@@ -55,10 +55,10 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
 				}
 			}
 			if (i % 1024 == 0) std::cout << '.';
@@ -68,10 +68,10 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 	// enumerate all subtraction cases for an integer<16> configuration compared against native short
-	template<typename BlockType, size_t testBits = 12>
-	int VerifyShortSubtraction(bool bReportIndividualTestCases) {
+	template<typename BlockType>
+	int VerifyShortSubtraction(bool reportTestCases) {
 		constexpr size_t nbits = 16;
-		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
 		using Integer = integer<nbits, BlockType>;
 		Integer ia, ib, iresult, iref;
@@ -104,10 +104,10 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
 				}
 			}
 			if (i % 1024 == 0) std::cout << '.';
@@ -118,7 +118,7 @@ namespace sw { namespace universal {
 	}
 	// enumerate all multiplication cases for an integer<16> configuration compared against native short
 	template<typename BlockType, size_t testBits = 12>
-	int VerifyShortMultiplication(bool bReportIndividualTestCases) {
+	int VerifyShortMultiplication(bool reportTestCases) {
 		constexpr size_t nbits = 16;
 		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
@@ -153,10 +153,10 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
 				}
 			}
 			if (i % 1024 == 0) std::cout << '.';
@@ -167,7 +167,7 @@ namespace sw { namespace universal {
 	}
 	// enumerate all division cases for an integer<16> configuration compared against native short
 	template<typename BlockType, size_t testBits = 10>
-	int VerifyShortDivision(bool bReportIndividualTestCases) {
+	int VerifyShortDivision(bool reportTestCases) {
 		constexpr size_t nbits = 16;
 		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
@@ -215,10 +215,10 @@ namespace sw { namespace universal {
 
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
 				}
 			}
 			if (i % 1024 == 0) std::cout << '.';
@@ -229,7 +229,7 @@ namespace sw { namespace universal {
 	}
 	// enumerate all remainder cases for an integer<16> configuration compared against native short
 	template<typename BlockType, size_t testBits = 10>
-	int VerifyShortRemainder(bool bReportIndividualTestCases) {
+	int VerifyShortRemainder(bool reportTestCases) {
 		constexpr size_t nbits = 16;
 		constexpr size_t NR_INTEGERS = (size_t(1) << testBits);
 
@@ -263,10 +263,10 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "%", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "%", ia, ib, iref, iresult);
 				}
 			}
 			if (i % 1024 == 0) std::cout << '.';
@@ -278,7 +278,7 @@ namespace sw { namespace universal {
 
 	// enumerate all addition cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyAddition(bool bReportIndividualTestCases) {
+	int VerifyAddition(bool reportTestCases) {
 		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
@@ -312,10 +312,10 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -326,7 +326,7 @@ namespace sw { namespace universal {
 	}
 	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifySubtraction(bool bReportIndividualTestCases) {
+	int VerifySubtraction(bool reportTestCases) {
 		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
@@ -360,10 +360,10 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -375,7 +375,7 @@ namespace sw { namespace universal {
 
 	// enumerate all multiplication cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyMultiplication(bool bReportIndividualTestCases) {
+	int VerifyMultiplication(bool reportTestCases) {
 		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
@@ -409,10 +409,10 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
 				}
 				else {
-					if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -424,7 +424,7 @@ namespace sw { namespace universal {
 
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyDivision(bool bReportIndividualTestCases) {
+	int VerifyDivision(bool reportTestCases) {
 		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
@@ -470,10 +470,10 @@ namespace sw { namespace universal {
 				}
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -485,7 +485,7 @@ namespace sw { namespace universal {
 
 	// enumerate all remainder cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyRemainder(bool bReportIndividualTestCases) {
+	int VerifyRemainder(bool reportTestCases) {
 		using Integer = integer<nbits, BlockType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
@@ -518,10 +518,10 @@ namespace sw { namespace universal {
 				iref = i64a % i64b;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "%", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "%", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}

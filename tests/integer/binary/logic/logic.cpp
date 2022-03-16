@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <string>
 // configure the integer arithmetic class
@@ -12,6 +13,7 @@
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
+#include <universal/verification/test_reporters.hpp>
 
 /*
    The goal of the arbitrary integers is to provide a fast fixed-size integer type
@@ -19,7 +21,7 @@
    can be used for forward error analysis studies.
 */
 
-namespace sw::universal {
+namespace sw { namespace universal {
 
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits>
@@ -39,7 +41,7 @@ namespace sw::universal {
 
 	// enumerate all less than cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyEqual(bool bReportIndividualTestCases) {
+	int VerifyEqual(bool reportTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -56,10 +58,10 @@ namespace sw::universal {
 				iresult = ia == ib;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryLogicError("FAIL", "==", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryLogicError("FAIL", "==", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryLogicSuccess("PASS", "==", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryLogicSuccess("PASS", "==", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -71,7 +73,7 @@ namespace sw::universal {
 
 	// enumerate all less than or equal cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyNotEqual(bool bReportIndividualTestCases) {
+	int VerifyNotEqual(bool reportTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -88,10 +90,10 @@ namespace sw::universal {
 				iresult = ia != ib;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryLogicError("FAIL", "!=", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryLogicError("FAIL", "!=", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryLogicSuccess("PASS", "!=", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryLogicSuccess("PASS", "!=", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -103,7 +105,7 @@ namespace sw::universal {
 
 	// enumerate all less than cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyLessThan(bool bReportIndividualTestCases) {
+	int VerifyLessThan(bool reportTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -120,10 +122,10 @@ namespace sw::universal {
 				iresult = ia < ib;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryLogicError("FAIL", "<", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryLogicError("FAIL", "<", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryLogicSuccess("PASS", "<", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryLogicSuccess("PASS", "<", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -135,7 +137,7 @@ namespace sw::universal {
 
 	// enumerate all less than or equal cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyLessOrEqualThan(bool bReportIndividualTestCases) {
+	int VerifyLessOrEqualThan(bool reportTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -152,10 +154,10 @@ namespace sw::universal {
 				iresult = ia <= ib;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryLogicError("FAIL", "<=", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryLogicError("FAIL", "<=", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryLogicSuccess("PASS", "<=", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryLogicSuccess("PASS", "<=", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -167,7 +169,7 @@ namespace sw::universal {
 
 	// enumerate all greater than cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyGreaterThan(bool bReportIndividualTestCases) {
+	int VerifyGreaterThan(bool reportTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -184,10 +186,10 @@ namespace sw::universal {
 				iresult = ia < ib;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryLogicError("FAIL", ">", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryLogicError("FAIL", ">", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryLogicSuccess("PASS", ">", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryLogicSuccess("PASS", ">", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -199,7 +201,7 @@ namespace sw::universal {
 
 	// enumerate all greater than or equal cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyGreaterOrEqualThan(bool bReportIndividualTestCases) {
+	int VerifyGreaterOrEqualThan(bool reportTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -216,10 +218,10 @@ namespace sw::universal {
 				iresult = ia >= ib;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryLogicError("FAIL", ">=", ia, ib, iref, iresult);
+					if (reportTestCases)	ReportBinaryLogicError("FAIL", ">=", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryLogicSuccess("PASS", ">=", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryLogicSuccess("PASS", ">=", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -229,17 +231,22 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
-} // namespace sw::universal
+}} // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 0
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
 std::string convert_to_string(const std::vector<char>& v) {
@@ -254,79 +261,87 @@ int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "Integer logic operator verfication\n";
+	std::string test_tag    = "logic";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
-	
-	std::string tag = "Integer Logic Operator tests failed";
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<4>(bReportIndividualTestCases), "integer<4>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<4>(bReportIndividualTestCases), "integer<4>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<4>(bReportIndividualTestCases), "integer<4>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<4>(bReportIndividualTestCases), "integer<4>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<4>(bReportIndividualTestCases), "integer<4>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<4>(bReportIndividualTestCases), "integer<4>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<4>(reportTestCases), "integer<4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<4>(reportTestCases), "integer<4>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<4>(reportTestCases), "integer<4>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<4>(reportTestCases), "integer<4>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<4>(reportTestCases), "integer<4>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<4>(reportTestCases), "integer<4>", ">=");
 
-	std::cout << "done" << std::endl;
-
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << "Integer Logic Operator verfication\n";
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<4>(bReportIndividualTestCases), "integer<4>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<4>(bReportIndividualTestCases), "integer<4>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<4>(bReportIndividualTestCases), "integer<4>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<4>(bReportIndividualTestCases), "integer<4>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<4>(bReportIndividualTestCases), "integer<4>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<4>(bReportIndividualTestCases), "integer<4>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<4>(reportTestCases), "integer<4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<4>(reportTestCases), "integer<4>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<4>(reportTestCases), "integer<4>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<4>(reportTestCases), "integer<4>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<4>(reportTestCases), "integer<4>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<4>(reportTestCases), "integer<4>", ">=");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<8>(bReportIndividualTestCases), "integer<8>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<8>(bReportIndividualTestCases), "integer<8>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<8>(bReportIndividualTestCases), "integer<8>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<8>(bReportIndividualTestCases), "integer<8>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<8>(bReportIndividualTestCases), "integer<8>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<8>(bReportIndividualTestCases), "integer<8>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<8>(reportTestCases), "integer<8>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<8>(reportTestCases), "integer<8>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<8>(reportTestCases), "integer<8>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<8>(reportTestCases), "integer<8>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<8>(reportTestCases), "integer<8>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<8>(reportTestCases), "integer<8>", ">=");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<10>(bReportIndividualTestCases), "integer<10>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<10>(bReportIndividualTestCases), "integer<10>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<10>(bReportIndividualTestCases), "integer<10>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<10>(bReportIndividualTestCases), "integer<10>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<10>(bReportIndividualTestCases), "integer<10>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<10>(bReportIndividualTestCases), "integer<10>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<10>(reportTestCases), "integer<10>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<10>(reportTestCases), "integer<10>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<10>(reportTestCases), "integer<10>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<10>(reportTestCases), "integer<10>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<10>(reportTestCases), "integer<10>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<10>(reportTestCases), "integer<10>", ">=");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<12>(bReportIndividualTestCases), "integer<12>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<12>(bReportIndividualTestCases), "integer<12>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<12>(bReportIndividualTestCases), "integer<12>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<12>(bReportIndividualTestCases), "integer<12>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<12>(bReportIndividualTestCases), "integer<12>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<12>(bReportIndividualTestCases), "integer<12>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<12>(reportTestCases), "integer<12>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<12>(reportTestCases), "integer<12>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<12>(reportTestCases), "integer<12>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<12>(reportTestCases), "integer<12>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<12>(reportTestCases), "integer<12>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<12>(reportTestCases), "integer<12>", ">=");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<13>(bReportIndividualTestCases), "integer<13>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<13>(bReportIndividualTestCases), "integer<13>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<13>(bReportIndividualTestCases), "integer<13>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<13>(bReportIndividualTestCases), "integer<13>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<13>(bReportIndividualTestCases), "integer<13>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<13>(bReportIndividualTestCases), "integer<13>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<13>(reportTestCases), "integer<13>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<13>(reportTestCases), "integer<13>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<13>(reportTestCases), "integer<13>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<13>(reportTestCases), "integer<13>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<13>(reportTestCases), "integer<13>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<13>(reportTestCases), "integer<13>", ">=");
 #endif
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif // MANUAL_TESTING
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
