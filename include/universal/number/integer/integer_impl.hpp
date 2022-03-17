@@ -432,6 +432,15 @@ public:
 			return;
 		}
 	}
+	inline constexpr void setbyte(unsigned byteIndex, uint8_t data) {
+		uint8_t mask = 0x1u;
+		unsigned start = byteIndex * 8;
+		unsigned end = start + 8;
+		for (unsigned i = start; i < end; ++i) {
+			setbit(i, (mask & data));
+			mask <<= 1;
+		}
+	}
 	inline constexpr void setblock(unsigned i, bt value) noexcept {
 		if (i < nrBlocks) _block[i] = value;
 	}
