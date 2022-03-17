@@ -724,7 +724,7 @@ template<size_t nbits, typename BlockType>
 inline signed findMsb(const integer<nbits, BlockType>& v) {
 	BlockType const* pV = v._block + v.nrBlocks - 1;
 	BlockType const* pLast = v._block - 1;
-	constexpr BlockType BlockMsb = BlockType(BlockType(1u) << (v.bitsInBlock - 1));
+	BlockType BlockMsb = BlockType(BlockType(1u) << (v.bitsInBlock - 1));
 	signed msb = static_cast<signed>(v.nbits - 1ull); // the case for an aligned MSB
 	unsigned rem = nbits % v.bitsInBlock;
 	// we are organized little-endian
