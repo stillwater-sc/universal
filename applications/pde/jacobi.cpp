@@ -70,8 +70,6 @@ try {
 
 	Test<float>();
 
-	cfloat<16, 5> a, b;
-
 	Test<cfloat<32, 8, uint32_t>>();
 
 	Test<posit<32, 2>>();

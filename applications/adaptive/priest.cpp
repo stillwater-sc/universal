@@ -114,13 +114,13 @@ try {
 
 	std::cout << "Douglas Priest arbitrary precision arithmetic experiments\n";
 
-	using Sngle = float;
+//	using Sngle = float;
 	using Longd = long double;
-	using Fixed = fixpnt<32,16>;
-	using Posit = posit<32,2>;
+//	using Fixed = fixpnt<32,16>;
+//	using Posit = posit<32,2>;
 	using Float = cfloat<32, 8, uint32_t>;
-	using Areal = areal<32, 8, uint32_t>;
-	using Lns   = lns<32, uint32_t>;
+//	using Areal = areal<32, 8, uint32_t>;
+//	using Lns   = lns<32, uint32_t>;
 
 
 	std::streamsize precision = std::cout.precision();

@@ -23,8 +23,6 @@
 template<unsigned nbits, typename BlockType>
 int VerifyFindMsb(bool reportTestCases) {
 	using Integer = sw::universal::integer<nbits, BlockType>;
-	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
-
 	int nrOfFailedTests = 0;
 
 	Integer a(0);
@@ -62,7 +60,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer bit manipulation verfication\n";
+	std::string test_suite  = "Integer bit manipulation verfication";
 	std::string test_tag    = "bit manipulators";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

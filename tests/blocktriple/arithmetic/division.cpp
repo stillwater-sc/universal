@@ -15,8 +15,8 @@
 
 #include <universal/native/ieee754.hpp>
 // uncomment to enable operator tracing
-#define BLOCKTRIPLE_VERBOSE_OUTPUT
-#define BLOCKTRIPLE_TRACE_DIV
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT
+//#define BLOCKTRIPLE_TRACE_DIV
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
@@ -112,9 +112,9 @@ int VerifyDivision(bool reportTestCases) {
 				double btref = double(reference);  // map the double result to the unrounded blocktriple representation
 
 				if (btref != double(c)) {
-					std::cout << "test case   : " << a << " * " << b << " = " << c << '\n';
-					std::cout << "conversion  : " << aref << " * " << bref << " = " << cref << " vs " << btref << '\n';
-					std::cout << "blocktriple : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " : " << c << '\n';
+//					std::cout << "test case   : " << a << " * " << b << " = " << c << '\n';
+//					std::cout << "conversion  : " << aref << " * " << bref << " = " << cref << " vs " << btref << '\n';
+//					std::cout << "blocktriple : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " : " << c << '\n';
 
 					++nrOfFailedTests;
 					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, double(c), btref);
@@ -176,6 +176,8 @@ void TestCase(ArgumentType lhs, ArgumentType rhs) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+// TODO: this regression test is not correct yet
+// 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -211,7 +213,7 @@ try {
 	// 
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple< 2, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple< 2, BlockTripleOperator::DIV, uint8_t >", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple< 4, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple< 4, BlockTripleOperator::DIV, uint8_t >", "division");
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple< 8, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple< 8, BlockTripleOperator::DIV, uint8_t >", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple< 8, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple< 8, BlockTripleOperator::DIV, uint8_t >", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple< 8, BlockTripleOperator::DIV, uint16_t> >(reportTestCases), "blocktriple< 8, BlockTripleOperator::DIV, uint16_t>", "division");
 
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision< blocktriple<12, BlockTripleOperator::DIV, uint8_t > >(reportTestCases), "blocktriple<12, BlockTripleOperator::DIV, uint8_t >", "division");

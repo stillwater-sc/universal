@@ -193,7 +193,7 @@ try {
 
 	std::cout << "\nFind all prime factors of the number : ";
 	{
-		Integer a, b;
+		Integer a;
 		// find all prime factors of a number
 		a = ipow(Integer(2), Integer(5))
 			* ipow(Integer(3), Integer(4))
