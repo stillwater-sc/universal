@@ -869,6 +869,7 @@ namespace sw { namespace universal {
 		}
 		if constexpr (op == BlockTripleOperator::DIV) {
 		}
+		return nrOfTestFailures;
 	}
 
 	/// <summary>

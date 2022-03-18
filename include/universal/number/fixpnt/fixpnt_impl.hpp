@@ -321,7 +321,6 @@ public:
 			std::cout << "found a decimal representation: TBD\n";
 			int64_t scale = 1;
 			int64_t fraction = 0;
-			bool fractionParse = true;
 			for (std::string::const_reverse_iterator r = number.rbegin();
 				r != number.rend();
 				++r) {

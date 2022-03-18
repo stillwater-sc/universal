@@ -63,7 +63,6 @@ try {
 
 	// extreme cases
 	{
-		int start = nrOfFailedTestCases;
 		fixpnt<8, 0, Modulo> a;  // only integers
 		for (int i = 0; i < 5; ++i) {
 			std::cout << to_binary(a) << " : " << a << '\n';

@@ -2965,7 +2965,6 @@ std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, 
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value, long long precision) {
 	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
-	constexpr size_t bias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
 	std::stringstream str;
 	if (value.iszero()) {
 		str << '0';
@@ -2979,7 +2978,7 @@ std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals
 	// lsbScale is e - fbits
 	// shift to get lsb to position 2^0 = (e - fbits)
 	std::int64_t scale = value.scale();
-	std::int64_t shift = scale + fbits; // we want the lsb at 2^0
+//	std::int64_t shift = scale + fbits; // we want the lsb at 2^0
 	std::int64_t lsbScale = scale - fbits;  // scale of the lsb
 	support::decimal partial, multiplier;
 	partial.setzero();
