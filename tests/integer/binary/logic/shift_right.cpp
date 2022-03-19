@@ -20,6 +20,48 @@
    can be used for forward error analysis studies.
 */
 
+// enumerate all shift right cases for an integer<nbits,BlockType> configuration
+template<size_t nbits, typename BlockType = uint8_t>
+int VerifyArithmeticRightShift(bool reportTestCases) {
+	using namespace sw::universal;
+	using Integer = integer<nbits, BlockType>;
+
+	if (reportTestCases) std::cout << type_tag(Integer()) << '\n';
+
+	// take maxneg and shift it right in all possible strides
+	int nrOfFailedTests = 0;
+	Integer a, result;
+	Integer mostNegative(SpecificValue::maxneg);
+	int64_t shiftRef, resultRef;
+	for (size_t i = 0; i < nbits + 1; i++) {
+		a = mostNegative;
+		int64_t denominator = 0;
+		if (i == 64) {
+			shiftRef = 0;
+		}
+		else if (i == 63) { // special case for int64_t shift as it is maxneg
+			shiftRef = -1;
+		}
+		else { // i < 63
+			denominator = (1ll << i);
+			shiftRef = ((long long)a / denominator);
+		}
+
+		result = a >> long(i);
+		resultRef = (long long)result;
+
+		if (shiftRef != resultRef) {
+			nrOfFailedTests++;
+			if (reportTestCases) ReportArithmeticShiftError("FAIL", ">>", a, i, result, resultRef);
+		}
+		else {
+			if (reportTestCases) ReportArithmeticShiftSuccess("PASS", ">>", a, i, result, resultRef);
+		}
+		if (nrOfFailedTests > 99) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -40,14 +82,17 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer arithmetic/logic verfication";
-	std::string test_tag    = "shift";
+	std::string test_suite  = "Integer arithmetic/logic shift right verfication";
+	std::string test_tag    = "shift right";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
+
+	// TODO: verifcation routine doesn't support integers bigger > 64bits
+	// nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 71, uint8_t>(reportTestCases), "integer< 71,uint8_t>", test_tag);
 
 	using Integer = integer<16, uint16_t>;
 	constexpr Integer a(SpecificValue::maxpos), b(SpecificValue::maxneg);
@@ -66,6 +111,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<  8, uint8_t>(reportTestCases), "integer<  8,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 12, uint8_t>(reportTestCases), "integer< 12,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 19, uint8_t>(reportTestCases), "integer< 19,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 33, uint8_t>(reportTestCases), "integer< 33,uint8_t>", test_tag);
 
 #endif
 
@@ -78,7 +127,9 @@ try {
 #endif
 
 #if	REGRESSION_LEVEL_4
-	
+	// verification suite does not support integers and shifts bigger than 64
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 71, uint8_t>(reportTestCases), "integer< 71,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<123, uint8_t>(reportTestCases), "integer<123,uint8_t>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

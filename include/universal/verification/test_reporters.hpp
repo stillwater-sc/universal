@@ -9,6 +9,7 @@
 #include <typeinfo>
 #include <limits>
 #include <complex>
+#include <universal/native/integers.hpp>
 #include <universal/math/complex_manipulators.hpp>
 
 // NOTE: reporters write to cerr
@@ -78,6 +79,40 @@ void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::strin
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
 		<< std::setprecision(old_precision)
 		<< '\n';
+}
+
+template<typename TestType>
+void ReportArithmeticShiftError(const std::string& test_case, const std::string& op, const TestType& a, const size_t divider, const TestType& result, int64_t reference) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << (long long)a    // to_hex(a, true)
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << divider    // to_hex(b, true)
+		<< " != "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << (long long)result // to_hex(result, true) 
+		<< " golden reference is "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << reference << ' ' << to_binary(reference, TestType::nbits)
+		<< " " << to_binary(result, true) << " vs " << to_binary(reference, TestType::nbits)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
+
+template<typename TestType>
+void ReportArithmeticShiftSuccess(const std::string& test_case, const std::string& op, const TestType& a, const size_t divider, const TestType& result, int64_t reference) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << (long long)a
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << divider
+		<< " == "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << (long long)result
+		<< " matches reference   "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << reference << ' ' << to_binary(reference, TestType::nbits)
+		<< " " << to_binary(result, true) << " vs " << to_binary(reference, TestType::nbits)
+		<< std::setprecision(old_precision)
+		<< std::endl;
 }
 
 template<typename InputType, typename ResultType, typename RefType>

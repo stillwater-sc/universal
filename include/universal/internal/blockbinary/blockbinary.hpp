@@ -230,7 +230,7 @@ public:
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > static_cast<int>(nbits)) {
-			*this = 0;
+			setzero();
 			return *this;
 		}
 		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
@@ -246,7 +246,7 @@ public:
 			if (bitsToShift == 0) return *this;
 		}
 		if constexpr (MSU > 0) {
-			// construct the mask for the upper bits in the block that need to move to the higher word
+			// construct the mask for the upper bits in the block that needs to move to the higher word
 			bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
 			for (size_t i = MSU; i > 0; --i) {
 				_block[i] <<= bitsToShift;
@@ -258,7 +258,7 @@ public:
 		_block[0] <<= bitsToShift;
 		return *this;
 	}
-	// shift right operator
+	// arithmetic shift right operator
 	blockbinary& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);

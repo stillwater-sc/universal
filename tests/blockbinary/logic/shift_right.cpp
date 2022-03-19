@@ -19,7 +19,7 @@ int VerifyArithmeticRightShift(bool reportTestCases) {
 	using namespace sw::universal;
 	using BlockBinary = blockbinary<nbits, BlockType>;
 
-	std::cout << type_tag(BlockBinary()) << '\n';
+	if (reportTestCases) std::cout << type_tag(BlockBinary()) << '\n';
 
 	// take maxneg and shift it right in all possible strides
 	int nrOfFailedTests = 0;
@@ -45,7 +45,7 @@ int VerifyArithmeticRightShift(bool reportTestCases) {
 
 		if (shiftRef != resultRef) {
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportArithmeticShiftError("FAIL", ">>", a, i, result, resultRef);
+			if (reportTestCases) ReportArithmeticShiftError("FAIL", ">>", a, i, result, resultRef);
 		}
 		else {
 			if (reportTestCases) ReportArithmeticShiftSuccess("PASS", ">>", a, i, result, resultRef);

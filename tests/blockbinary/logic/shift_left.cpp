@@ -19,7 +19,7 @@ int VerifyLeftShift(bool reportTestCases) {
 	using namespace sw::universal;
 	using BlockBinary = blockbinary<nbits, BlockType>;
 
-	std::cout << type_tag(BlockBinary()) << '\n';
+	if (reportTestCases) std::cout << type_tag(BlockBinary()) << '\n';
 
 	// take 1 and shift it left in all possible strides
 	int nrOfFailedTests = 0;

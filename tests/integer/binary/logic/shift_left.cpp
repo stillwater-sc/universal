@@ -20,6 +20,38 @@
    can be used for forward error analysis studies.
 */
 
+// enumerate all shift left cases for an integer<nbits, BlockType> configuration
+template<size_t nbits, typename BlockType = uint8_t>
+int VerifyLeftShift(bool reportTestCases) {
+	using namespace sw::universal;
+	using Integer = integer<nbits, BlockType>;
+
+	if (reportTestCases) std::cout << type_tag(Integer()) << '\n';
+
+	// take 1 and shift it left in all possible strides
+	int nrOfFailedTests = 0;
+	Integer a, result;
+	int64_t shiftRef, resultRef;
+	for (size_t i = 0; i < nbits + 1; i++) {
+		shiftRef = (-1ll << i);
+		if (i == nbits) shiftRef = 0; // shift all bits out
+
+		a = -1;
+		result = a << long(i);
+		resultRef = (long long)result;
+
+		if (shiftRef != resultRef) {
+			nrOfFailedTests++;
+			if (reportTestCases) ReportArithmeticShiftError("FAIL", "<<", a, i, result, resultRef);
+		}
+		else {
+			if (reportTestCases) ReportArithmeticShiftSuccess("PASS", "<<", a, i, result, resultRef);
+		}
+		if (nrOfFailedTests > 100) return nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -40,8 +72,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer arithmetic/logic verfication";
-	std::string test_tag    = "shift";
+	std::string test_suite  = "Integer arithmetic/logic shift left verfication";
+	std::string test_tag    = "shift left";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
@@ -66,7 +98,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-
+	nrOfFailedTestCases += ReportTestResult(VerifyLeftShift<  8, uint8_t>(reportTestCases), "integer<  8,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLeftShift< 12, uint8_t>(reportTestCases), "integer< 12,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLeftShift< 19, uint8_t>(reportTestCases), "integer< 19,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLeftShift< 33, uint8_t>(reportTestCases), "integer< 33,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

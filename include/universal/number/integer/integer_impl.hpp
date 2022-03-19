@@ -311,24 +311,110 @@ public:
 		*this = divresult.rem;
 		return *this;
 	}
-	integer& operator<<=(int shift) {
-		if (shift == 0) return *this;
-		if (shift < 0) {
-			return operator>>=(-shift);
-		}
-		if (nbits <= unsigned(shift)) {
-			clear();
+	integer& operator<<=(int bitsToShift) {
+		if (bitsToShift == 0) return *this;
+		if (bitsToShift < 0) return operator>>=(-bitsToShift);
+		if (bitsToShift > static_cast<int>(nbits)) {
+			setzero();
 			return *this;
 		}
-		integer<nbits, BlockType> target;
-		unsigned ushift = static_cast<unsigned>(shift); // unsigned shift
-		for (unsigned i = ushift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
-			target.setbit(i, at(i - ushift));
+		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
+			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
+			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
+				_block[i] = _block[i - blockShift];
+			}
+			for (int i = blockShift - 1; i >= 0; --i) {
+				_block[i] = bt(0);
+			}
+			// adjust the shift
+			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
+			if (bitsToShift == 0) return *this;
 		}
-		*this = target;
+		if constexpr (MSU > 0) {
+			// construct the mask for the upper bits in the block that needs to move to the higher word
+			bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+			for (size_t i = MSU; i > 0; --i) {
+				_block[i] <<= bitsToShift;
+				// mix in the bits from the right
+				bt bits = bt(mask & _block[i - 1]);
+				_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+			}
+		}
+		_block[0] <<= bitsToShift;
 		return *this;
 	}
-	integer& operator>>=(int shift) {
+	// arithmetic shift right operator
+	integer& operator>>=(int bitsToShift) {
+		if (bitsToShift == 0) return *this;
+		if (bitsToShift < 0) return operator<<=(-bitsToShift);
+		if (bitsToShift >= static_cast<int>(nbits)) {
+			setzero();
+			return *this;
+		}
+		bool signext = sign();
+		size_t blockShift = 0;
+		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
+			blockShift = bitsToShift / bitsInBlock;
+			if (MSU >= blockShift) {
+				// shift by blocks
+				for (size_t i = 0; i <= MSU - blockShift; ++i) {
+					_block[i] = _block[i + blockShift];
+				}
+			}
+			// adjust the shift
+			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
+			if (bitsToShift == 0) {
+				// fix up the leading zeros if we have a negative number
+				if (signext) {
+					// bitsToShift is guaranteed to be less than nbits
+					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
+					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+						this->setbit(i);
+					}
+				}
+				else {
+					// clean up the blocks we have shifted clean
+					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
+					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+						this->setbit(i, false);
+					}
+				}
+				return *this;
+			}
+		}
+		if constexpr (MSU > 0) {
+			bt mask = ALL_ONES;
+			mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
+			for (size_t i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
+				_block[i] >>= bitsToShift;
+				// mix in the bits from the left
+				bt bits = bt(mask & _block[i + 1]);
+				_block[i] |= (bits << (bitsInBlock - bitsToShift));
+			}
+		}
+		_block[MSU] >>= bitsToShift;
+
+		// fix up the leading zeros if we have a negative number
+		if (signext) {
+			// bitsToShift is guaranteed to be less than nbits
+			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
+			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+				this->setbit(i);
+			}
+		}
+		else {
+			// clean up the blocks we have shifted clean
+			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
+			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+				this->setbit(i, false);
+			}
+		}
+
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
+		return *this;
+	}
+	integer& logicShiftRight(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) {
 			return operator<<=(-shift);
@@ -1130,61 +1216,73 @@ inline bool operator>=(IntType lhs, const integer<nbits, BlockType>& rhs) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
+template<size_t nbits, typename BlockType>
+inline integer<nbits, BlockType> operator<<(const integer<nbits, BlockType>& lhs, int shift) {
+	integer<nbits, BlockType> shifted(lhs);
+	return (shifted <<= shift);
+}
+
+template<size_t nbits, typename BlockType>
+inline integer<nbits, BlockType> operator>>(const integer<nbits, BlockType>& lhs, int shift) {
+	integer<nbits, BlockType> shifted(lhs);
+	return (shifted >>= shift);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer - integer binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> operator+(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> sum = lhs;
+	integer<nbits, BlockType> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> operator-(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> diff = lhs;
+	integer<nbits, BlockType> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> operator*(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> mul = lhs;
+	integer<nbits, BlockType> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> operator/(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> ratio = lhs;
+	integer<nbits, BlockType> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 // BINARY REMAINDER
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> operator%(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> ratio = lhs;
+	integer<nbits, BlockType> ratio(lhs);
 	ratio %= rhs;
 	return ratio;
 }
 // BINARY BIT-WISE AND
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> operator&(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> bitwise = lhs;
+	integer<nbits, BlockType> bitwise(lhs);
 	bitwise &= rhs;
 	return bitwise;
 }
 // BINARY BIT-WISE OR
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> operator|(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> bitwise = lhs;
+	integer<nbits, BlockType> bitwise(lhs);
 	bitwise |= rhs;
 	return bitwise;
 }
 // BINARY BIT-WISE XOR
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> operator^(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> bitwise = lhs;
+	integer<nbits, BlockType> bitwise(lhs);
 	bitwise ^= rhs;
 	return bitwise;
 }
