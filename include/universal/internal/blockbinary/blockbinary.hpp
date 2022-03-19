@@ -229,8 +229,11 @@ public:
 	blockbinary& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
-		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
-		if (bitsToShift >= long(bitsInBlock)) {
+		if (bitsToShift > static_cast<int>(nbits)) {
+			*this = 0;
+			return *this;
+		}
+		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
 			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
 				_block[i] = _block[i - blockShift];
@@ -537,6 +540,17 @@ private:
 	template<size_t nnbits, typename Bbt>
 	friend std::ostream& operator<<(std::ostream& ostr, const blockbinary<nnbits, Bbt>& v);
 };
+
+// Generate a type tag for blockbinary
+template<size_t nbits, typename bt>
+std::string type_tag(const blockbinary<nbits, bt>& v) {
+	std::stringstream str;
+	if (v.isneg()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
+	str << "blockbinary<"
+		<< std::setw(4) << nbits << ", "
+		<< typeid(bt).name() << '>';
+	return str.str();
+}
 
 //////////////////////////////////////////////////////////////////////////////////
 // logic operators

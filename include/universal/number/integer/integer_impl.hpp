@@ -511,7 +511,7 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;
 	}
-	inline constexpr integer& assign(const std::string& txt) noexcept {
+	inline integer& assign(const std::string& txt) noexcept {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
@@ -612,7 +612,6 @@ public:
 		}
 		return *this;
 	}
-
 	// native IEEE-754 conversion
 	// TODO: currently only supports integer values of 64bits or less
 	template<typename Real>

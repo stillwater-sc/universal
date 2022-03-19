@@ -1,4 +1,4 @@
-// shift.cpp : test runner for arithmetic and logic shift of abitrary precision fixed-size integers
+// shift_left.cpp : test runner for arithmetic and logic shift of abitrary precision fixed-size integers
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
