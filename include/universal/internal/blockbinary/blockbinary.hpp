@@ -69,11 +69,11 @@ logic though.
 */
 
 // a block-based 2's complement binary number
-template<size_t _nbits, typename bt = uint8_t>
+template<size_t _nbits, typename BlockType = uint8_t>
 class blockbinary {
 public:
 	static constexpr size_t nbits = _nbits;
-	typedef bt BlockType;
+	typedef BlockType bt;
 
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
@@ -180,17 +180,22 @@ public:
 	}
 	// arithmetic operators
 	blockbinary& operator+=(const blockbinary& rhs) {
-		bool carry = false;
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			// cast up so we can test for overflow
-			uint64_t l = uint64_t(_block[i]);
-			uint64_t r = uint64_t(rhs._block[i]);
-			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
-			carry = (s > maxBlockValue ? true : false);
-			_block[i] = bt(s);
+		blockbinary sum;
+		bt* pA = _block;
+		bt const* pB = rhs._block;
+		bt* pC = sum._block;
+		bt* pEnd = pC + nrBlocks; // this is one element past the end: is that proper?
+		std::uint64_t carry = 0;
+		while (pC != pEnd) {
+			carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
+			*pC = static_cast<bt>(carry);
+			carry >>= bitsInBlock;
+			++pA; ++pB; ++pC;
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		_block[MSU] &= MSU_MASK;
+		BlockType* pLast = pEnd - 1;
+		*pLast = static_cast<bt>(MSU_MASK & *pLast);
+		*this = sum;
 		return *this;
 	}
 	blockbinary& operator-=(const blockbinary& rhs) {

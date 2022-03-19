@@ -340,12 +340,14 @@ try {
 
 #if MANUAL_TESTING
 
+	PerformanceRunner("blockbinary<1024> add/subtract  ", bb::AdditionSubtractionWorkload< blockbinary<1024> >, 1024*1024);
+
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
 	ShiftPerformanceWorkload< sw::universal::blockbinary<8, uint8_t> >(1);
 	
-	cout << "done" << endl;
+	std::cout << "done" << std::endl;
 
 	return EXIT_SUCCESS;
 #else
@@ -948,4 +950,213 @@ blockbinary<512,uint32>   rem        131072 per       0.0138712sec ->   9 Mops/s
 blockbinary<1024,uint8>   rem         65536 per       0.0591468sec ->   1 Mops/sec
 blockbinary<1024,uint16>  rem         65536 per       0.0286567sec ->   2 Mops/sec
 blockbinary<1024,uint32>  rem         65536 per       0.0147311sec ->   4 Mops/sec
+*/
+
+
+/*
+ETLO
+Date run : 03/19/2022
+Processor: AMD Ryzen 7 2700X Eight-Core Processor 3.70 GHz desktop 105W processor
+Cache    : L1 96KB/core (768kB total), L2 512k/core (4.0MB total), L3 16.0MB
+Memory   : 32GB
+System   : 64-bit Windows 11 Pro, Version 21H2, x64-based processor, OS build 22000.556
+
+blockbinary operator performance benchmarking
+
+Logical shift operator performance
+blockbinary<16>   shifts            1048576 per       0.0129976sec ->  80 Mops/sec
+blockbinary<32>   shifts            1048576 per        0.017511sec ->  59 Mops/sec
+blockbinary<64>   shifts            1048576 per       0.0270338sec ->  38 Mops/sec
+blockbinary<128>  shifts             524288 per       0.0176927sec ->  29 Mops/sec
+blockbinary<256>  shifts             262144 per       0.0190321sec ->  13 Mops/sec
+blockbinary<512>  shifts             131072 per       0.0247181sec ->   5 Mops/sec
+blockbinary<1024> shifts              65536 per       0.0180043sec ->   3 Mops/sec
+
+Arithmetic operator performance
+blockbinary<16>   add/subtract      2097152 per       0.0177148sec -> 118 Mops/sec
+blockbinary<32>   add/subtract      2097152 per       0.0238561sec ->  87 Mops/sec
+blockbinary<64>   add/subtract      2097152 per        0.034997sec ->  59 Mops/sec
+blockbinary<128>  add/subtract      1048576 per       0.0250035sec ->  41 Mops/sec
+blockbinary<256>  add/subtract       524288 per       0.0186836sec ->  28 Mops/sec
+blockbinary<512>  add/subtract       262144 per       0.0179957sec ->  14 Mops/sec
+blockbinary<1024> add/subtract       131072 per       0.0177477sec ->   7 Mops/sec
+blockbinary<16>   multiplication    1048576 per        0.024258sec ->  43 Mops/sec
+blockbinary<32>   multiplication     524288 per       0.0428356sec ->  12 Mops/sec
+blockbinary<64>   multiplication     262144 per       0.0772769sec ->   3 Mops/sec
+blockbinary<128>  multiplication      16384 per       0.0363821sec -> 450 Kops/sec
+blockbinary<512>  multiplication       2048 per       0.0747159sec ->  27 Kops/sec
+blockbinary<1024> multiplication       1024 per        0.153858sec ->   6 Kops/sec
+blockbinary<16>   division           524288 per       0.0395495sec ->  13 Mops/sec
+blockbinary<32>   division           524288 per       0.0431528sec ->  12 Mops/sec
+blockbinary<64>   division           262144 per       0.0405781sec ->   6 Mops/sec
+blockbinary<128>  division           131072 per       0.0491489sec ->   2 Mops/sec
+blockbinary<512>  division            65536 per       0.0921349sec -> 711 Kops/sec
+blockbinary<1024> division            32768 per       0.0901406sec -> 363 Kops/sec
+blockbinary<16>   remainder          524288 per       0.0240982sec ->  21 Mops/sec
+blockbinary<32>   remainder          524288 per       0.0294039sec ->  17 Mops/sec
+blockbinary<64>   remainder          262144 per       0.0247215sec ->  10 Mops/sec
+blockbinary<128>  remainder          131072 per       0.0172034sec ->   7 Mops/sec
+blockbinary<512>  remainder           65536 per       0.0443009sec ->   1 Mops/sec
+blockbinary<1024> remainder           32768 per       0.0372859sec -> 878 Kops/sec
+
+Construction performance
+blockbinary<8>    construction      1048577 per       0.0007161sec ->   1 Gops/sec
+blockbinary<16>   construction      1048577 per       0.0007387sec ->   1 Gops/sec
+blockbinary<32>   construction      1048577 per       0.0008148sec ->   1 Gops/sec
+blockbinary<64>   construction      1048577 per       0.0006218sec ->   1 Gops/sec
+blockbinary<128>  construction      1048577 per           2e-07sec ->   5 Tops/sec
+blockbinary<256>  construction      1048577 per           2e-07sec ->   5 Tops/sec
+blockbinary<512>  construction      1048577 per       0.0061047sec -> 171 Mops/sec
+blockbinary<1024> construction      1048577 per       0.0244186sec ->  42 Mops/sec
+
+Block size performance on logical shift operators
+blockbinary<8,uint8>     shifts      1048576 per           2e-07sec ->   5 Tops/sec
+blockbinary<16,uint8>    shifts      1048576 per       0.0133041sec ->  78 Mops/sec
+blockbinary<16,uint16>   shifts      1048576 per        0.014597sec ->  71 Mops/sec
+blockbinary<32,uint8>    shifts      1048576 per       0.0171373sec ->  61 Mops/sec
+blockbinary<32,uint16>   shifts      1048576 per       0.0166364sec ->  63 Mops/sec
+blockbinary<32,uint32>   shifts      1048576 per       0.0183361sec ->  57 Mops/sec
+blockbinary<64,uint8>    shifts      1048576 per       0.0295841sec ->  35 Mops/sec
+blockbinary<64,uint16>   shifts      1048576 per       0.0198625sec ->  52 Mops/sec
+blockbinary<64,uint32>   shifts      1048576 per       0.0142957sec ->  73 Mops/sec
+blockbinary<128,uint8>   shifts       524288 per       0.0219723sec ->  23 Mops/sec
+blockbinary<128,uint16>  shifts       524288 per        0.011636sec ->  45 Mops/sec
+blockbinary<128,uint32>  shifts       524288 per       0.0099171sec ->  52 Mops/sec
+blockbinary<256,uint8>   shifts       262144 per       0.0259556sec ->  10 Mops/sec
+blockbinary<256,uint16>  shifts       262144 per        0.009386sec ->  27 Mops/sec
+blockbinary<256,uint32>  shifts       262144 per       0.0053249sec ->  49 Mops/sec
+blockbinary<512,uint8>   shifts       131072 per       0.0353548sec ->   3 Mops/sec
+blockbinary<512,uint16>  shifts       131072 per       0.0161226sec ->   8 Mops/sec
+blockbinary<512,uint32>  shifts       131072 per       0.0083378sec ->  15 Mops/sec
+blockbinary<1024,uint8>  shifts        65536 per         0.01787sec ->   3 Mops/sec
+blockbinary<1024,uint16> shifts        65536 per       0.0080736sec ->   8 Mops/sec
+blockbinary<1024,uint32> shifts        65536 per       0.0040697sec ->  16 Mops/sec
+
+ADDITION: blockbinary arithemetic performance as a function of size and BlockType
+blockbinary<4,uint8>      add       2097152 per       0.0026306sec -> 797 Mops/sec
+blockbinary<8,uint8>      add       2097152 per       0.0026321sec -> 796 Mops/sec
+blockbinary<16,uint8>     add       2097152 per       0.0177226sec -> 118 Mops/sec
+blockbinary<16,uint16>    add       2097152 per       0.0015842sec ->   1 Gops/sec
+blockbinary<32,uint8>     add       2097152 per       0.0214241sec ->  97 Mops/sec
+blockbinary<32,uint16>    add       2097152 per       0.0186483sec -> 112 Mops/sec
+blockbinary<32,uint32>    add       2097152 per       0.0011682sec ->   1 Gops/sec
+blockbinary<64,uint8>     add       2097152 per       0.0318072sec ->  65 Mops/sec
+blockbinary<64,uint16>    add       2097152 per       0.0213641sec ->  98 Mops/sec
+blockbinary<64,uint32>    add       2097152 per       0.0173347sec -> 120 Mops/sec
+blockbinary<128,uint8>    add       1048576 per       0.0240713sec ->  43 Mops/sec
+blockbinary<128,uint16>   add       1048576 per       0.0157647sec ->  66 Mops/sec
+blockbinary<128,uint32>   add       1048576 per        0.011551sec ->  90 Mops/sec
+blockbinary<256,uint8>    add        524288 per       0.0206505sec ->  25 Mops/sec
+blockbinary<256,uint16>   add        524288 per       0.0090024sec ->  58 Mops/sec
+blockbinary<256,uint32>   add        524288 per       0.0062628sec ->  83 Mops/sec
+blockbinary<512,uint8>    add        262144 per       0.0193297sec ->  13 Mops/sec
+blockbinary<512,uint16>   add        262144 per       0.0081938sec ->  31 Mops/sec
+blockbinary<512,uint32>   add        262144 per       0.0041081sec ->  63 Mops/sec
+blockbinary<1024,uint8>   add        131072 per       0.0183192sec ->   7 Mops/sec
+blockbinary<1024,uint16>  add        131072 per        0.009946sec ->  13 Mops/sec
+blockbinary<1024,uint32>  add        131072 per        0.004828sec ->  27 Mops/sec
+
+MULTIPLICATION: blockbinary arithemetic performance as a function of size and BlockType
+blockbinary<4,uint8>      mul        524288 per       0.0018977sec -> 276 Mops/sec
+blockbinary<8,uint8>      mul        524288 per       0.0026256sec -> 199 Mops/sec
+blockbinary<16,uint8>     mul        524288 per       0.0155587sec ->  33 Mops/sec
+blockbinary<16,uint16>    mul        524288 per       0.0065909sec ->  79 Mops/sec
+blockbinary<32,uint8>     mul        524288 per       0.0487189sec ->  10 Mops/sec
+blockbinary<32,uint16>    mul        524288 per       0.0316798sec ->  16 Mops/sec
+blockbinary<32,uint32>    mul        524288 per       0.0188914sec ->  27 Mops/sec
+blockbinary<64,uint8>     mul        524288 per         0.17227sec ->   3 Mops/sec
+blockbinary<64,uint16>    mul        524288 per       0.0814941sec ->   6 Mops/sec
+blockbinary<64,uint32>    mul        524288 per       0.0412513sec ->  12 Mops/sec
+blockbinary<128,uint8>    mul        262144 per        0.631923sec -> 414 Kops/sec
+blockbinary<128,uint16>   mul        262144 per        0.192141sec ->   1 Mops/sec
+blockbinary<128,uint32>   mul        262144 per       0.0699298sec ->   3 Mops/sec
+blockbinary<256,uint8>    mul         32768 per        0.296732sec -> 110 Kops/sec
+blockbinary<256,uint16>   mul         65536 per        0.317678sec -> 206 Kops/sec
+blockbinary<256,uint32>   mul        131072 per        0.160059sec -> 818 Kops/sec
+blockbinary<512,uint8>    mul          1024 per       0.0408546sec ->  25 Kops/sec
+blockbinary<512,uint16>   mul          2048 per       0.0352479sec ->  58 Kops/sec
+blockbinary<512,uint32>   mul          4096 per       0.0313558sec -> 130 Kops/sec
+blockbinary<1024,uint8>   mul           512 per       0.0809457sec ->   6 Kops/sec
+blockbinary<1024,uint16>  mul          1024 per       0.0820582sec ->  12 Kops/sec
+blockbinary<1024,uint32>  mul          2048 per       0.0748518sec ->  27 Kops/sec
+
+DIVISION: blockbinary arithemetic performance as a function of size and BlockType
+blockbinary<4,uint8>      div       1048576 per       0.0371902sec ->  28 Mops/sec
+blockbinary<8,uint8>      div       1048576 per       0.0634376sec ->  16 Mops/sec
+blockbinary<16,uint8>     div       1048576 per       0.0733217sec ->  14 Mops/sec
+blockbinary<16,uint16>    div       1048576 per       0.0657642sec ->  15 Mops/sec
+blockbinary<32,uint8>     div       1048576 per       0.0964202sec ->  10 Mops/sec
+blockbinary<32,uint16>    div       1048576 per       0.0789437sec ->  13 Mops/sec
+blockbinary<32,uint32>    div       1048576 per       0.0833805sec ->  12 Mops/sec
+blockbinary<64,uint8>     div       1048576 per        0.184213sec ->   5 Mops/sec
+blockbinary<64,uint16>    div       1048576 per        0.134421sec ->   7 Mops/sec
+blockbinary<64,uint32>    div       1048576 per       0.0914573sec ->  11 Mops/sec
+blockbinary<128,uint8>    div        524288 per        0.192709sec ->   2 Mops/sec
+blockbinary<128,uint16>   div        524288 per       0.0914627sec ->   5 Mops/sec
+blockbinary<128,uint32>   div        524288 per       0.0682722sec ->   7 Mops/sec
+blockbinary<256,uint8>    div        262144 per        0.189627sec ->   1 Mops/sec
+blockbinary<256,uint16>   div        262144 per           0.106sec ->   2 Mops/sec
+blockbinary<256,uint32>   div        262144 per       0.0520821sec ->   5 Mops/sec
+blockbinary<512,uint8>    div        131072 per        0.198784sec -> 659 Kops/sec
+blockbinary<512,uint16>   div        131072 per         0.10001sec ->   1 Mops/sec
+blockbinary<512,uint32>   div        131072 per       0.0553885sec ->   2 Mops/sec
+blockbinary<1024,uint8>   div         65536 per        0.185807sec -> 352 Kops/sec
+blockbinary<1024,uint16>  div         65536 per        0.105308sec -> 622 Kops/sec
+blockbinary<1024,uint32>  div         65536 per       0.0561244sec ->   1 Mops/sec
+
+REMAINDER: blockbinary arithemetic performance as a function of size and BlockType
+blockbinary<4,uint8>      rem       1048576 per       0.0168175sec ->  62 Mops/sec
+blockbinary<8,uint8>      rem       1048576 per       0.0389062sec ->  26 Mops/sec
+blockbinary<16,uint8>     rem       1048576 per       0.0474354sec ->  22 Mops/sec
+blockbinary<16,uint16>    rem       1048576 per       0.0323672sec ->  32 Mops/sec
+blockbinary<32,uint8>     rem       1048576 per        0.058221sec ->  18 Mops/sec
+blockbinary<32,uint16>    rem       1048576 per       0.0504034sec ->  20 Mops/sec
+blockbinary<32,uint32>    rem       1048576 per       0.0582756sec ->  17 Mops/sec
+blockbinary<64,uint8>     rem       1048576 per        0.121894sec ->   8 Mops/sec
+blockbinary<64,uint16>    rem       1048576 per       0.0647446sec ->  16 Mops/sec
+blockbinary<64,uint32>    rem       1048576 per       0.0641945sec ->  16 Mops/sec
+blockbinary<128,uint8>    rem        524288 per        0.064757sec ->   8 Mops/sec
+blockbinary<128,uint16>   rem        524288 per       0.0307583sec ->  17 Mops/sec
+blockbinary<128,uint32>   rem        524288 per       0.0188096sec ->  27 Mops/sec
+blockbinary<256,uint8>    rem        262144 per        0.078893sec ->   3 Mops/sec
+blockbinary<256,uint16>   rem        262144 per       0.0356271sec ->   7 Mops/sec
+blockbinary<256,uint32>   rem        262144 per        0.016986sec ->  15 Mops/sec
+blockbinary<512,uint8>    rem        131072 per       0.0898092sec ->   1 Mops/sec
+blockbinary<512,uint16>   rem        131072 per       0.0424889sec ->   3 Mops/sec
+blockbinary<512,uint32>   rem        131072 per       0.0169454sec ->   7 Mops/sec
+blockbinary<1024,uint8>   rem         65536 per       0.0723782sec -> 905 Kops/sec
+blockbinary<1024,uint16>  rem         65536 per       0.0499046sec ->   1 Mops/sec
+blockbinary<1024,uint32>  rem         65536 per       0.0196345sec ->   3 Mops/sec
+
+changing operator+=() to use pointers and an arithmetic carry: about a 10% performance gain
+blockbinary<16>   add/subtract      2097152 per       0.0172887sec -> 121 Mops/sec
+blockbinary<32>   add/subtract      2097152 per       0.0198335sec -> 105 Mops/sec
+blockbinary<64>   add/subtract      2097152 per       0.0258789sec ->  81 Mops/sec
+blockbinary<128>  add/subtract      1048576 per        0.019928sec ->  52 Mops/sec
+blockbinary<256>  add/subtract       524288 per       0.0164414sec ->  31 Mops/sec
+blockbinary<512>  add/subtract       262144 per       0.0141651sec ->  18 Mops/sec
+blockbinary<1024> add/subtract       131072 per       0.0149449sec ->   8 Mops/sec
+
+blockbinary<4,uint8>      add       2097152 per       0.0026287sec -> 797 Mops/sec
+blockbinary<8,uint8>      add       2097152 per       0.0026241sec -> 799 Mops/sec
+blockbinary<16,uint8>     add       2097152 per       0.0195565sec -> 107 Mops/sec
+blockbinary<16,uint16>    add       2097152 per       0.0015823sec ->   1 Gops/sec
+blockbinary<32,uint8>     add       2097152 per       0.0193255sec -> 108 Mops/sec
+blockbinary<32,uint16>    add       2097152 per       0.0173402sec -> 120 Mops/sec
+blockbinary<32,uint32>    add       2097152 per       0.0015711sec ->   1 Gops/sec
+blockbinary<64,uint8>     add       2097152 per       0.0257522sec ->  81 Mops/sec  << from 65Mops
+blockbinary<64,uint16>    add       2097152 per       0.0210924sec ->  99 Mops/sec
+blockbinary<64,uint32>    add       2097152 per       0.0172938sec -> 121 Mops/sec
+blockbinary<128,uint8>    add       1048576 per       0.0197569sec ->  53 Mops/sec
+blockbinary<128,uint16>   add       1048576 per       0.0127447sec ->  82 Mops/sec
+blockbinary<128,uint32>   add       1048576 per        0.010513sec ->  99 Mops/sec  << from 90Mops
+blockbinary<256,uint8>    add        524288 per       0.0185148sec ->  28 Mops/sec
+blockbinary<256,uint16>   add        524288 per       0.0104053sec ->  50 Mops/sec
+blockbinary<256,uint32>   add        524288 per       0.0054061sec ->  96 Mops/sec  << from 83Mops
+blockbinary<512,uint8>    add        262144 per       0.0141602sec ->  18 Mops/sec
+blockbinary<512,uint16>   add        262144 per       0.0079915sec ->  32 Mops/sec
+blockbinary<512,uint32>   add        262144 per       0.0037765sec ->  69 Mops/sec  << from 63Mops
+blockbinary<1024,uint8>   add        131072 per       0.0146829sec ->   8 Mops/sec
+blockbinary<1024,uint16>  add        131072 per       0.0077309sec ->  16 Mops/sec
+blockbinary<1024,uint32>  add        131072 per       0.0038901sec ->  33 Mops/sec  << from 27Mops
 */
