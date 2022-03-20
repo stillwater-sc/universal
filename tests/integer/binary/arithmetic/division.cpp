@@ -225,7 +225,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer Arithmetic Division verfication\n";
+	std::string test_suite  = "Integer Arithmetic Division verfication";
 	std::string test_tag    = "integer<> division";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -280,7 +280,15 @@ try {
 #endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

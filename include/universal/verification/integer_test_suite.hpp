@@ -153,15 +153,15 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
 				}
 				else {
 					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
 				}
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+		if (reportTestCases) std::cout << std::endl;
 
 		return nrOfFailedTests;
 	}
@@ -225,9 +225,9 @@ namespace sw { namespace universal {
 					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
 				}
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+		if (reportTestCases) std::cout << std::endl;
 
 		return nrOfFailedTests;
 	}
@@ -316,16 +316,16 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
 				}
 				else {
 					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+		if (reportTestCases) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
@@ -364,16 +364,16 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
 				}
 				else {
 					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+		if (reportTestCases) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -413,16 +413,16 @@ namespace sw { namespace universal {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
 				}
 				else {
-					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
+					// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+		if (reportTestCases) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -474,16 +474,16 @@ namespace sw { namespace universal {
 				}
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
 				}
 				else {
 					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+		if (reportTestCases) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 
@@ -522,16 +522,16 @@ namespace sw { namespace universal {
 				iref = i64a % i64b;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
 				}
 				else {
 					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "%", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
-			if (i % 1024 == 0) std::cout << '.';
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
-		std::cout << std::endl;
+		if (reportTestCases) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 

@@ -31,17 +31,23 @@ you need the exception types defined, but you have the option to throw them
 
 namespace sw { namespace universal {
 
+enum class IntegerNumberType {
+	IntegerNumber = 0,  // { ...,-3,-2,-1,0,1,2,3,... }
+	WholeNumber   = 1,  // {              0,1,2,3,... }
+	NaturalNumber = 2   // {                1,2,3,... }
+};
+
 // forward references
-template<size_t nbits, typename BlockType> class integer;
-template<size_t nbits, typename BlockType> integer<nbits, BlockType> max_int();
-template<size_t nbits, typename BlockType> integer<nbits, BlockType> min_int();
-template<size_t nbits, typename BlockType> struct idiv_t;
-template<size_t nbits, typename BlockType> idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>&, const integer<nbits, BlockType>&b);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType> class integer;
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> max_int();
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> min_int();
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType> struct idiv_t;
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType> idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>&, const integer<nbits, BlockType, NumberType>&b);
 
 // scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
-template<size_t nbits, typename BlockType>
-inline long scale(const integer<nbits, BlockType>& i) {
-	integer<nbits, BlockType> v(i);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline long scale(const integer<nbits, BlockType, NumberType>& i) {
+	integer<nbits, BlockType, NumberType> v(i);
 	if (i.sign()) { // special case handling
 		v.twosComplement();
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
@@ -58,20 +64,20 @@ inline long scale(const integer<nbits, BlockType>& i) {
 }
 
 // signed integer conversion
-template<size_t nbits, typename BlockType>
-inline constexpr integer<nbits, BlockType>& convert(int64_t v, integer<nbits, BlockType>& result) {	return result.convert(v); }
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline constexpr integer<nbits, BlockType, NumberType>& convert(int64_t v, integer<nbits, BlockType, NumberType>& result) {	return result.convert(v); }
 // unsigned integer conversion
-template<size_t nbits, typename BlockType>
-inline constexpr integer<nbits, BlockType>& convert(uint64_t v, integer<nbits, BlockType>& result) { return result.convert(v); }
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline constexpr integer<nbits, BlockType, NumberType>& convert(uint64_t v, integer<nbits, BlockType, NumberType>& result) { return result.convert(v); }
 
-template<size_t nbits, typename BlockType>
-bool parse(const std::string& number, integer<nbits, BlockType>& v);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& v);
 
-// idiv_t for integer<nbits, BlockType> to capture quotient and remainder during long division
-template<size_t nbits, typename BlockType>
+// idiv_t for integer<nbits, BlockType, NumberType> to capture quotient and remainder during long division
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 struct idiv_t {
-	integer<nbits, BlockType> quot; // quotient
-	integer<nbits, BlockType> rem;  // remainder
+	integer<nbits, BlockType, NumberType> quot; // quotient
+	integer<nbits, BlockType, NumberType> rem;  // remainder
 };
 
 /*
@@ -94,7 +100,7 @@ chunk values. The chunks need to be interpreted as unsigned binary segments.
 */
 
 // integer is an arbitrary fixed-sized 2's complement integer
-template<size_t _nbits, typename BlockType = uint8_t>
+template<size_t _nbits, typename BlockType = uint8_t, IntegerNumberType NumberType = IntegerNumberType::IntegerNumber>
 class integer {
 public:
 	using bt = BlockType;
@@ -118,7 +124,7 @@ public:
 
 	/// Construct a new integer from another, sign extend when necessary, BlockTypes must be the same
 	template<size_t srcbits>
-	integer(const integer<srcbits, BlockType>& a) {
+	integer(const integer<srcbits, BlockType, NumberType>& a) {
 //		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision"); // TODO: do we want this?
 		bitcopy(a);
 		if constexpr (srcbits < nbits) {
@@ -193,103 +199,155 @@ public:
 	constexpr integer& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
 	constexpr integer& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
 	constexpr integer& operator=(float rhs)              noexcept { return convert_ieee(rhs); }
-	constexpr integer& operator=(double rhs)             noexcept { return convert_ieee(rhs); }
+constexpr integer& operator=(double rhs)             noexcept { return convert_ieee(rhs); }
 #if LONG_DOUBLE_SUPPORT
-	constexpr integer& operator=(long double rhs)        noexcept { return convert_ieee(rhs); }
+constexpr integer& operator=(long double rhs)        noexcept { return convert_ieee(rhs); }
 #endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
-	// POSIT_CONCEPT_GENERALIZATION
-	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
-	template<typename PositType>
-	integer& operator=(const PositType& rhs) {
-		convert_p2i(rhs, *this);
-		return *this;
-	}
+// POSIT_CONCEPT_GENERALIZATION
+// TODO: SFINAE to assure we only match a posit<nbits,es> concept
+template<typename PositType>
+integer& operator=(const PositType& rhs) {
+	convert_p2i(rhs, *this);
+	return *this;
+}
 #endif // ADAPTER_POSIT_AND_INTEGER
 
-	// prefix operators
-	constexpr integer operator-() const {
-		integer negated(*this);
-		negated.flip();
-		negated += 1;
-		return negated;
-	}
-	// one's complement
-	constexpr integer operator~() const {
-		integer complement(*this);
-		complement.flip(); 
-		return complement;
-	}
-	// increment
-	constexpr integer operator++(int) {
-		integer tmp(*this);
-		operator++();
-		return tmp;
-	}
-	constexpr integer& operator++() {
-		*this += integer(1);
-		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
-		return *this;
-	}
-	// decrement
-	constexpr integer operator--(int) {
-		integer tmp(*this);
-		operator--();
-		return tmp;
-	}
-	constexpr integer& operator--() {
-		*this -= integer(1);
-		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
-		return *this;
-	}
-	// conversion operators
-	explicit operator unsigned short() const     { return to_integer<unsigned short>(); }
-	explicit operator unsigned int() const       { return to_integer<unsigned int>(); }
-	explicit operator unsigned long() const      { return to_integer<unsigned long>(); }
-	explicit operator unsigned long long() const { return to_integer<unsigned long long>(); }
-	explicit operator short() const              { return to_integer<short>(); }
-	explicit operator int() const                { return to_integer<int>(); }
-	explicit operator long() const               { return to_integer<long>(); }
-	explicit operator long long() const          { return to_integer<long long>(); }
-	explicit operator float() const              { return to_real<float>(); }
-	explicit operator double() const             { return to_real<double>(); }
+// prefix operators
+constexpr integer operator-() const {
+	integer negated(*this);
+	negated.flip();
+	negated += 1;
+	return negated;
+}
+// one's complement
+constexpr integer operator~() const {
+	integer complement(*this);
+	complement.flip();
+	return complement;
+}
+// increment
+constexpr integer operator++(int) {
+	integer tmp(*this);
+	operator++();
+	return tmp;
+}
+constexpr integer& operator++() {
+	*this += integer(1);
+	_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
+	return *this;
+}
+// decrement
+constexpr integer operator--(int) {
+	integer tmp(*this);
+	operator--();
+	return tmp;
+}
+constexpr integer& operator--() {
+	*this -= integer(1);
+	_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
+	return *this;
+}
+// conversion operators
+explicit operator unsigned short() const { return to_integer<unsigned short>(); }
+explicit operator unsigned int() const { return to_integer<unsigned int>(); }
+explicit operator unsigned long() const { return to_integer<unsigned long>(); }
+explicit operator unsigned long long() const { return to_integer<unsigned long long>(); }
+explicit operator short() const { return to_integer<short>(); }
+explicit operator int() const { return to_integer<int>(); }
+explicit operator long() const { return to_integer<long>(); }
+explicit operator long long() const { return to_integer<long long>(); }
+explicit operator float() const { return to_real<float>(); }
+explicit operator double() const { return to_real<double>(); }
 #if LONG_DOUBLE_SUPPORT
-	explicit operator long double() const        { return to_real<long double>(); }
+explicit operator long double() const { return to_real<long double>(); }
 #endif
-	// arithmetic operators
-	integer& operator+=(const integer& rhs) {
-		integer<nbits, BlockType> sum;
-		std::uint64_t carry = 0;
-		BlockType* pA = _block;
-		BlockType const* pB = rhs._block;
-		BlockType* pC = sum._block;
-		BlockType* pEnd = pC + nrBlocks; // this is one element past the end: is that proper?
-		while (pC != pEnd) {
-			carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
-			*pC = static_cast<bt>(carry);
-			carry >>= bitsInBlock;
-			++pA; ++pB; ++pC;
-		}
-		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		BlockType* pLast = pEnd - 1;
-		*pLast = static_cast<bt>(MSU_MASK & *pLast);
+// arithmetic operators
+integer& operator+=(const integer& rhs) {
+	integer<nbits, BlockType, NumberType> sum;
+	std::uint64_t carry = 0;
+	BlockType* pA = _block;
+	BlockType const* pB = rhs._block;
+	BlockType* pC = sum._block;
+	BlockType* pEnd = pC + nrBlocks; // this is one element past the end: is that proper?
+	while (pC != pEnd) {
+		carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
+		*pC = static_cast<bt>(carry);
+		carry >>= bitsInBlock;
+		++pA; ++pB; ++pC;
+	}
+	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+	BlockType* pLast = pEnd - 1;
+	*pLast = static_cast<bt>(MSU_MASK & *pLast);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-		// TODO: what is the real overflow condition?
-		// it is not carry == 1 as  say 1 + -1 sets the carry but is 0
+	// TODO: what is the real overflow condition?
+	// it is not carry == 1 as  say 1 + -1 sets the carry but is 0
 //		if (carry) throw integer_overflow();
 #endif
-		*this = sum;
-		return *this;
+	* this = sum;
+	return *this;
+}
+integer& operator-=(const integer& rhs) {
+	integer twos(rhs);
+	operator+=(twos.twosComplement());
+	return *this;
+}
+#define FAST_MUL
+#ifdef FAST_MUL
+integer& operator*=(const integer& rhs) {
+	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
+		// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
+		integer<nbits + 1, BlockType, NumberType> base(*this);
+		integer<nbits + 1, BlockType, NumberType> multiplicant(rhs);
+		bool resultIsNeg = false;
+		if (base.isneg() && multiplicant.ispos() || base.ispos() && multiplicant.isneg()) resultIsNeg = true;
+		if (base.isneg()) {
+			base.twosComplement();
+		}
+		if (multiplicant.isneg()) {
+			multiplicant.twosComplement();
+		}
+		clear();
+		for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+			std::uint64_t segment(0);
+			for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+
+				if (i + j < static_cast<unsigned>(nrBlocks)) {
+					segment += _block[i + j];
+					_block[i + j] = static_cast<bt>(segment);
+					segment >>= bitsInBlock;
+				}
+			}
+		}
+		if (resultIsNeg) twosComplement();
 	}
-	integer& operator-=(const integer& rhs) {
-		integer twos(rhs);
-		operator+=(twos.twosComplement());
-		return *this;
+	else {  // whole and natural numbers are closed under multiplication (modulo)
+		integer<nbits, BlockType, NumberType> base(*this);
+		integer<nbits, BlockType, NumberType> multiplicant(rhs);
+		clear();
+		for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+			std::uint64_t segment(0);
+			for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+
+				if (i + j < static_cast<unsigned>(nrBlocks)) {
+					segment += _block[i + j];
+					_block[i + j] = static_cast<bt>(segment);
+					segment >>= bitsInBlock;
+				}
+			}
+		}
 	}
+	// null any leading bits that fall outside of nbits
+	_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
+	return *this;
+}
+#else
 	integer& operator*=(const integer& rhs) {
-		integer<nbits, BlockType> base(*this);
-		integer<nbits, BlockType> multiplicant(rhs);
+		integer<nbits, BlockType, NumberType> base(*this);
+		integer<nbits, BlockType, NumberType> multiplicant(rhs);
 		clear();
 		for (unsigned i = 0; i < nbits; ++i) {
 			if (base.at(i)) {
@@ -301,13 +359,14 @@ public:
 		// we don't need to null here
 		return *this;
 	}
+#endif
 	integer& operator/=(const integer& rhs) {
-		idiv_t<nbits, BlockType> divresult = idiv<nbits, BlockType>(*this, rhs);
+		idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
 		*this = divresult.quot;
 		return *this;
 	}
 	integer& operator%=(const integer& rhs) {
-		idiv_t<nbits, BlockType> divresult = idiv<nbits, BlockType>(*this, rhs);
+		idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
 		*this = divresult.rem;
 		return *this;
 	}
@@ -423,7 +482,7 @@ public:
 			clear();
 			return *this;
 		}
-		integer<nbits, BlockType> target;
+		integer<nbits, BlockType, NumberType> target;
 		for (int i = nbits - 1; i >= shift; --i) {  // TODO: inefficient as it works at the bit level
 			target.setbit(static_cast<size_t>(i) - static_cast<size_t>(shift), at(static_cast<size_t>(i)));
 		}
@@ -607,7 +666,7 @@ public:
 	}
 	// pure bit copy of source integer, no sign extension
 	template<size_t src_nbits>
-	inline constexpr void bitcopy(const integer<src_nbits, BlockType>& src) noexcept {
+	inline constexpr void bitcopy(const integer<src_nbits, BlockType, NumberType>& src) noexcept {
 		clear();
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = src.block(i);
@@ -746,45 +805,46 @@ private:
 	bt _block[nrBlocks];
 
 	// convert
-	template<size_t nnbits, typename BBlockType>
-	friend std::string convert_to_decimal_string(const integer<nnbits>& value);
+	template<size_t nnbits, typename BBlockType, IntegerNumberType NNumberType>
+	friend std::string convert_to_decimal_string(const integer<nnbits, BBlockType, NNumberType>& value);
 
 	// integer - integer logic comparisons
-	template<size_t nnbits, typename BBlockType>
-	friend bool operator==(const integer<nnbits, BBlockType>& lhs, const integer<nnbits, BBlockType>& rhs);
+	template<size_t nnbits, typename BBlockType, IntegerNumberType NNumberType>
+	friend bool operator==(const integer<nnbits, BBlockType, NNumberType>& lhs, const integer<nnbits, BBlockType, NNumberType>& rhs);
 
 	// find the most significant bit set
-	template<size_t nnbits, typename BBlockType>
-	friend signed findMsb(const integer<nnbits, BBlockType>& v);
+	template<size_t nnbits, typename BBlockType, IntegerNumberType NNumberType>
+	friend signed findMsb(const integer<nnbits, BBlockType, NNumberType>& v);
 };
 
 ////////////////////////    INTEGER functions   /////////////////////////////////
 
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> abs(const integer<nbits, BlockType>& a) {
-	return (a >= 0 ? a : twos_complement(a));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> abs(const integer<nbits, BlockType, NumberType>& a) {
+	integer<nbits, BlockType, NumberType> b(a);
+	return (a >= 0 ? b : b.twosComplement());
 }
 
 // free function generator to create a 1's complement copy of an integer
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> onesComplement(const integer<nbits, BlockType>& value) {
-	integer<nbits, BlockType> ones(value);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> onesComplement(const integer<nbits, BlockType, NumberType>& value) {
+	integer<nbits, BlockType, NumberType> ones(value);
 	return ones.flip();
 }
 // free function generator to create the 2's complement of an integer
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> twosComplement(const integer<nbits, BlockType>& value) {
-	integer<nbits, BlockType> twos(value);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> twosComplement(const integer<nbits, BlockType, NumberType>& value) {
+	integer<nbits, BlockType, NumberType> twos(value);
 	return twos.twosComplement();;
 }
 
 // convert integer to decimal string
-template<size_t nbits, typename BlockType>
-std::string convert_to_decimal_string(const integer<nbits, BlockType>& value) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+std::string convert_to_decimal_string(const integer<nbits, BlockType, NumberType>& value) {
 	if (value.iszero()) {
 		return std::string("0");
 	}
-	integer<nbits, BlockType> number = value.sign() ? twosComplement(value) : value;
+	integer<nbits, BlockType, NumberType> number = value.sign() ? twosComplement(value) : value;
 	support::decimal partial, multiplier;
 	partial.setzero();
 	multiplier.setdigit(1);
@@ -804,9 +864,9 @@ std::string convert_to_decimal_string(const integer<nbits, BlockType>& value) {
 	return str.str();
 }
 
-// findMsb takes an integer<nbits, BlockType> reference and returns the 0-based position of the most significant bit, -1 if v == 0
-template<size_t nbits, typename BlockType>
-inline signed findMsb(const integer<nbits, BlockType>& v) {
+// findMsb takes an integer<nbits, BlockType, NumberType> reference and returns the 0-based position of the most significant bit, -1 if v == 0
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
 	BlockType const* pV = v._block + v.nrBlocks - 1;
 	BlockType const* pLast = v._block - 1;
 	BlockType BlockMsb = BlockType(BlockType(1u) << (v.bitsInBlock - 1));
@@ -846,38 +906,38 @@ inline signed findMsb(const integer<nbits, BlockType>& v) {
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
 
-// divide integer<nbits, BlockType> a and b and return result argument
-template<size_t nbits, typename BlockType>
-void divide(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b, integer<nbits, BlockType>& quotient) {
-	if (b == integer<nbits, BlockType>(0)) {
+// divide integer<nbits, BlockType, NumberType> a and b and return result argument
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+void divide(const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b, integer<nbits, BlockType, NumberType>& quotient) {
+	if (b == integer<nbits, BlockType, NumberType>(0)) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	idiv_t<nbits, BlockType> divresult = idiv<nbits, BlockType>(a, b);
+	idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(a, b);
 	quotient = divresult.quot;
 }
 
-// calculate remainder of integer<nbits, BlockType> a and b and return result argument
-template<size_t nbits, typename BlockType>
-void remainder(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b, integer<nbits, BlockType>& remainder) {
-	if (b == integer<nbits, BlockType>(0)) {
+// calculate remainder of integer<nbits, BlockType, NumberType> a and b and return result argument
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+void remainder(const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b, integer<nbits, BlockType, NumberType>& remainder) {
+	if (b == integer<nbits, BlockType, NumberType>(0)) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	idiv_t<nbits, BlockType> divresult = idiv<nbits, BlockType>(a, b);
+	idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(a, b);
 	remainder = divresult.rem;
 }
 
-// divide integer<nbits, BlockType> a and b and return result argument
-template<size_t nbits, typename BlockType>
-idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>& _a, const integer<nbits, BlockType>& _b) {
-	if (_b == integer<nbits, BlockType>(0)) {
+// divide integer<nbits, BlockType, NumberType> a and b and return result argument
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>& _a, const integer<nbits, BlockType, NumberType>& _b) {
+	if (_b == integer<nbits, BlockType, NumberType>(0)) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
@@ -889,17 +949,17 @@ idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>& _a, const integer
 	bool a_negative = _a.sign();
 	bool b_negative = _b.sign();
 	bool result_negative = (a_negative ^ b_negative);
-	integer<nbits + 1, BlockType> a; a.bitcopy(a_negative ? -_a : _a);
-	integer<nbits + 1, BlockType> b; b.bitcopy(b_negative ? -_b : _b);
-	idiv_t<nbits, BlockType> divresult;
+	integer<nbits + 1, BlockType, NumberType> a; a.bitcopy(a_negative ? -_a : _a);
+	integer<nbits + 1, BlockType, NumberType> b; b.bitcopy(b_negative ? -_b : _b);
+	idiv_t<nbits, BlockType, NumberType> divresult;
 	if (a < b) {
 		divresult.rem = _a; // a % b = a when a / b = 0
 		return divresult; // a / b = 0 when b > a
 	}
 	// initialize the long division
-	integer<nbits + 1, BlockType> accumulator = a;
+	integer<nbits + 1, BlockType, NumberType> accumulator = a;
 	// prepare the subtractand
-	integer<nbits + 1, BlockType> subtractand = b;
+	integer<nbits + 1, BlockType, NumberType> subtractand = b;
 	int msb_b = findMsb(b);
 	int msb_a = findMsb(a);
 	int shift = msb_a - msb_b;
@@ -920,7 +980,7 @@ idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>& _a, const integer
 		divresult.quot.flip();
 		divresult.quot += 1;
 	} 
-	if (_a < integer<nbits, BlockType>(0)) {
+	if (_a < integer<nbits, BlockType, NumberType>(0)) {
 		divresult.rem = -accumulator;
 	}
 	else {
@@ -933,8 +993,8 @@ idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>& _a, const integer
 /// stream operators
 
 // read a integer ASCII format and make a binary integer out of it
-template<size_t nbits, typename BlockType>
-bool parse(const std::string& number, integer<nbits, BlockType>& value) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& value) {
 	bool bSuccess = false;
 	value.clear();
 	// check if the txt is an integer form: [0123456789]+
@@ -1044,7 +1104,7 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 	}
 	else if (std::regex_match(number, decimal_regex)) {
 		//std::cout << "found a decimal integer representation\n";
-		integer<nbits, BlockType> scale = 1;
+		integer<nbits, BlockType, NumberType> scale = 1;
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
@@ -1055,7 +1115,7 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 				break;
 			}
 			else {
-				integer<nbits, BlockType> digit = charLookup.at(*r);
+				integer<nbits, BlockType, NumberType> digit = charLookup.at(*r);
 				value += scale * digit;
 				scale *= 10;
 			}
@@ -1066,14 +1126,14 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 	return bSuccess;
 }
 
-template<size_t nbits, typename BlockType>
-std::string to_string(const integer<nbits, BlockType>& n) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+std::string to_string(const integer<nbits, BlockType, NumberType>& n) {
 	return convert_to_decimal_string(n);
 }
 
 // generate an integer format ASCII format
-template<size_t nbits, typename BlockType>
-inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType>& i) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the integer into a string
 	std::stringstream ss;
@@ -1089,8 +1149,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 }
 
 // read an ASCII integer format
-template<size_t nbits, typename BlockType>
-inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType>& p) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType, NumberType>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
@@ -1100,8 +1160,8 @@ inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType>& p
 }
 
 ////////////////// string operators
-template<size_t nbits, typename BlockType>
-inline std::string to_binary(const integer<nbits, BlockType>& number, bool nibbleMarker = false) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::string to_binary(const integer<nbits, BlockType, NumberType>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	for (int i = nbits - 1; i >= 0; --i) {
@@ -1115,25 +1175,25 @@ inline std::string to_binary(const integer<nbits, BlockType>& number, bool nibbl
 // integer - integer binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-template<size_t nbits, typename BlockType>
-inline bool operator==(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator==(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) return false;
 	}
 	return true;
 }
-template<size_t nbits, typename BlockType>
-inline bool operator!=(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator!=(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	return !operator==(lhs, rhs);
 }
-template<size_t nbits, typename BlockType>
-inline bool operator< (const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	bool lhs_is_negative = lhs.sign();
 	bool rhs_is_negative = rhs.sign();
 	if (lhs_is_negative && !rhs_is_negative) return true;
 	if (rhs_is_negative && !lhs_is_negative) return false;
 	// arguments have the same sign
-	integer<nbits, BlockType> diff(0);
+	integer<nbits, BlockType, NumberType> diff(0);
 	try {
 		diff = (lhs - rhs);
 	}
@@ -1144,44 +1204,44 @@ inline bool operator< (const integer<nbits, BlockType>& lhs, const integer<nbits
 	}
 	return diff.sign();
 }
-template<size_t nbits, typename BlockType>
-inline bool operator> (const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator> (const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	return operator< (rhs, lhs);
 }
-template<size_t nbits, typename BlockType>
-inline bool operator<=(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator<=(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	return !operator> (lhs, rhs);
 }
-template<size_t nbits, typename BlockType>
-inline bool operator>=(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator>=(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-template<size_t nbits, typename BlockType, typename IntType>
-inline bool operator==(const integer<nbits, BlockType>& lhs, IntType rhs) {
-	return operator==(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
+inline bool operator==(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
+	return operator==(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
-template<size_t nbits, typename BlockType, typename IntType>
-inline bool operator!=(const integer<nbits, BlockType>& lhs, IntType rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
+inline bool operator!=(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
 	return !operator==(lhs, rhs);
 }
-template<size_t nbits, typename BlockType, typename IntType>
-inline bool operator< (const integer<nbits, BlockType>& lhs, IntType rhs) {
-	return operator<(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
+inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
+	return operator<(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
-template<size_t nbits, typename BlockType, typename IntType>
-inline bool operator> (const integer<nbits, BlockType>& lhs, IntType rhs) {
-	return operator< (integer<nbits, BlockType>(rhs), lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
+inline bool operator> (const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
+	return operator< (integer<nbits, BlockType, NumberType>(rhs), lhs);
 }
-template<size_t nbits, typename BlockType, typename IntType>
-inline bool operator<=(const integer<nbits, BlockType>& lhs, IntType rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
+inline bool operator<=(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<size_t nbits, typename BlockType, typename IntType>
-inline bool operator>=(const integer<nbits, BlockType>& lhs, IntType rhs) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType, typename IntType>
+inline bool operator>=(const integer<nbits, BlockType, NumberType>& lhs, IntType rhs) {
 	return !operator< (lhs, rhs);
 }
 
@@ -1189,100 +1249,100 @@ inline bool operator>=(const integer<nbits, BlockType>& lhs, IntType rhs) {
 // literal - integer binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-template<typename IntType, size_t nbits, typename BlockType>
-inline bool operator==(IntType lhs, const integer<nbits, BlockType>& rhs) {
-	return operator==(integer<nbits, BlockType>(lhs), rhs);
+template<typename IntType, size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator==(IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator==(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
-template<typename IntType, size_t nbits, typename BlockType>
-inline bool operator!=(IntType lhs, const integer<nbits, BlockType>& rhs) {
+template<typename IntType, size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator!=(IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	return !operator==(lhs, rhs);
 }
-template<typename IntType, size_t nbits, typename BlockType>
-inline bool operator< (IntType lhs, const integer<nbits, BlockType>& rhs) {
-	return operator<(integer<nbits, BlockType>(lhs), rhs);
+template<typename IntType, size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator< (IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator<(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
-template<typename IntType, size_t nbits, typename BlockType>
-inline bool operator> (IntType lhs, const integer<nbits, BlockType>& rhs) {
+template<typename IntType, size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator> (IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	return operator< (rhs, lhs);
 }
-template<typename IntType, size_t nbits, typename BlockType>
-inline bool operator<=(IntType lhs, const integer<nbits, BlockType>& rhs) {
+template<typename IntType, size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator<=(IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<typename IntType, size_t nbits, typename BlockType>
-inline bool operator>=(IntType lhs, const integer<nbits, BlockType>& rhs) {
+template<typename IntType, size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline bool operator>=(IntType lhs, const integer<nbits, BlockType, NumberType>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator<<(const integer<nbits, BlockType>& lhs, int shift) {
-	integer<nbits, BlockType> shifted(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator<<(const integer<nbits, BlockType, NumberType>& lhs, int shift) {
+	integer<nbits, BlockType, NumberType> shifted(lhs);
 	return (shifted <<= shift);
 }
 
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator>>(const integer<nbits, BlockType>& lhs, int shift) {
-	integer<nbits, BlockType> shifted(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator>>(const integer<nbits, BlockType, NumberType>& lhs, int shift) {
+	integer<nbits, BlockType, NumberType> shifted(lhs);
 	return (shifted >>= shift);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer - integer binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator+(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> sum(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator+(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	integer<nbits, BlockType, NumberType> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator-(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> diff(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator-(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	integer<nbits, BlockType, NumberType> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator*(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> mul(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator*(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	integer<nbits, BlockType, NumberType> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator/(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> ratio(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator/(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	integer<nbits, BlockType, NumberType> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 // BINARY REMAINDER
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator%(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> ratio(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator%(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	integer<nbits, BlockType, NumberType> ratio(lhs);
 	ratio %= rhs;
 	return ratio;
 }
 // BINARY BIT-WISE AND
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator&(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> bitwise(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator&(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	integer<nbits, BlockType, NumberType> bitwise(lhs);
 	bitwise &= rhs;
 	return bitwise;
 }
 // BINARY BIT-WISE OR
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator|(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> bitwise(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator|(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	integer<nbits, BlockType, NumberType> bitwise(lhs);
 	bitwise |= rhs;
 	return bitwise;
 }
 // BINARY BIT-WISE XOR
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator^(const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs) {
-	integer<nbits, BlockType> bitwise(lhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator^(const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	integer<nbits, BlockType, NumberType> bitwise(lhs);
 	bitwise ^= rhs;
 	return bitwise;
 }
@@ -1290,86 +1350,86 @@ inline integer<nbits, BlockType> operator^(const integer<nbits, BlockType>& lhs,
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer - literal binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator+(const integer<nbits, BlockType>& lhs, long long rhs) {
-	return operator+(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator+(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
+	return operator+(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY SUBTRACTION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator-(const integer<nbits, BlockType>& lhs, long long rhs) {
-	return operator-(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator-(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
+	return operator-(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator*(const integer<nbits, BlockType>& lhs, long long rhs) {
-	return operator*(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator*(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
+	return operator*(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY DIVISION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator/(const integer<nbits, BlockType>& lhs, long long rhs) {
-	return operator/(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator/(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
+	return operator/(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY REMAINDER
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator%(const integer<nbits, BlockType>& lhs, long long rhs) {
-	return operator%(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator%(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
+	return operator%(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE AND
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator&(const integer<nbits, BlockType>& lhs, long long rhs) {
-	return operator&(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator&(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
+	return operator&(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE OR
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator|(const integer<nbits, BlockType>& lhs, long long rhs) {
-	return operator|(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator|(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
+	return operator|(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
 // BINARY BIT-WISE XOR
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator^(const integer<nbits, BlockType>& lhs, long long rhs) {
-	return operator^(lhs, integer<nbits, BlockType>(rhs));
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator^(const integer<nbits, BlockType, NumberType>& lhs, long long rhs) {
+	return operator^(lhs, integer<nbits, BlockType, NumberType>(rhs));
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - integer binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator+(long long lhs, const integer<nbits, BlockType>& rhs) {
-	return operator+(integer<nbits, BlockType>(lhs), rhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator+(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator+(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY SUBTRACTION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator-(long long lhs, const integer<nbits, BlockType>& rhs) {
-	return operator-(integer<nbits, BlockType>(lhs), rhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator-(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator-(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator*(long long lhs, const integer<nbits, BlockType>& rhs) {
-	return operator*(integer<nbits, BlockType>(lhs), rhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator*(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator*(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY DIVISION
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator/(long long lhs, const integer<nbits, BlockType>& rhs) {
-	return operator/(integer<nbits, BlockType>(lhs), rhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator/(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator/(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY REMAINDER
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator%(long long lhs, const integer<nbits, BlockType>& rhs) {
-	return operator%(integer<nbits, BlockType>(lhs), rhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator%(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator%(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE AND
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator&(long long lhs, const integer<nbits, BlockType>& rhs) {
-	return operator&(integer<nbits, BlockType>(lhs), rhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator&(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator&(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE OR
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator|(long long lhs, const integer<nbits, BlockType>& rhs) {
-	return operator|(integer<nbits, BlockType>(lhs), rhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator|(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator|(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
 // BINARY BIT-WISE XOR
-template<size_t nbits, typename BlockType>
-inline integer<nbits, BlockType> operator^(long long lhs, const integer<nbits, BlockType>& rhs) {
-	return operator^(integer<nbits, BlockType>(lhs), rhs);
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline integer<nbits, BlockType, NumberType> operator^(long long lhs, const integer<nbits, BlockType, NumberType>& rhs) {
+	return operator^(integer<nbits, BlockType, NumberType>(lhs), rhs);
 }
 
 }} // namespace sw::universal

@@ -47,7 +47,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "integer subtraction";
+	std::string test_suite  = "Integer Arithmetic Subtraction verfication";
+	std::string test_tag    = "integer<> subtraction";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -56,47 +61,50 @@ try {
 	b = 1235;
 	GenerateSubTest(a, b, c);
 
-	std::cout << "done" << std::endl;
-
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << "Integer subtraction verfication\n";
-
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, uint8_t >(bReportIndividualTestCases), "integer< 5, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint8_t >(bReportIndividualTestCases), "integer< 7, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, uint8_t >(bReportIndividualTestCases), "integer< 9, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, uint8_t >(reportTestCases), "integer< 5, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint8_t >(reportTestCases), "integer< 7, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, uint8_t >(reportTestCases), "integer< 9, uint8_t >", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint8_t >(bReportIndividualTestCases), "integer< 7, uint8_t >", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint16_t>(bReportIndividualTestCases), "integer< 7, uint16_t>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, uint8_t >(bReportIndividualTestCases), "integer<10, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, uint16_t>(bReportIndividualTestCases), "integer<10, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint8_t >(reportTestCases), "integer< 7, uint8_t >", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, uint16_t>(reportTestCases), "integer< 7, uint16_t>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, uint8_t >(reportTestCases), "integer<10, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, uint16_t>(reportTestCases), "integer<10, uint16_t>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<11, uint8_t >(bReportIndividualTestCases), "integer<11, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, uint16_t>(bReportIndividualTestCases), "integer<13, uint16_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<11, uint8_t >(reportTestCases), "integer<11, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, uint16_t>(reportTestCases), "integer<13, uint16_t>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-//	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint8_t >(bReportIndividualTestCases), "integer<16, uint8_t >", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint8_t >(reportTestCases), "integer<16, uint8_t >", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint16_t>(reportTestCases), "integer<16, uint16_t>", "subtraction");
 	// this is a 'standard' comparision against a native int64_t
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<16, uint8_t>(reportTestCases), "integer<16, uint8_t>", "subtraction");
 #endif
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif // MANUAL_TESTING
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

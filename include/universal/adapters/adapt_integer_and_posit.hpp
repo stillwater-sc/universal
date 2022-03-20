@@ -23,7 +23,8 @@ namespace sw { namespace universal {
 template<size_t nbits, size_t es> class posit;
 template<size_t nbits, size_t es> int scale(const posit<nbits, es>&);
 template<size_t nbits, size_t es, size_t fbits> internal::bitblock<fbits+1> significant(const posit<nbits, es>&);
-template<size_t nbits, typename BlockType> class integer;
+enum class IntegerNumberType;
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType> class integer;
 
 /*
   Why is the convert function not part of the Integer or Posit types?
@@ -33,8 +34,8 @@ template<size_t nbits, typename BlockType> class integer;
  */
 
 // convert a Posit to an Integer
-template<size_t nbits, size_t es, size_t ibits, typename BlockType>
-inline void convert_p2i(const posit<nbits, es>& p, integer<ibits, BlockType>& v) {
+template<size_t nbits, size_t es, size_t ibits, typename BlockType, IntegerNumberType NumberType>
+inline void convert_p2i(const posit<nbits, es>& p, integer<ibits, BlockType, NumberType>& v) {
 	// get the scale of the posit value
 	int scale = sw::universal::scale(p);
 	if (scale < 0) {
@@ -67,16 +68,16 @@ inline void convert_p2i(const posit<nbits, es>& p, integer<ibits, BlockType>& v)
 
 /////////////////////////////////////////////////////////////////////////
 // convert an Integer to a Posit
-template<size_t ibits, typename BlockType, size_t nbits, size_t es>
-inline void convert_i2p(const integer<ibits, BlockType>& w, posit<nbits, es>& p) {
-	using namespace std;
+template<size_t ibits, typename BlockType, IntegerNumberType NumberType, size_t nbits, size_t es>
+inline void convert_i2p(const integer<ibits, BlockType, NumberType>& w, posit<nbits, es>& p) {
+	using Integer = integer<ibits, BlockType, NumberType>;
 
 	bool sign = w < 0;
 	bool isZero = w == 0;
 	bool isInf = false;
 	bool isNan = false;
 	long _scale = scale(w);
-	integer<ibits, BlockType> w2 = sign ? twosComplement(w) : w;
+	Integer w2 = sign ? twosComplement(w) : w;
 	int msb = findMsb(w2);
 	internal::bitblock<nbits> fraction_without_hidden_bit;
 	int fbit = nbits - 1;
