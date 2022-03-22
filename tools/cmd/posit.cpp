@@ -66,36 +66,36 @@ try {
 //	typedef std::numeric_limits<long double > Real;
 //	int precision = Real::max_digits10;
 	constexpr size_t BIT_COLUMN_WIDTH = 10;
-	std::cout << "posit< 8,0>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p8_0) << " : " << p8_0 << '\n';
-	std::cout << "posit< 8,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p8_1) << " : " << p8_1 << '\n';
-	std::cout << "posit< 8,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p8_2) << " : " << p8_2 << '\n';
-	std::cout << "posit< 8,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p8_3) << " : " << p8_3 << '\n';
+	std::cout << " posit< 8,0>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p8_0) << " : " << p8_0 << '\n';
+	std::cout << " posit< 8,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p8_1) << " : " << p8_1 << '\n';
+	std::cout << " posit< 8,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p8_2) << " : " << p8_2 << '\n';
+	std::cout << " posit< 8,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p8_3) << " : " << p8_3 << '\n';
 
 	std::cout << std::setprecision(5);
-	std::cout << "posit<16,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p16_1) << " : " << p16_1 << '\n';
-	std::cout << "posit<16,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p16_2) << " : " << p16_2 << '\n';
-	std::cout << "posit<16,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p16_3) << " : " << p16_3 << '\n';
+	std::cout << " posit<16,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p16_1) << " : " << p16_1 << '\n';
+	std::cout << " posit<16,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p16_2) << " : " << p16_2 << '\n';
+	std::cout << " posit<16,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p16_3) << " : " << p16_3 << '\n';
 	
 	std::cout << std::setprecision(7);
-	std::cout << "posit<24,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p24_1) << " : " << p24_1 << '\n';
-	std::cout << "posit<24,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p24_2) << " : " << p24_2 << '\n';
-	std::cout << "posit<24,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p24_3) << " : " << p24_3 << '\n';
+	std::cout << " posit<24,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p24_1) << " : " << p24_1 << '\n';
+	std::cout << " posit<24,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p24_2) << " : " << p24_2 << '\n';
+	std::cout << " posit<24,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p24_3) << " : " << p24_3 << '\n';
 
 	std::cout << std::setprecision(9);
-	std::cout << "posit<32,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p32_1) << " : " << p32_1 << '\n';
-	std::cout << "posit<32,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p32_2) << " : " << p32_1 << '\n';
-	std::cout << "posit<32,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p32_3) << " : " << p32_3 << '\n';
+	std::cout << " posit<32,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p32_1) << " : " << p32_1 << '\n';
+	std::cout << " posit<32,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p32_2) << " : " << p32_1 << '\n';
+	std::cout << " posit<32,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p32_3) << " : " << p32_3 << '\n';
 	
 	std::cout << std::setprecision(14);
-	std::cout << "posit<48,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p48_1) << " : " << p48_1 << '\n';
-	std::cout << "posit<48,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p48_2) << " : " << p48_2 << '\n';
-	std::cout << "posit<48,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p48_3) << " : " << p48_3 << '\n';
+	std::cout << " posit<48,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p48_1) << " : " << p48_1 << '\n';
+	std::cout << " posit<48,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p48_2) << " : " << p48_2 << '\n';
+	std::cout << " posit<48,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p48_3) << " : " << p48_3 << '\n';
 	
 	std::cout << std::setprecision(18);
-	std::cout << "posit<64,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_1) << " : " << p64_1 << '\n';
-	std::cout << "posit<64,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_2) << " : " << p64_2 << '\n';
-	std::cout << "posit<64,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_3) << " : " << p64_3 << '\n';
-	std::cout << "posit<64,4>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_4) << " : " << p64_4 << '\n';
+	std::cout << " posit<64,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_1) << " : " << p64_1 << '\n';
+	std::cout << " posit<64,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_2) << " : " << p64_2 << '\n';
+	std::cout << " posit<64,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_3) << " : " << p64_3 << '\n';
+	std::cout << " posit<64,4>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_4) << " : " << p64_4 << '\n';
 
 #ifdef WIDE_CONSOLE
 	posit<128, 2> p128_2(d);
