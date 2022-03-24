@@ -216,31 +216,36 @@ public:
 #ifdef BLOCKBINARY_FAST_MUL
 	blockbinary& operator*=(const blockbinary& rhs) {
 		if constexpr (NumberType == BinaryNumberType::Signed) {
-			// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
-			blockbinary<nbits + 1, BlockType, NumberType> base(*this);
-			blockbinary<nbits + 1, BlockType, NumberType> multiplicant(rhs);
-			bool resultIsNeg = false;
-			if (base.isneg() && multiplicant.ispos() || base.ispos() && multiplicant.isneg()) resultIsNeg = true;
-			if (base.isneg()) {
-				base.twosComplement();
+			if constexpr (nrBlocks == 1) {
+				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
 			}
-			if (multiplicant.isneg()) {
-				multiplicant.twosComplement();
-			}
-			clear();
-			for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
-				std::uint64_t segment(0);
-				for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
-					segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+			else {
+				// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
+				blockbinary<nbits + 1, BlockType, NumberType> base(*this);
+				blockbinary<nbits + 1, BlockType, NumberType> multiplicant(rhs);
+				bool resultIsNeg = false;
+				if (base.isneg() && multiplicant.ispos() || base.ispos() && multiplicant.isneg()) resultIsNeg = true;
+				if (base.isneg()) {
+					base.twosComplement();
+				}
+				if (multiplicant.isneg()) {
+					multiplicant.twosComplement();
+				}
+				clear();
+				for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+					std::uint64_t segment(0);
+					for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+						segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
 
-					if (i + j < static_cast<unsigned>(nrBlocks)) {
-						segment += _block[i + j];
-						_block[i + j] = static_cast<bt>(segment);
-						segment >>= bitsInBlock;
+						if (i + j < static_cast<unsigned>(nrBlocks)) {
+							segment += _block[i + j];
+							_block[i + j] = static_cast<bt>(segment);
+							segment >>= bitsInBlock;
+						}
 					}
 				}
+				if (resultIsNeg) twosComplement();
 			}
-			if (resultIsNeg) twosComplement();
 		}
 		else {  // unsigned
 			blockbinary<nbits, BlockType, NumberType> base(*this);

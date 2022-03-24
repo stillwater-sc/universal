@@ -315,6 +315,7 @@ void TestBlockPerformanceOnMul() {
 	PerformanceRunner("blockbinary<64,uint8>     mul   ", bb::MultiplicationWorkload< blockbinary<64, uint8_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<64,uint16>    mul   ", bb::MultiplicationWorkload< blockbinary<64, uint16_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<64,uint32>    mul   ", bb::MultiplicationWorkload< blockbinary<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint64>    mul   ", bb::MultiplicationWorkload< blockbinary<64, uint64_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<128,uint8>    mul   ", bb::MultiplicationWorkload< blockbinary<128, uint8_t> >, NR_OPS / 2);
 	PerformanceRunner("blockbinary<128,uint16>   mul   ", bb::MultiplicationWorkload< blockbinary<128, uint16_t> >, NR_OPS / 2);
 	PerformanceRunner("blockbinary<128,uint32>   mul   ", bb::MultiplicationWorkload< blockbinary<128, uint32_t> >, NR_OPS / 2);
@@ -1335,4 +1336,19 @@ blockbinary<512,uint32>   rem        131072 per       0.0191569sec ->   6 Mops/s
 blockbinary<1024,uint8>   rem         65536 per       0.0657663sec -> 996 Kops/sec
 blockbinary<1024,uint16>  rem         65536 per       0.0395263sec ->   1 Mops/sec
 blockbinary<1024,uint32>  rem         65536 per       0.0169843sec ->   3 Mops/sec
+
+
+// performance improvement of special casing the fast multiply for single block representations:
+MULTIPLICATION: blockbinary arithemetic performance as a function of size and BlockType
+blockbinary<4,uint8>      mul        524288 per       0.0006819sec -> 768 Mops/sec
+blockbinary<8,uint8>      mul        524288 per       0.0006634sec -> 790 Mops/sec   <-- was 68 Mops/sec
+blockbinary<16,uint8>     mul        524288 per       0.0144837sec ->  36 Mops/sec
+blockbinary<16,uint16>    mul        524288 per        0.000657sec -> 798 Mops/sec   <-- was 69 Mops/sec
+blockbinary<32,uint8>     mul        524288 per       0.0170343sec ->  30 Mops/sec
+blockbinary<32,uint16>    mul        524288 per       0.0125508sec ->  41 Mops/sec
+blockbinary<32,uint32>    mul        524288 per       0.0004003sec ->   1 Gops/sec   <-- was 69 Mops/sec
+blockbinary<64,uint8>     mul        524288 per       0.0567939sec ->   9 Mops/sec
+blockbinary<64,uint16>    mul        524288 per         0.01865sec ->  28 Mops/sec
+blockbinary<64,uint32>    mul        524288 per       0.0149327sec ->  35 Mops/sec
+blockbinary<64,uint64>    mul        524288 per       0.0003911sec ->   1 Gops/sec
 */
