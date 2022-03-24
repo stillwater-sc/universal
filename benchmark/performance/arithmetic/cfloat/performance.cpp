@@ -143,7 +143,7 @@ void DecodeWorkload(size_t NR_OPS) {
 		a.setbits(i);
 		bool s{ false };
 		blockbinary<a.es, typename Scalar::BlockType> e;
-		blockbinary<a.fbits, typename Scalar::BlockType> f;
+		blockbinary<a.fbits+1, typename Scalar::BlockType> f;
 		sw::universal::decode(a, s, e, f);
 		if ((i%2) == f.at(0)) {
 			++success;
@@ -253,14 +253,14 @@ void TestDecodePerformance() {
 	PerformanceRunner("cfloat<16,5,uint64_t>    decode         ", DecodeWorkload< sw::universal::cfloat<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("cfloat<32,8,uint64_t>    decode         ", DecodeWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("cfloat<64,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<64, 11, uint64_t> >, NR_OPS);
-	PerformanceRunner("cfloat<128,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint64_t> >, NR_OPS);
+	PerformanceRunner("cfloat<128,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint32_t> >, NR_OPS);
 
 	std::cout << "very large representations\n";
-	PerformanceRunner("cfloat<80,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<80, 11, uint64_t> >, NR_OPS);
-	PerformanceRunner("cfloat<96,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<96, 11, uint64_t> >, NR_OPS);
-	PerformanceRunner("cfloat<128,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint64_t> >, NR_OPS); 
-	PerformanceRunner("cfloat<256,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<256, 11, uint64_t> >, NR_OPS);
-	PerformanceRunner("cfloat<512,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<512, 11, uint64_t> >, NR_OPS);
+	PerformanceRunner("cfloat<80,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<80, 11, uint32_t> >, NR_OPS);
+	PerformanceRunner("cfloat<96,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::cfloat<96, 11, uint32_t> >, NR_OPS);
+	PerformanceRunner("cfloat<128,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<128, 11, uint32_t> >, NR_OPS); 
+	PerformanceRunner("cfloat<256,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<256, 11, uint32_t> >, NR_OPS);
+	PerformanceRunner("cfloat<512,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::cfloat<512, 11, uint32_t> >, NR_OPS);
 }
 
 #ifdef LATER

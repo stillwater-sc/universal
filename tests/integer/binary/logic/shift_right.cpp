@@ -1,6 +1,6 @@
-//  addition.cpp : test runner for addition of abitrary precision integers
+// shift_right.cpp : test runner for arithmetic and logic shift of abitrary precision fixed-size integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -20,30 +20,46 @@
    can be used for forward error analysis studies.
 */
 
-#include <typeinfo>
-template<typename Scalar>
-void GenerateAddTest(const Scalar& x, const Scalar& y, Scalar& z) {
+// enumerate all shift right cases for an integer<nbits,BlockType> configuration
+template<size_t nbits, typename BlockType = uint8_t>
+int VerifyArithmeticRightShift(bool reportTestCases) {
 	using namespace sw::universal;
-	z = x + y;
-	std::cout << typeid(Scalar).name() << ": " << x << " + " << y << " = " << z << std::endl;
-}
+	using Integer = integer<nbits, BlockType>;
 
+	if (reportTestCases) std::cout << type_tag(Integer()) << '\n';
 
-// ExamplePattern to check that short and integer<16> do exactly the same
-void ExamplePattern() {
-	short s = 0;
-	GenerateAddTest<short>(2, 16, s);
-	sw::universal::integer<16> z = 0;
-	GenerateAddTest<sw::universal::integer<16> >(2, 16, z);
-}
-
-// enumerate a couple ratios to test representability
-void ReproducibilityTestSuite() {
-	for (int i = 0; i < 30; i += 3) {
-		for (int j = 0; j < 70; j += 7) {
-			sw::universal::reportRepresentability(i, j);
+	// take maxneg and shift it right in all possible strides
+	int nrOfFailedTests = 0;
+	Integer a, result;
+	Integer mostNegative(SpecificValue::maxneg);
+	int64_t shiftRef, resultRef;
+	for (size_t i = 0; i < nbits + 1; i++) {
+		a = mostNegative;
+		int64_t denominator = 0;
+		if (i == 64) {
+			shiftRef = 0;
 		}
+		else if (i == 63) { // special case for int64_t shift as it is maxneg
+			shiftRef = -1;
+		}
+		else { // i < 63
+			denominator = (1ll << i);
+			shiftRef = ((long long)a / denominator);
+		}
+
+		result = a >> long(i);
+		resultRef = (long long)result;
+
+		if (shiftRef != resultRef) {
+			nrOfFailedTests++;
+			if (reportTestCases) ReportArithmeticShiftError("FAIL", ">>", a, i, result, resultRef);
+		}
+		else {
+			if (reportTestCases) ReportArithmeticShiftSuccess("PASS", ">>", a, i, result, resultRef);
+		}
+		if (nrOfFailedTests > 99) return nrOfFailedTests;
 	}
+	return nrOfFailedTests;
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -62,27 +78,21 @@ void ReproducibilityTestSuite() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-std::string convert_to_string(const std::vector<char>& v) {
-	std::stringstream ss;
-	for (std::vector<char>::const_reverse_iterator rit = v.rbegin(); rit != v.rend(); ++rit) {
-		ss << (int)*rit;
-	}
-	return ss.str();
-}
-
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer Arithmetic Addition verfication\n";
-	std::string test_tag    = "integer<> addition";
-	bool reportTestCases    = true;
+	std::string test_suite  = "Integer arithmetic/logic shift right verfication";
+	std::string test_tag    = "shift right";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
+	// TODO: verifcation routine doesn't support integers bigger > 64bits
+	// nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 71, uint8_t>(reportTestCases), "integer< 71,uint8_t>", test_tag);
 
 	using Integer = integer<16, uint16_t>;
 	constexpr Integer a(SpecificValue::maxpos), b(SpecificValue::maxneg);
@@ -100,31 +110,26 @@ try {
 	return EXIT_SUCCESS; // ignore failures
 #else
 
-
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 4, uint8_t>(reportTestCases), "integer< 4, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 6, uint8_t>(reportTestCases), "integer< 6, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 8, uint8_t>(reportTestCases), "integer< 8, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 9, uint8_t >(reportTestCases), "integer< 9, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<  8, uint8_t>(reportTestCases), "integer<  8,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 12, uint8_t>(reportTestCases), "integer< 12,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 19, uint8_t>(reportTestCases), "integer< 19,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 33, uint8_t>(reportTestCases), "integer< 33,uint8_t>", test_tag);
+
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 9, uint16_t>(reportTestCases), "integer< 9, uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint8_t >(reportTestCases), "integer<11, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint16_t>(reportTestCases), "integer<11, uint16_t>", test_tag);
+	
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t >(reportTestCases), "integer<12, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(reportTestCases), "integer<12, uint16_t>", test_tag);
+	
 #endif
 
 #if	REGRESSION_LEVEL_4
-	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint8_t >(reportTestCases), "integer<16, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<uint16_t>(reportTestCases), "integer<16, uint16_t>", test_tag);
-	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16, uint16_t>(reportTestCases), "integer<16, uint16_t>", test_tag);
+	// verification suite does not support integers and shifts bigger than 64
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 71, uint8_t>(reportTestCases), "integer< 71,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<123, uint8_t>(reportTestCases), "integer<123,uint8_t>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -144,7 +149,7 @@ catch (const sw::universal::universal_internal_exception& err) {
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

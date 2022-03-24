@@ -231,7 +231,9 @@ private:
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const vector<Scalar>& v) {
 	auto width = ostr.width();
+	ostr << "[ ";
 	for (size_t j = 0; j < size(v); ++j) ostr << std::setw(width) << v[j] << " ";
+	ostr << " ]";
 	return ostr;
 }
 

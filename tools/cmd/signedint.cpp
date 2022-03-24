@@ -13,7 +13,7 @@ template<typename Scalar>
 void ParseAndReport(const std::string& arg) {
 	Scalar v;
 	sw::universal::parse(arg, v);
-	std::cout << "The input value of " << arg << " can be represented by " << typeid(v).name() << '\n';
+	std::cout << "The input    : " << arg << " can be represented by " << typeid(v).name() << '\n';
 	std::cout << " value       : " << v << '\n';
 	std::cout << " binary form : " << sw::universal::to_binary(v, true) << '\n';
 	std::cout << " triple form : " << sw::universal::to_triple(v) << '\n';
@@ -43,51 +43,51 @@ try {
 		std::cout << "Unable to parse the value: " << arg << ". Exiting...\n";
 		return EXIT_FAILURE;
 	}
-
-	value >= 0 ? parse("0x7F", ref) : parse("-128", ref);
-	if (value < ref) {
+	integer<1032, uint32_t> absValue = value.isneg() ? -value : value;
+	parse("0x7F", ref);
+	if (absValue < ref) {
 		using Scalar = integer<8, uint8_t>;
 		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFF", ref);
-	if (value < ref) {
+	if (absValue < ref) {
 		using Scalar = integer<16, uint16_t>;
 		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFF", ref);
-	if (value < ref) {
+	if (absValue < ref) {
 		using Scalar = integer<32, uint32_t>;
 		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFF", ref);
-	if (value < ref) {
+	if (absValue < ref) {
 		using Scalar = integer<64, uint32_t>;
 		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", ref);
-	if (value < ref) {
+	if (absValue < ref) {
 		using Scalar = integer<128, uint32_t>;
 		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", ref);
-	if (value < ref) {
+	if (absValue < ref) {
 		using Scalar = integer<256, uint32_t>;
 		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", ref);
-	if (value < ref) {
+	if (absValue < ref) {
 		using Scalar = integer<512, uint32_t>;
 		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;
 	}
 	parse("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", ref);
-	if (value < ref) {
+	if (absValue < ref) {
 		using Scalar = integer<1024, uint32_t>;
 		ParseAndReport<Scalar>(arg);
 		return EXIT_SUCCESS;

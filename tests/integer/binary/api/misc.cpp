@@ -56,14 +56,14 @@ void TestSizeof() {
 	int1024 o;
 
 	constexpr int WIDTH = 30;
-	std::cout << std::setw(WIDTH) << type_tag(a) << "  size in bytes " << a.nrBytes << '\n';
-	std::cout << std::setw(WIDTH) << type_tag(k) << "  size in bytes " << k.nrBytes << '\n';
-	std::cout << std::setw(WIDTH) << type_tag(m) << "  size in bytes " << m.nrBytes << '\n';
-	std::cout << std::setw(WIDTH) << type_tag(o) << "  size in bytes " << o.nrBytes << '\n';
-	if (a.nrBytes != sizeof(a)) pass = false;
-	if (k.nrBytes != sizeof(k)) pass = false;
-	if (m.nrBytes != sizeof(m)) pass = false;
-	if (o.nrBytes != sizeof(o)) pass = false;
+	std::cout << std::setw(WIDTH) << type_tag(a) << "  size in bytes " << a.nbits / 8 << '\n';
+	std::cout << std::setw(WIDTH) << type_tag(k) << "  size in bytes " << k.nbits / 8 << '\n';
+	std::cout << std::setw(WIDTH) << type_tag(m) << "  size in bytes " << m.nbits / 8 << '\n';
+	std::cout << std::setw(WIDTH) << type_tag(o) << "  size in bytes " << o.nbits / 8 << '\n';
+	if (a.nbits >> 3 != sizeof(a)) pass = false;
+	if (k.nbits >> 3 != sizeof(k)) pass = false;
+	if (m.nbits >> 3 != sizeof(m)) pass = false;
+	if (o.nbits >> 3 != sizeof(o)) pass = false;
 
 	std::cout << (pass ? "PASS" : "FAIL") << '\n';
 }

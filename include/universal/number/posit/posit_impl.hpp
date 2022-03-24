@@ -184,7 +184,7 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb) + 1ull);
 	if (msb >= 0) {
 		for (int i = msb; i >= 0; --i) {
-			_frac[fbits - size_t{ 1 } - static_cast<size_t>(msb - i)] = tmp[static_cast<size_t>(i)];
+			_frac[fbits - 1ull - (static_cast<size_t>(msb) - static_cast<size_t>(i))] = tmp[static_cast<size_t>(i)];
 		}
 	}
 	_fraction.set(_frac, nrFractionBits);
@@ -1672,7 +1672,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the posit into a string
 	std::stringstream ss;
-#if POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
+#if POSIT_ERROR_FREE_IO_FORMAT
 	ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
 #else
 	std::streamsize prec = ostr.precision();
@@ -2621,18 +2621,15 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, Value rhs) {
 
 #endif // POSIT_ENABLE_LITERALS
 
-// Magnitude of a posit (equivalent to turning the sign bit off).
+// Magnitude of a posit (expensive as we are creating a new posit).
 template<size_t nbits, size_t es> 
 posit<nbits, es> abs(const posit<nbits, es>& p) {
 	return p.abs();
 }
 template<size_t nbits, size_t es>
-posit<nbits, es> fabs(const posit<nbits, es>& p) {
+posit<nbits, es> fabs(const posit<nbits, es>& v) {
+	posit<nbits, es> p(v);
 	return p.abs();
-}
-template<typename Scalar>
-Scalar fabs(Scalar s) {
-	return std::fabs(s);
 }
 
 // Atomic fused operators

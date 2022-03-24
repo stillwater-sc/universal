@@ -10,6 +10,7 @@
 #include <map>
 #include <universal/blas/exceptions.hpp>
 #include <universal/number/posit/posit_fwd.hpp>
+#include <universal/number/cfloat/cfloat_fwd.hpp>
 
 namespace sw { namespace universal { namespace blas { 
 
@@ -191,7 +192,7 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 	size_t n = A.cols();
 	for (size_t i = 0; i < m; ++i) {
 		for (size_t j = 0; j < n; ++j) {
-			ostr << std::fixed << std::setw(width) << A(i, j) << " ";
+			ostr << std::setw(width) << A(i, j) << " ";
 		}
 		ostr << '\n';
 	}

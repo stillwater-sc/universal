@@ -39,7 +39,12 @@ void ExamplePattern() {
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 0
 #define REGRESSION_LEVEL_3 0
@@ -50,7 +55,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "Integer Arithmetic tests failed";
+	std::string test_suite  = "Integer Arithmetic Remainder verfication";
+	std::string test_tag    = "integer<> remainder";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 
@@ -62,47 +72,50 @@ try {
 	ReportTestResult(VerifyRemainder<4>("manual test", true), "integer<4>", "remainder");
 	ReportTestResult(VerifyRemainder<11>("manual test", true), "integer<11>", "remainder");
 
-	cout << "done" << endl;
-
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << "Integer Arithmetic verfication" << std::endl;
-
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 4, uint8_t >(bReportIndividualTestCases), "integer< 4, uint8_t >", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 6, uint8_t >(bReportIndividualTestCases), "integer< 6, uint8_t >", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 8, uint8_t >(bReportIndividualTestCases), "integer< 8, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 4, uint8_t >(reportTestCases), "integer< 4, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 6, uint8_t >(reportTestCases), "integer< 6, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder< 8, uint8_t >(reportTestCases), "integer< 8, uint8_t >", "remainder");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t >(bReportIndividualTestCases), "integer<10, uint8_t >", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint16_t>(bReportIndividualTestCases), "integer<10, uint16_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t >(bReportIndividualTestCases), "integer<12, uint8_t >", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint16_t>(bReportIndividualTestCases), "integer<12, uint16_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t >(reportTestCases), "integer<10, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint16_t>(reportTestCases), "integer<10, uint16_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t >(reportTestCases), "integer<12, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint16_t>(reportTestCases), "integer<12, uint16_t>", "remainder");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<14, uint8_t >(bReportIndividualTestCases), "integer<14, uint8_t >", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<14, uint8_t >(bReportIndividualTestCases), "integer<14, uint16_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<14, uint8_t >(reportTestCases), "integer<14, uint8_t >", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<14, uint8_t >(reportTestCases), "integer<14, uint16_t>", "remainder");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// VerifyShortRemainder compares an integer<16> to native short type to make certain it has all the same behavior
-//	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint16_t>(bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint8_t>(reportTestCases), "integer<16, uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint16_t>(reportTestCases), "integer<16, uint16_t>", "remainder");
 	// this is a 'standard' comparision against a native int64_t
-//	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
+//	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(reportTestCases), "integer<16, uint8_t>", "remainder");
 #endif
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-#endif // MANUAL_TESTING
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

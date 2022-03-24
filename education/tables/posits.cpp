@@ -10,7 +10,7 @@
 #pragma warning(disable : 5045)  // compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif 
 // enable/disable special posit format I/O
-#define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
+#define POSIT_ERROR_FREE_IO_FORMAT 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/posit/table.hpp>
 

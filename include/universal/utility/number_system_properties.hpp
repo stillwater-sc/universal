@@ -10,6 +10,8 @@
 #include <string>
 #include <limits>
 
+#include <universal/native/manipulators.hpp>   // type_tag for float/double/long double
+
 namespace sw { namespace universal {
 
 	// report the minimum and maximum of a type
@@ -46,8 +48,8 @@ namespace sw { namespace universal {
 	std::string dynamic_range() {
 		std::stringstream str;
 		Ty v(0);
-		str << std::setw(30) << typeid(v).name();
-		str << ' ';
+		str << std::setw(30) << type_tag(v);
+		str << '\n';
 		str << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
 		str << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
 		str << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
@@ -59,16 +61,14 @@ namespace sw { namespace universal {
 	template<typename Ty>
 	std::string dynamic_range(Ty v) {
 		std::stringstream str;
-		str << std::setw(30) << typeid(v).name();
-		str << ' ';
+		str << std::setw(30) << type_tag(v);
+		str << '\n';
 		str << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
 		str << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
 		str << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
 		str << "maximum " << std::setw(12) << std::numeric_limits<Ty>::max() << "     ";
 		return str.str();
 	}
-
-
 
 }} // namespace sw::universal
 

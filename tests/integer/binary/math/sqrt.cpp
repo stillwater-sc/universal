@@ -102,10 +102,15 @@ try {
 
 #if MANUAL_TESTING
 
-	cout << floor(sqrt(5.0)) << " - " << ceil(sqrt(5.0)) << endl << endl;
-	cout << floor_sqrt(integer<8, uint8_t>(5)) << endl;
-	cout << endl;
-	cout << ceil_sqrt(integer<8, uint8_t>(5)) << endl;
+	{
+		integer<10, uint8_t> a(256);
+		std::cout << floor(sqrt(256)) << " - " << ceil(sqrt(256)) << '\n';
+		std::cout << floor(sqrt(257)) << " - " << ceil(sqrt(257)) << '\n';
+		std::cout << floor_sqrt(a - 1) << '\n';
+		std::cout << floor_sqrt(a) << '\n';
+		std::cout << ceil_sqrt(a) << '\n';
+
+	}
 
 	{
 		// examples of the Babylonian algorithm for approximating sqrt
@@ -120,17 +125,17 @@ try {
 	Integer a;
 
 	a = 1024 * 1024;
-	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	std::cout << "sqrt of " << a << " = " << sqrt(a) << '\n';
 	a *= a;
-	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	std::cout << "sqrt of " << a << " = " << sqrt(a) << '\n';
 	a *= a;
-	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	std::cout << "sqrt of " << a << " = " << sqrt(a) << '\n';
 	a *= a;
-	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	std::cout << "sqrt of " << a << " = " << sqrt(a) << '\n';
 	a *= a;
-	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	std::cout << "sqrt of " << a << " = " << sqrt(a) << '\n';
 	a *= a;
-	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	std::cout << "sqrt of " << a << " = " << sqrt(a) << '\n';
 
 	// quick big test
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerFloorSqrt<8, uint8_t>(bReportIndividualTestCases), "integer<8,uint8_t>", "floor_sqrt");

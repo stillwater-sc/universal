@@ -8,6 +8,8 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/table.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/utility/sampleviz.hpp>
 
 template<typename cfloatConfiguration, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
@@ -30,47 +32,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(sum, true) << " (reference: " << to_binary(ref, true) << ")   ";
 	std::cout << (ref == sum ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
-}
-
-template<typename Real, typename CfloatConfiguration>
-void Sample(CfloatConfiguration start, CfloatConfiguration stop, Real sample) {
-	using namespace sw::universal;
-	constexpr size_t nbits = CfloatConfiguration::nbits;
-	constexpr size_t es = CfloatConfiguration::es;
-	CfloatConfiguration a;
-	sw::universal::cfloat<nbits+1, es> b;
-	a = start;
-	if (a < 0.0f) {
-		while (a > stop) {
-			std::cout << to_binary(a) << "   " << a << '\n';
-			b = float(a);
-			--b; // intermediate sample
-			if (Real(a) > sample && sample > Real(b)) {
-				std::cout << "                  <------- sample " << sample << ' ' << to_binary(sample) << '\n';
-			}
-			std::cout << to_binary(b) << "  " << b << '\n';
-			--a;
-			if (Real(b) > sample && sample > Real(a)) {
-				std::cout << "                  <------- sample " << sample << ' ' << to_binary(sample) << '\n';
-			}
-		}
-	}
-	else {
-		while (a < stop) {
-			std::cout << to_binary(a) << "   " << a << '\n';
-			b = float(a);
-			++b; // intermediate sample
-			if (Real(a) < sample && sample < Real(b)) {
-				std::cout << "                  <------- sample " << sample << ' ' << to_binary(sample) << '\n';
-			}
-			std::cout << to_binary(b) << "  " << b << '\n';
-			++a;
-			if (Real(b) < sample && sample < Real(a)) {
-				std::cout << "                  <------- sample " << sample << ' ' << to_binary(sample) << '\n';
-			}
-
-		}
-	}
 }
 
 int main()
@@ -112,23 +73,45 @@ try {
   16:     0b0.0010.000       0      -5           b0010            b000                       0.03125       8.4x0x10r
 
 	*/
-	float fa = 0.017578125;
-	float fb = -0.5f;
-	float fc = fa + fb;
-	cfloat<8, 4> a;
-	a = -0.40625f;
-	Sample(a, cfloat<8, 4>{-1.0f}, fc);
 
 	{
-		cfloat < 8, 4, uint8_t > a, b, c;
+		float fa = 0.017578125;
+		float fb = -0.5f;
+		float fc = fa + fb;
+		using Cfloat8_4 = cfloat<8, 4>;
+		using Cfloat9_4 = cfloat<9, 4>;
+		Cfloat8_4 start{ -0.40625f };
+		Cfloat8_4 end{ -0.625f };
+		sampleviz<float, Cfloat8_4, Cfloat9_4>(start, end, fc);
 
-		a = fa;
-		b = fb;
-		c = a + b;
-		std::cout << a << " + " << b << " = " << c << '\n';
-		std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+
+		{
+			cfloat < 8, 4, uint8_t > a, b, c;
+
+			a = fa;
+			b = fb;
+			c = a + b;
+			std::cout << a << " + " << b << " = " << c << '\n';
+			std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+		}
+		//	GenerateTestCase< cfloat<8, 4, uint8_t>, float>(fa, fb);
 	}
-	GenerateTestCase< cfloat<8, 4, uint8_t>, float>(fa, fb);
+
+	{
+		using Posit8_1 = posit<8, 1>;
+		using Posit9_1 = posit<9, 1>;
+		Posit8_1 start(SpecificValue::minpos);
+		Posit8_1 end(8*start);
+		sampleviz<float, Posit8_1, Posit9_1>(start, end, 0.000601383f);
+	}
+
+	{
+		using Posit8_1 = posit<8, 1>;
+		using Posit9_1 = posit<9, 1>;
+		Posit8_1 start(SpecificValue::minneg);
+		Posit8_1 end(8 * start);
+		sampleviz<float, Posit8_1, Posit9_1>(start, end, -0.000601383f);
+	}
 
 	return EXIT_SUCCESS;
 }

@@ -49,6 +49,7 @@ namespace sw { namespace universal {
 	int Compare(SrcType input, const TestType& testValue, const TestType& reference, bool reportTestCases) {
 		int fail = 0;
 		if (testValue != reference) {
+			if (testValue.isnan() && reference.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			fail++;
 			if (reportTestCases)	CfloatReportConversionError("FAIL", "=", input, reference, testValue);
 		}
@@ -58,6 +59,19 @@ namespace sw { namespace universal {
 		return fail;
 	}
 
+	// compare float/double/long double values
+	template<typename SrcType, typename TestType>
+	int CompareIEEE(SrcType input, const TestType& testValue, const TestType& reference, bool reportTestCases) {
+		int fail = 0;
+		if (testValue != reference) {
+			fail++;
+			if (reportTestCases)	CfloatReportConversionError("FAIL", "=", input, reference, testValue);
+		}
+		else {
+			// if (reportTestCases) CfloatReportConversionSuccess("PASS", "=", input, reference, testValue);
+		}
+		return fail;
+	}
 
 	////////////////////////////////  generate individual test cases //////////////////////// 
 
@@ -473,7 +487,7 @@ namespace sw { namespace universal {
 				std::cerr << "synthesized a subnormal : " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
-			nrOfFailedTests += Compare(refValue, testValue, refValue, reportTestCases);
+			nrOfFailedTests += CompareIEEE(refValue, testValue, refValue, reportTestCases);
 #ifdef CUSTOM_FEEDBACK
 			if (ref.isnan()) {
 				std::cerr << "synthesized a NaN       : " << to_binary(ref) << '\n';
@@ -528,7 +542,7 @@ namespace sw { namespace universal {
 				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
-			nrOfFailedTests += Compare(refValue, testValue, refValue, reportTestCases);
+			nrOfFailedTests += CompareIEEE(refValue, testValue, refValue, reportTestCases);
 #ifdef CUSTOM_FEEDBACK
 			if (ref.isnan()) {
 				std::cerr << "synthesized a NaN       : " << to_binary(ref) << '\n';
@@ -700,6 +714,7 @@ namespace sw { namespace universal {
 			convert(b, nut);
 			a = double(b);
 			if (a != nut) {
+				if (a.isnan() && nut.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 				++nrOfTestFailures;
 				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 			}
@@ -854,6 +869,7 @@ namespace sw { namespace universal {
 		}
 		if constexpr (op == BlockTripleOperator::DIV) {
 		}
+		return nrOfTestFailures;
 	}
 
 	/// <summary>
@@ -1082,6 +1098,7 @@ namespace sw { namespace universal {
 			c++; // this will test both postfix and prefix operators
 			ref = *(it + 1);
 			if (c != ref) {
+				if (c.isnan() && ref.isnan()) continue; // nan != nan, so the regular equivalance test fails
 				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
@@ -1176,7 +1193,7 @@ namespace sw { namespace universal {
 			ref = *(it - 1);
 
 			if (c != ref) {
-				// std::cout << to_binary(*it) << " : " << to_binary(*(it - 1)) << " : " << to_binary(c) << '\n';
+				if (c.isnan() && ref.isnan()) continue; // nan != nan, so the regular equivalance test fails
 				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
@@ -1294,6 +1311,7 @@ namespace sw { namespace universal {
 #endif // THROW_ARITHMETIC_EXCEPTION
 
 				if (nut != cref) {
+					if (nut.isnan() && cref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
 					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
@@ -1440,6 +1458,7 @@ namespace sw { namespace universal {
 #endif // THROW_ARITHMETIC_EXCEPTION
 
 				if (nut != cref) {
+					if (nut.isnan() && cref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
 					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, nut, cref);
@@ -1572,6 +1591,7 @@ namespace sw { namespace universal {
 #endif // THROW_ARITHMETIC_EXCEPTION
 
 				if (nut != cref) {
+					if (nut.isnan() && cref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
 					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, nut, cref);
@@ -1721,6 +1741,7 @@ namespace sw { namespace universal {
 #endif // CFLOAT_THROW_ARITHMETIC_EXCEPTION
 
 				if (nut != cref) {
+					if (nut.isnan() && cref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
 					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 #ifdef FILTER_OUT_DIVIDE_BY_ZERO
 					if (b.iszero()) continue; // optimization alters nan(ind) and +-inf

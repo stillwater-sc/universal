@@ -36,7 +36,7 @@ try {
 //		Integer a = 101737;
 //		Integer a = 999983;
 
-		Integer factor;
+//		Integer factor;
 
 		std::random_device rd{};
 		std::mt19937 engine{ rd() };

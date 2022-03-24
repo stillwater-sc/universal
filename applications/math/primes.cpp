@@ -104,7 +104,7 @@ void MeasureElapsedTimeOfPrimeGeneration()
 int main() 
 try {
 	using namespace sw::universal;
-	constexpr size_t nbits = 32;
+	constexpr size_t nbits = 34;
 	using BlockType = uint32_t;
 	using Integer = integer<nbits, BlockType>;
 
@@ -193,7 +193,7 @@ try {
 
 	std::cout << "\nFind all prime factors of the number : ";
 	{
-		Integer a, b;
+		Integer a;
 		// find all prime factors of a number
 		a = ipow(Integer(2), Integer(5))
 			* ipow(Integer(3), Integer(4))
@@ -201,7 +201,7 @@ try {
 			* ipow(Integer(7), Integer(2))
 			* ipow(Integer(13), Integer(1))
 			* ipow(Integer(37), Integer(1));
-		std::cout << a << '\n';
+		std::cout << to_binary(a) << " : " << a << '\n';
 		primefactors<Integer> factors;
 		primeFactorization(a, factors);
 		for (size_t i = 0; i < factors.size(); ++i) {

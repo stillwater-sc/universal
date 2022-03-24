@@ -59,9 +59,9 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
 /// <param name="s">sign (output: bool ref)</param>
 /// <param name="e">exponent (output: blockbinary ref)</param>
 /// <param name="f">fraction (output: blockbinary ref)</param>
-template<size_t nbits, size_t es, size_t fbits, typename bt,
+template<size_t nbits, size_t es, size_t fbitsPlus1, typename bt,
 	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-void decode(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
+void decode(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbitsPlus1, bt>& f) {
 	v.sign(s);
 	v.exponent(e);
 	v.fraction(f);
@@ -296,49 +296,49 @@ public:
 	static_assert(_es < 21ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a classic floating point number");
 	// how do you assert on the condition that if es == 1 then subnormals and supernormals must be true?
-	static constexpr bool subsuper = (_hasSubnormals && _hasSupernormals);
-	static constexpr bool special = (subsuper ? true : (_es > 1));
+	static constexpr bool     subsuper = (_hasSubnormals && _hasSupernormals);
+	static constexpr bool     special = (subsuper ? true : (_es > 1));
 	static_assert(special, "when es == 1, cfloat must have both subnormals and supernormals");
-	static constexpr size_t bitsInByte = 8ull;
-	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr size_t   bitsInByte = 8ull;
+	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
 
-	static constexpr size_t nbits = _nbits;
-	static constexpr size_t es = _es;
-	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
-	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
+	static constexpr size_t   nbits = _nbits;
+	static constexpr size_t   es = _es;
+	static constexpr size_t   fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
+	static constexpr size_t   fhbits = nbits - es;           // number of fraction bits including the hidden bit
 
-	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
-	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
+	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
 	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
 	static constexpr uint64_t topfbits = fbits % 64;
 	static constexpr uint64_t FR_SHIFT = (topfbits > 0 ? (64 - topfbits) : 0);
 	static constexpr uint64_t ALL_ONES_FR = (topfbits > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> FR_SHIFT) : 0ull); // special case for nbits <= 64
 	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
 
-	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
-	static constexpr bt     MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
-	static constexpr size_t fBlocks = 1ull + ((fbits - 1ull) / bitsInBlock); // nr of blocks with fraction bits
-	static constexpr size_t FSU = fBlocks - 1ull;  // FSU = Fraction Significant Unit: the index of the block that contains the most significant fraction bits
-	static constexpr bt     FSU_MASK = (ALL_ONES >> (fBlocks * bitsInBlock - fbits));
-	static constexpr size_t bitsInFSU = bitsInBlock - (fBlocks * bitsInBlock - fbits);
+	static constexpr size_t   nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr size_t   MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+	static constexpr bt       MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr size_t   bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
+	static constexpr size_t   fBlocks = 1ull + ((fbits - 1ull) / bitsInBlock); // nr of blocks with fraction bits
+	static constexpr size_t   FSU = fBlocks - 1ull;  // FSU = Fraction Significant Unit: the index of the block that contains the most significant fraction bits
+	static constexpr bt       FSU_MASK = (ALL_ONES >> (fBlocks * bitsInBlock - fbits));
+	static constexpr size_t   bitsInFSU = bitsInBlock - (fBlocks * bitsInBlock - fbits);
 
-	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
-	static constexpr bt LSB_BIT_MASK = bt(1ull);
-	static constexpr bool MSU_CAPTURES_EXP = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_EXP ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
-	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
-	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
-	static constexpr int MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
-	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
-	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
-	static constexpr bt BLOCK_MASK = bt(~0);
+	static constexpr bt       SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
+	static constexpr bt       LSB_BIT_MASK = bt(1ull);
+	static constexpr bool     MSU_CAPTURES_EXP = (1ull + es) <= bitsInMSU;
+	static constexpr size_t   EXP_SHIFT = (MSU_CAPTURES_EXP ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
+	static constexpr bt       MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
+	static constexpr int      EXP_BIAS = ((1l << (es - 1ull)) - 1l);
+	static constexpr int      MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
+	static constexpr int      MIN_EXP_NORMAL = 1 - EXP_BIAS;
+	static constexpr int      MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
+	static constexpr bt       BLOCK_MASK = bt(~0);
 
-	static constexpr bool hasSubnormals   = _hasSubnormals;
-	static constexpr bool hasSupernormals = _hasSupernormals;
-	static constexpr bool isSaturating    = _isSaturating;
+	static constexpr bool     hasSubnormals   = _hasSubnormals;
+	static constexpr bool     hasSupernormals = _hasSupernormals;
+	static constexpr bool     isSaturating    = _isSaturating;
 	typedef bt BlockType;
 
 	// constructors
@@ -1140,10 +1140,8 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;
 	}
-	inline constexpr void setblock(size_t b, const bt& data) noexcept {
-		if (b < nrBlocks) {
-			_block[b] = data;
-		}
+	inline constexpr void setblock(size_t b, bt data) noexcept {
+		if (b < nrBlocks) _block[b] = data;
 	}
 	
 	// create specific number system values of interest
@@ -1559,7 +1557,6 @@ public:
 		return 0;
 	}
 
-
 	inline constexpr void sign(bool& s) const {
 		s = sign();
 	}
@@ -1580,16 +1577,19 @@ public:
 			}
 		}
 	}
-	inline constexpr void fraction(blockbinary<fbits, bt>& f) const {
+	// blockbinary is a 2's complement encoding, so we need to 0 extend the fraction, hence the fbits+1 size
+	template<size_t fbits>
+	inline constexpr blockbinary<fbits, bt>& fraction(blockbinary<fbits, bt>& f) const {
 		f.clear();
-		if constexpr (0 == nrBlocks) return;
+		if constexpr (0 == nrBlocks) return f;
 		else if constexpr (1 == nrBlocks) {
 			bt fraction = bt(_block[MSU] & ~MSU_EXP_MASK);
 			f.setbits(fraction);
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(i)); } // TODO: TEST!
+			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(i)); }
 		}
+		return f;
 	}
 	inline constexpr uint64_t fraction_ull() const {
 		uint64_t raw{ 0 };
@@ -1665,9 +1665,11 @@ public:
 		}
 		return shift;
 	}
-	inline constexpr void getbits(blockbinary<nbits, bt>& b) const {
+	template<size_t targetbits>
+	inline constexpr void getbits(blockbinary<targetbits, bt>& b) const {
+		size_t upperbound = (nbits > targetbits ? targetbits : nbits);
 		b.clear();
-		for (size_t i = 0; i < nbits; ++i) { b.setbit(i, at(i)); }
+		for (size_t i = 0; i < upperbound; ++i) { b.setbit(i, at(i)); }
 	}
 
 	// casts to native types
@@ -2951,8 +2953,8 @@ std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, 
 		if (position == fbits) str << '.';
 		--position;
 	}
-	if (digitsWritten < fbits) { // deal with trailing 0s
-		for (size_t i = digitsWritten; i < fbits; ++i) {
+	if (digitsWritten < precision) { // deal with trailing 0s
+		for (size_t i = static_cast<size_t>(digitsWritten); i < fbits; ++i) {
 			str << '0';
 		}
 	}
@@ -2963,7 +2965,6 @@ std::string to_decimal_fixpnt_string(const cfloat<nbits, es, bt, hasSubnormals, 
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& value, long long precision) {
 	constexpr size_t fbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
-	constexpr size_t bias = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::EXP_BIAS;
 	std::stringstream str;
 	if (value.iszero()) {
 		str << '0';
@@ -2977,7 +2978,7 @@ std::string to_string(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals
 	// lsbScale is e - fbits
 	// shift to get lsb to position 2^0 = (e - fbits)
 	std::int64_t scale = value.scale();
-	std::int64_t shift = scale + fbits; // we want the lsb at 2^0
+//	std::int64_t shift = scale + fbits; // we want the lsb at 2^0
 	std::int64_t lsbScale = scale - fbits;  // scale of the lsb
 	support::decimal partial, multiplier;
 	partial.setzero();
@@ -3026,20 +3027,20 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 	// implement setw and left/right operators
 	std::streamsize repWidth = static_cast<std::streamsize>(representation.size());
 	if (width > repWidth) {
-		std::streamsize diff = static_cast<std::string::size_type>(width - representation.size());
+		std::streamsize diff = width - static_cast<std::streamsize>(representation.size());
 		char fill = ostr.fill();
 		if ((ff & std::ios_base::left) == std::ios_base::left) {
-			representation.append(diff, fill);
+			representation.append(static_cast<size_t>(diff), fill);
 		}
 		else {
-			representation.insert(static_cast<std::string::size_type>(0), diff, fill);
+			representation.insert(0ull, static_cast<size_t>(diff), fill);
 		}
 	}
 
 	return ostr << representation;
 }
 
-
+// istream input: TBD
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::istream& operator>>(std::istream& istr, const cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
 	istr >> v._fraction;
@@ -3093,7 +3094,15 @@ inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
 abs(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(false, v.scale(), v.fraction(), v.isZero());
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a(v);
+	a.setsign(false);
+	return a;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
+fabs(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> v) {
+	return abs(v);
 }
 
 ////////////////////// debug helpers
@@ -3110,6 +3119,7 @@ void ReportCfloatClassParameters() {
 
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -3120,13 +3130,58 @@ inline bool operator==(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const c
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator!=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
-inline bool operator< (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return (lhs - rhs).isneg(); }
+inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	// need this as arithmetic difference is defined as snan(indeterminate)
+	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
+	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
+	if constexpr (nsub) {
+		cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
+		return (!diff.iszero() && diff.isneg()) ? true : false;  // got to guard against -0
+	}
+	if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
+	if (lhs.isneg() && rhs.ispos()) return true;
+	if (lhs.ispos() && rhs.isneg()) return false;
+	bool positive = lhs.ispos();
+	if (positive) {
+		if (lhs.scale() < rhs.scale()) return true;
+		if (lhs.scale() > rhs.scale()) return false;
+	}
+	else {
+		if (lhs.scale() > rhs.scale()) return true;
+		if (lhs.scale() < rhs.scale()) return false;
+	}
+	// sign and scale are the same
+	if (lhs.scale() == rhs.scale()) {
+		// compare fractions: we do not have subnormals, so we can ignore the hidden bit
+		blockbinary<nnbits - 1ull - nes, nbt> l, r; 
+		lhs.fraction(l);
+		rhs.fraction(r);
+		blockbinary<nnbits - nes, nbt> ll, rr; // fbits + 1 so we can 0 extend to honor 2's complement encoding of blockbinary
+		ll.assignWithoutSignExtend(l);
+		rr.assignWithoutSignExtend(r);
+		return (positive ? (ll < rr) : (ll > rr));
+	}
+	return false;
+}
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
-inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return  operator< (rhs, lhs); }
+inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
+	if (lhs.isnan() || rhs.isnan()) return false;
+	// need this as arithmetic difference is defined as snan(indeterminate)
+	if (lhs.isinf(INF_TYPE_NEGATIVE) && rhs.isinf(INF_TYPE_NEGATIVE)) return false;
+	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
+	return  operator< (rhs, lhs); 
+}
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
-inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return !operator> (lhs, rhs); 
+}
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
-inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
+	return !operator< (lhs, rhs); 
+}
 
 //////////////////////////////////////////////////////
 /// cfloat - cfloat binary arithmetic operators

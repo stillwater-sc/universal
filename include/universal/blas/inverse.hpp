@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <utility>  // std::swap
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/blas/matrix.hpp>
 
 // compilation flags
@@ -31,6 +32,8 @@ namespace sw { namespace universal { namespace blas {
 template<typename Scalar>
 matrix<Scalar> inv(const matrix<Scalar>& A) {
 	using namespace std;
+	using namespace sw::universal;
+	using std::fabs;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {
 		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";

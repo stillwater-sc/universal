@@ -29,14 +29,14 @@ void TestShiftOperatorPerformance() {
 
 	constexpr uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("integer<8>    shifts        ", ShiftPerformanceWorkload< sw::universal::integer<8> >, NR_OPS);
-	PerformanceRunner("integer<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<64> >, NR_OPS);
-	PerformanceRunner("integer<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::integer<128> >, NR_OPS / 2);
-	PerformanceRunner("integer<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::integer<256> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<   8> shifts        ", ShiftPerformanceWorkload< sw::universal::integer<   8, uint8_t > >, NR_OPS);
+	PerformanceRunner("integer<  16> shifts        ", ShiftPerformanceWorkload< sw::universal::integer<  16, uint16_t> >, NR_OPS);
+	PerformanceRunner("integer<  32> shifts        ", ShiftPerformanceWorkload< sw::universal::integer<  32, uint32_t> >, NR_OPS);
+	PerformanceRunner("integer<  64> shifts        ", ShiftPerformanceWorkload< sw::universal::integer<  64, uint64_t> >, NR_OPS);
+	PerformanceRunner("integer< 128> shifts        ", ShiftPerformanceWorkload< sw::universal::integer< 128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("integer< 256> shifts        ", ShiftPerformanceWorkload< sw::universal::integer< 256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("integer< 512> shifts        ", ShiftPerformanceWorkload< sw::universal::integer< 512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::integer<1024, uint32_t> >, NR_OPS / 16);
 }
 
 // measure performance of arithmetic operators
@@ -46,43 +46,44 @@ void TestArithmeticOperatorPerformance() {
 
 	uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("integer<8>    add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<8> >, NR_OPS);
-	PerformanceRunner("integer<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<64> >, NR_OPS);
-	PerformanceRunner("integer<128>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<128> >, NR_OPS / 2);
-	PerformanceRunner("integer<256>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<256> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<   8> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<   8, uint8_t > >, NR_OPS);
+	PerformanceRunner("integer<  16> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<  16, uint16_t> >, NR_OPS);
+	PerformanceRunner("integer<  32> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<  32, uint32_t> >, NR_OPS);
+	PerformanceRunner("integer<  64> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<  64, uint64_t> >, NR_OPS);
+	PerformanceRunner("integer< 128> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("integer< 256> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("integer< 512> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<1024, uint32_t> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<8>    division      ", DivisionWorkload< sw::universal::integer<8> >, NR_OPS);
-	PerformanceRunner("integer<16>   division      ", DivisionWorkload< sw::universal::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   division      ", DivisionWorkload< sw::universal::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   division      ", DivisionWorkload< sw::universal::integer<64> >, NR_OPS / 2);
-	PerformanceRunner("integer<128>  division      ", DivisionWorkload< sw::universal::integer<128> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  division      ", DivisionWorkload< sw::universal::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> division      ", DivisionWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<   8> division      ", DivisionWorkload< sw::universal::integer<   8, uint8_t> >, NR_OPS);
+	PerformanceRunner("integer<  16> division      ", DivisionWorkload< sw::universal::integer<  16, uint16_t> >, NR_OPS);
+	PerformanceRunner("integer<  32> division      ", DivisionWorkload< sw::universal::integer<  32, uint32_t> >, NR_OPS);
+	PerformanceRunner("integer<  64> division      ", DivisionWorkload< sw::universal::integer<  64, uint64_t> >, NR_OPS / 2);
+	PerformanceRunner("integer< 128> division      ", DivisionWorkload< sw::universal::integer< 128, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("integer< 512> division      ", DivisionWorkload< sw::universal::integer< 512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> division      ", DivisionWorkload< sw::universal::integer<1024, uint32_t> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<8>    remainder     ", RemainderWorkload< sw::universal::integer<8> >, NR_OPS);
-	PerformanceRunner("integer<16>   remainder     ", RemainderWorkload< sw::universal::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   remainder     ", RemainderWorkload< sw::universal::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   remainder     ", RemainderWorkload< sw::universal::integer<64> >, NR_OPS / 2);
-	PerformanceRunner("integer<128>  remainder     ", RemainderWorkload< sw::universal::integer<128> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  remainder     ", RemainderWorkload< sw::universal::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> remainder     ", RemainderWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<   8> remainder     ", RemainderWorkload< sw::universal::integer<   8, uint8_t > >, NR_OPS);
+	PerformanceRunner("integer<  16> remainder     ", RemainderWorkload< sw::universal::integer<  16, uint16_t> >, NR_OPS);
+	PerformanceRunner("integer<  32> remainder     ", RemainderWorkload< sw::universal::integer<  32, uint32_t> >, NR_OPS);
+	PerformanceRunner("integer<  64> remainder     ", RemainderWorkload< sw::universal::integer<  64, uint64_t> >, NR_OPS / 2);
+	PerformanceRunner("integer< 128> remainder     ", RemainderWorkload< sw::universal::integer< 128, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("integer< 512> remainder     ", RemainderWorkload< sw::universal::integer< 512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> remainder     ", RemainderWorkload< sw::universal::integer<1024, uint32_t> >, NR_OPS / 16);
 
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<8>    multiplication", MultiplicationWorkload< sw::universal::integer<8> >, NR_OPS);
-	PerformanceRunner("integer<16>   multiplication", MultiplicationWorkload< sw::universal::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   multiplication", MultiplicationWorkload< sw::universal::integer<32> >, NR_OPS / 2);
-	PerformanceRunner("integer<64>   multiplication", MultiplicationWorkload< sw::universal::integer<64> >, NR_OPS / 4);
-	PerformanceRunner("integer<128>  multiplication", MultiplicationWorkload< sw::universal::integer<128> >, NR_OPS / 8);
-	PerformanceRunner("integer<512>  multiplication", MultiplicationWorkload< sw::universal::integer<512> >, NR_OPS / 16);
-	PerformanceRunner("integer<1024> multiplication", MultiplicationWorkload< sw::universal::integer<1024> >, NR_OPS / 32);
+	PerformanceRunner("integer<   8> multiplication", MultiplicationWorkload< sw::universal::integer<   8, uint8_t > >, NR_OPS);
+	PerformanceRunner("integer<  16> multiplication", MultiplicationWorkload< sw::universal::integer<  16, uint16_t> >, NR_OPS);
+	PerformanceRunner("integer<  32> multiplication", MultiplicationWorkload< sw::universal::integer<  32, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("integer<  64> multiplication", MultiplicationWorkload< sw::universal::integer<  64, uint64_t> >, NR_OPS / 4);
+	PerformanceRunner("integer< 128> multiplication", MultiplicationWorkload< sw::universal::integer< 128, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("integer< 256> multiplication", MultiplicationWorkload< sw::universal::integer< 256, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("integer< 512> multiplication", MultiplicationWorkload< sw::universal::integer< 512, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("integer<1024> multiplication", MultiplicationWorkload< sw::universal::integer<1024, uint32_t> >, NR_OPS / 32);
 }
 
 // conditional compilation
@@ -183,4 +184,104 @@ integer<64>   multiplication       8192 per         0.08589sec ->  95 Kops/sec
 integer<128>  multiplication       4096 per        0.166093sec ->  24 Kops/sec
 integer<512>  multiplication       2048 per         1.33028sec ->   1 Kops/sec
 integer<1024> multiplication       1024 per         2.58557sec -> 396  ops/sec
+*/
+
+/*
+ETLO
+Date run : 03/19/2022
+Processor: AMD Ryzen 7 2700X Eight-Core Processor 3.70 GHz desktop 105W processor
+Cache    : L1 96KB/core (768kB total), L2 512k/core (4.0MB total), L3 16.0MB
+Memory   : 32GB
+System   : 64-bit Windows 11 Pro, Version 21H2, x64-based processor, OS build 22000.556
+
+Integer operator performance benchmarking
+
+with default uint8_t BlockType
+INTEGER Logical shift operator performance
+integer<8>    shifts            1000000 per           1e-07sec ->  10 Tops/sec
+integer<16>   shifts            1000000 per       0.0189153sec ->  52 Mops/sec
+integer<32>   shifts            1000000 per       0.0175485sec ->  56 Mops/sec
+integer<64>   shifts            1000000 per       0.0391782sec ->  25 Mops/sec
+integer<128>  shifts             500000 per       0.0209925sec ->  23 Mops/sec
+integer<256>  shifts             250000 per       0.0289021sec ->   8 Mops/sec
+integer<512>  shifts             125000 per        0.019476sec ->   6 Mops/sec
+integer<1024> shifts              62500 per       0.0253791sec ->   2 Mops/sec
+
+INTEGER Arithmetic operator performance
+integer<8>    add/subtract      1000000 per       0.0005549sec ->   1 Gops/sec
+integer<16>   add/subtract      1000000 per       0.0086505sec -> 115 Mops/sec
+integer<32>   add/subtract      1000000 per       0.0099939sec -> 100 Mops/sec
+integer<64>   add/subtract      1000000 per        0.015391sec ->  64 Mops/sec
+integer<128>  add/subtract       500000 per       0.0096107sec ->  52 Mops/sec
+integer<256>  add/subtract       250000 per       0.0085242sec ->  29 Mops/sec
+integer<512>  add/subtract       125000 per       0.0069788sec ->  17 Mops/sec
+integer<1024> add/subtract        62500 per       0.0076963sec ->   8 Mops/sec
+integer<8>    division            32768 per       0.0023556sec ->  13 Mops/sec
+integer<16>   division            32768 per       0.0029534sec ->  11 Mops/sec
+integer<32>   division            32768 per       0.0035336sec ->   9 Mops/sec
+integer<64>   division            16384 per       0.0024298sec ->   6 Mops/sec
+integer<128>  division             8192 per       0.0018567sec ->   4 Mops/sec
+integer<512>  division             4096 per       0.0031357sec ->   1 Mops/sec
+integer<1024> division             2048 per       0.0029386sec -> 696 Kops/sec
+integer<8>    remainder           32768 per        0.002537sec ->  12 Mops/sec
+integer<16>   remainder           32768 per       0.0033418sec ->   9 Mops/sec
+integer<32>   remainder           32768 per       0.0037914sec ->   8 Mops/sec
+integer<64>   remainder           16384 per       0.0025117sec ->   6 Mops/sec
+integer<128>  remainder            8192 per       0.0017473sec ->   4 Mops/sec
+integer<512>  remainder            4096 per       0.0031309sec ->   1 Mops/sec
+integer<1024> remainder            2048 per       0.0029546sec -> 693 Kops/sec
+integer<8>    multiplication      32768 per       0.0022627sec ->  14 Mops/sec
+integer<16>   multiplication      32768 per         0.00256sec ->  12 Mops/sec
+integer<32>   multiplication      16384 per       0.0014768sec ->  11 Mops/sec
+integer<64>   multiplication       8192 per       0.0012147sec ->   6 Mops/sec
+integer<128>  multiplication       4096 per       0.0019705sec ->   2 Mops/sec
+integer<512>  multiplication       2048 per        0.011195sec -> 182 Kops/sec
+integer<1024> multiplication       1024 per       0.0205978sec ->  49 Kops/sec
+
+
+With tailored BlockType
+Integer operator performance benchmarking
+
+INTEGER Logical shift operator performance
+integer<   8> shifts            1000000 per               0sec ->   0  ops/sec
+integer<  16> shifts            1000000 per       0.0211381sec ->  47 Mops/sec
+integer<  32> shifts            1000000 per       0.0190994sec ->  52 Mops/sec
+integer<  64> shifts            1000000 per       0.0326373sec ->  30 Mops/sec
+integer< 128> shifts             500000 per       0.0083589sec ->  59 Mops/sec
+integer< 256> shifts             250000 per       0.0062384sec ->  40 Mops/sec
+integer< 512> shifts             125000 per       0.0045322sec ->  27 Mops/sec
+integer<1024> shifts              62500 per       0.0055964sec ->  11 Mops/sec
+
+INTEGER Arithmetic operator performance
+integer<   8> add/subtract      1000000 per       0.0005934sec ->   1 Gops/sec
+integer<  16> add/subtract      1000000 per       0.0005815sec ->   1 Gops/sec
+integer<  32> add/subtract      1000000 per       0.0008533sec ->   1 Gops/sec
+integer<  64> add/subtract      1000000 per       0.0003468sec ->   2 Gops/sec
+integer< 128> add/subtract       500000 per       0.0052717sec ->  94 Mops/sec
+integer< 256> add/subtract       250000 per       0.0025542sec ->  97 Mops/sec
+integer< 512> add/subtract       125000 per       0.0021965sec ->  56 Mops/sec
+integer<1024> add/subtract        62500 per        0.001869sec ->  33 Mops/sec
+integer<   8> division            32768 per       0.0023856sec ->  13 Mops/sec
+integer<  16> division            32768 per       0.0026805sec ->  12 Mops/sec
+integer<  32> division            32768 per       0.0037076sec ->   8 Mops/sec
+integer<  64> division            16384 per       0.0005425sec ->  30 Mops/sec
+integer< 128> division             8192 per       0.0011302sec ->   7 Mops/sec
+integer< 512> division             4096 per       0.0010917sec ->   3 Mops/sec
+integer<1024> division             2048 per        0.001076sec ->   1 Mops/sec
+integer<   8> remainder           32768 per       0.0025818sec ->  12 Mops/sec
+integer<  16> remainder           32768 per       0.0028768sec ->  11 Mops/sec
+integer<  32> remainder           32768 per       0.0035723sec ->   9 Mops/sec
+integer<  64> remainder           16384 per       0.0004941sec ->  33 Mops/sec
+integer< 128> remainder            8192 per       0.0008867sec ->   9 Mops/sec
+integer< 512> remainder            4096 per       0.0009781sec ->   4 Mops/sec
+integer<1024> remainder            2048 per       0.0009335sec ->   2 Mops/sec
+integer<   8> multiplication      32768 per       0.0023107sec ->  14 Mops/sec
+integer<  16> multiplication      32768 per       0.0024994sec ->  13 Mops/sec
+integer<  32> multiplication      16384 per       0.0012404sec ->  13 Mops/sec
+integer<  64> multiplication       8192 per       0.0007763sec ->  10 Mops/sec
+integer< 128> multiplication       4096 per       0.0005118sec ->   8 Mops/sec
+integer< 256> multiplication       2048 per       0.0003702sec ->   5 Mops/sec
+integer< 512> multiplication       2048 per       0.0009729sec ->   2 Mops/sec
+integer<1024> multiplication       1024 per        0.001776sec -> 576 Kops/sec
+
 */

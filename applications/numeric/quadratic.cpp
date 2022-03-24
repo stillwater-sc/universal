@@ -25,6 +25,17 @@
 #include <cstring>
 #include <ostream>
 
+using Float16 = sw::universal::cfloat<16, 5, uint16_t>; // , true, true, false > ;
+using Float32 = sw::universal::cfloat<32, 8, uint32_t>; // , true, true, false > ;
+using Float48 = sw::universal::cfloat<48, 8, uint32_t>; // , true, true, false > ;
+using Float64 = sw::universal::cfloat<64, 11, uint32_t>; // , true, true, false > ;
+using FloatSP = float;
+using FloatDP = double;
+using Posit32 = sw::universal::posit<32, 2>;
+using Posit48 = sw::universal::posit<48, 2>;
+using Posit64 = sw::universal::posit<64, 2>;
+using Fixed64 = sw::universal::fixpnt<64, 16>;
+
 template<typename Scalar>
 std::pair<Scalar, Scalar> Quadratic(const Scalar& a, const Scalar& b, const Scalar& c) {
 	std::pair<Scalar, Scalar> roots;
@@ -34,6 +45,23 @@ std::pair<Scalar, Scalar> Quadratic(const Scalar& a, const Scalar& b, const Scal
 	roots.first  = (-b - sqrt_b2_minus_4ac) / (2 * a);
 	roots.second = (-b + sqrt_b2_minus_4ac) / (2 * a);
 	return roots;
+}
+
+void CompareBigTerms(float a, float b, float c) {
+	using namespace sw::universal;
+	integer<64> inta(a);
+	integer<64> intb(b);
+	integer<64> intc(c);
+	integer<64> difference = intb * intb - 4 * inta * intc;
+	std::cout << "    (b^2 - 4ac)      : " << sw::universal::to_binary(difference) << " : " << difference << '\n';
+
+	{
+		Fixed64 a;
+		a = 100000.0f;
+		std::cout << "a   : " << to_binary(a) << " : " << a << '\n';
+		a *= a;
+		std::cout << "a^2 : " << to_binary(a) << " : " << a << '\n';
+	}
 }
 
 template<typename Real>
@@ -58,30 +86,7 @@ void CompareTerms(Real a, Real b, Real c) {
 	std::cout << "root                 : " << sw::universal::to_binary(root) << " : " << root << '\n';
 }
 
-int main()
-try {
-	using namespace sw::universal;
-
-	std::cout << "catastrophic cancellation in the quadratic formula\n";
-
-	auto precision = std::cout.precision();
-	std::cout << std::setprecision(15);
-
-	using Float16 = cfloat<16,  5, uint16_t>; // , true, true, false > ;
-	using Float32 = cfloat<32,  8, uint32_t>; // , true, true, false > ;
-	using Float48 = cfloat<48,  8, uint32_t>; // , true, true, false > ;
-	using Float64 = cfloat<64, 11, uint32_t>; // , true, true, false > ;
-	using FloatSP = float;
-	using FloatDP = double;
-	using Posit32 = sw::universal::posit<32, 2>;
-	using Posit48 = sw::universal::posit<48, 2>;
-	using Posit64 = sw::universal::posit<64, 2>;
-	using Fixed64 = sw::universal::fixpnt<64, 16>;
-
-	float a = 1.0f;
-	float b = 1.0e5f;
-	float c = 1.0f;
-
+void CompareTypes(float a, float b, float c) {
 	std::cout << "16-bit floating-point\n";
 	CompareTerms<Float16>(a, b, c);
 	std::cout << '\n';
@@ -121,33 +126,55 @@ try {
 	std::cout << "fixed-point fixpnt<64, 16>\n";
 	CompareTerms<Fixed64>(a, b, c);
 	std::cout << '\n';
+}
 
-	integer<64> inta(a);
-	integer<64> intb(b);
-	integer<64> intc(c);
-	integer<64> difference = intb * intb - 4 * inta * intc;
-	std::cout << "    (b^2 - 4ac)      : " << sw::universal::to_binary(difference) << " : " << difference << '\n';;
-
+void CompareRoots(float fa, float fb, float fc) {
+	{
+		using Scalar = Float32;
+		Scalar a{ fa }, b{ fb }, c{ fc };
+		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
+		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+	}
 	{
 		using Scalar = Posit32;
-		Scalar a{ 3.0 }, b{ 5.0 }, c{ -7.0 };
+		Scalar a{ fa }, b{ fb }, c{ fc };
 		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
 		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
 	}
 	{
-		using Scalar = sw::universal::fixpnt<16,8>;
-		Scalar a{ 3.0 }, b{ 5.0 }, c{ -7.0 };
+		using Scalar = sw::universal::fixpnt<32, 16>;
+		Scalar a{ fa }, b{ fb }, c{ fc };
 		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
 		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
 	}
+	{
+		using Scalar = Float64;
+		Scalar a{ fa }, b{ fb }, c{ fc };
+		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
+		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+	}
+	{
+		using Scalar = Posit64;
+		Scalar a{ fa }, b{ fb }, c{ fc };
+		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
+		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+	}
+}
+int main()
+try {
+	using namespace sw::universal;
 
-	{
-		Fixed64 a;
-		a = 100000.0f;
-		std::cout << "a   : " << to_binary(a) << " : " << a << '\n';
-		a *= a;
-		std::cout << "a^2 : " << to_binary(a) << " : " << a << '\n';
-	}
+	std::cout << "catastrophic cancellation in the quadratic formula\n";
+
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(15);
+
+	CompareRoots(1.0f, 1.0e5f, 1.0f);
+
+	std::cout << "\n\n\n";
+
+	CompareRoots(3.0f, 5.0f, -7.0f);
+
 
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;

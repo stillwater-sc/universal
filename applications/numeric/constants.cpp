@@ -28,7 +28,6 @@
 template<typename Scalar>
 void SqrtWorkload(size_t NR_OPS) {
 	Scalar a{ 0 }, c{ 0 };
-	Scalar maxpos(sw::universal::SpecificValue::maxpos);
 	size_t maxval = 1024*1024*1024;
 	for (size_t i = 0; i < NR_OPS; ++i) {
 		a = Scalar(i % maxval);

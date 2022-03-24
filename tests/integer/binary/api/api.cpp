@@ -13,18 +13,6 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/verification/test_reporters.hpp> 
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
-#endif
-
 int main()
 try {
 	using namespace sw::universal;
@@ -43,7 +31,8 @@ try {
 		integer<8> a, b(-8), c(7), d(-7); 
 		
 		if (a != (c + d)) ++nrOfFailedTestCases;
-		if (a != (b - c)) ++nrOfFailedTestCases;
+		if (a != (1 + b + c)) ++nrOfFailedTestCases;
+		if (a - 1 != (b + c)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
@@ -57,10 +46,9 @@ try {
 		// construction with explicit arithmetic type and BlockType
 		integer<16, uint16_t> a, b(-2048), c(2047), d(-2047);
 		if (a != (c + d)) ++nrOfFailedTestCases;
-		if (a != (b - c)) ++nrOfFailedTestCases;
-		//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
+		if (a - 1 != (b + c)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
-			std::cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
+//			std::cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
 			std::cout << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
 	}
@@ -75,18 +63,21 @@ try {
 		std::cout << "type identifier : " << type_tag(a) << '\n';
 		std::cout << "type identifier : " << type_tag(integer<8>()) << '\n';
 		std::cout << "type identifier : " << type_tag(integer<8, uint16_t>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer<32, uint32_t>()) << '\n';
 	}
 
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 8;
+		constexpr unsigned nbits = 8;
 		integer<nbits> a, b;
 		a = 1;
-		if (!a.test(4)) ++nrOfFailedTestCases;
-		b.setbits(1); // set the ULP
+		if (a.test(4)) ++nrOfFailedTestCases;
+		if (!a.test(0)) ++nrOfFailedTestCases;
+		b.setbits(0x01); // set the ULP
 		if (!b.at(0)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : selectors\n";
+			std::cout << a << ' ' << b << '\n';
 		}
 	}
 
@@ -98,14 +89,15 @@ try {
 		// state/bit management
 		constexpr size_t nbits = 8;
 		integer<nbits> a, b, c, d;
-		for (size_t i = 0; i < nbits; ++i) {
+		// set all bits of 'a' which represents -1
+		for (unsigned i = 0; i < nbits; ++i) {
 			a.setbit(i, true);
 		}
-		b.setbits(0x0F); // same as the fixpnt a above
-		if ((a - b) != 0) ++nrOfFailedTestCases;
+		b.setbits(0x0f);
+		if ((a + b) == 0) ++nrOfFailedTestCases;
 		c = b;
 		// manually flip the bits of b: don't use flip() as we are going to confirm flip() is correct
-		for (size_t i = 0; i < nbits; ++i) {
+		for (unsigned i = 0; i < nbits; ++i) {
 			b.setbit(i, !b.test(i));
 		}
 		c.flip();  // in-place 1's complement, so now b and c are the same
@@ -116,6 +108,7 @@ try {
 		if (d != 0) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : modifiers\n";
+			std::cout << a << ' ' << b << ' ' << c << ' ' << d << '\n';
 		}
 	}
 
@@ -269,19 +262,19 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::integer_arithmetic_exception& err) {
-	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::integer_internal_exception& err) {
-	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

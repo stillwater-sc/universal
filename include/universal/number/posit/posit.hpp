@@ -15,10 +15,10 @@
 ///  BEHAVIORAL COMPILATION SWITCHES
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// enable/disable special posit format I/O
-#if !defined(POSIT_ROUNDING_ERROR_FREE_IO_FORMAT)
-// default is to print (long double) values
-#define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 0
+// enable/disable error-free posit format I/O
+#if !defined(POSIT_ERROR_FREE_IO_FORMAT)
+// default is to print double values in human-readable form
+#define POSIT_ERROR_FREE_IO_FORMAT 0
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////

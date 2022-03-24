@@ -216,6 +216,7 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 #endif
 			cref = std::pow(da, db);
 			if (cpow != cref) {
+				if (cpow.isnan() && cref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, cref, cpow);
 			}
@@ -248,6 +249,7 @@ int VerifySine(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::sin(da);
 		if (psin != aref) {
+			if (psin.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "sin", a, aref, psin);
 		}
@@ -273,6 +275,7 @@ int VerifyCosine(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::cos(da);
 		if (pcos != aref) {
+			if (pcos.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "cos", a, aref, pcos);
 		}
@@ -298,6 +301,7 @@ int VerifyTangent(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::tan(da);
 		if (ptan != aref) {
+			if (ptan.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "tan", a, aref, ptan);
 		}
@@ -323,6 +327,7 @@ int VerifyAtan(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::atan(da);
 		if (atan != aref) {
+			if (atan.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "atan", a, aref, atan);
 		}
@@ -348,6 +353,7 @@ int VerifyAsin(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::asin(da);
 		if (asin != aref) {
+			if (asin.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "asin", a, aref, asin);
 		}
@@ -373,6 +379,7 @@ int VerifyAcos(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::acos(da);
 		if (acos != aref) {
+			if (acos.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "acos", a, aref, acos);
 		}
@@ -398,6 +405,7 @@ int VerifySinh(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::sinh(da);
 		if (psinh != aref) {
+			if (psinh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "sinh", a, aref, psinh);
 		}
@@ -423,6 +431,7 @@ int VerifyCosh(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::cosh(da);
 		if (pcosh != aref) {
+			if (pcosh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "cosh", a, aref, pcosh);
 		}
@@ -448,6 +457,7 @@ int VerifyTanh(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::tanh(da);
 		if (ptanh != aref) {
+			if (ptanh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "tanh", a, aref, ptanh);
 		}
@@ -473,6 +483,7 @@ int VerifyAtanh(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::atanh(da);
 		if (atanh != aref) {
+			if (atanh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "atanh", a, aref, atanh);
 		}
@@ -498,6 +509,7 @@ int VerifyAsinh(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::asinh(da);
 		if (aasinh != aref) {
+			if (aasinh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "asinh", a, aref, aasinh);
 		}
@@ -523,6 +535,7 @@ int VerifyAcosh(bool bReportIndividualTestCases) {
 		double da = double(a);
 		aref = std::acosh(da);
 		if (aacosh != aref) {
+			if (aacosh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "acosh", a, aref, aacosh);
 		}

@@ -10,8 +10,10 @@
 #define POSIT_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-// third: enable native literals in logic and arithmetic operations
+// third: enable support for native literals in logic and arithmetic operations
 #define POSIT_ENABLE_LITERALS 1
+// fourth: enable/disable error-free serialization I/O
+#define POSIT_ERROR_FREE_IO_FORMAT 0
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/posit/posit.hpp>

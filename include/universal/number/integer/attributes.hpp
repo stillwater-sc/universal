@@ -17,7 +17,7 @@ integer<nbits, BlockType> ipow(const integer<nbits, BlockType>& a, const integer
 	integer<nbits, BlockType> result(1), base(a), exp(b);
 	for (;;) {
 		if (exp.isodd()) result *= base;
-		exp >>= 1;
+		exp.logicShiftRight(1);
 		if (exp == 0) break;
 		base *= base;
 	}

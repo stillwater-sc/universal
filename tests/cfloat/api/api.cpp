@@ -70,12 +70,14 @@ try {
 		using half    = cfloat< 16,  5, uint8_t, false, false, false>;
 		using single  = cfloat< 32,  8, uint8_t, true, false, false>;
 		using dual    = cfloat< 64, 11, uint8_t, true, false, false>;
-		using quad    = cfloat<128, 15, uint8_t, true, false, false>;
-		using octo    = cfloat<256, 18, uint8_t, true, false, false>;
+//		using quad    = cfloat<128, 15, uint8_t, true, false, false>;  // TODO: our printing needs to improve to enable these large precisions
+//		using octo    = cfloat<256, 18, uint8_t, true, false, false>;
 		report_range<quarter>(std::cout);
 		report_range<half>(std::cout);
 		report_range<single>(std::cout);
 		report_range<dual>(std::cout);
+		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+		std::cout << "performance of printing of quad and larger precision needs to improve to be practical\n";
 //		report_range<quad>(std::cout);
 //		report_range<octo>(std::cout);
 
@@ -204,7 +206,6 @@ try {
 		using BlockType = uint32_t;
 		float subnormal = std::nextafter(0.0f, 1.0f);
 		using Cfloat = cfloat<32, 8, BlockType, true>;
-		constexpr size_t fbits = Cfloat::fbits; 
 		Cfloat a;
 		blockbinary<a.fhbits, BlockType> significant;
 
@@ -238,13 +239,14 @@ try {
 
 	std::cout << "human-readable output for large cfloats\n";
 	{
-		using dp   = cfloat< 64, 11, uint32_t, true, false, false>;
-		using quad = cfloat<128, 15, uint8_t, true, false, false>;
-		using octo = cfloat<256, 18, uint8_t, true, false, false>;
-//		using Real = cfloat< 80, 11, uint32_t, true, false, false>;
+		using dp   = cfloat< 64, 11, uint32_t, true, false, false>;  // double precision
+//		using ep   = cfloat< 80, 11, uint32_t, true, false, false>;  // extended precision
+//		using quad = cfloat<128, 15, uint8_t, true, false, false>;   // quad precision
+//		using octo = cfloat<256, 18, uint8_t, true, false, false>;   // octo precision
 		using Real = dp;
 
 		auto precision = std::cout.precision();
+		std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
 		Real v(SpecificValue::minpos);
 		v = 1.0f;
 //		auto s = to_string(v, precision);
@@ -254,6 +256,7 @@ try {
 		// this demonstrates that our conversion is WAY TOO SLOW: takes 4 minutes to create the representation: ETLO 1/23
 //		octo o(SpecificValue::maxpos);
 //		std::cout << std::fixed << o << std::scientific << '\n';
+		std::cout << std::setprecision(precision);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
