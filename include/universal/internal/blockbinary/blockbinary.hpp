@@ -223,8 +223,7 @@ public:
 				// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
 				blockbinary<nbits + 1, BlockType, NumberType> base(*this);
 				blockbinary<nbits + 1, BlockType, NumberType> multiplicant(rhs);
-				bool resultIsNeg = false;
-				if (base.isneg() && multiplicant.ispos() || base.ispos() && multiplicant.isneg()) resultIsNeg = true;
+				bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
 				if (base.isneg()) {
 					base.twosComplement();
 				}

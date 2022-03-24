@@ -300,8 +300,7 @@ integer& operator*=(const integer& rhs) {
 		// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
 		integer<nbits + 1, BlockType, NumberType> base(*this);
 		integer<nbits + 1, BlockType, NumberType> multiplicant(rhs);
-		bool resultIsNeg = false;
-		if (base.isneg() && multiplicant.ispos() || base.ispos() && multiplicant.isneg()) resultIsNeg = true;
+		bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
 		if (base.isneg()) {
 			base.twosComplement();
 		}
