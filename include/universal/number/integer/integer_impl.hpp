@@ -293,8 +293,8 @@ integer& operator-=(const integer& rhs) {
 	operator+=(twos.twosComplement());
 	return *this;
 }
-#define FAST_MUL
-#ifdef FAST_MUL
+#define INTEGER_FAST_MUL
+#ifdef INTEGER_FAST_MUL
 integer& operator*=(const integer& rhs) {
 	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
 		// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
