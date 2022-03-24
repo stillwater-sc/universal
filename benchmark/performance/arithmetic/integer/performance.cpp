@@ -285,3 +285,61 @@ integer< 512> multiplication       2048 per       0.0009729sec ->   2 Mops/sec
 integer<1024> multiplication       1024 per        0.001776sec -> 576 Kops/sec
 
 */
+
+/*
+ETLO
+Date run : 03/24/2022
+Processor: AMD Ryzen 7 2700X Eight-Core Processor 3.70 GHz desktop 105W processor
+Cache    : L1 96KB/core (768kB total), L2 512k/core (4.0MB total), L3 16.0MB
+Memory   : 32GB
+System   : 64-bit Windows 11 Pro, Version 21H2, x64-based processor, OS build 22000.556
+
+optimization: special casing single block configurations: 
+see results for integer<64, uint64_t>
+add/sub: 3 Gops/sec
+mul    : 1 Gops/sec
+
+Integer operator performance benchmarking
+
+INTEGER Logical shift operator performance
+integer<   8> shifts            1000000 per               0sec ->   0  ops/sec
+integer<  16> shifts            1000000 per       0.0164093sec ->  60 Mops/sec
+integer<  32> shifts            1000000 per       0.0204416sec ->  48 Mops/sec
+integer<  64> shifts            1000000 per       0.0319357sec ->  31 Mops/sec
+integer< 128> shifts             500000 per       0.0087293sec ->  57 Mops/sec
+integer< 256> shifts             250000 per       0.0051965sec ->  48 Mops/sec
+integer< 512> shifts             125000 per       0.0040006sec ->  31 Mops/sec
+integer<1024> shifts              62500 per       0.0039462sec ->  15 Mops/sec
+
+INTEGER Arithmetic operator performance
+integer<   8> add/subtract      1000000 per       0.0003457sec ->   2 Gops/sec
+integer<  16> add/subtract      1000000 per       0.0003146sec ->   3 Gops/sec
+integer<  32> add/subtract      1000000 per       0.0006857sec ->   1 Gops/sec
+integer<  64> add/subtract      1000000 per       0.0003146sec ->   3 Gops/sec
+integer< 128> add/subtract       500000 per       0.0050097sec ->  99 Mops/sec
+integer< 256> add/subtract       250000 per       0.0025866sec ->  96 Mops/sec
+integer< 512> add/subtract       125000 per       0.0018629sec ->  67 Mops/sec
+integer<1024> add/subtract        62500 per       0.0025402sec ->  24 Mops/sec
+integer<   8> division            32768 per        0.002713sec ->  12 Mops/sec
+integer<  16> division            32768 per       0.0028828sec ->  11 Mops/sec
+integer<  32> division            32768 per       0.0034744sec ->   9 Mops/sec
+integer<  64> division            16384 per       0.0006312sec ->  25 Mops/sec
+integer< 128> division             8192 per       0.0012048sec ->   6 Mops/sec
+integer< 512> division             4096 per       0.0012505sec ->   3 Mops/sec
+integer<1024> division             2048 per        0.001018sec ->   2 Mops/sec
+integer<   8> remainder           32768 per       0.0027676sec ->  11 Mops/sec
+integer<  16> remainder           32768 per       0.0031366sec ->  10 Mops/sec
+integer<  32> remainder           32768 per       0.0035994sec ->   9 Mops/sec
+integer<  64> remainder           16384 per         0.00049sec ->  33 Mops/sec
+integer< 128> remainder            8192 per       0.0008721sec ->   9 Mops/sec
+integer< 512> remainder            4096 per       0.0009715sec ->   4 Mops/sec
+integer<1024> remainder            2048 per       0.0008951sec ->   2 Mops/sec
+integer<   8> multiplication      32768 per         3.4e-05sec -> 963 Mops/sec
+integer<  16> multiplication      32768 per         3.4e-05sec -> 963 Mops/sec
+integer<  32> multiplication      16384 per        1.73e-05sec -> 947 Mops/sec
+integer<  64> multiplication       8192 per         6.6e-06sec ->   1 Gops/sec
+integer< 128> multiplication       4096 per       0.0005048sec ->   8 Mops/sec
+integer< 256> multiplication       2048 per       0.0003359sec ->   6 Mops/sec
+integer< 512> multiplication       2048 per       0.0009838sec ->   2 Mops/sec
+integer<1024> multiplication       1024 per       0.0018267sec -> 560 Kops/sec
+*/

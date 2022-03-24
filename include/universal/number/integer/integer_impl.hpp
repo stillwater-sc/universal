@@ -129,7 +129,7 @@ public:
 		bitcopy(a);
 		if constexpr (srcbits < nbits) {
 			if (a.sign()) { // sign extend
-				for (size_t i = srcbits; i < nbits; ++i) {
+				for (unsigned i = srcbits; i < nbits; ++i) {
 					setbit(i);
 				}
 			}
@@ -280,7 +280,7 @@ integer& operator+=(const integer& rhs) {
 		while (pC != pEnd) {
 			carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
 			*pC = static_cast<bt>(carry);
-			carry >>= bitsInBlock;
+			if constexpr (bitsInBlock == 64) carry = 0; else carry >>= bitsInBlock;
 			++pA; ++pB; ++pC;
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
@@ -443,14 +443,14 @@ integer& operator*=(const integer& rhs) {
 				if (signext) {
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 						this->setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 						this->setbit(i, false);
 					}
 				}
@@ -473,14 +473,14 @@ integer& operator*=(const integer& rhs) {
 		if (signext) {
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 				this->setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 				this->setbit(i, false);
 			}
 		}
