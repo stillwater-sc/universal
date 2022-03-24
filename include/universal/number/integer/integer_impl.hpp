@@ -265,27 +265,34 @@ explicit operator long double() const { return to_real<long double>(); }
 #endif
 // arithmetic operators
 integer& operator+=(const integer& rhs) {
-	integer<nbits, BlockType, NumberType> sum;
-	std::uint64_t carry = 0;
-	BlockType* pA = _block;
-	BlockType const* pB = rhs._block;
-	BlockType* pC = sum._block;
-	BlockType* pEnd = pC + nrBlocks; // this is one element past the end: is that proper?
-	while (pC != pEnd) {
-		carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
-		*pC = static_cast<bt>(carry);
-		carry >>= bitsInBlock;
-		++pA; ++pB; ++pC;
+	if constexpr (nrBlocks == 1) {
+		_block[0] = static_cast<bt>(_block[0] + rhs.block(0));
+		// null any leading bits that fall outside of nbits
+		_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
 	}
-	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-	BlockType* pLast = pEnd - 1;
-	*pLast = static_cast<bt>(MSU_MASK & *pLast);
+	else {
+		integer<nbits, BlockType, NumberType> sum;
+		std::uint64_t carry = 0;
+		BlockType* pA = _block;
+		BlockType const* pB = rhs._block;
+		BlockType* pC = sum._block;
+		BlockType* pEnd = pC + nrBlocks;
+		while (pC != pEnd) {
+			carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
+			*pC = static_cast<bt>(carry);
+			carry >>= bitsInBlock;
+			++pA; ++pB; ++pC;
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		BlockType* pLast = pEnd - 1;
+		*pLast = static_cast<bt>(MSU_MASK & *pLast);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-	// TODO: what is the real overflow condition?
-	// it is not carry == 1 as  say 1 + -1 sets the carry but is 0
-//		if (carry) throw integer_overflow();
+		// TODO: what is the real overflow condition?
+		// it is not carry == 1 as  say 1 + -1 sets the carry but is 0
+	//		if (carry) throw integer_overflow();
 #endif
-	* this = sum;
+		* this = sum;
+	}
 	return *this;
 }
 integer& operator-=(const integer& rhs) {
@@ -297,44 +304,54 @@ integer& operator-=(const integer& rhs) {
 #ifdef INTEGER_FAST_MUL
 integer& operator*=(const integer& rhs) {
 	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
-		// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
-		integer<nbits + 1, BlockType, NumberType> base(*this);
-		integer<nbits + 1, BlockType, NumberType> multiplicant(rhs);
-		bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
-		if (base.isneg()) {
-			base.twosComplement();
+		if constexpr (nrBlocks == 1) {
+			_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
 		}
-		if (multiplicant.isneg()) {
-			multiplicant.twosComplement();
-		}
-		clear();
-		for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
-			std::uint64_t segment(0);
-			for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
-				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+		else {
+			// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
+			integer<nbits + 1, BlockType, NumberType> base(*this);
+			integer<nbits + 1, BlockType, NumberType> multiplicant(rhs);
+			bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
+			if (base.isneg()) {
+				base.twosComplement();
+			}
+			if (multiplicant.isneg()) {
+				multiplicant.twosComplement();
+			}
+			clear();
+			for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+				std::uint64_t segment(0);
+				for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+					segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
 
-				if (i + j < static_cast<unsigned>(nrBlocks)) {
-					segment += _block[i + j];
-					_block[i + j] = static_cast<bt>(segment);
-					segment >>= bitsInBlock;
+					if (i + j < static_cast<unsigned>(nrBlocks)) {
+						segment += _block[i + j];
+						_block[i + j] = static_cast<bt>(segment);
+						segment >>= bitsInBlock;
+					}
 				}
 			}
+			if (resultIsNeg) twosComplement();
 		}
-		if (resultIsNeg) twosComplement();
 	}
 	else {  // whole and natural numbers are closed under multiplication (modulo)
-		integer<nbits, BlockType, NumberType> base(*this);
-		integer<nbits, BlockType, NumberType> multiplicant(rhs);
-		clear();
-		for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
-			std::uint64_t segment(0);
-			for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
-				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+		if constexpr (nrBlocks == 1) {
+			_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
+		}
+		else {
+			integer<nbits, BlockType, NumberType> base(*this);
+			integer<nbits, BlockType, NumberType> multiplicant(rhs);
+			clear();
+			for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+				std::uint64_t segment(0);
+				for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+					segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
 
-				if (i + j < static_cast<unsigned>(nrBlocks)) {
-					segment += _block[i + j];
-					_block[i + j] = static_cast<bt>(segment);
-					segment >>= bitsInBlock;
+					if (i + j < static_cast<unsigned>(nrBlocks)) {
+						segment += _block[i + j];
+						_block[i + j] = static_cast<bt>(segment);
+						segment >>= bitsInBlock;
+					}
 				}
 			}
 		}
