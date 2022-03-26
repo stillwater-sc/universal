@@ -743,7 +743,6 @@ integer& operator*=(const integer& rhs) {
 		clear();
 		if (0 == rhs) return *this;
 		constexpr size_t argbits = sizeof(rhs);
-		bool negative = rhs < 0;
 		int64_t v = rhs;
 		unsigned upper = (nbits <= _nbits ? nbits : argbits);
 		for (unsigned i = 0; i < upper && v != 0; ++i) {
@@ -751,7 +750,7 @@ integer& operator*=(const integer& rhs) {
 			v >>= 1;
 		}
 		if constexpr (nbits > 64) {
-			if (negative) {	// sign extend if negative
+			if (rhs < 0) {	// sign extend if negative
 				for (unsigned i = upper; i < nbits; ++i) {
 					setbit(i);
 				}
@@ -1210,6 +1209,8 @@ inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, const i
 	if (rhs_is_negative && !lhs_is_negative) return false;
 	// arguments have the same sign
 	integer<nbits, BlockType, NumberType> diff(0);
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+	// we need to catch and ignore the exception
 	try {
 		diff = (lhs - rhs);
 	}
@@ -1218,6 +1219,9 @@ inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, const i
 		const char* p = e.what();
 		if (p) --p;
 	}
+#else 
+	diff = (lhs - rhs);
+#endif
 	return diff.sign();
 }
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
