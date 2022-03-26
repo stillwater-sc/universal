@@ -157,6 +157,7 @@ int TestOverflowOnDivision(bool bReportIndividualTestCases, const Scalar& a, con
 	int nrOfFailedTestCases = 0;
 	try {
 		Scalar  c = a / b;
+		if (c == a && a != 0) ++nrOfFailedTestCases; // should never happen, but the compiler needs something
 	}
 	catch (const universal_arithmetic_exception& err) {
 		if (bReportIndividualTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
@@ -185,7 +186,8 @@ int TestNegativeSqrtArgument(bool bReportIndividualTestCases) {
 	int nrOfFailedTestCases = 0;
 	try {
 		Scalar a{ -1 };
-		sqrt(a);
+		Scalar b = sqrt(a);
+		if (b.ispos()) ++nrOfFailedTestCases; // should never happen, but the compiler needs something
 	}
 	catch (const universal_arithmetic_exception& err) {
 		if (bReportIndividualTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;

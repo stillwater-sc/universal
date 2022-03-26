@@ -68,7 +68,7 @@ template<size_t nbits, typename bt> bfquorem<nbits, bt> longdivision(const block
 // idiv_t for blocksignificant<nbits> to capture quotient and remainder during long division
 template<size_t nbits, typename bt>
 struct bfquorem {
-	bfquorem() {} // default constructors
+	bfquorem() : exceptionId{ 0 } {} // default constructors
 	int exceptionId;
 	blocksignificant<nbits, bt> quo; // quotient
 	blocksignificant<nbits, bt> rem; // remainder
