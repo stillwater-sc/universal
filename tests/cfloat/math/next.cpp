@@ -1,15 +1,26 @@
-// complex.cpp: test suite runner for complex (real, imag, conj) functions
+// next.cpp: test suite runner for ULP functions nextafter, nextforward
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default number system library configuration
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 
+namespace sw { namespace universal {
+
+template<typename TestType>
+int VerifyNextafter() {
+	int nrOfFailedTests = 0;
+
+	return nrOfFailedTests;
+}
+
+} } // namespace sw::universal
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -20,49 +31,46 @@
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit complex function validation";
-	std::string test_tag    = "complex failed: ";
+	std::string test_suite  = "cfloat<> nextafter/toward validation";
+	std::string test_tag    = "nextafter/toward failed";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
 
-	// manual exhaustive test
-
-	{
-	    constexpr size_t nbits = 8;
-	    constexpr size_t rbits = 4;
-	    constexpr bool arithmetic = Saturating;
-	    typedef uint8_t bt;
-	    using Real = fixpnt<nbits, rbits, arithmetic, bt>;
-	    std::complex<FixedPoint> a, b, c;
-
-	    a.real = 1.0f;
-	    a.imag = 1.0f;
-	}
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< cfloat< 4, 2> >(), "cfloat< 4,2>", "==");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
+
 #else
 
+#if REGRESSION_LEVEL_1
 
-	constexpr size_t nbits = 10;
-	constexpr size_t es = 0;
-	using Real = posit<nbits, es>;
-	std::complex<Real> x, y;
-	auto bla = std::complex<Real>(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
+#endif
 
-	std::cout << bla << '\n';
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

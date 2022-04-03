@@ -38,21 +38,26 @@ void GenerateTestCase(Ty a, Ty b) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "Posit Power function validation\n";
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "posit power function validation";
+	std::string test_tag    = "power failed: ";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "pow() failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -75,24 +80,24 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(bReportIndividualTestCases), "posit<2,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(reportTestCases), "posit<2,0>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(bReportIndividualTestCases), "posit<3,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(bReportIndividualTestCases), "posit<3,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(reportTestCases), "posit<3,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(reportTestCases), "posit<3,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(bReportIndividualTestCases), "posit<4,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(bReportIndividualTestCases), "posit<4,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(reportTestCases), "posit<4,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(reportTestCases), "posit<4,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(bReportIndividualTestCases), "posit<5,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(bReportIndividualTestCases), "posit<5,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(bReportIndividualTestCases), "posit<5,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(reportTestCases), "posit<5,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(reportTestCases), "posit<5,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(reportTestCases), "posit<5,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(bReportIndividualTestCases), "posit<8,0>", "pow");	
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(bReportIndividualTestCases), "posit<8,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(bReportIndividualTestCases), "posit<8,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(reportTestCases), "posit<8,0>", "pow");	
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(reportTestCases), "posit<8,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(reportTestCases), "posit<8,4>", "pow");
 
-	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(bReportIndividualTestCases), "posit<16,1>", "pow");
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
 
@@ -108,87 +113,84 @@ try {
 	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(bReportIndividualTestCases), "posit<2,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(reportTestCases), "posit<2,0>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(bReportIndividualTestCases), "posit<3,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(bReportIndividualTestCases), "posit<3,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(reportTestCases), "posit<3,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(reportTestCases), "posit<3,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(bReportIndividualTestCases), "posit<4,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(bReportIndividualTestCases), "posit<4,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(reportTestCases), "posit<4,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(reportTestCases), "posit<4,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(bReportIndividualTestCases), "posit<5,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(bReportIndividualTestCases), "posit<5,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(bReportIndividualTestCases), "posit<5,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(reportTestCases), "posit<5,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(reportTestCases), "posit<5,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(reportTestCases), "posit<5,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 0>(bReportIndividualTestCases), "posit<6,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 1>(bReportIndividualTestCases), "posit<6,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 2>(bReportIndividualTestCases), "posit<6,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 3>(bReportIndividualTestCases), "posit<6,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 0>(reportTestCases), "posit<6,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 1>(reportTestCases), "posit<6,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 2>(reportTestCases), "posit<6,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 3>(reportTestCases), "posit<6,3>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 0>(bReportIndividualTestCases), "posit<7,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 1>(bReportIndividualTestCases), "posit<7,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 2>(bReportIndividualTestCases), "posit<7,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 3>(bReportIndividualTestCases), "posit<7,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 4>(bReportIndividualTestCases), "posit<7,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 0>(reportTestCases), "posit<7,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 1>(reportTestCases), "posit<7,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 2>(reportTestCases), "posit<7,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 3>(reportTestCases), "posit<7,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 4>(reportTestCases), "posit<7,4>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(bReportIndividualTestCases), "posit<8,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(bReportIndividualTestCases), "posit<8,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 2>(bReportIndividualTestCases), "posit<8,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 3>(bReportIndividualTestCases), "posit<8,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(bReportIndividualTestCases), "posit<8,4>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 5>(bReportIndividualTestCases), "posit<8,5>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(reportTestCases), "posit<8,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(reportTestCases), "posit<8,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 2>(reportTestCases), "posit<8,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 3>(reportTestCases), "posit<8,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(reportTestCases), "posit<8,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 5>(reportTestCases), "posit<8,5>", "pow");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 0>(bReportIndividualTestCases), "posit<9,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 1>(bReportIndividualTestCases), "posit<9,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 2>(bReportIndividualTestCases), "posit<9,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 3>(bReportIndividualTestCases), "posit<9,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 4>(bReportIndividualTestCases), "posit<9,4>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 5>(bReportIndividualTestCases), "posit<9,5>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 6>(bReportIndividualTestCases), "posit<9,6>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 0>(reportTestCases), "posit<9,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 1>(reportTestCases), "posit<9,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 2>(reportTestCases), "posit<9,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 3>(reportTestCases), "posit<9,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 4>(reportTestCases), "posit<9,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 5>(reportTestCases), "posit<9,5>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 6>(reportTestCases), "posit<9,6>", "pow");
 	
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 0>(bReportIndividualTestCases), "posit<10,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 1>(bReportIndividualTestCases), "posit<10,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 2>(bReportIndividualTestCases), "posit<10,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 0>(reportTestCases), "posit<10,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 1>(reportTestCases), "posit<10,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 2>(reportTestCases), "posit<10,2>", "pow");
 	// fails due to regime representation not being able to be represented by double
-	// nrOfFailedTestCases += ReportTestResult(VerifyPowMethod<10, 7>(bReportIndividualTestCases), "posit<10,7>", "pow");
+	// nrOfFailedTestCases += ReportTestResult(VerifyPowMethod<10, 7>(reportTestCases), "posit<10,7>", "pow");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 0>(bReportIndividualTestCases), "posit<12,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 1>(bReportIndividualTestCases), "posit<12,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 2>(bReportIndividualTestCases), "posit<12,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 0>(reportTestCases), "posit<12,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 1>(reportTestCases), "posit<12,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 2>(reportTestCases), "posit<12,2>", "pow");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 0>(bReportIndividualTestCases), "posit<16,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(bReportIndividualTestCases), "posit<16,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 2>(bReportIndividualTestCases), "posit<16,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 0>(reportTestCases), "posit<16,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(reportTestCases), "posit<16,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 2>(reportTestCases), "posit<16,2>", "pow");
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

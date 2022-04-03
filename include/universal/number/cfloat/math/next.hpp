@@ -46,8 +46,8 @@ cfloat<nbits,es> nextafter(cfloat<nbits, es, bt> x, cfloat<nbits, es, bt> target
 }
 		
 template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es> nexttoward(cfloat<nbits, es, bt> x, cfloat<256, 5, bt> target) {
-	cfloat<256, 5, bt> _x(x);
+cfloat<nbits,es> nexttoward(cfloat<nbits, es, bt> x, cfloat<128, 15, bt> target) {
+	cfloat<128, 15, bt> _x(x);
 	if (_x == target) return x;
 	if (target.isnar()) {
 		if (_x.isneg()) {

@@ -31,18 +31,33 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setprecision(5);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 #define GENERATE_EXPONENT_TABLES 0
 
 int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = true;
+	std::string test_suite  = "posit exponent function validation";
+	std::string test_tag    = "exponent failed: ";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -65,155 +80,150 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<2, 0>("Manual Testing", bReportIndividualTestCases), "posit<2,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<2, 0>("Manual Testing", reportTestCases), "posit<2,0>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<3, 0>("Manual Testing", bReportIndividualTestCases), "posit<3,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<3, 1>("Manual Testing", bReportIndividualTestCases), "posit<3,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<3, 0>("Manual Testing", reportTestCases), "posit<3,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<3, 1>("Manual Testing", reportTestCases), "posit<3,1>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<4, 0>("Manual Testing", bReportIndividualTestCases), "posit<4,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<4, 1>("Manual Testing", bReportIndividualTestCases), "posit<4,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<4, 0>("Manual Testing", reportTestCases), "posit<4,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<4, 1>("Manual Testing", reportTestCases), "posit<4,1>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 0>("Manual Testing", bReportIndividualTestCases), "posit<5,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 1>("Manual Testing", bReportIndividualTestCases), "posit<5,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 2>("Manual Testing", bReportIndividualTestCases), "posit<5,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 0>("Manual Testing", reportTestCases), "posit<5,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 1>("Manual Testing", reportTestCases), "posit<5,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 2>("Manual Testing", reportTestCases), "posit<5,2>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 4>("Manual Testing", bReportIndividualTestCases), "posit<8,4>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 4>("Manual Testing", bReportIndividualTestCases), "posit<8,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 4>("Manual Testing", reportTestCases), "posit<8,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 4>("Manual Testing", reportTestCases), "posit<8,4>", "exp2");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
 	std::cout << "Posit exponential function validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<2, 0>(bReportIndividualTestCases), "posit<2,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<2, 0>(reportTestCases), "posit<2,0>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<3, 0>(bReportIndividualTestCases), "posit<3,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<3, 1>(bReportIndividualTestCases), "posit<3,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<3, 0>(reportTestCases), "posit<3,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<3, 1>(reportTestCases), "posit<3,1>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<4, 0>(bReportIndividualTestCases), "posit<4,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<4, 1>(bReportIndividualTestCases), "posit<4,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<4, 0>(reportTestCases), "posit<4,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<4, 1>(reportTestCases), "posit<4,1>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 0>(bReportIndividualTestCases), "posit<5,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 1>(bReportIndividualTestCases), "posit<5,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 2>(bReportIndividualTestCases), "posit<5,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 0>(reportTestCases), "posit<5,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 1>(reportTestCases), "posit<5,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<5, 2>(reportTestCases), "posit<5,2>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<6, 0>(bReportIndividualTestCases), "posit<6,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<6, 1>(bReportIndividualTestCases), "posit<6,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<6, 2>(bReportIndividualTestCases), "posit<6,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<6, 3>(bReportIndividualTestCases), "posit<6,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<6, 0>(reportTestCases), "posit<6,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<6, 1>(reportTestCases), "posit<6,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<6, 2>(reportTestCases), "posit<6,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<6, 3>(reportTestCases), "posit<6,3>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 0>(bReportIndividualTestCases), "posit<7,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 1>(bReportIndividualTestCases), "posit<7,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 2>(bReportIndividualTestCases), "posit<7,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 3>(bReportIndividualTestCases), "posit<7,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 4>(bReportIndividualTestCases), "posit<7,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 0>(reportTestCases), "posit<7,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 1>(reportTestCases), "posit<7,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 2>(reportTestCases), "posit<7,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 3>(reportTestCases), "posit<7,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<7, 4>(reportTestCases), "posit<7,4>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 0>(bReportIndividualTestCases), "posit<8,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 1>(bReportIndividualTestCases), "posit<8,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 2>(bReportIndividualTestCases), "posit<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 3>(bReportIndividualTestCases), "posit<8,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 4>(bReportIndividualTestCases), "posit<8,4>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 5>(bReportIndividualTestCases), "posit<8,5>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 0>(reportTestCases), "posit<8,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 1>(reportTestCases), "posit<8,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 2>(reportTestCases), "posit<8,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 3>(reportTestCases), "posit<8,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 4>(reportTestCases), "posit<8,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<8, 5>(reportTestCases), "posit<8,5>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 0>(bReportIndividualTestCases), "posit<9,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 1>(bReportIndividualTestCases), "posit<9,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 2>(bReportIndividualTestCases), "posit<9,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 3>(bReportIndividualTestCases), "posit<9,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 4>(bReportIndividualTestCases), "posit<9,4>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 5>(bReportIndividualTestCases), "posit<9,5>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 6>(bReportIndividualTestCases), "posit<9,6>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 0>(reportTestCases), "posit<9,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 1>(reportTestCases), "posit<9,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 2>(reportTestCases), "posit<9,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 3>(reportTestCases), "posit<9,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 4>(reportTestCases), "posit<9,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 5>(reportTestCases), "posit<9,5>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<9, 6>(reportTestCases), "posit<9,6>", "exp");
 	
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<10, 0>(bReportIndividualTestCases), "posit<10,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<10, 1>(bReportIndividualTestCases), "posit<10,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<10, 2>(bReportIndividualTestCases), "posit<10,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<10, 7>(bReportIndividualTestCases), "posit<10,7>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<10, 0>(reportTestCases), "posit<10,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<10, 1>(reportTestCases), "posit<10,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<10, 2>(reportTestCases), "posit<10,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<10, 7>(reportTestCases), "posit<10,7>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<12, 0>(bReportIndividualTestCases), "posit<12,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<12, 1>(bReportIndividualTestCases), "posit<12,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<12, 2>(bReportIndividualTestCases), "posit<12,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<12, 0>(reportTestCases), "posit<12,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<12, 1>(reportTestCases), "posit<12,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<12, 2>(reportTestCases), "posit<12,2>", "exp");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<16, 0>(bReportIndividualTestCases), "posit<16,0>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<16, 1>(bReportIndividualTestCases), "posit<16,1>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<16, 2>(bReportIndividualTestCases), "posit<16,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<16, 0>(reportTestCases), "posit<16,0>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<16, 1>(reportTestCases), "posit<16,1>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<16, 2>(reportTestCases), "posit<16,2>", "exp");
 
 	// base-2 exponent testing
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<2, 0>(bReportIndividualTestCases), "posit<2,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<2, 0>(reportTestCases), "posit<2,0>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<3, 0>(bReportIndividualTestCases), "posit<3,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<3, 1>(bReportIndividualTestCases), "posit<3,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<3, 0>(reportTestCases), "posit<3,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<3, 1>(reportTestCases), "posit<3,1>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<4, 0>(bReportIndividualTestCases), "posit<4,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<4, 1>(bReportIndividualTestCases), "posit<4,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<4, 0>(reportTestCases), "posit<4,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<4, 1>(reportTestCases), "posit<4,1>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<5, 0>(bReportIndividualTestCases), "posit<5,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<5, 1>(bReportIndividualTestCases), "posit<5,1>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<5, 2>(bReportIndividualTestCases), "posit<5,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<5, 0>(reportTestCases), "posit<5,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<5, 1>(reportTestCases), "posit<5,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<5, 2>(reportTestCases), "posit<5,2>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<6, 0>(bReportIndividualTestCases), "posit<6,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<6, 1>(bReportIndividualTestCases), "posit<6,1>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<6, 2>(bReportIndividualTestCases), "posit<6,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<6, 3>(bReportIndividualTestCases), "posit<6,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<6, 0>(reportTestCases), "posit<6,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<6, 1>(reportTestCases), "posit<6,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<6, 2>(reportTestCases), "posit<6,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<6, 3>(reportTestCases), "posit<6,3>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 0>(bReportIndividualTestCases), "posit<7,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 1>(bReportIndividualTestCases), "posit<7,1>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 2>(bReportIndividualTestCases), "posit<7,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 3>(bReportIndividualTestCases), "posit<7,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 4>(bReportIndividualTestCases), "posit<7,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 0>(reportTestCases), "posit<7,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 1>(reportTestCases), "posit<7,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 2>(reportTestCases), "posit<7,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 3>(reportTestCases), "posit<7,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<7, 4>(reportTestCases), "posit<7,4>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 0>(bReportIndividualTestCases), "posit<8,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 1>(bReportIndividualTestCases), "posit<8,1>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 2>(bReportIndividualTestCases), "posit<8,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 3>(bReportIndividualTestCases), "posit<8,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 4>(bReportIndividualTestCases), "posit<8,4>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 5>(bReportIndividualTestCases), "posit<8,5>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 0>(reportTestCases), "posit<8,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 1>(reportTestCases), "posit<8,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 2>(reportTestCases), "posit<8,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 3>(reportTestCases), "posit<8,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 4>(reportTestCases), "posit<8,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<8, 5>(reportTestCases), "posit<8,5>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 0>(bReportIndividualTestCases), "posit<9,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 1>(bReportIndividualTestCases), "posit<9,1>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 2>(bReportIndividualTestCases), "posit<9,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 3>(bReportIndividualTestCases), "posit<9,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 4>(bReportIndividualTestCases), "posit<9,4>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 5>(bReportIndividualTestCases), "posit<9,5>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 6>(bReportIndividualTestCases), "posit<9,6>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 0>(reportTestCases), "posit<9,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 1>(reportTestCases), "posit<9,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 2>(reportTestCases), "posit<9,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 3>(reportTestCases), "posit<9,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 4>(reportTestCases), "posit<9,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 5>(reportTestCases), "posit<9,5>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<9, 6>(reportTestCases), "posit<9,6>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<10, 0>(bReportIndividualTestCases), "posit<10,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<10, 1>(bReportIndividualTestCases), "posit<10,1>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<10, 2>(bReportIndividualTestCases), "posit<10,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<10, 7>(bReportIndividualTestCases), "posit<10,7>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<10, 0>(reportTestCases), "posit<10,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<10, 1>(reportTestCases), "posit<10,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<10, 2>(reportTestCases), "posit<10,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<10, 7>(reportTestCases), "posit<10,7>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<12, 0>(bReportIndividualTestCases), "posit<12,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<12, 1>(bReportIndividualTestCases), "posit<12,1>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<12, 2>(bReportIndividualTestCases), "posit<12,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<12, 0>(reportTestCases), "posit<12,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<12, 1>(reportTestCases), "posit<12,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<12, 2>(reportTestCases), "posit<12,2>", "exp2");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<16, 0>(bReportIndividualTestCases), "posit<16,0>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<16, 1>(bReportIndividualTestCases), "posit<16,1>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<16, 2>(bReportIndividualTestCases), "posit<16,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<16, 0>(reportTestCases), "posit<16,0>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<16, 1>(reportTestCases), "posit<16,1>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<16, 2>(reportTestCases), "posit<16,2>", "exp2");
 
 
-#if STRESS_TESTING
-	
-#endif  // STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
