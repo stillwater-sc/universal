@@ -28,6 +28,10 @@
 int main()
 try {
 	using namespace sw::universal;
+	using std::isnormal;
+	using std::isfinite;
+	using std::isinf;
+	using std::isnan;
 
 	std::string test_suite  = "posit classification function validation";
 	std::string test_tag    = "classification failed: ";
@@ -51,11 +55,11 @@ try {
 	posit<nbits, es> pone(1);
 
 	std::cout << std::boolalpha
-		<< "isnormal(NaN) = " << std::isnormal(NAN) << '\n'
-		<< "isnormal(Inf) = " << std::isnormal(INFINITY) << '\n'
-		<< "isnormal(0.0) = " << std::isnormal(0.0) << '\n'
-		<< "isnormal(DBL_MIN/2.0) = " << std::isnormal(MY_DBL_MIN / 2.0) << '\n'
-		<< "isnormal(1.0) = " << std::isnormal(1.0) << '\n';
+		<< "isnormal(NaN) = " << isnormal(NAN) << '\n'
+		<< "isnormal(Inf) = " << isnormal(INFINITY) << '\n'
+		<< "isnormal(0.0) = " << isnormal(0.0) << '\n'
+		<< "isnormal(DBL_MIN/2.0) = " << isnormal(MY_DBL_MIN / 2.0) << '\n'
+		<< "isnormal(1.0) = " << isnormal(1.0) << '\n';
 	std::cout << std::boolalpha
 		<< "isnormal(NaR) = " << isnormal(pnar) << '\n'
 		<< "isnormal(Inf) = " << isnormal(pinf) << '\n'
@@ -64,11 +68,11 @@ try {
 		<< "isnormal(1.0) = " << isnormal(pone) << '\n';
 
 	std::cout << std::boolalpha
-		<< "isfinite(NaN) = " << std::isfinite(NAN) << '\n'
-		<< "isfinite(Inf) = " << std::isfinite(INFINITY) << '\n'
-		<< "isfinite(0.0) = " << std::isfinite(0.0) << '\n'
-		<< "isfinite(DBL_MIN/2.0) = " << std::isfinite(MY_DBL_MIN / 2.0) << '\n'
-		<< "isfinite(1.0) = " << std::isfinite(1.0) << '\n';
+		<< "isfinite(NaN) = " << isfinite(NAN) << '\n'
+		<< "isfinite(Inf) = " << isfinite(INFINITY) << '\n'
+		<< "isfinite(0.0) = " << isfinite(0.0) << '\n'
+		<< "isfinite(DBL_MIN/2.0) = " << isfinite(MY_DBL_MIN / 2.0) << '\n'
+		<< "isfinite(1.0) = " << isfinite(1.0) << '\n';
 	std::cout << std::boolalpha
 		<< "isfinite(NaR) = " << isfinite(pnar) << '\n'
 		<< "isfinite(Inf) = " << isfinite(pinf) << '\n'
@@ -77,11 +81,11 @@ try {
 		<< "isfinite(1.0) = " << isfinite(pone) << '\n';
 
 	std::cout << std::boolalpha
-		<< "isinf(NaN) = " << std::isinf(NAN) << '\n'
-		<< "isinf(Inf) = " << std::isinf(INFINITY) << '\n'
-		<< "isinf(0.0) = " << std::isinf(0.0) << '\n'
-		<< "isinf(DBL_MIN/2.0) = " << std::isinf(MY_DBL_MIN / 2.0) << '\n'
-		<< "isinf(1.0) = " << std::isinf(1.0) << '\n';
+		<< "isinf(NaN) = " << isinf(NAN) << '\n'
+		<< "isinf(Inf) = " << isinf(INFINITY) << '\n'
+		<< "isinf(0.0) = " << isinf(0.0) << '\n'
+		<< "isinf(DBL_MIN/2.0) = " << isinf(MY_DBL_MIN / 2.0) << '\n'
+		<< "isinf(1.0) = " << isinf(1.0) << '\n';
 	std::cout << std::boolalpha
 		<< "isinf(NaR) = " << isinf(pnar) << '\n'
 		<< "isinf(Inf) = " << isinf(pinf) << '\n'
@@ -90,11 +94,11 @@ try {
 		<< "isinf(1.0) = " << isinf(pone) << '\n';
 
 	std::cout << std::boolalpha
-		<< "isnan(NaN) = " << std::isnan(NAN) << '\n'
-		<< "isnan(Inf) = " << std::isnan(INFINITY) << '\n'
-		<< "isnan(0.0) = " << std::isnan(0.0) << '\n'
-		<< "isnan(DBL_MIN/2.0) = " << std::isnan(MY_DBL_MIN / 2.0) << '\n'
-		<< "isnan(1.0) = " << std::isnan(1.0) << '\n';
+		<< "isnan(NaN) = " << isnan(NAN) << '\n'
+		<< "isnan(Inf) = " << isnan(INFINITY) << '\n'
+		<< "isnan(0.0) = " << isnan(0.0) << '\n'
+		<< "isnan(DBL_MIN/2.0) = " << isnan(MY_DBL_MIN / 2.0) << '\n'
+		<< "isnan(1.0) = " << isnan(1.0) << '\n';
 	std::cout << std::boolalpha
 		<< "isnan(NaR) = " << isnan(pnar) << '\n'
 		<< "isnan(Inf) = " << isnan(pinf) << '\n'

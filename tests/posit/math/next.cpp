@@ -6,14 +6,18 @@
 #include <universal/utility/directives.hpp>
 // use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/test_suite_mathlib.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -24,11 +28,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "Posit nextafter/forward function validation\n";
-	bool bReportIndividualTestCases = true;
+	std::string test_suite  = "posit<> nextafter/toward validation";
+	std::string test_tag    = "nextafter/toward";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "nextafter/toward failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -53,11 +58,18 @@ try {
 	std::cout << to_binary(nut) << " reference is " << to_binary(pminus) << '\n';
 
 
-	return (nrOfFailedTestCases > 0) ? EXIT_FAILURE : EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
 
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< posit<  8, 2> >(reportTestCases), "posit<  8, 2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< posit< 16, 2> >(reportTestCases), "posit< 16, 2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< posit< 32, 2> >(reportTestCases), "posit< 32, 2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< posit< 64, 2> >(reportTestCases), "posit< 64, 2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< posit< 80, 2> >(reportTestCases), "posit< 80, 2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< posit<128, 2> >(reportTestCases), "posit<128, 2>", test_tag);
 
 #endif
 
