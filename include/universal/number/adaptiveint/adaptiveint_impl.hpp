@@ -55,8 +55,9 @@ bool parse(const std::string& number, adaptiveint& v);
 // adaptiveint is an adaptive precision linear floating-point type
 class adaptiveint {
 	using BlockType = uint32_t;
+	static constexpr unsigned BITS_IN_BLOCK = 32;
 public:
-	adaptiveint() : sign(false), exp(0) { }
+	adaptiveint() : _sign(false), _blocks(0) { }
 
 	adaptiveint(const adaptiveint&) = default;
 	adaptiveint(adaptiveint&&) = default;
@@ -130,75 +131,75 @@ public:
 	}
 
 	// modifiers
-	inline void clear() { sign = false; exp = 0; coef.clear(); }
-	inline void setzero() { clear(); }
+	inline void clear() noexcept { _sign = false; _blocks.clear(); }
+	inline void setzero() noexcept { clear(); }
+	inline void setsign(bool sign = true) noexcept { _sign = sign; }
 	// use un-interpreted raw bits to set the bits of the adaptiveint
 	inline void setbits(unsigned long long value) {
 		clear();
+		std::uint32_t low  = static_cast<std::uint32_t>(value & 0x0000'0000'FFFF'FFFF);
+		std::uint32_t high = static_cast<std::uint32_t>((value & 0xFFFF'FFFF'0000'0000) >> BITS_IN_BLOCK);
+		if (high > 0) {
+			_blocks.push_back(high);
+			_blocks.push_back(low);
+		}
+		else if (low > 0) {
+			_blocks.push_back(low);
+		}
 	}
 	inline adaptiveint& assign(const std::string& txt) {
 		return *this;
 	}
 
 	// selectors
-	inline bool iszero() const { return !sign && coef.size() == 0; }
-	inline bool isone() const  { return true; }
-	inline bool isodd() const  { return false; }
-	inline bool iseven() const { return !isodd(); }
-	inline bool ispos() const  { return !sign; }
-	inline bool ineg() const   { return sign; }
-	inline int64_t scale() const { return exp + int64_t(coef.size()); }
+	inline bool iszero() const noexcept { return !_sign && _blocks.size() == 0; }
+	inline bool isone()  const noexcept { return true; }
+	inline bool isodd()  const noexcept { return (_blocks.size() > 0) ? (_blocks[0] & 0x1) : false; }
+	inline bool iseven() const noexcept { return !isodd(); }
+	inline bool ispos()  const noexcept { return !_sign; }
+	inline bool ineg()   const noexcept { return _sign; }
+
+	inline int scale()   const noexcept { return findMsb(); }
+
+	inline std::uint32_t block(unsigned b) const noexcept {
+		if (b < _blocks.size()) {
+			return _blocks[b];
+		}
+		return 0u;
+	}
+	inline unsigned size() const noexcept { return _blocks.size(); }
+
+
+	// findMsb takes an adaptiveint reference and returns the position of the most significant bit, -1 if v == 0
+	inline int findMsb() const noexcept {
+		int nrBlocks = _blocks.size();
+		if (nrBlocks == 0) return -1; // no significant bit found, all bits are zero
+		int msb = nrBlocks * BITS_IN_BLOCK;
+		for (int b = nrBlocks - 1; b >= 0; --b) {
+			std::uint32_t segment = _blocks[b];
+			std::uint32_t mask = 0x8000'0000;
+			for (int i = BITS_IN_BLOCK - 1; i >= 0; --i) {
+				--msb;
+				if (segment & mask) return msb;
+				mask >>= 1;
+			}
+		}
+		return -1; // no significant bit found, all bits are zero
+	}
 
 	// convert to string containing digits number of digits
 	std::string str(size_t nrDigits = 0) const {
-		if (iszero()) return std::string("0.0");
 
-		int64_t magnitude = scale();
-		if (magnitude > 1 || magnitude < 0) {
-			// use scientific notation for non-trivial exponent values
-			return sci_notation(nrDigits);
-		}
-
-		std::string str;
-		int64_t exponent = trimmed(nrDigits, str);
-
-		if (magnitude == 0) {
-			if (sign)
-				return std::string("-0.0") + str;
-			else
-				return std::string("0.0") + str;
-		}
-
-		std::string before_decimal = std::to_string(coef.back());
-
-		if (exponent >= 0) {
-			if (sign)
-				return std::string("-") + before_decimal + ".0";
-			else
-				return before_decimal + ".0";
-		}
-
-		// now the digits after the radix point
-		std::string after_decimal = str.substr((size_t)(str.size() + exponent), (size_t)-exponent);
-		if (sign)
-			return std::string("-") + before_decimal + "." + after_decimal;
-		else
-			return before_decimal + "." + after_decimal;
-
-		return std::string("bad");
+		return std::string("tbd");
 	}
 
-	void test(bool _sign, int _exp, std::vector<BlockType>& _coef) {
-		sign = _sign;
-		coef = _coef;
-		exp = _exp;
-	}
 protected:
-	bool                   sign;  // sign of the number: -1 if true, +1 if false, zero is positive
-	int64_t                exp;   // exponent of the number
-	std::vector<BlockType> coef;  // coefficients of the polynomial
+	bool                   _sign;    // sign of the number: -1 if true, +1 if false, zero is positive
+	std::vector<BlockType> _blocks;  // building blocks representing a 1's complement magnitude
 
 	// HELPER methods
+
+
 
 	// convert to native floating-point, use conversion rules to cast down to float and double
 	long double toNativeFloatingPoint() const {
@@ -212,65 +213,6 @@ protected:
 		long long base = (long long)rhs;
 		*this = base;
 		return *this;
-	}
-
-	// convert to string with nrDigits of significant digits and return the scale
-	// value = str + "10^" + scale
-	int64_t trimmed(size_t nrDigits, std::string& number) const {
-		if (coef.size() == 0) return 0;
-		int64_t exponent = exp;
-		size_t length = coef.size();
-		size_t index = 0; 
-		if (nrDigits == 0) {
-			nrDigits = length * 9;
-		}
-		else {
-			size_t nrSegments = (nrDigits + 17) / 9;
-			if (nrSegments < length) {
-				index = length - nrSegments;
-				exponent += index;
-				length = nrSegments;
-			}
-		}
-		exponent *= 9;
-		char segment[] = "012345678";
-		number.clear();
-		size_t i = length;
-		while (i-- > 0) {
-			BlockType w = coef[i];
-			for (int i = 8; i >= 0; --i) {
-				segment[i] = w % 10 + '0';
-				w /= 10;
-			}
-			number += segment;
-		}
-
-		// process leading zeros
-		size_t lz = 0;
-		while (number[lz] == '0') ++lz;
-		nrDigits += lz;
-		if (nrDigits < number.size()) {
-			exponent += number.size() - nrDigits;
-			number.resize(nrDigits);
-		}
-
-		return exponent;
-	}
-
-	std::string sci_notation(size_t nrDigits) const {
-		if (coef.size() == 0) return std::string("0.0");
-		std::string str;
-		int64_t exponent = trimmed(nrDigits, str);
-		// remove leading zeros
-		str.erase(str.begin(), std::find_if(str.begin(), str.end(), [](int ch) { return (ch != '0'); }));
-		exponent += str.size() - 1;
-		str = str.substr(0, 1) + "." + &str[1];
-		if (exponent != 0) {
-			str += "*10^";
-			str += std::to_string(exponent);
-		}
-		if (sign) str = std::string("-") + str;
-		return str;
 	}
 
 private:
@@ -313,12 +255,6 @@ inline adaptiveint& convert_unsigned(uint64_t v, adaptiveint& result) {
 
 inline adaptiveint abs(const adaptiveint& a) {
 	return a; // (a < 0 ? -a : a);
-}
-
-
-// findMsb takes an adaptiveint reference and returns the position of the most significant bit, -1 if v == 0
-inline signed findMsb(const adaptiveint& v) {
-	return -1; // no significant bit found, all bits are zero
 }
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
@@ -367,9 +303,21 @@ inline std::istream& operator>>(std::istream& istr, adaptiveint& p) {
 
 ////////////////// string operators
 
-inline std::string to_binary(const adaptiveint& a) {
+inline std::string to_binary(const adaptiveint& a, bool nibbleMarker = true) {
+	if (a.size() == 0) return std::string("0x0");
+
 	std::stringstream s;
-	s << "TBD";
+	s << "0x";
+	for (int b = a.size() - 1; b >= 0; --b) {
+		std::uint32_t segment = a.block(b);
+		std::uint32_t mask = 0x8000'0000;
+		for (int i = 31; i >= 0; --i) {
+			s << ((segment & mask) ? '1' : '0');
+			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+			mask >>= 1;
+		}
+	}
+
 	return s.str();
 }
 
