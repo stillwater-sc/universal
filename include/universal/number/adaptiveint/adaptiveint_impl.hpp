@@ -133,7 +133,7 @@ public:
 	inline void clear() { sign = false; exp = 0; coef.clear(); }
 	inline void setzero() { clear(); }
 	// use un-interpreted raw bits to set the bits of the adaptiveint
-	inline void setBits(unsigned long long value) {
+	inline void setbits(unsigned long long value) {
 		clear();
 	}
 	inline adaptiveint& assign(const std::string& txt) {
@@ -308,7 +308,7 @@ inline adaptiveint& convert_unsigned(uint64_t v, adaptiveint& result) {
 	return result;
 }
 
-////////////////////////    MPFLOAT functions   /////////////////////////////////
+////////////////////////    adaptiveint functions   /////////////////////////////////
 
 
 inline adaptiveint abs(const adaptiveint& a) {
@@ -317,7 +317,6 @@ inline adaptiveint abs(const adaptiveint& a) {
 
 
 // findMsb takes an adaptiveint reference and returns the position of the most significant bit, -1 if v == 0
-
 inline signed findMsb(const adaptiveint& v) {
 	return -1; // no significant bit found, all bits are zero
 }
@@ -368,6 +367,11 @@ inline std::istream& operator>>(std::istream& istr, adaptiveint& p) {
 
 ////////////////// string operators
 
+inline std::string to_binary(const adaptiveint& a) {
+	std::stringstream s;
+	s << "TBD";
+	return s.str();
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // adaptiveint - adaptiveint binary logic operators

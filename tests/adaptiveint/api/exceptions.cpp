@@ -1,6 +1,6 @@
-// add.cpp: test suite runner for addition on adaptive precision binary integers
+// exceptions.cpp: test suite runner for exceptions on adaptive precision binary integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -13,52 +13,34 @@
 #include <universal/number/adaptiveint/adaptiveint.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
-// generate specific test case that you can trace with the trace conditions in mpreal.hpp
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<typename Ty>
-void GenerateTestCase(Ty _a, Ty _b) {
-	Ty ref;
-	sw::universal::adaptiveint a, b, aref, asum;
-	a = _a;
-	b = _b;
-	asum = a + b;
-	ref = _a + _b;
-	aref = ref;
-	constexpr size_t ndigits = 30;
-	std::cout << std::setw(ndigits) << _a << " + " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << asum << " (reference: " << aref << ")   " ;
-	std::cout << (aref == asum ? "PASS" : "FAIL") << std::endl << std::endl;
-}
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite  = "adaptive precision binary integer exception validation";
+	std::string test_tag    = "adaptiveint exception failed";
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "adaptive precision binary integer addition failed: ";
-
 #if MANUAL_TESTING
-//	bool bReportIndividualTestCases = false;
-
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase(1, 2);
 
 #else
 
-	cout << "adaptive precision linear float addition validation\n";
 
 #if REGRESSION_LEVEL_1
 
