@@ -135,19 +135,31 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 16;
-		using blocktype = uint16_t;
-		integer<nbits, blocktype> a, b, c, d;
+		using blocktype = std::uint8_t;
+		integer<nbits, blocktype> a, b, c, d, e(SpecificValue::minpos);
 		a.maxpos();
 		b.maxneg();
 		c.minpos();
 		d.minneg();
-		if ((c + d) != 0) ++nrOfFailedTestCases;
 
+		if ((a + b) != -1) ++nrOfFailedTestCases;
+		if ((c + d) != 0) ++nrOfFailedTestCases;
 		if ((a + c) != b) ++nrOfFailedTestCases;
+		if ((a - a) != (b - b)) ++nrOfFailedTestCases;
+		e += e;
+		e -= c;
+		if (c != e) ++nrOfFailedTestCases;
+
+		a = 1;
+		b = 10;
+		c = 100;
+		d = 1000;
+		if (a * d != d) ++nrOfFailedTestCases;
+		if (d / c != b) ++nrOfFailedTestCases;
+		if (d % a != 0) ++nrOfFailedTestCases;
+
 		if (nrOfFailedTestCases - start > 0) {
-			std::cout << "FAIL: min/max\n";
-			std::cout << to_binary(c + d) << " vs " << to_binary(integer<nbits, blocktype>(0)) << '\n';
-			std::cout << to_binary(a + c) << " vs " << to_binary(b) << '\n';
+			std::cout << "FAIL: arithmetic\n";
 		}
 	}
 
@@ -162,6 +174,7 @@ try {
 		b = 2l;
 		c = 3ll;
 		d = 0ull;
+
 		// unsigned literals
 		if (a != 1u) ++nrOfFailedTestCases;
 		if (b != 2ul) ++nrOfFailedTestCases;
@@ -254,6 +267,19 @@ try {
 		if (3ll >= d) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL: logic operators\n";
+		}
+	}
+
+
+	///////////////////////////////////////////////////////////////////////////////////
+	// printing of large integers
+	{
+		integer<1024, std::uint32_t> a;
+		a = 1;
+		constexpr unsigned NR_DIGITS = 100;
+		for (unsigned i = 0; i < NR_DIGITS; ++i) {
+			std::cout << std::setw(NR_DIGITS) << a << '\n';
+			a = 10 * a;
 		}
 	}
 
