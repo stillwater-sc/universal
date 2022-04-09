@@ -95,19 +95,11 @@ public:
 	adaptiveint& operator=(const double rhs)             { return float_assign(rhs); }
 	adaptiveint& operator=(const long double rhs)        { return float_assign(rhs); }
 
-#ifdef ADAPTER_POSIT_AND_ADAPTIVEINT
-	// POSIT_CONCEPT_GENERALIZATION
-	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
-	template<typename PositType>
-	adaptiveint& operator=(const PositType& rhs) {
-		convert_p2i(rhs, *this);
-		return *this;
-	}
-#endif // ADAPTER_POSIT_AND_ADAPTIVEINT
 
 	// prefix operators
 	adaptiveint operator-() const {
 		adaptiveint negated(*this);
+		negated.setsign(!_sign);
 		return negated;
 	}
 
@@ -167,7 +159,7 @@ public:
 		}
 		return 0u;
 	}
-	inline unsigned size() const noexcept { return _blocks.size(); }
+	inline unsigned limbs() const noexcept { return _blocks.size(); }
 
 
 	// findMsb takes an adaptiveint reference and returns the position of the most significant bit, -1 if v == 0
@@ -304,11 +296,11 @@ inline std::istream& operator>>(std::istream& istr, adaptiveint& p) {
 ////////////////// string operators
 
 inline std::string to_binary(const adaptiveint& a, bool nibbleMarker = true) {
-	if (a.size() == 0) return std::string("0x0");
+	if (a.limbs() == 0) return std::string("0x0");
 
 	std::stringstream s;
 	s << "0x";
-	for (int b = a.size() - 1; b >= 0; --b) {
+	for (int b = a.limbs() - 1; b >= 0; --b) {
 		std::uint32_t segment = a.block(b);
 		std::uint32_t mask = 0x8000'0000;
 		for (int i = 31; i >= 0; --i) {
