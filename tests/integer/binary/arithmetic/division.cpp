@@ -227,7 +227,7 @@ try {
 
 	std::string test_suite  = "Integer Arithmetic Division verfication";
 	std::string test_tag    = "integer<> division";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';

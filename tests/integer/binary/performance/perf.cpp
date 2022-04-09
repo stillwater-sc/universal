@@ -65,6 +65,22 @@ namespace sw::universal::internal {
 		if (c == d) std::cout << " "; else std::cout << "-";
 	}
 
+	// Generic set of remainders for a given number system type
+	template<typename Scalar>
+	void RemainderWorkload(size_t NR_OPS) {
+		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
+		d = 2;
+		c = d;
+		b = c;
+		a = 3;
+		for (size_t i = 0; i < NR_OPS; ++i) {
+			c = a % b;
+			b = ++c;
+		}
+//		std::cout << a << ' ' << b << ' ' << c << ' ' << d << '\n';
+		if (c == d) std::cout << " "; else std::cout << "-";
+	}
+
 	// Generic string conversion
 	template<typename Scalar>
 	void SerializationWorkload(size_t NR_OPS) {
@@ -93,6 +109,12 @@ namespace sw::universal::internal {
 	 integer<16>   division          1048576 per        0.102274sec ->  10 Mops/sec
 	 integer<32>   division           524288 per       0.0648111sec ->   8 Mops/sec
 	 integer<64>   division           524288 per       0.0614304sec ->   8 Mops/sec
+
+	 after enabling constexpr of single block configurations
+	 integer< 8>   division          1048576 per       0.0046351sec -> 226 Mops/sec
+	 integer<16>   division          1048576 per       0.0039042sec -> 268 Mops/sec
+	 integer<32>   division           524288 per       0.0017782sec -> 294 Mops/sec
+	 integer<64>   division           524288 per       0.0017905sec -> 292 Mops/sec
 	 */
 
 	void TestArithmeticOperatorPerformance() {
@@ -100,22 +122,32 @@ namespace sw::universal::internal {
 		std::cout << "\nArithmetic operator performance\n";
 
 		size_t NR_OPS = 1024ull * 1024ull * 4ull;
-		PerformanceRunner("integer< 8>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 8, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<16, uint16_t> >, NR_OPS);
-		PerformanceRunner("integer<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<32, uint32_t> >, NR_OPS);
-		PerformanceRunner("integer<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<64, uint64_t> >, NR_OPS); // <--- lucky as carry does not matter in modulo arithmetic
+		PerformanceRunner("integer<  8>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<  8, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer< 16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 16, uint16_t> >, NR_OPS);
+		PerformanceRunner("integer< 32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS);
+		PerformanceRunner("integer< 64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS);
+		PerformanceRunner("integer<128>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS);	// need to drop down to uint32_t to catch carry prop
 
 		NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("integer< 8>   multiplication", MultiplicationWorkload< sw::universal::integer< 8, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<16>   multiplication", MultiplicationWorkload< sw::universal::integer<16, uint16_t> >, NR_OPS);
-		PerformanceRunner("integer<32>   multiplication", MultiplicationWorkload< sw::universal::integer<32, uint32_t> >, NR_OPS / 2);
-		PerformanceRunner("integer<64>   multiplication", MultiplicationWorkload< sw::universal::integer<64, uint64_t> >, NR_OPS / 2); // <---- TODO: support uint64_t
+		PerformanceRunner("integer<  8>   multiplication", MultiplicationWorkload< sw::universal::integer<  8, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer< 16>   multiplication", MultiplicationWorkload< sw::universal::integer< 16, uint16_t> >, NR_OPS);
+		PerformanceRunner("integer< 32>   multiplication", MultiplicationWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("integer< 64>   multiplication", MultiplicationWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS / 2);	// uint64_t works because it is a single block
+		PerformanceRunner("integer<128>   multiplication", MultiplicationWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
 
 		NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("integer< 8>   division      ", DivisionWorkload< sw::universal::integer< 8, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<16>   division      ", DivisionWorkload< sw::universal::integer<16, uint16_t> >, NR_OPS);
-		PerformanceRunner("integer<32>   division      ", DivisionWorkload< sw::universal::integer<32, uint32_t> >, NR_OPS / 2);
-		PerformanceRunner("integer<64>   division      ", DivisionWorkload< sw::universal::integer<64, uint32_t> >, NR_OPS / 2);    // <---- TODO: bug when BlockType is uint64_t divide fails
+		PerformanceRunner("integer<  8>   division      ", DivisionWorkload< sw::universal::integer<  8, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer< 16>   division      ", DivisionWorkload< sw::universal::integer< 16, uint16_t> >, NR_OPS);
+		PerformanceRunner("integer< 32>   division      ", DivisionWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("integer< 64>   division      ", DivisionWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS / 2);	// uint64_t works because it is a single block
+		PerformanceRunner("integer<128>   division      ", DivisionWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
+
+		NR_OPS = 1024ull * 1024ull;
+		PerformanceRunner("integer<  8>   remainder     ", RemainderWorkload< sw::universal::integer<  8, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer< 16>   remainder     ", RemainderWorkload< sw::universal::integer< 16, uint16_t> >, NR_OPS);
+		PerformanceRunner("integer< 32>   remainder     ", RemainderWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("integer< 64>   remainder     ", RemainderWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS / 2);	// uint64_t works because it is a single block
+		PerformanceRunner("integer<128>   remainder     ", RemainderWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
 	}
 
 
@@ -222,4 +254,43 @@ Processor: Intel Core i7-7500 CPU @ 2.70GHz, 2 cores, 4 threads, 15W mobile proc
 Memory   : 16GB
 System   : 64-bit Windows 10 Pro, Version 1803, x64-based processor, OS build 17134.165
 
+*/
+
+/*
+Date run : 3/01/2021
+Processor: AMD Ryzen 7 2700x CPU @ 3.70GHz, 8 cores, 16 threads, 75W desktop processor
+Memory   : 32GB
+System   : 64-bit Windows 11 Pro, Version 21H2, x64-based processor, OS build 22000.556
+
+Arithmetic operator performance
+ integer<  8>   add/subtract      4194304 per       0.0057685sec -> 727 Mops/sec
+ integer< 16>   add/subtract      4194304 per       0.0052956sec -> 792 Mops/sec
+ integer< 32>   add/subtract      4194304 per       0.0045509sec -> 921 Mops/sec
+ integer< 64>   add/subtract      4194304 per       0.0047554sec -> 882 Mops/sec
+ integer<128>   add/subtract      4194304 per       0.0643765sec ->  65 Mops/sec
+ integer<  8>   multiplication    1048576 per       0.0011309sec -> 927 Mops/sec
+ integer< 16>   multiplication    1048576 per       0.0011109sec -> 943 Mops/sec
+ integer< 32>   multiplication     524288 per       0.0004292sec ->   1 Gops/sec
+ integer< 64>   multiplication     524288 per       0.0004168sec ->   1 Gops/sec
+ integer<128>   multiplication     524288 per       0.0633141sec ->   8 Mops/sec
+ integer<  8>   division          1048576 per       0.0046351sec -> 226 Mops/sec
+ integer< 16>   division          1048576 per       0.0039042sec -> 268 Mops/sec
+ integer< 32>   division           524288 per       0.0017782sec -> 294 Mops/sec
+ integer< 64>   division           524288 per       0.0017905sec -> 292 Mops/sec
+ integer<128>   division           524288 per       0.0697476sec ->   7 Mops/sec
+ integer<  8>   remainder         1048576 per       0.0036293sec -> 288 Mops/sec
+ integer< 16>   remainder         1048576 per       0.0035849sec -> 292 Mops/sec
+ integer< 32>   remainder          524288 per        0.001824sec -> 287 Mops/sec
+ integer< 64>   remainder          524288 per       0.0017972sec -> 291 Mops/sec
+ integer<128>   remainder          524288 per       0.0748564sec ->   7 Mops/sec
+
+Serialization operator performance
+integer<   8>  ostream                512 per       0.0015546sec -> 329 Kops/sec
+integer<  16>  ostream                512 per       0.0028714sec -> 178 Kops/sec
+integer<  32>  ostream                512 per       0.0048707sec -> 105 Kops/sec
+integer<  64>  ostream                512 per       0.0097528sec ->  52 Kops/sec
+integer< 128>  ostream                512 per       0.0227661sec ->  22 Kops/sec
+integer< 256>  ostream                512 per       0.0931414sec ->   5 Kops/sec
+integer< 512>  ostream                512 per        0.246753sec ->   2 Kops/sec
+integer<1024>  ostream                512 per        0.862064sec -> 593  ops/sec
 */

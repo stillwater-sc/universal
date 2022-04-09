@@ -377,13 +377,49 @@ integer& operator*=(const integer& rhs) {
 	}
 #endif
 	integer& operator/=(const integer& rhs) {
-		idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
-		*this = divresult.quot;
+#undef INTEGER_SINGLE_BLOCK_DIV
+#ifdef INTEGER_SINGLE_BLOCK_DIV
+		if constexpr (nbits == (sizeof(BlockType)*8) ) {
+			if (rhs._block[0] == 0) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				throw integer_divide_by_zero{};
+#else
+				std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+			}
+			_block[0] = _block[0] / rhs._block[0];  // <-- _block[0] needs a conversion to signed to be correct
+			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
+		}
+		else {
+#endif
+			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
+			*this = divresult.quot;
+#ifdef INTEGER_SINGLE_BLOCK_DIV
+	}
+#endif
 		return *this;
 	}
 	integer& operator%=(const integer& rhs) {
-		idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
-		*this = divresult.rem;
+#undef INTEGER_SINGLE_BLOCK_REM
+#ifdef INTEGER_SINGLE_BLOCK_REM
+		if constexpr (nbits == (sizeof(BlockType) * 8)) {
+			if (rhs._block[0] == 0) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				throw integer_divide_by_zero{};
+#else
+				std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+			}
+			_block[0] = _block[0] % rhs._block[0];   // <-- _block[0] needs a conversion to signed to be correct
+			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
+		}
+		else {
+#endif
+			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
+			*this = divresult.rem;
+#ifdef INTEGER_SINGLE_BLOCK_REM
+		}
+#endif
 		return *this;
 	}
 	integer& operator<<=(int bitsToShift) {
@@ -952,7 +988,7 @@ void remainder(const integer<nbits, BlockType, NumberType>& a, const integer<nbi
 // divide integer<nbits, BlockType, NumberType> a and b and return result argument
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>& _a, const integer<nbits, BlockType, NumberType>& _b) {
-	if (_b == integer<nbits, BlockType, NumberType>(0)) {
+	if (_b.iszero()) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
