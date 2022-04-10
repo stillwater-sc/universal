@@ -659,10 +659,9 @@ public:
 	}
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
-	// INTEGER_TYPE_CONCEPT_GENERALIZATION
-	// TODO: SFINAE to assure we only match an integer<nbits> concept
-	template<typename IntegerType>
-	posit& operator=(const IntegerType& rhs) {
+	// convenience assignment operator
+	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+	posit& operator=(const integer<nbits, BlockType, NumberType>& rhs) {
 		convert_i2p(rhs, *this);
 		return *this;
 	}

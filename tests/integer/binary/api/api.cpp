@@ -293,9 +293,30 @@ if (nrOfFailedTestCases - start > 0) {
 		int8_t a0s = int8_t(a0);
 		int8_t b0s = int8_t(b0);
 		uint8_t c0 = static_cast<uint8_t>(a0s / b0s);
-		std::cout << to_binary(c0, 8) << " : " << unsigned(c0) << '\n';
+		std::cout << to_binary(c0, 8) << " : " << unsigned(c0) << '\n';  // -128/100 = -1
 
 	}
+	{
+		constexpr size_t nbits = 8;
+		integer<nbits> a{ 1 };
+		std::cout << std::oct;
+		for (unsigned i = 0; i < nbits; ++i) {
+			std::cout << to_binary(a) << " : ";
+			std::cout << '0' << a << '\n';
+			a *= 2;
+		}
+	}
+	{
+		constexpr size_t nbits = 8;
+		integer<nbits> a{ 1 };
+		std::cout << std::hex;
+		for (unsigned i = 0; i < nbits; ++i) {
+			std::cout << to_binary(a) << " : ";
+			std::cout << "0x" << a << '\n';
+			a *= 2;
+		}
+	}
+	std::cout << std::dec;
 	{
 		integer<32> a{ 1 };
 		std::cout << std::showpos;
