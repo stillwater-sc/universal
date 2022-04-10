@@ -322,7 +322,7 @@ if (nrOfFailedTestCases - start > 0) {
 		std::cout << std::showpos;
 		for (unsigned i = 0; i < 32; ++i) {
 			std::cout << to_binary(a) << " : ";
-			std::cout << a << '\n';
+			std::cout << std::setw(11) << a << '\n';
 			a *= 2;
 		}
 		a.setbits(0x8000'0001);
@@ -332,12 +332,12 @@ if (nrOfFailedTestCases - start > 0) {
 		a = -1;
 		for (unsigned i = 0; i < 32; ++i) {
 			std::cout << to_binary(a) << " : ";
-			std::cout << a << '\n';
+			std::cout << std::setw(11) << a << '\n';
 			a *= 2;
 		}
 		int32_t _a = -1;
 		for (unsigned i = 0; i < 32; ++i) {
-			std::cout << to_binary(_a, 32, false) << " : " << _a << '\n';
+			std::cout << to_binary(_a, 32, false) << " : " << std::setw(11) << _a << '\n';
 			_a *= 2;
 		}
 		_a = 0x8000'0001;

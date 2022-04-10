@@ -1179,6 +1179,7 @@ std::string to_string(const integer<nbits, BlockType, NumberType>& n) {
 
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits, BlockType, NumberType>& n) {
+	using IntegerBase = integer<nbits, BlockType, NumberType>;
 	using Integer = integer<nbits+1, BlockType, NumberType>;  // got to be 1 bigger to be able to represent maxneg in 2's complement form
 
 	// set the base of the target number system to convert to
@@ -1229,19 +1230,19 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 
 		Integer block10;
 		unsigned digits_in_block10 = 2;
-		if constexpr (n.bitsInBlock == 8) {
+		if constexpr (IntegerBase::bitsInBlock == 8) {
 			block10 = 100;
 			digits_in_block10 = 2;
 		}
-		else if constexpr (n.bitsInBlock == 16) {
+		else if constexpr (IntegerBase::bitsInBlock == 16) {
 			block10 = 10'000;
 			digits_in_block10 = 4;
 		}
-		else if constexpr (n.bitsInBlock == 32) {
+		else if constexpr (IntegerBase::bitsInBlock == 32) {
 			block10 = 1'000'000'000;
 			digits_in_block10 = 9;
 		}
-		else if constexpr (n.bitsInBlock == 64) {
+		else if constexpr (IntegerBase::bitsInBlock == 64) {
 			block10 = 1'000'000'000'000'000'000;
 			digits_in_block10 = 18;
 		}
