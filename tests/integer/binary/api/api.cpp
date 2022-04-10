@@ -61,9 +61,11 @@ try {
 		using Integer = integer<16, uint16_t>;
 		Integer a{ 0 };
 		std::cout << "type identifier : " << type_tag(a) << '\n';
-		std::cout << "type identifier : " << type_tag(integer<8>()) << '\n';
-		std::cout << "type identifier : " << type_tag(integer<8, uint16_t>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer< 8>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer< 8, uint16_t>()) << '\n';
 		std::cout << "type identifier : " << type_tag(integer<32, uint32_t>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer<64, uint64_t>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer<96, uint32_t>()) << '\n';
 	}
 
 	{
@@ -173,113 +175,166 @@ try {
 		a = 1;
 		b = 2l;
 		c = 3ll;
-		d = 0ull;
+d = 0ull;
 
-		// unsigned literals
-		if (a != 1u) ++nrOfFailedTestCases;
-		if (b != 2ul) ++nrOfFailedTestCases;
-		if (c != 3ull) ++nrOfFailedTestCases;
-		if (1u != a) ++nrOfFailedTestCases;
-		if (2ul != b) ++nrOfFailedTestCases;
-		if (3ull != c) ++nrOfFailedTestCases;
-		if (d != c - b - a) ++nrOfFailedTestCases;
-		// signed literals
-		if (-a != -1) ++nrOfFailedTestCases;
-		if (-b != -2l) ++nrOfFailedTestCases;
-		if (-c != -3ll) ++nrOfFailedTestCases;
-		if (-1 != -a) ++nrOfFailedTestCases;
-		if (-2l != -b) ++nrOfFailedTestCases;
-		if (-3ll != -c) ++nrOfFailedTestCases;
+// unsigned literals
+if (a != 1u) ++nrOfFailedTestCases;
+if (b != 2ul) ++nrOfFailedTestCases;
+if (c != 3ull) ++nrOfFailedTestCases;
+if (1u != a) ++nrOfFailedTestCases;
+if (2ul != b) ++nrOfFailedTestCases;
+if (3ull != c) ++nrOfFailedTestCases;
+if (d != c - b - a) ++nrOfFailedTestCases;
+// signed literals
+if (-a != -1) ++nrOfFailedTestCases;
+if (-b != -2l) ++nrOfFailedTestCases;
+if (-c != -3ll) ++nrOfFailedTestCases;
+if (-1 != -a) ++nrOfFailedTestCases;
+if (-2l != -b) ++nrOfFailedTestCases;
+if (-3ll != -c) ++nrOfFailedTestCases;
 
-		// less than unsigned literal
-		d = 4.0f;
-		if (d < 1u) ++nrOfFailedTestCases;
-		if (d < 2ul) ++nrOfFailedTestCases;
-		if (d < 3ull) ++nrOfFailedTestCases;
-		d = 0.0;
-		if (1u < d) ++nrOfFailedTestCases;
-		if (2ul < d) ++nrOfFailedTestCases;
-		if (3ull < d) ++nrOfFailedTestCases;
+// less than unsigned literal
+d = 4.0f;
+if (d < 1u) ++nrOfFailedTestCases;
+if (d < 2ul) ++nrOfFailedTestCases;
+if (d < 3ull) ++nrOfFailedTestCases;
+d = 0.0;
+if (1u < d) ++nrOfFailedTestCases;
+if (2ul < d) ++nrOfFailedTestCases;
+if (3ull < d) ++nrOfFailedTestCases;
 
-		// greater than unsigned literal
-		if (d > 1u) ++nrOfFailedTestCases;
-		if (d > 2ul) ++nrOfFailedTestCases;
-		if (d > 3ull) ++nrOfFailedTestCases;
-		d = 4ll;
-		if (1u > d) ++nrOfFailedTestCases;
-		if (2ul > d) ++nrOfFailedTestCases;
-		if (3ull > d) ++nrOfFailedTestCases;
+// greater than unsigned literal
+if (d > 1u) ++nrOfFailedTestCases;
+if (d > 2ul) ++nrOfFailedTestCases;
+if (d > 3ull) ++nrOfFailedTestCases;
+d = 4ll;
+if (1u > d) ++nrOfFailedTestCases;
+if (2ul > d) ++nrOfFailedTestCases;
+if (3ull > d) ++nrOfFailedTestCases;
 
-		// less than or equal unsigned literal
-		if (d <= 1u) ++nrOfFailedTestCases;
-		if (d <= 2ul) ++nrOfFailedTestCases;
-		if (d <= 3ull) ++nrOfFailedTestCases;
-		d = 0.0f;
-		if (1u <= d) ++nrOfFailedTestCases;
-		if (2ul <= d) ++nrOfFailedTestCases;
-		if (3ull <= d) ++nrOfFailedTestCases;
+// less than or equal unsigned literal
+if (d <= 1u) ++nrOfFailedTestCases;
+if (d <= 2ul) ++nrOfFailedTestCases;
+if (d <= 3ull) ++nrOfFailedTestCases;
+d = 0.0f;
+if (1u <= d) ++nrOfFailedTestCases;
+if (2ul <= d) ++nrOfFailedTestCases;
+if (3ull <= d) ++nrOfFailedTestCases;
 
-		// greater than or equal unsigned literal
-		if (d >= 1u) ++nrOfFailedTestCases;
-		if (d >= 2ul) ++nrOfFailedTestCases;
-		if (d >= 3ull) ++nrOfFailedTestCases;
-		d = 4.0;
-		if (1u >= d) ++nrOfFailedTestCases;
-		if (2ul >= d) ++nrOfFailedTestCases;
-		if (3ull >= d) ++nrOfFailedTestCases;
+// greater than or equal unsigned literal
+if (d >= 1u) ++nrOfFailedTestCases;
+if (d >= 2ul) ++nrOfFailedTestCases;
+if (d >= 3ull) ++nrOfFailedTestCases;
+d = 4.0;
+if (1u >= d) ++nrOfFailedTestCases;
+if (2ul >= d) ++nrOfFailedTestCases;
+if (3ull >= d) ++nrOfFailedTestCases;
 
-		// comparisons with signed literals
-		// less than signed literal
-		d = 4.0f;
-		if (d < 1) ++nrOfFailedTestCases;
-		if (d < 2l) ++nrOfFailedTestCases;
-		if (d < 3ll) ++nrOfFailedTestCases;
-		d = 0.0;
-		if (1 < d) ++nrOfFailedTestCases;
-		if (2l < d) ++nrOfFailedTestCases;
-		if (3ll < d) ++nrOfFailedTestCases;
+// comparisons with signed literals
+// less than signed literal
+d = 4.0f;
+if (d < 1) ++nrOfFailedTestCases;
+if (d < 2l) ++nrOfFailedTestCases;
+if (d < 3ll) ++nrOfFailedTestCases;
+d = 0.0;
+if (1 < d) ++nrOfFailedTestCases;
+if (2l < d) ++nrOfFailedTestCases;
+if (3ll < d) ++nrOfFailedTestCases;
 
-		// greater than signed literal
-		if (d > 1) ++nrOfFailedTestCases;
-		if (d > 2l) ++nrOfFailedTestCases;
-		if (d > 3ll) ++nrOfFailedTestCases;
-		d = 4ll;
-		if (1 > d) ++nrOfFailedTestCases;
-		if (2l > d) ++nrOfFailedTestCases;
-		if (3ll > d) ++nrOfFailedTestCases;
+// greater than signed literal
+if (d > 1) ++nrOfFailedTestCases;
+if (d > 2l) ++nrOfFailedTestCases;
+if (d > 3ll) ++nrOfFailedTestCases;
+d = 4ll;
+if (1 > d) ++nrOfFailedTestCases;
+if (2l > d) ++nrOfFailedTestCases;
+if (3ll > d) ++nrOfFailedTestCases;
 
-		// less than or equal signed literal
-		if (d <= 1) ++nrOfFailedTestCases;
-		if (d <= 2l) ++nrOfFailedTestCases;
-		if (d <= 3ll) ++nrOfFailedTestCases;
-		d = 0.0f;
-		if (1 <= d) ++nrOfFailedTestCases;
-		if (2l <= d) ++nrOfFailedTestCases;
-		if (3ll <= d) ++nrOfFailedTestCases;
+// less than or equal signed literal
+if (d <= 1) ++nrOfFailedTestCases;
+if (d <= 2l) ++nrOfFailedTestCases;
+if (d <= 3ll) ++nrOfFailedTestCases;
+d = 0.0f;
+if (1 <= d) ++nrOfFailedTestCases;
+if (2l <= d) ++nrOfFailedTestCases;
+if (3ll <= d) ++nrOfFailedTestCases;
 
-		// greater than or equal signed literal
-		if (d >= 1) ++nrOfFailedTestCases;
-		if (d >= 2l) ++nrOfFailedTestCases;
-		if (d >= 3ll) ++nrOfFailedTestCases;
-		d = 4.0;
-		if (1 >= d) ++nrOfFailedTestCases;
-		if (2l >= d) ++nrOfFailedTestCases;
-		if (3ll >= d) ++nrOfFailedTestCases;
-		if (nrOfFailedTestCases - start > 0) {
-			std::cout << "FAIL: logic operators\n";
-		}
+// greater than or equal signed literal
+if (d >= 1) ++nrOfFailedTestCases;
+if (d >= 2l) ++nrOfFailedTestCases;
+if (d >= 3ll) ++nrOfFailedTestCases;
+d = 4.0;
+if (1 >= d) ++nrOfFailedTestCases;
+if (2l >= d) ++nrOfFailedTestCases;
+if (3ll >= d) ++nrOfFailedTestCases;
+if (nrOfFailedTestCases - start > 0) {
+	std::cout << "FAIL: logic operators\n";
+}
 	}
 
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// printing of large integers
 	{
+		constexpr size_t nbits = 8;
+		integer<nbits> a{ 1 };
+		std::cout << std::showpos;
+		for (unsigned i = 0; i < nbits; ++i) {
+			std::cout << to_binary(a) << " : ";
+			std::cout << a << '\n';
+			a *= 2;
+		}
+		a.setbits(0x80);
+		std::cout << a << '\n';
+
+		uint8_t a0, b0;
+		a0 = 0x80;
+		b0 = 100;
+		int8_t a0s = int8_t(a0);
+		int8_t b0s = int8_t(b0);
+		uint8_t c0 = static_cast<uint8_t>(a0s / b0s);
+		std::cout << to_binary(c0, 8) << " : " << unsigned(c0) << '\n';
+
+	}
+	{
+		integer<32> a{ 1 };
+		std::cout << std::showpos;
+		for (unsigned i = 0; i < 32; ++i) {
+			std::cout << to_binary(a) << " : ";
+			std::cout << a << '\n';
+			a *= 2;
+		}
+		a.setbits(0x8000'0001);
+		std::cout << to_binary(a) << " : ";
+		std::cout << a << '\n';
+		std::cout << std::noshowpos;
+		a = -1;
+		for (unsigned i = 0; i < 32; ++i) {
+			std::cout << to_binary(a) << " : ";
+			std::cout << a << '\n';
+			a *= 2;
+		}
+		int32_t _a = -1;
+		for (unsigned i = 0; i < 32; ++i) {
+			std::cout << to_binary(_a, 32, false) << " : " << _a << '\n';
+			_a *= 2;
+		}
+		_a = 0x8000'0001;
+		std::cout << to_binary(_a, 32, false) << " : " << _a << '\n';
+	}
+
+	{
+		integer<32> a{ 128 };
+		std::cout << a << '\n';
+	}
+
+	{
 		integer<1024, std::uint32_t> a;
 		a = 1;
-		constexpr unsigned NR_DIGITS = 100;
+		constexpr unsigned NR_DIGITS = 10;
 		for (unsigned i = 0; i < NR_DIGITS; ++i) {
 			std::cout << std::setw(NR_DIGITS) << a << '\n';
-			a = 10 * a;
+			a = a * 10;
 		}
 	}
 

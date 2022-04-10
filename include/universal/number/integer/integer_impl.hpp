@@ -377,8 +377,6 @@ integer& operator*=(const integer& rhs) {
 	}
 #endif
 	integer& operator/=(const integer& rhs) {
-#undef INTEGER_SINGLE_BLOCK_DIV
-#ifdef INTEGER_SINGLE_BLOCK_DIV
 		if constexpr (nbits == (sizeof(BlockType)*8) ) {
 			if (rhs._block[0] == 0) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -387,21 +385,27 @@ integer& operator*=(const integer& rhs) {
 				std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 			}
-			_block[0] = _block[0] / rhs._block[0];  // <-- _block[0] needs a conversion to signed to be correct
+			if constexpr (sizeof(BlockType) == 1) {
+				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 2) {
+				_block[0] = static_cast<bt>(std::int16_t(_block[0]) / std::int16_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 4) {
+				_block[0] = static_cast<bt>(std::int32_t(_block[0]) / std::int32_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 8) {
+				_block[0] = static_cast<bt>(std::int64_t(_block[0]) / std::int64_t(rhs._block[0]));		
+			}
 			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
 		}
 		else {
-#endif
 			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
 			*this = divresult.quot;
-#ifdef INTEGER_SINGLE_BLOCK_DIV
-	}
-#endif
+		}
 		return *this;
 	}
 	integer& operator%=(const integer& rhs) {
-#undef INTEGER_SINGLE_BLOCK_REM
-#ifdef INTEGER_SINGLE_BLOCK_REM
 		if constexpr (nbits == (sizeof(BlockType) * 8)) {
 			if (rhs._block[0] == 0) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -410,16 +414,26 @@ integer& operator*=(const integer& rhs) {
 				std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 			}
-			_block[0] = _block[0] % rhs._block[0];   // <-- _block[0] needs a conversion to signed to be correct
+			if constexpr (sizeof(BlockType) == 1) {
+				_block[0] = static_cast<bt>(std::int8_t(_block[0]) % std::int8_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 2) {
+				_block[0] = static_cast<bt>(std::int16_t(_block[0]) % std::int16_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 4) {
+				_block[0] = static_cast<bt>(std::int32_t(_block[0]) % std::int32_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 8) {
+				_block[0] = static_cast<bt>(std::int64_t(_block[0]) % std::int64_t(rhs._block[0]));
+			}
 			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
 		}
 		else {
-#endif
+
 			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
 			*this = divresult.rem;
-#ifdef INTEGER_SINGLE_BLOCK_REM
 		}
-#endif
+
 		return *this;
 	}
 	integer& operator<<=(int bitsToShift) {
@@ -1182,6 +1196,109 @@ std::string to_string(const integer<nbits, BlockType, NumberType>& n) {
 	return convert_to_decimal_string(n);
 }
 
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits, BlockType, NumberType>& n) {
+	using Integer = integer<nbits, BlockType, NumberType>;
+
+	// set the base of the target number system to convert to
+	int base = 10;
+	if ((flags & std::ios_base::oct) == std::ios_base::oct) base = 8;
+	if ((flags & std::ios_base::hex) == std::ios_base::hex) base = 16;
+
+	std::string result;
+	if (base == 8 || base == 16) {
+		if (n.sign()) throw std::runtime_error("negative number printing for base 8 or 16 is not supported");
+
+		BlockType shift = base == 8 ? 3 : 4;
+		BlockType mask = static_cast<BlockType>((1u << shift) - 1);
+		Integer t(n);
+		result.assign(nbits / shift + ((nbits % shift) ? 1 : 0), '0');
+		std::string::difference_type pos = result.size() - 1;
+		for (size_t i = 0; i < nbits / static_cast<size_t>(shift); ++i) {
+			char c = '0' + static_cast<char>(t.block(0) & mask);
+			if (c > '9')
+				c += 'A' - '9' - 1;
+			result[pos--] = c;
+			t >>= shift;
+		}
+		if (nbits % shift) {
+			mask = static_cast<BlockType>((1u << (nbits % shift)) - 1);
+			char c = '0' + static_cast<char>(t.block(0) & mask);
+			if (c > '9')
+				c += 'A' - '9';
+			result[pos] = c;
+		}
+		//
+		// Get rid of leading zeros:
+		//
+		std::string::size_type n = result.find_first_not_of('0');
+		if (!result.empty() && (n == std::string::npos))
+			n = result.size() - 1;
+		result.erase(0, n);
+		if (flags & std::ios_base::showbase) {
+			const char* pp = base == 8 ? "0" : "0x";
+			result.insert(static_cast<std::string::size_type>(0), pp);
+		}
+	}
+	else {
+		result.assign(nbits / 3 + 1u, '0');
+		std::string::difference_type pos = result.size() - 1;
+		Integer t(n);
+		if (t.sign()) t.twosComplement();  // TODO: how to deal with maxneg which has no positive representation in 2's complement?
+
+		Integer block10;
+		unsigned digits_in_block10 = 2;
+		if constexpr (n.bitsInBlock == 8) {
+			block10 = 100;
+			digits_in_block10 = 2;
+		}
+		else if constexpr (n.bitsInBlock == 16) {
+			block10 = 10'000;
+			digits_in_block10 = 4;
+		}
+		else if constexpr (n.bitsInBlock == 32) {
+			block10 = 1'000'000'000;
+			digits_in_block10 = 9;
+		}
+		else if constexpr (n.bitsInBlock == 64) {
+			block10 = 1'000'000'000'000'000'000;
+			digits_in_block10 = 18;
+		}
+
+		while (!t.iszero()) {
+
+			Integer t2 = t / block10;
+			Integer r  = t % block10;
+//			std::cout << "t  " << long(t) << '\n';
+//			std::cout << "t2 " << long(t2) << '\n';
+//			std::cout << "r  " << long(r) << '\n';
+			t = t2;
+			BlockType v = r.block(0);
+//			std::cout << "v  " << uint32_t(v) << '\n';
+			for (unsigned i = 0; i < digits_in_block10; ++i) {
+//				std::cout << i << " " << (v / 10) << " " << (v % 10) << '\n';
+				char c = '0' + v % 10;
+				v /= 10;
+				result[pos] = c;
+//				std::cout << result << '\n';
+				if (pos-- == 0)
+					break;
+			}
+		}
+
+		std::string::size_type firstDigit = result.find_first_not_of('0');
+		result.erase(0, firstDigit);
+		if (result.empty())
+			result = "0";
+		if (n.isneg())
+			result.insert(static_cast<std::string::size_type>(0), 1, '-');
+		else if (flags & std::ios_base::showpos)
+			result.insert(static_cast<std::string::size_type>(0), 1, '+');
+	}
+	return result;
+}
+
+#ifdef OLD
 // generate an integer format ASCII format
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
@@ -1198,7 +1315,22 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 
 	return ostr << ss.str();
 }
-
+#else 
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
+	std::streamsize prec = ostr.precision();
+	std::string s = convert_to_string(ostr.flags(), i);
+	std::streamsize width = ostr.width();
+	if (width > static_cast<std::streamsize>(s.size())) {
+		char fill = ostr.fill();
+		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
+			s.append(static_cast<std::string::size_type>(width - s.size()), fill);
+		else
+			s.insert(static_cast<std::string::size_type>(0), static_cast<std::string::size_type>(width - s.size()), fill);
+	}
+	return ostr << s;
+}
+#endif
 // read an ASCII integer format
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType, NumberType>& p) {

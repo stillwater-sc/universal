@@ -296,13 +296,55 @@ public:
 	}
 #endif
 	blockbinary& operator/=(const blockbinary& rhs) {
-		quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
-		*this = result.quo;
+		if constexpr (nbits == (sizeof(BlockType) * 8)) {
+			if (rhs.iszero()) {
+				*this = 0;
+				return *this;
+			}
+			if constexpr (sizeof(BlockType) == 1) {
+				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 2) {
+				_block[0] = static_cast<bt>(std::int16_t(_block[0]) / std::int16_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 4) {
+				_block[0] = static_cast<bt>(std::int32_t(_block[0]) / std::int32_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 8) {
+				_block[0] = static_cast<bt>(std::int64_t(_block[0]) / std::int64_t(rhs._block[0]));
+			}
+			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
+		}
+		else {
+			quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
+			*this = result.quo;
+		}
 		return *this;
 	}
 	blockbinary& operator%=(const blockbinary& rhs) {
-		quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
-		*this = result.rem;
+		if constexpr (nbits == (sizeof(BlockType) * 8)) {
+			if (rhs.iszero()) {
+				*this = 0;
+				return *this;
+			}
+			if constexpr (sizeof(BlockType) == 1) {
+				_block[0] = static_cast<bt>(std::int8_t(_block[0]) % std::int8_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 2) {
+				_block[0] = static_cast<bt>(std::int16_t(_block[0]) % std::int16_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 4) {
+				_block[0] = static_cast<bt>(std::int32_t(_block[0]) % std::int32_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 8) {
+				_block[0] = static_cast<bt>(std::int64_t(_block[0]) % std::int64_t(rhs._block[0]));
+			}
+			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
+		}
+		else {
+			quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
+			*this = result.rem;
+		}
 		return *this;
 	}
 	// shift left operator
