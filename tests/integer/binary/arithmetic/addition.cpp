@@ -74,7 +74,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer Arithmetic Addition verfication\n";
+	std::string test_suite  = "Integer Arithmetic Addition verfication";
 	std::string test_tag    = "integer<> addition";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;

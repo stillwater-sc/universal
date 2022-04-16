@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition on adaptive precision binary integers
+// addition.cpp: test suite runner for addition on adaptive precision decimal integers
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -10,15 +10,15 @@
 #include <limits>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/adaptiveint/adaptiveint.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/number/decimal/decimal.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 // generate specific test case that you can trace with the trace conditions in mpreal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::adaptiveint a, b, aref, asum;
+	sw::universal::decimal a, b, aref, asum;
 	a = _a;
 	b = _b;
 	asum = a + b;
@@ -36,6 +36,10 @@ void GenerateTestCase(Ty _a, Ty _b) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 0
@@ -46,19 +50,23 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::string test_suite = "adaptive precision decimal integer addition";
+	std::string test_tag = "decimal addition";
+	bool reportTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "adaptive precision binary integer addition failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 //	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase(1, 2);
+	GenerateTestCase(1, 9);
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-
-	cout << "adaptive precision linear float addition validation\n";
 
 #if REGRESSION_LEVEL_1
 
@@ -76,12 +84,20 @@ try {
 
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
@@ -89,6 +105,6 @@ catch (const std::runtime_error& err) {
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << std::endl;
+	std::cerr << "Caught unknown exception" << '\n';
 	return EXIT_FAILURE;
 }

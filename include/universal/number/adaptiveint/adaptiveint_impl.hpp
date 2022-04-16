@@ -36,11 +36,15 @@ public:
 	adaptiveint& operator=(adaptiveint&&) = default;
 
 	// initializers for native types
+	adaptiveint(short initial_value)              { *this = initial_value; }
 	adaptiveint(int initial_value)                { *this = initial_value; }
 	adaptiveint(long initial_value)               { *this = initial_value; }
 	adaptiveint(long long initial_value)          { *this = initial_value; }
+	adaptiveint(unsigned int initial_value)       { *this = initial_value; }
+	adaptiveint(unsigned long initial_value)      { *this = initial_value; }
 	adaptiveint(unsigned long long initial_value) { *this = initial_value; }
-	adaptiveint(long double initial_value)        { *this = initial_value; }
+	adaptiveint(float initial_value)              { *this = initial_value; }
+	adaptiveint(double initial_value)             { *this = initial_value; }
 
 	// assignment operators for native types
 	adaptiveint& operator=(int rhs)                noexcept { return convert(rhs, *this); }
@@ -49,7 +53,13 @@ public:
 	adaptiveint& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs, *this); }
 	adaptiveint& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs, *this); }
 	adaptiveint& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs, *this); }
+	adaptiveint& operator=(float rhs)              noexcept { return float_assign(rhs); }
+	adaptiveint& operator=(double rhs)             noexcept { return float_assign(rhs); }
+
+#ifdef LONG_DOUBLE_SUPPORT
+	adaptiveint(long double initial_value)                  { *this = initial_value; }
 	adaptiveint& operator=(long double rhs)        noexcept { return float_assign(rhs); }
+#endif
 
 	// prefix operators
 	adaptiveint operator-() const {
@@ -139,16 +149,25 @@ public:
 	adaptiveint& operator+=(const adaptiveint& rhs) {
 		auto lhsSize = _blocks.size();
 		auto rhsSize = rhs._blocks.size();
-//		auto minLimbs = (lhsSize < rhsSize) ? lhsSize : rhsSize;
+		auto minLimbs = (lhsSize < rhsSize) ? lhsSize : rhsSize;
 
+		if (lhsSize < rhsSize) {
+			_blocks.resize(rhsSize, 0);
+		}
 		std::uint64_t carry{ 0 };
 		std::vector<BlockType>::iterator li = _blocks.begin();
 		std::vector<BlockType>::const_iterator ri = rhs._blocks.begin();
 		while (li != _blocks.end()) {
-			carry += static_cast<std::uint64_t>(*li) + static_cast<std::uint64_t>(*ri);
+			if (ri != rhs._blocks.end()) {
+				carry += static_cast<std::uint64_t>(*li) + static_cast<std::uint64_t>(*ri);
+				++ri;
+			}
+			else {
+				carry += static_cast<std::uint64_t>(*li);
+			}
 			*li = static_cast<BlockType>(carry);
 			carry >>= bitsInBlock;
-			++li; ++ri;
+			++li; 
 		}
 		if (carry == 0x1ull) {
 			_blocks.push_back(static_cast<BlockType>(carry));
@@ -458,6 +477,7 @@ inline std::string to_binary(const adaptiveint& a, bool nibbleMarker = true) {
 		for (int i = 31; i >= 0; --i) {
 			s << ((segment & mask) ? '1' : '0');
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+			if (b > 0 && i == 0 && nibbleMarker) s << '\'';
 			mask >>= 1;
 		}
 	}

@@ -26,9 +26,11 @@ try {
 	{
 		using Integer = adaptiveint;
 
-		Integer a(1), b(2), c(0);
+		Integer a(0xFFFF'FFFF), b(0), c(1);
 		std::cout << type_tag(a) << '\n';
 		c = a + b;
+		std::cout << "c = " << to_binary(c) << '\n';
+		c = a + c;
 		std::cout << "c = " << to_binary(c) << '\n';
 		c = c - a;
 		std::cout << "c = " << to_binary(c) << '\n';
