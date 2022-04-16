@@ -18,8 +18,6 @@ namespace sw { namespace universal {
 
 // forward references
 class adaptiveint;
-inline adaptiveint& convert(int64_t v, adaptiveint& result);
-inline adaptiveint& convert_unsigned(uint64_t v, adaptiveint& result);
 bool parse(const std::string& number, adaptiveint& v);
 
 // adaptiveint is an adaptive precision integer type
@@ -47,18 +45,18 @@ public:
 	adaptiveint(double initial_value)             { *this = initial_value; }
 
 	// assignment operators for native types
-	adaptiveint& operator=(int rhs)                noexcept { return convert(rhs, *this); }
-	adaptiveint& operator=(long rhs)               noexcept { return convert(rhs, *this); }
-	adaptiveint& operator=(long long rhs)          noexcept { return convert(rhs, *this); }
-	adaptiveint& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs, *this); }
-	adaptiveint& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs, *this); }
-	adaptiveint& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs, *this); }
-	adaptiveint& operator=(float rhs)              noexcept { return float_assign(rhs); }
-	adaptiveint& operator=(double rhs)             noexcept { return float_assign(rhs); }
+	adaptiveint& operator=(int rhs)                noexcept { return assign_signed(rhs); }
+	adaptiveint& operator=(long rhs)               noexcept { return assign_signed(rhs); }
+	adaptiveint& operator=(long long rhs)          noexcept { return assign_signed(rhs); }
+	adaptiveint& operator=(unsigned int rhs)       noexcept { return assign_unsigned(rhs); }
+	adaptiveint& operator=(unsigned long rhs)      noexcept { return assign_unsigned(rhs); }
+	adaptiveint& operator=(unsigned long long rhs) noexcept { return assign_unsigned(rhs); }
+	adaptiveint& operator=(float rhs)              noexcept { return assign_native_ieee(rhs); }
+	adaptiveint& operator=(double rhs)             noexcept { return assign_native_ieee(rhs); }
 
 #ifdef LONG_DOUBLE_SUPPORT
 	adaptiveint(long double initial_value)                  { *this = initial_value; }
-	adaptiveint& operator=(long double rhs)        noexcept { return float_assign(rhs); }
+	adaptiveint& operator=(long double rhs)        noexcept { return assign_native_ieee(rhs); }
 #endif
 
 	// prefix operators
@@ -144,13 +142,12 @@ public:
 		_blocks[MSU] >>= shift;
 		// remove leading 0 blocks
 		// TODO
+		return *this;
 	}
 	// arithmetic operators
 	adaptiveint& operator+=(const adaptiveint& rhs) {
 		auto lhsSize = _blocks.size();
 		auto rhsSize = rhs._blocks.size();
-		auto minLimbs = (lhsSize < rhsSize) ? lhsSize : rhsSize;
-
 		if (lhsSize < rhsSize) {
 			_blocks.resize(rhsSize, 0);
 		}
@@ -231,7 +228,7 @@ public:
 	inline bool isneg()  const noexcept { return _sign; }
 
 	inline bool sign()   const noexcept { return _sign; }
-	inline int scale()   const noexcept { return findMsb(); }
+	inline int scale()   const noexcept { return findMsb(); } // TODO: when value = 0, scale returns -1 which is incorrect
 
 	inline std::uint32_t block(unsigned b) const noexcept {
 		if (b < _blocks.size()) {
@@ -272,7 +269,39 @@ protected:
 
 	// HELPER methods
 
+	template<typename SignedInt>
+	inline adaptiveint& assign_signed(SignedInt v) {
+		clear();
+		if (v != 0) {
+			if (v < 0) {
+				setsign(true);
+				setbits(static_cast<unsigned long long>(-v));
+			}
+			else {
+				setbits(static_cast<unsigned long long>(v)); // TODO: what about -2^63
+			}
+		}
+		return *this;
+	}
 
+	template<typename UnsignedInt>
+	inline adaptiveint& assign_unsigned(UnsignedInt v) {
+		if (0 == v) {
+			setzero();
+		}
+		else {
+			setbits(static_cast<unsigned long long>(v));
+		}
+		return *this;
+	}
+
+	template<typename Ty>
+	adaptiveint& assign_native_ieee(Ty& rhs) {
+		clear();
+		long long base = (long long)rhs;
+		*this = base;
+		return *this;
+	}
 
 	// convert to native floating-point, use conversion rules to cast down to float and double
 	long double toNativeFloatingPoint() const {
@@ -280,13 +309,6 @@ protected:
 		return ld;
 	}
 
-	template<typename Ty>
-	adaptiveint& float_assign(Ty& rhs) {
-		clear();
-		long long base = (long long)rhs;
-		*this = base;
-		return *this;
-	}
 
 private:
 
@@ -303,38 +325,11 @@ private:
 	friend signed findMsb(const adaptiveint& v);
 };
 
-inline adaptiveint& convert(long long v, adaptiveint& result) {
-	if (0 == v) {
-		result.setzero();
-	}
-	else {
-		result.clear();
-		if (v < 0) {
-			result.setsign(true);
-			result.setbits(static_cast<unsigned long long>(-v));
-		}
-		else {
-			result.setbits(static_cast<unsigned long long>(v)); // TODO: what about -2^(n-1)
-		}
-	}
-	return result;
-}
-
-inline adaptiveint& convert_unsigned(unsigned long long v, adaptiveint& result) {
-	if (0 == v) {
-		result.setzero();
-	}
-	else {
-		result.setbits(static_cast<unsigned long long>(v));
-	}
-	return result;
-}
-
 ////////////////////////    adaptiveint functions   /////////////////////////////////
 
 
 inline adaptiveint abs(const adaptiveint& a) {
-	return a; // (a < 0 ? -a : a);
+	return (a.isneg()  ? -a : a);
 }
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
@@ -440,7 +435,6 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint& 
 
 // generate an adaptiveint format ASCII format
 inline std::ostream& operator<<(std::ostream& ostr, const adaptiveint& i) {
-	std::streamsize prec = ostr.precision();
 	std::string s = convert_to_string(ostr.flags(), i);
 	std::streamsize width = ostr.width();
 	if (width > static_cast<std::streamsize>(s.size())) {

@@ -916,7 +916,7 @@ std::string convert_to_decimal_string(const integer<nbits, BlockType, NumberType
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
 	BlockType const* pV = v._block + v.nrBlocks - 1;
-	BlockType const* pLast = v._block - 1;
+	BlockType const* pLast = v._block;
 	BlockType BlockMsb = BlockType(BlockType(1u) << (v.bitsInBlock - 1));
 	signed msb = static_cast<signed>(v.nbits - 1ull); // the case for an aligned MSB
 	unsigned rem = nbits % v.bitsInBlock;
@@ -935,7 +935,7 @@ inline signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
 	}
 	// invariant: msb is now aligned with the blocks
 	// std::cout << "invariant msb : " << msb << '\n';
-	while (pV != pLast) {
+	while (pV >= pLast) {
 		if (*pV != 0) {
 			BlockType mask = BlockMsb;
 			while (mask != 0) {
