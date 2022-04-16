@@ -98,7 +98,7 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	}
 	for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
 		value_type sum = 0.0;
-		for (int k = i + 1; k < N; ++k) {
+		for (int k = i + 1; k < static_cast<int>(N); ++k) {
 			//cout << "lu[] = " << LU[i][k] << " x[" << k << "] = " << x[k] << endl;
 			sum += LU[i][k] * x[k];
 		}
@@ -141,7 +141,7 @@ void CroutFDP(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& S,
 			quire<nbits, es, capacity> q;
 			q.reset();
 			//for (size_t p = 0; p < k; ++p) q += D[k][p] * D[p][j];   if we had expression templates for the quire
-			for (int p = 0; p < k; ++p) q += quire_mul(D[k][p], D[p][j]);
+			for (size_t p = 0; p < k; ++p) q += quire_mul(D[k][p], D[p][j]);
 			posit<nbits, es> sum;
 			convert(q.to_value(), sum);   // one and only rounding step of the fused-dot product
 			D[k][j] = (S[k][j] - sum) / D[k][k];

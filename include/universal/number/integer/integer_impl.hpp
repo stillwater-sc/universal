@@ -1302,7 +1302,6 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 #else 
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
-	std::streamsize prec = ostr.precision();
 	std::string s = convert_to_string(ostr.flags(), i);
 	std::streamsize width = ostr.width();
 	if (width > static_cast<std::streamsize>(s.size())) {
