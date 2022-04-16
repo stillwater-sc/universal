@@ -248,6 +248,7 @@ public:
 		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
+
 	// conversion operators
 	explicit operator unsigned short()     const { return to_integer<unsigned short>(); }
 	explicit operator unsigned int()       const { return to_integer<unsigned int>(); }
@@ -417,6 +418,8 @@ public:
 
 		return *this;
 	}
+
+	// arithmetic shift right operator
 	integer& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
@@ -449,7 +452,6 @@ public:
 		_block[0] <<= bitsToShift;
 		return *this;
 	}
-	// arithmetic shift right operator
 	integer& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);

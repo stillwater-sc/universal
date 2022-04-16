@@ -22,20 +22,22 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// default behavior
-	std::cout << "Default cfloat has no subnormals, no supernormals and is not saturating\n";
+	std::cout << "Default adaptiveint expands and contracts as needed\n";
 	{
 		using Integer = adaptiveint;
 
 		Integer a(1), b(2), c(0);
 		std::cout << type_tag(a) << '\n';
 		c = a + b;
-		std::cout << "c = " << c << '\n';
+		std::cout << "c = " << to_binary(c) << '\n';
 		c = c - a;
-		std::cout << "c = " << c << '\n';
+		std::cout << "c = " << to_binary(c) << '\n';
 		c = c * b;
-		std::cout << "c = " << c << '\n';
+		std::cout << "c = " << to_binary(c) << '\n';
 		std::cout << "---\n";
 	}
+
+	return EXIT_SUCCESS;
 
 	// set bit patterns
 	std::cout << "set bit patterns API\n";
