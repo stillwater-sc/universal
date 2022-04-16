@@ -1,7 +1,7 @@
 #pragma once
-// lns.hpp: definition of an arbitrary logarithmic number system configuration
+// lns_impl.hpp: implementation of an arbitrary logarithmic number system configuration
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>

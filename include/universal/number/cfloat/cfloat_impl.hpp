@@ -1,7 +1,17 @@
 #pragma once
-// cfloat.hpp: 'classic' float: definition of an arbitrary configuration linear floating-point representation
+// cfloat_impl.hpp: implementation of an arbitrary configuration fixed-size 'classic' floating-point representation
+// cfloat<> can emulate IEEE-754 floats and the new Deep Learning types, such as 
+// IEEE-754 half-precision floats
+// Google bfloat16
+// NVIDIA TensorFloat 
+// AMD FP16 and FP32
+// Microsoft FP8 and FP9
+// 
+// cfloat<> can also emulate more precise configurations, such as
+// 80bit IEEE-754 extended precision floats
+// true 128bit quad precision floats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

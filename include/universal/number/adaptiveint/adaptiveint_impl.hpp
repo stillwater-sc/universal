@@ -1,7 +1,7 @@
 #pragma once
-// adaptiveint_impl.hpp: definition of an adaptive precision binary integer
+// adaptiveint_impl.hpp: implementation of an adaptive precision binary integer
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -14,36 +14,6 @@
 
 #include <universal/number/adaptiveint/exceptions.hpp>
 
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
 namespace sw { namespace universal {
 
 // forward references
@@ -52,7 +22,7 @@ inline adaptiveint& convert(int64_t v, adaptiveint& result);
 inline adaptiveint& convert_unsigned(uint64_t v, adaptiveint& result);
 bool parse(const std::string& number, adaptiveint& v);
 
-// adaptiveint is an adaptive precision linear floating-point type
+// adaptiveint is an adaptive precision integer type
 class adaptiveint {
 	using BlockType = uint32_t;
 	static constexpr unsigned BITS_IN_BLOCK = 32;
@@ -94,7 +64,6 @@ public:
 	adaptiveint& operator=(const float rhs)              { return float_assign(rhs); }
 	adaptiveint& operator=(const double rhs)             { return float_assign(rhs); }
 	adaptiveint& operator=(const long double rhs)        { return float_assign(rhs); }
-
 
 	// prefix operators
 	adaptiveint operator-() const {
