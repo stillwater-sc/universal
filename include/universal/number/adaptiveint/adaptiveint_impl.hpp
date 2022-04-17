@@ -183,28 +183,40 @@ public:
 		return *this += adaptiveint(rhs);
 	}
 	adaptiveint& operator-=(const adaptiveint& rhs) {
+		int magnitude = compare_magnitude(*this, rhs); // if -1 result is going to be negative
 		auto lhsSize = _blocks.size();
 		auto rhsSize = rhs._blocks.size();
-		if (lhsSize < rhsSize) {
-			_blocks.resize(rhsSize, 0);
-		}
-		std::uint64_t onePlusBorrow{ 1 };   // tracking (1 + borrow), borrow is -1 or 0
-		std::uint64_t bMinus1{ 0xFFFF'FFFF };
+
+		auto overlap = (lhsSize < rhsSize ? lhsSize : rhsSize);
+		auto extent = (lhsSize < rhsSize ? rhsSize : lhsSize);
+		
+		if (lhsSize < rhsSize) _blocks.resize(rhsSize + 1);
 		std::uint64_t borrow{ 0 };
-		typename std::vector<BlockType>::iterator li = _blocks.begin();
-		typename std::vector<BlockType>::const_iterator ri = rhs._blocks.begin();
-		while (li != _blocks.end()) {
-			if (ri != rhs._blocks.end()) {
-				borrow += static_cast<std::uint64_t>(*li) - static_cast<std::uint64_t>(*ri) + bMinus1;
-				++ri;
-			}
-			else {
-				borrow += static_cast<std::uint64_t>(*li) + bMinus1;
-			}
-			*li = static_cast<BlockType>(borrow);
-			borrow >>= bitsInBlock;
-			++li;
+		
+		typename std::vector<BlockType>::const_iterator aIter, bIter;
+		if (magnitude == 1) {
+			aIter = _blocks.begin();
+			bIter = rhs._blocks.begin();
 		}
+		else {
+			aIter = rhs._blocks.begin();
+			bIter = _blocks.begin();
+		}
+		unsigned i{ 0 };
+		while (i < overlap) {
+			borrow = static_cast<std::uint64_t>(*aIter) - static_cast<std::uint64_t>(*bIter) + borrow;
+			_blocks[i] = static_cast<BlockType>(borrow);
+			borrow = (borrow >> bitsInBlock) & 0x1u;
+			++i; ++aIter; ++bIter;
+		}
+		while (borrow && (i < extent)) {
+			borrow = static_cast<BlockType>(*aIter) - borrow;
+			_blocks[i] = static_cast<BlockType>(borrow);
+			borrow = (borrow >> bitsInBlock) & 1u;
+			++i; ++aIter;
+		}
+		remove_leading_zeros();
+		setsign(magnitude == -1);
 		return *this;
 	}
 	adaptiveint& operator-=(long long rhs) {
@@ -378,6 +390,20 @@ protected:
 	std::vector<BlockType> _blocks;  // building blocks representing a 1's complement magnitude
 
 	// HELPER methods
+	inline int compare_magnitude(const adaptiveint& a, const adaptiveint& b) {
+		unsigned aLimbs = a.limbs();
+		unsigned bLimbs = b.limbs();
+		if (aLimbs != bLimbs) {
+			return (aLimbs > bLimbs ? 1 : -1);  // return 1 if a > b, otherwise -1
+		}
+		for (int i = aLimbs - 1; i >= 0; --i) {
+			BlockType _a = a._blocks[static_cast<size_t>(i)];
+			BlockType _b = b._blocks[static_cast<size_t>(i)];
+			if ( _a != _b) {
+				return (_a > _b ? 1 : -1);
+			}
+		}
+	}
 	inline void remove_leading_zeros() {
 		unsigned leadingZeroBlocks{ 0 };
 		typename std::vector<BlockType>::reverse_iterator rit = _blocks.rbegin();
@@ -392,6 +418,7 @@ protected:
 		}
 		_blocks.resize(_blocks.size() - leadingZeroBlocks);
 	}
+	
 	template<typename SignedInt>
 	inline adaptiveint& assign_signed(SignedInt v) {
 		clear();
@@ -445,17 +472,17 @@ protected:
 		return *this;
 	}
 
-	template<typename Ty>
-	Ty convert_to_native_integer() const noexcept {
-		Ty v{ 0 };
-		Ty m{ 1 };
+	template<typename Integer>
+	Integer convert_to_native_integer() const noexcept {
+		Integer v{ 0 };
+		Integer m{ 1 };
 		for (unsigned i = 0; i < nbits(); ++i) {
 			if (test(i)) {
 				v += m;
 			}
 			m *= 2;
 		}
-		return v;
+		return (sign() ? -v : v);
 	}
 	template<typename Real>
 	Real convert_to_native_ieee() const noexcept {
@@ -467,9 +494,8 @@ protected:
 			}
 			m *= Real(2.0);
 		}
-		return v;
+		return (sign() ? -v : v);
 	}
-
 
 private:
 
