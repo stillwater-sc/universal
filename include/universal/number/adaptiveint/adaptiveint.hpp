@@ -24,6 +24,9 @@
 #define ADAPTIVEINT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
+#include <universal/utility/bit_cast.hpp>
+#include <universal/utility/long_double.hpp>
+
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/adaptiveint/adaptiveint_impl.hpp>

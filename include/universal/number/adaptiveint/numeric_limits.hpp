@@ -23,8 +23,8 @@ TODO: how to make the adaptiveint class a literal type so that we can use it as 
 */
 
 
-template <> 
-class numeric_limits< sw::universal::adaptiveint >
+template <typename BlockType> 
+class numeric_limits< sw::universal::adaptiveint<BlockType> >
 {
 	public:
 		static constexpr bool is_specialized = true;

@@ -16,10 +16,10 @@
 
 // generate specific test case that you can trace with the trace conditions in mpreal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<typename Ty>
+template<typename Ty, typename BlockType = std::uint32_t>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::adaptiveint a, b, aref, asum;
+	sw::universal::adaptiveint<BlockType> a, b, aref, asum;
 	a = _a;
 	b = _b;
 	asum = a + b;
@@ -27,7 +27,8 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	aref = ref;
 	constexpr size_t ndigits = 30;
 	std::cout << std::setw(ndigits) << _a << " + " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << asum << " (reference: " << aref << ")   " ;
+//	std::cout << a << " + " << b << " = " << asum << " (reference: " << aref << ")   " ;
+	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(asum) << " : " << (long long)(asum) << " (reference: " << to_binary(aref) << ")   ";
 	std::cout << (aref == asum ? "PASS" : "FAIL") << std::endl << std::endl;
 }
 
@@ -62,7 +63,32 @@ try {
 //	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
-//	GenerateTestCase(1, 2);
+	// byte based limbs
+	adaptiveint<std::uint8_t> a(259);
+	std::cout << to_binary(a) << " : " << int(a) << '\n';
+	float target = 2.0e9f;
+	a = target;
+	std::cout << to_binary(a) << " : " << float(a) << " : reference " << target << '\n';
+	target = 2.0e10f;
+	a = target;
+	std::cout << to_binary(a) << " : " << float(a) << " : reference " << target << '\n';
+
+	for (int i = 1; i < 40; ++i) {
+		float target = 2.0f * pow(10.0f, float(i));
+		a = target;
+		//std::cout << to_binary(a) << " : " << float(a) << " : reference " << target << '\n';
+		std::cout << std::setw(15) << float(a) << " : reference " << target << '\n';
+	}
+
+
+	GenerateTestCase<std::uint32_t, std::uint8_t>(1, 2);
+	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 0);
+	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 1);
+	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 2);
+	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 4);
+
+	GenerateTestCase<std::uint32_t>(1, 2);
+	GenerateTestCase<std::uint64_t>(0xFFFF'FFFF, 1);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
