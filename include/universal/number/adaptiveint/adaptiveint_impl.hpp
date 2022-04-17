@@ -154,6 +154,20 @@ public:
 	
 	// arithmetic operators
 	adaptiveint& operator+=(const adaptiveint& rhs) {
+		if (sign() != rhs.sign()) {
+			if (sign()) {
+				adaptiveint negated(*this);
+				negated.setsign(false);
+				*this = rhs - negated;
+				return *this;
+			}
+			else {
+				adaptiveint negated(rhs);
+				negated.setsign(false);
+				*this -= negated;
+				return *this;
+			}
+		}
 		auto lhsSize = _blocks.size();
 		auto rhsSize = rhs._blocks.size();
 		if (lhsSize < rhsSize) {
@@ -183,6 +197,11 @@ public:
 		return *this += adaptiveint(rhs);
 	}
 	adaptiveint& operator-=(const adaptiveint& rhs) {
+		if (rhs.sign()) {
+			adaptiveint negated(rhs);
+			negated.setsign(false);
+			return *this += negated;
+		}
 		int magnitude = compare_magnitude(*this, rhs); // if -1 result is going to be negative
 		auto lhsSize = _blocks.size();
 		auto rhsSize = rhs._blocks.size();
@@ -424,8 +443,8 @@ protected:
 		clear();
 		if (v != 0) {
 			if (v < 0) {
-				setsign(true);
 				setbits(static_cast<unsigned long long>(-v));
+				setsign(true);
 			}
 			else {
 				setbits(static_cast<unsigned long long>(v)); // TODO: what about -2^63

@@ -111,10 +111,28 @@ namespace sw::universal::internal {
 	 integer<64>   division           524288 per       0.0614304sec ->   8 Mops/sec
 
 	 after enabling constexpr of single block configurations
-	 integer< 8>   division          1048576 per       0.0046351sec -> 226 Mops/sec
-	 integer<16>   division          1048576 per       0.0039042sec -> 268 Mops/sec
-	 integer<32>   division           524288 per       0.0017782sec -> 294 Mops/sec
-	 integer<64>   division           524288 per       0.0017905sec -> 292 Mops/sec
+
+	 Arithmetic operator performance
+	 integer<  8>   add/subtract      4194304 per       0.0042346sec -> 990 Mops/sec
+	 integer< 16>   add/subtract      4194304 per       0.0045856sec -> 914 Mops/sec
+	 integer< 32>   add/subtract      4194304 per       0.0044825sec -> 935 Mops/sec
+	 integer< 64>   add/subtract      4194304 per       0.0040611sec ->   1 Gops/sec
+	 integer<128>   add/subtract      4194304 per       0.0609649sec ->  68 Mops/sec  <-- segmented algorithm
+	 integer<  8>   multiplication    1048576 per       0.0010752sec -> 975 Mops/sec
+	 integer< 16>   multiplication    1048576 per        0.001106sec -> 948 Mops/sec
+	 integer< 32>   multiplication     524288 per       0.0004072sec ->   1 Gops/sec
+	 integer< 64>   multiplication     524288 per       0.0004291sec ->   1 Gops/sec
+	 integer<128>   multiplication     524288 per       0.0606596sec ->   8 Mops/sec  <-- segmented algorithm
+	 integer<  8>   division          1048576 per       0.0044795sec -> 234 Mops/sec
+	 integer< 16>   division          1048576 per       0.0035649sec -> 294 Mops/sec
+	 integer< 32>   division           524288 per       0.0017663sec -> 296 Mops/sec
+	 integer< 64>   division           524288 per         0.00179sec -> 292 Mops/sec
+	 integer<128>   division           524288 per       0.0699141sec ->   7 Mops/sec  <-- segmented algorithm
+	 integer<  8>   remainder         1048576 per       0.0049021sec -> 213 Mops/sec
+	 integer< 16>   remainder         1048576 per       0.0036782sec -> 285 Mops/sec
+	 integer< 32>   remainder          524288 per       0.0018578sec -> 282 Mops/sec
+	 integer< 64>   remainder          524288 per       0.0018595sec -> 281 Mops/sec
+	 integer<128>   remainder          524288 per       0.0759803sec ->   6 Mops/sec  <-- segmented algorithm
 	 */
 
 	void TestArithmeticOperatorPerformance() {
@@ -150,10 +168,10 @@ namespace sw::universal::internal {
 		PerformanceRunner("integer<128>   remainder     ", RemainderWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
 	}
 
-
 	/*
 	April, 2022, NZXT Ryzen 7 2700X 3.7GHz desktop
 
+	With convert_to_decimal_string() function that uses repeated addition
 	Serialization operator performance
 	integer<   8>  ostream              512 per       0.0022123sec -> 231 Kops/sec
 	integer<  16>  ostream              512 per       0.0024522sec -> 208 Kops/sec
@@ -163,6 +181,19 @@ namespace sw::universal::internal {
 	integer< 256>  ostream              512 per       0.0675558sec ->   7 Kops/sec
 	integer< 512>  ostream              512 per        0.231855sec ->   2 Kops/sec
 	integer<1024>  ostream              512 per        0.850865sec -> 601  ops/sec
+
+	With new convert_to_string() function that relies on division
+	Serialization operator performance
+	integer<   8>  ostream              512 per       0.0002716sec ->   1 Mops/sec
+	integer<  16>  ostream              512 per       0.0007282sec -> 703 Kops/sec
+	integer<  32>  ostream              512 per       0.0031247sec -> 163 Kops/sec
+	integer<  64>  ostream              512 per       0.0171648sec ->  29 Kops/sec
+	integer< 128>  ostream              512 per       0.0931262sec ->   5 Kops/sec
+	integer< 256>  ostream              512 per        0.558849sec -> 916  ops/sec
+	integer< 512>  ostream              512 per         4.45766sec -> 114  ops/sec
+	integer<1024>  ostream              512 per         33.6936sec ->  15  ops/sec
+
+	-> TODO: need to replace current long division with fast segmented division 4/11/2022
 	*/
 
 	void TestSerializationOperatorPerformance() {

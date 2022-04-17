@@ -14,6 +14,75 @@
 #include <universal/number/adaptiveint/adaptiveint.hpp>
 #include <universal/verification/test_reporters.hpp>
 
+namespace sw { namespace universal {
+
+	// enumerate all addition cases for an adaptiveint<BlockType> configuration
+	template<size_t nbits, typename BlockType>
+	int VerifyAddition(bool reportTestCases) {
+		using Integer = adaptiveint<BlockType>;
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+
+		Integer ia, ib, iresult, iref;
+
+		int nrOfFailedTests = 0;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.setbits(i); // this does a clear and rebuilds the limbs
+			int64_t i64a = int64_t(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.setbits(j);
+				int64_t i64b = int64_t(ib);
+				iref = i64a + i64b;
+				iresult = ia + ib;
+
+				if (iresult != iref) {
+					nrOfFailedTests++;
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+				}
+				else {
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+				}
+				if (nrOfFailedTests > 100) return nrOfFailedTests;
+			}
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
+		}
+		if (reportTestCases) std::cout << std::endl;
+		return nrOfFailedTests;
+	}
+	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType>
+	int VerifySubtraction(bool reportTestCases) {
+		using Integer = adaptiveint<BlockType>;
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+
+		Integer ia, ib, iresult, iref;
+
+		int nrOfFailedTests = 0;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.setbits(i);
+			int64_t i64a = int64_t(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.setbits(j);
+				int64_t i64b = int64_t(ib);
+				iref = i64a - i64b;
+				iresult = ia - ib;
+
+				if (iresult != iref) {
+					nrOfFailedTests++;
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
+				}
+				else {
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
+				}
+				if (nrOfFailedTests > 100) return nrOfFailedTests;
+			}
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
+		}
+		if (reportTestCases) std::cout << std::endl;
+		return nrOfFailedTests;
+	}
+
+} } // namespace sw::universal
+
 // generate specific test case that you can trace with the trace conditions in mpreal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename Ty, typename BlockType = std::uint32_t>
@@ -60,7 +129,20 @@ try {
 	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
-//	bool bReportIndividualTestCases = false;
+	{
+		adaptiveint<std::uint8_t> a, b, c;
+		a =  4; b =  5; c = a + b;  std::cout << " 4 +  5  = " << int(c) << '\n';
+		a =  4; b =  5; c = a - b;  std::cout << " 4 -  5  = " << int(c) << '\n';
+		a = -4; b = -5; c = a + b;  std::cout << "-4 + -5  = " << int(c) << '\n';
+		a =  4; b = -5; c = a - b;  std::cout << " 4 - -5  = " << int(c) << '\n';
+		a = -4; b = -5; c = a - b;  std::cout << "-4 - -5  = " << int(c) << '\n';
+		a =  4; b =  5; a += b;     std::cout << " 4 +=  5 : " << int(a) << '\n';
+		a =  4; b = -5; a += b;     std::cout << " 4 += -5 : " << int(a) << '\n';
+		a = -4; b = -5; a += b;     std::cout << "-4 += -5 : " << int(a) << '\n';
+		a =  4; b =  5; a -= b;     std::cout << " 4 -=  5 : " << int(a) << '\n';
+		a =  4; b = -5; a -= b;     std::cout << " 4 -= -5 : " << int(a) << '\n';
+		a = -4; b = -5; a -= b;     std::cout << "-4 -= -5 : " << int(a) << '\n';
+	}
 
 	// generate individual testcases to hand trace/debug
 	// byte based limbs
@@ -80,22 +162,27 @@ try {
 		std::cout << std::setw(15) << float(a) << " : reference " << target << '\n';
 	}
 
-
 	GenerateTestCase<std::uint32_t, std::uint8_t>(1, 2);
 	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 0);
 	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 1);
 	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 2);
-	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 4);
+
+	GenerateTestCase<std::int32_t, std::uint8_t>(-5, -4);
+	GenerateTestCase<std::int32_t, std::uint8_t>(255, -55);
 
 	GenerateTestCase<std::uint32_t>(1, 2);
 	GenerateTestCase<std::uint64_t>(0xFFFF'FFFF, 1);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

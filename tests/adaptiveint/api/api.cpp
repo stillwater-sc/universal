@@ -24,7 +24,7 @@ try {
 	// default behavior
 	std::cout << "Default adaptiveint expands and contracts as needed\n";
 	{
-		using Integer = adaptiveint;
+		using Integer = adaptiveint<std::uint32_t>;
 
 		Integer a(0xFFFF'FFFF), b(0), c(1);
 		std::cout << type_tag(a) << '\n';
@@ -46,7 +46,7 @@ try {
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 5;
-		using Integer = adaptiveint;
+		using Integer = adaptiveint<std::uint32_t>;
 
 		Integer a;
 		std::cout << type_tag(a) << '\n';
