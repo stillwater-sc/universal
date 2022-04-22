@@ -97,6 +97,8 @@ option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special functions p
 # reproducible IEEE-754
 option(BUILD_NUMERIC_IEEE_QUIRES         "Set to ON to build reproducible IEEE floats"         OFF)
 
+# application environment tests
+option(BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
 
 # C API library and test programs
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
@@ -423,6 +425,23 @@ macro (compile_all testing prefix folder)
 endmacro (compile_all)
 
 ####
+# macro to create an executable target consisting of all cpp files in a directory
+# and create a test target for that cpp file
+macro (compile_multifile_target testing test_name folder)
+    message(STATUS "Add test ${test_name} from source folder ${folder}.")
+    add_executable (${test_name} ${ARGN})
+
+    #add_custom_target(valid SOURCES ${SOURCES})
+    set_target_properties(${test_name} PROPERTIES FOLDER ${folder})
+    if (${testing} STREQUAL "true")
+        if (UNIVERSAL_CMAKE_TRACE)
+            message(STATUS "testing: ${test_name} ${RUNTIME_OUTPUT_DIRECTORY}/${test_name}")
+        endif()
+        add_test(${test_name} ${RUNTIME_OUTPUT_DIRECTORY}/${test_name})
+    endif()
+endmacro (compile_multifile_target)
+
+####
 # Setup the cmake config files
 string(REGEX REPLACE "_" "" PROJECT_NAME_NOSPACES ${PROJECT_NAME})
 # in case the project name changes
@@ -543,6 +562,7 @@ if(BUILD_ALL)
 	set(BUILD_BENCHMARKS ON)
 	set(BUILD_NUMBER_SYSTEMS ON)
 	set(BUILD_MIXEDPRECISION_SDK ON)
+	set(BUILD_APP_ENVIRONMENT ON)
 
 	# build the BLAS test/verification suites
 	set(BUILD_LINEAR_ALGEBRA_BLAS ON)
@@ -607,6 +627,10 @@ if(BUILD_MIXEDPRECISION_SDK)
 	set(BUILD_MIXEDPRECISION_OPTIMIZE ON)
 	set(BUILD_MIXEDPRECISION_CONJUGATE ON)
 endif(BUILD_MIXEDPRECISION_SDK)
+
+if(BUILD_APP_ENVIRONMENT)
+add_subdirectory("tests/appenv")
+endif(BUILD_APP_ENVIRONMENT)
 
 # Build the tests for the underlying storage classes
 if(BUILD_NUMBER_ARITHMETIC_CLASSES)

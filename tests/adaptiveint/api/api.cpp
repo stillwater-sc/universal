@@ -24,7 +24,7 @@ try {
 	// default behavior
 	std::cout << "Default adaptiveint expands and contracts as needed\n";
 	{
-		using Integer = adaptiveint<std::uint32_t>;
+		using Integer = adaptiveint<std::uint8_t>;
 
 		Integer a(0xFFFF'FFFF), b(0), c(1);
 		std::cout << type_tag(a) << '\n';
@@ -37,6 +37,50 @@ try {
 		c = c * b;
 		std::cout << "c = " << to_binary(c) << '\n';
 		std::cout << "---\n";
+	}
+
+	{
+		adaptiveint<std::uint8_t> a, b, c;
+		a = +4; b = +5; c = a + b;  std::cout << " 4 +  5  = " << int(c) << '\n';
+		a = +4; b = +5; c = a - b;  std::cout << " 4 -  5  = " << int(c) << '\n';
+		a = -4; b = -5; c = a + b;  std::cout << "-4 + -5  = " << int(c) << '\n';
+		a = +4; b = -5; c = a - b;  std::cout << " 4 - -5  = " << int(c) << '\n';
+		a = -4; b = -5; c = a - b;  std::cout << "-4 - -5  = " << int(c) << '\n';
+		a = +4; b = +5; a += b;     std::cout << " 4 +=  5 : " << int(a) << '\n';
+		a = +4; b = -5; a += b;     std::cout << " 4 += -5 : " << int(a) << '\n';
+		a = -4; b = -5; a += b;     std::cout << "-4 += -5 : " << int(a) << '\n';
+		a = +4; b = +5; a -= b;     std::cout << " 4 -=  5 : " << int(a) << '\n';
+		a = +4; b = -5; a -= b;     std::cout << " 4 -= -5 : " << int(a) << '\n';
+		a = -4; b = -5; a -= b;     std::cout << "-4 -= -5 : " << int(a) << '\n';
+	}
+
+	// TODO: remove leading zeros
+	std::cout << "Bringing in large values\n";
+	{
+		using Integer = adaptiveint<std::uint8_t>;
+		for (int i = 1; i < 40; ++i) {
+			float target = 2.0f * pow(10.0f, float(i));
+			Integer a = target;
+			std::cout << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
+		}
+	}
+	// TODO: negative doesn't register
+	{
+		using Integer = adaptiveint<std::uint8_t>;
+		for (int i = 1; i < 40; ++i) {
+			float target = -2.0f * pow(10.0f, float(i));
+			Integer a = target;
+			std::cout << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
+		}
+	}
+	// TODO: conversions using 4 byte blocks fails
+	{
+		using Integer = adaptiveint<std::uint32_t>;
+		for (int i = 1; i < 40; ++i) {
+			float target = 2.0f * pow(10.0f, float(i));
+			Integer a = target;
+			std::cout << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
+		}
 	}
 
 	return EXIT_SUCCESS;

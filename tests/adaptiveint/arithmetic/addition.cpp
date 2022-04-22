@@ -129,20 +129,6 @@ try {
 	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
-	{
-		adaptiveint<std::uint8_t> a, b, c;
-		a =  4; b =  5; c = a + b;  std::cout << " 4 +  5  = " << int(c) << '\n';
-		a =  4; b =  5; c = a - b;  std::cout << " 4 -  5  = " << int(c) << '\n';
-		a = -4; b = -5; c = a + b;  std::cout << "-4 + -5  = " << int(c) << '\n';
-		a =  4; b = -5; c = a - b;  std::cout << " 4 - -5  = " << int(c) << '\n';
-		a = -4; b = -5; c = a - b;  std::cout << "-4 - -5  = " << int(c) << '\n';
-		a =  4; b =  5; a += b;     std::cout << " 4 +=  5 : " << int(a) << '\n';
-		a =  4; b = -5; a += b;     std::cout << " 4 += -5 : " << int(a) << '\n';
-		a = -4; b = -5; a += b;     std::cout << "-4 += -5 : " << int(a) << '\n';
-		a =  4; b =  5; a -= b;     std::cout << " 4 -=  5 : " << int(a) << '\n';
-		a =  4; b = -5; a -= b;     std::cout << " 4 -= -5 : " << int(a) << '\n';
-		a = -4; b = -5; a -= b;     std::cout << "-4 -= -5 : " << int(a) << '\n';
-	}
 
 	// generate individual testcases to hand trace/debug
 	// byte based limbs
@@ -155,12 +141,7 @@ try {
 	a = target;
 	std::cout << to_binary(a) << " : " << float(a) << " : reference " << target << '\n';
 
-	for (int i = 1; i < 40; ++i) {
-		float target = 2.0f * pow(10.0f, float(i));
-		a = target;
-		//std::cout << to_binary(a) << " : " << float(a) << " : reference " << target << '\n';
-		std::cout << std::setw(15) << float(a) << " : reference " << target << '\n';
-	}
+
 
 	GenerateTestCase<std::uint32_t, std::uint8_t>(1, 2);
 	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 0);

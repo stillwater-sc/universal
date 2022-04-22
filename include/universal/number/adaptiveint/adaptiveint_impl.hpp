@@ -422,6 +422,7 @@ protected:
 				return (_a > _b ? 1 : -1);
 			}
 		}
+		return 0;
 	}
 	inline void remove_leading_zeros() {
 		unsigned leadingZeroBlocks{ 0 };
