@@ -17,8 +17,6 @@ enum class ALU_OPS {
 
 template<typename NumberSystemType>
 NumberSystemType ArithmeticLogicUnit(ALU_OPS op, const NumberSystemType& a, const NumberSystemType& b) {
-	using namespace sw::universal;
-
 	NumberSystemType c;
 	switch (op) {
 	default:

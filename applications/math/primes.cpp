@@ -10,7 +10,6 @@
 #include <numeric>
 #include <chrono>
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/integer/math_functions.hpp>
 #include <universal/number/integer/primes.hpp>
 
 // conditional compilation

@@ -22,6 +22,11 @@ struct integer_overflow : public integer_arithmetic_exception {
 	integer_overflow() : integer_arithmetic_exception("overflow") {}
 };
 
+// negative argument to a sqrt function
+struct integer_negative_sqrt_arg : public integer_arithmetic_exception {
+	integer_negative_sqrt_arg() : integer_arithmetic_exception("negative input argument to sqrt function") {}
+};
+
 ///////////////////////////////////////////////////////////////
 // internal implementation exceptions
 

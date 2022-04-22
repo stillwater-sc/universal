@@ -27,7 +27,7 @@ try {
 
 	{
 		constexpr size_t nbits = 1024;
-		using Integer = integer<nbits, uint32_t>;
+		using Integer = integer<nbits, uint32_t, IntegerNumberType::IntegerNumber>;
 		// some primes to try
 		Integer a = 53;
 //		Integer a = 1049;

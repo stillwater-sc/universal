@@ -524,7 +524,7 @@ public:
 #endif
 				if (shiftRight > 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
-					raw >>= (shiftRight + adjustment);
+					raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
 					// ubit = false; already set to false

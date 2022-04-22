@@ -3683,4 +3683,20 @@ inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////                  standard floating-point formats                  //////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+// IEEE-754
+using quarter = cfloat<  8,  2, uint16_t, true, false, false>;
+using fp8     = quarter;
+using half    = cfloat< 16,  5, uint16_t, true, false, false>;
+using fp16    = half;
+using single  = cfloat< 32,  8, uint32_t, true, false, false>;
+using fp32    = single;
+using dble    = cfloat< 64, 11, uint32_t, true, false, false>;
+using fp64    = dble;
+using quad    = cfloat<128, 15, uint32_t, true, false, false>;
+using fp128   = quad;
+
 }} // namespace sw::universal

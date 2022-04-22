@@ -9,11 +9,15 @@
 #include <string>
 #include <cmath>
 #include <limits>
+#include <universal/verification/test_reporters.hpp>
 
 // minimum set of include files to reflect source code dependencies
+#include <universal/number/integer/integer.hpp>
 #include <universal/number/adaptiveint/adaptiveint.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/test_reporters.hpp>
+#include <universal/number/posit/posit.hpp>
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -31,11 +35,16 @@
 #define REGRESSION_LEVEL_4 0
 #endif
 
-using FP8 = sw::universal::cfloat<8, 2, uint8_t, false, false, false>;
-
 // forward references
-FP8 Polynomial1(const std::vector<FP8>& coef, const FP8& x);
-FP8 Polynomial2(const std::vector<FP8>& coef, const FP8& x);
+using Integer = sw::universal::integer<8, uint8_t, sw::universal::IntegerNumberType::IntegerNumber>;
+using Fixpnt  = sw::universal::fixpnt<8, 4, sw::universal::Saturating, uint8_t>;
+using Cfloat  = sw::universal::half;
+using Posit   = sw::universal::posit<8,2>;
+
+Integer integerPolynomial(const std::vector<int>& coef, const Integer& x);
+Fixpnt  fixpntPolynomial(const std::vector<int>& coef, const Fixpnt& x);
+Cfloat  cfloatPolynomial(const std::vector<int>& coef, const Cfloat& x);
+Posit   positPolynomial(const std::vector<int>& coef, const Posit& x);
 
 int main()
 try {
@@ -50,19 +59,21 @@ try {
 
 #if MANUAL_TESTING
 
+	// polynomial(x) = a + bx + cx^2 + dx^3 + ex^4 + fx^5;
+	std::vector<int> coefficients;
+	coefficients.push_back(1);
+	coefficients.push_back(-1);
+	coefficients.push_back(1);
+	coefficients.push_back(-1);
+	coefficients.push_back(1);
+	coefficients.push_back(-1);
 
-	std::vector<FP8> coef1;
-	coef1.push_back(1);
-	coef1.push_back(-2);
-	coef1.push_back(-1);
-	std::vector<FP8> coef2;
-	coef2.push_back(1);
-	coef2.push_back(-1);
-	coef2.push_back(-1);
-	FP8 a(1), b(-1), c(0);
+	float a(1.0f);
 	
-	std::cout << "Polynomial1  : " << Polynomial1(coef1, FP8(a)) << '\n';
-	std::cout << "Polynomial2  : " << Polynomial2(coef2, FP8(a)) << '\n';
+	std::cout << "integer      : " << integerPolynomial(coefficients, Integer(a)) << '\n';
+	std::cout << "fixpnt       : " << fixpntPolynomial(coefficients, Fixpnt(a)) << '\n';
+	std::cout << "cfloat       : " << cfloatPolynomial(coefficients, Cfloat(a)) << '\n';
+	std::cout << "posit        : " << positPolynomial(coefficients, Posit(a)) << '\n';
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
