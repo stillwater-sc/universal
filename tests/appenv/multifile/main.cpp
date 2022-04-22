@@ -52,7 +52,7 @@ try {
 
 	std::string test_suite = "multifile application environment";
 	std::string test_tag = "multifile application";
-	bool reportTestCases = true;
+	//bool reportTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
