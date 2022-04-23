@@ -19,7 +19,7 @@ print_header()
 # Ubuntu 18.04 LTS runs cmake 3.10.2
 # container runs cmake 3.7.1
 # gcc5 container runs cmake 3.0.2
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.23)
 
 ####
 ## Enable project() command to manage VERSION variables
@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 54)
+  set(UNIVERSAL_VERSION_MINOR 55)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
