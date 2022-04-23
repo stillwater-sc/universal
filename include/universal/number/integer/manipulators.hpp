@@ -23,22 +23,28 @@ std::string type_tag(const integer<nbits, BlockType, NumberType>& v) {
 // return in triple form (sign, scale, fraction)
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::string to_triple(const integer<nbits, BlockType, NumberType>& number) {
+	using Integer = integer<nbits+1, BlockType, NumberType>; // to capture maxneg in magnitude conversion
+
 	std::stringstream str;
 
 	// print sign bit
 	str << '(' << (number < 0 ? '-' : '+') << ',';
 
+	Integer magnitude = (number < 0 ? -number : number);
+
 	// scale
-	str << scale(number) << ',';
+	str << scale(magnitude) << ',';
 
 	// print fraction bits
-	long msb = findMsb(number);
+	long msb = findMsb(magnitude);
 	if (msb < 0) {
 		str << '-';
 	}
 	else {
-		for (int i = msb-1; i >= 0; --i) {
-			str << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+		// the msb becomes the hidden bit
+		magnitude <<= (nbits - msb);
+		for (int i = nbits - 1; i >= 0; --i) {
+			str << (magnitude.at(static_cast<size_t>(i)) ? '1' : '0');
 		}
 	}
 
