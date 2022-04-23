@@ -1,7 +1,7 @@
 #pragma once
-// adaptivefloat.hpp: definition of an adaptive precision linear floating-point number system
+// adaptivefloat_impl.hpp: implementation of an adaptive precision linear floating-point number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -13,36 +13,6 @@
 #include <map>
 
 #include <universal/number/adaptivefloat/exceptions.hpp>
-
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
 
 namespace sw { namespace universal {
 
@@ -93,16 +63,6 @@ public:
 	adaptivefloat& operator=(const float rhs)              { return float_assign(rhs); }
 	adaptivefloat& operator=(const double rhs)             { return float_assign(rhs); }
 	adaptivefloat& operator=(const long double rhs)        { return float_assign(rhs); }
-
-#ifdef ADAPTER_POSIT_AND_ADAPTIVEFLOAT
-	// POSIT_CONCEPT_GENERALIZATION
-	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
-	template<typename PositType>
-	adaptivefloat& operator=(const PositType& rhs) {
-		convert_p2i(rhs, *this);
-		return *this;
-	}
-#endif // ADAPTER_POSIT_AND_ADAPTIVEFLOAT
 
 	// prefix operators
 	adaptivefloat operator-() const {

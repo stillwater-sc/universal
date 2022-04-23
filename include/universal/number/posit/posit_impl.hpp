@@ -1,7 +1,7 @@
 #pragma once
-// posit.hpp: definition of arbitrary posit number configurations
+// posit_impl.hpp: implementation of arbitrary configuration fixed-size posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -659,10 +659,9 @@ public:
 	}
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
-	// INTEGER_TYPE_CONCEPT_GENERALIZATION
-	// TODO: SFINAE to assure we only match an integer<nbits> concept
-	template<typename IntegerType>
-	posit& operator=(const IntegerType& rhs) {
+	// convenience assignment operator
+	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+	posit& operator=(const integer<nbits, BlockType, NumberType>& rhs) {
 		convert_i2p(rhs, *this);
 		return *this;
 	}

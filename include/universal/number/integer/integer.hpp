@@ -1,6 +1,6 @@
 // <universal/integer/integer>: arbitrary integer arithmetic type standard header
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _INTEGER_STANDARD_HEADER_
@@ -50,6 +50,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/integer/math_functions.hpp>
+#include <universal/number/integer/mathlib.hpp>
 
 #endif

@@ -14,6 +14,10 @@
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -24,12 +28,17 @@
 int main()
 try {
 	using namespace sw::universal;
+	using std::isnormal;
+	using std::isfinite;
+	using std::isinf;
+	using std::isnan;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "posit classification function validation";
+	std::string test_tag    = "classification failed: ";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "Posit classification function validation\n";
-	std::string tag = "Addition failed: ";
+	std::cout << test_suite << '\n';
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -46,11 +55,11 @@ try {
 	posit<nbits, es> pone(1);
 
 	std::cout << std::boolalpha
-		<< "isnormal(NaN) = " << std::isnormal(NAN) << '\n'
-		<< "isnormal(Inf) = " << std::isnormal(INFINITY) << '\n'
-		<< "isnormal(0.0) = " << std::isnormal(0.0) << '\n'
-		<< "isnormal(DBL_MIN/2.0) = " << std::isnormal(MY_DBL_MIN / 2.0) << '\n'
-		<< "isnormal(1.0) = " << std::isnormal(1.0) << '\n';
+		<< "isnormal(NaN) = " << isnormal(NAN) << '\n'
+		<< "isnormal(Inf) = " << isnormal(INFINITY) << '\n'
+		<< "isnormal(0.0) = " << isnormal(0.0) << '\n'
+		<< "isnormal(DBL_MIN/2.0) = " << isnormal(MY_DBL_MIN / 2.0) << '\n'
+		<< "isnormal(1.0) = " << isnormal(1.0) << '\n';
 	std::cout << std::boolalpha
 		<< "isnormal(NaR) = " << isnormal(pnar) << '\n'
 		<< "isnormal(Inf) = " << isnormal(pinf) << '\n'
@@ -59,11 +68,11 @@ try {
 		<< "isnormal(1.0) = " << isnormal(pone) << '\n';
 
 	std::cout << std::boolalpha
-		<< "isfinite(NaN) = " << std::isfinite(NAN) << '\n'
-		<< "isfinite(Inf) = " << std::isfinite(INFINITY) << '\n'
-		<< "isfinite(0.0) = " << std::isfinite(0.0) << '\n'
-		<< "isfinite(DBL_MIN/2.0) = " << std::isfinite(MY_DBL_MIN / 2.0) << '\n'
-		<< "isfinite(1.0) = " << std::isfinite(1.0) << '\n';
+		<< "isfinite(NaN) = " << isfinite(NAN) << '\n'
+		<< "isfinite(Inf) = " << isfinite(INFINITY) << '\n'
+		<< "isfinite(0.0) = " << isfinite(0.0) << '\n'
+		<< "isfinite(DBL_MIN/2.0) = " << isfinite(MY_DBL_MIN / 2.0) << '\n'
+		<< "isfinite(1.0) = " << isfinite(1.0) << '\n';
 	std::cout << std::boolalpha
 		<< "isfinite(NaR) = " << isfinite(pnar) << '\n'
 		<< "isfinite(Inf) = " << isfinite(pinf) << '\n'
@@ -72,11 +81,11 @@ try {
 		<< "isfinite(1.0) = " << isfinite(pone) << '\n';
 
 	std::cout << std::boolalpha
-		<< "isinf(NaN) = " << std::isinf(NAN) << '\n'
-		<< "isinf(Inf) = " << std::isinf(INFINITY) << '\n'
-		<< "isinf(0.0) = " << std::isinf(0.0) << '\n'
-		<< "isinf(DBL_MIN/2.0) = " << std::isinf(MY_DBL_MIN / 2.0) << '\n'
-		<< "isinf(1.0) = " << std::isinf(1.0) << '\n';
+		<< "isinf(NaN) = " << isinf(NAN) << '\n'
+		<< "isinf(Inf) = " << isinf(INFINITY) << '\n'
+		<< "isinf(0.0) = " << isinf(0.0) << '\n'
+		<< "isinf(DBL_MIN/2.0) = " << isinf(MY_DBL_MIN / 2.0) << '\n'
+		<< "isinf(1.0) = " << isinf(1.0) << '\n';
 	std::cout << std::boolalpha
 		<< "isinf(NaR) = " << isinf(pnar) << '\n'
 		<< "isinf(Inf) = " << isinf(pinf) << '\n'
@@ -85,11 +94,11 @@ try {
 		<< "isinf(1.0) = " << isinf(pone) << '\n';
 
 	std::cout << std::boolalpha
-		<< "isnan(NaN) = " << std::isnan(NAN) << '\n'
-		<< "isnan(Inf) = " << std::isnan(INFINITY) << '\n'
-		<< "isnan(0.0) = " << std::isnan(0.0) << '\n'
-		<< "isnan(DBL_MIN/2.0) = " << std::isnan(MY_DBL_MIN / 2.0) << '\n'
-		<< "isnan(1.0) = " << std::isnan(1.0) << '\n';
+		<< "isnan(NaN) = " << isnan(NAN) << '\n'
+		<< "isnan(Inf) = " << isnan(INFINITY) << '\n'
+		<< "isnan(0.0) = " << isnan(0.0) << '\n'
+		<< "isnan(DBL_MIN/2.0) = " << isnan(MY_DBL_MIN / 2.0) << '\n'
+		<< "isnan(1.0) = " << isnan(1.0) << '\n';
 	std::cout << std::boolalpha
 		<< "isnan(NaR) = " << isnan(pnar) << '\n'
 		<< "isnan(Inf) = " << isnan(pinf) << '\n'
@@ -97,6 +106,8 @@ try {
 		<< "isnan(DBL_MIN/2.0) = " << isnan(pdblmin / 2.0) << '\n'
 		<< "isnan(1.0) = " << isnan(pone) << '\n';
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
 
@@ -116,28 +127,25 @@ try {
 
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

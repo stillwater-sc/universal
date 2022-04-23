@@ -1,10 +1,9 @@
 #pragma once
-// integer.hpp: definition of a fixed-size arbitrary integer precision number
+// integer_impl.hpp: implementation of a fixed-size arbitrary integer precision number
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/utility/directives.hpp>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -129,7 +128,7 @@ public:
 		bitcopy(a);
 		if constexpr (srcbits < nbits) {
 			if (a.sign()) { // sign extend
-				for (size_t i = srcbits; i < nbits; ++i) {
+				for (unsigned i = srcbits; i < nbits; ++i) {
 					setbit(i);
 				}
 			}
@@ -199,176 +198,227 @@ public:
 	constexpr integer& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
 	constexpr integer& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
 	constexpr integer& operator=(float rhs)              noexcept { return convert_ieee(rhs); }
-constexpr integer& operator=(double rhs)             noexcept { return convert_ieee(rhs); }
+	constexpr integer& operator=(double rhs)             noexcept { return convert_ieee(rhs); }
 #if LONG_DOUBLE_SUPPORT
-constexpr integer& operator=(long double rhs)        noexcept { return convert_ieee(rhs); }
+	constexpr integer& operator=(long double rhs)        noexcept { return convert_ieee(rhs); }
 #endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
-// POSIT_CONCEPT_GENERALIZATION
-// TODO: SFINAE to assure we only match a posit<nbits,es> concept
-template<typename PositType>
-integer& operator=(const PositType& rhs) {
-	convert_p2i(rhs, *this);
-	return *this;
-}
-#endif // ADAPTER_POSIT_AND_INTEGER
-
-// prefix operators
-constexpr integer operator-() const {
-	integer negated(*this);
-	negated.flip();
-	negated += 1;
-	return negated;
-}
-// one's complement
-constexpr integer operator~() const {
-	integer complement(*this);
-	complement.flip();
-	return complement;
-}
-// increment
-constexpr integer operator++(int) {
-	integer tmp(*this);
-	operator++();
-	return tmp;
-}
-constexpr integer& operator++() {
-	*this += integer(1);
-	_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
-	return *this;
-}
-// decrement
-constexpr integer operator--(int) {
-	integer tmp(*this);
-	operator--();
-	return tmp;
-}
-constexpr integer& operator--() {
-	*this -= integer(1);
-	_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
-	return *this;
-}
-// conversion operators
-explicit operator unsigned short() const { return to_integer<unsigned short>(); }
-explicit operator unsigned int() const { return to_integer<unsigned int>(); }
-explicit operator unsigned long() const { return to_integer<unsigned long>(); }
-explicit operator unsigned long long() const { return to_integer<unsigned long long>(); }
-explicit operator short() const { return to_integer<short>(); }
-explicit operator int() const { return to_integer<int>(); }
-explicit operator long() const { return to_integer<long>(); }
-explicit operator long long() const { return to_integer<long long>(); }
-explicit operator float() const { return to_real<float>(); }
-explicit operator double() const { return to_real<double>(); }
-#if LONG_DOUBLE_SUPPORT
-explicit operator long double() const { return to_real<long double>(); }
-#endif
-// arithmetic operators
-integer& operator+=(const integer& rhs) {
-	integer<nbits, BlockType, NumberType> sum;
-	std::uint64_t carry = 0;
-	BlockType* pA = _block;
-	BlockType const* pB = rhs._block;
-	BlockType* pC = sum._block;
-	BlockType* pEnd = pC + nrBlocks; // this is one element past the end: is that proper?
-	while (pC != pEnd) {
-		carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
-		*pC = static_cast<bt>(carry);
-		carry >>= bitsInBlock;
-		++pA; ++pB; ++pC;
-	}
-	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-	BlockType* pLast = pEnd - 1;
-	*pLast = static_cast<bt>(MSU_MASK & *pLast);
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
-	// TODO: what is the real overflow condition?
-	// it is not carry == 1 as  say 1 + -1 sets the carry but is 0
-//		if (carry) throw integer_overflow();
-#endif
-	* this = sum;
-	return *this;
-}
-integer& operator-=(const integer& rhs) {
-	integer twos(rhs);
-	operator+=(twos.twosComplement());
-	return *this;
-}
-#define INTEGER_FAST_MUL
-#ifdef INTEGER_FAST_MUL
-integer& operator*=(const integer& rhs) {
-	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
-		// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
-		integer<nbits + 1, BlockType, NumberType> base(*this);
-		integer<nbits + 1, BlockType, NumberType> multiplicant(rhs);
-		bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
-		if (base.isneg()) {
-			base.twosComplement();
-		}
-		if (multiplicant.isneg()) {
-			multiplicant.twosComplement();
-		}
-		clear();
-		for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
-			std::uint64_t segment(0);
-			for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
-				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
-
-				if (i + j < static_cast<unsigned>(nrBlocks)) {
-					segment += _block[i + j];
-					_block[i + j] = static_cast<bt>(segment);
-					segment >>= bitsInBlock;
-				}
-			}
-		}
-		if (resultIsNeg) twosComplement();
-	}
-	else {  // whole and natural numbers are closed under multiplication (modulo)
-		integer<nbits, BlockType, NumberType> base(*this);
-		integer<nbits, BlockType, NumberType> multiplicant(rhs);
-		clear();
-		for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
-			std::uint64_t segment(0);
-			for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
-				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
-
-				if (i + j < static_cast<unsigned>(nrBlocks)) {
-					segment += _block[i + j];
-					_block[i + j] = static_cast<bt>(segment);
-					segment >>= bitsInBlock;
-				}
-			}
-		}
-	}
-	// null any leading bits that fall outside of nbits
-	_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
-	return *this;
-}
-#else
-	integer& operator*=(const integer& rhs) {
-		integer<nbits, BlockType, NumberType> base(*this);
-		integer<nbits, BlockType, NumberType> multiplicant(rhs);
-		clear();
-		for (unsigned i = 0; i < nbits; ++i) {
-			if (base.at(i)) {
-				operator+=(multiplicant);
-			}
-			multiplicant <<= 1;
-		}
-		// since we used operator+=, which enforces the nulling of leading bits
-		// we don't need to null here
+	// convenience assignment operator 
+	template<size_t nbits, size_t es>
+	integer& operator=(const posit<nbits, es>& rhs) {
+		convert_p2i(rhs, *this);
 		return *this;
 	}
+#endif // ADAPTER_POSIT_AND_INTEGER
+
+	// prefix operators
+	constexpr integer operator-() const {
+		integer negated(*this);
+		negated.flip();
+		negated += 1;
+		return negated;
+	}
+	// one's complement
+	constexpr integer operator~() const {
+		integer complement(*this);
+		complement.flip();
+		return complement;
+	}
+	// increment
+	constexpr integer operator++(int) {
+		integer tmp(*this);
+		operator++();
+		return tmp;
+	}
+	constexpr integer& operator++() {
+		*this += integer(1);
+		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+	// decrement
+	constexpr integer operator--(int) {
+		integer tmp(*this);
+		operator--();
+		return tmp;
+	}
+	constexpr integer& operator--() {
+		*this -= integer(1);
+		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+
+	// conversion operators
+	explicit operator unsigned short()     const { return to_integer<unsigned short>(); }
+	explicit operator unsigned int()       const { return to_integer<unsigned int>(); }
+	explicit operator unsigned long()      const { return to_integer<unsigned long>(); }
+	explicit operator unsigned long long() const { return to_integer<unsigned long long>(); }
+	explicit operator short()              const { return to_integer<short>(); }
+	explicit operator int()                const { return to_integer<int>(); }
+	explicit operator long()               const { return to_integer<long>(); }
+	explicit operator long long()          const { return to_integer<long long>(); }
+	explicit operator float()              const { return to_real<float>(); }
+	explicit operator double()             const { return to_real<double>(); }
+#if LONG_DOUBLE_SUPPORT
+	explicit operator long double() const { return to_real<long double>(); }
 #endif
+
+	// arithmetic operators
+	integer& operator+=(const integer& rhs) {
+		if constexpr (nrBlocks == 1) {
+			_block[0] = static_cast<bt>(_block[0] + rhs.block(0));
+			// null any leading bits that fall outside of nbits
+			_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
+		}
+		else {
+			integer<nbits, BlockType, NumberType> sum;
+			std::uint64_t carry = 0;
+			BlockType* pA = _block;
+			BlockType const* pB = rhs._block;
+			BlockType* pC = sum._block;
+			BlockType* pEnd = pC + nrBlocks;
+			while (pC != pEnd) {
+				carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
+				*pC = static_cast<bt>(carry);
+				if constexpr (bitsInBlock == 64) carry = 0; else carry >>= bitsInBlock;
+				++pA; ++pB; ++pC;
+			}
+			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+			BlockType* pLast = pEnd - 1;
+			*pLast = static_cast<bt>(MSU_MASK & *pLast);
+	#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+			// TODO: what is the real overflow condition?
+			// it is not carry == 1 as  say 1 + -1 sets the carry but is 0
+		//		if (carry) throw integer_overflow();
+	#endif
+			* this = sum;
+		}
+		return *this;
+	}
+	integer& operator-=(const integer& rhs) {
+		integer twos(rhs);
+		operator+=(twos.twosComplement());
+		return *this;
+	}
+	integer& operator*=(const integer& rhs) {
+		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
+			if constexpr (nrBlocks == 1) {
+				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
+			}
+			else {
+				// is there a better way than upconverting to deal with maxneg in a 2's complement encoding?
+				integer<nbits + 1, BlockType, NumberType> base(*this);
+				integer<nbits + 1, BlockType, NumberType> multiplicant(rhs);
+				bool resultIsNeg = (base.isneg() ^ multiplicant.isneg());
+				if (base.isneg()) {
+					base.twosComplement();
+				}
+				if (multiplicant.isneg()) {
+					multiplicant.twosComplement();
+				}
+				clear();
+				for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+					std::uint64_t segment(0);
+					for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+						segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+
+						if (i + j < static_cast<unsigned>(nrBlocks)) {
+							segment += _block[i + j];
+							_block[i + j] = static_cast<bt>(segment);
+							segment >>= bitsInBlock;
+						}
+					}
+				}
+				if (resultIsNeg) twosComplement();
+			}
+		}
+		else {  // whole and natural numbers are closed under multiplication (modulo)
+			if constexpr (nrBlocks == 1) {
+				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
+			}
+			else {
+				integer<nbits, BlockType, NumberType> base(*this);
+				integer<nbits, BlockType, NumberType> multiplicant(rhs);
+				clear();
+				for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+					std::uint64_t segment(0);
+					for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+						segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+
+						if (i + j < static_cast<unsigned>(nrBlocks)) {
+							segment += _block[i + j];
+							_block[i + j] = static_cast<bt>(segment);
+							segment >>= bitsInBlock;
+						}
+					}
+				}
+			}
+		}
+		// null any leading bits that fall outside of nbits
+		_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
+		return *this;
+	}
 	integer& operator/=(const integer& rhs) {
-		idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
-		*this = divresult.quot;
+		if constexpr (nbits == (sizeof(BlockType)*8) ) {
+			if (rhs._block[0] == 0) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				throw integer_divide_by_zero{};
+#else
+				std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+			}
+			if constexpr (sizeof(BlockType) == 1) {
+				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 2) {
+				_block[0] = static_cast<bt>(std::int16_t(_block[0]) / std::int16_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 4) {
+				_block[0] = static_cast<bt>(std::int32_t(_block[0]) / std::int32_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 8) {
+				_block[0] = static_cast<bt>(std::int64_t(_block[0]) / std::int64_t(rhs._block[0]));		
+			}
+			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
+		}
+		else {
+			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
+			*this = divresult.quot;
+		}
 		return *this;
 	}
 	integer& operator%=(const integer& rhs) {
-		idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
-		*this = divresult.rem;
+		if constexpr (nbits == (sizeof(BlockType) * 8)) {
+			if (rhs._block[0] == 0) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				throw integer_divide_by_zero{};
+#else
+				std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+			}
+			if constexpr (sizeof(BlockType) == 1) {
+				_block[0] = static_cast<bt>(std::int8_t(_block[0]) % std::int8_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 2) {
+				_block[0] = static_cast<bt>(std::int16_t(_block[0]) % std::int16_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 4) {
+				_block[0] = static_cast<bt>(std::int32_t(_block[0]) % std::int32_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 8) {
+				_block[0] = static_cast<bt>(std::int64_t(_block[0]) % std::int64_t(rhs._block[0]));
+			}
+			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
+		}
+		else {
+			idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(*this, rhs);
+			*this = divresult.rem;
+		}
+
 		return *this;
 	}
+
+	// arithmetic shift right operator
 	integer& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
@@ -401,7 +451,6 @@ integer& operator*=(const integer& rhs) {
 		_block[0] <<= bitsToShift;
 		return *this;
 	}
-	// arithmetic shift right operator
 	integer& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
@@ -426,14 +475,14 @@ integer& operator*=(const integer& rhs) {
 				if (signext) {
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 						this->setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 						this->setbit(i, false);
 					}
 				}
@@ -456,14 +505,14 @@ integer& operator*=(const integer& rhs) {
 		if (signext) {
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 				this->setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 				this->setbit(i, false);
 			}
 		}
@@ -726,7 +775,6 @@ integer& operator*=(const integer& rhs) {
 		clear();
 		if (0 == rhs) return *this;
 		constexpr size_t argbits = sizeof(rhs);
-		bool negative = rhs < 0;
 		int64_t v = rhs;
 		unsigned upper = (nbits <= _nbits ? nbits : argbits);
 		for (unsigned i = 0; i < upper && v != 0; ++i) {
@@ -734,7 +782,7 @@ integer& operator*=(const integer& rhs) {
 			v >>= 1;
 		}
 		if constexpr (nbits > 64) {
-			if (negative) {	// sign extend if negative
+			if (rhs < 0) {	// sign extend if negative
 				for (unsigned i = upper; i < nbits; ++i) {
 					setbit(i);
 				}
@@ -867,7 +915,7 @@ std::string convert_to_decimal_string(const integer<nbits, BlockType, NumberType
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
 	BlockType const* pV = v._block + v.nrBlocks - 1;
-	BlockType const* pLast = v._block - 1;
+	BlockType const* pLast = v._block;
 	BlockType BlockMsb = BlockType(BlockType(1u) << (v.bitsInBlock - 1));
 	signed msb = static_cast<signed>(v.nbits - 1ull); // the case for an aligned MSB
 	unsigned rem = nbits % v.bitsInBlock;
@@ -886,7 +934,7 @@ inline signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
 	}
 	// invariant: msb is now aligned with the blocks
 	// std::cout << "invariant msb : " << msb << '\n';
-	while (pV != pLast) {
+	while (pV >= pLast) {
 		if (*pV != 0) {
 			BlockType mask = BlockMsb;
 			while (mask != 0) {
@@ -936,7 +984,7 @@ void remainder(const integer<nbits, BlockType, NumberType>& a, const integer<nbi
 // divide integer<nbits, BlockType, NumberType> a and b and return result argument
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>& _a, const integer<nbits, BlockType, NumberType>& _b) {
-	if (_b == integer<nbits, BlockType, NumberType>(0)) {
+	if (_b.iszero()) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
@@ -979,7 +1027,7 @@ idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, Number
 		divresult.quot.flip();
 		divresult.quot += 1;
 	} 
-	if (_a < integer<nbits, BlockType, NumberType>(0)) {
+	if (_a.isneg()) {
 		divresult.rem = -accumulator;
 	}
 	else {
@@ -1130,6 +1178,110 @@ std::string to_string(const integer<nbits, BlockType, NumberType>& n) {
 	return convert_to_decimal_string(n);
 }
 
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits, BlockType, NumberType>& n) {
+	using IntegerBase = integer<nbits, BlockType, NumberType>;
+	using Integer = integer<nbits+1, BlockType, NumberType>;  // got to be 1 bigger to be able to represent maxneg in 2's complement form
+
+	// set the base of the target number system to convert to
+	int base = 10;
+	if ((flags & std::ios_base::oct) == std::ios_base::oct) base = 8;
+	if ((flags & std::ios_base::hex) == std::ios_base::hex) base = 16;
+
+	std::string result;
+	if (base == 8 || base == 16) {
+		if (n.sign()) return std::string("negative value: ignored");
+
+		BlockType shift = base == 8 ? 3 : 4;
+		BlockType mask = static_cast<BlockType>((1u << shift) - 1);
+		Integer t(n);
+		result.assign(nbits / shift + ((nbits % shift) ? 1 : 0), '0');
+		std::string::difference_type pos = result.size() - 1;
+		for (size_t i = 0; i < nbits / static_cast<size_t>(shift); ++i) {
+			char c = '0' + static_cast<char>(t.block(0) & mask);
+			if (c > '9')
+				c += 'A' - '9' - 1;
+			result[pos--] = c;
+			t >>= shift;
+		}
+		if (nbits % shift) {
+			mask = static_cast<BlockType>((1u << (nbits % shift)) - 1);
+			char c = '0' + static_cast<char>(t.block(0) & mask);
+			if (c > '9')
+				c += 'A' - '9';
+			result[pos] = c;
+		}
+		//
+		// Get rid of leading zeros:
+		//
+		std::string::size_type n = result.find_first_not_of('0');
+		if (!result.empty() && (n == std::string::npos))
+			n = result.size() - 1;
+		result.erase(0, n);
+		if (flags & std::ios_base::showbase) {
+			const char* pp = base == 8 ? "0" : "0x";
+			result.insert(static_cast<std::string::size_type>(0), pp);
+		}
+	}
+	else {
+		result.assign(nbits / 3 + 1u, '0');
+		std::string::difference_type pos = result.size() - 1;
+		Integer t(n);
+		if (t.sign()) t.twosComplement();  // TODO: how to deal with maxneg which has no positive representation in 2's complement?
+
+		Integer block10;
+		unsigned digits_in_block10 = 2;
+		if constexpr (IntegerBase::bitsInBlock == 8) {
+			block10 = 100;
+			digits_in_block10 = 2;
+		}
+		else if constexpr (IntegerBase::bitsInBlock == 16) {
+			block10 = 10'000;
+			digits_in_block10 = 4;
+		}
+		else if constexpr (IntegerBase::bitsInBlock == 32) {
+			block10 = 1'000'000'000;
+			digits_in_block10 = 9;
+		}
+		else if constexpr (IntegerBase::bitsInBlock == 64) {
+			block10 = 1'000'000'000'000'000'000;
+			digits_in_block10 = 18;
+		}
+
+		while (!t.iszero()) {
+
+			Integer t2 = t / block10;
+			Integer r  = t % block10;
+//			std::cout << "t  " << long(t) << '\n';
+//			std::cout << "t2 " << long(t2) << '\n';
+//			std::cout << "r  " << long(r) << '\n';
+			t = t2;
+			BlockType v = r.block(0);
+//			std::cout << "v  " << uint32_t(v) << '\n';
+			for (unsigned i = 0; i < digits_in_block10; ++i) {
+//				std::cout << i << " " << (v / 10) << " " << (v % 10) << '\n';
+				char c = '0' + v % 10;
+				v /= 10;
+				result[pos] = c;
+//				std::cout << result << '\n';
+				if (pos-- == 0)
+					break;
+			}
+		}
+
+		std::string::size_type firstDigit = result.find_first_not_of('0');
+		result.erase(0, firstDigit);
+		if (result.empty())
+			result = "0";
+		if (n.isneg())
+			result.insert(static_cast<std::string::size_type>(0), 1, '-');
+		else if (flags & std::ios_base::showpos)
+			result.insert(static_cast<std::string::size_type>(0), 1, '+');
+	}
+	return result;
+}
+
+#ifdef OLD
 // generate an integer format ASCII format
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
@@ -1146,7 +1298,21 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 
 	return ostr << ss.str();
 }
-
+#else 
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
+	std::string s = convert_to_string(ostr.flags(), i);
+	std::streamsize width = ostr.width();
+	if (width > static_cast<std::streamsize>(s.size())) {
+		char fill = ostr.fill();
+		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
+			s.append(static_cast<std::string::size_type>(width - s.size()), fill);
+		else
+			s.insert(static_cast<std::string::size_type>(0), static_cast<std::string::size_type>(width - s.size()), fill);
+	}
+	return ostr << s;
+}
+#endif
 // read an ASCII integer format
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType, NumberType>& p) {
@@ -1193,6 +1359,8 @@ inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, const i
 	if (rhs_is_negative && !lhs_is_negative) return false;
 	// arguments have the same sign
 	integer<nbits, BlockType, NumberType> diff(0);
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+	// we need to catch and ignore the exception
 	try {
 		diff = (lhs - rhs);
 	}
@@ -1201,6 +1369,9 @@ inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, const i
 		const char* p = e.what();
 		if (p) --p;
 	}
+#else 
+	diff = (lhs - rhs);
+#endif
 	return diff.sign();
 }
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>

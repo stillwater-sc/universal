@@ -1,7 +1,17 @@
 #pragma once
-// cfloat.hpp: 'classic' float: definition of an arbitrary configuration linear floating-point representation
+// cfloat_impl.hpp: implementation of an arbitrary configuration fixed-size 'classic' floating-point representation
+// cfloat<> can emulate IEEE-754 floats and the new Deep Learning types, such as 
+// IEEE-754 half-precision floats
+// Google bfloat16
+// NVIDIA TensorFloat 
+// AMD FP16 and FP32
+// Microsoft FP8 and FP9
+// 
+// cfloat<> can also emulate more precise configurations, such as
+// 80bit IEEE-754 extended precision floats
+// true 128bit quad precision floats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -3672,5 +3682,21 @@ template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSuper
 inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
 	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////                  standard floating-point formats                  //////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+// IEEE-754
+using quarter = cfloat<  8,  2, uint16_t, true, false, false>;
+using fp8     = quarter;
+using half    = cfloat< 16,  5, uint16_t, true, false, false>;
+using fp16    = half;
+using single  = cfloat< 32,  8, uint32_t, true, false, false>;
+using fp32    = single;
+using dble    = cfloat< 64, 11, uint32_t, true, false, false>;
+using fp64    = dble;
+using quad    = cfloat<128, 15, uint32_t, true, false, false>;
+using fp128   = quad;
 
 }} // namespace sw::universal

@@ -1,7 +1,7 @@
 #pragma once
 // exceptions.hpp: definition of integer exceptions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
@@ -20,6 +20,11 @@ struct integer_divide_by_zero : public integer_arithmetic_exception {
 // overflow exception for integers
 struct integer_overflow : public integer_arithmetic_exception {
 	integer_overflow() : integer_arithmetic_exception("overflow") {}
+};
+
+// negative argument to a sqrt function
+struct integer_negative_sqrt_arg : public integer_arithmetic_exception {
+	integer_negative_sqrt_arg() : integer_arithmetic_exception("negative input argument to sqrt function") {}
 };
 
 ///////////////////////////////////////////////////////////////

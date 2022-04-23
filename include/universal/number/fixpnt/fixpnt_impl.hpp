@@ -1,7 +1,7 @@
 #pragma once
-// fixpnt.hpp: definition of an arbitrary configuration binary fixed-point number parameterized in total bits and radix bits
+// fixpnt_impl.hpp: implementation of an arbitrary configuration binary fixed-point number parameterized in total bits and radix bits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>

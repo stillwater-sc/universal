@@ -191,22 +191,29 @@ public:
 	}
 	// arithmetic operators
 	blockbinary& operator+=(const blockbinary& rhs) {
-		blockbinary sum;
-		bt* pA = _block;
-		bt const* pB = rhs._block;
-		bt* pC = sum._block;
-		bt* pEnd = pC + nrBlocks; // this is one element past the end: is that proper?
-		std::uint64_t carry = 0;
-		while (pC != pEnd) {
-			carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
-			*pC = static_cast<bt>(carry);
-			carry >>= bitsInBlock;
-			++pA; ++pB; ++pC;
+		if constexpr (nrBlocks == 1) {
+			_block[0] = static_cast<bt>(_block[0] + rhs.block(0));
+			// null any leading bits that fall outside of nbits
+			_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
 		}
-		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		BlockType* pLast = pEnd - 1;
-		*pLast = static_cast<bt>(MSU_MASK & *pLast);
-		*this = sum;
+		else {
+			blockbinary sum;
+			BlockType* pA = _block;
+			BlockType const* pB = rhs._block;
+			BlockType* pC = sum._block;
+			BlockType* pEnd = pC + nrBlocks;
+			std::uint64_t carry = 0;
+			while (pC != pEnd) {
+				carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
+				*pC = static_cast<bt>(carry);
+				carry >>= bitsInBlock;
+				++pA; ++pB; ++pC;
+			}
+			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+			BlockType* pLast = pEnd - 1;
+			*pLast = static_cast<bt>(MSU_MASK & *pLast);
+			*this = sum;
+		}
 		return *this;
 	}
 	blockbinary& operator-=(const blockbinary& rhs) {
@@ -247,18 +254,23 @@ public:
 			}
 		}
 		else {  // unsigned
-			blockbinary<nbits, BlockType, NumberType> base(*this);
-			blockbinary<nbits, BlockType, NumberType> multiplicant(rhs);
-			clear();
-			for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
-				std::uint64_t segment(0);
-				for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
-					segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
+			if constexpr (nrBlocks == 1) {
+				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
+			}
+			else {
+				blockbinary<nbits, BlockType, NumberType> base(*this);
+				blockbinary<nbits, BlockType, NumberType> multiplicant(rhs);
+				clear();
+				for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
+					std::uint64_t segment(0);
+					for (unsigned j = 0; j < static_cast<unsigned>(nrBlocks); ++j) {
+						segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(multiplicant.block(j));
 
-					if (i + j < static_cast<unsigned>(nrBlocks)) {
-						segment += _block[i + j];
-						_block[i + j] = static_cast<bt>(segment);
-						segment >>= bitsInBlock;
+						if (i + j < static_cast<unsigned>(nrBlocks)) {
+							segment += _block[i + j];
+							_block[i + j] = static_cast<bt>(segment);
+							segment >>= bitsInBlock;
+						}
 					}
 				}
 			}
@@ -284,13 +296,55 @@ public:
 	}
 #endif
 	blockbinary& operator/=(const blockbinary& rhs) {
-		quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
-		*this = result.quo;
+		if constexpr (nbits == (sizeof(BlockType) * 8)) {
+			if (rhs.iszero()) {
+				*this = 0;
+				return *this;
+			}
+			if constexpr (sizeof(BlockType) == 1) {
+				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 2) {
+				_block[0] = static_cast<bt>(std::int16_t(_block[0]) / std::int16_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 4) {
+				_block[0] = static_cast<bt>(std::int32_t(_block[0]) / std::int32_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 8) {
+				_block[0] = static_cast<bt>(std::int64_t(_block[0]) / std::int64_t(rhs._block[0]));
+			}
+			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
+		}
+		else {
+			quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
+			*this = result.quo;
+		}
 		return *this;
 	}
 	blockbinary& operator%=(const blockbinary& rhs) {
-		quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
-		*this = result.rem;
+		if constexpr (nbits == (sizeof(BlockType) * 8)) {
+			if (rhs.iszero()) {
+				*this = 0;
+				return *this;
+			}
+			if constexpr (sizeof(BlockType) == 1) {
+				_block[0] = static_cast<bt>(std::int8_t(_block[0]) % std::int8_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 2) {
+				_block[0] = static_cast<bt>(std::int16_t(_block[0]) % std::int16_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 4) {
+				_block[0] = static_cast<bt>(std::int32_t(_block[0]) % std::int32_t(rhs._block[0]));
+			}
+			else if constexpr (sizeof(BlockType) == 8) {
+				_block[0] = static_cast<bt>(std::int64_t(_block[0]) % std::int64_t(rhs._block[0]));
+			}
+			_block[0] = static_cast<bt>(MSU_MASK & _block[0]);
+		}
+		else {
+			quorem<nbits, BlockType, NumberType> result = longdivision(*this, rhs);
+			*this = result.rem;
+		}
 		return *this;
 	}
 	// shift left operator

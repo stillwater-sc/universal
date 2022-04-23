@@ -1,7 +1,7 @@
 #pragma once
-// unum.hpp: definition of the flexible configuration universal number system
+// unum_impl.hpp: implementation of the flexible configuration universal number system
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>

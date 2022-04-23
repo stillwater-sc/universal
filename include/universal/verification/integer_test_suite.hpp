@@ -446,7 +446,7 @@ namespace sw { namespace universal {
 					iresult = ia / ib;
 				}
 				catch (const integer_divide_by_zero& e) {
-					if (ib == integer<nbits, BlockType>(0)) {
+					if (ib.iszero()) {
 						// correctly caught the exception
 						continue;
 					}

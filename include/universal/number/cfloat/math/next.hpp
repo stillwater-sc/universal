@@ -23,10 +23,10 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es> nextafter(cfloat<nbits, es, bt> x, cfloat<nbits, es, bt> target) {
+template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+cfloat<nbits,es, bt, hasSubnormal, hasSupernormal, isSaturating> nextafter(cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x, cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> target) {
 	if (x == target) return target;
-	if (target.isnar()) {
+	if (target.isnan()) {
 		if (x.isneg()) {
 			--x;
 		}
@@ -45,11 +45,11 @@ cfloat<nbits,es> nextafter(cfloat<nbits, es, bt> x, cfloat<nbits, es, bt> target
 	return x;
 }
 		
-template<size_t nbits, size_t es, typename bt>
-cfloat<nbits,es> nexttoward(cfloat<nbits, es, bt> x, cfloat<256, 5, bt> target) {
-	cfloat<256, 5, bt> _x(x);
+template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+cfloat<nbits,es, bt, hasSubnormal, hasSupernormal, isSaturating> nexttoward(cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x, cfloat<128, 15, bt, hasSubnormal, hasSupernormal, isSaturating> target) {
+	cfloat<128, 15, bt, hasSubnormal, hasSupernormal, isSaturating> _x(x);
 	if (_x == target) return x;
-	if (target.isnar()) {
+	if (target.isnan()) {
 		if (_x.isneg()) {
 			--_x;
 		}

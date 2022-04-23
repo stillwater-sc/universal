@@ -1,7 +1,7 @@
 #pragma once
-// areal.hpp: definition of an arbitrary configuration linear floating-point representation
+// areal_impl.hpp: implementation of an arbitrary configuration fixed-size floating-point representation with an uncertainty bit to represent a faithful floating-point system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -524,7 +524,7 @@ public:
 #endif
 				if (shiftRight > 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
-					raw >>= (shiftRight + adjustment);
+					raw >>= (static_cast<std::int64_t>(shiftRight) + adjustment);
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
 					// ubit = false; already set to false

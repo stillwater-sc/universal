@@ -58,7 +58,7 @@ namespace sw { namespace universal {
 			b = b * a;
 		}
 		if (b == Scalar(-1.0f)) {
-			Scalar a, b{ 1.0625f };
+			a = 0, b = 1.0625f;
 			for (size_t i = 1; i < 10; ++i) {
 				a = data[i % 2];
 				std::cout << a << " : " << b << '\n';

@@ -9,19 +9,20 @@
 namespace sw { namespace universal {
 
 // Generate a type tag for general integer
-template<size_t nbits, typename bt>
-std::string type_tag(const integer<nbits, bt>& v) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+std::string type_tag(const integer<nbits, BlockType, NumberType>& v) {
 	std::stringstream str;
 	if (v.iszero()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
 	str << "integer<"
 	    << std::setw(4) << nbits << ", "
-	    << typeid(bt).name() << '>';
+	    << typeid(BlockType).name() << ", "
+		<< typeid(NumberType).name() << '>';
 	return str.str();
 }
 
 // return in triple form (sign, scale, fraction)
-template<size_t nbits, typename bt>
-inline std::string to_triple(const integer<nbits, bt>& number) {
+template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+inline std::string to_triple(const integer<nbits, BlockType, NumberType>& number) {
 	std::stringstream str;
 
 	// print sign bit

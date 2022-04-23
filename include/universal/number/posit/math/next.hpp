@@ -25,7 +25,7 @@ Return Value
 	*/
 template<size_t nbits, size_t es>
 posit<nbits,es> nextafter(posit<nbits,es> x, posit<nbits, es> target) {
-	if (x == target) return target;
+	if (x == target || x.isnar()) return x;
 	if (target.isnar()) {
 		if (x.isneg()) {
 			--x;
@@ -48,24 +48,23 @@ posit<nbits,es> nextafter(posit<nbits,es> x, posit<nbits, es> target) {
 template<size_t nbits, size_t es>
 posit<nbits,es> nexttoward(posit<nbits,es> x, posit<256, 5> target) {
 	posit<256, 5> _x(x);
-	if (_x == target) return x;
+	if (_x == target || x.isnar()) return x;
 	if (target.isnar()) {
-		if (_x.isneg()) {
-			--_x;
+		if (x.isneg()) {
+			--x;
 		}
 		else {
-			++_x;
+			++x;
 		}
 	}
 	else {
 		if (_x > target) {
-			--_x;
+			--x;
 		}
 		else {
-			++_x;
+			++x;
 		}
 	}
-	x = _x;
 	return x;
 }
 

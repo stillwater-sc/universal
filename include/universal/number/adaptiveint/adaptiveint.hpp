@@ -1,6 +1,6 @@
 // adaptiveint arithmetic type standard header
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _ADAPTIVEINT_STANDARD_HEADER_
@@ -24,12 +24,15 @@
 #define ADAPTIVEINT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
+#include <universal/utility/bit_cast.hpp>
+#include <universal/utility/long_double.hpp>
+
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/adaptiveint/adaptiveint_impl.hpp>
-//#include <universal/number/adaptiveint/numeric_limits.hpp>
+#include <universal/number/adaptiveint/numeric_limits.hpp>
 #include <universal/number/adaptiveint/exceptions.hpp>
-//#include <universal/number/adaptiveint/manipulators.hpp>
+#include <universal/number/adaptiveint/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
