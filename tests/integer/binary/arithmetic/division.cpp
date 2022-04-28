@@ -16,6 +16,8 @@
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/integer_test_suite.hpp>
 
+#include <universal/native/integers.hpp>
+
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type
    that enables fast computation with exceptions for overflow, so that the type
@@ -205,8 +207,20 @@ void ExamplePattern() {
 	GenerateDivTest<sw::universal::integer<16> >(2, 16, z);
 }
 
+
+template<size_t nbits, typename BlockType, sw::universal::IntegerNumberType NumberType>
+void showLimbs(const sw::universal::integer<nbits, BlockType, NumberType>& a) {
+	using Integer = sw::universal::integer<nbits, BlockType, NumberType>;
+	size_t i = Integer::MSU;
+	while (i > 0) {
+		std::cout << sw::universal::to_binary(a.block(i), sizeof(BlockType)*8) << ", ";
+		--i;
+	}
+	std::cout << sw::universal::to_binary(a.block(0));
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -234,16 +248,23 @@ try {
 
 #if MANUAL_TESTING
 
-	integer<20, uint16_t> a, b, c;
-	a = 0;
+	integer<20, uint8_t> a, b, c;
+	a = 1000;
 	b = 100;
 	GenerateDivTest(a, b, c);
 
-//	TestFastdiv();
-	ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "integer<4, uint8_t>", test_tag);
-	ReportTestResult(VerifyDivision<11, uint8_t>(reportTestCases), "integer<11, uint8_t>", test_tag);
+	std::cout << "a : "; showLimbs(a); std::cout << '\n';
+	std::cout << "b : "; showLimbs(b); std::cout << '\n';
+	divide(c, a, b);
+	std::cout << c << '\n';
 
-	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t >(reportTestCases), "integer<16, uint8_t >", test_tag);
+	return 0;
+
+//	TestFastdiv();
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "integer<4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint8_t>(reportTestCases), "integer<11, uint8_t>", test_tag);
+
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t >(reportTestCases), "integer<16, uint8_t >", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
