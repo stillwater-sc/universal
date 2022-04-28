@@ -101,7 +101,6 @@ void GenerateTestCaseAtanh(Ty v) {
 
 
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
 
 const double pi = 3.14159265358979323846;
 
@@ -109,10 +108,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "cfloat<> mathlib hyperbolic function validation";
+	std::string test_tag    = "hyperbolic";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -126,12 +127,15 @@ try {
 	std::cout << '\n';
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySinh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2>", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< cfloat<8, 2, uint8_t> >(reportTestCases), "cfloat<8,2>", "asinh");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
 	std::cout << "cfloat hyperbolic sine/cosine/tangent function validation\n";

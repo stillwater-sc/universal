@@ -15,11 +15,11 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "cfloat<> mathlib classification validation";
-	std::string test_tag    = "assignment";
-//	bool reportTestCases    = false;
-//	int nrOfFailedTestCases = 0;
+	std::string test_tag    = "classify";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -92,6 +92,8 @@ try {
 //		<< "isnan(DBL_MIN/2.0) = " << isnan(dblmin / 2.0) << '\n'
 		<< "isnan(1.0) = " << isnan(cone) << '\n';
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

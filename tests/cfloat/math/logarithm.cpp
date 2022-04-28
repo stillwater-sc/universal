@@ -37,7 +37,7 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -62,6 +62,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyLog2< cfloat<8, 4, uint8_t> >(reportTestCases), "cfloat<8,4>", "log2");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog10< cfloat <8, 4, uint8_t > >(reportTestCases), "cfloat<8,4>", "log10");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
 	// nbits=64 requires long double compiler support

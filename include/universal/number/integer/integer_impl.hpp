@@ -249,16 +249,16 @@ public:
 	}
 
 	// conversion operators
-	explicit operator unsigned short()     const { return to_integer<unsigned short>(); }
-	explicit operator unsigned int()       const { return to_integer<unsigned int>(); }
-	explicit operator unsigned long()      const { return to_integer<unsigned long>(); }
-	explicit operator unsigned long long() const { return to_integer<unsigned long long>(); }
-	explicit operator short()              const { return to_integer<short>(); }
-	explicit operator int()                const { return to_integer<int>(); }
-	explicit operator long()               const { return to_integer<long>(); }
-	explicit operator long long()          const { return to_integer<long long>(); }
-	explicit operator float()              const { return to_real<float>(); }
-	explicit operator double()             const { return to_real<double>(); }
+	explicit operator unsigned short()     const noexcept { return to_integer<unsigned short>(); }
+	explicit operator unsigned int()       const noexcept { return to_integer<unsigned int>(); }
+	explicit operator unsigned long()      const noexcept { return to_integer<unsigned long>(); }
+	explicit operator unsigned long long() const noexcept { return to_integer<unsigned long long>(); }
+	explicit operator short()              const noexcept { return to_integer<short>(); }
+	explicit operator int()                const noexcept { return to_integer<int>(); }
+	explicit operator long()               const noexcept { return to_integer<long>(); }
+	explicit operator long long()          const noexcept { return to_integer<long long>(); }
+	explicit operator float()              const noexcept { return to_real<float>(); }
+	explicit operator double()             const noexcept { return to_real<double>(); }
 #if LONG_DOUBLE_SUPPORT
 	explicit operator long double() const { return to_real<long double>(); }
 #endif
@@ -815,9 +815,9 @@ public:
 protected:
 	// HELPER methods
 
-	// TODO: conditional NOEXCEPT when we are not throwing arithmetic exceptions?
+	// TODO: need to properly implement signed <-> unsigned conversions
 	template<typename IntType>
-	IntType to_integer() const {
+	IntType to_integer() const noexcept {
 		IntType v{ 0 };
 		if (*this == 0) return v;
 		constexpr unsigned sizeofint = 8 * sizeof(IntType);
@@ -872,13 +872,13 @@ inline integer<nbits, BlockType, NumberType> abs(const integer<nbits, BlockType,
 	return (a >= 0 ? b : b.twosComplement());
 }
 
-// free function generator to create a 1's complement copy of an integer
+// free function to create a 1's complement copy of an integer
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline integer<nbits, BlockType, NumberType> onesComplement(const integer<nbits, BlockType, NumberType>& value) {
 	integer<nbits, BlockType, NumberType> ones(value);
 	return ones.flip();
 }
-// free function generator to create the 2's complement of an integer
+// free function to create the 2's complement of an integer
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline integer<nbits, BlockType, NumberType> twosComplement(const integer<nbits, BlockType, NumberType>& value) {
 	integer<nbits, BlockType, NumberType> twos(value);
@@ -953,23 +953,62 @@ inline signed findMsb(const integer<nbits, BlockType, NumberType>& v) {
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
 
-// divide integer<nbits, BlockType, NumberType> a and b and return result argument
+// divide returns the ratio of u and v in c
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
-void divide(const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b, integer<nbits, BlockType, NumberType>& quotient) {
-	if (b == integer<nbits, BlockType, NumberType>(0)) {
+void divide(integer<nbits, BlockType, NumberType>& c, const integer<nbits, BlockType, NumberType>& u, const integer<nbits, BlockType, NumberType>& v) {
+	if (v.iszero()) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(a, b);
-	quotient = divresult.quot;
+	using Integer = integer<nbits, BlockType, NumberType>;
+	// given two nonnegative numbers a = (a_1a_2..a_m+n)_b and v = (v_1v_2...v_n)_b, where v_1 != 0, and n > 1
+	// step 1: calculate a normalization factor d = floor(b / (v_1 + 1)
+	// to scale both u and v so that v_1 becomes >= floor(b/2)
+
+	idiv_t<nbits, BlockType, NumberType> divresult;
+	if (u > v) {
+		std::cout << "normalize\n";
+		std::uint64_t b = Integer::ALL_ONES + 1;
+		std::cout << b << '\n';
+		
+		int i = static_cast<int>(Integer::MSU);
+		while (v.block(static_cast<size_t>(i)) == 0) {
+			--i;
+		}
+		std::uint64_t vStart = v.block(static_cast<size_t>(i)) + 1;
+		std::uint64_t d = b / vStart;
+		std::cout << "normalization d = " << d << " = " << b << " / " << vStart << '\n';
+		Integer _u = u * Integer(d);
+		Integer _v = v * Integer(d);
+		std::uint64_t v_1 = _v.block(static_cast<size_t>(i));
+		std::uint64_t v_2 = 0;
+		
+		std::cout << "scaled u : " << to_binary(_u, true) << '\n';
+		std::cout << "scaled v : " << to_binary(_v, true) << '\n';
+		std::cout << "v_1      : " << to_binary(Integer(v_1), true) << '\n';
+		// start long division of limbs
+		for (size_t j = 0; j < Integer::nrBlocks-1; ++j) {
+			std::uint64_t u_j = _u.block(Integer::MSU - j);
+			if (u_j == 0) continue;
+			std::uint64_t u_jplus1 = _u.block(Integer::MSU - j - 1);
+			std::uint64_t u_jplus2 = _u.block(Integer::MSU - j - 2);
+			std::uint64_t qHat = (u_j == v_1 ? b - 1 : (u_j * b + u_jplus1) / v_1);
+			std::cout << "qHat     : " << qHat << " = " << u_j << " * " << b << " + " << u_jplus1 << " / " << v_1 << '\n';
+			// test if v2*qHat > (u_j*b + u_jplus1 - qhat*v_1) * b + u_j+2
+			if (v_2 * qHat > ((u_j * b + u_jplus1 - qHat * v_1) * b + u_jplus2)) {
+				--qHat;
+			}
+		}
+	}
+	c = divresult.quot;
 }
 
-// calculate remainder of integer<nbits, BlockType, NumberType> a and b and return result argument
+// remainder returns a mod b in c
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
-void remainder(const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b, integer<nbits, BlockType, NumberType>& remainder) {
+void remainder(integer<nbits, BlockType, NumberType>& c, const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b) {
 	if (b == integer<nbits, BlockType, NumberType>(0)) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
@@ -978,7 +1017,7 @@ void remainder(const integer<nbits, BlockType, NumberType>& a, const integer<nbi
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
 	idiv_t<nbits, BlockType, NumberType> divresult = idiv<nbits, BlockType, NumberType>(a, b);
-	remainder = divresult.rem;
+	c = divresult.rem;
 }
 
 // divide integer<nbits, BlockType, NumberType> a and b and return result argument

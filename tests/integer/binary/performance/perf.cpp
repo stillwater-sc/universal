@@ -156,7 +156,9 @@ namespace sw::universal::internal {
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("integer<  8>   division      ", DivisionWorkload< sw::universal::integer<  8, uint8_t> >, NR_OPS);
 		PerformanceRunner("integer< 16>   division      ", DivisionWorkload< sw::universal::integer< 16, uint16_t> >, NR_OPS);
+		PerformanceRunner("integer< 24>   division      ", DivisionWorkload< sw::universal::integer< 24, uint32_t> >, NR_OPS / 2);
 		PerformanceRunner("integer< 32>   division      ", DivisionWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("integer< 48>   division      ", DivisionWorkload< sw::universal::integer< 48, uint32_t> >, NR_OPS / 2);
 		PerformanceRunner("integer< 64>   division      ", DivisionWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS / 2);	// uint64_t works because it is a single block
 		PerformanceRunner("integer<128>   division      ", DivisionWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
 
@@ -203,7 +205,9 @@ namespace sw::universal::internal {
 		size_t NR_OPS = 512ull;
 		PerformanceRunner("integer<   8>  ostream      ", SerializationWorkload< sw::universal::integer<   8, uint8_t> >, NR_OPS);
 		PerformanceRunner("integer<  16>  ostream      ", SerializationWorkload< sw::universal::integer<  16, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<  24>  ostream      ", SerializationWorkload< sw::universal::integer<  24, uint8_t> >, NR_OPS);
 		PerformanceRunner("integer<  32>  ostream      ", SerializationWorkload< sw::universal::integer<  32, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<  48>  ostream      ", SerializationWorkload< sw::universal::integer<  48, uint8_t> >, NR_OPS);
 		PerformanceRunner("integer<  64>  ostream      ", SerializationWorkload< sw::universal::integer<  64, uint8_t> >, NR_OPS);
 		PerformanceRunner("integer< 128>  ostream      ", SerializationWorkload< sw::universal::integer< 128, uint8_t> >, NR_OPS);
 		PerformanceRunner("integer< 256>  ostream      ", SerializationWorkload< sw::universal::integer< 256, uint8_t> >, NR_OPS);

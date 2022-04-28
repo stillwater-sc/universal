@@ -1683,8 +1683,10 @@ public:
 	}
 
 	// casts to native types
+	int to_int() const { return int(to_native<float>()); }
 	long to_long() const { return long(to_native<double>()); }
 	long long to_long_long() const { return (long long)(to_native<double>()); }
+
 	// transform an cfloat to a native C++ floating-point. We are using the native
 	// precision to compute, which means that all sub-values need to be representable 
 	// by the native precision.
@@ -1763,7 +1765,8 @@ public:
 	}
 
 	// make conversions to native types explicit
-	explicit operator int()       const noexcept { return to_long_long(); }
+	explicit operator int()       const noexcept { return to_int(); }
+	explicit operator long()      const noexcept { return to_long(); }
 	explicit operator long long() const noexcept { return to_long_long(); }
 	explicit operator float()     const noexcept { return to_native<float>(); }
 	explicit operator double()    const noexcept { return to_native<double>(); }

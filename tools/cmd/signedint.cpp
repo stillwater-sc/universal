@@ -18,6 +18,7 @@ void ParseAndReport(const std::string& arg) {
 	std::cout << " binary form : " << sw::universal::to_binary(v, true) << '\n';
 	std::cout << " triple form : " << sw::universal::to_triple(v) << '\n';
 }
+
 // receive an unsigned integer and print its components
 int main(int argc, char** argv)
 try {
