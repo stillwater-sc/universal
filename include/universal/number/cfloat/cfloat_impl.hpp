@@ -846,8 +846,7 @@ public:
 		return tmp;
 	}
 
-	// modifiers
-	
+	// modifiers	
 	inline constexpr void clear() noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
@@ -1232,13 +1231,21 @@ public:
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
+	// truncate the fraction, that is, null all fraction bits
+	inline constexpr cfloat& truncate() noexcept {
+		for (size_t b = 0; b < FSU; ++b) {
+			_block[b] = bt(0);
+		}
+		_block[FSU] &= bt(~FSU_MASK);
+		return *this;
+	}
 
 	/// <summary>
 	/// assign the value of the string representation to the cfloat
 	/// </summary>
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
-	/// CLANG doesn't support a constexpr basic_string, so constexpr is conditional
+	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
 	inline CONSTEXPRESSION cfloat& assign(const std::string& str) noexcept {
 		clear();
 		size_t nrChars = str.size();
@@ -1587,9 +1594,9 @@ public:
 			}
 		}
 	}
-	// blockbinary is a 2's complement encoding, so we need to 0 extend the fraction, hence the fbits+1 size
-	template<size_t fbits>
-	inline constexpr blockbinary<fbits, bt>& fraction(blockbinary<fbits, bt>& f) const {
+	template<size_t targetFractionBits>
+	inline constexpr blockbinary<targetFractionBits, bt>& fraction(blockbinary<targetFractionBits, bt>& f) const {
+		static_assert(targetFractionBits >= fbits, "target blockbinary is too small and can't receive all fraction bits");
 		f.clear();
 		if constexpr (0 == nrBlocks) return f;
 		else if constexpr (1 == nrBlocks) {
@@ -2068,7 +2075,12 @@ public:
 		std::cout << "topfbits          : " << topfbits << '\n';
 		std::cout << "ALL_ONE_MASK_FR   : " << to_binary(ALL_ONES_FR) << '\n';
 	}
-
+	void blocks() const {
+		for (size_t b = 0; b < fBlocks; ++b) {
+			std::cout << to_binary(_block[fBlocks - b - 1], sizeof(bt) * 8) << ' ';
+		}
+		std::cout << '\n';
+	}
 protected:
 	// HELPER methods
 
