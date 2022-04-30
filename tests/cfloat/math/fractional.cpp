@@ -105,17 +105,29 @@ try {
 
 	std::cout << "IEEE-754 float reference\n";
 	std::cout << "fmod      : " << fmod(fa, fb) << " : " << fa << " : " << fb << '\n';
-	std::cout << "fmod      : " << fmod(fb, fa) << " : " << fb << " : " << fa << '\n';
+	std::cout << "fmod      : " << fmod(-fa, fb) << " : " << -fa << " : " << fb << '\n';
+	std::cout << "fmod      : " << fmod(fb, -fa) << " : " << fb << " : " << fa << '\n';
+	std::cout << "fmod      : " << fmod(fb, fa) << " : " << fb << " : " << -fa << '\n';
 	std::cout << "remainder : " << remainder(fa, fb) << " : " << fa << " : " << fb << '\n';
 	std::cout << "remainder : " << remainder(fb, fa) << " : " << fb << " : " << fa << '\n';
 //	std::cout << "frac      : " << std::frac(fa) << " : " << fa << '\n';
 
 	std::cout << "cfloat results\n";
 	std::cout << "fmod      : " << fmod(a, b) << " : " << a << " : " << b << '\n';
+	std::cout << "fmod      : " << fmod(-a, b) << " : " << -a << " : " << b << '\n';
 	std::cout << "fmod      : " << fmod(b, a) << " : " << b << " : " << a << '\n';
+	std::cout << "fmod      : " << fmod(b, -a) << " : " << b << " : " << -a << '\n';
 	std::cout << "remainder : " << remainder(a, b) << " : " << a << " : " << b << '\n';
 	std::cout << "remainder : " << remainder(b, a) << " : " << b << " : " << a << '\n';
 	std::cout << "frac      : " << frac(a) << " : " << a << '\n';
+	std::cout << "frac      : " << frac(Real(-2.0625)) << " : " << Real(-2.0625) << '\n';
+	for (int i = 0; i < 10; ++i) {
+		Real x = 0.5;
+		Real exp = pow(10.0, i);
+		x += exp;
+		std::cout << "frac      : " << to_binary(frac(x)) << " : " << frac(x) << " : " << to_binary(x) << " : " << x << '\n';
+	}
+
 
 	{
 		using Real = cfloat<16, 2, uint8_t, false, false, false>;
@@ -132,6 +144,10 @@ try {
 		c = test_fmod(a, b);
 		std::cout << "fmod = " << c << '\n';
 		c = test_fmod(b, a);
+		std::cout << "fmod = " << c << '\n';
+		c = test_fmod(-a, b);
+		std::cout << "fmod = " << c << '\n';
+		c = test_fmod(b, -a);
 		std::cout << "fmod = " << c << '\n';
 	}
 
@@ -153,6 +169,7 @@ try {
 		test_frac(a = 2.25);
 		test_frac(a = 0.25);
 		test_frac(a = 0.0625);
+		test_frac(a = -0.0625);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

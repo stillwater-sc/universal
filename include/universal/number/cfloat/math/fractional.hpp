@@ -30,7 +30,7 @@ template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSuper
 cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> frac(cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
 	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	long long intValue = (long long)(x);
-	return (x-Real(intValue));
+	return abs(x-Real(intValue));  // with the logic that fractions are unsigned quantities
 }
 
 
