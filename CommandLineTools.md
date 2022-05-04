@@ -9,10 +9,10 @@ The following segments presents short description of their use.
 Compare the three IEEE formats on a given real number value:
 
 ```text
-λ ./compieee.exe
+λ ./ieee.exe
 Show the truncated value and (sign/scale/fraction) components of different floating point types.
 Usage: compieee floating_point_value
-Example: compieee 0.03124999
+Example: ieee 0.03124999
 input value:                0.03124999
       float:              0.0312499907 (+,-6,11111111111111111111011)
      double:      0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)
@@ -24,11 +24,11 @@ long double:  0.0312499899999999983247 (+,-6,11111111111111111110100101111010001
 Show the sign/scale/fraction components of an IEEE float.
 
 ```text
-λ ./compf.exe
+λ ./float.exe
 compf : components of an IEEE single-precision float
 Show the sign/scale/fraction components of an IEEE float.
-Usage: compf float_value
-Example: compf 0.03124999
+Usage: float float_value
+Example: float 0.03124999
 float: 0.031249990686774254 (+,-6,11111111111111111111011)
 ```
 
@@ -37,11 +37,11 @@ float: 0.031249990686774254 (+,-6,11111111111111111111011)
 Show the sign/scale/fraction components of an IEEE double.
 
 ```text
-λ ./compd.exe
+λ ./double.exe
 compd : components of an IEEE double-precision float
 Show the sign/scale/fraction components of an IEEE double.
-Usage: compf double_value
-Example: compd 0.03124999
+Usage: double double_value
+Example: double 0.03124999
 double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)
 ```
 
@@ -50,11 +50,11 @@ double: 0.031249989999999998 (+,-6,111111111111111111110101010000110011100010001
 Show the sign/scale/fraction components of an IEEE long double. On Windows using the Microsoft Visual Studio environment, the `long double` is aliased to `double`.
 
 ```text
-λ ./compld.exe
+λ ./longdouble.exe
 compld: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V
 Show the sign/scale/fraction components of an IEEE long double.
-Usage: compld long_double_value
-Example: compld 0.03124999
+Usage: longdouble long_double_value
+Example: longdouble 0.03124999
 long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)
 ```
 
@@ -63,11 +63,11 @@ long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011
 Show the sign/scale/fraction components of a fixed-point value.
 
 ```text
-λ ./compfp.exe
+λ ./fixpnt.exe
 compfp : components of a fixed-point value
 Show the sign/scale/fraction components of a fixed-point value.
-Usage: compfp float_value
-Example: compfp 1.0625
+Usage: fixpnt float_value
+Example: fixpnt 1.0625
 class sw::unum::fixpnt<32,16,1,unsigned char>: 1.0625000000000000 b0000000000000001.0001000000000000
 ```
 
@@ -100,11 +100,11 @@ Quire segments
 Show the sign/scale/fraction components of a signed integer.
 
 ```text
-λ ./compsi.exe
+λ ./signedint.exe
 compsi : components of a signed integer
 Show the sign/scale/fraction components of a signed integer.
-Usage: compsi integer_value
-Example: compsi 1234567890123456789012345
+Usage: signedint integer_value
+Example: signedint 1234567890123456789012345
 class sw::unum::integer<128,unsigned int>         : 1234567890123456789012345 (+,80,00000101011011100000111100110110101001100100010000111101111000101101111101111001)
 ```
 
@@ -113,11 +113,11 @@ class sw::unum::integer<128,unsigned int>         : 1234567890123456789012345 (+
 Show the sign/scale/fraction components of an unsigned integer.
 
 ```text
-λ ./compui.exe
+λ ./unsignedint.exe
 compui : components of an unsigned integer
 Show the sign/scale/fraction components of an unsigned integer.
-Usage: compui integer_value
-Example: compui 123456789012345670
+Usage: unsignedint integer_value
+Example: unsignedint 123456789012345670
 TBD:
 ```
 
@@ -126,11 +126,11 @@ TBD:
 Show the sign/scale/regime/exponent/fraction components of a posit.
 
 ```text
-λ ./compp.exe
+λ ./posit.exe
 pc : posit components
 Show the sign/scale/regime/exponent/fraction components of a posit.
-Usage: pc float_value
-Example: pc -1.123456789e17
+Usage: posit float_value
+Example: posit -1.123456789e17
 posit< 8, 0> = s1 r1111111 e f qNW v-64
 posit< 8, 1> = s1 r1111111 e f qNW v-4096
 posit< 8, 2> = s1 r1111111 e f qNW v-16777216
@@ -412,3 +412,147 @@ numeric_limits< sw::unum::posit<256, 5> >::round_style       : 1
 ## propq
 
 Show size tables of quires.
+
+```text
+λ ./propq.exe
+print quire size tables
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+       4      18      26      42      74     138     266     522    1034    2058    4106
+       5      22      34      58     106     202     394     778    1546    3082    6154
+       6      26      42      74     138     266     522    1034    2058    4106    8202
+       7      30      50      90     170     330     650    1290    2570    5130   10250
+       8      34      58     106     202     394     778    1546    3082    6154   12298
+       9      38      66     122     234     458     906    1802    3594    7178   14346
+      10      42      74     138     266     522    1034    2058    4106    8202   16394
+      11      46      82     154     298     586    1162    2314    4618    9226   18442
+      12      50      90     170     330     650    1290    2570    5130   10250   20490
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+       8      34      58     106     202     394     778    1546    3082    6154   12298
+       9      38      66     122     234     458     906    1802    3594    7178   14346
+      10      42      74     138     266     522    1034    2058    4106    8202   16394
+      11      46      82     154     298     586    1162    2314    4618    9226   18442
+      12      50      90     170     330     650    1290    2570    5130   10250   20490
+      13      54      98     186     362     714    1418    2826    5642   11274   22538
+      14      58     106     202     394     778    1546    3082    6154   12298   24586
+      15      62     114     218     426     842    1674    3338    6666   13322   26634
+      16      66     122     234     458     906    1802    3594    7178   14346   28682
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+      16      66     122     234     458     906    1802    3594    7178   14346   28682
+      17      70     130     250     490     970    1930    3850    7690   15370   30730
+      18      74     138     266     522    1034    2058    4106    8202   16394   32778
+      19      78     146     282     554    1098    2186    4362    8714   17418   34826
+      20      82     154     298     586    1162    2314    4618    9226   18442   36874
+      21      86     162     314     618    1226    2442    4874    9738   19466   38922
+      22      90     170     330     650    1290    2570    5130   10250   20490   40970
+      23      94     178     346     682    1354    2698    5386   10762   21514   43018
+      24      98     186     362     714    1418    2826    5642   11274   22538   45066
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+      24      98     186     362     714    1418    2826    5642   11274   22538   45066
+      25     102     194     378     746    1482    2954    5898   11786   23562   47114
+      26     106     202     394     778    1546    3082    6154   12298   24586   49162
+      27     110     210     410     810    1610    3210    6410   12810   25610   51210
+      28     114     218     426     842    1674    3338    6666   13322   26634   53258
+      29     118     226     442     874    1738    3466    6922   13834   27658   55306
+      30     122     234     458     906    1802    3594    7178   14346   28682   57354
+      31     126     242     474     938    1866    3722    7434   14858   29706   59402
+      32     130     250     490     970    1930    3850    7690   15370   30730   61450
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+      32     130     250     490     970    1930    3850    7690   15370   30730   61450
+      33     134     258     506    1002    1994    3978    7946   15882   31754   63498
+      34     138     266     522    1034    2058    4106    8202   16394   32778   65546
+      35     142     274     538    1066    2122    4234    8458   16906   33802   67594
+      36     146     282     554    1098    2186    4362    8714   17418   34826   69642
+      37     150     290     570    1130    2250    4490    8970   17930   35850   71690
+      38     154     298     586    1162    2314    4618    9226   18442   36874   73738
+      39     158     306     602    1194    2378    4746    9482   18954   37898   75786
+      40     162     314     618    1226    2442    4874    9738   19466   38922   77834
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+      40     162     314     618    1226    2442    4874    9738   19466   38922   77834
+      41     166     322     634    1258    2506    5002    9994   19978   39946   79882
+      42     170     330     650    1290    2570    5130   10250   20490   40970   81930
+      43     174     338     666    1322    2634    5258   10506   21002   41994   83978
+      44     178     346     682    1354    2698    5386   10762   21514   43018   86026
+      45     182     354     698    1386    2762    5514   11018   22026   44042   88074
+      46     186     362     714    1418    2826    5642   11274   22538   45066   90122
+      47     190     370     730    1450    2890    5770   11530   23050   46090   92170
+      48     194     378     746    1482    2954    5898   11786   23562   47114   94218
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+      48     194     378     746    1482    2954    5898   11786   23562   47114   94218
+      49     198     386     762    1514    3018    6026   12042   24074   48138   96266
+      50     202     394     778    1546    3082    6154   12298   24586   49162   98314
+      51     206     402     794    1578    3146    6282   12554   25098   50186  100362
+      52     210     410     810    1610    3210    6410   12810   25610   51210  102410
+      53     214     418     826    1642    3274    6538   13066   26122   52234  104458
+      54     218     426     842    1674    3338    6666   13322   26634   53258  106506
+      55     222     434     858    1706    3402    6794   13578   27146   54282  108554
+      56     226     442     874    1738    3466    6922   13834   27658   55306  110602
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+      56     226     442     874    1738    3466    6922   13834   27658   55306  110602
+      57     230     450     890    1770    3530    7050   14090   28170   56330  112650
+      58     234     458     906    1802    3594    7178   14346   28682   57354  114698
+      59     238     466     922    1834    3658    7306   14602   29194   58378  116746
+      60     242     474     938    1866    3722    7434   14858   29706   59402  118794
+      61     246     482     954    1898    3786    7562   15114   30218   60426  120842
+      62     250     490     970    1930    3850    7690   15370   30730   61450  122890
+      63     254     498     986    1962    3914    7818   15626   31242   62474  124938
+      64     258     506    1002    1994    3978    7946   15882   31754   63498  126986
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+      64     258     506    1002    1994    3978    7946   15882   31754   63498  126986
+      65     262     514    1018    2026    4042    8074   16138   32266   64522  129034
+      66     266     522    1034    2058    4106    8202   16394   32778   65546  131082
+      67     270     530    1050    2090    4170    8330   16650   33290   66570  133130
+      68     274     538    1066    2122    4234    8458   16906   33802   67594  135178
+      69     278     546    1082    2154    4298    8586   17162   34314   68618  137226
+      70     282     554    1098    2186    4362    8714   17418   34826   69642  139274
+      71     286     562    1114    2218    4426    8842   17674   35338   70666  141322
+      72     290     570    1130    2250    4490    8970   17930   35850   71690  143370
+
+Quire size table as a function of <nbits, es, capacity = 10>
+Capacity is 2^10 accumulations of max_pos^2
+   nbits                               es value
+       +       0       1       2       3       4       5       6       7       8       9
+      80     322     634    1258    2506    5002    9994   19978   39946   79882  159754
+      81     326     642    1274    2538    5066   10122   20234   40458   80906  161802
+      82     330     650    1290    2570    5130   10250   20490   40970   81930  163850
+      83     334     658    1306    2602    5194   10378   20746   41482   82954  165898
+      84     338     666    1322    2634    5258   10506   21002   41994   83978  167946
+      85     342     674    1338    2666    5322   10634   21258   42506   85002  169994
+      86     346     682    1354    2698    5386   10762   21514   43018   86026  172042
+      87     350     690    1370    2730    5450   10890   21770   43530   87050  174090
+      88     354     698    1386    2762    5514   11018   22026   44042   88074  176138
+```
