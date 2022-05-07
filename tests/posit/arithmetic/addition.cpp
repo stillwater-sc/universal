@@ -48,6 +48,10 @@ void GenerateTestCase(Ty a, Ty b) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -71,11 +75,10 @@ try {
 	GenerateTestCase<3, 0>(0.5f, 1.0f);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 1>("Manual Testing", true), "posit<3,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 2>("Manual Testing", true), "posit<3,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 3>("Manual Testing", true), "posit<3,3>", "addition");
-
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 0>(true), "posit<3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 1>(true), "posit<3,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 2>(true), "posit<3,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 3>(true), "posit<3,3>", "addition");
 
 //	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
