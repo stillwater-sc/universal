@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 #include <regex>
 #include <vector>
 #include <map>
@@ -15,6 +16,7 @@
 // supporting types and functions
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/blocktype.hpp>
+#include <universal/native/integers.hpp> // just for printing native integers in binary form
 
 /*
 the integer arithmetic can be configured to:
@@ -249,10 +251,12 @@ public:
 	}
 
 	// conversion operators
-	explicit operator unsigned short()     const noexcept { return to_integer<unsigned short>(); }
-	explicit operator unsigned int()       const noexcept { return to_integer<unsigned int>(); }
-	explicit operator unsigned long()      const noexcept { return to_integer<unsigned long>(); }
-	explicit operator unsigned long long() const noexcept { return to_integer<unsigned long long>(); }
+	explicit operator unsigned char()      const noexcept { return to_unsigned_integer<unsigned char>(); }
+	explicit operator unsigned short()     const noexcept { return to_unsigned_integer<unsigned short>(); }
+	explicit operator unsigned int()       const noexcept { return to_unsigned_integer<unsigned int>(); }
+	explicit operator unsigned long()      const noexcept { return to_unsigned_integer<unsigned long>(); }
+	explicit operator unsigned long long() const noexcept { return to_unsigned_integer<unsigned long long>(); }
+	explicit operator signed char()        const noexcept { return to_integer<signed char>(); }
 	explicit operator short()              const noexcept { return to_integer<short>(); }
 	explicit operator int()                const noexcept { return to_integer<int>(); }
 	explicit operator long()               const noexcept { return to_integer<long>(); }
@@ -358,6 +362,15 @@ public:
 		_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
 		return *this;
 	}
+	integer& operator*=(const BlockType& scale) noexcept {
+		std::uint64_t scaleFactor(scale), segment(0);
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			segment += static_cast<std::uint64_t>(_block[i]) * scaleFactor;
+			_block[i] = static_cast<BlockType>(segment);
+			segment >>= bitsInBlock;
+		}
+		return *this;
+	}
 	integer& operator/=(const integer& rhs) {
 		if constexpr (nbits == (sizeof(BlockType)*8) ) {
 			if (rhs._block[0] == 0) {
@@ -448,7 +461,8 @@ public:
 				_block[i] |= (bits >> (bitsInBlock - bitsToShift));
 			}
 		}
-		_block[0] <<= bitsToShift;
+		_block[0] <<= bitsToShift;	
+		_block[MSU] &= MSU_MASK; // null any leading bits that fall outside of nbits
 		return *this;
 	}
 	integer& operator>>=(int bitsToShift) {
@@ -742,8 +756,8 @@ public:
 		}
 		return true;
 	}
-	inline constexpr bool ispos()  const noexcept { return *this > 0; }
-	inline constexpr bool isneg()  const noexcept { return *this < 0; }
+	inline constexpr bool ispos()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this > 0; else return true; }
+	inline constexpr bool isneg()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this < 0; else return false; }
 	inline constexpr bool isone()  const noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			if (i == 0) {
@@ -812,27 +826,83 @@ public:
 		return *this = static_cast<long long>(rhs); // TODO: this clamps the IEEE range to +-2^63
 	}
 
+	// show the binary encodings of the limbs
+	std::string showLimbs() const {
+		using Integer = sw::universal::integer<nbits, BlockType, NumberType>;
+		std::stringstream s;
+		size_t i = Integer::MSU;
+		while (i > 0) {
+			s << to_binary(_block[i], sizeof(BlockType) * 8, true) << ' ';
+			--i;
+		}
+		s << to_binary(_block[0], sizeof(BlockType) * 8, true);
+		return s.str();
+	}
+	// show the values of the limbs as a radix-BlockType number
+	std::string showLimbValues() const {
+		using Integer = sw::universal::integer<nbits, BlockType, NumberType>;
+		std::stringstream s;
+		size_t i = Integer::MSU;
+		while (i > 0) {
+			s << std::setw(5) << unsigned(_block[i]) << ", ";
+			--i;
+		}
+		s << std::setw(5) << unsigned(_block[0]);
+		return s.str();
+	}
+
 protected:
 	// HELPER methods
 
-	// TODO: need to properly implement signed <-> unsigned conversions
-	template<typename IntType>
-	IntType to_integer() const noexcept {
-		IntType v{ 0 };
+	// to_integer converts to native signed integer
+	// TODO: enable_if this for integral types only
+	template<typename TargetInt>
+	TargetInt to_integer() const noexcept {
+		TargetInt v{ 0 };
 		if (*this == 0) return v;
-		constexpr unsigned sizeofint = 8 * sizeof(IntType);
-		uint64_t mask = 1ull;
-		unsigned upper = (nbits < sizeofint ? nbits : sizeofint);
-		for (unsigned i = 0; i < upper; ++i) {
-			v |= at(i) ? mask : 0;
-			mask <<= 1;
-		}
-		if (sign() && upper < sizeofint) { // sign extend
-			for (unsigned i = upper; i < sizeofint; ++i) {
-				v |= mask;
-				mask <<= 1;
+
+		constexpr unsigned sizeoftarget   = 8 * sizeof(TargetInt);
+		constexpr size_t upperTargetBlock = (sizeoftarget - 1ul) / bitsInBlock;
+		unsigned upperBlock = std::min(MSU, upperTargetBlock);
+		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
+			for (unsigned b = 0; b <= upperBlock; ++b) {
+				std::uint64_t data = _block[b];
+				v |= (data << (b * bitsInBlock));
+			}
+			unsigned upper = nbits;
+			if (sign() && upper < sizeoftarget) { // sign extend
+				uint64_t mask = (1ull << upper);
+				for (unsigned i = upper; i < sizeoftarget; ++i) {
+					v |= mask;
+					mask <<= 1;
+				}
 			}
 		}
+		else {
+			for (unsigned b = 0; b <= upperBlock; ++b) {
+				std::uint64_t data = _block[b];
+				v |= (data << (b * bitsInBlock));
+			}
+		}
+
+		return v;
+	}
+
+	// to_unsigned_integer converts to native unsigned integer
+// TODO: enable_if this for integral types only
+	template<typename TargetInt>
+	TargetInt to_unsigned_integer() const noexcept {
+		TargetInt v{ 0 };
+		if (*this == 0) return v;
+
+		constexpr unsigned sizeoftarget = 8 * sizeof(TargetInt);
+		constexpr size_t upperTargetBlock = (sizeoftarget - 1ul) / bitsInBlock;
+		unsigned upperBlock = std::min(MSU, upperTargetBlock);
+		for (unsigned b = 0; b <= upperBlock; ++b) {
+			std::uint64_t data = _block[b];
+			v |= (data << (b * bitsInBlock));
+		}
+
 		return v;
 	}
 
@@ -963,47 +1033,76 @@ void divide(integer<nbits, BlockType, NumberType>& c, const integer<nbits, Block
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	using Integer = integer<nbits, BlockType, NumberType>;
-	// given two nonnegative numbers a = (a_1a_2..a_m+n)_b and v = (v_1v_2...v_n)_b, where v_1 != 0, and n > 1
+	if (u < v) { // filter out the easy stuff
+		c.setzero();
+		return;
+	}
+
+	using OriginalInteger = integer<nbits, BlockType, NumberType>;
+	using ExpandedInteger = integer<nbits+sizeof(BlockType)*8, BlockType, NumberType>; // need room for u_0 to receive the normalization bits
+	// given two nonnegative numbers u = (u_1u_2..u_m+n)_b and v = (v_1v_2...v_n)_b, where v_1 != 0, and n > 1
 	// step 1: calculate a normalization factor d = floor(b / (v_1 + 1)
 	// to scale both u and v so that v_1 becomes >= floor(b/2)
 
-	idiv_t<nbits, BlockType, NumberType> divresult;
 	if (u > v) {
 		std::cout << "normalize\n";
-		std::uint64_t b = Integer::ALL_ONES + 1;
-		std::cout << b << '\n';
+		std::uint64_t b = OriginalInteger::ALL_ONES + 1;
+		std::cout << "b               = " << to_binary(b, sizeof(BlockType) * 8, true) << " : " << b << '\n';
 		
-		int i = static_cast<int>(Integer::MSU);
+		int i = static_cast<int>(OriginalInteger::MSU);
 		while (v.block(static_cast<size_t>(i)) == 0) {
 			--i;
 		}
-		std::uint64_t vStart = v.block(static_cast<size_t>(i)) + 1;
+		unsigned n = static_cast<size_t>(i + 1);
+		std::cout << "n               = " << n << '\n';
+		std::uint64_t vStart = static_cast<std::uint64_t>(v.block(static_cast<unsigned int>(i)) + 1u);
+		std::cout << "vStart          = " << to_binary(vStart, sizeof(BlockType) * 8, true) << " : " << vStart << '\n';
 		std::uint64_t d = b / vStart;
 		std::cout << "normalization d = " << d << " = " << b << " / " << vStart << '\n';
-		Integer _u = u * Integer(d);
-		Integer _v = v * Integer(d);
-		std::uint64_t v_1 = _v.block(static_cast<size_t>(i));
-		std::uint64_t v_2 = 0;
-		
-		std::cout << "scaled u : " << to_binary(_u, true) << '\n';
-		std::cout << "scaled v : " << to_binary(_v, true) << '\n';
-		std::cout << "v_1      : " << to_binary(Integer(v_1), true) << '\n';
+
+		// normalize u and v
+		ExpandedInteger _u(u);
+		OriginalInteger _v(v);
+		_u *= static_cast<BlockType>(d);
+		_v *= static_cast<BlockType>(d); 
+		std::uint64_t v_n   = _v.block(static_cast<size_t>(n));  // v_n is most significant non-zero digit of v
+		std::uint64_t v_n_1 = (n > 0 ? _v.block(static_cast<size_t>(n - 1u)) : 0ull);
+
+		std::cout << "scaled u : " << _u.showLimbs() << " : " << _u.showLimbValues() << '\n';
+		std::cout << "scaled v :             " << _v.showLimbs() << " : " << _v.showLimbValues() << '\n';
+		std::cout << "v_n      : " << to_binary(v_n, sizeof(BlockType) * 8, true) << '\n';
+
 		// start long division of limbs
-		for (size_t j = 0; j < Integer::nrBlocks-1; ++j) {
-			std::uint64_t u_j = _u.block(Integer::MSU - j);
-			if (u_j == 0) continue;
-			std::uint64_t u_jplus1 = _u.block(Integer::MSU - j - 1);
-			std::uint64_t u_jplus2 = _u.block(Integer::MSU - j - 2);
-			std::uint64_t qHat = (u_j == v_1 ? b - 1 : (u_j * b + u_jplus1) / v_1);
-			std::cout << "qHat     : " << qHat << " = " << u_j << " * " << b << " + " << u_jplus1 << " / " << v_1 << '\n';
-			// test if v2*qHat > (u_j*b + u_jplus1 - qhat*v_1) * b + u_j+2
-			if (v_2 * qHat > ((u_j * b + u_jplus1 - qHat * v_1) * b + u_jplus2)) {
+		for (unsigned j = 0; j <= n; ++j) {
+			std::uint64_t u_j, u_jplus1, u_jplus2, qHat;
+			unsigned index_j = ExpandedInteger::MSU - j;
+			u_j = _u.block(index_j);
+			u_jplus1 = _u.block(index_j - 1);
+			u_jplus2 = _u.block(index_j - 2);
+			if (u_j == v_n) {
+				qHat = b - 1;
+			}
+			else {
+				qHat = (u_j == v_n ? b - 1 : (u_j * b + u_jplus1) / v_n);
+			}
+			std::cout << "qHat     : " << qHat << " = " << u_j << " * " << b << " + " << u_jplus1 << " / " << v_n << '\n';
+			// test if v2*qHat > (u_j*b + u_jplus1 - qHat*v_1) * b + u_j+2
+			while (v_n_1 * qHat > ((u_j * b + u_jplus1 - qHat * v_n) * b + u_jplus2)) {
+				std::cout << "qHat is too big : " << qHat << '\n';
 				--qHat;
 			}
+			// multiply and subtract: (u_j u_j+1 ... u_j+n) - qHat * (v_1 v2 ... v_n)
+			ExpandedInteger subtractant(_v);
+			subtractant *= static_cast<BlockType>(qHat);
+			_u -= subtractant;
+
+			std::cout << "updated u : " << _u.showLimbs() << '\n';
+
+			// reverse normalization of remainder
+			// TBD
 		}
 	}
-	c = divresult.quot;
+
 }
 
 // remainder returns a mod b in c
@@ -1030,46 +1129,79 @@ idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, Number
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	// generate the absolute values to do long division 
-	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
-	bool a_negative = _a.sign();
-	bool b_negative = _b.sign();
-	bool result_negative = (a_negative ^ b_negative);
-	integer<nbits + 1, BlockType, NumberType> a; a.bitcopy(a_negative ? -_a : _a);
-	integer<nbits + 1, BlockType, NumberType> b; b.bitcopy(b_negative ? -_b : _b);
+
+
 	idiv_t<nbits, BlockType, NumberType> divresult;
-	if (a < b) {
-		divresult.rem = _a; // a % b = a when a / b = 0
-		return divresult; // a / b = 0 when b > a
-	}
-	// initialize the long division
-	integer<nbits + 1, BlockType, NumberType> accumulator = a;
-	// prepare the subtractand
-	integer<nbits + 1, BlockType, NumberType> subtractand = b;
-	int msb_b = findMsb(b);
-	int msb_a = findMsb(a);
-	int shift = msb_a - msb_b;
-	subtractand <<= shift;
-	// long division
-	for (int i = shift; i >= 0; --i) {
-		if (subtractand <= accumulator) {
-			accumulator -= subtractand;
-			divresult.quot.setbit(static_cast<size_t>(i));
+
+	// generate the absolute values to do long division
+	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
+		using Integer = integer<nbits+1, BlockType, NumberType>;
+		// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
+		bool a_negative = _a.sign();
+		bool b_negative = _b.sign();
+		bool result_negative = (a_negative ^ b_negative);
+		Integer a; a.bitcopy(a_negative ? -_a : _a);
+		Integer b; b.bitcopy(b_negative ? -_b : _b);
+
+		if (a < b) {
+			divresult.rem = _a; // a % b = a when a / b = 0
+			return divresult; // a / b = 0 when b > a
+		}
+		// initialize the long division
+		integer<nbits + 1, BlockType, NumberType> accumulator = a;
+		// prepare the subtractand
+		integer<nbits + 1, BlockType, NumberType> subtractand = b;
+		int msb_b = findMsb(b);
+		int msb_a = findMsb(a);
+		int shift = msb_a - msb_b;
+		subtractand <<= shift;
+		// long division
+		for (int i = shift; i >= 0; --i) {
+			if (subtractand <= accumulator) {
+				accumulator -= subtractand;
+				divresult.quot.setbit(static_cast<size_t>(i));
+			}
+			else {
+				divresult.quot.setbit(static_cast<size_t>(i), false);
+			}
+			subtractand >>= 1;
+			//		std::cout << "i = " << i << " subtractand : " << long(subtractand) << '\n';
+		}
+		if (result_negative) {  // take 2's complement
+			divresult.quot.flip();
+			divresult.quot += 1;
+		}
+		if (_a.isneg()) {
+			divresult.rem = -accumulator;
 		}
 		else {
-			divresult.quot.setbit(static_cast<size_t>(i), false);
+			divresult.rem = accumulator;
 		}
-		subtractand >>= 1;
-//		std::cout << "i = " << i << " subtractand : " << subtractand << '\n';
-	}
-	if (result_negative) {  // take 2's complement
-		divresult.quot.flip();
-		divresult.quot += 1;
-	} 
-	if (_a.isneg()) {
-		divresult.rem = -accumulator;
 	}
 	else {
+		if (_a < _b) {
+			divresult.rem = _a; // a % b = a when a / b = 0
+			return divresult; // a / b = 0 when b > a
+		}
+		using Integer = integer<nbits, BlockType, NumberType>;
+		Integer accumulator(_a), subtractand(_b);
+		int msb_b = findMsb(_b);
+		int msb_a = findMsb(_a);
+		int shift = msb_a - msb_b;
+		subtractand <<= shift;
+		// long division
+		for (int i = shift; i >= 0; --i) {
+			if (subtractand <= accumulator) {
+				accumulator -= subtractand;
+				divresult.quot.setbit(static_cast<size_t>(i));
+			}
+			else {
+				divresult.quot.setbit(static_cast<size_t>(i), false);
+			}
+			subtractand >>= 1;
+			//		std::cout << "i = " << i << " subtractand : " << long(subtractand) << '\n';
+
+		}
 		divresult.rem = accumulator;
 	}
 
@@ -1220,7 +1352,6 @@ std::string to_string(const integer<nbits, BlockType, NumberType>& n) {
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits, BlockType, NumberType>& n) {
 	using IntegerBase = integer<nbits, BlockType, NumberType>;
-	using Integer = integer<nbits+1, BlockType, NumberType>;  // got to be 1 bigger to be able to represent maxneg in 2's complement form
 
 	// set the base of the target number system to convert to
 	int base = 10;
@@ -1231,11 +1362,11 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 	if (base == 8 || base == 16) {
 		if (n.sign()) return std::string("negative value: ignored");
 
-		BlockType shift = base == 8 ? 3 : 4;
+		BlockType shift = static_cast<BlockType>(base == 8 ? 3 : 4);
 		BlockType mask = static_cast<BlockType>((1u << shift) - 1);
-		Integer t(n);
+		IntegerBase t(n);
 		result.assign(nbits / shift + ((nbits % shift) ? 1 : 0), '0');
-		std::string::difference_type pos = result.size() - 1;
+		std::string::size_type pos = result.size() - 1u;
 		for (size_t i = 0; i < nbits / static_cast<size_t>(shift); ++i) {
 			char c = '0' + static_cast<char>(t.block(0) & mask);
 			if (c > '9')
@@ -1253,20 +1384,23 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 		//
 		// Get rid of leading zeros:
 		//
-		std::string::size_type n = result.find_first_not_of('0');
-		if (!result.empty() && (n == std::string::npos))
-			n = result.size() - 1;
-		result.erase(0, n);
+		std::string::size_type nnz = result.find_first_not_of('0');
+		if (!result.empty() && (nnz == std::string::npos)) nnz = result.size() - 1;
+		result.erase(0, nnz);
 		if (flags & std::ios_base::showbase) {
 			const char* pp = base == 8 ? "0" : "0x";
-			result.insert(static_cast<std::string::size_type>(0), pp);
+			result.insert(0ull, pp);
 		}
 	}
 	else {
+		using Integer = integer<nbits + 1, BlockType, NumberType>;  // nbits+1 to be able to represent maxneg in 2's complement form
+
 		result.assign(nbits / 3 + 1u, '0');
-		std::string::difference_type pos = result.size() - 1;
+		std::string::size_type pos = result.size() - 1;
 		Integer t(n);
-		if (t.sign()) t.twosComplement();  // TODO: how to deal with maxneg which has no positive representation in 2's complement?
+		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
+			if (t.sign()) t.twosComplement();
+		}
 
 		Integer block10;
 		unsigned digits_in_block10 = 2;
@@ -1298,11 +1432,11 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 			BlockType v = r.block(0);
 //			std::cout << "v  " << uint32_t(v) << '\n';
 			for (unsigned i = 0; i < digits_in_block10; ++i) {
-//				std::cout << i << " " << (v / 10) << " " << (v % 10) << '\n';
+//				std::cout << i << ' ' << unsigned(v) << ' ' << (v / 10) << ' ' << (v % 10) << '\n';
 				char c = '0' + v % 10;
 				v /= 10;
 				result[pos] = c;
-//				std::cout << result << '\n';
+//				std::cout << "result : " << result << " : pos : " << pos << '\n';
 				if (pos-- == 0)
 					break;
 			}
@@ -1312,6 +1446,7 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 		result.erase(0, firstDigit);
 		if (result.empty())
 			result = "0";
+
 		if (n.isneg())
 			result.insert(static_cast<std::string::size_type>(0), 1, '-');
 		else if (flags & std::ios_base::showpos)
@@ -1326,16 +1461,15 @@ template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the integer into a string
-	std::stringstream ss;
+	std::stringstream s;
 
 	std::streamsize prec = ostr.precision();
 	std::streamsize width = ostr.width();
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
-	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << convert_to_decimal_string(i);
-
-	return ostr << ss.str();
+	s.flags(ff);
+	s << std::setw(width) << std::setprecision(prec) << convert_to_decimal_string(i);
+	return ostr << s.str();
 }
 #else 
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
