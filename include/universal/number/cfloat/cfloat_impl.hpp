@@ -1233,8 +1233,10 @@ public:
 	}
 	// truncate the fraction, that is, null all fraction bits
 	inline constexpr cfloat& truncate() noexcept {
-		for (size_t b = 0; b < FSU; ++b) {
-			_block[b] = bt(0);
+		if constexpr (FSU > 0) {
+			for (size_t b = 0; b < FSU; ++b) {
+				_block[b] = bt(0);
+			}
 		}
 		_block[FSU] &= bt(~FSU_MASK);
 		return *this;
@@ -2075,12 +2077,13 @@ public:
 		std::cout << "topfbits          : " << topfbits << '\n';
 		std::cout << "ALL_ONE_MASK_FR   : " << to_binary(ALL_ONES_FR) << '\n';
 	}
-	void blocks() const {
+	void showLimbs() const {
 		for (size_t b = 0; b < fBlocks; ++b) {
 			std::cout << to_binary(_block[fBlocks - b - 1], sizeof(bt) * 8) << ' ';
 		}
 		std::cout << '\n';
 	}
+
 protected:
 	// HELPER methods
 
