@@ -128,7 +128,7 @@ public:
 	integer(const integer<srcbits, BlockType, NumberType>& a) {
 //		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision"); // TODO: do we want this?
 		bitcopy(a);
-		if constexpr (srcbits < nbits) {
+		if constexpr (srcbits < nbits && NumberType == IntegerNumberType::IntegerNumber) {
 			if (a.sign()) { // sign extend
 				for (unsigned i = srcbits; i < nbits; ++i) {
 					setbit(i);
@@ -729,11 +729,11 @@ public:
 	// pure bit copy of source integer, no sign extension
 	template<size_t src_nbits>
 	inline constexpr void bitcopy(const integer<src_nbits, BlockType, NumberType>& src) noexcept {
-		clear();
-		for (unsigned i = 0; i < nrBlocks; ++i) {
+		// no need to clear as we are going to overwrite all blocks
+		for (unsigned i = 0; i < nrBlocks; ++i) { // use nrBlocks of receiver even when src is smaller, src.block() will return 0 for blocks it doesn't have, nulling the receiver's blocks
 			_block[i] = src.block(i);
 		}
-		_block[MSU] = static_cast<bt>(_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 	}
 	// in-place one's complement
 	inline constexpr integer& flip() {
@@ -1398,6 +1398,9 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 		result.assign(nbits / 3 + 1u, '0');
 		std::string::size_type pos = result.size() - 1;
 		Integer t(n);
+		std::cout << '\n';
+		std::cout << "n : " << long(n) << '\n';
+		std::cout << "t : " << long(t) << '\n';
 		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
 			if (t.sign()) t.twosComplement();
 		}
