@@ -786,8 +786,7 @@ public:
 
 	// operators
 	// reduce returns the ratio and remainder of a and b in *this and r
-	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
-	void reduce(const integer<nbits, BlockType, NumberType>& a, const integer<nbits, BlockType, NumberType>& b, integer<nbits, BlockType, NumberType>& r) {
+	void reduce(const integer& a, const integer& b, integer& r) {
 		if (b.iszero()) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 			throw integer_divide_by_zero{};
@@ -809,17 +808,19 @@ public:
 			r = static_cast<BlockType>(a0 % b0);
 		}
 		else {
-			// filter out the easy stuff
-			if (a < b) { r = a; clear(); return; }
 
+			// no need to constexpr guard this for IntegerNumber as sign() will return false for Whole and Natural Numbers
 			bool sign_a = a.sign();
 			bool sign_b = b.sign();
 			bool sign_q = sign_a ^ sign_b;
 			using Integer = integer<nbits, BlockType, NumberType>; // TODO: this does not deal with maxneg
 			Integer _a(a), _b(b);
 			if (sign_a) _a.twosComplement();
-			if (sign_b) _b.twosComplement();
+			if (sign_b) _b.twosComplement();			
 			
+			// filter out the easy stuff
+			if (_a < _b) { r = a; clear(); return; }
+
 			// determine first non-zero limbs
 			unsigned m{ 0 }, n{ 0 };
 			for (size_t i = nrBlocks; i > 0; --i) {
@@ -846,6 +847,7 @@ public:
 					remainder = dividend - limbQuotient * divisor;
 				}
 				r._block[0] = static_cast<BlockType>(remainder);
+				if (sign_q) twosComplement();
 				return;
 			}
 
@@ -895,12 +897,12 @@ public:
 					normalized_a.setblock(i + j, static_cast<BlockType>(diff));
 					borrow = (p >> bitsInBlock) - (diff >> bitsInBlock);
 				}
-				std::int64_t signedBorrow = normalized_a.block(j + n) - borrow;
+				std::int64_t signedBorrow = static_cast<int64_t>(normalized_a.block(j + n) - borrow);
 				normalized_a.setblock(j + n, static_cast<BlockType>(signedBorrow));
 
 				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
 
-				setblock(j, static_cast<BlockType>(qhat));
+				setblock(static_cast<unsigned>(j), static_cast<BlockType>(qhat));
 				if (signedBorrow < 0) { // subtracted too much, add back
 					std::cout << "subtracted too much, add back\n";
 					_block[j] -= 1;
@@ -910,7 +912,7 @@ public:
 						normalized_a.setblock(i + j, static_cast<BlockType>(carry));
 						carry >>= 32;
 					}
-					BlockType rectified = normalized_a.block(j + n) + static_cast<BlockType>(carry);
+					BlockType rectified = static_cast<BlockType>(normalized_a.block(j + n) + carry);
 					normalized_a.setblock(j + n, rectified);
 				}
 				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
@@ -919,11 +921,11 @@ public:
 
 			// remainder needs to be normalized
 			for (unsigned i = 0; i < n - 1; ++i) {
-				std::uint64_t remainder = (normalized_a.block(i) >> shift);
-				remainder |= (normalized_a.block(i + 1) << (32 - shift));
-				r.setblock(i, remainder);
+				std::uint64_t remainder = static_cast<uint64_t>(normalized_a.block(i) >> shift);
+				remainder |= static_cast<uint64_t>(normalized_a.block(i + 1) << (32 - shift));
+				r.setblock(i, static_cast<BlockType>(remainder));
 			}
-			r.setblock(n - 1, (normalized_a.block(n - 1) >> shift));
+			r.setblock(n - 1, static_cast<BlockType>(normalized_a.block(n - 1) >> shift));
 		}
 	}
 	// signed integer conversion
@@ -1433,7 +1435,7 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 			if (c > '9')
 				c += 'A' - '9' - 1;
 			result[pos--] = c;
-			t >>= shift;
+			t >>= static_cast<int>(shift);
 		}
 		if (nbits % shift) {
 			mask = static_cast<BlockType>((1u << (nbits % shift)) - 1);

@@ -308,7 +308,7 @@ namespace sw { namespace universal {
 } } // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -431,6 +431,16 @@ try {
 		std::cout << to_binary(r) << " : " << r << '\n';
 	}
 
+	{
+		integer<32, uint8_t> a, b, q, r;
+		a = -10;
+		b = 2;
+		q.reduce(a, b, r);
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(q) << " : " << q << '\n';
+		std::cout << to_binary(r) << " : " << r << '\n';
+	}
 //	TestFastdiv();
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "integer<4, uint8_t>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint8_t>(reportTestCases), "integer<11, uint8_t>", test_tag);
