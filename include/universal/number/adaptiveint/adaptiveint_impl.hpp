@@ -341,10 +341,10 @@ public:
 			}
 			normalized_b.setblock(0, static_cast<BlockType>(b.block(0) << shift));
 
-			std::cout << "normalized a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
-			std::cout << "normalized b :             " << normalized_b.showLimbs() << " : " << normalized_b.showLimbValues() << '\n';
+			//std::cout << "normalized a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
+			//std::cout << "normalized b :             " << normalized_b.showLimbs() << " : " << normalized_b.showLimbValues() << '\n';
 
-						// divide by limb
+			// divide by limb
 			std::uint64_t divisor = normalized_b._block[n - 1];
 			std::uint64_t v_nminus2 = normalized_b._block[n - 2]; // n > 1 at this point
 			for (int j = static_cast<int>(m - n); j >= 0; --j) {
@@ -368,7 +368,7 @@ public:
 				std::int64_t signedBorrow = static_cast<int64_t>(normalized_a.block(j + n) - borrow);
 				normalized_a.setblock(j + n, static_cast<BlockType>(signedBorrow));
 
-				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
+				//std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
 
 				setblock(static_cast<unsigned>(j), static_cast<BlockType>(qhat));
 				if (signedBorrow < 0) { // subtracted too much, add back
@@ -383,7 +383,7 @@ public:
 					BlockType rectified = static_cast<BlockType>(normalized_a.block(j + n) + carry);
 					normalized_a.setblock(j + n, rectified);
 				}
-				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
+				//std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
 			}
 
 			// remainder needs to be normalized
@@ -484,10 +484,7 @@ public:
 		}
 	}
 	inline void setblock(unsigned i, BlockType value) noexcept {
-		std::cout << "i              : " << i << '\n';
-		std::cout << "    block size : " << _block.size() << '\n';
 		if (i >= _block.size()) _block.resize(i+1);
-		std::cout << "new block size : " << _block.size() << '\n';
 		_block[i] = value;
 	}
 	inline adaptiveint& assign(const std::string& txt) {

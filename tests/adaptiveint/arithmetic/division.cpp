@@ -36,10 +36,10 @@ namespace sw { namespace universal {
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<typename BlockType>
 	int VerifyAdaptiveDivision(size_t nbits, bool reportTestCases) {
-		using Integer = adaptiveint;
+		using Integer = adaptiveint<BlockType>;
 		size_t NR_INTEGERS = (size_t(1) << nbits);
 
-		Integer ia, ib, iq, iref, ir;
+		Integer ia{}, ib{}, iq{}, iref{}, ir{};
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -144,7 +144,7 @@ try {
 	std::cout << "_q  : " << to_binary(_q, 32, true) << " : " << _q << '\n';
 	std::cout << "_r  : " << to_binary(_r, 32, true) << " : " << _r << '\n';
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(12, reportTestCases), "adaptiveint<uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(12, reportTestCases), "adaptiveint<uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
