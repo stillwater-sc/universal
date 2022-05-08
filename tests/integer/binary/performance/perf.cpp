@@ -135,7 +135,7 @@ namespace sw::universal::internal {
 	 integer<128>   remainder          524288 per       0.0759803sec ->   6 Mops/sec  <-- segmented algorithm
 	 */
 
-	void TestArithmeticOperatorPerformance() {
+	void TestStandardArithmeticOperatorPerformance() {
 		using namespace sw::universal;
 		std::cout << "\nArithmetic operator performance\n";
 
@@ -144,14 +144,12 @@ namespace sw::universal::internal {
 		PerformanceRunner("integer< 16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 16, uint16_t> >, NR_OPS);
 		PerformanceRunner("integer< 32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS);
 		PerformanceRunner("integer< 64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS);
-		PerformanceRunner("integer<128>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS);	// need to drop down to uint32_t to catch carry prop
 
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("integer<  8>   multiplication", MultiplicationWorkload< sw::universal::integer<  8, uint8_t> >, NR_OPS);
 		PerformanceRunner("integer< 16>   multiplication", MultiplicationWorkload< sw::universal::integer< 16, uint16_t> >, NR_OPS);
 		PerformanceRunner("integer< 32>   multiplication", MultiplicationWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS / 2);
 		PerformanceRunner("integer< 64>   multiplication", MultiplicationWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS / 2);	// uint64_t works because it is a single block
-		PerformanceRunner("integer<128>   multiplication", MultiplicationWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
 
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("integer<  8>   division      ", DivisionWorkload< sw::universal::integer<  8, uint8_t> >, NR_OPS);
@@ -160,14 +158,33 @@ namespace sw::universal::internal {
 		PerformanceRunner("integer< 32>   division      ", DivisionWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS / 2);
 		PerformanceRunner("integer< 48>   division      ", DivisionWorkload< sw::universal::integer< 48, uint32_t> >, NR_OPS / 2);
 		PerformanceRunner("integer< 64>   division      ", DivisionWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS / 2);	// uint64_t works because it is a single block
-		PerformanceRunner("integer<128>   division      ", DivisionWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
 
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("integer<  8>   remainder     ", RemainderWorkload< sw::universal::integer<  8, uint8_t> >, NR_OPS);
 		PerformanceRunner("integer< 16>   remainder     ", RemainderWorkload< sw::universal::integer< 16, uint16_t> >, NR_OPS);
 		PerformanceRunner("integer< 32>   remainder     ", RemainderWorkload< sw::universal::integer< 32, uint32_t> >, NR_OPS / 2);
 		PerformanceRunner("integer< 64>   remainder     ", RemainderWorkload< sw::universal::integer< 64, uint64_t> >, NR_OPS / 2);	// uint64_t works because it is a single block
+	}
+
+	void TestExtendedArithmeticOperatorPerformance() {
+		using namespace sw::universal;
+		std::cout << "\nArithmetic operator performance\n";
+
+		size_t NR_OPS = 1024ull * 1024ull * 4ull;
+		PerformanceRunner("integer<128>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS);	// need to drop down to uint32_t to catch carry prop
+		PerformanceRunner("integer<128>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<128, uint8_t> >, NR_OPS);
+
+		NR_OPS = 1024ull * 1024ull;
+		PerformanceRunner("integer<128>   multiplication", MultiplicationWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
+		PerformanceRunner("integer<128>   multiplication", MultiplicationWorkload< sw::universal::integer<128, uint8_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
+
+		NR_OPS = 1024ull * 1024ull;
+		PerformanceRunner("integer<128>   division      ", DivisionWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
+		PerformanceRunner("integer<128>   division      ", DivisionWorkload< sw::universal::integer<128, uint8_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
+
+		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("integer<128>   remainder     ", RemainderWorkload< sw::universal::integer<128, uint32_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
+		PerformanceRunner("integer<128>   remainder     ", RemainderWorkload< sw::universal::integer<128, uint8_t> >, NR_OPS / 2);	// need to drop down to uint32_t to catch carry prop
 	}
 
 	/*
@@ -198,21 +215,27 @@ namespace sw::universal::internal {
 	-> TODO: need to replace current long division with fast segmented division 4/11/2022
 	*/
 
-	void TestSerializationOperatorPerformance() {
+	void TestStandardSerializationOperatorPerformance() {
 		using namespace sw::universal;
 		std::cout << "\nSerialization operator performance\n";
 
 		size_t NR_OPS = 512ull;
-		PerformanceRunner("integer<   8>  ostream      ", SerializationWorkload< sw::universal::integer<   8, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<  16>  ostream      ", SerializationWorkload< sw::universal::integer<  16, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<  24>  ostream      ", SerializationWorkload< sw::universal::integer<  24, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<  32>  ostream      ", SerializationWorkload< sw::universal::integer<  32, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<  48>  ostream      ", SerializationWorkload< sw::universal::integer<  48, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<  64>  ostream      ", SerializationWorkload< sw::universal::integer<  64, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer< 128>  ostream      ", SerializationWorkload< sw::universal::integer< 128, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer< 256>  ostream      ", SerializationWorkload< sw::universal::integer< 256, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer< 512>  ostream      ", SerializationWorkload< sw::universal::integer< 512, uint8_t> >, NR_OPS);
-		PerformanceRunner("integer<1024>  ostream      ", SerializationWorkload< sw::universal::integer<1024, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<   8>   ostream       ", SerializationWorkload< sw::universal::integer<   8, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<  16>   ostream       ", SerializationWorkload< sw::universal::integer<  16, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<  24>   ostream       ", SerializationWorkload< sw::universal::integer<  24, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<  32>   ostream       ", SerializationWorkload< sw::universal::integer<  32, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<  48>   ostream       ", SerializationWorkload< sw::universal::integer<  48, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<  64>   ostream       ", SerializationWorkload< sw::universal::integer<  64, uint8_t> >, NR_OPS);
+	}
+	void TestExtendedSerializationOperatorPerformance() {
+		using namespace sw::universal;
+		std::cout << "\nSerialization operator performance\n";
+
+		size_t NR_OPS = 512ull;
+		PerformanceRunner("integer< 128>   ostream       ", SerializationWorkload< sw::universal::integer< 128, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer< 256>   ostream       ", SerializationWorkload< sw::universal::integer< 256, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer< 512>   ostream       ", SerializationWorkload< sw::universal::integer< 512, uint8_t> >, NR_OPS);
+		PerformanceRunner("integer<1024>   ostream       ", SerializationWorkload< sw::universal::integer<1024, uint8_t> >, NR_OPS);
 	}
 }
 
@@ -253,16 +276,20 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	TestArithmeticOperatorPerformance();
-	TestSerializationOperatorPerformance();
+	TestStandardArithmeticOperatorPerformance();
+	TestStandardSerializationOperatorPerformance();
 #endif
 
 #if REGRESSION_LEVEL_2
-	TestArithmeticOperatorPerformance();
+	TestExtendedArithmeticOperatorPerformance();
+#endif
+
+#if REGRESSION_LEVEL_3
+
 #endif
 
 #if REGRESSION_LEVEL_4
-	TestArithmeticOperatorPerformance();
+	TestExtendedSerializationOperatorPerformance();
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
