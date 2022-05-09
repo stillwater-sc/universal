@@ -1,3 +1,5 @@
-file (GLOB SOURCES "./*.cpp")
+file (GLOB FLOAT_SRCS "./float/*.cpp")
+file (GLOB INTEGER_SRCS "./integer/*.cpp")
 
-compile_all("true" "native" "Number Systems/fixed size/floating-point/linear/IEEE-754" "${SOURCES}")
+compile_all("true" "native_float" "Number Systems/native/floating-point/IEEE-754" "${FLOAT_SRCS}")
+compile_all("true" "native_int" "Number Systems/native/integer/integer" "${INTEGER_SRCS}")

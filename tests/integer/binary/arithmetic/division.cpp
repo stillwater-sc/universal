@@ -199,43 +199,6 @@ void TestFastdiv() {
 	fid::check();
 }
 
-void TestNLZ() {
-	using namespace sw::universal;
-	{
-		uint8_t a = 0x1;
-		for (uint32_t i = 0; i < 8; ++i) {
-			int shift = nlz(a);
-			std::cout << " shift = " << shift << " : " << to_binary(a, 8, true) << '\n';
-			a <<= 1;
-		}
-	}
-
-	{
-		uint16_t a = 0x1;
-		for (uint32_t i = 0; i < 16; ++i) {
-			int shift = nlz(a);
-			std::cout << " shift = " << shift << " : " << to_binary(a, 16, true) << '\n';
-			a <<= 1;
-		}
-	}
-	{
-		uint32_t a = 0x1;
-		for (uint32_t i = 0; i < 32; ++i) {
-			int shift = nlz(a);
-			std::cout << " shift = " << shift << " : " << to_binary(a, 32, true) << '\n';
-			a <<= 1;
-		}
-	}
-	{
-		uint64_t a = 0x1;
-		for (uint32_t i = 0; i < 64; ++i) {
-			int shift = nlz(a);
-			std::cout << " shift = " << shift << " : " << to_binary(a, 64, true) << '\n';
-			a <<= 1;
-		}
-	}
-}
-
 // ExamplePattern to check that short and integer<16> do exactly the same
 void ExamplePattern() {
 	short s = 0;
@@ -308,7 +271,7 @@ namespace sw { namespace universal {
 } } // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -453,9 +416,12 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "integer<4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(reportTestCases), "integer<6, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(reportTestCases), "integer<8, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t, IntegerNumber>(reportTestCases), "integer<4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t, IntegerNumber>(reportTestCases), "integer<6, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t, IntegerNumber>(reportTestCases), "integer<8, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t, WholeNumber>(reportTestCases), "integer<4, uint8_t, wholenumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t, WholeNumber>(reportTestCases), "integer<6, uint8_t, wholenumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t, WholeNumber>(reportTestCases), "integer<8, uint8_t, wholenumber>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -1,12 +1,16 @@
 // ieee754.cpp : native IEEE-754 operations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
+#include <universal/utility/bit_cast.hpp>
 #include <iostream>
 #include <string>
 #include <limits>
 #include <universal/native/ieee754.hpp>
+#include <universal/verification/test_suite.hpp>
 
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
@@ -69,9 +73,34 @@ void InfinityAdditions() {
 	std::cout << fb << " + " << fb << " = " << (fb + fb) << " : " << sw::universal::to_binary(fb + fb) << '\n';
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
+
+	std::string test_suite  = "IEEE-754 floating-point bit manipulation verification";
+	std::string test_tag    = "bit manipulators";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
+
+#if MANUAL_TESTING
 
 	// compare bits of different real number representations
 	
@@ -102,16 +131,41 @@ try {
 	// show the results of addition with infinites
 	InfinityAdditions();
 
-	std::cout << std::endl; // flush the stream
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else
 
-	return EXIT_SUCCESS;
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatFieldExtraction<float>(reportTestCases), "float", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatFieldExtraction<double>(reportTestCases), "double", test_tag);
+#if LONG_DOUBLE_SUPPORT
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatFieldExtraction<long double>(reportTestCases), "long double", test_tag);
+#endif
+
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if	REGRESSION_LEVEL_4
+
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Caught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

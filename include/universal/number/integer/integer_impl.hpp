@@ -38,6 +38,10 @@ enum class IntegerNumberType {
 	NaturalNumber = 2   // {                1,2,3,... }
 };
 
+constexpr IntegerNumberType IntegerNumber = IntegerNumberType::IntegerNumber;
+constexpr IntegerNumberType WholeNumber = IntegerNumberType::WholeNumber;
+constexpr IntegerNumberType NaturalNumber = IntegerNumberType::NaturalNumber;
+
 // forward references
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType> class integer;
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> max_int();
