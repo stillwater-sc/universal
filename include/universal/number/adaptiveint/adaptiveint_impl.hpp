@@ -520,7 +520,7 @@ public:
 		}
 	}
 	inline void setblock(unsigned i, BlockType value) noexcept {
-		if (i >= _block.size()) _block.resize(i+1);
+		if (i >= _block.size()) _block.resize(i+1ull);
 		_block[i] = value;
 	}
 	inline adaptiveint& assign(const std::string& txt) {
@@ -760,24 +760,24 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint<B
 	if (base == 8 || base == 16) {
 		if (n.sign()) return std::string("negative value: ignored");
 
-		int shift = (base == 8 ? 3 : 4);
+		size_t shift = (base == 8 ? 3ull : 4ull);
 		BlockType mask = static_cast<BlockType>((1u << shift) - 1);
 		AdaptiveInteger t(n);
 		result.assign(nbits / shift + ((nbits % shift) ? 1 : 0), '0');
-		std::string::difference_type pos = static_cast<int>(result.size()) - 1;
-		for (size_t i = 0; i < nbits / static_cast<size_t>(shift); ++i) {
+		size_t pos = result.size() - 1ull;
+		for (size_t i = 0; i < nbits / shift; ++i) {
 			char c = '0' + static_cast<char>(t.block(0) & mask);
 			if (c > '9')
 				c += 'A' - '9' - 1;
-			result[static_cast<size_t>(pos--)] = c;
-			t >>= shift;
+			result[pos--] = c;
+			t >>= static_cast<int>(shift);
 		}
 		if (nbits % shift) {
 			mask = static_cast<BlockType>((1u << (nbits % shift)) - 1);
 			char c = '0' + static_cast<char>(t.block(0) & mask);
 			if (c > '9')
 				c += 'A' - '9';
-			result[static_cast<size_t>(pos)] = c;
+			result[pos] = c;
 		}
 		//
 		// Get rid of leading zeros:
@@ -809,8 +809,8 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint<B
 			block10 = 1'000'000'000'000'000'000;
 			digits_in_block10 = 18;
 		}
-		result.assign(nbits / 3 + 1u, '0');
-		std::string::difference_type pos = static_cast<int>(result.size()) - 1;
+		result.assign(nbits / 3 + 1ull, '0');
+		size_t pos = result.size() - 1ull;
 		AdaptiveInteger t(n);
 		while (!t.iszero()) {
 			AdaptiveInteger q,r;
@@ -820,10 +820,9 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint<B
 			for (unsigned i = 0; i < digits_in_block10; ++i) {
 				char c = '0' + static_cast<char>(v % 10);
 				v /= 10;
-				result[static_cast<size_t>(pos)] = c;
+				result[pos] = c;
 //				std::cout << result << " pos: " << pos << '\n';
-				if (pos-- == 0)
-					break;
+				if (pos-- == 0)	break;
 			}
 			t = q;
 		}
@@ -833,9 +832,9 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint<B
 		if (result.empty())
 			result = "0";
 		if (n.isneg())
-			result.insert(static_cast<std::string::size_type>(0), 1, '-');
+			result.insert(0ull, 1ull, '-');
 		else if (flags & std::ios_base::showpos)
-			result.insert(static_cast<std::string::size_type>(0), 1, '+');
+			result.insert(0ull, 1ull, '+');
 	}
 	return result;
 }

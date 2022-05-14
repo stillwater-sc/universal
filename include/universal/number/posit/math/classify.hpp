@@ -44,4 +44,11 @@ inline bool isnormal(const posit<nbits, es>& p) {
 	return std::isnormal((long double)(p));
 }
 
+// STD LIB function for IEEE floats: Determines if the given floating point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
+// specialized for posits
+template<size_t nbits, size_t es>
+inline bool isdenorm(const posit<nbits, es>& p) {
+	return false; // posits are never denormalized
+}
+
 }} // namespace sw::universal

@@ -36,15 +36,15 @@ void GenerateTestCase(Ty _a, Ty _b) {
 namespace sw { namespace universal {
 
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
-	template<typename BlockType>
-	int VerifyAdaptiveDivision(size_t nbits, bool reportTestCases) {
+	template<size_t nbits, typename BlockType>
+	int VerifyAdaptiveDivision(bool reportTestCases) {
 		using Integer = adaptiveint<BlockType>;
-		size_t NR_ENCODINGS = (size_t(1) << nbits);
+		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 
-		size_t increment = std::max(1ull, NR_ENCODINGS / 1024ull);
 		Integer ia{}, ib{}, iq{}, iref{}, ir{};
 
 		int nrOfFailedTests = 0;
+		size_t increment = std::max(1ull, NR_ENCODINGS / 1024ull);
 		for (size_t i = 0; i < NR_ENCODINGS; i += increment) {
 			ia.setbits(i);
 			int64_t i64a = int64_t(ia);
@@ -282,15 +282,15 @@ try {
 	 */
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += DirectedTests();
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(10, reportTestCases), "adaptiveint<uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint16_t>(8, reportTestCases), "adaptiveint<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint32_t>(8, reportTestCases), "adaptiveint<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<10, uint8_t>(reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<8, uint16_t>(reportTestCases), "adaptiveint<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<8, uint32_t>(reportTestCases), "adaptiveint<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(10, reportTestCases), "adaptiveint<uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint16_t>(10, reportTestCases), "adaptiveint<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint32_t>(10, reportTestCases), "adaptiveint<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<10, uint8_t>(reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<10, uint16_t>(reportTestCases), "adaptiveint<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<10, uint32_t>(reportTestCases), "adaptiveint<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

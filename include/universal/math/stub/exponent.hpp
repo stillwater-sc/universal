@@ -1,7 +1,7 @@
 #pragma once
 // exponent.hpp: templated exponent function stubs for native floating-point
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,29 +9,29 @@ namespace sw { namespace universal {
 
 // Base-e exponential function
 template<typename Scalar,
-	typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-	Scalar exp(Scalar x) {
+	typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
+Scalar exp(Scalar x) {
 	return std::exp(x);
 }
 
 // Base-2 exponential function
 template<typename Scalar,
-	typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-	Scalar exp2(Scalar x) {
+	typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
+Scalar exp2(Scalar x) {
 	return std::exp2(x);
 }
 
 // Base-10 exponential function
 template<typename Scalar,
-	typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-	Scalar exp10(Scalar x) {
+	typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
+Scalar exp10(Scalar x) {
 	return std::pow(Scalar(10.0), x);
 }
 		
 // Base-e exponential function exp(x)-1
 template<typename Scalar,
-	typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-	Scalar expm1(Scalar x) {
+	typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
+Scalar expm1(Scalar x) {
 	return std::expm1(x);
 }
 

@@ -42,11 +42,14 @@ inline bool isnan(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, is
 // specialized for cfloats
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline bool isnormal(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
-#if LONG_DOUBLE_SUPPORT
-	return std::isnormal((long double)(a));
-#else
-	return std::isnormal(double(a));
-#endif
+	return a.isnormal();
+}
+
+// STD LIB function for IEEE floats: Determines if the given floating point number arg is denormal, i.e. is neither zero, normal, infinite, nor NaN.
+// specialized for cfloats
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline bool isdenorm(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
+	return a.isdenormal();
 }
 
 }} // namespace sw::universal
