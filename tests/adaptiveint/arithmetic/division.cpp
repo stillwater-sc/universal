@@ -9,6 +9,7 @@
 #include <string>
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 // minimum set of include files to reflect source code dependencies
 #define ADAPTIVEINT_THROW_ARITHMETIC_EXCEPTION 1
@@ -33,19 +34,21 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 namespace sw { namespace universal {
+
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<typename BlockType>
 	int VerifyAdaptiveDivision(size_t nbits, bool reportTestCases) {
 		using Integer = adaptiveint<BlockType>;
-		size_t NR_INTEGERS = (size_t(1) << nbits);
+		size_t NR_ENCODINGS = (size_t(1) << nbits);
 
+		size_t increment = std::max(1ull, NR_ENCODINGS / 1024ull);
 		Integer ia{}, ib{}, iq{}, iref{}, ir{};
 
 		int nrOfFailedTests = 0;
-		for (size_t i = 0; i < NR_INTEGERS; i++) {
+		for (size_t i = 0; i < NR_ENCODINGS; i += increment) {
 			ia.setbits(i);
 			int64_t i64a = int64_t(ia);
-			for (size_t j = 0; j < NR_INTEGERS; j++) {
+			for (size_t j = 0; j < NR_ENCODINGS; j += increment) {
 				ib.setbits(j);
 				int64_t i64b = int64_t(ib);
 #if ADAPTIVEINT_THROW_ARITHMETIC_EXCEPTION
@@ -93,7 +96,7 @@ namespace sw { namespace universal {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -108,13 +111,89 @@ namespace sw { namespace universal {
 #define REGRESSION_LEVEL_4 0
 #endif
 
+struct TestRecord {
+	std::int64_t a;
+	std::int64_t b;
+	std::int64_t q;
+	std::int64_t r;
+};
+
+int DirectedTests() {
+	TestRecord tests[] = {
+		{ 128, 127, 1, 1 },
+		{ 128, 128, 1, 0 },
+		{ 128, 129, 0, 128 },
+		{ 128,  63, 2, 2 },
+
+		{ 256, 255, 1, 1 },
+		{ 256, 256, 1, 0 },
+		{ 256, 257, 0, 256 },
+
+		{ 0x0000'0000'0001'0000, 0x0000'FFFF, 1, 1 },
+		{ 0x0000'0000'0001'0000, 0x0001'0000, 1, 0 },
+		{ 0x0000'0000'0001'0000, 0x0001'0001, 0, 0x0001'0000 },
+
+		{ 0x0000'0000'0100'0000, 0x00FF'FFFF, 1, 1 },
+		{ 0x0000'0000'0100'0000, 0x0100'0000, 1, 0 },
+		{ 0x0000'0000'0100'0000, 0x0100'0001, 0, 0x0100'0000 },
+
+		{ 0x0000'0001'0000'0000, 0x0'FFFF'FFFF, 1, 1 },
+		{ 0x0000'0001'0000'0000, 0x1'0000'0000, 1, 0 },
+		{ 0x0000'0001'0000'0000, 0x1'0000'0001, 0, 0x0000'0001'0000'0000 },
+
+		{ 0x0000'0100'0000'0000, 0x0000'FFFF'FFFF, 256, 256 } ,
+		{ 0x0000'0100'0000'0000, 0x00FF'FFFF'FFFF, 1, 1 },
+		{ 0x0000'0100'0000'0000, 0x0100'0000'0000, 1, 0 },
+		{ 0x0000'0100'0000'0000, 0x0100'0000'0001, 0, 0x0000'0100'0000'0000 },
+
+		{ 0x0001'0000'0000'0000, 0x0000'FFFF'FFFF'FFFF, 1, 1 },
+		{ 0x0001'0000'0000'0000, 0x0001'0000'0000'0000, 1, 0 },
+		{ 0x0001'0000'0000'0000, 0x0001'0000'0000'0001, 0, 0x0001'0000'0000'0000 },
+
+		{ 0x0100'0000'0000'0000, 0x00FF'FFFF'FFFF'FFFF, 1, 1 },
+		{ 0x0100'0000'0000'0000, 0x0100'0000'0000'0000, 1, 0 },
+		{ 0x0100'0000'0000'0000, 0x0100'0000'0000'0001, 0, 0x0100'0000'0000'0000 }
+	};
+	constexpr size_t nrTests = sizeof(tests) / sizeof(TestRecord);
+
+	int nrOfFailedTests = 0;
+	for (size_t i = 0; i < nrTests; ++i) {
+		std::int64_t _a, _b, _q, _r;
+		_a = tests[i].a;
+		_b = tests[i].b;
+		_q = tests[i].q;
+		_r = tests[i].r;
+		//std::cout << "div " << (_a / _b) << " rem " << (_a % _b) << '\n';
+		sw::universal::adaptiveint<uint8_t> a(_a), b(_b), q, r;
+		q.reduce(a, b, r);
+		if ((long long)q != _q || (long long)r != _r) {
+			std::cout << "FAIL: " << std::hex << "0x" << _a << " / 0x" << _b << std::dec << '\n';
+			std::cout << "div " << (_a / _b) << " rem " << (_a % _b) << '\n';
+			std::cout << _a << " / " << _b << " = " << _q << " with remainder " << _r << '\n';
+			std::cout << (long long)a << " / " << (long long)b << " = " << (long long)q << " with remainder " << (long long)r << '\n';
+			++nrOfFailedTests;
+		}
+	}
+	return nrOfFailedTests;
+}
+
+template<typename BlockType>
+void PrintPowersOfTwo(unsigned exponent = 100) {
+	constexpr size_t COLUMN_WIDTH = 35;
+	sw::universal::adaptiveint<BlockType> a(1);
+	for (int p = 0; p < exponent; ++p) {
+		std::cout << std::setw(COLUMN_WIDTH) << std::oct << a << std::setw(COLUMN_WIDTH) << std::dec << a << std::setw(COLUMN_WIDTH) << std::hex << a << '\n';
+		a += a;
+	}
+}
+
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "adaptive precision binary integer division";
-	std::string test_tag = "adaptiveint division";
-	bool reportTestCases = true;
+	std::string test_suite  = "adaptive precision binary integer division";
+	std::string test_tag    = "adaptiveint division";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
@@ -125,37 +204,93 @@ try {
 	// generate individual testcases to hand trace/debug
 //	GenerateTestCase(1, 2);
 
-	std::int32_t _a, _b, _q, _r;
-	adaptiveint<uint8_t> a, b, q, r;
-	_a = 0x08040201;
-	_b = 0x0804;
-	_q = _a / _b;
-	_r = _a % _b;
-	a = _a; 
-	b = _b;
-	q.reduce(a, b, r);
-	std::cout << "a   : " << to_binary(a) << " : " << (long long)(a) << '\n';
-	std::cout << "b   : " << to_binary(b) << " : " << (long long)(b) << '\n';
-	std::cout << "q   : " << to_binary(q) << " : " << (long long)(q) << '\n';
-	std::cout << "r   : " << to_binary(r) << " : " << (long long)(r) << '\n';
+	PrintPowersOfTwo<uint8_t>();
+	PrintPowersOfTwo<uint16_t>();
+	PrintPowersOfTwo<uint32_t>();
+	
+	{
+		adaptiveint<uint8_t> a;
+		a = 16;
+		std::cout << std::oct << a << '\n';
+		std::cout << std::hex << a << '\n';
+		std::cout << std::dec << a << '\n';
+		adaptiveint<uint32_t> b;
+		b = 16;
+		std::cout << b << '\n';
+		adaptiveint<uint16_t> c;
+		c = 16;
+		std::cout << c << '\n';
+	}
 
-	std::cout << "_a  : " << to_binary(_a, 32, true) << " : " << _a << '\n';
-	std::cout << "_b  : " << to_binary(_b, 32, true) << " : " << _b << '\n';
-	std::cout << "_q  : " << to_binary(_q, 32, true) << " : " << _q << '\n';
-	std::cout << "_r  : " << to_binary(_r, 32, true) << " : " << _r << '\n';
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(12, reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	{
+		adaptiveint<uint16_t> a, b, q, r;
+		a = 16;
+		b = 10000;
+		q.reduce(a, b, r);
+		std::cout << "a   : " << to_binary(a) << " : " << (long long)(a) << '\n';
+		std::cout << "b   : " << to_binary(b) << " : " << (long long)(b) << '\n';
+		std::cout << "q   : " << to_binary(q) << " : " << (long long)(q) << '\n';
+		std::cout << "r   : " << to_binary(r) << " : " << (long long)(r) << '\n';
+	}
+
+
+	{
+		adaptiveint a;
+		a.assign("633825300114114700748351602688");
+		std::cout << std::setw(50) << std::right << a << '\n';
+	}
+
+	{
+		std::int32_t _a, _b, _q, _r;
+		adaptiveint<uint8_t> a, b, q, r;
+		_a = 0x08040201;
+		_b = 0x0804;
+		_q = _a / _b;
+		_r = _a % _b;
+		a = _a;
+		b = _b;
+		q.reduce(a, b, r);
+		std::cout << "a   : " << to_binary(a) << " : " << (long long)(a) << '\n';
+		std::cout << "b   : " << to_binary(b) << " : " << (long long)(b) << '\n';
+		std::cout << "q   : " << to_binary(q) << " : " << (long long)(q) << '\n';
+		std::cout << "r   : " << to_binary(r) << " : " << (long long)(r) << '\n';
+
+		std::cout << "_a  : " << to_binary(_a, 32, true) << " : " << _a << '\n';
+		std::cout << "_b  : " << to_binary(_b, 32, true) << " : " << _b << '\n';
+		std::cout << "_q  : " << to_binary(_q, 32, true) << " : " << _q << '\n';
+		std::cout << "_r  : " << to_binary(_r, 32, true) << " : " << _r << '\n';
+	}
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(8, reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint16_t>(8, reportTestCases), "adaptiveint<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint32_t>(8, reportTestCases), "adaptiveint<uint32_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(16, reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint16_t>(16, reportTestCases), "adaptiveint<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint32_t>(16, reportTestCases), "adaptiveint<uint32_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
-#if REGRESSION_LEVEL_1
+	/*
+		The testing strategy for adaptiveint's creates directed tests
+		that enumerate the boundary conditions of the algorithm.
 
+		The single limb configurations are scanned exhaustively.
+	 */
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += DirectedTests();
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(10, reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint16_t>(8, reportTestCases), "adaptiveint<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint32_t>(8, reportTestCases), "adaptiveint<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(10, reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint16_t>(10, reportTestCases), "adaptiveint<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint32_t>(10, reportTestCases), "adaptiveint<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
