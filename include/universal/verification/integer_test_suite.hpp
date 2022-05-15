@@ -426,31 +426,22 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
+	// default is an unsigned reference type
 	template<IntegerNumberType NumberType>
 	struct ReferenceTypeForInteger {
 		typedef std::uint64_t reference_type;
 	};
-
+	// specialized for IntegerNumber to yield a signed reference type
 	template<>
 	struct ReferenceTypeForInteger< IntegerNumberType::IntegerNumber>{
 		typedef std::int64_t reference_type;
 	};
-	/*
-	template<>
-	struct ReferenceTypeForInteger< IntegerNumberType::WholeNumber> {
-		typedef std::uint64_t reference_type;
-	};
-	template<>
-	struct ReferenceTypeForInteger< IntegerNumberType::NaturalNumber> {
-		typedef std::uint64_t reference_type;
-	};
-	*/
 
 	// enumerate all division cases for an integer<nbits, BlockType, NumberType> configuration
 	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 	int VerifyDivision(bool reportTestCases) {
 		using Integer = integer<nbits, BlockType>;
-		using ReferenceType = ReferenceTypeForInteger<NumberType>::reference_type;
+		using ReferenceType = typename ReferenceTypeForInteger<NumberType>::reference_type;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
