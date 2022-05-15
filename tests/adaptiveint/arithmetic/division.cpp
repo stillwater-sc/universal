@@ -16,23 +16,6 @@
 #include <universal/number/adaptiveint/adaptiveint.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-// generate specific test case that you can trace with the trace conditions in mpreal.hpp
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<typename Ty, typename BlockType = std::uint32_t>
-void GenerateTestCase(Ty _a, Ty _b) {
-	Ty ref;
-	sw::universal::adaptiveint<BlockType> a, b, aref, aratio;
-	a = _a;
-	b = _b;
-	aratio = a / b;
-	ref = _a / _b;
-	aref = ref;
-	constexpr size_t ndigits = 30;
-	std::cout << std::setw(ndigits) << _a << " / " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;
-	std::cout << a << " / " << b << " = " << aratio << " (reference: " << aref << ")   " ;
-	std::cout << (aref == aratio ? "PASS" : "FAIL") << std::endl << std::endl;
-}
-
 namespace sw { namespace universal {
 
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
@@ -80,10 +63,10 @@ namespace sw { namespace universal {
 				}
 				if (iq != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iq);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", ia, ib, iq, iref);
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iq);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iq, iref);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -95,21 +78,24 @@ namespace sw { namespace universal {
 } } // namespace sw::universal
 
 
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#undef REGRESSION_LEVEL_1
-#undef REGRESSION_LEVEL_2
-#undef REGRESSION_LEVEL_3
-#undef REGRESSION_LEVEL_4
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
-#endif
+// generate specific test case that you can trace with the trace conditions in mpreal.hpp
+// for most bugs they are traceable with _trace_conversion and _trace_add
+template<typename Ty, typename BlockType = std::uint32_t>
+void GenerateTestCase(Ty _a, Ty _b) {
+	Ty ref;
+	sw::universal::adaptiveint<BlockType> a, b, c, aref;
+	ref = _a / _b;
+	aref = ref;
+
+	a = _a;
+	b = _b;
+	c = a / b;
+
+	constexpr size_t ndigits = 30;
+	std::cout << std::setw(ndigits) << _a << " / " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;
+	std::cout << a << " / " << b << " = " << c << " (reference: " << aref << ")   ";
+	std::cout << (aref == c ? "PASS" : "FAIL") << std::endl << std::endl;
+}
 
 struct TestRecord {
 	std::int64_t a;
@@ -187,13 +173,29 @@ void PrintPowersOfTwo(unsigned exponent = 100) {
 	}
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "adaptive precision binary integer division";
 	std::string test_tag    = "adaptiveint division";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
@@ -274,23 +276,23 @@ try {
 	return EXIT_SUCCESS; // ignore failures
 #else
 
-	/*
-		The testing strategy for adaptiveint's creates directed tests
-		that enumerate the boundary conditions of the algorithm.
 
-		The single limb configurations are scanned exhaustively.
-	 */
+	//The testing strategy for adaptiveint's creates directed tests
+	//that enumerate the boundary conditions of the algorithm.
+
+	//The single limb configurations are scanned exhaustively.
+
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += DirectedTests();
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<10, uint8_t>(reportTestCases), "adaptiveint<uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<8, uint16_t>(reportTestCases), "adaptiveint<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<8, uint32_t>(reportTestCases), "adaptiveint<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<16, uint8_t>(reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<16, uint16_t>(reportTestCases), "adaptiveint<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<32, uint32_t>(reportTestCases), "adaptiveint<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<10, uint8_t>(reportTestCases), "adaptiveint<uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<10, uint16_t>(reportTestCases), "adaptiveint<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<10, uint32_t>(reportTestCases), "adaptiveint<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<32, uint8_t>(reportTestCases), "adaptiveint<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<32, uint16_t>(reportTestCases), "adaptiveint<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<64, uint32_t>(reportTestCases), "adaptiveint<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

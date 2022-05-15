@@ -22,7 +22,7 @@ namespace sw { namespace universal {
 		using Integer = adaptiveint<BlockType>;
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 
-		Integer ia, ib, iresult, iref;
+		Integer ia, ib, ic, iref;
 
 		int nrOfFailedTests = 0;
 		size_t increment = std::max(1ull, NR_ENCODINGS / 1024ull);
@@ -33,14 +33,14 @@ namespace sw { namespace universal {
 				ib.setbits(j);
 				int64_t i64b = int64_t(ib);
 				iref = i64a + i64b;
-				iresult = ia + ib;
+				ic = ia + ib;
 
-				if (iresult != iref) {
+				if (ic != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", ia, ib, ic, iref);
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, ic, iref);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -58,21 +58,23 @@ namespace sw { namespace universal {
 template<typename Ty, typename BlockType = std::uint32_t>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::adaptiveint<BlockType> a, b, aref, asum;
-	a = _a;
-	b = _b;
-	asum = a + b;
+	sw::universal::adaptiveint<BlockType> a, b, c, aref;
 	ref = _a + _b;
 	aref = ref;
+
+	a = _a;
+	b = _b;
+	c = a + b;
+
 	constexpr size_t ndigits = 30;
 	std::cout << std::setw(ndigits) << _a << " + " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;
-//	std::cout << a << " + " << b << " = " << asum << " (reference: " << aref << ")   " ;
-	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(asum) << " : " << (long long)(asum) << " (reference: " << to_binary(aref) << ")   ";
-	std::cout << (aref == asum ? "PASS" : "FAIL") << std::endl << std::endl;
+//	std::cout << a << " + " << b << " = " << c << " (reference: " << aref << ")   " ;
+	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << " : " << (long long)(c) << " (reference: " << to_binary(aref) << ")   ";
+	std::cout << (aref == c ? "PASS" : "FAIL") << std::endl << std::endl;
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -130,10 +132,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<8, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<8, uint16_t>(reportTestCases), "adaptiveint<uint16_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<8, uint32_t>(reportTestCases), "adaptiveint<uint32_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<10, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<16, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<16, uint16_t>(reportTestCases), "adaptiveint<uint16_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<32, uint32_t>(reportTestCases), "adaptiveint<uint32_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<4, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

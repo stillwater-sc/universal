@@ -61,13 +61,6 @@ public:
 	adaptiveint& operator=(float rhs)              noexcept { return assign_native_ieee(rhs); }
 	adaptiveint& operator=(double rhs)             noexcept { return assign_native_ieee(rhs); }
 
-	// prefix operators
-	adaptiveint operator-() const {
-		adaptiveint negated(*this);
-		negated.setsign(!_sign);
-		return negated;
-	}
-
 	// conversion operators
 	explicit operator int() const noexcept         { return convert_to_native_integer<int>(); }
 	explicit operator long() const noexcept        { return convert_to_native_integer<long>(); }
@@ -158,7 +151,32 @@ public:
 		return *this;
 	}
 	
-	// arithmetic operators
+	// unary arithmetic operators
+	adaptiveint operator-() const {
+		adaptiveint negated(*this);
+		negated.setsign(!_sign);
+		return negated;
+	}
+	adaptiveint operator++(int) {
+		adaptiveint tmp(*this);
+		operator++();
+		return tmp;
+	}
+	adaptiveint& operator++() {
+		*this += 1;
+		return *this;
+	}
+	adaptiveint operator--(int) {
+		adaptiveint tmp(*this);
+		operator--();
+		return tmp;
+	}
+	adaptiveint& operator--() {
+		*this -= 1;
+		return *this;
+	}
+
+	// binary arithmetic operators
 	adaptiveint& operator+=(const adaptiveint& rhs) {
 		if (sign() != rhs.sign()) {
 			if (sign()) {
@@ -176,9 +194,8 @@ public:
 		}
 		auto lhsSize = _block.size();
 		auto rhsSize = rhs._block.size();
-		if (lhsSize < rhsSize) {
-			_block.resize(rhsSize, 0);
-		}
+		if (lhsSize < rhsSize) _block.resize(rhsSize, 0);
+
 		std::uint64_t carry{ 0 };
 		typename std::vector<BlockType>::iterator li = _block.begin();
 		typename std::vector<BlockType>::const_iterator ri = rhs._block.begin();
@@ -208,16 +225,20 @@ public:
 			negated.setsign(false);
 			return *this += negated;
 		}
-		int magnitude = compare_magnitude(*this, rhs); // if -1 result is going to be negative
 		auto lhsSize = _block.size();
+		if (lhsSize == 0) {
+			*this = -rhs;
+			return *this;
+		}
 		auto rhsSize = rhs._block.size();
+		int magnitude = compare_magnitude(*this, rhs); // if -1 result is going to be negative
 
 		auto overlap = (lhsSize < rhsSize ? lhsSize : rhsSize);
 		auto extent = (lhsSize < rhsSize ? rhsSize : lhsSize);
-		
-		if (lhsSize < rhsSize) _block.resize(rhsSize + 1);
-		std::uint64_t borrow{ 0 };
-		
+
+		// prep storage
+		if (lhsSize < rhsSize) _block.resize(rhsSize, 0);
+
 		typename std::vector<BlockType>::const_iterator aIter, bIter;
 		if (magnitude == 1) {
 			aIter = _block.begin();
@@ -227,17 +248,22 @@ public:
 			aIter = rhs._block.begin();
 			bIter = _block.begin();
 		}
+		std::uint64_t borrow{ 0 };
 		unsigned i{ 0 };
 		while (i < overlap) {
+			std::cout << "overlap: a : " << unsigned(*aIter) << " - b : " << unsigned(*bIter) << " + borrow : " << borrow << " = ";
 			borrow = static_cast<std::uint64_t>(*aIter) - static_cast<std::uint64_t>(*bIter) + borrow;
+			std::cout << borrow << '\n';
 			_block[i] = static_cast<BlockType>(borrow);
 			borrow = (borrow >> bitsInBlock) & 0x1u;
 			++i; ++aIter; ++bIter;
 		}
-		while (borrow && (i < extent)) {
+		while ((i < extent)) {
+			std::cout << "extent: a : " << unsigned(*aIter) << " - borrow : " << borrow << " = ";
 			borrow = static_cast<BlockType>(*aIter) - borrow;
+			std::cout << borrow << '\n';
 			_block[i] = static_cast<BlockType>(borrow);
-			borrow = (borrow >> bitsInBlock) & 1u;
+			borrow = (borrow >> bitsInBlock) & 0x1u;
 			++i; ++aIter;
 		}
 		remove_leading_zeros();
@@ -248,6 +274,22 @@ public:
 		return *this -= adaptiveint(rhs);
 	}
 	adaptiveint& operator*=(const adaptiveint& rhs) {
+		adaptiveint base(*this);
+		unsigned ll = limbs();
+		unsigned rl = rhs.limbs();
+
+		clear();
+		std::uint64_t segment(0);
+		for (unsigned i = 0; i < ll; ++i) {
+			for (unsigned j = 0; j < rl; ++j) {
+				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(rhs.block(j));
+				segment += block(i + j);
+				setblock(i + j, static_cast<bt>(segment));
+				segment >>= bitsInBlock;
+			}
+		}
+		if (segment != 0) setblock(ll + rl - 1, static_cast<bt>(segment));
+
 		return *this;
 	}
 	adaptiveint& operator*=(long long rhs) {
@@ -549,10 +591,8 @@ public:
 	inline int scale()   const noexcept { return findMsb(); } // TODO: when value = 0, scale returns -1 which is incorrect
 
 	inline BlockType block(unsigned b) const noexcept {
-		if (b < _block.size()) {
-			return _block[b];
-		}
-		return 0u;
+		if (b < _block.size()) return _block[b];
+		return static_cast<BlockType>(0u);
 	}
 	inline unsigned limbs() const noexcept { return static_cast<unsigned>(_block.size()); }
 
@@ -610,13 +650,14 @@ protected:
 	std::vector<BlockType> _block;  // building blocks representing a 1's complement magnitude
 
 	// HELPER methods
+	// compare_magnitude returns 1 if a > b, 0 if they are equal, and -1 if a < b
 	inline int compare_magnitude(const adaptiveint& a, const adaptiveint& b) {
 		unsigned aLimbs = a.limbs();
 		unsigned bLimbs = b.limbs();
 		if (aLimbs != bLimbs) {
 			return (aLimbs > bLimbs ? 1 : -1);  // return 1 if a > b, otherwise -1
 		}
-		for (int i = aLimbs - 1; i >= 0; --i) {
+		for (int i = static_cast<int>(aLimbs) - 1; i >= 0; --i) {
 			BlockType _a = a._block[static_cast<size_t>(i)];
 			BlockType _b = b._block[static_cast<size_t>(i)];
 			if ( _a != _b) {

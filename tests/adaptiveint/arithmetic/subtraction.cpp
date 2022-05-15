@@ -22,7 +22,7 @@ namespace sw { namespace universal {
 		using Integer = adaptiveint<BlockType>;
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 
-		Integer ia, ib, iresult, iref;
+		Integer ia, ib, ic, iref;
 
 		int nrOfFailedTests = 0;
 		size_t increment = std::max(1ull, NR_ENCODINGS / 1024ull);
@@ -33,14 +33,14 @@ namespace sw { namespace universal {
 				ib.setbits(j);
 				int64_t i64b = int64_t(ib);
 				iref = i64a - i64b;
-				iresult = ia - ib;
+				ic = ia - ib;
 
-				if (iresult != iref) {
+				if (ic != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "-", ia, ib, ic, iref);
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, ic, iref);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -57,17 +57,19 @@ namespace sw { namespace universal {
 template<typename Ty, typename BlockType>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::adaptiveint<BlockType> a, b, aref, adiff;
-	a = _a;
-	b = _b;
-	adiff = a - b;
+	sw::universal::adaptiveint<BlockType> a, b, c, aref;
 	ref = _a - _b;
 	aref = ref;
+
+	a = _a;
+	b = _b;
+	c = a - b;
+
 	constexpr size_t ndigits = 30;
 	std::cout << std::setw(ndigits) << _a << " - " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;
-//	std::cout << a << " - " << b << " = " << adiff << " (reference: " << aref << ")   " ;
-	std::cout << to_binary(a) << " - " << to_binary(b) << " = " << to_binary(adiff) << " : " << (long long)(adiff) << " (reference: " << to_binary(aref) << ")   ";
-	std::cout << (aref == adiff ? "PASS" : "FAIL") << std::endl << std::endl;
+//	std::cout << a << " - " << b << " = " << c << " (reference: " << aref << ")   " ;
+	std::cout << to_binary(a) << " - " << to_binary(b) << " = " << to_binary(c) << " : " << (long long)(c) << " (reference: " << to_binary(aref) << ")   ";
+	std::cout << (aref == c ? "PASS" : "FAIL") << std::endl << std::endl;
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -101,13 +103,18 @@ try {
 //	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<std::uint32_t, std::uint8_t>(1, 1);
-	GenerateTestCase<std::uint32_t, std::uint8_t>(4, 2);
-	GenerateTestCase<std::int32_t, std::uint8_t>(2, 4);
-	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 0);
-	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 1);
-	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 2);
-	GenerateTestCase<std::uint32_t, std::uint8_t>(255, 4);
+	//GenerateTestCase<std::uint32_t, std::uint8_t>(1, 1);
+	//GenerateTestCase<std::int32_t, std::uint8_t>(0, 1);
+	//GenerateTestCase<std::int32_t, std::uint8_t>(1, 0);
+	//GenerateTestCase<std::int32_t, std::uint8_t>(0, -1);
+	//GenerateTestCase<std::int32_t, std::uint8_t>(1, 2);
+	//GenerateTestCase<std::int32_t, std::uint8_t>(4, 256);
+	//GenerateTestCase<std::int32_t, std::uint8_t>(4, 260);
+	GenerateTestCase<std::int32_t, std::uint8_t>(260, 512);
+	GenerateTestCase<std::int32_t, std::uint8_t>(260, 511);
+	GenerateTestCase<std::int32_t, std::uint8_t>(512, 260);
+	GenerateTestCase<std::int32_t, std::uint8_t>(512, 257);
+	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<12, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
