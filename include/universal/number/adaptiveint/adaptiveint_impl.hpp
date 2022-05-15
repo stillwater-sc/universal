@@ -251,17 +251,17 @@ public:
 		std::uint64_t borrow{ 0 };
 		unsigned i{ 0 };
 		while (i < overlap) {
-			std::cout << "overlap: a : " << unsigned(*aIter) << " - b : " << unsigned(*bIter) << " + borrow : " << borrow << " = ";
-			borrow = static_cast<std::uint64_t>(*aIter) - static_cast<std::uint64_t>(*bIter) + borrow;
-			std::cout << borrow << '\n';
+//			std::cout << "overlap: " << unsigned(*aIter) << " - " << unsigned(*bIter) << " - borrow " << borrow << " = ";
+			borrow = static_cast<std::uint64_t>(*aIter) - static_cast<std::uint64_t>(*bIter) - borrow;
+//			std::cout << static_cast<long long>(borrow) << " : " << to_binary(borrow, 33, true) << '\n';
 			_block[i] = static_cast<BlockType>(borrow);
 			borrow = (borrow >> bitsInBlock) & 0x1u;
 			++i; ++aIter; ++bIter;
 		}
 		while ((i < extent)) {
-			std::cout << "extent: a : " << unsigned(*aIter) << " - borrow : " << borrow << " = ";
+//			std::cout << "extent: a : " << unsigned(*aIter) << " - borrow " << borrow << " = ";
 			borrow = static_cast<BlockType>(*aIter) - borrow;
-			std::cout << borrow << '\n';
+//			std::cout << static_cast<long long>(borrow) << " : " << to_binary(borrow, 33, true) << '\n';
 			_block[i] = static_cast<BlockType>(borrow);
 			borrow = (borrow >> bitsInBlock) & 0x1u;
 			++i; ++aIter;

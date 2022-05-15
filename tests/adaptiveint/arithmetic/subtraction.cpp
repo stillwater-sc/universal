@@ -73,7 +73,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -103,21 +103,22 @@ try {
 //	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
-	//GenerateTestCase<std::uint32_t, std::uint8_t>(1, 1);
-	//GenerateTestCase<std::int32_t, std::uint8_t>(0, 1);
-	//GenerateTestCase<std::int32_t, std::uint8_t>(1, 0);
-	//GenerateTestCase<std::int32_t, std::uint8_t>(0, -1);
-	//GenerateTestCase<std::int32_t, std::uint8_t>(1, 2);
-	//GenerateTestCase<std::int32_t, std::uint8_t>(4, 256);
-	//GenerateTestCase<std::int32_t, std::uint8_t>(4, 260);
+	GenerateTestCase<std::uint32_t, std::uint8_t>(1, 1);
+	GenerateTestCase<std::int32_t, std::uint8_t>(0, 1);
+	GenerateTestCase<std::int32_t, std::uint8_t>(1, 0);
+	GenerateTestCase<std::int32_t, std::uint8_t>(0, -1);
+	GenerateTestCase<std::int32_t, std::uint8_t>(1, 2);
+	GenerateTestCase<std::int32_t, std::uint8_t>(4, 256);
+	GenerateTestCase<std::int32_t, std::uint8_t>(4, 260);
 	GenerateTestCase<std::int32_t, std::uint8_t>(260, 512);
 	GenerateTestCase<std::int32_t, std::uint8_t>(260, 511);
 	GenerateTestCase<std::int32_t, std::uint8_t>(512, 260);
 	GenerateTestCase<std::int32_t, std::uint8_t>(512, 257);
-	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<12, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<32, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 8bytes", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
