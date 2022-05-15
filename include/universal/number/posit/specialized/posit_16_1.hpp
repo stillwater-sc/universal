@@ -116,14 +116,14 @@ public:
 		return *this;
 	}
 	constexpr posit& setbits(uint64_t value) {
-		_bits = uint16_t(value & 0xffff);
+		_bits = uint16_t(value & 0xffffu);
 		return *this;
 	}
 	
 	// arithmetic assignment operators
 	constexpr posit operator-() const {
 		posit p;
-		return p.setbits((~_bits) + 1);
+		return p.setbits((~_bits) + 1ul);
 	}
 	posit& operator+=(const posit& b) {
 		// process special cases
@@ -471,7 +471,7 @@ public:
 	}
 	inline posit twosComplement() const {
 		posit p;
-		return p.setbits(~_bits + 1);
+		return p.setbits(~_bits + 1ul);
 	}
 
 	internal::value<fbits> to_value() const {

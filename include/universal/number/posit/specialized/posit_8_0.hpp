@@ -118,12 +118,12 @@ public:
 		return *this;
 	}
 	constexpr posit& setbits(uint64_t value) {
-		_bits = uint8_t(value & 0xff);
+		_bits = uint8_t(value & 0xffu);
 		return *this;
 	}
 	constexpr posit operator-() const {
 		posit p;
-		return p.setbits((~_bits) + 1);
+		return p.setbits((~_bits) + 1ul);
 	}
 	// arithmetic assignment operators
 	posit& operator+=(const posit& b) {
