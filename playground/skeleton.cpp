@@ -234,16 +234,15 @@ void NumberTraits() {
 	std::cout << "epsilon for posit<128,4> : " << number_traits<posit<128, 4> >::epsilon() << '\n';  // TODO
 	std::cout << "epsilon for posit<256,5> : " << number_traits<posit<256, 5> >::epsilon() << '\n';  // TODO
 
-	/* call the raw implementation
-	std::cout << "digit10 for floats       : " << sw::internal::default_digits10_impl<float, false, false>().run() << endl;
-	std::cout << "digit10 for doubles      : " << sw::internal::default_digits10_impl<double, false, false>().run() << endl;
-	std::cout << "digit10 for posit<8,0>   : " << sw::internal::default_digits10_impl<posit<8, 0>, false, false>().run() << endl;
-	std::cout << "digit10 for posit<16,1>  : " << sw::internal::default_digits10_impl<posit<16, 1>, false, false>().run() << endl;
-	std::cout << "digit10 for posit<32,2>  : " << sw::internal::default_digits10_impl<posit<32, 2>, false, false>().run() << endl;
-	std::cout << "digit10 for posit<64,3>  : " << sw::internal::default_digits10_impl<posit<64, 3>, false, false>().run() << endl;
-	std::cout << "digit10 for posit<128,4> : " << sw::internal::default_digits10_impl<posit<128, 4>, false, false>().run() << endl;
-	std::cout << "digit10 for posit<256,5> : " << sw::internal::default_digits10_impl<posit<256, 5>, false, false>().run() << endl;
-	*/
+	// call the raw implementation
+	//std::cout << "digit10 for floats       : " << sw::internal::default_digits10_impl<float, false, false>().run() << endl;
+	//std::cout << "digit10 for doubles      : " << sw::internal::default_digits10_impl<double, false, false>().run() << endl;
+	//std::cout << "digit10 for posit<8,0>   : " << sw::internal::default_digits10_impl<posit<8, 0>, false, false>().run() << endl;
+	//std::cout << "digit10 for posit<16,1>  : " << sw::internal::default_digits10_impl<posit<16, 1>, false, false>().run() << endl;
+	//std::cout << "digit10 for posit<32,2>  : " << sw::internal::default_digits10_impl<posit<32, 2>, false, false>().run() << endl;
+	//std::cout << "digit10 for posit<64,3>  : " << sw::internal::default_digits10_impl<posit<64, 3>, false, false>().run() << endl;
+	//std::cout << "digit10 for posit<128,4> : " << sw::internal::default_digits10_impl<posit<128, 4>, false, false>().run() << endl;
+	//std::cout << "digit10 for posit<256,5> : " << sw::internal::default_digits10_impl<posit<256, 5>, false, false>().run() << endl;
 
 	std::cout << "digit10 for floats       : " << number_traits<float>::digits10() << '\n';
 	std::cout << "digit10 for doubles      : " << number_traits<double>::digits10() << '\n';
