@@ -48,7 +48,7 @@ inline bool isnormal(const posit<nbits, es>& p) {
 // specialized for posits
 template<size_t nbits, size_t es>
 inline bool isdenorm(const posit<nbits, es>& p) {
-	return false; // posits are never denormalized
+	return (p.isnar() ? false : false); // posits are never denormalized
 }
 
 }} // namespace sw::universal

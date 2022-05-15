@@ -25,6 +25,7 @@ inline constexpr void extractFields(Real value, bool& s, uint64_t& rawExponentBi
 	}
 	if (value < 0) s = true;
 }
+// specialization to extract fields from a float
 template<>
 inline constexpr void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
 	uint64_t bc = std::bit_cast<uint32_t, float>(value);
@@ -32,6 +33,7 @@ inline constexpr void extractFields(float value, bool& s, uint64_t& rawExponentB
 	rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
 	rawFractionBits = (ieee754_parameter<float>::fmask & bc);
 }
+// specialization to extract fields from a double
 template<>
 inline constexpr void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
 	uint64_t bc = std::bit_cast<uint64_t, double>(value);
@@ -39,6 +41,17 @@ inline constexpr void extractFields(double value, bool& s, uint64_t& rawExponent
 	rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
 	rawFractionBits = (ieee754_parameter<double>::fmask & bc);
 }
+
+#if LONG_DOUBLE_SUPPORT
+// specialization to extract fields from a long double
+template<>
+inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
+	uint64_t bc = std::bit_cast<uint64_t, long double>(value);
+	s = (ieee754_parameter<double>::smask & bc);
+	rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
+	rawFractionBits = (ieee754_parameter<double>::fmask & bc);
+}
+#endif // LONG_DOUBLE_SUPPORT
 
 // generate a hex formatted string for a native IEEE floating point
 template<typename Real,

@@ -23,8 +23,7 @@ namespace sw { namespace universal {
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
 	Scalar  frac(Scalar x) {
-		std::cout << "frac TBD\n";
-		return Scalar(0); // std::frac(x);
+		return x;
 	}
 
 }} // namespace sw::universal

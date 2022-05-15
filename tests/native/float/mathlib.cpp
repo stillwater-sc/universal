@@ -17,67 +17,6 @@
 namespace sw { namespace universal {
 
 	template<typename Scalar>
-	Scalar NativeMathlib(Scalar a, Scalar b = Scalar(1)) {
-		using namespace std;
-
-		Scalar result{ 0 };
-
-		std::cout << "abs               : " << abs(a) << '\n';
-
-		std::cout << "fpclassify        : " << fpclassify(a) << '\n';
-		std::cout << "isnormal          : " << isnormal(a) << '\n';
-		std::cout << "isinf             : " << isinf(a) << '\n';
-		std::cout << "isnan             : " << isnan(a) << '\n';
-
-		std::cout << "erf               : " << erf(a) << '\n';
-		std::cout << "erfc              : " << erfc(a) << '\n';
-
-		std::cout << "exp               : " << exp(a) << '\n';
-		std::cout << "exp2              : " << exp2(a) << '\n';
-		std::cout << "exp10             : " << exp10(a) << '\n';
-		std::cout << "expm1             : " << expm1(a) << '\n';
-
-		std::cout << "log               : " << log(a) << '\n';
-		std::cout << "log2              : " << log2(a) << '\n';
-		std::cout << "log10             : " << log10(a) << '\n';
-		std::cout << "log1p             : " << log1p(a) << '\n';
-
-		std::cout << "fmod              : " << fmod(a, b) << '\n';
-		std::cout << "remainder         : " << remainder(a, b) << '\n';
-		std::cout << "frac              : " << frac(a) << '\n';
-
-		std::cout << "sin               : " << sin(a) << '\n';
-		std::cout << "cos               : " << cos(a) << '\n';
-		std::cout << "tan               : " << tan(a) << '\n';
-		std::cout << "atan              : " << atan(a) << '\n';
-		std::cout << "acos              : " << acos(a) << '\n';
-		std::cout << "asin              : " << asin(a) << '\n';
-
-		std::cout << "sinh              : " << sinh(a) << '\n';
-		std::cout << "cosh              : " << cosh(a) << '\n';
-		std::cout << "tanh              : " << tanh(a) << '\n';
-		std::cout << "atanh             : " << atanh(a) << '\n';
-		std::cout << "acosh             : " << acosh(a) << '\n';
-		std::cout << "asinh             : " << asinh(a) << '\n';
-
-		std::cout << "hypot             : " << hypot(a, b) << '\n';
-
-		std::cout << "min               : " << min(a, b) << '\n';
-		std::cout << "max               : " << max(a, b) << '\n';
-
-		std::cout << "pow               : " << pow(a, b) << '\n';
-
-		std::cout << "sqrt              : " << sqrt(a) << '\n';
-
-		std::cout << "trunc             : " << trunc(a) << '\n';
-		std::cout << "round             : " << round(a) << '\n';
-		std::cout << "floor             : " << floor(a) << '\n';
-		std::cout << "ceil              : " << ceil(a) << '\n';
-
-		return result;
-	}
-
-	template<typename Scalar>
 	Scalar UniversalMathlibShim(Scalar a, Scalar b = Scalar(1)) {
 		using namespace sw::universal;
 		using std::abs;
@@ -85,6 +24,7 @@ namespace sw { namespace universal {
 		using std::isnormal;
 		using std::isinf;
 		using std::isnan;
+		using std::isfinite;
 		using std::erf;
 		using std::erfc;
 		using std::exp;
@@ -181,11 +121,12 @@ namespace sw { namespace universal {
 
 	template<typename Scalar>
 		int VerifyMathlibShim(bool reportTestCases) {
-		constexpr unsigned nbits = sizeof(Scalar) * 8;
+
 		int nrOfFailedTests = 0;
 
 		Scalar one(1);
 		UniversalMathlibShim(one);
+		if (reportTestCases) std::cout << "done\n";
 
 		return nrOfFailedTests;
 	}

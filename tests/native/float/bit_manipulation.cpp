@@ -10,24 +10,46 @@
 #include <iostream>
 #include <sstream>
 #include <bit>
+#include <universal/native/ieee754.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw {
-	namespace universal {
+namespace sw { namespace universal {
 
-		template<typename NativeReal,
-			typename = typename std::enable_if< std::is_floating_point<NativeReal>::value, NativeReal >::type>
-		int VerifyFloatFieldExtraction(bool reportTestCases) {
-			constexpr unsigned nbits = sizeof(NativeReal) * 8;
-			int nrOfFailedTests = 0;
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	int VerifyFloatFieldExtraction(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrOfFailedTests = 0;
 
-			// TODO
+		bool sign{ false };
+		std::uint64_t rawExponent{ 0 };
+		int exponent{ 0 };
+		std::uint64_t rawFraction{ 0 };
+		int fbits{ 64 };
 
-			return nrOfFailedTests;
+		Real a;
+		a = 1.0;
+
+		if constexpr (sizeof(Real) == 4) {
+			fbits = 23;
+		}
+		else if constexpr (sizeof(Real) == 8) {
+			fbits = 52;
+		}
+		else if constexpr (sizeof(Real) == 16) {
+			fbits = 64;
+		}
+		extractFields(a, sign, rawExponent, rawFraction);
+		exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
+		if (sign != false || exponent != 0 || rawFraction != 0) {
+			++nrOfFailedTests;
+			if (reportTestCases) std::cerr << "fp components: " << (sign ? '1' : '0') << " exp: " << exponent << " frac: " << to_binary(rawFraction, fbits, true) << '\n';
 		}
 
+		return nrOfFailedTests;
 	}
-} // namespace sw::universal
+
+} } // namespace sw::universal
 
 union float_decoder {
 	float_decoder() : f{ 0.0f } {}

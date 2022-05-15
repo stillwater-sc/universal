@@ -75,6 +75,12 @@ namespace sw { namespace universal {
 		return std::fpclassify(v);
 	}
 
+	// STD LIB function for IEEE floats: 
+	template<typename Scalar,
+		typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
+	inline bool isfinite(const Scalar& v) {
+		return !std::isnan(v) && !std::isinf(v);
+	}
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -87,7 +93,6 @@ namespace sw { namespace universal {
 
 	// Universal function supported by all number systems
 
-
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
 	inline bool isdenorm(const Scalar& v) {
@@ -99,10 +104,5 @@ namespace sw { namespace universal {
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
 	inline bool issubnorm(const Scalar& v) { return isdenorm(v); }
 
-	template<typename Scalar,
-		typename = typename std::enable_if<std::is_floating_point<Scalar>::value, Scalar>::type>
-		inline bool isfinite(const Scalar& v) {
-		return !std::isnan(v) && !std::isinf(v);
-	}
 
 }} // namespace sw::universal

@@ -12,6 +12,46 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/verification/test_suite.hpp>
 
+namespace sw { namespace universal {
+
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	int VerifyFloatingPointScales(bool reportTestCases) {
+		using namespace sw::universal;
+		int nrOfFailedTests = 0;
+
+		long long largestScale = std::numeric_limits<Real>::max_exponent - 1;
+		Real r = sw::universal::ipow<Real>(static_cast<size_t>(largestScale));
+		for (long long i = 0; i < largestScale + 1; ++i) {
+			if (largestScale - i != scale(r)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL : " << std::setw(4) << largestScale - i << " : " << scale(r) << " : " << sw::universal::to_binary(r) << " : " << r << '\n';
+			}
+			r /= 2.0;
+		}
+		// this gets us to 1.0, next enumerate the negative scaled normals
+		int smallestScale = std::numeric_limits<Real>::min_exponent - 1;
+		for (int i = -1; i > smallestScale; --i) {
+			if (i != scale(r)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << "FAIL : " << std::setw(4) << i << " : " << scale(r) << " : " << sw::universal::to_binary(r) << " : " << r << '\n';
+			}
+			r /= 2.0;
+		}
+		// this gets us to the smallest normal, next enumerate the subnormals
+		for (int i = 0; i < sw::universal::ieee754_parameter<Real>::fbits; ++i) {
+			if (smallestScale - i != scale(r)) {
+				++nrOfFailedTests;
+				if (reportTestCases) std::cerr << std::setw(4) << (smallestScale - i) << " : " << scale(r) << " : " << sw::universal::to_binary(r) << " : " << r << '\n';
+			}
+			r /= 2.0;
+		}
+
+		return nrOfFailedTests;
+	}
+
+} } // namespace sw::universal
+
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
 void NativeEnvironment(Real r) {
@@ -51,7 +91,7 @@ void DescendingScales() {
 	}
 	// this gets us to 1.0, next enumerate the negative scaled normals
 	int smallestScale = std::numeric_limits<Real>::min_exponent - 1;
-	for (int i = 0; i > smallestScale; --i) {
+	for (int i = -1; i > smallestScale; --i) {
 		std::cout << std::setw(4) << i << " : " << sw::universal::to_binary(r) << " : " << r << '\n';
 		r /= 2.0;
 	}
@@ -74,7 +114,7 @@ void InfinityAdditions() {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -89,13 +129,16 @@ void InfinityAdditions() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
+#define NATIVE_ENVIRONMENT
+#define VALUE_REPRESENTATION
+
 int main()
 try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "IEEE-754 floating-point bit manipulation verification";
 	std::string test_tag    = "bit manipulators";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
@@ -112,17 +155,21 @@ try {
 	std::cout << "This environment does not support a native long double format\n";
 #endif
 
+#ifdef NATIVE_ENVIRONMENT
 	NativeEnvironment(f);
 	NativeEnvironment(d);
 #if LONG_DOUBLE_SUPPORT
 	NativeEnvironment(ld);
 #endif
+#endif
 
+#ifdef VALUE_REPRESENTATION
 	// show all the different presentations for the different IEEE-754 native formats
 	valueRepresentations(f);
 	valueRepresentations(d);
 #if LONG_DOUBLE_SUPPORT
 	valueRepresentations(ld);
+#endif
 #endif
 
 	// show the scales that an IEEE-754 type contains
@@ -131,15 +178,24 @@ try {
 	// show the results of addition with infinites
 	InfinityAdditions();
 
+	int largestScale = std::numeric_limits<float>::max_exponent - 1;
+	float r = sw::universal::ipow<float>(static_cast<size_t>(largestScale));
+	std::cout << "largest scale  : " << largestScale << " value : " << r << '\n';
+	int smallestScale = std::numeric_limits<float>::min_exponent - 1;
+	r = sw::universal::ipow<float>(static_cast<size_t>(smallestScale));
+	std::cout << "smallest scale : " << smallestScale << " value : " << r << '\n';
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<float>(reportTestCases), "float", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<double>(reportTestCases), "double", test_tag);
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatFieldExtraction<float>(reportTestCases), "float", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatFieldExtraction<double>(reportTestCases), "double", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<float>(reportTestCases), "float", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<double>(reportTestCases), "double", test_tag);
 #if LONG_DOUBLE_SUPPORT
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatFieldExtraction<long double>(reportTestCases), "long double", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<long double>(reportTestCases), "long double", test_tag);
 #endif
 
 #endif
