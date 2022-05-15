@@ -346,8 +346,7 @@ public:
 				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
 			}
 			else {
-				integer<nbits, BlockType, NumberType> base(*this);
-				integer<nbits, BlockType, NumberType> multiplicant(rhs);
+				integer<nbits, BlockType, NumberType> base(*this), multiplicant(rhs);
 				clear();
 				for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
 					std::uint64_t segment(0);
