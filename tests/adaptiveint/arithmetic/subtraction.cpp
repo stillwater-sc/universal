@@ -126,9 +126,11 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint16_t>(reportTestCases), "adaptiveint<uint16_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint32_t>(reportTestCases), "adaptiveint<uint32_t> 1byte", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<10, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint16_t>(reportTestCases), "adaptiveint<uint16_t> 1word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<16, uint16_t>(reportTestCases), "adaptiveint<uint16_t> 2word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<16, uint32_t>(reportTestCases), "adaptiveint<uint32_t> 1word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<32, uint32_t>(reportTestCases), "adaptiveint<uint32_t> 2word", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

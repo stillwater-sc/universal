@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include <regex>
+#include <map>
 #include <vector>
 
 #include <universal/number/adaptiveint/exceptions.hpp>
@@ -79,7 +80,7 @@ public:
 		if (shift == 0) return *this;
 		if (shift < 0) return operator>>=(-shift);
 
-		// by default extend the limbs by 1
+		// by default extend the limbs by 1: TODO: can this be improved?
 		_block.push_back(0);
 		size_t MSU = _block.size() - 1;
 		if (shift >= static_cast<int>(bitsInBlock)) {
@@ -105,7 +106,12 @@ public:
 				BlockType bits = BlockType(mask & _block[i - 1]);
 				_block[static_cast<size_t>(i)] |= (bits >> (bitsInBlock - shift));
 			}
+			_block[0] <<= shift;
 		}
+		else {
+			_block[0] <<= shift;
+		}
+		remove_leading_zeros();
 		return *this;
 	}
 	adaptiveint& operator>>=(int shift) {
@@ -251,17 +257,13 @@ public:
 		std::uint64_t borrow{ 0 };
 		unsigned i{ 0 };
 		while (i < overlap) {
-//			std::cout << "overlap: " << unsigned(*aIter) << " - " << unsigned(*bIter) << " - borrow " << borrow << " = ";
 			borrow = static_cast<std::uint64_t>(*aIter) - static_cast<std::uint64_t>(*bIter) - borrow;
-//			std::cout << static_cast<long long>(borrow) << " : " << to_binary(borrow, 33, true) << '\n';
 			_block[i] = static_cast<BlockType>(borrow);
 			borrow = (borrow >> bitsInBlock) & 0x1u;
 			++i; ++aIter; ++bIter;
 		}
 		while ((i < extent)) {
-//			std::cout << "extent: a : " << unsigned(*aIter) << " - borrow " << borrow << " = ";
 			borrow = static_cast<BlockType>(*aIter) - borrow;
-//			std::cout << static_cast<long long>(borrow) << " : " << to_binary(borrow, 33, true) << '\n';
 			_block[i] = static_cast<BlockType>(borrow);
 			borrow = (borrow >> bitsInBlock) & 0x1u;
 			++i; ++aIter;
@@ -274,8 +276,14 @@ public:
 		return *this -= adaptiveint(rhs);
 	}
 	adaptiveint& operator*=(const adaptiveint& rhs) {
+		if (iszero() || rhs.iszero()) {
+			clear();
+			return *this;
+		}
 		adaptiveint base(*this);
+		bool ls = sign();
 		unsigned ll = limbs();
+		bool rs = rhs.sign();
 		unsigned rl = rhs.limbs();
 
 		clear();
@@ -289,7 +297,7 @@ public:
 			}
 		}
 		if (segment != 0) setblock(ll + rl - 1, static_cast<bt>(segment));
-
+		setsign(ls ^ rs);
 		return *this;
 	}
 	adaptiveint& operator*=(long long rhs) {
@@ -328,7 +336,6 @@ public:
 		r.clear();
 		if (a.iszero()) return;
 
-		_sign = a.sign() ^ b.sign();
 		size_t aBlocks = a.limbs();
 		size_t bBlocks = b.limbs();
 		if (aBlocks == 1 && aBlocks == bBlocks) { // completely reduce this to native div and rem
@@ -445,6 +452,7 @@ public:
 			r.setblock(n - 1, static_cast<BlockType>(normalized_a.block(n - 1) >> shift));
 		}
 		remove_leading_zeros();
+		_sign = a.sign() ^ b.sign();
 	}
 
 	// modifiers
@@ -565,12 +573,18 @@ public:
 		if (i >= _block.size()) _block.resize(i+1ull);
 		_block[i] = value;
 	}
+	inline void setbyte(unsigned i, std::uint8_t byte) noexcept {
+		std::cerr << "setbyte(" << i << ", " << int(byte) << ") TBD\n";
+	}
 	inline adaptiveint& assign(const std::string& txt) {
+		if (!parse(txt, *this)) {
+			std::cerr << "Unable to parse: " << txt << std::endl;
+		}
 		return *this;
 	}
 
 	// selectors
-	inline bool iszero() const noexcept { return !_sign && (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
+	inline bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
 	inline bool isone()  const noexcept { return true; }
 	inline bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
 	inline bool iseven() const noexcept { return !isodd(); }
@@ -724,11 +738,11 @@ protected:
 			return *this; // we are zero
 		}
 		// normal and subnormal handling
-		setsign(s);
 		constexpr size_t fbits = ieee754_parameter<Real>::fbits;
 		std::uint64_t hiddenBit = (0x1ull << fbits);
 		rawFraction |= hiddenBit;
 		setbits(rawFraction);
+		setsign(s);
 		// scale the fraction bits
 		*this <<= static_cast<int>(exponent - fbits);
 		return *this;
@@ -779,8 +793,135 @@ inline adaptiveint<BlockType> abs(const adaptiveint<BlockType>& a) {
 // read a adaptiveint ASCII format and make a binary adaptiveint out of it
 template<typename BlockType>
 bool parse(const std::string& number, adaptiveint<BlockType>& value) {
+	using Integer = adaptiveint<BlockType>;
 	bool bSuccess = false;
-
+	value.clear();
+	// check if the txt is an integer form: [0123456789]+
+	std::regex decimal_regex("^[-+]*[0-9]+");
+	std::regex octal_regex("^[-+]*0[1-7][0-7]*$");
+	std::regex hex_regex("^[-+]*0[xX][0-9a-fA-F']+");
+	// setup associative array to map chars to nibbles
+	std::map<char, int> charLookup{
+		{ '0', 0 },
+		{ '1', 1 },
+		{ '2', 2 },
+		{ '3', 3 },
+		{ '4', 4 },
+		{ '5', 5 },
+		{ '6', 6 },
+		{ '7', 7 },
+		{ '8', 8 },
+		{ '9', 9 },
+		{ 'a', 10 },
+		{ 'b', 11 },
+		{ 'c', 12 },
+		{ 'd', 13 },
+		{ 'e', 14 },
+		{ 'f', 15 },
+		{ 'A', 10 },
+		{ 'B', 11 },
+		{ 'C', 12 },
+		{ 'D', 13 },
+		{ 'E', 14 },
+		{ 'F', 15 },
+	};
+	if (std::regex_match(number, octal_regex)) {
+		std::cout << "found an octal representation\n";
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			std::cout << "char = " << *r << std::endl;
+		}
+		bSuccess = false; // TODO
+	}
+	else if (std::regex_match(number, hex_regex)) {
+		//std::cout << "found a hexadecimal representation\n";
+		// each char is a nibble
+		int byte = 0;
+		int byteIndex = 0;
+		bool odd = false;
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			if (*r == '\'') {
+				// ignore
+			}
+			else if (*r == 'x' || *r == 'X') {
+				if (odd) {
+					// complete the most significant byte
+					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
+				}
+				// check that we have [-+]0[xX] format
+				++r;
+				if (r != number.rend()) {
+					if (*r == '0') {
+						// check if we have a sign
+						++r;
+						if (r == number.rend()) {
+							// no sign, thus by definition positive
+							bSuccess = true;
+						}
+						else if (*r == '+') {
+							// optional positive sign, no further action necessary
+							bSuccess = true;
+						}
+						else if (*r == '-') {
+							// negative sign, invert
+							value = -value;
+							bSuccess = true;
+						}
+						else {
+							// the regex will have filtered this out
+							bSuccess = false;
+						}
+					}
+					else {
+						// we didn't find the obligatory '0', the regex should have filtered this out
+						bSuccess = false;
+					}
+				}
+				else {
+					// we are missing the obligatory '0', the regex should have filtered this out
+					bSuccess = false;
+				}
+				// we have reached the end of our parse
+				break;
+			}
+			else {
+				if (odd) {
+					byte += charLookup.at(*r) << 4;
+					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
+					++byteIndex;
+				}
+				else {
+					byte = charLookup.at(*r);
+				}
+				odd = !odd;
+			}
+		}
+	}
+	else if (std::regex_match(number, decimal_regex)) {
+		//std::cout << "found a decimal integer representation\n";
+		Integer scale = 1;
+		bool sign{ false };
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			if (*r == '-') {
+				sign = true;;
+			}
+			else if (*r == '+') {
+				break;
+			}
+			else {
+				Integer digit = charLookup.at(*r);
+				value += scale * digit;
+				scale *= 10;
+			}
+		}
+		value.setsign(sign);
+		bSuccess = true;
+	}
 	return bSuccess;
 }
 
@@ -835,20 +976,25 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint<B
 		unsigned block10;
 		unsigned digits_in_block10;
 		if constexpr (AdaptiveInteger::bitsInBlock == 8) {
-			block10 = 100;
+			block10 = 100u;
 			digits_in_block10 = 2;
 		}
 		else if constexpr (AdaptiveInteger::bitsInBlock == 16) {
-			block10 = 10'000;
+			block10 = 10'000ul;
 			digits_in_block10 = 4;
 		}
 		else if constexpr (AdaptiveInteger::bitsInBlock == 32) {
-			block10 = 1'000'000'000;
+			block10 = 1'000'000'000ul;
 			digits_in_block10 = 9;
 		}
 		else if constexpr (AdaptiveInteger::bitsInBlock == 64) {
-			block10 = 1'000'000'000'000'000'000;
-			digits_in_block10 = 18;
+			// not allowed as the whole multi-digit arithmetic
+			// requires that there is a 'larger' type that
+			// can receive carries and borrows.
+			// If your platform does have a native 128bit
+			// integer, this could be enabled
+			//block10 = 1'000'000'000'000'000'000ull;
+			//digits_in_block10 = 18;
 		}
 		result.assign(nbits / 3 + 1ull, '0');
 		size_t pos = result.size() - 1ull;
