@@ -64,7 +64,7 @@ constexpr bool _trace_value_div = true;
 constexpr bool _trace_value_div = false;
 #endif
 
-// template class representing a value in scientific notation, using a template size for the number of fraction bits
+// template class representing a value in scientific notation, using a template parameter to define the number of fraction bits
 template<size_t fbits>
 class value {
 public:
@@ -550,82 +550,6 @@ private:
 	friend bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs);
 };
 
-/*
- n fraction bits represent a sampling of 2^n samples of a 10^n domain.
-
- if you need to represent a smaller decimal than n digits, you need to
- round in the fraction domain, and then convert the rounded bit string.
- */
-
-// convert a value to a decimal representation
-template<size_t fbits>
-inline std::string convert_to_decimal_string(const value<fbits>& v) {
-	std::cout << to_triple(v) << '\n';
-	auto scale = v.scale();
-	auto bits = v.fraction();
-	// construct the value of the hidden bit
-	support::decimal bitValue;
-
-	// construct the value of the fraction
-	// step 1: calculate the decimal value of the smallest discretization step of the range
-	support::decimal range, discretizationLevels, step, partial, multiplier, one;
-	// create the decimal range we are discretizing
-	range.setdigit(1);
-	range.shiftLeft(fbits); // == 10^fbits
-	// calculate the discretization levels of this range
-	discretizationLevels.setdigit(1);
-	for (size_t i = 0; i < fbits; ++i) support::add(discretizationLevels, discretizationLevels);
-	step = support::div(range, discretizationLevels);
-	// step 2: construct the value of fraction in terms of discretization samples
-	partial.setzero();
-	multiplier.setdigit(1);
-	// convert the fraction part
-	for (unsigned i = 0; i < fbits; ++i) {
-		if (bits[i]) support::add(partial, multiplier);
-		support::add(multiplier, multiplier);
-	}
-	support::add(partial, multiplier); // add the hidden bit value
-
-	// step 3: calculate the value of fraction = nrOfSamples * discretizationStep
-	support::mul(partial, step);
-
-	// construct a decimal fixed-point
-	if (scale > 0) {
-		support::decimal scaleUp;
-		scaleUp.setdigit(1);
-		for (auto i = 0; i < scale; ++i) support::add(scaleUp, scaleUp);
-		support::mul(partial, scaleUp);
-	}
-	else if (scale < 0) {
-		support::decimal scaleDown;
-		scaleDown.setdigit(1);
-		for (auto i = 0; i < -scale; ++i) support::add(scaleDown, scaleDown);
-		partial = support::div(partial, scaleDown);
-	}
-	std::stringstream str;
-	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		str << (int)*rit;
-	}
-#ifdef REV
-	// leading 0s will cause the partial to be represented incorrectly
-	// if we simply convert it to digits.
-	// The partial represents the parts in the range, so we can deduce
-	// the number of leading zeros by comparing to the length of range
-	size_t nrLeadingZeros = range.size() - partial.size() - 1;
-	for (size_t i = 0; i < nrLeadingZeros; ++i) str << '0';
-	size_t digitsWritten = nrLeadingZeros;
-	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		str << (int)*rit;
-		++digitsWritten;
-	}
-	if (digitsWritten < fbits) { // deal with trailing 0s
-		for (size_t i = digitsWritten; i < fbits; ++i) {
-			str << '0';
-		}
-	}
-#endif
-	return str.str();
-}
 ////////////////////// VALUE operators
 template<size_t nfbits>
 inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {

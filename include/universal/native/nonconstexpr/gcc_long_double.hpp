@@ -1,7 +1,7 @@
 #pragma once
 // gcc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -30,12 +30,28 @@ union long_double_decoder {
 	} parts;
 };
 
+// extract the fields of a native C++ long double
 inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
 	long_double_decoder decoder;
 	decoder.ld = value;
 	s = decoder.parts.sign == 1 ? true : false;
 	rawExponentBits = decoder.parts.exponent;
 	rawFractionBits = decoder.parts.fraction;
+}
+
+// ieee_components returns a tuple of sign, exponent, and fraction.
+inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
+	static_assert(std::numeric_limits<double>::is_iec559,
+		"This function only works when double complies with IEC 559 (IEEE 754)");
+	static_assert(sizeof(long double) == 16, "This function only works when double is 80 bit.");
+
+	long_double_decoder dd{ fp }; // initializes the first member of the union
+	// Reading inactive union parts is forbidden in constexpr :-(
+	return std::make_tuple<bool, int, std::uint64_t>(
+		static_cast<bool>(dd.parts.sign),
+		static_cast<int>(dd.parts.exponent),
+		static_cast<std::uint64_t>(dd.parts.fraction)
+		);
 }
 
 // specialization for IEEE long double precision floats

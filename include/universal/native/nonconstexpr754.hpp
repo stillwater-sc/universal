@@ -1,7 +1,7 @@
 #pragma once
 // nonconstexpr754.hpp: manipulation functions for IEEE-754 native types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
@@ -336,8 +336,8 @@ inline std::string to_base2_scientific(double number) {
 	return s.str();
 }
 
-/// Returns a tuple of sign, exponent, and fraction.
-inline std::tuple<bool, int32_t, uint32_t> ieee_components(float fp)
+// ieee_components returns a tuple of sign, exponent, and fraction
+inline std::tuple<bool, int, std::uint32_t> ieee_components(float fp)
 {
 	static_assert(std::numeric_limits<float>::is_iec559,
 		"This function only works when float complies with IEC 559 (IEEE 754)");
@@ -345,23 +345,15 @@ inline std::tuple<bool, int32_t, uint32_t> ieee_components(float fp)
 
 	float_decoder fd{ fp }; // initializes the first member of the union
 	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple<bool, int32_t, uint32_t>(
+	return std::make_tuple<bool, int, std::uint32_t>(
 		static_cast<bool>(fd.parts.sign), 
-		static_cast<int32_t>(fd.parts.exponent),
-		static_cast<uint32_t>(fd.parts.fraction) 
+		static_cast<int>(fd.parts.exponent),
+		static_cast<std::uint32_t>(fd.parts.fraction) 
 	);
-
-#if 0 // reinterpret_cast forbidden in constexpr :-(
-	uint32_t& as_int = reinterpret_cast<uint32_t&>(fp);
-	uint32_t exp = static_cast<int32_t>(as_int >> 23);
-	if (exp & 0x80)
-		exp |= 0xffffff00l; // turn on leading bits for negativ exponent
-	return { fp < 0.0, exp, as_int & uint32_t{0x007FFFFFul} };
-#endif
 }
 
-/// Returns a tuple of sign, exponent, and fraction.
-inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
+// ieee_components returns a tuple of sign, exponent, and fraction
+inline std::tuple<bool, int, std::uint64_t> ieee_components(double fp)
 {
 	static_assert(std::numeric_limits<double>::is_iec559,
 		"This function only works when double complies with IEC 559 (IEEE 754)");
@@ -369,10 +361,10 @@ inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 
 	double_decoder dd{ fp }; // initializes the first member of the union
 	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple<bool, int64_t, uint64_t>(
+	return std::make_tuple<bool, int, std::uint64_t>(
 		static_cast<bool>(dd.parts.sign), 
-		static_cast<int64_t>(dd.parts.exponent),
-		static_cast<uint64_t>(dd.parts.fraction) 
+		static_cast<int>(dd.parts.exponent),
+		static_cast<std::uint64_t>(dd.parts.fraction) 
 	);
 }
 

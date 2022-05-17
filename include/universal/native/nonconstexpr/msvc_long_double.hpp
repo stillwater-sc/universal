@@ -1,7 +1,7 @@
 #pragma once
 // msvc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -15,16 +15,9 @@ namespace sw { namespace universal {
 // compiler specific long double IEEE floating point
 
 // Visual C++ does not support long double, it is just an alias for double
-/*
-union long_double_decoder {
-	long double ld;
-	struct {
-		uint64_t fraction : 52;
-		uint64_t exponent : 11;
-		uint64_t  sign : 1;
-	} parts;
-};
-*/
+inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
+	return ieee_components(double(fp));
+}
 
 // specialization for IEEE long double precision floats
 inline std::string to_base2_scientific(long double number) {
