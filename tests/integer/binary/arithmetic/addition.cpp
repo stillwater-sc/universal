@@ -1,6 +1,6 @@
-//  addition.cpp : test runner for addition of abitrary precision integers
+//  addition.cpp : test runner for addition operator on fixed-size abitrary precision integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -76,7 +76,7 @@ try {
 
 	std::string test_suite  = "Integer Arithmetic Addition verfication";
 	std::string test_tag    = "integer<> addition";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';

@@ -1,6 +1,6 @@
-//  multiplication.cpp : test suite runner for multiplication of abitrary precision integers
+//  multiplication.cpp : test suite runner for multiplication operator on fixed-size abitrary precision integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -18,22 +18,6 @@
    that enables fast computation with exceptions for overflow, so that the type
    can be used for forward error analysis studies.
 */
-
-#include <typeinfo>
-template<typename Scalar>
-void GenerateMulTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::universal;
-	z = x * y;
-	std::cout << typeid(Scalar).name() << ": " << x << " * " << y << " = " << z << std::endl;
-}
-
-// ExamplePattern to check that short and integer<16> do exactly the same
-void ExamplePattern() {
-	short s = 0;
-	GenerateMulTest<short>(2, 16, s);
-	sw::universal::integer<16> z = 0;
-	GenerateMulTest<sw::universal::integer<16> >(2, 16, z);
-}
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -57,7 +41,7 @@ try {
 
 	std::string test_suite  = "Integer Arithmetic Multiplication verfication";
 	std::string test_tag    = "integer<> multiplication";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';

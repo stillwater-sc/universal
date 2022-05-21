@@ -1,6 +1,6 @@
-//  divide.cpp : test suite runner for division of abitrary precision integers
+//  divide.cpp : test suite runner for division operator on fixed-size abitrary precision integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -78,7 +78,7 @@ private:
 		}
 
 		int p;
-		unsigned ad, anc, delta, q1, r1, q2, r2, t;
+		unsigned ad, anc, delta{ 0 }, q1, r1, q2, r2, t;
 		const unsigned two31 = 0x80000000u;
 		ad = static_cast<unsigned>(d == 0) ? 1u : abs(d);
 		t = two31 + ((unsigned int)d >> 31);
