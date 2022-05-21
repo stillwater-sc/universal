@@ -125,7 +125,7 @@ inline std::string to_triple(float number, bool nibbleMarker = false) {
 		s << "exp=1, ";
 	}
 	int scale = int(decoder.parts.exponent) - 127;
-	s << scale << ',';
+	s << scale << ",0b";
 
 	// print fraction bits
 	uint32_t mask = (uint32_t(1) << 22);

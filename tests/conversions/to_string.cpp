@@ -1,4 +1,4 @@
-// rounding.cpp : rounding and assignment test suite for abitrary precision integers to real number types
+// to_string.cpp : test suite for conversions to string
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -10,83 +10,100 @@
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/integer/numeric_limits.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_suite.hpp>
 
-////////////////// rounding rules
+using namespace sw::universal;
 
 /*
-Rounding rules:
-  ULP = Unit in the Last Place
-  G   = guard bit
-  R   = round bit
-  S   = sticky bit
- ...ULP|GRS...
-  GRS | Action
-  0xx | round-down
-  100 | tie: round-up to even when ULP = 1, else round down
-  101 | round-up
-  110 | round-up
-  111 | round-up
+  Given an n-digit radix-2 fraction f, 0 <= f <= 1:
+	   f = . f_-1, f_-2, ...f_-n = SUM f_-i * b^-i from i = 1 to n
+  Output the digits F_i of an N-digit radix-10 fraction F:
+	   F = . F_-1, F_-2, ...F_-N = SUM F_-i * B^-i from i = 1 to N
 
-  sticky = OR(remaining bits)
+  Such that:
+	1-  | F - f | < b^-n / 2: that is, difference is less then 0.5 ULP in radix-2
+	2-  N is the smallest integer >= 1 such that (1) can be true
+	3-  | F - f | < B^-N / 2: that is, difference is also less than 0.5 ULP in radix-10
+	4-  F digits are generated without needing correction
  */
-
-// generate a posit conversion test case
-// process to convert an integer to a posit is to
-// transform the integer into a 1.####eExp format
-// find msb -> scale is msb
-// shift all the msb-1 bits into a fraction, making the msb the hidden bit
-// round the bits we have with respect to the scale of the number
-template<size_t nbits, size_t es, size_t ibits>
-void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const sw::universal::integer<ibits>& w) {
-	using namespace std;
-	using namespace sw::universal;
-
-	internal::value<ibits> v;
-
-	bool sign = w < 0;
-	bool isZero = w == 0;
-	bool isInf = false;
-	bool isNan = false;
-	long _scale = scale(w);
-	int msb = findMsb(w);
-	internal::bitblock<ibits> fraction_without_hidden_bit;
-	int fbit = ibits - 1;
-	for (int i = msb - 1; i >= 0; --i) {
-		fraction_without_hidden_bit.set(fbit, w.at(i));
-		--fbit;
+template<size_t fbits>
+std::string fp3(float f) {
+	using Fraction = fixpnt<fbits, fbits, Modulo, uint8_t>;
+	Fraction B = 10;
+	Fraction R, U;
+	Fraction M;
+	std::cout << "R : " << to_triple(R, false) << " : " << float(R) << '\n';
+	std::cout << "M : " << to_triple(M, false) << " : " << float(M) << '\n';
+	for (int i = 1; i < fbits; ++i) {
+		U = R * B;  // push the next digit out
+		int digit = U.to_int();
+		M = M * B;
+		std::cout << "U : " << to_triple(U, false) << " : " << float(U) << '\n';
+		std::cout << "M : " << to_triple(M, false) << " : " << float(M) << '\n';
+		std::cout << "D : " << digit << '\n';
+		R = R - U;
 	}
-	v.set(sign, _scale, fraction_without_hidden_bit, isZero, isInf, isNan);
-	cout << "integer is " << w << endl;
-	cout << "value is   " << v << endl;
-	p = v;
-	cout << "posit is   " << color_print(p) << " " << p << " " << hex_format(p) << endl;
 }
 
 
+// float
+//0b0.01111001.01000111101011100001010 : 0.02
+//0b0.10000100.10010000001010001111011 : 50.02000 : 5.00200e+01 : 50.02
+//0b0.10000111.11110100000000001000010 : 500.0020142 : 5.0000201e+02 : 500.002
+//0b0.10001011.00111000100000000000000 : 5000.000000000 : 5.000000000e+03 : 5000
+//0b0.10001110.10000110101000000000000 : 50000.00000000000 : 5.00000000000e+04 : 50000
+//0b0.10010001.11101000010010000000000 : 500000.0000000000000 : 5.0000000000000e+05 : 500000
+//0b0.10010101.00110001001011010000000 : 5000000.000000000000000 : 5.000000000000000e+06 : 5000000
+//0b0.10011000.01111101011110000100000 : 50000000.00000000000000000 : 5.00000000000000000e+07 : 50000000
+//0b0.10011011.11011100110101100101000 : 500000000.0000000000000000000 : 5.0000000000000000000e+08 : 500000000
+//0b0.10011111.00101010000001011111001 : 5000000000.000000000000000000000 : 5.000000000000000000000e+09 : 5000000000
+//0b0.10100010.01110100100001110110111 : 49999998976.00000000000000000000000 : 4.99999989760000000000000e+10 : 49999998976
+// 
+// double
+//0b0.01111111001.0100011110101110000101000000000000000000000000000000 : 0.02
+//0b0.10000000100.1001000000101000111101011100001010000000000000000000 : 50.02000 : 5.00200e+01 : 50.02
+//0b0.10000000111.1111010000000000100000110001001001101110011001100110 : 500.0020000 : 5.0000200e+02 : 500.002
+//0b0.10000001011.0011100010000000000000001101000110110111000101110001 : 5000.000200000 : 5.000000200e+03 : 5000.0002
+//0b0.10000001110.1000011010100000000000000000001010011111000101101011 : 50000.00002000000 : 5.00000000200e+04 : 50000.00002
+//0b0.10000010001.1110100001001000000000000000000000001000011000111000 : 500000.0000020000152 : 5.0000000000200e+05 : 500000.000002
+//0b0.10000010101.0011000100101101000000000000000000000000000011010111 : 5000000.000000200234354 : 5.000000000000200e+06 : 5000000.0000002
+//0b0.10000011000.0111110101111000010000000000000000000000000000000011 : 50000000.00000002235174179 : 5.00000000000000224e+07 : 50000000.000000022
+//0b0.10000011011.1101110011010110010100000000000000000000000000000000 : 500000000.0000000000000000000 : 5.0000000000000000000e+08 : 500000000
+//0b0.10000011111.0010101000000101111100100000000000000000000000000000 : 5000000000.000000000000000000000 : 5.000000000000000000000e+09 : 5000000000
+//0b0.10000100010.0111010010000111011011101000000000000000000000000000 : 50000000000.00000000000000000000000 : 5.00000000000000000000000e+10 : 50000000000
 
-template<size_t nbits>
-void VerifyScale() {
-	assert(nbits > 1); // we are representing numbers not booleans
-	int cntr = 0;
-	sw::universal::integer<nbits> i = 1;
-	while (cntr < nbits) {
-		std::cout << std::setw(20) << sw::universal::to_binary(i) << std::setw(20) << i << " scale is " << sw::universal::scale(i) << std::endl;
-		i *= 2;
-		++cntr;
+template<typename Real>
+void ShowDifferentFloatFormats() {
+	// how does fixed represent different floating point formats?
+
+	auto oldPrecision = std::cout.precision();
+	Real a, b, c;
+	a = 50; b = 1.0f / 50;
+	std::cout << to_binary(b) << " : " << b << '\n';
+	size_t nrDigits = 4;
+	for (int i = 0; i < 10; ++i) {
+		c = a + b;
+		std::cout << sw::universal::to_binary(c) << " : " << std::setprecision(nrDigits + 1) << std::fixed << c << " : " << std::scientific << c << " : " << std::defaultfloat << c << '\n';
+		a *= 10;
+		b /= 10;
+		nrDigits += 2;
 	}
-	// enumerate the negative integers
-	// i is zero at this point
-	i.set(nbits - 1, true); i >>= 1; i.set(nbits-1, true);
-	cntr = 1;
-	while (cntr < nbits) {
-		std::cout << std::setw(20) << sw::universal::to_binary(i) << std::setw(20) << i << " scale is " << sw::universal::scale(i) << std::endl;
-		i >>= 1; i.set(nbits-1, true);
-		++cntr;
-	}
+	std::cout << std::setprecision(oldPrecision) << std::endl;
+}
+
+template<typename Real>
+void ShowFloatingPointFormats(Real v, size_t precision = 0) {
+	auto oldPrecision = std::cout.precision();
+	if (precision > 0) std::cout << std::setprecision(precision);
+	std::cout << "scientific    : " << std::scientific << v << '\n';  // flags: 0b0001'0010'0000'0001
+	std::cout << "fixed         : " << std::fixed << v << '\n';       // flags: 0b0010'0010'0000'0001
+	std::cout << "hexfloat      : " << std::hexfloat << v << '\n';    // flags: 0b0011'0010'0000'0001
+	std::cout << "defaultfloat  : " << std::defaultfloat << v << '\n';// flags: 0b0000'0010'0000'0001
+	std::cout << "binary        : " << to_binary(v) << '\n';
+	if (precision > 0) std::cout << std::setprecision(oldPrecision);
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -120,54 +137,14 @@ try {
 
 #if MANUAL_TESTING
 
-	//using int10_t = integer<10>;
-	//using int11_t = integer<11>;
-	//using int12_t = integer<12>;
-	//using int13_t = integer<13>;
-	using int14_t = integer<14>;
-	using int15_t = integer<15>;
-	using int16_t = integer<16>;
-	//using int17_t = integer<17>;
-	//using int18_t = integer<18>;
+	//		ShowDifferentFloatFormats<float>();
+	//		ShowDifferentFloatFormats<double>();
 
-	int14_t i14 = 0x1fff;
-	int15_t i15 = 0x3fff;
-	int16_t i16 = 0x7fff;
-
-	cout << to_binary(i14) << " " << i14 << endl;
-	cout << to_binary(i15) << " " << i15 << endl;
-	cout << to_binary(i16) << " " << i16 << endl;
-
-	using posit8_t = posit<8, 0>;
-	posit8_t p8;
-	GeneratePositConversionTestCase(p8, i14);
-	GeneratePositConversionTestCase(p8, i15);
-	GeneratePositConversionTestCase(p8, i16);
-
-	using posit16_t = posit<16, 1>;
-	posit16_t p16;
-	GeneratePositConversionTestCase(p16, i14);
-	GeneratePositConversionTestCase(p16, i15);
-	GeneratePositConversionTestCase(p16, i16);
-
-	// create the 5 rounding configurations for a 14bit integer
-	//using int32_t = integer<32>;
-	//int32_t tie = 0x00001fff;
-
-	// if we take the posit around 1.0 then we know exactly that the scale is 0
-	// and the rounding-down and rounding-up cases are then easily constructed.
-	// say we have a posit<16,1>, it has 1 sign bit, 2 regime bits, 1 exponent
-	// bit, and 12 mantissa bits
-
-	// using posit32_t = posit<32, 2>;
-
-	//VerifyScale<16>();
-	//VerifyScale<24>();
-	//VerifyScale<32>();
-
-	//cout << "minimum for integer<16> " << min_int<16>() << endl;
-	//cout << "maximum for integer<16> " << max_int<16>() << endl;
-
+			// Dragon algorithm inspired test cases
+	ShowFloatingPointFormats(1.3f);        // 1.3, not 1.2999999
+	ShowFloatingPointFormats(4.0f / 3.0f); // 1.33333
+	ShowFloatingPointFormats(4.0f / 3.0f, 8); // 1.33333
+	ShowFloatingPointFormats(4.0f / 3.0f, 15); // 1.33333
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

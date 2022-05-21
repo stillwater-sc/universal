@@ -341,7 +341,6 @@ void copy_into(const bitblock<src_size>& src, size_t shift, bitblock<tgt_size>& 
 		tgt.set(i + shift, src[i]);
 }
 
-// TODO: is this guard named correctly?
 #if BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 // copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
 template<size_t src_size, size_t tgt_size>
@@ -661,7 +660,7 @@ std::string to_bit_string(bitblock<nbits> bits, bool separator = true) {
 
 template<size_t nbits>
 std::string to_hex(bitblock<nbits> bits) {
-	char str[(nbits >> 2) + 2];   // plenty of room
+	char str[(nbits >> 2) + 2]{ 0 };
 	for (size_t i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
 	//const char* hexits = "0123456789ABCDEF";
 	const char* hexits = "0123456789abcdef";

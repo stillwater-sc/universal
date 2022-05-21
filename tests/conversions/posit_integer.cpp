@@ -1,10 +1,12 @@
-//  posit_integer.cpp : test suite for conversions between integers and posits
+// to_integer.cpp : test suite for conversions to integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <string>
+
 // enable conversion between posits and integers
 #include <universal/adapters/adapt_integer_and_posit.hpp>
 // configure the integer arithmetic class
@@ -17,7 +19,7 @@
 
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_suite.hpp>
 
 // generate a posit conversion test case
 // process to convert an integer to a posit is to
@@ -25,8 +27,8 @@
 // find msb -> scale is msb
 // shift all the msb-1 bits into a fraction, making the msb the hidden bit
 // round the bits we have with respect to the scale of the number
-template<size_t nbits, size_t es, size_t ibits>
-void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const sw::universal::integer<ibits>& w) {
+template<size_t nbits, size_t es, size_t ibits, typename BlockType, sw::universal::IntegerNumberType NumberType>
+void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const sw::universal::integer<ibits, BlockType, NumberType>& w) {
 	using namespace std;
 	using namespace sw::universal;
 
@@ -52,29 +54,7 @@ void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const s
 }
 
 template<size_t ibits, size_t pbits, size_t pes>
-int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividualTestCases) {
-	using namespace std;
-	using namespace sw::universal;
-	int nrOfFailedTests = 0;
-	posit<pbits, pes> p;
-	integer<ibits> i;
-	constexpr size_t NR_INTEGERS = (1 << ibits);
-	//for (integer<ibits> i = min_int<ibits>(); i <= max_int<ibits>(); ++i) {  // this doesn't work for signed integers
-	for (size_t pattern = 0; pattern < NR_INTEGERS; ++pattern) {
-		i.setbits(pattern);
-		p = i; 
-		// p = i requires ADAPTER_POSIT_AND_INTEGER to be set which is accomplished by
-		// #include <universal/adapters/adapt_integer_and_posit.hpp>
-		// we need to enhance this with an integer type concept
-		long diff = long(p) - long(i);
-		cout << setw(ibits) << i << " " << to_binary(i) << " -> " << color_print(p) << setw(ibits) << p << " diff is " << diff << std::endl;
-		if (diff != 0) ++nrOfFailedTests;
-	}
-	return nrOfFailedTests;
-}
-
-template<size_t ibits, size_t pbits, size_t pes>
-int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyPosit2IntegerConversion(bool reportTestCases) {
 	using namespace std;
 	using namespace sw::universal;
 	int nrOfFailedTests = 0;
@@ -100,20 +80,39 @@ int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividual
 	return nrOfFailedTests;
 }
 
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
 
-	std::string tag = "Conversion between integer and posit failed";
+	std::string test_suite  = "integer conversion verfication";
+	std::string test_tag    = "conversion";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
+
+	std::cout << test_suite << '\n';
+	std::cout << (reportTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
 
-	using int128_t = sw::universal::integer<128>;
-	using int256_t = sw::universal::integer<256>;
+	using int128_t = sw::universal::integer<128, uint32_t, IntegerNumberType::IntegerNumber>;
+	using int256_t = sw::universal::integer<256, uint32_t, IntegerNumberType::IntegerNumber>;
 	using posit8_t = sw::universal::posit<8,0>;
 	using posit16_t = sw::universal::posit<16,1>;
 	using posit32_t = sw::universal::posit<32,2>;
@@ -153,42 +152,43 @@ try {
 	int128.assign("0xffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff");
 	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 
-	int128.assign("0x5555'5555'5555'5555'5555'5555'5555'5555");
-	posit<32, 5> p;
-	GeneratePositConversionTestCase(p, int128);
 
 	int256.assign("0xAAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA");
 
-	integer<5> bla = -15;
-	posit<12, 1> p;
-	convert_i2p(bla, p);
-	cout << color_print(p) << " " << p << endl;
+	{
+		integer<5> i = -15;
+		posit<12, 1> p;
+		convert_p2i(p, i);
+		cout << color_print(p) << " : " << p << endl;
+		cout << to_binary(i) << " : " << i << endl;
+	}
 
-	cout << "done" << endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 1>(reportTestCases), "posit<5,1> -> integer<5>", "=");
 
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << "Integer to posit conversion verfication" << std::endl;
 
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 1>(reportTestCases), "posit<5,1> -> integer<5>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 2>(reportTestCases), "posit<5,2> -> integer<5>", "=");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 5, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<5,1>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 8, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<8,1>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 12, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<12,1>", "=");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 1>(tag, bReportIndividualTestCases), "posit<5,1> -> integer<5>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 2>(tag, bReportIndividualTestCases), "posit<5,2> -> integer<5>", "=");
+#if REGRESSION_LEVEL_2
 
-	nrOfFailedTestCases = 0; // TODO: our test plan is not automated yet
+#endif
 
-#if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<16, 16, 1>(tag, bReportIndividualTestCases), "integer<16> -> posit<16,1>", "=");
+#if REGRESSION_LEVEL_3
 
-#endif // STRESS_TESTING
+#endif
 
+#if REGRESSION_LEVEL_4
+
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
 #endif // MANUAL_TESTING
 }
 catch (char const* msg) {

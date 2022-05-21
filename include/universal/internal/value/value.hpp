@@ -325,7 +325,7 @@ public:
 		_fraction.reset(); // not constexpr
                 // _fraction= bitblock<fbits>{}; // work around
 	}
-	void set(bool sign, int scale, bitblock<fbits> fraction_without_hidden_bit, bool zero, bool inf, bool nan = false) {
+	void set(bool sign, int scale, bitblock<fbits> fraction_without_hidden_bit, bool zero = false, bool inf = false, bool nan = false) {
 		_sign     = sign;
 		_scale    = scale;
 		_fraction = fraction_without_hidden_bit;
@@ -360,7 +360,9 @@ public:
 		_nrOfBits = fbits;	
 		_fraction.reset();
 	}
-	inline void setExponent(int e) { _scale = e; }
+	inline void setsign(bool sign = true) { _sign = sign; }
+	inline void setscale(int e) { _scale = e; }
+	inline void setfraction(const bitblock<fbits>& fraction_without_hidden_bit) { _fraction = fraction_without_hidden_bit; }
 	inline bool isneg() const { return _sign; }
 	inline bool ispos() const { return !_sign; }
 	inline constexpr bool iszero() const { return _zero; }
@@ -451,15 +453,12 @@ public:
 	}
 
 	// conversion helpers
-	long double to_long_double() const {
-		return sign_value<long double>() * scale_value<long double>() * fraction_value<long double>();
-	}
-	double to_double() const {
-		return sign_value<double>() * scale_value<double>() * fraction_value<double>();
-	}
-	float to_float() const {
-		return sign_value<float>() * scale_value<float>() * fraction_value<float>();
-	}
+	int to_int()                 const noexcept { return int(to_float()); }
+	long to_long()               const noexcept { return long(to_float()); }
+	long long to_long_long()     const noexcept { return (long long)(to_double()); }
+	float to_float()             const noexcept { return sign_value<float>() * scale_value<float>() * fraction_value<float>(); }
+	double to_double()           const noexcept { return sign_value<double>() * scale_value<double>() * fraction_value<double>(); }
+	long double to_long_double() const noexcept { return sign_value<long double>() * scale_value<long double>() * fraction_value<long double>(); }
 
 	// explicit conversion operators to native types
 	explicit operator long double() const { return to_long_double(); }
@@ -551,15 +550,91 @@ private:
 };
 
 ////////////////////// VALUE operators
+
+#define OLD
+#ifdef OLD
 template<size_t nfbits>
-inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
-	if (v._inf) {
-		ostr << FP_INFINITE;
+inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, size_t precision = 0) {
+	std::stringstream s;
+	if (v.isinf()) {
+		s << FP_INFINITE;
 	}
 	else {
-		ostr << (long double)v;
+		if (precision) {
+			s << std::setprecision(precision) << (long double)v;
+		}
+		else {
+			s << (long double)v;
+		}
 	}
-	return ostr;
+	return s.str();
+}
+#else
+
+template<size_t nfbits>
+inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, size_t precision) {
+	std::string result;
+	// special case processing
+	if (v.isnan()) return std::string("nan");
+	if (v.isinf()) {
+		if (v.sign()) {
+			result = "-inf";
+		}
+		else {
+			result = (flags & std::ios_base::showpos) ? "+inf" : "inf";
+		}
+		return result;
+	}
+
+//	std::cout << "flags : " << to_binary((uint32_t)flags, 32, true) << '\n';
+	int nrDigits = precision;
+	if (nrDigits == 0) nrDigits = nfbits / 3;
+
+	// shift required to make the fraction an integer
+	int scale = v.scale();
+//	int shift = nfbits - scale - 1;
+	float log10_of_2 = 0.30102999566398f;
+	int scale10 = (scale >= 0 ? static_cast<int>(std::floor(scale * log10_of_2)) : static_cast<int>(std::ceil(scale * log10_of_2)));
+
+	bool scientific = (flags & std::ios_base::scientific) == std::ios_base::scientific;
+	bool fixed = !scientific && (flags & std::ios_base::fixed);
+
+	if (fixed) nrDigits += 1ull + scale10;
+	if (scientific) ++nrDigits;
+	if (nrDigits < -1) {
+		result = "0";
+		if (v.sign()) result.insert(0u, 1, '-');
+		// print float
+		return result;
+	}
+	// cleanup and special flag handling
+	std::string::size_type firstDigit = result.find_first_not_of('0');
+	result.erase(0, firstDigit);
+	if (result.empty())	result = std::string("0");
+	if (v.isneg()) {
+		result.insert(static_cast<std::string::size_type>(0), 1, '-');
+	}
+	else if (flags & std::ios_base::showpos) {
+		result.insert(static_cast<std::string::size_type>(0), 1, '+');
+	}
+	return result;
+}
+#endif
+
+
+template<size_t nfbits>
+inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
+	std::streamsize nrDigits = ostr.precision();
+	std::string s = convert_to_string(ostr.flags(), v, static_cast<size_t>(nrDigits));
+	std::streamsize width = ostr.width();
+	if (width > static_cast<std::streamsize>(s.size())) {
+		char fill = ostr.fill();
+		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
+			s.append(static_cast<std::string::size_type>(width - s.size()), fill);
+		else
+			s.insert(static_cast<std::string::size_type>(0), static_cast<std::string::size_type>(width - s.size()), fill);
+	}
+	return ostr << s;
 }
 
 template<size_t nfbits>
@@ -663,20 +738,19 @@ inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true)
 	}
 }
 template<size_t fbits>
-inline std::string to_triple(const value<fbits>& v) {
+inline std::string to_triple(const value<fbits>& v, bool nibbleMarker = true) {
 	std::stringstream s;
 	if (v.iszero()) {
-		s << "(+, 0," << std::setw(fbits) << v.fraction() << ')';
+		s << "(+,0," << std::setw(fbits) << v.fraction() << ')';
 		return s.str();
 	}
 	else if (v.isinf()) {
 		s << "(inf," << std::setw(fbits) << v.fraction() << ')';
 		return s.str();
 	}
-	s << (v.sign() ? "(-, " : "(+, ");
-	s << v.scale() << ", ";
-	s << to_binary(v.fraction(), true) << ')';
-//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ')';
+	s << (v.sign() ? "(-," : "(+,");
+	s << v.scale() << ',';
+	s << to_binary(v.fraction(), nibbleMarker) << ')';
 	return s.str();
 }
 

@@ -1,14 +1,14 @@
 ﻿#pragma once
 // adapt_integer_and_posit.hpp: adapter functions to convert integer<size> type and posit<nbits,es> types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <iostream>
 
 // include this adapter before the src/tgt types that you want to connect
-#include <universal/internal/bitblock/bitblock.hpp>
-#include <universal/internal/value/value.hpp>
+//#include <universal/internal/bitblock/bitblock.hpp>
+//#include <universal/internal/value/value.hpp>
 
 // if included, set the compilation flag that will enable the operator=(const TargetType&) in the SourceType.
 #ifndef ADAPTER_POSIT_AND_INTEGER
@@ -19,7 +19,12 @@
 
 namespace sw { namespace universal {
 
+namespace internal {
+	template<size_t fbits> class bitblock;
+	template<size_t fbits> class value;
+}
 // forward references
+
 template<size_t nbits, size_t es> class posit;
 template<size_t nbits, size_t es> int scale(const posit<nbits, es>&);
 template<size_t nbits, size_t es, size_t fbits> internal::bitblock<fbits+1> significant(const posit<nbits, es>&);

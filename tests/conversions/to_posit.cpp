@@ -7,14 +7,14 @@
 #include <iostream>
 #include <string>
 
+// enable conversion between posits and integers
+#include <universal/adapters/adapt_integer_and_posit.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
 // configure the posit arithmetic class
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-// enable conversion between posits and integers
-#include <universal/adapters/adapt_integer_and_posit.hpp>
 
 // is representable
 #include <universal/functions/isrepresentable.hpp>
@@ -69,33 +69,6 @@ int VerifyInteger2PositConversion(bool reportTestCases) {
 		// we need to enhance this with an integer type concept
 		long diff = long(p) - long(i);
 		cout << setw(ibits) << i << " " << to_binary(i) << " -> " << color_print(p) << setw(ibits) << p << " diff is " << diff << std::endl;
-		if (diff != 0) ++nrOfFailedTests;
-	}
-	return nrOfFailedTests;
-}
-
-template<size_t ibits, size_t pbits, size_t pes>
-int VerifyPosit2IntegerConversion(bool reportTestCases) {
-	using namespace std;
-	using namespace sw::universal;
-	int nrOfFailedTests = 0;
-	posit<pbits, pes> p;
-	integer<ibits> i;
-	constexpr size_t NR_POSITS = (1 << pbits);
-	for (size_t pattern = 0; pattern < NR_POSITS; ++pattern) {
-		p.setbits(pattern);
-		long diff;
-		if (p.isnar()) {
-			i = 0;
-			diff = 0;
-		}
-		else {
-			// i = p requires ADAPTER_POSIT_AND_INTEGER to be set which is accomplished by
-			// #include <universal/adapters/adapt_integer_and_posit.hpp>
-			// we need to enhance this with an integer type concept	
-			diff = long(p) - long(i);
-		}
-		cout << setw(ibits) << i << " " << to_binary(i) << " <- " << color_print(p) << setw(12) << p << " diff is " << diff << std::endl;
 		if (diff != 0) ++nrOfFailedTests;
 	}
 	return nrOfFailedTests;
@@ -188,6 +161,8 @@ try {
 		cout << color_print(p) << " " << p << endl;
 	}
 
+	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 5, 1>(reportTestCases), "integer<5> -> posit<5,1>", "=");
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
@@ -196,9 +171,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 5, 1>(reportTestCases), "integer<5> -> posit<5,1>", "=");
 	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 8, 1>(reportTestCases), "integer<5> -> posit<8,1>", "=");
 	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 12, 1>(reportTestCases), "integer<5> -> posit<12,1>", "=");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 1>(reportTestCases), "posit<5,1> -> integer<5>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 2>(reportTestCases), "posit<5,2> -> integer<5>", "=");
 
 #endif
 

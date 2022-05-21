@@ -1358,17 +1358,17 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 						}
 						else {
 							// the regex will have filtered this out
-							bSuccess = false;
+							return false;
 						}
 					}
 					else {
 						// we didn't find the obligatory '0', the regex should have filtered this out
-						bSuccess = false;
+						return false;
 					}
 				}
 				else {
 					// we are missing the obligatory '0', the regex should have filtered this out
-					bSuccess = false;
+					return false;
 				}
 				// we have reached the end of our parse
 				break;
@@ -1385,6 +1385,7 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 				odd = !odd;
 			}
 		}
+		bSuccess = true;
 	}
 	else if (std::regex_match(number, decimal_regex)) {
 		//std::cout << "found a decimal integer representation\n";
