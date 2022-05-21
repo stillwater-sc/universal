@@ -1,5 +1,5 @@
 #pragma once
-// integer_impl.hpp: implementation of a fixed-size arbitrary integer precision number
+// integer_impl.hpp: implementation of a fixed-size arbitrary precision integer number
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -1469,19 +1469,19 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 		Integer block10;
 		unsigned digits_in_block10 = 2;
 		if constexpr (IntegerBase::bitsInBlock == 8) {
-			block10 = 100;
+			block10 = 100u;
 			digits_in_block10 = 2;
 		}
 		else if constexpr (IntegerBase::bitsInBlock == 16) {
-			block10 = 10'000;
+			block10 = 10'000u;
 			digits_in_block10 = 4;
 		}
 		else if constexpr (IntegerBase::bitsInBlock == 32) {
-			block10 = 1'000'000'000;
+			block10 = 1'000'000'000ul;
 			digits_in_block10 = 9;
 		}
 		else if constexpr (IntegerBase::bitsInBlock == 64) {
-			block10 = 1'000'000'000'000'000'000;
+			block10 = 1'000'000'000'000'000'000ull;
 			digits_in_block10 = 18;
 		}
 
@@ -1514,23 +1514,6 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 	return result;
 }
 
-#ifdef OLD
-// generate an integer format ASCII format
-template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
-inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the integer into a string
-	std::stringstream s;
-
-	std::streamsize prec = ostr.precision();
-	std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	s.flags(ff);
-	s << std::setw(width) << std::setprecision(prec) << convert_to_decimal_string(i);
-	return ostr << s.str();
-}
-#else 
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType, NumberType>& i) {
 	std::string s = convert_to_string(ostr.flags(), i);
@@ -1544,7 +1527,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockTy
 	}
 	return ostr << s;
 }
-#endif
+
 // read an ASCII integer format
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::istream& operator>>(std::istream& istr, integer<nbits, BlockType, NumberType>& p) {
