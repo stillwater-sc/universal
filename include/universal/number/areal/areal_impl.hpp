@@ -346,7 +346,7 @@ public:
 		uint32_t mask = 0x007F'FFFF >> fbits; // mask for sticky bit 
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
-			// trick though is that it might be a normal number in IEEE double precision representation
+			// trick though is that it might be a normal number in IEEE single precision representation
 			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
@@ -1190,7 +1190,7 @@ protected:
 			if (guard) {
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
-				if (raw == (1ull << nbits)) { // overflow
+				if (raw == (1ull << fbits)) { // overflow
 					++exponent;
 					raw >>= 1u;
 				}
