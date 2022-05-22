@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <string>
 // configure the posit arithmetic
@@ -32,7 +33,9 @@ using namespace sw::universal;
 template<size_t fbits>
 std::string fp3(float f) {
 	using Fraction = fixpnt<fbits+6, fbits+1, Modulo, uint8_t>;
-	std::string s;
+	std::string F;
+	size_t len = fbits / 3 + 2ull;
+	F.assign(len, '0');
 	Fraction B = 10;
 	Fraction R, U;
 	Fraction M;
@@ -43,18 +46,32 @@ std::string fp3(float f) {
 
 	std::cout << "R : " << to_binary(R) << " : " << float(R) << '\n';
 	std::cout << "M : " << to_binary(M) << " : " << float(M) << '\n';
-	for (int i = 1; i < fbits; ++i) {
+	int digit{ 0 };
+	size_t k{ 1 };
+	do {
 		U = R * B;  // push the next digit out
-		std::cout << "U : " << to_binary(U) << " : " << float(U) << '\n';
-		int digit = int(U);
+		digit = int(U);
 		std::cout << "D : " << digit << '\n';
+		R = (R * B).fraction();
 		M = M * B;
-		std::cout << "M : " << to_binary(M) << " : " << float(M) << '\n';
-		R *= B;
-		R = R.fraction();
+		std::cout << "U : " << to_binary(U) << " : " << float(U) << '\n';
 		std::cout << "R : " << to_binary(R) << " : " << float(R) << '\n';
+		std::cout << "M : " << to_binary(M) << " : " << float(M) << '\n';
+		if (R >= M && R <= (1 - M)) {
+			F[k] = '0' + static_cast<char>(digit);
+			std::cout << "F : " << F << '\n';
+			++k;
+		}
+		else break;
+	} while (R >= M && R <= (1 - M));
+	if (R <= 0.5) {
+		F[k] = '0' + static_cast<char>(digit);
 	}
-	return s;
+	if (R >= 0.5) {
+		F[k] = '0' + static_cast<char>(digit + 1);
+	}
+	std::cout << "F : " << F << '\n';
+	return F;
 }
 
 
@@ -154,7 +171,11 @@ try {
 	ShowFloatingPointFormats(4.0f / 3.0f, 8); // 1.33333
 	ShowFloatingPointFormats(4.0f / 3.0f, 15); // 1.33333
 
-	std::string s = fp3<4>(0.5f);
+	std::string s;
+//	s = fp3<4>(0.5f);
+//	s = fp3<4>(0.25f);
+	s = fp3<4>(0.125f);
+//	s = fp3<4>(0.0625f);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
