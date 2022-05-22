@@ -164,7 +164,7 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 	{
 		std::cout << "multiplication trace\n";
 
-		blockbinary<2 * nbits> cc = unrounded_mul(a.getbb(), b.getbb());
+		blockbinary<2 * nbits> cc = unrounded_mul(a.bits(), b.bits());
 		bool roundUp = cc.roundingMode(rbits);
 		cc >>= rbits;
 		if (roundUp) ++cc;
@@ -186,8 +186,8 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits> roundingBits;
-			blockbinary<2 * nbits + roundingDecisionBits> a = unrounded_div(c.getbb(), b.getbb(), roundingBits);
-			std::cout << c.getbb() << " / " << b.getbb() << " = " << a << " rounding bits " << roundingBits;
+			blockbinary<2 * nbits + roundingDecisionBits> a = unrounded_div(c.bits(), b.bits(), roundingBits);
+			std::cout << c.bits() << " / " << b.bits() << " = " << a << " rounding bits " << roundingBits;
 			bool roundUp = a.roundingMode(rbits + roundingDecisionBits);
 			a >>= rbits + nbits + roundingDecisionBits - 1;
 			if (roundUp) ++a;
@@ -202,8 +202,8 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits> roundingBits;
-			blockbinary<2 * nbits + roundingDecisionBits> b = unrounded_div(c.getbb(), a.getbb(), roundingBits);
-			std::cout << c.getbb() << " / " << a.getbb() << " = " << b << " rounding bits " << roundingBits;
+			blockbinary<2 * nbits + roundingDecisionBits> b = unrounded_div(c.bits(), a.bits(), roundingBits);
+			std::cout << c.bits() << " / " << a.bits() << " = " << b << " rounding bits " << roundingBits;
 			bool roundUp = b.roundingMode(rbits + roundingDecisionBits);
 			b >>= rbits + nbits + roundingDecisionBits - 1;
 			if (roundUp) ++b;

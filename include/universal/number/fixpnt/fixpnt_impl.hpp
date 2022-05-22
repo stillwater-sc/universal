@@ -189,7 +189,7 @@ public:
 			// we round on the difference between (src_rbits - rbits) fraction bits
 			// and modulo arithmetic, lop of the high order integer bits
 			if constexpr (src_rbits > rbits) {
-				auto rawbb = a.getbb();
+				auto rawbb = a.bits();
 				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
 				rawbb >>= src_rbits - rbits;
 				if (roundUp) ++rawbb;
@@ -202,7 +202,7 @@ public:
 			// we round on the difference between (src_rbits - rbits) fraction bits
 			// and modulo arithmetic, lop of the high order integer bits
 			if constexpr (src_rbits > rbits) {
-				auto rawbb = a.getbb();
+				auto rawbb = a.bits();
 				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
 				rawbb >>= src_rbits - rbits;
 				if (roundUp) ++rawbb;
@@ -438,12 +438,12 @@ public:
 			using biggerbb = blockbinary<nbits + 1, bt>;
 			biggerbb c = uradd(bb, rhs.bb);  // c = a + b
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			biggerbb saturation = maxpos.getbb();		
+			biggerbb saturation = maxpos.bits();		
 			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
-			saturation = maxneg.getbb();
+			saturation = maxneg.bits();
 			if (c <= saturation) {
 				bb = saturation;
 				return *this;
@@ -458,14 +458,14 @@ public:
 		}
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
-			biggerbb c = ursub(bb, rhs.getbb());  // c = a - b
+			biggerbb c = ursub(bb, rhs.bits());  // c = a - b
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			biggerbb saturation = maxpos.getbb();
+			biggerbb saturation = maxpos.bits();
 			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
-			saturation = maxneg.getbb();
+			saturation = maxneg.bits();
 			if (c <= saturation) {
 				bb = saturation;
 				return *this;
@@ -486,14 +486,14 @@ public:
 		else {
 			blockbinary<2 * nbits, bt> c = urmul2(this->bb, rhs.bb);
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg); // TODO: can these be static?
-			blockbinary<2 * nbits, bt> saturation = maxpos.getbb();
+			blockbinary<2 * nbits, bt> saturation = maxpos.bits();
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;
 			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
-			saturation = maxneg.getbb();
+			saturation = maxneg.bits();
 			if (c < saturation) {
 				bb = saturation;
 				return *this;
@@ -519,7 +519,7 @@ public:
 			blockbinary<accumulatorSize, bt> dividend(this->bb);
 			if (dividend.isneg()) dividend.twosComplement();
 			dividend <<= (2 * (rbits + roundingBits)); // scale up to include rounding bits
-			blockbinary<accumulatorSize, bt> divisor(rhs.getbb());
+			blockbinary<accumulatorSize, bt> divisor(rhs.bits());
 			if (divisor.isneg()) divisor.twosComplement();
 			divisor <<= rbits + roundingBits;
 			blockbinary<accumulatorSize, bt> quotient = dividend / divisor;
@@ -619,13 +619,15 @@ public:
 	inline constexpr fixpnt& twosComplement() noexcept { bb.twosComplement(); return *this; }
 
 	// selectors
-	inline constexpr bool sign()   const noexcept { return bb.sign(); }
-	inline constexpr bool iszero() const noexcept { return bb.iszero(); }
-	inline constexpr bool ispos()  const noexcept { return bb.ispos(); }
-	inline constexpr bool isneg()  const noexcept { return bb.isneg(); }
-	inline constexpr bool at(size_t bitIndex) const noexcept { return bb.at(bitIndex); }
-	inline constexpr bool test(size_t bitIndex) const noexcept { return bb.test(bitIndex); }
-	inline blockbinary<nbits, bt> getbb() const noexcept { return blockbinary<nbits, bt>(bb); }
+	inline constexpr bool   sign()                const noexcept { return bb.sign(); }
+	inline constexpr fixpnt integer()             const noexcept { return floor(*this); }
+	inline constexpr fixpnt fraction()            const noexcept { return (*this - integer()); }
+	inline blockbinary<nbits, bt> bits()          const noexcept { return blockbinary<nbits, bt>(bb); }
+	inline constexpr bool   iszero()              const noexcept { return bb.iszero(); }
+	inline constexpr bool   ispos()               const noexcept { return bb.ispos(); }
+	inline constexpr bool   isneg()               const noexcept { return bb.isneg(); }
+	inline constexpr bool   at(size_t bitIndex)   const noexcept { return bb.at(bitIndex); }
+	inline constexpr bool   test(size_t bitIndex) const noexcept { return bb.test(bitIndex); }
 
 protected:
 	// HELPER methods

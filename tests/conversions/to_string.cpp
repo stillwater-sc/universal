@@ -31,25 +31,28 @@ using namespace sw::universal;
  */
 template<size_t fbits>
 std::string fp3(float f) {
-	using Fraction = fixpnt<fbits+4, fbits+1, Modulo, uint8_t>;
+	using Fraction = fixpnt<fbits+6, fbits+1, Modulo, uint8_t>;
 	std::string s;
 	Fraction B = 10;
 	Fraction R, U;
 	Fraction M;
 	M.setbit(0, true);  // b^-n/2
-	R = frac(f);
+	U = f; // marshall the float value into the fraction compute environment
+	R = U.fraction();
 	sqrt(R);
 
-	std::cout << "R : " << to_triple(R, false) << " : " << float(R) << '\n';
-	std::cout << "M : " << to_triple(M, false) << " : " << float(M) << '\n';
+	std::cout << "R : " << to_binary(R) << " : " << float(R) << '\n';
+	std::cout << "M : " << to_binary(M) << " : " << float(M) << '\n';
 	for (int i = 1; i < fbits; ++i) {
 		U = R * B;  // push the next digit out
-		int digit = U.to_int();
-		M = M * B;
-		std::cout << "U : " << to_triple(U, false) << " : " << float(U) << '\n';
-		std::cout << "M : " << to_triple(M, false) << " : " << float(M) << '\n';
+		std::cout << "U : " << to_binary(U) << " : " << float(U) << '\n';
+		int digit = int(U);
 		std::cout << "D : " << digit << '\n';
-		R = R - digit;
+		M = M * B;
+		std::cout << "M : " << to_binary(M) << " : " << float(M) << '\n';
+		R *= B;
+		R = R.fraction();
+		std::cout << "R : " << to_binary(R) << " : " << float(R) << '\n';
 	}
 	return s;
 }
