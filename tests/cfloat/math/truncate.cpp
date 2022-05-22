@@ -1,6 +1,6 @@
 // truncate.cpp: test suite runner for truncation functions trunc, round, floor, and ceil
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -21,14 +21,14 @@ int VerifyFloor(bool reportTestCases) {
 		TestType l1 = floor(a);
 		// generate the reference
 		float f = float(a);         // we can stay with floats as the state space NR_VALUES is always going to be small to be practical (nbits < 16)
-		float l2 = std::floor(f);
+		float ff = std::floor(f);
+		TestType l2 = ff;
 		if (l1 != l2) {
 			if (a.isnan() || l1.isnan()) continue;
 			std::cout << to_binary(a) << " : " << a << '\n';
-//			std::cout << to_binary(l1) << " : " << l1 << '\n';
 			std::cout << "floor(" << f << ") = " << l2 << " vs result " << l1 << '\n';
 			++nrOfFailedTestCases;
-			if (reportTestCases) ReportOneInputFunctionError("floor", "floor", a, TestType(l1), TestType(l2));
+			if (reportTestCases) ReportOneInputFunctionError("floor", "floor", a, l1, l2);
 		}
 	}
 	return nrOfFailedTestCases;
@@ -47,20 +47,34 @@ int VerifyCeil(bool reportTestCases) {
 		TestType l1 = ceil(a);
 		// generate the reference
 		float f = float(a);
-		float l2 = std::ceil(f);
+		float cf = std::ceil(f);
+		TestType l2 = cf;
 		if (l1 != l2) {
 			if (a.isnan() || l1.isnan()) continue;
 			std::cout << to_binary(a) << " : " << a << '\n';
-//			std::cout << to_binary(l1) << " : " << l1 << '\n';
 			std::cout << "ceil(" << f << ") = " << l2 << " vs result " << l1 << '\n';
 			++nrOfFailedTestCases;
-			if (reportTestCases) ReportOneInputFunctionError("ceil", "ceil", a, TestType(l1), TestType(l2));
+			if (reportTestCases) ReportOneInputFunctionError("ceil", "ceil", a, l1, l2);
 		}
 	}
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 1
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
@@ -83,14 +97,32 @@ try {
 	return EXIT_SUCCESS;  // ignore failures in manual testing mode
 #else
 
-	// clang and gcc fail due to NaN != NaN relationship
-
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases = ReportTestResult(VerifyFloor< cfloat<8, 2, uint8_t> >(reportTestCases), "floor", "cfloat<8,2>");
 	nrOfFailedTestCases = ReportTestResult(VerifyCeil < cfloat<8, 2, uint8_t> >(reportTestCases), "ceil ", "cfloat<8,2>");
 
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< half >(reportTestCases), "floor", "half");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < half >(reportTestCases), "ceil ", "half");
+
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< bfloat16 >(reportTestCases), "floor", "bfloat16");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < bfloat16 >(reportTestCases), "ceil ", "bfloat16");
+
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+
+#endif
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
 #endif  // MANUAL_TESTING
 }
 catch (char const* msg) {

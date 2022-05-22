@@ -31,10 +31,15 @@ using namespace sw::universal;
  */
 template<size_t fbits>
 std::string fp3(float f) {
-	using Fraction = fixpnt<fbits, fbits, Modulo, uint8_t>;
+	using Fraction = fixpnt<fbits+4, fbits+1, Modulo, uint8_t>;
+	std::string s;
 	Fraction B = 10;
 	Fraction R, U;
 	Fraction M;
+	M.setbit(0, true);  // b^-n/2
+	R = frac(f);
+	sqrt(R);
+
 	std::cout << "R : " << to_triple(R, false) << " : " << float(R) << '\n';
 	std::cout << "M : " << to_triple(M, false) << " : " << float(M) << '\n';
 	for (int i = 1; i < fbits; ++i) {
@@ -44,8 +49,9 @@ std::string fp3(float f) {
 		std::cout << "U : " << to_triple(U, false) << " : " << float(U) << '\n';
 		std::cout << "M : " << to_triple(M, false) << " : " << float(M) << '\n';
 		std::cout << "D : " << digit << '\n';
-		R = R - U;
+		R = R - digit;
 	}
+	return s;
 }
 
 
@@ -132,19 +138,20 @@ try {
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
-	std::cout << (reportTestCases ? " " : "not ") << "reporting individual testcases\n";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	//		ShowDifferentFloatFormats<float>();
-	//		ShowDifferentFloatFormats<double>();
+	ShowDifferentFloatFormats<float>();
+	ShowDifferentFloatFormats<double>();
 
-			// Dragon algorithm inspired test cases
+	// Dragon algorithm inspired test cases
 	ShowFloatingPointFormats(1.3f);        // 1.3, not 1.2999999
 	ShowFloatingPointFormats(4.0f / 3.0f); // 1.33333
 	ShowFloatingPointFormats(4.0f / 3.0f, 8); // 1.33333
 	ShowFloatingPointFormats(4.0f / 3.0f, 15); // 1.33333
+
+	std::string s = fp3<4>(0.5f);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

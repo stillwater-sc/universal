@@ -59,4 +59,13 @@
 /// elementary math functions library
 #include <universal/number/cfloat/mathlib.hpp>
 
+///////////////////////////////////////////////////////////////////////////////////////
+/// aliases for industry standard floating point configurations
+
+// IEEE-754 half precision floating-point
+using half     = sw::universal::cfloat<16, 5, uint16_t, true, false, false>;
+
+// Google brain float
+using bfloat16 = sw::universal::cfloat<16, 8, uint16_t, false, false, false>;
+
 #endif

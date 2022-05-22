@@ -115,8 +115,7 @@ try {
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
-	std::cout << (reportTestCases ? " " : "not ") << "reporting individual testcases\n";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
