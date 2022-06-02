@@ -1,6 +1,6 @@
 ﻿// sat_subnormal_conversion.cpp: test suite runner for subnormal IEEE-754 floating-point to fixed-point 
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -90,11 +90,15 @@ void DoubleGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -107,10 +111,10 @@ try {
 
 	std::string test_suite  = "Fixed-point saturating subnormal conversion ";
 	std::string test_tag    = "conversion of IEEE-754 subnormals";
-//	bool reportTestCases    = false;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// minpos_subnormal value

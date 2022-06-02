@@ -1,6 +1,6 @@
-// api.cpp: application programming interface demonstration for arbitrary logarithmic number system
+// api.cpp: application programming interface demonstration of fixed-size, arbitrary precision logarithmic number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

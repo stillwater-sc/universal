@@ -1,6 +1,6 @@
 ﻿// trigonometry.cpp: test suite runner for trigonometric functions (sin/cos/tan/atan/acos/asin)
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -175,18 +175,32 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setprecision(5);
 }
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "fixed-point mathlib trigonometry";
+	std::string test_tag    = "mathlib trig";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "fixpnt trig function failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -207,7 +221,6 @@ try {
 
 	GenerateTestCase<16, 1, Saturating, uint8_t, double>(m_pi_2);
 
-	// manual exhaustive test
 	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag<FixedPoint>(), "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag<FixedPoint>(), "cos");
@@ -215,19 +228,33 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAtan<   FixedPoint >(true), type_tag<FixedPoint>(), "atan");
 	nrOfFailedTestCases += ReportTestResult(VerifyAsin<   FixedPoint >(true), type_tag<FixedPoint>(), "asin");
 	nrOfFailedTestCases += ReportTestResult(VerifyAcos<   FixedPoint >(true), type_tag<FixedPoint>(), "acos");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
-	std::cout << "fixpnt sine function validation\n";
+#if REGRESSION_LEVEL_1
+	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag<FixedPoint>(), "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag<FixedPoint>(), "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent<FixedPoint >(true), type_tag<FixedPoint>(), "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan<   FixedPoint >(true), type_tag<FixedPoint>(), "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin<   FixedPoint >(true), type_tag<FixedPoint>(), "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos<   FixedPoint >(true), type_tag<FixedPoint>(), "acos");
+#endif
 
+#if REGRESSION_LEVEL_2
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_3
+#endif
 
-	
-#endif  // STRESS_TESTING
+#if REGRESSION_LEVEL_4
+#endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

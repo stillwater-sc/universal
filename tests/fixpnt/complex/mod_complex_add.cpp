@@ -1,6 +1,6 @@
 // mod_complex_add.cpp: test suite runner for arbitrary configuration fixed-point complex addition
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -18,7 +18,7 @@
 
 // enumerate all complex addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyComplexAddition(bool bReportIndividualTestCases) {
+int VerifyComplexAddition(bool reportTestCases) {
 	using namespace sw::universal;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
@@ -67,10 +67,10 @@ int VerifyComplexAddition(bool bReportIndividualTestCases) {
 
 					if (result.real() != ref.real() || result.imag() != ref.imag()) {
 						nrOfFailedTests++;
-						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "+", a, b, result, ref);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", a, b, result, ref);
 					}
 					else {
-						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, result, ref);
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, result, ref);
 					}
 					if (nrOfFailedTests > 100) return nrOfFailedTests;
 				}
@@ -102,6 +102,10 @@ namespace sw::universal::complex_literals {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -113,11 +117,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "fixed-point complex addition validation";
-	std::string test_tag = "complex modular addition";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "fixed-point complex addition validation";
+	std::string test_tag    = "complex modular addition";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -139,32 +144,32 @@ try {
 
 #if REGRESSION_LEVEL_1
 	// 4-bits: 2^16 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<4,2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<4,3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<4,4,Modulo,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
 	// 5-bits: 2^20 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<5,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<5,1,Modulo,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
 	// 6-bits: 2^24 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,2,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,5,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,6,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<6,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<6,1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<6,2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<6,3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<6,4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<6,5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 6, Modulo, uint8_t>(reportTestCases), "fixpnt<6,6,Modulo,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
@@ -174,31 +179,31 @@ try {
 
 	// the following test scenarios are only feasible with hardware acceleration
 	// 8-bits: 2^32 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<8,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<8,1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<8,2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<8,3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<8,4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<8,5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 6, Modulo, uint8_t>(reportTestCases), "fixpnt<8,6,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 7, Modulo, uint8_t>(reportTestCases), "fixpnt<8,7,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 8, Modulo, uint8_t>(reportTestCases), "fixpnt<8,8,Modulo,uint8_t>", test_tag);
 
 	// 10-bits: 2^40 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,5,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,7,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<10,3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<10,5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 7, Modulo, uint8_t>(reportTestCases), "fixpnt<10,7,Modulo,uint8_t>", test_tag);
 
 	// 11-bits: 2^44 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<11,3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<11,5,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<11,7,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<11,3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<11,5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 7, Modulo, uint8_t>(reportTestCases), "fixpnt<11,7,Modulo,uint8_t>", test_tag);
 
 	// 12-bits: 2^48 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,4,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,8,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 12, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,12,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<12,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<12,4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 8, Modulo, uint8_t>(reportTestCases), "fixpnt<12,8,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 12, Modulo, uint8_t>(reportTestCases), "fixpnt<12,12,Modulo,uint8_t>", test_tag);
 #endif  // HARDWARE_ACCELERATION
 #endif
 

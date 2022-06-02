@@ -1,6 +1,6 @@
 // constexpr.cpp: compile time tests for fixed-point constexpr
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,14 +11,100 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/number/fixpnt/mathlib.hpp>
+#include <universal/verification/test_suite.hpp>
+
+template<typename Fixpnt>
+int DecoratedConstructors() {
+	using namespace sw::universal;
+
+	int nrOfFailedTestCases = 0;
+
+	{
+		// decorated constructors
+		{
+			constexpr Fixpnt a(1l);  // signed long
+			std::cout << a << '\n';
+		}
+		{
+			constexpr Fixpnt a(1ul);  // unsigned long
+			std::cout << a << '\n';
+		}
+		// constexpr for float depends on C++20 support and bit_cast<>
+#if BIT_CAST_SUPPORT
+		{
+			CONSTEXPRESSION Fixpnt a(1.0f);  // float
+			std::cout << a << '\n';
+		}
+		{
+			CONSTEXPRESSION Fixpnt a(1.0);   // double
+			std::cout << a << '\n';
+		}
+#if LONG_DOUBLE_SUPPORT
+		{
+			CONSTEXPRESSION Fixpnt a(1.0l);  // long double
+			std::cout << a << '\n';
+		}
+#endif // LONG_DOUBLE_SUPPORT
+#else
+		std::cout << "constexpr not supported yet by compiler\n";
+
+#endif // BIT_CAST_SUPPORT
+	}
+
+	return nrOfFailedTestCases;
+}
+
+template<typename Fixpnt>
+int AssignmentOperators() {
+	using namespace sw::universal;
+
+	int nrOfFailedTestCases = 0;
+
+	{
+		// assignment operators
+		{
+			constexpr Fixpnt a = 1l;  // signed long
+			std::cout << a << '\n';
+		}
+		{
+			constexpr Fixpnt a = 1ul;  // unsigned long
+			std::cout << a << '\n';
+		}
+		// constexpr for float depends on C++20 support and bit_cast<>
+#if BIT_CAST_SUPPORT
+		{
+			CONSTEXPRESSION Fixpnt a = 1.0f;  // float
+			std::cout << a << '\n';
+		}
+		{
+			CONSTEXPRESSION Fixpnt a = 1.0;   // double
+			std::cout << a << '\n';
+		}
+#if LONG_DOUBLE_SUPPORT
+		{
+			CONSTEXPRESSION Fixpnt a = 1.0l;  // long double
+			std::cout << a << '\n';
+		}
+#endif // LONG_DOUBLE_SUPPORT
+#else
+		std::cout << "constexpr not supported yet by compiler\n";
+
+#endif // BIT_CAST_SUPPORT
+	}
+
+	return nrOfFailedTestCases;
+}
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -27,86 +113,51 @@
 
 constexpr double pi = 3.14159265358979323846;
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	if (argc > 0) { std::cout << argv[0] << std::endl; }
-
+	std::string test_suite  = "fixed-point constexpr verification";
+	std::string test_tag    = "constexpr";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "fixed-point constexpr tests\n";
-	
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	using Fixpnt = sw::universal::fixpnt<8, 4, Modulo, uint16_t>;
+
+#if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+
 	{
 		fixpnt<8, 4> a(pi);
 		std::cout << a << '\n';
 	}
 
-// TODO: make fixpnt constexpr
-	{
-		// decorated constructors
-		{
-			constexpr fixpnt<8, 4> a(1l);  // signed long
-			std::cout << a << '\n';
-		}
-		{
-			constexpr fixpnt<8, 4> a(1ul);  // unsigned long
-			std::cout << a << '\n';
-		}
-// constexpr for float depends on C++20 support and bit_cast<>
-#if BIT_CAST_SUPPORT
-		{
-			CONSTEXPRESSION fixpnt<8, 4> a(1.0f);  // float
-			std::cout << a << '\n';
-		}
-		{
-			CONSTEXPRESSION fixpnt<8, 4> a(1.0);   // double
-			std::cout << a << '\n';
-		}
-#if LONG_DOUBLE_SUPPORT
-		{
-			CONSTEXPRESSION fixpnt<8, 4> a(1.0l);  // long double
-			std::cout << a << '\n';
-		}
-#endif // LONG_DOUBLE_SUPPORT
+	nrOfFailedTestCases += ReportTestResult(DecoratedConstructors<Fixpnt>(), test_tag, "constructors");
+	nrOfFailedTestCases += ReportTestResult(AssignmentOperators<Fixpnt>(), test_tag, "assignment");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-		std::cout << "constexpr not supported yet by compiler\n";
 
-#endif // BIT_CAST_SUPPORT
-	}
-	{
-		// assignment operators
-		{
-			constexpr fixpnt<8, 4> a = 1l;  // signed long
-			std::cout << a << '\n';
-		}
-		{
-			constexpr fixpnt<8, 4> a = 1ul;  // unsigned long
-			std::cout << a << '\n';
-		}
-// constexpr for float depends on C++20 support and bit_cast<>
-#if BIT_CAST_SUPPORT
-		{
-			CONSTEXPRESSION fixpnt<8, 4> a = 1.0f;  // float
-			std::cout << a << '\n';
-		}
-		{
-			CONSTEXPRESSION fixpnt<8, 4> a = 1.0;   // double
-			std::cout << a << '\n';
-		}
-#if LONG_DOUBLE_SUPPORT
-		{
-			CONSTEXPRESSION fixpnt<8, 4> a = 1.0l;  // long double
-			std::cout << a << '\n';
-		}
-#endif // LONG_DOUBLE_SUPPORT
-#else
-		std::cout << "constexpr not supported yet by compiler\n";
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(DecoratedConstructors<Fixpnt>(), test_tag, "constructors");
+	nrOfFailedTestCases += ReportTestResult(AssignmentOperators<Fixpnt>(), test_tag, "assignment");
+#endif
 
-#endif // BIT_CAST_SUPPORT
-	}
+#if REGRESSION_LEVEL_2
+#endif
 
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

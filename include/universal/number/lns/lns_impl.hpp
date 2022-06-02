@@ -126,22 +126,22 @@ public:
 	}
 
 	// modifiers
-	inline void clear() { _bits.clear(); }
-	inline void setbits(uint64_t v) { _bits.setbits(v); } // API to be consistent with the other number systems
+	void clear() { _bits.clear(); }
+	void setbits(uint64_t v) { _bits.setbits(v); } // API to be consistent with the other number systems
 
 	// selectors
-	inline constexpr bool iszero() const { return false; }
-	inline constexpr bool isneg() const { return false; }
-	inline constexpr bool ispos() const { return false; }
-	inline constexpr bool isinf() const { return false; }
-	inline constexpr bool isnan() const { return false; }
-	inline constexpr bool sign() const { return false; }
-	inline constexpr int scale() const { return false; }
+	constexpr bool iszero() const { return false; }
+	constexpr bool isneg() const { return false; }
+	constexpr bool ispos() const { return false; }
+	constexpr bool isinf() const { return false; }
+	constexpr bool isnan() const { return false; }
+	constexpr bool sign() const { return false; }
+	constexpr int  scale() const { return false; }
 
-	inline constexpr bool at(size_t bitIndex) const noexcept {
+	constexpr bool at(size_t bitIndex) const noexcept {
 		return _bits.at(bitIndex);
 	}
-	inline std::string get() const { 
+	std::string get() const { 
 		std::stringstream s;
 		s << std::exp(double(_bits.to_long_long()));
 		return s.str(); 

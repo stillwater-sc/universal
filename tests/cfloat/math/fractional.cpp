@@ -131,7 +131,7 @@ try {
 
 	{
 		using Real = cfloat<16, 2, uint8_t, false, false, false>;
-		Real a, b, c;
+		Real a;
 		a = -1.5;
 		a.showLimbs();
 		std::cout << to_binary(a) << " : " << a << " : " << a.truncate() << " : " << to_binary(a) << " : " << a << '\n';

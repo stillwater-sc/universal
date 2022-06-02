@@ -1,11 +1,12 @@
 // exponent.cpp: test suite runner for exponent (exp, exp2, exp10) functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default number system library configuration
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/fixpnt_math_test_suite.hpp>
 
 // Background: http://numbers.computation.free.fr/Constants/E/e.html
@@ -44,8 +45,21 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setprecision(5);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 #define GENERATE_EXPONENT_TABLES 0
 
 int main()
@@ -54,10 +68,12 @@ try {
 
 //	GenerateEulersNumber();  // 9000 digits of e
 
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "fixed-point mathlib exponent";
+	std::string test_tag    = "mathlib exponent";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "fixpnt exp() failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -74,38 +90,45 @@ try {
 
 	// manual exhaustive test
 	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifyExp<FixedPoint>(bReportIndividualTestCases), type_tag(FixedPoint), "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2<FixedPoint>(bReportIndividualTestCases), type_tag(FixedPoint) "exp2");
-
+	nrOfFailedTestCases += ReportTestResult(VerifyExp<FixedPoint>(reportTestCases), type_tag(FixedPoint), "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2<FixedPoint>(reportTestCases), type_tag(FixedPoint) "exp2");
+	
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
-	std::cout << "fixpnt exponential function validation\n";
-
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 3, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<8,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 9, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<9,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<10,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 3, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<10,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<12, 4, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<12,4>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<16, 5, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<16,5>", "exp");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<8,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 3, Saturating, uint8_t> >(reportTestCases), "fixpnt<8,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 9, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<9,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<10,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 3, Saturating, uint8_t> >(reportTestCases), "fixpnt<10,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<12, 4, Saturating, uint8_t> >(reportTestCases), "fixpnt<12,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<16, 5, Saturating, uint8_t> >(reportTestCases), "fixpnt<16,5>", "exp");
 
 	// base-2 exponent testing
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<8,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 3, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<8,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<9, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<9,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 2, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<10,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 3, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<10,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<12, 4, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<12,4>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<16, 5, Saturating, uint8_t> >(bReportIndividualTestCases), "fixpnt<16,5>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<8,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 3, Saturating, uint8_t> >(reportTestCases), "fixpnt<8,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<9, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<9,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<10,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 3, Saturating, uint8_t> >(reportTestCases), "fixpnt<10,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<12, 4, Saturating, uint8_t> >(reportTestCases), "fixpnt<12,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<16, 5, Saturating, uint8_t> >(reportTestCases), "fixpnt<16,5>", "exp2");
 
+#endif
 
-#if STRESS_TESTING
-	
-#endif  // STRESS_TESTING
+#if REGRESSION_LEVEL_2
+#endif
 
-#endif  // MANUAL_TESTING
+#if REGRESSION_LEVEL_3
+#endif
 
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

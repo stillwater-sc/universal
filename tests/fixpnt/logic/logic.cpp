@@ -1,6 +1,6 @@
 // logic.cpp :test suite runner for logic operators between fixpnts and literals
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -14,6 +14,10 @@
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -26,10 +30,10 @@ try {
 
 	std::string test_suite  = "fixed-point logic operators ";
 	std::string test_tag    = "comparisons";
-//	bool reportTestCases    = true;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
