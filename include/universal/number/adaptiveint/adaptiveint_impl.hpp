@@ -456,11 +456,11 @@ public:
 	}
 
 	// modifiers
-	inline void clear() noexcept { _sign = false; _block.clear(); }
-	inline void setzero() noexcept { clear(); }
-	inline void setsign(bool sign = true) noexcept { _sign = sign; }
+	void clear() noexcept { _sign = false; _block.clear(); }
+	void setzero() noexcept { clear(); }
+	void setsign(bool sign = true) noexcept { _sign = sign; }
 	// use un-interpreted raw bits to set the bits of the adaptiveint
-	inline void setbits(unsigned long long value) {
+	void setbits(unsigned long long value) {
 		clear();
 		if constexpr (bitsInBlock == 8) {
 			std::uint8_t byte0 = static_cast<std::uint8_t>(value & 0x0000'0000'0000'00FF);
@@ -569,14 +569,14 @@ public:
 			}
 		}
 	}
-	inline void setblock(unsigned i, BlockType value) noexcept {
+	void setblock(unsigned i, BlockType value) noexcept {
 		if (i >= _block.size()) _block.resize(i+1ull);
 		_block[i] = value;
 	}
-	inline void setbyte(unsigned i, std::uint8_t byte) noexcept {
+	void setbyte(unsigned i, std::uint8_t byte) noexcept {
 		std::cerr << "setbyte(" << i << ", " << int(byte) << ") TBD\n";
 	}
-	inline adaptiveint& assign(const std::string& txt) {
+	adaptiveint& assign(const std::string& txt) {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
@@ -584,14 +584,14 @@ public:
 	}
 
 	// selectors
-	inline bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
-	inline bool isone()  const noexcept { return true; }
-	inline bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
-	inline bool iseven() const noexcept { return !isodd(); }
-	inline bool ispos()  const noexcept { return !_sign; }
-	inline bool isneg()  const noexcept { return _sign; }
+	bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
+	bool isone()  const noexcept { return true; }
+	bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
+	bool iseven() const noexcept { return !isodd(); }
+	bool ispos()  const noexcept { return !_sign; }
+	bool isneg()  const noexcept { return _sign; }
 
-	inline bool test(unsigned index) const noexcept {
+	bool test(unsigned index) const noexcept {
 		if (index < nbits()) {
 			unsigned blockIndex = index / bitsInBlock;
 			unsigned bitIndexInBlock = index % bitsInBlock;
@@ -601,19 +601,19 @@ public:
 		}
 		return false;
 	}
-	inline bool sign()   const noexcept { return _sign; }
-	inline int scale()   const noexcept { return findMsb(); } // TODO: when value = 0, scale returns -1 which is incorrect
+	bool sign()   const noexcept { return _sign; }
+	int scale()   const noexcept { return findMsb(); } // TODO: when value = 0, scale returns -1 which is incorrect
 
-	inline BlockType block(unsigned b) const noexcept {
+	BlockType block(unsigned b) const noexcept {
 		if (b < _block.size()) return _block[b];
 		return static_cast<BlockType>(0u);
 	}
-	inline unsigned limbs() const noexcept { return static_cast<unsigned>(_block.size()); }
+	unsigned limbs() const noexcept { return static_cast<unsigned>(_block.size()); }
 
-	inline unsigned nbits() const noexcept { return static_cast<unsigned>(_block.size() * sizeof(BlockType) * 8); }
+	unsigned nbits() const noexcept { return static_cast<unsigned>(_block.size() * sizeof(BlockType) * 8); }
 
 	// findMsb takes an adaptiveint reference and returns the position of the most significant bit, -1 if v == 0
-	inline int findMsb() const noexcept {
+	int findMsb() const noexcept {
 		int nrBlocks = static_cast<int>(_block.size());
 		if (nrBlocks == 0) return -1; // no significant bit found, all bits are zero
 		int msb = nrBlocks * static_cast<int>(bitsInBlock);
@@ -665,7 +665,7 @@ protected:
 
 	// HELPER methods
 	// compare_magnitude returns 1 if a > b, 0 if they are equal, and -1 if a < b
-	inline int compare_magnitude(const adaptiveint& a, const adaptiveint& b) {
+	int compare_magnitude(const adaptiveint& a, const adaptiveint& b) {
 		unsigned aLimbs = a.limbs();
 		unsigned bLimbs = b.limbs();
 		if (aLimbs != bLimbs) {
@@ -680,7 +680,7 @@ protected:
 		}
 		return 0;
 	}
-	inline void remove_leading_zeros() {
+	void remove_leading_zeros() {
 		unsigned leadingZeroBlocks{ 0 };
 		typename std::vector<BlockType>::reverse_iterator rit = _block.rbegin();
 		while (rit != _block.rend()) {
@@ -696,7 +696,7 @@ protected:
 	}
 	
 	template<typename SignedInt>
-	inline adaptiveint& assign_signed(SignedInt v) {
+	adaptiveint& assign_signed(SignedInt v) {
 		clear();
 		if (v != 0) {
 			if (v < 0) {
@@ -711,7 +711,7 @@ protected:
 	}
 
 	template<typename UnsignedInt>
-	inline adaptiveint& assign_unsigned(UnsignedInt v) {
+	adaptiveint& assign_unsigned(UnsignedInt v) {
 		if (0 == v) {
 			setzero();
 		}
