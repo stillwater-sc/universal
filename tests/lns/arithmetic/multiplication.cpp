@@ -43,11 +43,11 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	TestCase<lns<16, uint8_t>, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
-	TestCase<lns<8, uint8_t>, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
+	TestCase<lns<16, 5, std::uint16_t>, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
+	TestCase<lns<8, 2, std::uint8_t>, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
 	constexpr double e = 2.71828182845904523536;
-	lns<16> a, b, c;
+	lns<16, 5, std::uint16_t> a, b, c;
 	a = 0.5; std::cout << a << '\n';
 	a = e; std::cout << a << '\n';
 	b = 1.0 / e;

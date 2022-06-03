@@ -43,8 +43,8 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	TestCase< lns<16, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	TestCase< lns<8, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< lns<16, 5, std::uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+	TestCase< lns<8, 2, std::uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>("Manual Testing", reportTestCases), "lns<8>", test_tag);

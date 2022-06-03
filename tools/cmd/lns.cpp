@@ -1,6 +1,6 @@
 // lns.cpp: components of a logarithmic number: cli to show the sign/scale/fraction components of a logarithmic number 
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/lns/lns.hpp>
@@ -8,8 +8,8 @@
 namespace sw::universal {
 
 	// return in triple form (sign, scale, fraction)
-	template<size_t nbits, typename bt>
-	inline std::string to_triple(const lns<nbits, bt>& number) {
+	template<size_t nbits, size_t rbits, typename bt>
+	inline std::string to_triple(const lns<nbits, rbits, bt>& number) {
 		std::stringstream ss;
 
 		// print sign bit
@@ -44,7 +44,7 @@ try {
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	std::string arg = argv[1];
-	lns<32, uint32_t> v;
+	lns<32, 8, std::uint32_t> v;
 
 	constexpr size_t columnWidth = 50;
 	std::cout << std::setw(columnWidth) << std::left << typeid(v).name() << ": " << std::setprecision(max_digits10) << std::right << v << " " << to_triple(v) << '\n';

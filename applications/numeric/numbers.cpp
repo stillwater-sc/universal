@@ -1,6 +1,6 @@
 // numbers.cpp: example program to use C++20 <numbers> high precision constants
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -124,12 +124,12 @@ try {
 
 	report_compiler_environment();
 
-	using int32    = integer<32>;
-	using fixpnt32 = fixpnt<32,16>;
-	using posit32  = posit<32,2>;
-	using cfloat32 = cfloat<32, 8,uint8_t>;
-	using areal32  = areal<32,8,uint32_t>; // should use a uint32_t for efficiency
-	using lns32    = lns<32>;
+	using int32 = integer<32, std::uint32_t>;
+	using fixpnt32 = fixpnt<32, 16, Modulo, std::uint32_t>;
+	using cfloat32 = cfloat<32, 8, std::uint32_t, true, true, false>;
+	using posit32 = posit<32, 2>;
+	using areal32 = areal<32, 8, std::uint32_t>;
+	using lns32 = lns<32, 8, std::uint32_t>;
 
 	// report on precision and dynamic range of the number system
 

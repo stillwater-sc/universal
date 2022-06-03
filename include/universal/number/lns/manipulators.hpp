@@ -1,7 +1,7 @@
 #pragma once
 // manipulators.hpp: definitions of helper functions for logarithmic numbers manipulation
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -14,8 +14,8 @@
 namespace sw { namespace universal {
 
 // Generate a type tag for this lns
-template<size_t nbits, typename bt>
-std::string type_tag(const lns<nbits, bt>& v) {
+template<size_t nbits, size_t rbits, typename bt>
+std::string type_tag(const lns<nbits, rbits, bt>& v) {
 	std::stringstream s;
 	s << "lns<"
 		<< std::setw(3) << nbits << ", "
@@ -26,8 +26,8 @@ std::string type_tag(const lns<nbits, bt>& v) {
 
 /* TBD
 // report dynamic range of a type, specialized for lns
-template<size_t nbits, typename bt>
-std::string dynamic_range(const lns<nbits, bt>& a) {
+template<size_t nbits, size_t rbits, typename bt>
+std::string dynamic_range(const lns<nbits, rbits, bt>& a) {
 	std::stringstream s;
 	lns<nbits, bt> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 	s << type_tag(a) << ": ";
