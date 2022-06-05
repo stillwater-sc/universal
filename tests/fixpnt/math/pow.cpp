@@ -88,7 +88,7 @@ try {
 	std::cout << "fixpnt pow() function validation\n";
 
 	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< FixedPoint >(reportTestCases), type_tag<FixedPoint>(), "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "pow");
 
 
 #if REGRESSION_LEVEL_1

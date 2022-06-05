@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition arithmetic on fixed-sized, arbitrary precision logarithmic number system
+// assignment.cpp: test suite runner for assignment conversion of floats to fixed-sized, arbitrary precision logarithmic number system
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -11,11 +11,10 @@
 
 namespace sw { namespace universal {
 
-//template<typename LnsType,
-//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
-//>
-template<typename LnsType>
-int ValidateAddition(bool reportTestCases) {
+template<typename LnsType,
+	typename = typename enable_if_lns<LnsType, LnsType>
+>
+int ValidateAssignment(bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
 
 	return nrOfFailedTestCases;
@@ -57,14 +56,14 @@ try {
 	TestCase< LNS8_2, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS8_2>(reportTestCases), type_tag<LNS8_2>(), test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS8_2>(reportTestCases), type_tag<LNS8_2>(), test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

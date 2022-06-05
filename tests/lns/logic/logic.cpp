@@ -29,7 +29,7 @@ int ValidateAddition(const std::string& tag, bool reportTestCases) {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

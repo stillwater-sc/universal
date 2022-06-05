@@ -38,7 +38,8 @@
 template<typename Scalar>
 void TestComplexConjugate(float r = 0.25f, float i = 0.5f) {
 	constexpr bool nibbleMarker = true;
-	std::cout << "TestComplexConjugate for type " << sw::universal::type_tag<Scalar, Scalar>() << '\n';
+	Scalar s{ 0 };
+	std::cout << "TestComplexConjugate for type " << sw::universal::type_tag(s) << '\n';
 	std::complex<Scalar> c(r, i);
 	std::complex<Scalar> cconj(r, -i);
 	std::cout << sw::universal::to_binary(c, nibbleMarker) << " : " << c << '\n';

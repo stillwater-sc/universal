@@ -27,12 +27,14 @@ std::string type_tag(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 // and is thus ambiguous
 
 // Generate a type tag for this fixpnt
-template<typename FixedPoint>
+template<typename Fixpnt,
+	std::enable_if_t<is_fixpnt<Fixpnt>, Fixpnt> = 0
+>
 std::string type_tag() {
-	constexpr size_t nbits = FixedPoint::nbits;
-	constexpr size_t rbits = FixedPoint::rbits;
-	constexpr bool arithmetic = FixedPoint::arithmetic;
-	using bt = typename FixedPoint::BlockType;
+	constexpr size_t nbits = Fixpnt::nbits;
+	constexpr size_t rbits = Fixpnt::rbits;
+	constexpr bool arithmetic = Fixpnt::arithmetic;
+	using bt = typename Fixpnt::BlockType;
 	return type_tag(fixpnt<nbits, rbits, arithmetic, bt>());
 }
 

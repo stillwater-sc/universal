@@ -13,16 +13,25 @@
 
 namespace sw { namespace universal {
 
-// Generate a type tag for this lns
-template<size_t nbits, size_t rbits, typename bt>
-std::string type_tag(const lns<nbits, rbits, bt>& v) {
-	std::stringstream s;
-	s << "lns<"
-		<< std::setw(3) << nbits << ", "
-		<< typeid(bt).name() << '>';
-	if (v.iszero()) s << ' ';
-	return s.str();
-}
+	// Generate a type tag for this lns
+	template<size_t nbits, size_t rbits, typename BlockType>
+	std::string type_tag(const lns<nbits, rbits, BlockType>& l) {
+		std::stringstream s;
+		s << "lns<"
+			<< std::setw(3) << nbits << ", "
+			<< std::setw(3) << rbits << ", "
+			<< typeid(BlockType).name() << '>';
+		if (l.iszero()) s << ' ';
+		return s.str();
+	}
+
+	template<typename LnsType,
+		std::enable_if_t<is_lns<LnsType>, LnsType> = 0
+	>
+	std::string type_tag() {
+		LnsType l{ 1.0 };
+		return type_tag(l);
+	}
 
 /* TBD
 // report dynamic range of a type, specialized for lns

@@ -36,6 +36,7 @@
 /// INCLUDE FILES that make up the library
 #include <universal/number/lns/exceptions.hpp>
 #include <universal/number/lns/lns_impl.hpp>
+#include <universal/number/lns/lns_traits.hpp>
 #include <universal/number/lns/numeric_limits.hpp>
 
 // useful functions to work with logarithmic numbers

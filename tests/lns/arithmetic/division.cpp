@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition arithmetic on fixed-sized, arbitrary precision logarithmic number system
+// division.cpp: test suite runner for division arithmetic of fixed-sized, arbitrary precision logarithmic number system
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -8,19 +8,17 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/test_suite.hpp>
 
-
 namespace sw { namespace universal {
 
-//template<typename LnsType,
-//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
-//>
-template<typename LnsType>
-int ValidateAddition(bool reportTestCases) {
-	int nrOfFailedTestCases = 0;
+	//template<typename LnsType,
+	//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
+	//>
+	template<typename LnsType>
+int ValidateMultiplication(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
 
-	return nrOfFailedTestCases;
-}
-
+		return nrOfFailedTestCases;
+	}
 } }
 
 
@@ -40,12 +38,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "lns addition validation";
-	std::string test_tag    = "addition";
+	std::string test_suite  = "lns multiplication validation";
+	std::string test_tag    = "multiplication";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	ReportTestSuiteHeader(test_suite, reportTestCases);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 
 #if MANUAL_TESTING
 
@@ -53,15 +51,24 @@ try {
 	using LNS8_2 = lns<8, 2, std::uint8_t>;
 
 	// generate individual testcases to hand trace/debug
-	TestCase< LNS16_5, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	TestCase< LNS8_2, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
+	TestCase<LNS8_2, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
+
+	constexpr double e = 2.71828182845904523536;
+	lns<16, 5, std::uint16_t> a, b, c;
+	a = 0.5; std::cout << a << '\n';
+	a = e; std::cout << a << '\n';
+	b = 1.0 / e;
+	c = a * b;
+	std::cout << c.to_long_double() << '\n';
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
+	using LNS8_2 = lns<8, 2, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);

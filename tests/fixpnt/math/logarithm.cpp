@@ -72,9 +72,9 @@ try {
 
 	// manual exhaustive test
 	using FixedPoint = fixpnt<10, 5, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag<FixedPoint>(), "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(reportTestCases), type_tag<FixedPoint>(), "log2");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(reportTestCases), type_tag<FixedPoint>(), "log10");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log2");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log10");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -82,9 +82,9 @@ try {
 
 #if REGRESSION_LEVEL_1
 	using FixedPoint = fixpnt<10, 5, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag<FixedPoint>(), "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(reportTestCases), type_tag<FixedPoint>(), "log2");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(reportTestCases), type_tag<FixedPoint>(), "log10");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log2");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log10");
 #endif
 
 #if REGRESSION_LEVEL_2

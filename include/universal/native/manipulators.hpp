@@ -1,51 +1,39 @@
 #pragma once
 // manipulators.hpp: definition of manipulation functions for native types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <sstream>
+#include <universal/native/ieee754.hpp>
 
 namespace sw { namespace universal {
 
-	template<typename Real,
-		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+	template<typename Real, 
+		std::enable_if_t< std::is_floating_point<Real>::value, bool> = true
 	>
-	std::string type_tag(const Real f) {
-		constexpr size_t nrBytes = sizeof(f);
-		std::string realType;
-		switch (nrBytes) {
-		case 2:
-			realType = "half";
-			break;
-		case 4:
-			realType = "float";
-			break;
-		case 8:
-			realType = "double";
-			break;
-		case 10:
-			realType = "extended precision";
-			break;
-		case 16:
-			realType = "quad";
-			break;
-		default:
-			realType = "unknown";
+	std::string type_tag(Real f) {
+		// can't use a simple typeid(Real).name() because gcc and clang obfuscate the native types
+		std::string real;
+		if constexpr (ieee754_parameter<Real>::nbits == 32) {
+			real = std::string("float");
 		}
-		std::stringstream s;
-		// s << typeid(Real).name();  gcc and clang obfuscate the native types
-		s << realType;
-		if (f == 0.0) s << ' '; // to get rid of unreferenced formal parameter warning
-		return s.str();
+		else if constexpr (ieee754_parameter<Real>::nbits == 64) {
+			real = std::string("double");
+		}
+		else if constexpr (ieee754_parameter<Real>::nbits == 128) {
+			real = std::string("long double");
+		}
+		else {
+			real = std::string("unknown");
+		}
+		return real;
 	}
 
-	// Generate a type tag for this native floating-point type
 	template<typename Real,
-		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+		std::enable_if_t< std::is_floating_point<Real>::value, bool > = true
 	>
 	std::string type_tag() {
-		Real f(0);
+		Real f{ 0.0 };
 		return type_tag(f);
 	}
 

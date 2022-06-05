@@ -139,12 +139,12 @@ try {
 
 	// manual exhaustive test
 	using FixedPoint = fixpnt<8, 4, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag<FixedPoint>(), "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag<FixedPoint>(), "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag<FixedPoint>(), "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<FixedPoint>(true), type_tag<FixedPoint>(), "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<FixedPoint>(true), type_tag<FixedPoint>(), "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<FixedPoint>(true), type_tag<FixedPoint>(), "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag(FixedPoint()), "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag(FixedPoint()), "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag(FixedPoint()), "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<FixedPoint>(true), type_tag(FixedPoint()), "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<FixedPoint>(true), type_tag(FixedPoint()), "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<FixedPoint>(true), type_tag(FixedPoint()), "asinh");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -152,12 +152,12 @@ try {
 
 #if REGRESSION_LEVEL_1
 	using FixedPoint = fixpnt<8, 4, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag<FixedPoint>(), "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag<FixedPoint>(), "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag<FixedPoint>(), "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<FixedPoint>(true), type_tag<FixedPoint>(), "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<FixedPoint>(true), type_tag<FixedPoint>(), "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<FixedPoint>(true), type_tag<FixedPoint>(), "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag(FixedPoint()), "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag(FixedPoint()), "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag(FixedPoint()), "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<FixedPoint>(true), type_tag(FixedPoint()), "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<FixedPoint>(true), type_tag(FixedPoint()), "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<FixedPoint>(true), type_tag(FixedPoint()), "asinh");
 #endif
 
 #if REGRESSION_LEVEL_2

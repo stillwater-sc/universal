@@ -1,21 +1,26 @@
-// multiplication.cpp: test suite runner for multiplication of arbitrary logarithmic number system
+// multiplication.cpp: test suite runner for multiplication arithmetic of fixed-sized, arbitrary precision logarithmic number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/test_reporters.hpp>
-#include <universal/verification/test_case.hpp>
+#include <universal/verification/test_suite.hpp>
 
-template<size_t nbits> 
-int ValidateMultiplication(const std::string& tag, bool reportTestCases) {
-	int nrOfFailedTestCases = 0;
+namespace sw { namespace universal {
 
-	return nrOfFailedTestCases;
-}
+	//template<typename LnsType,
+	//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
+	//>
+	template<typename LnsType>
+int ValidateMultiplication(bool reportTestCases) {
+		int nrOfFailedTestCases = 0;
+
+		return nrOfFailedTestCases;
+	}
+} }
+
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -29,7 +34,7 @@ int ValidateMultiplication(const std::string& tag, bool reportTestCases) {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -38,13 +43,16 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 
 #if MANUAL_TESTING
 
+	using LNS16_5 = lns<16, 5, std::uint16_t>;
+	using LNS8_2 = lns<8, 2, std::uint8_t>;
+
 	// generate individual testcases to hand trace/debug
-	TestCase<lns<16, 5, std::uint16_t>, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
-	TestCase<lns<8, 2, std::uint8_t>, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
+	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
+	TestCase<LNS8_2, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
 	constexpr double e = 2.71828182845904523536;
 	lns<16, 5, std::uint16_t> a, b, c;
@@ -55,13 +63,25 @@ try {
 	std::cout << c.to_long_double() << '\n';
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", reportTestCases), "lns<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
+	using LNS8_2 = lns<8, 2, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>(tag, reportTestCases), "lns<8>", test_tag);
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

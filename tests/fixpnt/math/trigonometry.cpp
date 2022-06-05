@@ -222,12 +222,12 @@ try {
 	GenerateTestCase<16, 1, Saturating, uint8_t, double>(m_pi_2);
 
 	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag<FixedPoint>(), "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag<FixedPoint>(), "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent<FixedPoint >(true), type_tag<FixedPoint>(), "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan<   FixedPoint >(true), type_tag<FixedPoint>(), "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin<   FixedPoint >(true), type_tag<FixedPoint>(), "asin");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos<   FixedPoint >(true), type_tag<FixedPoint>(), "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag(FixedPoint()), "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag(FixedPoint()), "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent<FixedPoint >(true), type_tag(FixedPoint()), "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan<   FixedPoint >(true), type_tag(FixedPoint()), "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin<   FixedPoint >(true), type_tag(FixedPoint()), "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos<   FixedPoint >(true), type_tag(FixedPoint()), "acos");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -235,12 +235,12 @@ try {
 
 #if REGRESSION_LEVEL_1
 	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag<FixedPoint>(), "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag<FixedPoint>(), "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent<FixedPoint >(true), type_tag<FixedPoint>(), "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan<   FixedPoint >(true), type_tag<FixedPoint>(), "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin<   FixedPoint >(true), type_tag<FixedPoint>(), "asin");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos<   FixedPoint >(true), type_tag<FixedPoint>(), "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag(FixedPoint()), "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag(FixedPoint()), "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent<FixedPoint >(true), type_tag(FixedPoint()), "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan<   FixedPoint >(true), type_tag(FixedPoint()), "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin<   FixedPoint >(true), type_tag(FixedPoint()), "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos<   FixedPoint >(true), type_tag(FixedPoint()), "acos");
 #endif
 
 #if REGRESSION_LEVEL_2
