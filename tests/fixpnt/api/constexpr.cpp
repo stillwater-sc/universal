@@ -113,6 +113,12 @@ int AssignmentOperators() {
 
 constexpr double pi = 3.14159265358979323846;
 
+template<typename Fixpnt>
+void ConstexprFixpnt() {
+	constexpr Fixpnt a(pi);
+	std::cout << type_tag(a) << " : " << a << '\n';
+}
+
 int main()
 try {
 	using namespace sw::universal;
@@ -140,6 +146,20 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
+
+	constexpr size_t FIRST_COLUMN = 43;
+	std::cout << "constexpr pi approximations\n";
+	std::cout << std::setw(FIRST_COLUMN) << "type" << " : " << pi << '\n';
+	ConstexprFixpnt<fixpnt<8, 4>>();
+	ConstexprFixpnt<fixpnt<9, 6>>();
+	ConstexprFixpnt<fixpnt<16, 4>>();
+	ConstexprFixpnt<fixpnt<16, 8>>();
+	ConstexprFixpnt<fixpnt<16, 12>>();
+	ConstexprFixpnt<fixpnt<32, 28>>();
+	auto oldPrecision = std::cout.precision();
+	std::cout << std::setprecision(30);
+	std::cout << std::setw(FIRST_COLUMN) << "double" << " : " << pi << '\n';
+	std::cout << std::setprecision(oldPrecision);
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(DecoratedConstructors<Fixpnt>(), test_tag, "constructors");
