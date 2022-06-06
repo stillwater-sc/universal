@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee754.hpp>
+#include <string>
 
 namespace sw { namespace universal {
 
@@ -13,14 +13,15 @@ namespace sw { namespace universal {
 	>
 	std::string type_tag(Real f) {
 		// can't use a simple typeid(Real).name() because gcc and clang obfuscate the native types
+		constexpr unsigned nbits = sizeof(f);
 		std::string real;
-		if constexpr (ieee754_parameter<Real>::nbits == 32) {
+		if constexpr (nbits == 32) {
 			real = std::string("float");
 		}
-		else if constexpr (ieee754_parameter<Real>::nbits == 64) {
+		else if constexpr (nbits == 64) {
 			real = std::string("double");
 		}
-		else if constexpr (ieee754_parameter<Real>::nbits == 128) {
+		else if constexpr (nbits == 128) {
 			real = std::string("long double");
 		}
 		else {
