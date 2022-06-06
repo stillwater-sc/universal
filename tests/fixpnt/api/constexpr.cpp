@@ -115,7 +115,7 @@ constexpr double pi = 3.14159265358979323846;
 
 template<typename Fixpnt>
 void ConstexprFixpnt() {
-	constexpr Fixpnt a(pi);
+	CONSTEXPRESSION Fixpnt a(pi);
 	std::cout << type_tag(a) << " : " << a << '\n';
 }
 
