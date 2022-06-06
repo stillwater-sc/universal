@@ -254,6 +254,8 @@ public:
 #endif
 
 	// assign the value of the textual representation to the fixpnt: can be binary/octal/decimal/hexadecimal
+	// we want to make this a constexpr so that we could create arbitrary constants, but Clang
+	// doesn't have full STL constexpr support yet, so if failing this.
 	fixpnt& assign(const std::string& number) {
 		clear();
 
@@ -325,7 +327,7 @@ public:
 				r != number.rend();
 				++r) {
 				if (*r != '.') {
-					int64_t digit = charLookup.at(*r); // TODO: deal with look up fail
+					int64_t digit = charLookup.at(*r);
 					fraction += scale * digit;
 					scale *= 10;
 				}
@@ -510,7 +512,7 @@ public:
 		if (rhs.iszero()) std::cerr << "fixpnt_divide_by_zero" << std::endl;
 #endif
 		if constexpr (arithmetic == Modulo) {
-			bool positive = (ispos() & rhs.ispos()) | (isneg() & rhs.isneg());  // XNOR
+			bool positive = (ispos() && rhs.ispos()) || (isneg() && rhs.isneg());  // XNOR
 
 			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
 			// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor

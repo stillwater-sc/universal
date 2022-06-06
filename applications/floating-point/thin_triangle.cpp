@@ -1,6 +1,6 @@
 ﻿// goldberg_thin_triangle.cpp: example program showing the Goldberg thin triangle example
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -228,6 +228,7 @@ void printTriangleConfiguration(std::ostream& ostr, const Scalar& a, const Scala
 int main()
 try {
 	using namespace sw::universal;
+	using std::abs;
 
 	/*
 	{

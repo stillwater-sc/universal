@@ -1,6 +1,6 @@
 // priest.cpp: experiments with Douglas Priest arbitrary precision floating-point arithmetic
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -32,6 +32,7 @@ Definition of FAITHFUL arithmetic
 
 template<typename Real>
 std::pair<Real, Real> SumErr(Real a, Real b) {
+	using std::abs;
 	Real c, d, e, f, g, h;
 
 	if (abs(a) < abs(b)) std::swap(a, b);
@@ -49,6 +50,7 @@ std::pair<Real, Real> SumErr(Real a, Real b) {
 
 template<typename Real>
 std::pair<Real, Real> SumErrCorollary2(Real a, Real b) {
+	using std::abs;
 	Real c, d, e;
 
 	if (abs(a) < abs(b)) std::swap(a, b);
@@ -144,7 +146,6 @@ try {
 		std::cout << "x'  : " << to_binary(xp) << " : " << xp << '\n';
 		std::cout << "x'' : " << to_binary(xpp) << " : " << xpp << '\n';
 	}
-
 
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;

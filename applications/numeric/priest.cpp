@@ -32,6 +32,7 @@ Definition of FAITHFUL arithmetic
 
 template<typename Real>
 std::pair<Real, Real> SumErr(Real a, Real b) {
+	using std::abs;
 	Real c, d, e, f, g, h;
 
 	if (abs(a) < abs(b)) std::swap(a, b);
@@ -49,6 +50,7 @@ std::pair<Real, Real> SumErr(Real a, Real b) {
 
 template<typename Real>
 std::pair<Real, Real> SumErrCorollary2(Real a, Real b) {
+	using std::abs;
 	Real c, d, e;
 
 	if (abs(a) < abs(b)) std::swap(a, b);
