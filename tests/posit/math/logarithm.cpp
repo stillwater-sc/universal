@@ -1,6 +1,6 @@
 // function_logarithm.cpp: test suite runner for the logarithm functions (log2, log10, ln)
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -53,11 +53,11 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "posit logarithm function validation";
-	std::string test_tag    = "logarithm failed: ";
+	std::string test_tag    = "logarithm";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
