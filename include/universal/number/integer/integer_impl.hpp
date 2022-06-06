@@ -157,7 +157,10 @@ public:
 	constexpr integer(double initial_value)             { *this = initial_value; }
 	constexpr integer(long double initial_value)        { *this = initial_value; }
 
-	// specific value constructor
+	// specific value constructors
+	integer(const std::string& s) noexcept {
+		assign(s);
+	}
 	constexpr integer(const SpecificValue code) noexcept
 		: _block{ 0 } {
 		switch (code) {
@@ -578,7 +581,7 @@ public:
 	}
 
 	// modifiers
-	inline constexpr void clear() noexcept { 
+	constexpr void clear() noexcept { 
 		bt* p = _block;
 		if constexpr (0 == nrBlocks) {
 			return;
@@ -607,33 +610,33 @@ public:
 			}
 		}
 	}
-	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr integer& maxpos() noexcept {
+	constexpr void setzero() noexcept { clear(); }
+	constexpr integer& maxpos() noexcept {
 		clear();
 		setbit(nbits - 1ull, true);
 		flip();
 		return *this;
 	}
-	inline constexpr integer& minpos() noexcept {
+	constexpr integer& minpos() noexcept {
 		clear();
 		setbit(0, true);
 		return *this;
 	}
-	inline constexpr integer& zero() noexcept {
+	constexpr integer& zero() noexcept {
 		clear();
 		return *this;
 	}
-	inline constexpr integer& minneg() noexcept {
+	constexpr integer& minneg() noexcept {
 		clear();
 		flip();
 		return *this;
 	}
-	inline constexpr integer& maxneg() noexcept {
+	constexpr integer& maxneg() noexcept {
 		clear();
 		setbit(nbits - 1ull, true);
 		return *this;
 	}
-	inline constexpr void setbit(unsigned i, bool v = true) noexcept {
+	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -643,7 +646,7 @@ public:
 			return;
 		}
 	}
-	inline constexpr void setbyte(unsigned byteIndex, uint8_t data) {
+	constexpr void setbyte(unsigned byteIndex, uint8_t data) {
 		uint8_t mask = 0x1u;
 		unsigned start = byteIndex * 8;
 		unsigned end = start + 8;
@@ -652,11 +655,11 @@ public:
 			mask <<= 1;
 		}
 	}
-	inline constexpr void setblock(unsigned i, bt value) noexcept {
+	constexpr void setblock(unsigned i, bt value) noexcept {
 		if (i < nrBlocks) _block[i] = value;
 	}
 	// use un-interpreted raw bits to set the bits of the integer
-	inline constexpr integer& setbits(uint64_t raw_bits) noexcept {
+	constexpr integer& setbits(uint64_t raw_bits) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return *this;
 		}
@@ -722,7 +725,7 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;
 	}
-	inline integer& assign(const std::string& txt) noexcept {
+	integer& assign(const std::string& txt) noexcept {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
@@ -732,7 +735,7 @@ public:
 	}
 	// pure bit copy of source integer, no sign extension
 	template<size_t src_nbits>
-	inline constexpr void bitcopy(const integer<src_nbits, BlockType, NumberType>& src) noexcept {
+	constexpr void bitcopy(const integer<src_nbits, BlockType, NumberType>& src) noexcept {
 		// no need to clear as we are going to overwrite all blocks
 		for (unsigned i = 0; i < nrBlocks; ++i) { // use nrBlocks of receiver even when src is smaller, src.block() will return 0 for blocks it doesn't have, nulling the receiver's blocks
 			_block[i] = src.block(i);
@@ -740,7 +743,7 @@ public:
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 	}
 	// in-place one's complement
-	inline constexpr integer& flip() {
+	constexpr integer& flip() {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = static_cast<bt>(~_block[i]);
 		}
@@ -748,21 +751,21 @@ public:
 		return *this;
 	}
 	// in-place 2's complement
-	inline constexpr integer& twosComplement() {
+	constexpr integer& twosComplement() {
 		flip();
 		return ++(*this);
 	}
 
 	// selectors
-	inline constexpr bool iszero() const noexcept {
+	constexpr bool iszero() const noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			if (_block[i] != 0) return false;
 		}
 		return true;
 	}
-	inline constexpr bool ispos()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this > 0; else return true; }
-	inline constexpr bool isneg()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this < 0; else return false; }
-	inline constexpr bool isone()  const noexcept {
+	constexpr bool ispos()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this > 0; else return true; }
+	constexpr bool isneg()  const noexcept { if constexpr (NumberType == IntegerNumberType::IntegerNumber) return *this < 0; else return false; }
+	constexpr bool isone()  const noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			if (i == 0) {
 				if (_block[0] != BlockType(1u)) return false;
@@ -773,10 +776,10 @@ public:
 		}
 		return true;
 	}
-	inline constexpr bool isodd()  const noexcept  { return bool(_block[0] & 0x01); }
-	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool sign()   const noexcept { return at(nbits - 1); }
-	inline constexpr bool at(unsigned bitIndex) const noexcept {
+	constexpr bool isodd()  const noexcept  { return bool(_block[0] & 0x01); }
+	constexpr bool iseven() const noexcept { return !isodd(); }
+	constexpr bool sign()   const noexcept { return at(nbits - 1); }
+	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];
 			bt mask = bt(1ull << (bitIndex % bitsInBlock));
@@ -784,8 +787,8 @@ public:
 		}
 		return false;
 	}
-	inline constexpr bool test(unsigned i)  const noexcept { return at(i); }
-	inline constexpr bt   block(unsigned i) const noexcept { if (i < nrBlocks) return _block[i]; else return bt(0u); }
+	constexpr bool test(unsigned i)  const noexcept { return at(i); }
+	constexpr bt   block(unsigned i) const noexcept { if (i < nrBlocks) return _block[i]; else return bt(0u); }
 
 	// operators
 	// reduce returns the ratio and remainder of a and b in *this and r
@@ -933,7 +936,7 @@ public:
 	}
 	// signed integer conversion
 	template<typename SignedInt>
-	inline constexpr integer& convert_signed(SignedInt rhs) noexcept {
+	constexpr integer& convert_signed(SignedInt rhs) noexcept {
 		clear();
 		if (0 == rhs) return *this;
 		constexpr size_t argbits = sizeof(rhs);
@@ -954,7 +957,7 @@ public:
 	}
 	// unsigned integer conversion
 	template<typename UnsignedInt>
-	inline constexpr integer& convert_unsigned(UnsignedInt rhs) noexcept {
+	constexpr integer& convert_unsigned(UnsignedInt rhs) noexcept {
 		clear();
 		if (0 == rhs) return *this;
 		uint64_t v = rhs;
@@ -1286,7 +1289,7 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& val
 	std::regex octal_regex("^[-+]*0[1-7][0-7]*$");
 	std::regex hex_regex("^[-+]*0[xX][0-9a-fA-F']+");
 	// setup associative array to map chars to nibbles
-	std::map<char, int> charLookup{
+	static std::map<char, int> charLookup{
 		{ '0', 0 },
 		{ '1', 1 },
 		{ '2', 2 },
