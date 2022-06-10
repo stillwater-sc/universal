@@ -426,24 +426,38 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
-	// enumerate all division cases for an integer<nbits, BlockType> configuration
-	template<size_t nbits, typename BlockType>
+	// default is an unsigned reference type
+	template<IntegerNumberType NumberType>
+	struct ReferenceTypeForInteger {
+		typedef std::uint64_t reference_type;
+	};
+	// specialized for IntegerNumber to yield a signed reference type
+	template<>
+	struct ReferenceTypeForInteger< IntegerNumberType::IntegerNumber>{
+		typedef std::int64_t reference_type;
+	};
+
+	// enumerate all division cases for an integer<nbits, BlockType, NumberType> configuration
+	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 	int VerifyDivision(bool reportTestCases) {
 		using Integer = integer<nbits, BlockType>;
+		using ReferenceType = typename ReferenceTypeForInteger<NumberType>::reference_type;
+
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
-		Integer ia, ib, iresult, iref;
+		Integer ia, ib, ic, iref;
+		ReferenceType ra, rb, rc;  // reference values
 
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.setbits(i);
-			int64_t i64a = int64_t(ia);
+			ra = ReferenceType(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.setbits(j);
-				int64_t i64b = int64_t(ib);
+				rb = ReferenceType(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
-					iresult = ia / ib;
+					ic = ia / ib;
 				}
 				catch (const integer_divide_by_zero& e) {
 					if (ib.iszero()) {
@@ -464,20 +478,21 @@ namespace sw { namespace universal {
 					nrOfFailedTests++;
 				}
 #else
-				iresult = ia / ib;
+				ic = ia / ib;
 #endif
 				if (j == 0) {
 					iref = 0; // or maxneg?
 				}
 				else {
-					iref = i64a / i64b;
+					rc = ra / rb;
+					iref = rc;
 				}
-				if (iresult != iref) {
+				if (ic != iref) {
 					nrOfFailedTests++;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, ic);
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, ic);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}

@@ -1,6 +1,6 @@
 //  exceptions.cpp : test suite for arithmetic exceptions of fixpnt numbers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,7 +10,7 @@
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -29,29 +29,29 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "fixpnt arithmetic exceptions ";
-	std::string test_tag = "exceptions";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "fixpnt arithmetic exceptions ";
+	std::string test_tag    = "arithmetic exception";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
 	using Number = sw::universal::fixpnt<8, 4, Modulo, uint16_t>;
 
-	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
-
-	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
+	nrOfFailedTestCases += TestDivisionByZero<Number>(reportTestCases);
+	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(reportTestCases);
 
 #ifdef IMPLEMENTED
 	// special value-add cases
 	constexpr Number maxpos(SpecificValue::maxpos);
 	constexpr Number minpos(SpecificValue::minpos);
 	constexpr Number maxneg(SpecificValue::maxneg);
-	nrOfFailedTestCases += TestOverflowOnAddition(bReportIndividualTestCases, maxpos, maxpos);
-	nrOfFailedTestCases += TestOverflowOnSubtraction(bReportIndividualTestCases, maxneg, maxpos);
-	nrOfFailedTestCases += TestOverflowOnMultiplication(bReportIndividualTestCases, maxneg, maxpos);
-	nrOfFailedTestCases += TestOverflowOnDivision(bReportIndividualTestCases, maxneg, minpos);
+	nrOfFailedTestCases += TestOverflowOnAddition(reportTestCases, maxpos, maxpos);
+	nrOfFailedTestCases += TestOverflowOnSubtraction(reportTestCases, maxneg, maxpos);
+	nrOfFailedTestCases += TestOverflowOnMultiplication(reportTestCases, maxneg, maxpos);
+	nrOfFailedTestCases += TestOverflowOnDivision(reportTestCases, maxneg, minpos);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -59,6 +59,11 @@ try {
 #else // !MANUAL_TESTING
 
 #if REGRESSION_LEVEL_1
+	using Number = sw::universal::fixpnt<8, 4, Modulo, uint16_t>;
+
+	nrOfFailedTestCases += ReportTestResult(TestDivisionByZero<Number>(reportTestCases), test_tag, "division by zero");
+
+	nrOfFailedTestCases += ReportTestResult(TestNegativeSqrtArgument<Number>(reportTestCases), test_tag, "negative sqrt argument");
 #endif
 
 #if REGRESSION_LEVEL_2

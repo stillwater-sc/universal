@@ -14,6 +14,39 @@
 #include <universal/number/adaptiveint/adaptiveint.hpp>
 #include <universal/verification/test_suite.hpp>
 
+template<typename Integer>
+void ArithmeticOperations(std::int64_t _a, std::int64_t _b) {
+	Integer a(_a), b(_b), c(0);
+	std::cout << type_tag(a) << '\n';
+	c = a + b;
+	std::cout << a << " + " << b << " = " << c << '\n';
+	c = a - b;
+	std::cout << a << " - " << b << " = " << c << '\n';
+	c = a * b;
+	std::cout << a << " * " << b << " = " << c << '\n';
+	c = a / b;
+	std::cout << a << " / " << b << " = " << c << '\n';
+	c = a % b;
+	std::cout << a << " % " << b << " = " << c << '\n';
+	std::cout << "---\n";
+}
+
+template<typename Integer>
+void AddSubPermutations() {
+	Integer a, b, c;
+	a = +4; b = +5; c = a + b;  std::cout << " 4 +  5  = " << int(c) << '\n';
+	a = +4; b = +5; c = a - b;  std::cout << " 4 -  5  = " << int(c) << '\n';
+	a = -4; b = -5; c = a + b;  std::cout << "-4 + -5  = " << int(c) << '\n';
+	a = +4; b = -5; c = a - b;  std::cout << " 4 - -5  = " << int(c) << '\n';
+	a = -4; b = -5; c = a - b;  std::cout << "-4 - -5  = " << int(c) << '\n';
+	a = +4; b = +5; a += b;     std::cout << " 4 +=  5 : " << int(a) << '\n';
+	a = +4; b = -5; a += b;     std::cout << " 4 += -5 : " << int(a) << '\n';
+	a = -4; b = -5; a += b;     std::cout << "-4 += -5 : " << int(a) << '\n';
+	a = +4; b = +5; a -= b;     std::cout << " 4 -=  5 : " << int(a) << '\n';
+	a = +4; b = -5; a -= b;     std::cout << " 4 -= -5 : " << int(a) << '\n';
+	a = -4; b = -5; a -= b;     std::cout << "-4 -= -5 : " << int(a) << '\n';
+}
+
 int main()
 try {
 	using namespace sw::universal;
@@ -23,54 +56,32 @@ try {
 
 	// default behavior
 	std::cout << "Default adaptiveint expands and contracts as needed\n";
-	{
-		using Integer = adaptiveint<std::uint8_t>;
-
-		Integer a(0xFFFF'FFFF), b(0), c(1);
-		std::cout << type_tag(a) << '\n';
-		c = a + b;
-		std::cout << "c = " << to_binary(c) << '\n';
-		c = a + c;
-		std::cout << "c = " << to_binary(c) << '\n';
-		c = c - a;
-		std::cout << "c = " << to_binary(c) << '\n';
-		c = c * b;
-		std::cout << "c = " << to_binary(c) << '\n';
-		std::cout << "---\n";
-	}
+	ArithmeticOperations<adaptiveint<std::uint8_t>>(4ll, -2ll);
+	// ArithmeticOperations<adaptiveint<std::int8_t>>(4, -2); // shouldn't use signed building blocks
+	ArithmeticOperations<adaptiveint<std::uint8_t>>(256ll, -64ll);
 
 	{
-		adaptiveint<std::uint8_t> a, b, c;
-		a = +4; b = +5; c = a + b;  std::cout << " 4 +  5  = " << int(c) << '\n';
-		a = +4; b = +5; c = a - b;  std::cout << " 4 -  5  = " << int(c) << '\n';
-		a = -4; b = -5; c = a + b;  std::cout << "-4 + -5  = " << int(c) << '\n';
-		a = +4; b = -5; c = a - b;  std::cout << " 4 - -5  = " << int(c) << '\n';
-		a = -4; b = -5; c = a - b;  std::cout << "-4 - -5  = " << int(c) << '\n';
-		a = +4; b = +5; a += b;     std::cout << " 4 +=  5 : " << int(a) << '\n';
-		a = +4; b = -5; a += b;     std::cout << " 4 += -5 : " << int(a) << '\n';
-		a = -4; b = -5; a += b;     std::cout << "-4 += -5 : " << int(a) << '\n';
-		a = +4; b = +5; a -= b;     std::cout << " 4 -=  5 : " << int(a) << '\n';
-		a = +4; b = -5; a -= b;     std::cout << " 4 -= -5 : " << int(a) << '\n';
-		a = -4; b = -5; a -= b;     std::cout << "-4 -= -5 : " << int(a) << '\n';
+		using Integer = adaptiveint<std::uint32_t>;
+		Integer a = -20000000.0f;
+		std::cout << (long long)a << " : " << to_binary(a) << " : " << a << '\n';
 	}
 
 	// TODO: remove leading zeros
-	std::cout << "Bringing in large values\n";
+	std::cout << "Bringing in large values through floating-point\n";
 	{
 		using Integer = adaptiveint<std::uint8_t>;
 		for (int i = 1; i < 40; ++i) {
 			float target = 2.0f * pow(10.0f, float(i));
 			Integer a = target;
-			std::cout << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
+			std::cout << a << " : " << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
 		}
 	}
-	// TODO: negative doesn't register
 	{
 		using Integer = adaptiveint<std::uint8_t>;
 		for (int i = 1; i < 40; ++i) {
 			float target = -2.0f * pow(10.0f, float(i));
 			Integer a = target;
-			std::cout << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
+			std::cout << a << " : " << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
 		}
 	}
 	// TODO: conversions using 4 byte blocks fails
@@ -79,17 +90,13 @@ try {
 		for (int i = 1; i < 40; ++i) {
 			float target = 2.0f * pow(10.0f, float(i));
 			Integer a = target;
-			std::cout << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
+			std::cout << a << " : " << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
 		}
 	}
-
-	return EXIT_SUCCESS;
 
 	// set bit patterns
 	std::cout << "set bit patterns API\n";
 	{
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 5;
 		using Integer = adaptiveint<std::uint32_t>;
 
 		Integer a;
@@ -101,11 +108,11 @@ try {
 		a.setbits(0xAAAA);
 		std::cout << to_binary(a) << " : " << a << '\n';
 
-		a.assign(std::string("0b1.01010.1010'1010'10"));
+		a.assign(std::string("0b1'0101'1010'1010'10"));
 		std::cout << to_binary(a) << " : " << a << '\n';
 
-		a.assign(std::string("0b1.01010.10'1010'1010"));
-		std::cout << to_binary(a) << " : " << a << '\n';
+		a.assign("1234567890123456789012345");
+		std::cout << a << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -1,17 +1,15 @@
-// api.cpp: application programming interface demonstration for arbitrary logarithmic number system
+// api.cpp: application programming interface demonstration of fixed-size, arbitrary precision logarithmic number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/test_reporters.hpp>
-#include <universal/verification/test_case.hpp>
+#include <universal/verification/test_suite.hpp>
 
 template<size_t nbits> 
-int ValidateAddition(const std::string& tag, bool reportTestCases) {
+int VerifyAddition(bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
 
 	return nrOfFailedTestCases;
@@ -38,26 +36,35 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	TestCase< lns<16, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	TestCase< lns<8, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< lns<16, 5, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+	TestCase< lns<8, 2, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>("Manual Testing", reportTestCases), "lns<8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>(reportTestCases), "lns<8>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
+#if REGRESSION_LEVEL_1
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>(tag, reportTestCases), "lns<8>", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
 #endif  // MANUAL_TESTING
 }
 catch (char const* msg) {

@@ -20,6 +20,14 @@
    can be used for forward error analysis studies.
 */
 
+namespace sw { namespace universal {
+
+	// TODO: we need to add a type_trait to integer<> so that we can SFINAE like this:
+	// 	template<typename UnsignedInteger,
+	//           typename = typename std::enable_if< std::is_unsigned<UnsignedInteger>::value, UnsignedInteger >::type >
+	//  int VerifyNLZ(bool reportTestCases) { .. }
+
+
 template<unsigned nbits, typename BlockType>
 int VerifyFindMsb(bool reportTestCases) {
 	using Integer = sw::universal::integer<nbits, BlockType>;
@@ -40,8 +48,48 @@ int VerifyFindMsb(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+} } // namespace sw::universal
+
+// test the nlz method which returns the shift required to move the leading non-zero into the most significant bit position of the type
+void TestNLZ() {
+	using namespace sw::universal;
+	{
+		uint8_t a = 0x1;
+		for (uint32_t i = 0; i < 8; ++i) {
+			int shift = nlz(a);
+			std::cout << " shift = " << shift << " : " << to_binary(a, 8, true) << '\n';
+			a <<= 1;
+		}
+	}
+
+	{
+		uint16_t a = 0x1;
+		for (uint32_t i = 0; i < 16; ++i) {
+			int shift = nlz(a);
+			std::cout << " shift = " << shift << " : " << to_binary(a, 16, true) << '\n';
+			a <<= 1;
+		}
+	}
+	{
+		uint32_t a = 0x1;
+		for (uint32_t i = 0; i < 32; ++i) {
+			int shift = nlz(a);
+			std::cout << " shift = " << shift << " : " << to_binary(a, 32, true) << '\n';
+			a <<= 1;
+		}
+	}
+	{
+		uint64_t a = 0x1;
+		for (uint32_t i = 0; i < 64; ++i) {
+			int shift = nlz(a);
+			std::cout << " shift = " << shift << " : " << to_binary(a, 64, true) << '\n';
+			a <<= 1;
+		}
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -60,7 +108,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer bit manipulation verfication";
+	std::string test_suite  = "Integer bit manipulation verification";
 	std::string test_tag    = "bit manipulators";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -69,17 +117,21 @@ try {
 
 #if MANUAL_TESTING
 
-	using Integer = integer<16, uint16_t>;
-	constexpr Integer a(SpecificValue::maxpos), b(SpecificValue::maxneg);
-	int i = int(b);
-	std::cout << i << '\n';
-	std::cout << b << '\n';
-	Integer c;
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	std::cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(c) << '\n';
+	{
+		using Integer = integer<16, uint16_t>;
+		constexpr Integer a(SpecificValue::maxpos), b(SpecificValue::maxneg);
+		int i = int(b);
+		std::cout << i << '\n';
+		std::cout << b << '\n';
+		Integer c;
+		c = a + b;
+		std::cout << a << " + " << b << " = " << c << '\n';
+		std::cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(c) << '\n';
+	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< 4, uint8_t>(reportTestCases), "integer< 4, uint8_t >", "addition");
+	TestNLZ();  // TODO: we should have a native int
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb< 40, uint64_t>(reportTestCases), "integer< 40, uint64_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -87,13 +139,13 @@ try {
 
 #if REGRESSION_LEVEL_1
 	test_tag = "findMsb";
-	ReportTestResult(VerifyFindMsb<  4, uint8_t >(reportTestCases), "integer<  4, uint8_t >", test_tag);
-	ReportTestResult(VerifyFindMsb<  8, uint8_t >(reportTestCases), "integer<  8, uint8_t >", test_tag);
-	ReportTestResult(VerifyFindMsb< 12, uint8_t >(reportTestCases), "integer< 12, uint8_t >", test_tag);
-	ReportTestResult(VerifyFindMsb< 20, uint16_t>(reportTestCases), "integer< 20, uint16_t>", test_tag);
-	ReportTestResult(VerifyFindMsb< 40, uint16_t>(reportTestCases), "integer< 40, uint16_t>", test_tag);
-	ReportTestResult(VerifyFindMsb< 40, uint32_t>(reportTestCases), "integer< 40, uint32_t>", test_tag);
-	ReportTestResult(VerifyFindMsb< 40, uint64_t>(reportTestCases), "integer< 40, uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb<  4, uint8_t >(reportTestCases), "integer<  4, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb<  8, uint8_t >(reportTestCases), "integer<  8, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb< 12, uint8_t >(reportTestCases), "integer< 12, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb< 20, uint16_t>(reportTestCases), "integer< 20, uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb< 40, uint16_t>(reportTestCases), "integer< 40, uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb< 40, uint32_t>(reportTestCases), "integer< 40, uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb< 40, uint64_t>(reportTestCases), "integer< 40, uint64_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

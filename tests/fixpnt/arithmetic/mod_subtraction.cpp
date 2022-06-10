@@ -1,6 +1,6 @@
 // mod_subtraction.cpp: test suite runner for arbitrary configuration fixed-point modulo subtraction
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -40,6 +40,10 @@ void GenerateTestCase(Ty _a, Ty _b) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -50,10 +54,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "fixed-point modular subtraction ";
-	std::string test_tag = "modular subtraction";
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "fixed-point modular subtraction ";
+	std::string test_tag    = "modular subtraction";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -66,15 +72,15 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 1.0f);
 
-	bReportIndividualTestCases = true;
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
+	reportTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modulo, uint8_t>("Manual Testing", reportTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<4,0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<4,1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<4,2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<4,3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<4,4,Modulo,uint8_t>", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -82,51 +88,51 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 5, 0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 5, 1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 5, 2,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 5, 3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 5, 4,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 5, 5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 0, Modulo, uint8_t>(reportTestCases), "fixpnt< 5, 0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 1, Modulo, uint8_t>(reportTestCases), "fixpnt< 5, 1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 2, Modulo, uint8_t>(reportTestCases), "fixpnt< 5, 2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 3, Modulo, uint8_t>(reportTestCases), "fixpnt< 5, 3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 4, Modulo, uint8_t>(reportTestCases), "fixpnt< 5, 4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 5, 5, Modulo, uint8_t>(reportTestCases), "fixpnt< 5, 5,Modulo,uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 7, 0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 7, 1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 7, 2,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 7, 3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 7, 4,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 7, 5,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 7, 6,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 7, 7,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 0, Modulo, uint8_t>(reportTestCases), "fixpnt< 7, 0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 1, Modulo, uint8_t>(reportTestCases), "fixpnt< 7, 1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 2, Modulo, uint8_t>(reportTestCases), "fixpnt< 7, 2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 3, Modulo, uint8_t>(reportTestCases), "fixpnt< 7, 3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 4, Modulo, uint8_t>(reportTestCases), "fixpnt< 7, 4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 5, Modulo, uint8_t>(reportTestCases), "fixpnt< 7, 5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 6, Modulo, uint8_t>(reportTestCases), "fixpnt< 7, 6,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 7, 7, Modulo, uint8_t>(reportTestCases), "fixpnt< 7, 7,Modulo,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 1,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 2,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 4,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 5,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 6,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 7,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 8, 8,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 0, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 1, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 1,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 2, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 2,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 3, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 4, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 4,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 5, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 6, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 6,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 7, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 7,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 8, 8, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 8,Modulo,uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 9, 3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 9, 5,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt< 9, 7,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, 3, Modulo, uint8_t>(reportTestCases), "fixpnt< 9, 3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, 5, Modulo, uint8_t>(reportTestCases), "fixpnt< 9, 5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction< 9, 7, Modulo, uint8_t>(reportTestCases), "fixpnt< 9, 7,Modulo,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<13, 0,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<13, 5,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 9, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<13, 9,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13,12, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<13,12,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<13, 0,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<13, 5,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 9, Modulo, uint8_t>(reportTestCases), "fixpnt<13, 9,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13,12, Modulo, uint8_t>(reportTestCases), "fixpnt<13,12,Modulo,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<15, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<15, 3,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<15, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<15, 6,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<15, 9, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<15, 9,Modulo,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<15,12, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<15,12,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<15, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<15, 3,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<15, 6, Modulo, uint8_t>(reportTestCases), "fixpnt<15, 6,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<15, 9, Modulo, uint8_t>(reportTestCases), "fixpnt<15, 9,Modulo,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<15,12, Modulo, uint8_t>(reportTestCases), "fixpnt<15,12,Modulo,uint8_t>", test_tag);
 #endif
 
 #endif  // MANUAL_TESTING

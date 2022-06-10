@@ -14,26 +14,76 @@
 #include <universal/number/adaptiveint/adaptiveint.hpp>
 #include <universal/verification/test_reporters.hpp>
 
+namespace sw { namespace universal {
+
+	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType>
+	int VerifyAdaptiveMultiplication(bool reportTestCases) {
+		using Integer = adaptiveint<BlockType>;
+		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
+
+		Integer ia, ib, ic, iref;
+
+		int nrOfFailedTests = 0;
+		size_t increment = std::max(1ull, NR_ENCODINGS / 1024ull);
+		for (size_t i = 0; i < NR_ENCODINGS; i += increment) {
+			ia.setbits(i);
+			int64_t i64a = int64_t(ia);
+			for (size_t j = 0; j < NR_ENCODINGS; j += increment) {
+				ib.setbits(j);
+				int64_t i64b = int64_t(ib);
+				iref = i64a * i64b;
+				ic = ia * ib;
+
+				if (ic != iref) {
+					nrOfFailedTests++;
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", ia, ib, ic, iref);
+				}
+				else {
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, ic, iref);
+				}
+				if (nrOfFailedTests > 100) return nrOfFailedTests;
+			}
+			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
+		}
+		if (reportTestCases) std::cout << std::endl;
+		return nrOfFailedTests;
+	}
+
+} } // namespace sw::univeral
+
 // generate specific test case that you can trace with the trace conditions in mpreal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<typename Ty, typename BlockType = std::uint32_t>
+template<typename Ty, typename BlockType>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::adaptiveint<BlockType> a, b, aref, aproduct;
-	a = _a;
-	b = _b;
-	aproduct = a * b;
+	sw::universal::adaptiveint<BlockType> a, b, c, aref;
 	ref = _a * _b;
 	aref = ref;
+
+	a = _a;
+	b = _b;
+	c = a * b;
+
 	constexpr size_t ndigits = 30;
-	std::cout << std::setw(ndigits) << _a << " * " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;
-//	std::cout << a << " * " << b << " = " << aproduct << " (reference: " << aref << ")   " ;
-	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(aproduct) << " : " << (long long)(aproduct) << " (reference: " << to_binary(aref) << ")   ";
-	std::cout << (aref == aproduct? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setw(ndigits) << _a << " * " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << '\n';
+//	std::cout << a << " * " << b << " = " << c << " (reference: " << aref << ")   " ;
+	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " : " << (long long)(c) << " (reference: " << to_binary(aref) << ")   ";
+	std::cout << (aref == c? "PASS\n" : "FAIL\n");
+}
+
+template<typename BlockType>
+void PrintPowersOfTwo(unsigned exponent = 100) {
+	constexpr size_t COLUMN_WIDTH = 35;
+	sw::universal::adaptiveint<BlockType> a(1);
+	for (int p = 0; p < exponent; ++p) {
+		std::cout << std::setw(COLUMN_WIDTH) << std::oct << a << std::setw(COLUMN_WIDTH) << std::dec << a << std::setw(COLUMN_WIDTH) << std::hex << a << '\n';
+		a *= 2;
+	}
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -52,9 +102,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "adaptive precision binary integer multiplication";
-	std::string test_tag = "adaptiveint multiplication";
-	bool reportTestCases = true;
+	std::string test_suite  = "adaptive precision binary integer multiplication";
+	std::string test_tag    = "adaptiveint multiplication";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
@@ -63,14 +113,30 @@ try {
 //	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
-//	GenerateTestCase(1, 2);
+//	GenerateTestCase<std::uint32_t, std::uint8_t>(1, 2);
+	GenerateTestCase<std::uint32_t, std::uint8_t>(2, 128);
+	GenerateTestCase<std::uint32_t, std::uint8_t>(128, 2);
+
+	PrintPowersOfTwo<uint8_t>();
+	PrintPowersOfTwo<uint16_t>();
+	PrintPowersOfTwo<uint32_t>();
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<4, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<8, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<4, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<8, uint8_t>(reportTestCases), "adaptiveint<uint8_t> 2bytes", test_tag);
 
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<8, uint16_t>(reportTestCases), "adaptiveint<uint16_t> 1word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<16, uint16_t>(reportTestCases), "adaptiveint<uint16_t> 2words", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<16, uint32_t>(reportTestCases), "adaptiveint<uint32_t> 1word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<20, uint32_t>(reportTestCases), "adaptiveint<uint32_t> 2words", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -19,12 +19,13 @@ RUN set -ex \
     gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys "$key" ; \
   done
 
+ENV CMAKE_DIR v3.23
 ENV CMAKE_VERSION 3.23.1
 
 RUN set -ex \
-  && curl -fsSLO --compressed https://cmake.org/files/v3.23/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \
-  && curl -fsSLO https://cmake.org/files/v3.23/cmake-${CMAKE_VERSION}-SHA-256.txt.asc \
-  && curl -fsSLO https://cmake.org/files/v3.23/cmake-${CMAKE_VERSION}-SHA-256.txt \
+  && curl -fsSLO --compressed https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \
+  && curl -fsSLO https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-SHA-256.txt.asc \
+  && curl -fsSLO https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-SHA-256.txt \
   && gpg --verify cmake-${CMAKE_VERSION}-SHA-256.txt.asc cmake-${CMAKE_VERSION}-SHA-256.txt \
   && grep "cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz\$" cmake-${CMAKE_VERSION}-SHA-256.txt | sha256sum -c - \
   && tar xzf cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz -C /usr/local --strip-components=1 --no-same-owner \

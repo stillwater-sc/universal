@@ -1,6 +1,6 @@
 // api.cpp: test suite runner for class interface tests of the fixpnt<nbits,rbits,Modulo/Saturating,BlockType> type
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,7 +11,7 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/fixpnt/fixpnt.hpp>
-#include <universal/verification/test_reporters.hpp> 
+#include <universal/verification/test_suite.hpp> 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -19,19 +19,26 @@
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "fixed-point class interface ";
-	std::cout << test_suite << '\n';
+	std::string test_suite  = "fixed-point class interface ";
+//	std::string test_tag    = "";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR fixed-point (the default)

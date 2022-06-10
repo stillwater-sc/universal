@@ -1,6 +1,6 @@
 // mod_complex_sub.cpp: test suite runner for arbitrary configuration fixed-point complex subtraction
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -37,7 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 // enumerate all complex subtraction cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyComplexSubtraction(bool bReportIndividualTestCases) {
+int VerifyComplexSubtraction(bool reportTestCases) {
 	using namespace sw::universal;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
@@ -86,10 +86,10 @@ int VerifyComplexSubtraction(bool bReportIndividualTestCases) {
 
 					if (result.real() != ref.real() || result.imag() != ref.imag()) {
 						nrOfFailedTests++;
-						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, result, ref);
+						if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, result, ref);
 					}
 					else {
-						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, result, ref);
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, result, ref);
 					}
 					if (nrOfFailedTests > 100) return nrOfFailedTests;
 				}
@@ -108,6 +108,10 @@ int VerifyComplexSubtraction(bool bReportIndividualTestCases) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -120,11 +124,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "fixed-point complex subtraction validation";
-	std::string test_tag = "complex modular addition";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "fixed-point complex subtraction validation";
+	std::string test_tag    = "complex modular addition";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -146,32 +151,32 @@ try {
 
 #if REGRESSION_LEVEL_1
 	// 4-bits: 2^16 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<4,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<4,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<4,2,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<4,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<4, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<4,4,Modulo,uint8_t>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_2
 	// 5-bits: 2^20 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<5, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_3
 	// 6-bits: 2^24 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,1,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,2,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,5,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<6,6,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<6,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<6,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<6,2,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<6,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<6,4,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<6,5,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<6, 6, Modulo, uint8_t>(reportTestCases), "fixpnt<6,6,Modulo,uint8_t>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_4
@@ -181,31 +186,31 @@ try {
 
     // the following test scenarios are only feasible with hardware acceleration
     // 8-bits: 2^32 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<8,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 1, Modulo, uint8_t>(reportTestCases), "fixpnt<8,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 2, Modulo, uint8_t>(reportTestCases), "fixpnt<8,2,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<8,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<8,4,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<8,5,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 6, Modulo, uint8_t>(reportTestCases), "fixpnt<8,6,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 7, Modulo, uint8_t>(reportTestCases), "fixpnt<8,7,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<8, 8, Modulo, uint8_t>(reportTestCases), "fixpnt<8,8,Modulo,uint8_t>", "subtraction");
 
 	// 10-bits: 2^40 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<10, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<10, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,5,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<10, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<10,7,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<10, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<10,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<10, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<10,5,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<10, 7, Modulo, uint8_t>(reportTestCases), "fixpnt<10,7,Modulo,uint8_t>", "subtraction");
 
 	// 11-bits: 2^44 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<11, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<11,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<11, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<11,5,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<11, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<11,7,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<11, 3, Modulo, uint8_t>(reportTestCases), "fixpnt<11,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<11, 5, Modulo, uint8_t>(reportTestCases), "fixpnt<11,5,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<11, 7, Modulo, uint8_t>(reportTestCases), "fixpnt<11,7,Modulo,uint8_t>", "subtraction");
 
 	// 12-bits: 2^48 arithmetic combinations
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<12, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<12, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,4,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<12, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,8,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<12, 12, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<12,12,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<12, 0, Modulo, uint8_t>(reportTestCases), "fixpnt<12,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<12, 4, Modulo, uint8_t>(reportTestCases), "fixpnt<12,4,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<12, 8, Modulo, uint8_t>(reportTestCases), "fixpnt<12,8,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexSubtraction<12, 12, Modulo, uint8_t>(reportTestCases), "fixpnt<12,12,Modulo,uint8_t>", "subtraction");
 #endif // HARDWARE_ACCELERATION
 #endif
 

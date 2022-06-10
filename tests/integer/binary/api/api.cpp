@@ -38,6 +38,25 @@ try {
 		}
 	}
 
+	// assignment
+	{
+		int start = nrOfFailedTestCases;
+		integer<128, std::uint32_t> a, b;
+
+		a = -1;
+		b = 1;
+		if (a != -b) ++nrOfFailedTestCases;
+		std::string s("123456789");
+		integer<64, std::uint8_t> c(s);
+		integer<64, std::uint8_t> d;
+		d.assign(s);
+		if (c != d) ++nrOfFailedTestCases;
+		if (convert_to_decimal_string(c) != s) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << '\n';
+		}
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// improving efficiency for bigger integers through explicit BlockType specification
 
@@ -175,101 +194,101 @@ try {
 		a = 1;
 		b = 2l;
 		c = 3ll;
-d = 0ull;
+		d = 0ull;
 
-// unsigned literals
-if (a != 1u) ++nrOfFailedTestCases;
-if (b != 2ul) ++nrOfFailedTestCases;
-if (c != 3ull) ++nrOfFailedTestCases;
-if (1u != a) ++nrOfFailedTestCases;
-if (2ul != b) ++nrOfFailedTestCases;
-if (3ull != c) ++nrOfFailedTestCases;
-if (d != c - b - a) ++nrOfFailedTestCases;
-// signed literals
-if (-a != -1) ++nrOfFailedTestCases;
-if (-b != -2l) ++nrOfFailedTestCases;
-if (-c != -3ll) ++nrOfFailedTestCases;
-if (-1 != -a) ++nrOfFailedTestCases;
-if (-2l != -b) ++nrOfFailedTestCases;
-if (-3ll != -c) ++nrOfFailedTestCases;
+		// unsigned literals
+		if (a != 1u) ++nrOfFailedTestCases;
+		if (b != 2ul) ++nrOfFailedTestCases;
+		if (c != 3ull) ++nrOfFailedTestCases;
+		if (1u != a) ++nrOfFailedTestCases;
+		if (2ul != b) ++nrOfFailedTestCases;
+		if (3ull != c) ++nrOfFailedTestCases;
+		if (d != c - b - a) ++nrOfFailedTestCases;
+		// signed literals
+		if (-a != -1) ++nrOfFailedTestCases;
+		if (-b != -2l) ++nrOfFailedTestCases;
+		if (-c != -3ll) ++nrOfFailedTestCases;
+		if (-1 != -a) ++nrOfFailedTestCases;
+		if (-2l != -b) ++nrOfFailedTestCases;
+		if (-3ll != -c) ++nrOfFailedTestCases;
 
-// less than unsigned literal
-d = 4.0f;
-if (d < 1u) ++nrOfFailedTestCases;
-if (d < 2ul) ++nrOfFailedTestCases;
-if (d < 3ull) ++nrOfFailedTestCases;
-d = 0.0;
-if (1u < d) ++nrOfFailedTestCases;
-if (2ul < d) ++nrOfFailedTestCases;
-if (3ull < d) ++nrOfFailedTestCases;
+		// less than unsigned literal
+		d = 4.0f;
+		if (d < 1u) ++nrOfFailedTestCases;
+		if (d < 2ul) ++nrOfFailedTestCases;
+		if (d < 3ull) ++nrOfFailedTestCases;
+		d = 0.0;
+		if (1u < d) ++nrOfFailedTestCases;
+		if (2ul < d) ++nrOfFailedTestCases;
+		if (3ull < d) ++nrOfFailedTestCases;
 
-// greater than unsigned literal
-if (d > 1u) ++nrOfFailedTestCases;
-if (d > 2ul) ++nrOfFailedTestCases;
-if (d > 3ull) ++nrOfFailedTestCases;
-d = 4ll;
-if (1u > d) ++nrOfFailedTestCases;
-if (2ul > d) ++nrOfFailedTestCases;
-if (3ull > d) ++nrOfFailedTestCases;
+		// greater than unsigned literal
+		if (d > 1u) ++nrOfFailedTestCases;
+		if (d > 2ul) ++nrOfFailedTestCases;
+		if (d > 3ull) ++nrOfFailedTestCases;
+		d = 4ll;
+		if (1u > d) ++nrOfFailedTestCases;
+		if (2ul > d) ++nrOfFailedTestCases;
+		if (3ull > d) ++nrOfFailedTestCases;
 
-// less than or equal unsigned literal
-if (d <= 1u) ++nrOfFailedTestCases;
-if (d <= 2ul) ++nrOfFailedTestCases;
-if (d <= 3ull) ++nrOfFailedTestCases;
-d = 0.0f;
-if (1u <= d) ++nrOfFailedTestCases;
-if (2ul <= d) ++nrOfFailedTestCases;
-if (3ull <= d) ++nrOfFailedTestCases;
+		// less than or equal unsigned literal
+		if (d <= 1u) ++nrOfFailedTestCases;
+		if (d <= 2ul) ++nrOfFailedTestCases;
+		if (d <= 3ull) ++nrOfFailedTestCases;
+		d = 0.0f;
+		if (1u <= d) ++nrOfFailedTestCases;
+		if (2ul <= d) ++nrOfFailedTestCases;
+		if (3ull <= d) ++nrOfFailedTestCases;
 
-// greater than or equal unsigned literal
-if (d >= 1u) ++nrOfFailedTestCases;
-if (d >= 2ul) ++nrOfFailedTestCases;
-if (d >= 3ull) ++nrOfFailedTestCases;
-d = 4.0;
-if (1u >= d) ++nrOfFailedTestCases;
-if (2ul >= d) ++nrOfFailedTestCases;
-if (3ull >= d) ++nrOfFailedTestCases;
+		// greater than or equal unsigned literal
+		if (d >= 1u) ++nrOfFailedTestCases;
+		if (d >= 2ul) ++nrOfFailedTestCases;
+		if (d >= 3ull) ++nrOfFailedTestCases;
+		d = 4.0;
+		if (1u >= d) ++nrOfFailedTestCases;
+		if (2ul >= d) ++nrOfFailedTestCases;
+		if (3ull >= d) ++nrOfFailedTestCases;
 
-// comparisons with signed literals
-// less than signed literal
-d = 4.0f;
-if (d < 1) ++nrOfFailedTestCases;
-if (d < 2l) ++nrOfFailedTestCases;
-if (d < 3ll) ++nrOfFailedTestCases;
-d = 0.0;
-if (1 < d) ++nrOfFailedTestCases;
-if (2l < d) ++nrOfFailedTestCases;
-if (3ll < d) ++nrOfFailedTestCases;
+		// comparisons with signed literals
+		// less than signed literal
+		d = 4.0f;
+		if (d < 1) ++nrOfFailedTestCases;
+		if (d < 2l) ++nrOfFailedTestCases;
+		if (d < 3ll) ++nrOfFailedTestCases;
+		d = 0.0;
+		if (1 < d) ++nrOfFailedTestCases;
+		if (2l < d) ++nrOfFailedTestCases;
+		if (3ll < d) ++nrOfFailedTestCases;
 
-// greater than signed literal
-if (d > 1) ++nrOfFailedTestCases;
-if (d > 2l) ++nrOfFailedTestCases;
-if (d > 3ll) ++nrOfFailedTestCases;
-d = 4ll;
-if (1 > d) ++nrOfFailedTestCases;
-if (2l > d) ++nrOfFailedTestCases;
-if (3ll > d) ++nrOfFailedTestCases;
+		// greater than signed literal
+		if (d > 1) ++nrOfFailedTestCases;
+		if (d > 2l) ++nrOfFailedTestCases;
+		if (d > 3ll) ++nrOfFailedTestCases;
+		d = 4ll;
+		if (1 > d) ++nrOfFailedTestCases;
+		if (2l > d) ++nrOfFailedTestCases;
+		if (3ll > d) ++nrOfFailedTestCases;
 
-// less than or equal signed literal
-if (d <= 1) ++nrOfFailedTestCases;
-if (d <= 2l) ++nrOfFailedTestCases;
-if (d <= 3ll) ++nrOfFailedTestCases;
-d = 0.0f;
-if (1 <= d) ++nrOfFailedTestCases;
-if (2l <= d) ++nrOfFailedTestCases;
-if (3ll <= d) ++nrOfFailedTestCases;
+		// less than or equal signed literal
+		if (d <= 1) ++nrOfFailedTestCases;
+		if (d <= 2l) ++nrOfFailedTestCases;
+		if (d <= 3ll) ++nrOfFailedTestCases;
+		d = 0.0f;
+		if (1 <= d) ++nrOfFailedTestCases;
+		if (2l <= d) ++nrOfFailedTestCases;
+		if (3ll <= d) ++nrOfFailedTestCases;
 
-// greater than or equal signed literal
-if (d >= 1) ++nrOfFailedTestCases;
-if (d >= 2l) ++nrOfFailedTestCases;
-if (d >= 3ll) ++nrOfFailedTestCases;
-d = 4.0;
-if (1 >= d) ++nrOfFailedTestCases;
-if (2l >= d) ++nrOfFailedTestCases;
-if (3ll >= d) ++nrOfFailedTestCases;
-if (nrOfFailedTestCases - start > 0) {
-	std::cout << "FAIL: logic operators\n";
-}
+		// greater than or equal signed literal
+		if (d >= 1) ++nrOfFailedTestCases;
+		if (d >= 2l) ++nrOfFailedTestCases;
+		if (d >= 3ll) ++nrOfFailedTestCases;
+		d = 4.0;
+		if (1 >= d) ++nrOfFailedTestCases;
+		if (2l >= d) ++nrOfFailedTestCases;
+		if (3ll >= d) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL: logic operators\n";
+		}
 	}
 
 

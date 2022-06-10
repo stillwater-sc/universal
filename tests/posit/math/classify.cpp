@@ -1,6 +1,6 @@
-// function_classify.cpp: test suite runner for classification functions of the Reals specialized for posits
+// classify.cpp: test suite runner for classification functions of the Reals specialized for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -24,7 +24,6 @@
 #define REGRESSION_LEVEL_4 1
 #endif
 
-
 int main()
 try {
 	using namespace sw::universal;
@@ -38,7 +37,7 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug

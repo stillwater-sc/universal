@@ -64,7 +64,7 @@ constexpr bool _trace_value_div = true;
 constexpr bool _trace_value_div = false;
 #endif
 
-// template class representing a value in scientific notation, using a template size for the number of fraction bits
+// template class representing a value in scientific notation, using a template parameter to define the number of fraction bits
 template<size_t fbits>
 class value {
 public:
@@ -325,7 +325,7 @@ public:
 		_fraction.reset(); // not constexpr
                 // _fraction= bitblock<fbits>{}; // work around
 	}
-	void set(bool sign, int scale, bitblock<fbits> fraction_without_hidden_bit, bool zero, bool inf, bool nan = false) {
+	void set(bool sign, int scale, bitblock<fbits> fraction_without_hidden_bit, bool zero = false, bool inf = false, bool nan = false) {
 		_sign     = sign;
 		_scale    = scale;
 		_fraction = fraction_without_hidden_bit;
@@ -360,7 +360,9 @@ public:
 		_nrOfBits = fbits;	
 		_fraction.reset();
 	}
-	inline void setExponent(int e) { _scale = e; }
+	inline void setsign(bool sign = true) { _sign = sign; }
+	inline void setscale(int e) { _scale = e; }
+	inline void setfraction(const bitblock<fbits>& fraction_without_hidden_bit) { _fraction = fraction_without_hidden_bit; }
 	inline bool isneg() const { return _sign; }
 	inline bool ispos() const { return !_sign; }
 	inline constexpr bool iszero() const { return _zero; }
@@ -451,15 +453,12 @@ public:
 	}
 
 	// conversion helpers
-	long double to_long_double() const {
-		return sign_value<long double>() * scale_value<long double>() * fraction_value<long double>();
-	}
-	double to_double() const {
-		return sign_value<double>() * scale_value<double>() * fraction_value<double>();
-	}
-	float to_float() const {
-		return sign_value<float>() * scale_value<float>() * fraction_value<float>();
-	}
+	int to_int()                 const noexcept { return int(to_float()); }
+	long to_long()               const noexcept { return long(to_float()); }
+	long long to_long_long()     const noexcept { return (long long)(to_double()); }
+	float to_float()             const noexcept { return sign_value<float>() * scale_value<float>() * fraction_value<float>(); }
+	double to_double()           const noexcept { return sign_value<double>() * scale_value<double>() * fraction_value<double>(); }
+	long double to_long_double() const noexcept { return sign_value<long double>() * scale_value<long double>() * fraction_value<long double>(); }
 
 	// explicit conversion operators to native types
 	explicit operator long double() const { return to_long_double(); }
@@ -550,92 +549,92 @@ private:
 	friend bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs);
 };
 
-/*
- n fraction bits represent a sampling of 2^n samples of a 10^n domain.
-
- if you need to represent a smaller decimal than n digits, you need to
- round in the fraction domain, and then convert the rounded bit string.
- */
-
-// convert a value to a decimal representation
-template<size_t fbits>
-inline std::string convert_to_decimal_string(const value<fbits>& v) {
-	std::cout << to_triple(v) << '\n';
-	auto scale = v.scale();
-	auto bits = v.fraction();
-	// construct the value of the hidden bit
-	support::decimal bitValue;
-
-	// construct the value of the fraction
-	// step 1: calculate the decimal value of the smallest discretization step of the range
-	support::decimal range, discretizationLevels, step, partial, multiplier, one;
-	// create the decimal range we are discretizing
-	range.setdigit(1);
-	range.shiftLeft(fbits); // == 10^fbits
-	// calculate the discretization levels of this range
-	discretizationLevels.setdigit(1);
-	for (size_t i = 0; i < fbits; ++i) support::add(discretizationLevels, discretizationLevels);
-	step = support::div(range, discretizationLevels);
-	// step 2: construct the value of fraction in terms of discretization samples
-	partial.setzero();
-	multiplier.setdigit(1);
-	// convert the fraction part
-	for (unsigned i = 0; i < fbits; ++i) {
-		if (bits[i]) support::add(partial, multiplier);
-		support::add(multiplier, multiplier);
-	}
-	support::add(partial, multiplier); // add the hidden bit value
-
-	// step 3: calculate the value of fraction = nrOfSamples * discretizationStep
-	support::mul(partial, step);
-
-	// construct a decimal fixed-point
-	if (scale > 0) {
-		support::decimal scaleUp;
-		scaleUp.setdigit(1);
-		for (auto i = 0; i < scale; ++i) support::add(scaleUp, scaleUp);
-		support::mul(partial, scaleUp);
-	}
-	else if (scale < 0) {
-		support::decimal scaleDown;
-		scaleDown.setdigit(1);
-		for (auto i = 0; i < -scale; ++i) support::add(scaleDown, scaleDown);
-		partial = support::div(partial, scaleDown);
-	}
-	std::stringstream str;
-	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		str << (int)*rit;
-	}
-#ifdef REV
-	// leading 0s will cause the partial to be represented incorrectly
-	// if we simply convert it to digits.
-	// The partial represents the parts in the range, so we can deduce
-	// the number of leading zeros by comparing to the length of range
-	size_t nrLeadingZeros = range.size() - partial.size() - 1;
-	for (size_t i = 0; i < nrLeadingZeros; ++i) str << '0';
-	size_t digitsWritten = nrLeadingZeros;
-	for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		str << (int)*rit;
-		++digitsWritten;
-	}
-	if (digitsWritten < fbits) { // deal with trailing 0s
-		for (size_t i = digitsWritten; i < fbits; ++i) {
-			str << '0';
-		}
-	}
-#endif
-	return str.str();
-}
 ////////////////////// VALUE operators
+
+#define OLD
+#ifdef OLD
 template<size_t nfbits>
-inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
-	if (v._inf) {
-		ostr << FP_INFINITE;
+inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, size_t precision = 0) {
+	std::stringstream s;
+	if (v.isinf()) {
+		s << FP_INFINITE;
 	}
 	else {
-		ostr << (long double)v;
+		if (precision) {
+			s << std::setprecision(precision) << (long double)v;
+		}
+		else {
+			s << (long double)v;
+		}
 	}
-	return ostr;
+	return s.str();
+}
+#else
+
+template<size_t nfbits>
+inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, size_t precision) {
+	std::string result;
+	// special case processing
+	if (v.isnan()) return std::string("nan");
+	if (v.isinf()) {
+		if (v.sign()) {
+			result = "-inf";
+		}
+		else {
+			result = (flags & std::ios_base::showpos) ? "+inf" : "inf";
+		}
+		return result;
+	}
+
+//	std::cout << "flags : " << to_binary((uint32_t)flags, 32, true) << '\n';
+	int nrDigits = precision;
+	if (nrDigits == 0) nrDigits = nfbits / 3;
+
+	// shift required to make the fraction an integer
+	int scale = v.scale();
+//	int shift = nfbits - scale - 1;
+	float log10_of_2 = 0.30102999566398f;
+	int scale10 = (scale >= 0 ? static_cast<int>(std::floor(scale * log10_of_2)) : static_cast<int>(std::ceil(scale * log10_of_2)));
+
+	bool scientific = (flags & std::ios_base::scientific) == std::ios_base::scientific;
+	bool fixed = !scientific && (flags & std::ios_base::fixed);
+
+	if (fixed) nrDigits += 1ull + scale10;
+	if (scientific) ++nrDigits;
+	if (nrDigits < -1) {
+		result = "0";
+		if (v.sign()) result.insert(0u, 1, '-');
+		// print float
+		return result;
+	}
+	// cleanup and special flag handling
+	std::string::size_type firstDigit = result.find_first_not_of('0');
+	result.erase(0, firstDigit);
+	if (result.empty())	result = std::string("0");
+	if (v.isneg()) {
+		result.insert(static_cast<std::string::size_type>(0), 1, '-');
+	}
+	else if (flags & std::ios_base::showpos) {
+		result.insert(static_cast<std::string::size_type>(0), 1, '+');
+	}
+	return result;
+}
+#endif
+
+
+template<size_t nfbits>
+inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
+	std::streamsize nrDigits = ostr.precision();
+	std::string s = convert_to_string(ostr.flags(), v, static_cast<size_t>(nrDigits));
+	std::streamsize width = ostr.width();
+	if (width > static_cast<std::streamsize>(s.size())) {
+		char fill = ostr.fill();
+		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
+			s.append(static_cast<std::string::size_type>(width - s.size()), fill);
+		else
+			s.insert(static_cast<std::string::size_type>(0), static_cast<std::string::size_type>(width - s.size()), fill);
+	}
+	return ostr << s;
 }
 
 template<size_t nfbits>
@@ -739,20 +738,19 @@ inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true)
 	}
 }
 template<size_t fbits>
-inline std::string to_triple(const value<fbits>& v) {
+inline std::string to_triple(const value<fbits>& v, bool nibbleMarker = true) {
 	std::stringstream s;
 	if (v.iszero()) {
-		s << "(+, 0," << std::setw(fbits) << v.fraction() << ')';
+		s << "(+,0," << std::setw(fbits) << v.fraction() << ')';
 		return s.str();
 	}
 	else if (v.isinf()) {
 		s << "(inf," << std::setw(fbits) << v.fraction() << ')';
 		return s.str();
 	}
-	s << (v.sign() ? "(-, " : "(+, ");
-	s << v.scale() << ", ";
-	s << to_binary(v.fraction(), true) << ')';
-//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ')';
+	s << (v.sign() ? "(-," : "(+,");
+	s << v.scale() << ',';
+	s << to_binary(v.fraction(), nibbleMarker) << ')';
 	return s.str();
 }
 

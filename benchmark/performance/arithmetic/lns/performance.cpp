@@ -1,6 +1,6 @@
 // performance.cpp : performance benchmarking for abitrary fixed-precision logarithmic numbers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -26,32 +26,24 @@ void TestArithmeticOperatorPerformance() {
 
 	uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("lns<8>    add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<16> >, NR_OPS);
-	PerformanceRunner("lns<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<16> >, NR_OPS);
-	PerformanceRunner("lns<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<32> >, NR_OPS);
-	PerformanceRunner("lns<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<64> >, NR_OPS);
-//	PerformanceRunner("lns<128>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<128> >, NR_OPS / 2);  // TODO 128 bits breaks native shift operators
-//	PerformanceRunner("lns<256>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<256> >, NR_OPS / 4);
-//	PerformanceRunner("lns<512>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<512> >, NR_OPS / 8);
-//	PerformanceRunner("lns<1024> add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<1024> >, NR_OPS / 16);
+	PerformanceRunner("lns<8>    add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<16, 5> >, NR_OPS);
+	PerformanceRunner("lns<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<16, 5> >, NR_OPS);
+	PerformanceRunner("lns<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<32, 8> >, NR_OPS);
+//	PerformanceRunner("lns<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<64, 11> >, NR_OPS);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("lns<16>   division      ", DivisionWorkload< sw::universal::lns<16> >, NR_OPS);
-	PerformanceRunner("lns<32>   division      ", DivisionWorkload< sw::universal::lns<32> >, NR_OPS);
-	PerformanceRunner("lns<64>   division      ", DivisionWorkload< sw::universal::lns<64> >, NR_OPS / 2);
-//	PerformanceRunner("lns<128>  division      ", DivisionWorkload< sw::universal::lns<128> >, NR_OPS / 4);
-//	PerformanceRunner("lns<512>  division      ", DivisionWorkload< sw::universal::lns<512> >, NR_OPS / 8);
-//	PerformanceRunner("lns<1024> division      ", DivisionWorkload< sw::universal::lns<1024> >, NR_OPS / 16);
+	PerformanceRunner("lns<16>   division      ", DivisionWorkload< sw::universal::lns<16, 5> >, NR_OPS);
+	PerformanceRunner("lns<32>   division      ", DivisionWorkload< sw::universal::lns<32, 8> >, NR_OPS);
+//	PerformanceRunner("lns<64>   division      ", DivisionWorkload< sw::universal::lns<64, 11> >, NR_OPS / 2);
+
 
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("lns<16>   multiplication", MultiplicationWorkload< sw::universal::lns<16> >, NR_OPS);
-	PerformanceRunner("lns<32>   multiplication", MultiplicationWorkload< sw::universal::lns<32> >, NR_OPS / 2);
-	PerformanceRunner("lns<64>   multiplication", MultiplicationWorkload< sw::universal::lns<64> >, NR_OPS / 4);
-//	PerformanceRunner("lns<128>  multiplication", MultiplicationWorkload< sw::universal::lns<128> >, NR_OPS / 8);
-//	PerformanceRunner("lns<512>  multiplication", MultiplicationWorkload< sw::universal::lns<512> >, NR_OPS / 16);
-//	PerformanceRunner("lns<1024> multiplication", MultiplicationWorkload< sw::universal::lns<1024> >, NR_OPS / 32);
+	PerformanceRunner("lns<16>   multiplication", MultiplicationWorkload< sw::universal::lns<16, 5> >, NR_OPS);
+	PerformanceRunner("lns<32>   multiplication", MultiplicationWorkload< sw::universal::lns<32, 8> >, NR_OPS / 2);
+//	PerformanceRunner("lns<64>   multiplication", MultiplicationWorkload< sw::universal::lns<64, 11> >, NR_OPS / 4);
+
 }
 
 // conditional compilation

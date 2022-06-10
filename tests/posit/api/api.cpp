@@ -14,13 +14,8 @@
 #define POSIT_ENABLE_LITERALS 1
 // fourth: enable/disable error-free serialization I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 0
-
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/posit/posit.hpp>
-
-// conditional compile flags
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
 
 int main()
 try {
@@ -30,19 +25,6 @@ try {
 
 	std::cout << "posit class interface tests\n";
 
-	{
-		posit<16, 2> a;
-		a = 0.5f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 1.0f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 1.5f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 1.0625f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-	}
-
-	return 0;
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
 

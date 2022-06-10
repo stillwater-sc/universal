@@ -1,25 +1,40 @@
 // classify.cpp: test suite runner for classification functions specialized for classic floats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default number system configuration
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/verification/test_suite.hpp>
 //#include <universal/verification/fixpnt_math_test_suite.hpp>
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "fixed-point mathlib ";
+	std::string test_tag    = "mathlib classify";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "classify failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -91,18 +106,25 @@ try {
 //		<< "isnan(DBL_MIN/2.0) = " << isnan(dblmin / 2.0) << '\n'
 		<< "isnan(1.0) = " << isnan(one) << '\n';
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
-	cout << "fixpnt classification function validation" << endl;
+#if REGRESSION_LEVEL_1
+#endif
 
+#if REGRESSION_LEVEL_2
+#endif
 
-#if STRESS_TESTING
-	
-#endif  // STRESS_TESTING
+#if REGRESSION_LEVEL_3
+#endif
 
-#endif  // MANUAL_TESTING
+#if REGRESSION_LEVEL_4
+#endif
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

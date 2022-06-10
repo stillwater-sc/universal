@@ -1,6 +1,6 @@
 // logic.cpp: test suite runner for logic operation on arbitrary logarithmic number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -29,7 +29,7 @@ int ValidateAddition(const std::string& tag, bool reportTestCases) {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -43,8 +43,8 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	TestCase< lns<16, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	TestCase< lns<8, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< lns<16, 5, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+	TestCase< lns<8, 2, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>("Manual Testing", reportTestCases), "lns<8>", test_tag);

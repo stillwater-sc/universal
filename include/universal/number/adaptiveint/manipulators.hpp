@@ -13,7 +13,7 @@ template<typename BlockType>
 std::string type_tag(const adaptiveint<BlockType>& v) {
 	std::stringstream s;
 	if (v.iszero()) s << ' '; // remove 'unreferenced formal parameter warning from compilation log
-	s << "adaptiveint";
+	s << "adaptiveint<" << typeid(BlockType).name() << '>';
 	return s.str();
 }
 

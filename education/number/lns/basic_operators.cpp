@@ -1,13 +1,13 @@
 // basic_operators.cpp : examples of the basic arithmetic operators using logarithmic lns
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/lns/lns.hpp>
 
 // quick helper to report on a posit's specialness
-template<size_t nbits>
-void checkSpecialCases(sw::universal::lns<nbits> p) {
+template<size_t nbits, size_t rbits, typename bt>
+void checkSpecialCases(sw::universal::lns<nbits, rbits, bt> p) {
 	std::cout << "lns is " << (p.iszero() ? "zero " : "non-zero ") << (p.ispos() ? "positive " : "negative ") << (p.isnan() ? "Not a Number" : "Its a Real") << std::endl;
 }
 
@@ -16,8 +16,10 @@ int main()
 try {
 	using namespace sw::universal;	// standard namespace for lns
 
-	const size_t nbits = 16;
-	lns<nbits> p1, p2, p3, p4, p5, p6;
+	constexpr size_t nbits = 16;
+	constexpr size_t rbits = 5;
+	using LNS16 = lns<nbits, rbits, std::uint16_t>;
+	LNS16 p1, p2, p3, p4, p5, p6;
 
 //	/* constexpr */ double minpos = minpos_value<nbits>();
 //	/* constexpr */ double maxpos = maxpos_value<nbits>();

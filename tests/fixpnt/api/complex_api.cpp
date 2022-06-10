@@ -1,6 +1,6 @@
 // complex_api.cpp: api to use fixpnt type in complex arithmetic operations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include<universal/utility/directives.hpp>
@@ -36,20 +36,27 @@ namespace sw::universal::complex_literals {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace std; // needed to get imaginary literals
 	using namespace sw::universal;
 
-	if (argc > 0) { std::cout << argv[0] << std::endl; }
-
+	std::string test_suite  = "fixpnt complex arithmetic operations ";
+	std::string test_tag    = "complex arithmetic";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -77,7 +84,7 @@ try {
 #ifdef GPP_FIX
 	// for some reason the g++ doesn't compile this section as it is 
 	// casting the constants differently than other compilers.
-	// TODO: no idea how to fix the code below to make it compile with g++
+	// TODO: fix the code below to make it compile with g++
 	{
 		using namespace sw::universal::complex_literals;
 		using Real = sw::universal::fixpnt<8, 4>;
@@ -110,7 +117,7 @@ try {
 */
     // furthermore, the pow and exp functions don't match the correct complex<double> arguments in g++
 
-#else  // GPP_FIX
+#else  // !__GNUG__
 
 	{
 		// reference using native double precision floating point type
@@ -172,9 +179,9 @@ try {
 		std::cout << "z3 : " << z3 << '\n';
 	}
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-
-	cout << "Complex Fixed-point use cases" << endl;
 
 #if REGRESSION_LEVEL_1
 
@@ -192,9 +199,9 @@ try {
 
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

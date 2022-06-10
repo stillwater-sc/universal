@@ -1,8 +1,8 @@
 #pragma once
-//  posit_math_test_suite.hpp : functions to aid in testing and test reporting of function evaluation on posit types.
+// posit_math_test_suite.hpp : functions to aid in testing and test reporting of function evaluation on posit types.
 // Needs to be included after posit type is declared.
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -13,7 +13,7 @@
 
 // mathematical function definitions and implementations
 #include <universal/number/posit/mathlib.hpp>
-#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 namespace sw { namespace universal {

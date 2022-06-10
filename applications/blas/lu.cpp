@@ -1,6 +1,6 @@
 // lu.cpp: example program comparing float vs posit Gaussian Elimination (LU Decomposition) equation solver
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -150,6 +150,7 @@ void LUwithoutQuire()
 
 template<typename Scalar>
 void FrankMatrixTest() {
+	using std::abs;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
@@ -176,8 +177,8 @@ void FrankMatrixTest() {
 	auto e = xx - x;
 	Scalar infnorm = -1;
 	for (auto v : e) {
-		if (fabs(v) > infnorm) {
-			infnorm = fabs(v);
+		if (abs(v) > infnorm) {
+			infnorm = abs(v);
 		}
 	}
 	std::cout << "Solution vector for type " << std::setw(32) << typeid(Scalar).name() << " is [" << xx << "]" << " infinity norm of error " << infnorm << '\n';
@@ -200,6 +201,7 @@ void FrankMatrix() {
 
 template<typename Scalar>
 void MagicSquareTest(int N) {
+	using std::abs;
 	using namespace sw::universal::blas;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
@@ -215,7 +217,7 @@ void MagicSquareTest(int N) {
 //	std::cout << "solution x\n" << x << '\n';
 	bool bFail = false;
 	for (auto v : x) {
-		if (fabs(v - 1) > 0.00001) {
+		if (abs(v - 1) > 0.00001) {
 			std::cout << v << " outside of range 1.0+-0.00001\n";
 			bFail = true;
 			break;

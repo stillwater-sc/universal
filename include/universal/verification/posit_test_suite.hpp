@@ -198,7 +198,7 @@ namespace sw { namespace universal {
 		double result = double(presult);
 		if (std::fabs(result - reference) > 0.000000001) {
 			fail++;
-			if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
+			if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, presult, reference);
 		}
 		else {
 			// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);

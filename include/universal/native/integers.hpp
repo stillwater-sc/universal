@@ -157,4 +157,44 @@ inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleM
 	return s.str();
 }
 
+// finding leading non-zeros
+
+// find shift left value to move leading non-zero in a limb to most significant bit
+// BlockType must be one of [uint8_t, uint16_t, uint32_t, uint64_t]
+template<typename BlockType>
+inline int nlz(BlockType x) {
+	constexpr size_t bitsInBlock = sizeof(BlockType) * 8;
+	if (x == 0) return bitsInBlock;
+
+	int n = 0;
+	if constexpr (bitsInBlock == 64) {
+		if (x <= 0x00000000FFFFFFFFull) { n = n + 32; x = static_cast<BlockType>(x << 32); }
+		if (x <= 0x0000FFFFFFFFFFFFull) { n = n + 16; x = static_cast<BlockType>(x << 16); }
+		if (x <= 0x00FFFFFFFFFFFFFFull) { n = n + 8; x = static_cast<BlockType>(x << 8); }
+		if (x <= 0x0FFFFFFFFFFFFFFFull) { n = n + 4; x = static_cast<BlockType>(x << 4); }
+		if (x <= 0x3FFFFFFFFFFFFFFFull) { n = n + 2; x = static_cast<BlockType>(x << 2); }
+		if (x <= 0x7FFFFFFFFFFFFFFFull) { n = n + 1; }
+	}
+	else if constexpr (bitsInBlock == 32) {
+		if (x <= 0x0000FFFFu) { n = n + 16; x = static_cast<BlockType>(x << 16); }
+		if (x <= 0x00FFFFFFu) { n = n + 8; x = static_cast<BlockType>(x << 8); }
+		if (x <= 0x0FFFFFFFu) { n = n + 4; x = static_cast<BlockType>(x << 4); }
+		if (x <= 0x3FFFFFFFu) { n = n + 2; x = static_cast<BlockType>(x << 2); }
+		if (x <= 0x7FFFFFFFu) { n = n + 1; }
+	}
+	else if constexpr (bitsInBlock == 16) {
+		if (x <= 0x00FFu) { n = n + 8; x = static_cast<BlockType>(x << 8); }
+		if (x <= 0x0FFFu) { n = n + 4; x = static_cast<BlockType>(x << 4); }
+		if (x <= 0x3FFFu) { n = n + 2; x = static_cast<BlockType>(x << 2); }
+		if (x <= 0x7FFFu) { n = n + 1; }
+	}
+	else if constexpr (bitsInBlock == 8) {
+		if (x <= 0x0Fu) { n = n + 4; x = static_cast<BlockType>(x << 4); }
+		if (x <= 0x3Fu) { n = n + 2; x = static_cast<BlockType>(x << 2); }
+		if (x <= 0x7Fu) { n = n + 1; }
+	}
+
+	return n;
+}
+
 }} // namespace sw::universal

@@ -1,7 +1,7 @@
 #pragma once
 // msvc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -15,16 +15,9 @@ namespace sw { namespace universal {
 // compiler specific long double IEEE floating point
 
 // Visual C++ does not support long double, it is just an alias for double
-/*
-union long_double_decoder {
-	long double ld;
-	struct {
-		uint64_t fraction : 52;
-		uint64_t exponent : 11;
-		uint64_t  sign : 1;
-	} parts;
-};
-*/
+inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
+	return ieee_components(double(fp));
+}
 
 // specialization for IEEE long double precision floats
 inline std::string to_base2_scientific(long double number) {
@@ -52,7 +45,7 @@ inline std::string color_print(long double number) {
 }
 
 #ifdef CPLUSPLUS_17
-inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, std::uint64_t& _fraction) {
 	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
 	if constexpr (sizeof(long double) == 8) { // it is just a double
 		_sign = fp < 0.0 ? true : false;
@@ -70,14 +63,14 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 #pragma warning(disable : 4127) // warning C4127: conditional expression is constant
 #endif
 
-inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, std::uint64_t& _fraction) {
 	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
-	if (sizeof(long double) == 8) { // check if (long double) is aliased to be just a double
+	if constexpr (sizeof(long double) == 8) { // check if (long double) is aliased to be just a double
 		_sign = fp < 0.0 ? true : false;
 		_fr = frexp(double(fp), &_exponent);
 		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
 	}
-	else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+	else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
 		_sign = fp < 0.0 ? true : false;
 		_fr = frexpl(fp, &_exponent);
 		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction

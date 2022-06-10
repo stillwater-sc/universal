@@ -1,28 +1,100 @@
 // api.cpp: functional tests of the value type API
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/bit_cast.hpp>
+#include <limits>
+#include <universal/native/integers.hpp>
 // configure the value<> environment
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value.hpp>  // INTERNAL class: not part of the public Universal API
+#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/integer/integer.hpp>         // TODO remove: temporary as we are developing the string conversion functionality
+#include <universal/number/adaptiveint/adaptiveint.hpp> // TODO remove: temporary
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
+#include <universal/native/ieee754.hpp>
 
+using namespace sw::universal;
 using namespace sw::universal::internal;
 
 template<size_t fbits>
-int Check(const value<fbits>& v, double ref, bool bReportIndividualTestCases) {
+int Check(const value<fbits>& v, double ref, bool reportTestCases) {
 	int fails = 0;
 	if (v.to_double() != ref) {
 		++fails;
-		if (bReportIndividualTestCases) {
+		if (reportTestCases) {
 			std::cout << v << " != " << ref << '\n';
 		}
 	}
 	return fails;
+}
+
+// check all native type conversions
+int CheckConversion(bool reportTestCases) { 
+	constexpr double reference = 8;
+	signed char        sc = (signed char)reference;
+	short              ss = (short)reference;
+	int                si = (int)reference;
+	long               sl = (long)reference;
+	long long          sll = (long long)reference;
+	char               uc = (char)reference;
+	unsigned short     us = (unsigned short)reference;
+	unsigned int       ui = (unsigned int)reference;
+	unsigned long      ul = (unsigned long)reference;
+	unsigned long long ull = (unsigned long long)reference;
+	float              f = (float)reference;
+	double             d = (double)reference;
+	long double        ld = (long double)reference;
+
+	int nrOfFailedTestCases = 0;
+	sw::universal::internal::value<11> v;
+	v = sc;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = ss;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = si;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = sl;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = sll;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = uc;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = us;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = ui;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = ul;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = ull;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = f;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = d;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+	v = ld;
+	nrOfFailedTestCases += Check(v, reference, reportTestCases);
+
+	return nrOfFailedTestCases;
+}
+
+template<typename Real,
+	typename = typename std::enable_if<std::is_floating_point<Real>::value, Real>::type>
+void ShowComponentsOfNativeReal(Real fp) {
+	constexpr unsigned fbits = sw::universal::ieee754_parameter<Real>::fbits;
+	auto components = ieee_components(fp);
+	auto oldPrecision = std::cout.precision();
+	auto max_digits = std::numeric_limits<long double>::digits10 + 1;
+	std::cout << std::setprecision(std::numeric_limits<Real>::digits10);
+	std::cout << "components of a " 
+		<< std::setw(25) << typeid(Real).name() << " : " 
+		<< std::setw(max_digits) << fp 
+		<< " : (" << std::get<0>(components) << ", " << std::get<1>(components) << ", " << to_binary(std::get<2>(components), fbits, true) << ")\n";
+	std::cout << std::setprecision(oldPrecision);
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -46,100 +118,123 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
-	std::string test_suite = "value class API";
-	std::string test_tag = "value";
-	std::cout << test_suite << '\n';
+	std::string test_suite  = "value class API";
+	std::string test_tag    = "value";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = true;
 
-	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
+	std::cout << test_suite << '\n';
+	std::cout << (reportTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
 
-	{
-		value<4> a;
-		a = 0.03125f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 0.0625f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 0.125f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 0.25f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 0.5f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 1.0f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 1.5f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 1.0625f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 2.0f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 4.0f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 8.0f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
-		a = 16.0f;
-		std::cout << convert_to_decimal_string(a) << " vs " << a << '\n';
+	nrOfFailedTestCases += CheckConversion(reportTestCases);
+
+	long double fp = 1.234567890123456789012345l;
+	ShowComponentsOfNativeReal<float>(static_cast<float>(fp));
+	ShowComponentsOfNativeReal<double>(static_cast<double>(fp));
+	ShowComponentsOfNativeReal<long double>(fp);
+
+	//1.000'000'000'1 * 2 ^ -10 = 1 / 1024 + 1 / 1M
+	//1.000'000'000'1 * 2 ^ 0 = 1 + 1 / 1024 = 0.0009765625
+	//1.000'000'000'1 * 2 ^ 10 = 1025
+	/*
+	
+	(+,-10,0b000'0000'0010'0000'0000'0000) : 0.000977516174316406
+	(+,-10,0b000'0000'0010'0000'0000'0000) : 0.000977516174316406
+	(+,  0,0b000'0000'0010'0000'0000'0000) : 1.0009765625
+	(+,  0,0b000'0000'0010'0000'0000'0000) : 1.0009765625
+	(+, 10,0b000'0000'0010'0000'0000'0000) : 1025
+	(+, 10,0b000'0000'0010'0000'0000'0000) : 1025
+	*/
+	{ 
+		auto oldPrecision = std::cout.precision();
+		std::cout << std::setprecision(15);
+		value<23> a;
+		bitblock<23> bb;
+		float f;
+
+		bb.set(13, true);
+		std::cout << bb << '\n';
+
+		a.set(false, -10, bb, false, false, false);
+		std::cout << to_triple(a) << " : " << (float)a << '\n';
+		f = (1.0 + 1.0 / 1024) / 1024;
+		std::cout << to_triple(f, true) << " : " << f << '\n';
+
+		a.set(false, 0, bb, false, false, false);
+		std::cout << to_triple(a) << " : " << (float)a << '\n';
+		f = 1.0 + 1.0 / 1024;
+		std::cout << to_triple(f, true) << " : " << f << '\n';
+
+		a.set(false, 10, bb, false, false, false);
+		std::cout << to_triple(a) << " : " << (float)a << '\n';
+		f = (1.0 + 1.0 / 1024) * 1024;
+		std::cout << to_triple(f, true) << " : " << f << '\n';
+
+		// reset the stream
+		std::cout << std::setprecision(oldPrecision);
 	}
 
-	// assignment
+#define LATER_
+#ifdef LATER
 	{
-		constexpr double reference = 8;
-		signed char        sc  = (signed char)reference;
-		short              ss  = (short)reference;
-		int                si  = (int)reference;
-		long               sl  = (long)reference;
-		long long          sll = (long long)reference;
-		char               uc  = (char)reference;
-		unsigned short     us  = (unsigned short)reference;
-		unsigned int       ui  = (unsigned int)reference;
-		unsigned long      ul  = (unsigned long)reference;
-		unsigned long long ull = (unsigned long long)reference;
-		float              f   = (float)reference;
-		double             d   = (double)reference;
-		long double        ld  = (long double)reference;
+		integer<512, std::uint32_t> a, b, c;
 
-		value<11> v;
-		v = sc;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = ss;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = si;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = sl;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = sll;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = uc;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = us;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = ui;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = ul;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = ull;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
+		a.assign("123456789012345678901234567890123456789012345678901234567890");
+		b = 10;
+		c = a + b;
+		std::cout << "a : " << a << '\n';
+		std::cout << "b : " << b << '\n';
+		std::cout << "c : " << c << '\n';
+
+		a = 1024;
+		while (a > 0) {
+			a *= 2;
+			std::cout << a << '\n';
+		}
+		while (a < 0) {
+			a /= 2;
+			std::cout << a << '\n';
+		}
+	}
+#endif
+
+	{
+		double d = 3.14159265358979323846264338327950;
+		std::cout << std::scientific << d << '\n';
+
+		float f = 3.1415926535f;
+		std::cout << std::fixed << f << '\n';
+		std::cout.unsetf(std::ios_base::fixed);
+		std::cout << f << '\n';
+
+		uint32_t i = 0xAAAA;
+		std::cout << std::showbase;
+		std::cout << std::oct << i << '\n'; // shows 0125252
+		std::cout << std::hex << i << '\n'; // shows 0xaaaa
+		std::cout << std::dec << i << '\n'; // shows 43690
+		std::cout.unsetf(std::ios_base::showbase);
+		std::cout << std::oct << i << '\n'; // shows 125252
+		std::cout << std::hex << i << '\n'; // shows aaaa
+		std::cout << std::dec << i << '\n'; // shows 43690	
+			
+			
+		value<23> v;
+		v.setnan();
+		std::cout << v << '\n';
+		v.setinf();
+		std::cout << v << '\n';
+		v.setsign(false);
+		std::cout << v << '\n';
+		std::cout << std::showpos << v << '\n';
+		std::cout.unsetf(std::ios_base::showpos);
 		v = f;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = d;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-		v = ld;
-		nrOfFailedTestCases += Check(v, reference, bReportIndividualTestCases);
-	}
-
-	{
-		float f = 1.23456789f;
-		auto components = ieee_components(f);
-		std::cout << std::get<0>(components) << ", " << std::get<1>(components) << ", " << std::get<2>(components) << '\n';
-	}
-
-	{
-		double d = 1.23456789;
-		auto components = ieee_components(d);
-		std::cout << std::get<0>(components) << ", " << std::get<1>(components) << ", " << std::get<2>(components) << '\n';
+		std::cout << v << '\n';                     // flags: 0b0000'0010'0000'0001
+		std::cout << std::scientific << v << '\n';  // flags: 0b0001'0010'0000'0001
+		std::cout << std::fixed << v << '\n';       // flags: 0b0010'0010'0000'0001
+		std::cout << std::hexfloat << v << '\n';    // flags: 0b0011'0010'0000'0001
+		std::cout << std::defaultfloat << v << '\n';// flags: 0b0000'0010'0000'0001
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

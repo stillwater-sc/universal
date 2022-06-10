@@ -1,6 +1,6 @@
 // assignment.cpp: test suite runner for fixed-point assignments from native types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -13,6 +13,7 @@
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 void PositiveTestCases() {
@@ -169,6 +170,10 @@ void NegativeTestCases() {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -179,11 +184,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Fixed-point modular assignment";
-	std::string test_tag = "modulo assignment: ";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "Fixed-point modular assignment";
+	std::string test_tag    = "modulo assignment";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -209,72 +215,72 @@ try {
 	}
 
 
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 0, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,0,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,1,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 2, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,2,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 3, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,3,Modulo,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 4, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<4,4,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 0, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<4,0,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 1, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<4,1,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 2, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<4,2,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 3, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<4,3,Modulo,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<4, 4, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<4,4,Modulo,uint8_t>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 4,  0, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 4,  1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 4,  2, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 2,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 4,  3, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 4, 3,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 4,  0, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 4,  1, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 4,  2, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 4, 2,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 4,  3, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 4, 3,Modulo,uint8_t >");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 6,  0, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 6, 0,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 6,  1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 6, 1,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 6,  2, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 6, 2,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 6,  3, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 6, 3,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 6,  0, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 6, 0,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 6,  1, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 6, 1,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 6,  2, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 6, 2,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 6,  3, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 6, 3,Modulo,uint8_t >");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  0, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 0,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 1,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  2, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 2,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  3, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 3,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  4, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 4,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  0, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 0,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  1, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 1,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  2, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 2,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  3, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 3,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  4, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 4,Modulo,uint8_t >");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  5, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 5,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  6, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 6,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  7, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 7,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  8, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt< 8, 8,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  5, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 5,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  6, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 6,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  7, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 7,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment< 8,  8, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt< 8, 8,Modulo,uint8_t >");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  0, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<10, 0,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<10, 1,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  2, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<10, 2,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  3, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<10, 3,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  4, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<10, 4,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  5, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<10, 5,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  0, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<10, 0,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  1, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<10, 1,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  2, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<10, 2,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  3, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<10, 3,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  4, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<10, 4,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<10,  5, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<10, 5,Modulo,uint8_t >");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  0, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<12, 0,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  1, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<12, 1,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  2, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<12, 2,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  3, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<12, 3,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  4, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<12, 4,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  5, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<12, 5,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  6, Modulo, uint8_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<12, 6,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  0, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<12, 0,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  1, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<12, 1,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  2, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<12, 2,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  3, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<12, 3,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  4, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<12, 4,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  5, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<12, 5,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<12,  6, Modulo, uint8_t, float>(reportTestCases), test_tag, "fixpnt<12, 6,Modulo,uint8_t >");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14,  4, Modulo, uint8_t , float>(bReportIndividualTestCases), test_tag, "fixpnt<14, 4,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14,  8, Modulo, uint8_t , float>(bReportIndividualTestCases), test_tag, "fixpnt<14, 8,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14, 12, Modulo, uint8_t , float>(bReportIndividualTestCases), test_tag, "fixpnt<14,12,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14,  4, Modulo, uint16_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<14, 4,Modulo,uint16_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14,  8, Modulo, uint16_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<14, 8,Modulo,uint16_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14, 12, Modulo, uint16_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<14,12,Modulo,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14,  4, Modulo, uint8_t , float>(reportTestCases), test_tag, "fixpnt<14, 4,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14,  8, Modulo, uint8_t , float>(reportTestCases), test_tag, "fixpnt<14, 8,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14, 12, Modulo, uint8_t , float>(reportTestCases), test_tag, "fixpnt<14,12,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14,  4, Modulo, uint16_t, float>(reportTestCases), test_tag, "fixpnt<14, 4,Modulo,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14,  8, Modulo, uint16_t, float>(reportTestCases), test_tag, "fixpnt<14, 8,Modulo,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<14, 12, Modulo, uint16_t, float>(reportTestCases), test_tag, "fixpnt<14,12,Modulo,uint16_t>");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16,  4, Modulo, uint8_t , float>(bReportIndividualTestCases), test_tag, "fixpnt<16, 4,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16,  8, Modulo, uint8_t , float>(bReportIndividualTestCases), test_tag, "fixpnt<16, 8,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16, 12, Modulo, uint8_t , float>(bReportIndividualTestCases), test_tag, "fixpnt<16,12,Modulo,uint8_t >");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16,  4, Modulo, uint16_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<16, 4,Modulo,uint16_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16,  8, Modulo, uint16_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<16, 8,Modulo,uint16_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16, 12, Modulo, uint16_t, float>(bReportIndividualTestCases), test_tag, "fixpnt<16,12,Modulo,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16,  4, Modulo, uint8_t , float>(reportTestCases), test_tag, "fixpnt<16, 4,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16,  8, Modulo, uint8_t , float>(reportTestCases), test_tag, "fixpnt<16, 8,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16, 12, Modulo, uint8_t , float>(reportTestCases), test_tag, "fixpnt<16,12,Modulo,uint8_t >");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16,  4, Modulo, uint16_t, float>(reportTestCases), test_tag, "fixpnt<16, 4,Modulo,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16,  8, Modulo, uint16_t, float>(reportTestCases), test_tag, "fixpnt<16, 8,Modulo,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16, 12, Modulo, uint16_t, float>(reportTestCases), test_tag, "fixpnt<16,12,Modulo,uint16_t>");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

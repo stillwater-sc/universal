@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include <regex>
+#include <map>
 #include <vector>
 
 #include <universal/number/adaptiveint/exceptions.hpp>
@@ -26,10 +27,13 @@ template<typename BlockType> bool parse(const std::string& number, adaptiveint<B
 template<typename BlockType = std::uint32_t>
 class adaptiveint {
 public:
+	using bt = BlockType;
 	static constexpr unsigned bitsInBlock = sizeof(BlockType) * 8;
+	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
+	static constexpr uint64_t BASE = (ALL_ONES + 1ull);
 	static_assert(bitsInBlock <= 32, "BlockType must be one of [uint8_t, uint16_t, uint32_t]");
 
-	adaptiveint() : _sign(false), _blocks(0) { }
+	adaptiveint() : _sign(false), _block(0) { }
 
 	adaptiveint(const adaptiveint&) = default;
 	adaptiveint(adaptiveint&&) = default;
@@ -58,43 +62,36 @@ public:
 	adaptiveint& operator=(float rhs)              noexcept { return assign_native_ieee(rhs); }
 	adaptiveint& operator=(double rhs)             noexcept { return assign_native_ieee(rhs); }
 
-#if LONG_DOUBLE_SUPPORT
-	adaptiveint(long double initial_value)                  { *this = initial_value; }
-	adaptiveint& operator=(long double rhs)        noexcept { return assign_native_ieee(rhs); }
-#endif
-
-	// prefix operators
-	adaptiveint operator-() const {
-		adaptiveint negated(*this);
-		negated.setsign(!_sign);
-		return negated;
-	}
-
 	// conversion operators
-	explicit operator int() const { return convert_to_native_integer<int>(); }
-	explicit operator long() const { return convert_to_native_integer<long>(); }
-	explicit operator long long() const { return convert_to_native_integer<long long>(); }
-	explicit operator float() const { return float(convert_to_native_ieee<float>()); }
-	explicit operator double() const { return float(convert_to_native_ieee<double>()); }
-	explicit operator long double() const { return convert_to_native_ieee<long double>(); }
+	explicit operator int() const noexcept         { return convert_to_native_integer<int>(); }
+	explicit operator long() const noexcept        { return convert_to_native_integer<long>(); }
+	explicit operator long long() const noexcept   { return convert_to_native_integer<long long>(); }
+	explicit operator float() const noexcept       { return convert_to_native_ieee<float>(); }
+	explicit operator double() const noexcept      { return convert_to_native_ieee<double>(); }
+
+#if LONG_DOUBLE_SUPPORT
+	adaptiveint(long double initial_value) { *this = initial_value; }
+	adaptiveint& operator=(long double rhs)        noexcept { return assign_native_ieee(rhs); }
+	explicit operator long double() const noexcept { return convert_to_native_ieee<long double>(); }
+#endif
 
 	// logic shift operators
 	adaptiveint& operator<<=(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) return operator>>=(-shift);
 
-		// by default extend the limbs by 1
-		_blocks.push_back(0);
-		size_t MSU = _blocks.size() - 1;
+		// by default extend the limbs by 1: TODO: can this be improved?
+		_block.push_back(0);
+		size_t MSU = _block.size() - 1;
 		if (shift >= static_cast<int>(bitsInBlock)) {
 			int blockShift = shift / static_cast<int>(bitsInBlock);
-			if (blockShift > 0) _blocks.resize(_blocks.size() + blockShift, 0ul);
-			MSU = _blocks.size() - 1;
+			if (blockShift > 0) _block.resize(_block.size() + blockShift, 0ul);
+			MSU = _block.size() - 1;
 			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
-				_blocks[static_cast<size_t>(i)] = _blocks[static_cast<size_t>(i) - static_cast<size_t>(blockShift)];
+				_block[static_cast<size_t>(i)] = _block[static_cast<size_t>(i) - static_cast<size_t>(blockShift)];
 			}
 			for (int i = blockShift - 1; i >= 0; --i) {
-				_blocks[static_cast<size_t>(i)] = BlockType(0);
+				_block[static_cast<size_t>(i)] = BlockType(0);
 			}
 			// adjust the shift
 			shift -= static_cast<int>(blockShift * bitsInBlock);
@@ -104,12 +101,17 @@ public:
 			// construct the mask for the upper bits in the block that needs to move to the higher word
 			BlockType mask = static_cast<BlockType>(0xFFFF'FFFFul << (bitsInBlock - shift));
 			for (size_t i = MSU; i > 0; --i) {
-				_blocks[static_cast<size_t>(i)] <<= shift;
+				_block[static_cast<size_t>(i)] <<= shift;
 				// mix in the bits from the right
-				BlockType bits = BlockType(mask & _blocks[i - 1]);
-				_blocks[static_cast<size_t>(i)] |= (bits >> (bitsInBlock - shift));
+				BlockType bits = BlockType(mask & _block[i - 1]);
+				_block[static_cast<size_t>(i)] |= (bits >> (bitsInBlock - shift));
 			}
+			_block[0] <<= shift;
 		}
+		else {
+			_block[0] <<= shift;
+		}
+		remove_leading_zeros();
 		return *this;
 	}
 	adaptiveint& operator>>=(int shift) {
@@ -119,15 +121,15 @@ public:
 			setzero();
 			return *this;
 		}
-		size_t MSU = _blocks.size() - 1;
+		size_t MSU = _block.size() - 1;
 		size_t blockShift = 0;
 		if (shift >= static_cast<int>(bitsInBlock)) {
 			blockShift = shift / bitsInBlock;
 			if (MSU >= blockShift) {
 				// shift by blocks
 				for (size_t i = 0; i <= MSU - blockShift; ++i) {
-					_blocks[i] = _blocks[i + blockShift];
-					_blocks[i + blockShift] = 0; // null the upper block
+					_block[i] = _block[i + blockShift];
+					_block[i + blockShift] = 0; // null the upper block
 				}
 			}
 			// adjust the shift
@@ -141,18 +143,46 @@ public:
 			BlockType mask = static_cast<BlockType>(0xFFFF'FFFFul);
 			mask >>= (bitsInBlock - shift); // this is a mask for the lower bits in the block that need to move to the lower word
 			for (size_t i = 0; i < MSU; ++i) {
-				_blocks[i] >>= shift;
+				_block[i] >>= shift;
 				// mix in the bits from the left
-				BlockType bits = BlockType(mask & _blocks[i + 1]);
-				_blocks[i] |= (bits << (bitsInBlock - shift));
+				BlockType bits = BlockType(mask & _block[i + 1]);
+				_block[i] |= (bits << (bitsInBlock - shift));
 			}
-			_blocks[MSU] >>= shift;
+			_block[MSU] >>= shift;
+		}
+		else {
+			_block[0] >>= shift;
 		}
 		remove_leading_zeros();
 		return *this;
 	}
 	
-	// arithmetic operators
+	// unary arithmetic operators
+	adaptiveint operator-() const {
+		adaptiveint negated(*this);
+		negated.setsign(!_sign);
+		return negated;
+	}
+	adaptiveint operator++(int) {
+		adaptiveint tmp(*this);
+		operator++();
+		return tmp;
+	}
+	adaptiveint& operator++() {
+		*this += 1;
+		return *this;
+	}
+	adaptiveint operator--(int) {
+		adaptiveint tmp(*this);
+		operator--();
+		return tmp;
+	}
+	adaptiveint& operator--() {
+		*this -= 1;
+		return *this;
+	}
+
+	// binary arithmetic operators
 	adaptiveint& operator+=(const adaptiveint& rhs) {
 		if (sign() != rhs.sign()) {
 			if (sign()) {
@@ -168,16 +198,15 @@ public:
 				return *this;
 			}
 		}
-		auto lhsSize = _blocks.size();
-		auto rhsSize = rhs._blocks.size();
-		if (lhsSize < rhsSize) {
-			_blocks.resize(rhsSize, 0);
-		}
+		auto lhsSize = _block.size();
+		auto rhsSize = rhs._block.size();
+		if (lhsSize < rhsSize) _block.resize(rhsSize, 0);
+
 		std::uint64_t carry{ 0 };
-		typename std::vector<BlockType>::iterator li = _blocks.begin();
-		typename std::vector<BlockType>::const_iterator ri = rhs._blocks.begin();
-		while (li != _blocks.end()) {
-			if (ri != rhs._blocks.end()) {
+		typename std::vector<BlockType>::iterator li = _block.begin();
+		typename std::vector<BlockType>::const_iterator ri = rhs._block.begin();
+		while (li != _block.end()) {
+			if (ri != rhs._block.end()) {
 				carry += static_cast<std::uint64_t>(*li) + static_cast<std::uint64_t>(*ri);
 				++ri;
 			}
@@ -189,7 +218,7 @@ public:
 			++li; 
 		}
 		if (carry == 0x1ull) {
-			_blocks.push_back(static_cast<BlockType>(carry));
+			_block.push_back(static_cast<BlockType>(carry));
 		}
 		return *this;
 	}
@@ -202,36 +231,41 @@ public:
 			negated.setsign(false);
 			return *this += negated;
 		}
+		auto lhsSize = _block.size();
+		if (lhsSize == 0) {
+			*this = -rhs;
+			return *this;
+		}
+		auto rhsSize = rhs._block.size();
 		int magnitude = compare_magnitude(*this, rhs); // if -1 result is going to be negative
-		auto lhsSize = _blocks.size();
-		auto rhsSize = rhs._blocks.size();
 
 		auto overlap = (lhsSize < rhsSize ? lhsSize : rhsSize);
 		auto extent = (lhsSize < rhsSize ? rhsSize : lhsSize);
-		
-		if (lhsSize < rhsSize) _blocks.resize(rhsSize + 1);
-		std::uint64_t borrow{ 0 };
-		
+
+		// prep storage
+		if (lhsSize < rhsSize) _block.resize(rhsSize, 0);
+
 		typename std::vector<BlockType>::const_iterator aIter, bIter;
 		if (magnitude == 1) {
-			aIter = _blocks.begin();
-			bIter = rhs._blocks.begin();
+			aIter = _block.begin();
+			bIter = rhs._block.begin();
 		}
 		else {
-			aIter = rhs._blocks.begin();
-			bIter = _blocks.begin();
+			aIter = rhs._block.begin();
+			bIter = _block.begin();
 		}
+		std::uint64_t borrow{ 0 };
 		unsigned i{ 0 };
 		while (i < overlap) {
-			borrow = static_cast<std::uint64_t>(*aIter) - static_cast<std::uint64_t>(*bIter) + borrow;
-			_blocks[i] = static_cast<BlockType>(borrow);
+			borrow = static_cast<std::uint64_t>(*aIter) - static_cast<std::uint64_t>(*bIter) - borrow;
+			_block[i] = static_cast<BlockType>(borrow);
 			borrow = (borrow >> bitsInBlock) & 0x1u;
 			++i; ++aIter; ++bIter;
 		}
-		while (borrow && (i < extent)) {
+		while ((i < extent)) {
 			borrow = static_cast<BlockType>(*aIter) - borrow;
-			_blocks[i] = static_cast<BlockType>(borrow);
-			borrow = (borrow >> bitsInBlock) & 1u;
+			_block[i] = static_cast<BlockType>(borrow);
+			borrow = (borrow >> bitsInBlock) & 0x1u;
 			++i; ++aIter;
 		}
 		remove_leading_zeros();
@@ -242,30 +276,191 @@ public:
 		return *this -= adaptiveint(rhs);
 	}
 	adaptiveint& operator*=(const adaptiveint& rhs) {
+		if (iszero() || rhs.iszero()) {
+			clear();
+			return *this;
+		}
+		adaptiveint base(*this);
+		bool ls = sign();
+		unsigned ll = limbs();
+		bool rs = rhs.sign();
+		unsigned rl = rhs.limbs();
+
+		clear();
+		std::uint64_t segment(0);
+		for (unsigned i = 0; i < ll; ++i) {
+			for (unsigned j = 0; j < rl; ++j) {
+				segment += static_cast<std::uint64_t>(base.block(i)) * static_cast<std::uint64_t>(rhs.block(j));
+				segment += block(i + j);
+				setblock(i + j, static_cast<bt>(segment));
+				segment >>= bitsInBlock;
+			}
+		}
+		if (segment != 0) setblock(ll + rl - 1, static_cast<bt>(segment));
+		setsign(ls ^ rs);
 		return *this;
 	}
 	adaptiveint& operator*=(long long rhs) {
 		return *this *= adaptiveint(rhs);
 	}
 	adaptiveint& operator/=(const adaptiveint& rhs) {
+		adaptiveint q, r;
+		q.reduce(*this, rhs, r);
+		*this = q;
 		return *this;
 	}
 	adaptiveint& operator/=(long long rhs) {
 		return *this /= adaptiveint(rhs);
 	}
 	adaptiveint& operator%=(const adaptiveint& rhs) {
+		adaptiveint q, a(*this), r;
+		q.reduce(a, rhs, r);
+		*this = r;
 		return *this;
 	}
 	adaptiveint& operator%=(long long rhs) {
 		return *this %= adaptiveint(rhs);
 	}
 	
+	// reduce returns the ratio and remainder of a and b in *this and r
+	void reduce(const adaptiveint& a, const adaptiveint& b, adaptiveint& r) {
+		if (b.iszero()) {
+#if ADAPTIVEINT_THROW_ARITHMETIC_EXCEPTION
+			throw adaptiveint_divide_by_zero{};
+#else
+			std::cerr << "adaptiveint_divide_by_zero\n";
+			return;
+#endif // ADAPTIVEINT_THROW_ARITHMETIC_EXCEPTION
+		}
+		clear();
+		r.clear();
+		if (a.iszero()) return;
+
+		size_t aBlocks = a.limbs();
+		size_t bBlocks = b.limbs();
+		if (aBlocks == 1 && aBlocks == bBlocks) { // completely reduce this to native div and rem
+			std::uint64_t a0 = a._block[0];
+			std::uint64_t b0 = b._block[0];
+			*this = static_cast<BlockType>(a0 / b0);
+			r = static_cast<BlockType>(a0 % b0);
+		}
+		else {
+			// filter out the easy stuff
+			if (a < b) { r = a; clear(); return; }
+
+			// determine first non-zero limbs
+			unsigned m{ 0 }, n{ 0 };
+			for (size_t i = aBlocks; i > 0; --i) {
+				if (a._block[i - 1] != 0) {
+					m = static_cast<unsigned>(i);
+					break;
+				}
+			}
+			for (size_t i = bBlocks; i > 0; --i) {
+				if (b._block[i - 1] != 0) {
+					n = static_cast<unsigned>(i);
+					break;
+				}
+			}
+
+			// single limb divisor
+			if (n == 1) {
+				_block.resize(m);
+				std::uint64_t remainder{ 0 };
+				auto divisor = b.block(0);
+				for (unsigned j = m; j > 0; --j) {
+					std::uint64_t dividend = remainder * BASE + static_cast<std::uint64_t>(a.block(j - 1));
+					std::uint64_t limbQuotient = dividend / divisor;
+					_block[j - 1] = static_cast<BlockType>(limbQuotient);
+					remainder = dividend - limbQuotient * divisor;
+				}
+				remove_leading_zeros();
+				r.setblock(0, static_cast<BlockType>(remainder));
+				return;
+			}
+
+			// Knuth's algorithm calculates a normalization factor d
+			// that perfectly aligns b so that b0 >= floor(BASE/2),
+			// a requirement for the relationship: (qHat - 2) <= q <= qHat
+
+			int shift = nlz(b.block(n - 1));
+			adaptiveint normalized_a;
+			normalized_a.setblock(m, static_cast<BlockType>((a.block(m - 1) >> (bitsInBlock - shift))));
+			for (unsigned i = m - 1; i > 0; --i) {
+				normalized_a.setblock(i, static_cast<BlockType>((a.block(i) << shift) | (a.block(i - 1) >> (bitsInBlock - shift))));
+			}
+			normalized_a.setblock(0, static_cast<BlockType>(a.block(0) << shift));
+			// normalize b
+			adaptiveint normalized_b;
+			unsigned n_minus_1 = n - 1;
+			for (unsigned i = n_minus_1; i > 0; --i) {
+				normalized_b.setblock(i, static_cast<BlockType>((b.block(i) << shift) | (b.block(i - 1) >> (bitsInBlock - shift))));
+			}
+			normalized_b.setblock(0, static_cast<BlockType>(b.block(0) << shift));
+
+			//std::cout << "normalized a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
+			//std::cout << "normalized b :             " << normalized_b.showLimbs() << " : " << normalized_b.showLimbValues() << '\n';
+
+			// divide by limb
+			std::uint64_t divisor = normalized_b._block[n - 1];
+			std::uint64_t v_nminus2 = normalized_b._block[n - 2]; // n > 1 at this point
+			for (int j = static_cast<int>(m - n); j >= 0; --j) {
+				std::uint64_t dividend = normalized_a.block(j + n) * BASE + normalized_a.block(j + n - 1);
+				std::uint64_t qhat = dividend / divisor;
+				std::uint64_t rhat = dividend - qhat * divisor;
+
+				while (qhat >= BASE || qhat * v_nminus2 > BASE * rhat + normalized_a.block(j + n - 2)) {
+					--qhat;
+					rhat += divisor;
+					if (rhat < BASE) continue;
+				}
+				std::uint64_t borrow{ 0 };
+				std::uint64_t diff{ 0 };
+				for (unsigned i = 0; i < n; ++i) {
+					std::uint64_t p = qhat * normalized_b.block(i);
+					diff = normalized_a.block(i + j) - static_cast<BlockType>(p) - borrow;
+					normalized_a.setblock(i + j, static_cast<BlockType>(diff));
+					borrow = (p >> bitsInBlock) - (diff >> bitsInBlock);
+				}
+				std::int64_t signedBorrow = static_cast<int64_t>(normalized_a.block(j + n) - borrow);
+				normalized_a.setblock(j + n, static_cast<BlockType>(signedBorrow));
+
+				//std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
+
+				setblock(static_cast<unsigned>(j), static_cast<BlockType>(qhat));
+				if (signedBorrow < 0) { // subtracted too much, add back
+					std::cout << "subtracted too much, add back\n";
+					setblock(static_cast<size_t>(j), static_cast<BlockType>(_block[static_cast<size_t>(j)] - 1));
+					std::uint64_t carry{ 0 };
+					for (unsigned i = 0; i < n; ++i) {
+						carry += static_cast<std::uint64_t>(normalized_a.block(i + j)) + static_cast<std::uint64_t>(normalized_b.block(i));
+						normalized_a.setblock(i + j, static_cast<BlockType>(carry));
+						carry >>= 32;
+					}
+					BlockType rectified = static_cast<BlockType>(normalized_a.block(j + n) + carry);
+					normalized_a.setblock(j + n, rectified);
+				}
+				//std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
+			}
+
+			// remainder needs to be normalized
+			for (unsigned i = 0; i < n - 1; ++i) {
+				std::uint64_t remainder = static_cast<std::uint64_t>(normalized_a.block(i) >> shift);
+				remainder |= (static_cast<std::uint64_t>(normalized_a.block(i + 1)) << (32 - shift));
+				r.setblock(i, static_cast<BlockType>(remainder));
+			}
+			r.setblock(n - 1, static_cast<BlockType>(normalized_a.block(n - 1) >> shift));
+		}
+		remove_leading_zeros();
+		_sign = a.sign() ^ b.sign();
+	}
+
 	// modifiers
-	inline void clear() noexcept { _sign = false; _blocks.clear(); }
-	inline void setzero() noexcept { clear(); }
-	inline void setsign(bool sign = true) noexcept { _sign = sign; }
+	void clear() noexcept { _sign = false; _block.clear(); }
+	void setzero() noexcept { clear(); }
+	void setsign(bool sign = true) noexcept { _sign = sign; }
 	// use un-interpreted raw bits to set the bits of the adaptiveint
-	inline void setbits(unsigned long long value) {
+	void setbits(unsigned long long value) {
 		clear();
 		if constexpr (bitsInBlock == 8) {
 			std::uint8_t byte0 = static_cast<std::uint8_t>(value & 0x0000'0000'0000'00FF);
@@ -277,118 +472,153 @@ public:
 			std::uint8_t byte6 = static_cast<std::uint8_t>((value & 0x00FF'0000'0000'0000) >> 48);
 			std::uint8_t byte7 = static_cast<std::uint8_t>((value & 0xFF00'0000'0000'0000) >> 56);
 			if (byte7 > 0) {
-				_blocks.push_back(byte0);
-				_blocks.push_back(byte1);
-				_blocks.push_back(byte2);
-				_blocks.push_back(byte3);
-				_blocks.push_back(byte4);
-				_blocks.push_back(byte5);
-				_blocks.push_back(byte6);
-				_blocks.push_back(byte7);
+				_block.push_back(byte0);
+				_block.push_back(byte1);
+				_block.push_back(byte2);
+				_block.push_back(byte3);
+				_block.push_back(byte4);
+				_block.push_back(byte5);
+				_block.push_back(byte6);
+				_block.push_back(byte7);
 			}
 			else if (byte6 > 0) {
-				_blocks.push_back(byte0);
-				_blocks.push_back(byte1);
-				_blocks.push_back(byte2);
-				_blocks.push_back(byte3);
-				_blocks.push_back(byte4);
-				_blocks.push_back(byte5);
-				_blocks.push_back(byte6);
+				_block.push_back(byte0);
+				_block.push_back(byte1);
+				_block.push_back(byte2);
+				_block.push_back(byte3);
+				_block.push_back(byte4);
+				_block.push_back(byte5);
+				_block.push_back(byte6);
 			}
 			else if (byte5 > 0) {
-				_blocks.push_back(byte0);
-				_blocks.push_back(byte1);
-				_blocks.push_back(byte2);
-				_blocks.push_back(byte3);
-				_blocks.push_back(byte4);
-				_blocks.push_back(byte5);
+				_block.push_back(byte0);
+				_block.push_back(byte1);
+				_block.push_back(byte2);
+				_block.push_back(byte3);
+				_block.push_back(byte4);
+				_block.push_back(byte5);
 			}
 			else if (byte4 > 0) {
-				_blocks.push_back(byte0);
-				_blocks.push_back(byte1);
-				_blocks.push_back(byte2);
-				_blocks.push_back(byte3);
-				_blocks.push_back(byte4);
+				_block.push_back(byte0);
+				_block.push_back(byte1);
+				_block.push_back(byte2);
+				_block.push_back(byte3);
+				_block.push_back(byte4);
 			}
 			else if (byte3 > 0) {
-				_blocks.push_back(byte0);
-				_blocks.push_back(byte1);
-				_blocks.push_back(byte2);
-				_blocks.push_back(byte3);
+				_block.push_back(byte0);
+				_block.push_back(byte1);
+				_block.push_back(byte2);
+				_block.push_back(byte3);
 			}
 			else if (byte2 > 0) {
-				_blocks.push_back(byte0);
-				_blocks.push_back(byte1);
-				_blocks.push_back(byte2);
+				_block.push_back(byte0);
+				_block.push_back(byte1);
+				_block.push_back(byte2);
 			}
 			else if (byte1 > 0) {
-				_blocks.push_back(byte0);
-				_blocks.push_back(byte1);
+				_block.push_back(byte0);
+				_block.push_back(byte1);
 			}
 			else if (byte0 > 0) {
-				_blocks.push_back(byte0);
+				_block.push_back(byte0);
 			}
 			else {
-				_blocks.clear();
+				_block.clear();
 			}
 		}
 		else if constexpr (bitsInBlock == 16) {
-
+			std::uint16_t word0 = static_cast<std::uint16_t>( value & 0x0000'0000'0000'FFFF);
+			std::uint16_t word1 = static_cast<std::uint16_t>((value & 0x0000'0000'FFFF'0000) >> 16);
+			std::uint16_t word2 = static_cast<std::uint16_t>((value & 0x0000'FFFF'0000'0000) >> 32);
+			std::uint16_t word3 = static_cast<std::uint16_t>((value & 0xFFFF'0000'0000'0000) >> 48);
+			if (word3 > 0) {
+				_block.push_back(word0);
+				_block.push_back(word1);
+				_block.push_back(word2);
+				_block.push_back(word3);
+			}
+			else if (word2 > 0) {
+				_block.push_back(word0);
+				_block.push_back(word1);
+				_block.push_back(word2);
+			}
+			else if (word1 > 0) {
+				_block.push_back(word0);
+				_block.push_back(word1);
+			}
+			else if (word0 > 0) {
+				_block.push_back(word0);
+			}
+			else {
+				_block.clear();
+			}
 		}
 		else if constexpr (bitsInBlock == 32) {
 			std::uint32_t low  = static_cast<std::uint32_t>(value & 0x0000'0000'FFFF'FFFF);
 			std::uint32_t high = static_cast<std::uint32_t>((value & 0xFFFF'FFFF'0000'0000) >> bitsInBlock);
 			if (high > 0) {
-				_blocks.push_back(low);
-				_blocks.push_back(high);
+				_block.push_back(low);
+				_block.push_back(high);
 			}
 			else if (low > 0) {
-				_blocks.push_back(low);
+				_block.push_back(low);
+			}
+			else {
+				_block.clear();
 			}
 		}
 	}
-	inline adaptiveint& assign(const std::string& txt) {
+	void setblock(unsigned i, BlockType value) noexcept {
+		if (i >= _block.size()) _block.resize(i+1ull);
+		_block[i] = value;
+	}
+	void setbyte(unsigned i, std::uint8_t byte) noexcept {
+		std::cerr << "setbyte(" << i << ", " << int(byte) << ") TBD\n";
+	}
+	adaptiveint& assign(const std::string& txt) {
+		if (!parse(txt, *this)) {
+			std::cerr << "Unable to parse: " << txt << std::endl;
+		}
 		return *this;
 	}
 
 	// selectors
-	inline bool iszero() const noexcept { return !_sign && _blocks.size() == 0; }
-	inline bool isone()  const noexcept { return true; }
-	inline bool isodd()  const noexcept { return (_blocks.size() > 0) ? (_blocks[0] & 0x1) : false; }
-	inline bool iseven() const noexcept { return !isodd(); }
-	inline bool ispos()  const noexcept { return !_sign; }
-	inline bool isneg()  const noexcept { return _sign; }
+	bool iszero() const noexcept { return (_block.size() == 0 || ((_block.size() == 1) && _block[0] == bt(0))); }
+	bool isone()  const noexcept { return true; }
+	bool isodd()  const noexcept { return (_block.size() > 0) ? (_block[0] & 0x1) : false; }
+	bool iseven() const noexcept { return !isodd(); }
+	bool ispos()  const noexcept { return !_sign; }
+	bool isneg()  const noexcept { return _sign; }
 
-	inline bool test(unsigned index) const noexcept {
+	bool test(unsigned index) const noexcept {
 		if (index < nbits()) {
 			unsigned blockIndex = index / bitsInBlock;
 			unsigned bitIndexInBlock = index % bitsInBlock;
-			BlockType data = _blocks[blockIndex];
+			BlockType data = _block[blockIndex];
 			BlockType mask = (0x1u << bitIndexInBlock);
 			if (data & mask) return true;
 		}
 		return false;
 	}
-	inline bool sign()   const noexcept { return _sign; }
-	inline int scale()   const noexcept { return findMsb(); } // TODO: when value = 0, scale returns -1 which is incorrect
+	bool sign()   const noexcept { return _sign; }
+	int scale()   const noexcept { return findMsb(); } // TODO: when value = 0, scale returns -1 which is incorrect
 
-	inline BlockType block(unsigned b) const noexcept {
-		if (b < _blocks.size()) {
-			return _blocks[b];
-		}
-		return 0u;
+	BlockType block(unsigned b) const noexcept {
+		if (b < _block.size()) return _block[b];
+		return static_cast<BlockType>(0u);
 	}
-	inline unsigned limbs() const noexcept { return static_cast<unsigned>(_blocks.size()); }
+	unsigned limbs() const noexcept { return static_cast<unsigned>(_block.size()); }
 
-	inline unsigned nbits() const noexcept { return static_cast<unsigned>(_blocks.size() * sizeof(BlockType) * 8); }
+	unsigned nbits() const noexcept { return static_cast<unsigned>(_block.size() * sizeof(BlockType) * 8); }
 
 	// findMsb takes an adaptiveint reference and returns the position of the most significant bit, -1 if v == 0
-	inline int findMsb() const noexcept {
-		int nrBlocks = static_cast<int>(_blocks.size());
+	int findMsb() const noexcept {
+		int nrBlocks = static_cast<int>(_block.size());
 		if (nrBlocks == 0) return -1; // no significant bit found, all bits are zero
 		int msb = nrBlocks * static_cast<int>(bitsInBlock);
 		for (int b = nrBlocks - 1; b >= 0; --b) {
-			std::uint32_t segment = _blocks[static_cast<size_t>(b)];
+			std::uint32_t segment = _block[static_cast<size_t>(b)];
 			std::uint32_t mask = 0x8000'0000ul;
 			for (int i = bitsInBlock - 1; i >= 0; --i) {
 				--msb;
@@ -404,30 +634,56 @@ public:
 		return std::string("tbd");
 	}
 
+	// show the binary encodings of the limbs
+	std::string showLimbs() const {
+		if (_block.empty()) return "no limbs";
+		std::stringstream s;
+		size_t i = _block.size() - 1;
+		while (i > 0) {
+			s << to_binary(_block[i], sizeof(BlockType) * 8, true) << ' ';
+			--i;
+		}
+		s << to_binary(_block[0], sizeof(BlockType) * 8, true);
+		return s.str();
+	}
+	// show the values of the limbs as a radix-BlockType number
+	std::string showLimbValues() const {
+		if (_block.empty()) return "no limbs";
+		std::stringstream s;
+		size_t i = _block.size() - 1;
+		while (i > 0) {
+			s << std::setw(5) << unsigned(_block[i]) << ", ";
+			--i;
+		}
+		s << std::setw(5) << unsigned(_block[0]);
+		return s.str();
+	}
+
 protected:
 	bool                   _sign;    // sign of the number: -1 if true, +1 if false, zero is positive
-	std::vector<BlockType> _blocks;  // building blocks representing a 1's complement magnitude
+	std::vector<BlockType> _block;  // building blocks representing a 1's complement magnitude
 
 	// HELPER methods
-	inline int compare_magnitude(const adaptiveint& a, const adaptiveint& b) {
+	// compare_magnitude returns 1 if a > b, 0 if they are equal, and -1 if a < b
+	int compare_magnitude(const adaptiveint& a, const adaptiveint& b) {
 		unsigned aLimbs = a.limbs();
 		unsigned bLimbs = b.limbs();
 		if (aLimbs != bLimbs) {
 			return (aLimbs > bLimbs ? 1 : -1);  // return 1 if a > b, otherwise -1
 		}
-		for (int i = aLimbs - 1; i >= 0; --i) {
-			BlockType _a = a._blocks[static_cast<size_t>(i)];
-			BlockType _b = b._blocks[static_cast<size_t>(i)];
+		for (int i = static_cast<int>(aLimbs) - 1; i >= 0; --i) {
+			BlockType _a = a._block[static_cast<size_t>(i)];
+			BlockType _b = b._block[static_cast<size_t>(i)];
 			if ( _a != _b) {
 				return (_a > _b ? 1 : -1);
 			}
 		}
 		return 0;
 	}
-	inline void remove_leading_zeros() {
+	void remove_leading_zeros() {
 		unsigned leadingZeroBlocks{ 0 };
-		typename std::vector<BlockType>::reverse_iterator rit = _blocks.rbegin();
-		while (rit != _blocks.rend()) {
+		typename std::vector<BlockType>::reverse_iterator rit = _block.rbegin();
+		while (rit != _block.rend()) {
 			if (*rit == 0) {
 				++leadingZeroBlocks;
 			}
@@ -436,11 +692,11 @@ protected:
 			}
 			++rit;
 		}
-		_blocks.resize(_blocks.size() - leadingZeroBlocks);
+		_block.resize(_block.size() - leadingZeroBlocks);
 	}
 	
 	template<typename SignedInt>
-	inline adaptiveint& assign_signed(SignedInt v) {
+	adaptiveint& assign_signed(SignedInt v) {
 		clear();
 		if (v != 0) {
 			if (v < 0) {
@@ -455,7 +711,7 @@ protected:
 	}
 
 	template<typename UnsignedInt>
-	inline adaptiveint& assign_unsigned(UnsignedInt v) {
+	adaptiveint& assign_unsigned(UnsignedInt v) {
 		if (0 == v) {
 			setzero();
 		}
@@ -482,11 +738,11 @@ protected:
 			return *this; // we are zero
 		}
 		// normal and subnormal handling
-		setsign(s);
 		constexpr size_t fbits = ieee754_parameter<Real>::fbits;
 		std::uint64_t hiddenBit = (0x1ull << fbits);
 		rawFraction |= hiddenBit;
 		setbits(rawFraction);
+		setsign(s);
 		// scale the fraction bits
 		*this <<= static_cast<int>(exponent - fbits);
 		return *this;
@@ -537,13 +793,142 @@ inline adaptiveint<BlockType> abs(const adaptiveint<BlockType>& a) {
 // read a adaptiveint ASCII format and make a binary adaptiveint out of it
 template<typename BlockType>
 bool parse(const std::string& number, adaptiveint<BlockType>& value) {
+	using Integer = adaptiveint<BlockType>;
 	bool bSuccess = false;
-
+	value.clear();
+	// check if the txt is an integer form: [0123456789]+
+	std::regex decimal_regex("^[-+]*[0-9]+");
+	std::regex octal_regex("^[-+]*0[1-7][0-7]*$");
+	std::regex hex_regex("^[-+]*0[xX][0-9a-fA-F']+");
+	// setup associative array to map chars to nibbles
+	std::map<char, int> charLookup{
+		{ '0', 0 },
+		{ '1', 1 },
+		{ '2', 2 },
+		{ '3', 3 },
+		{ '4', 4 },
+		{ '5', 5 },
+		{ '6', 6 },
+		{ '7', 7 },
+		{ '8', 8 },
+		{ '9', 9 },
+		{ 'a', 10 },
+		{ 'b', 11 },
+		{ 'c', 12 },
+		{ 'd', 13 },
+		{ 'e', 14 },
+		{ 'f', 15 },
+		{ 'A', 10 },
+		{ 'B', 11 },
+		{ 'C', 12 },
+		{ 'D', 13 },
+		{ 'E', 14 },
+		{ 'F', 15 },
+	};
+	if (std::regex_match(number, octal_regex)) {
+		std::cout << "found an octal representation\n";
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			std::cout << "char = " << *r << std::endl;
+		}
+		bSuccess = false; // TODO
+	}
+	else if (std::regex_match(number, hex_regex)) {
+		//std::cout << "found a hexadecimal representation\n";
+		// each char is a nibble
+		int byte = 0;
+		int byteIndex = 0;
+		bool odd = false;
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			if (*r == '\'') {
+				// ignore
+			}
+			else if (*r == 'x' || *r == 'X') {
+				if (odd) {
+					// complete the most significant byte
+					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
+				}
+				// check that we have [-+]0[xX] format
+				++r;
+				if (r != number.rend()) {
+					if (*r == '0') {
+						// check if we have a sign
+						++r;
+						if (r == number.rend()) {
+							// no sign, thus by definition positive
+							bSuccess = true;
+						}
+						else if (*r == '+') {
+							// optional positive sign, no further action necessary
+							bSuccess = true;
+						}
+						else if (*r == '-') {
+							// negative sign, invert
+							value = -value;
+							bSuccess = true;
+						}
+						else {
+							// the regex will have filtered this out
+							bSuccess = false;
+						}
+					}
+					else {
+						// we didn't find the obligatory '0', the regex should have filtered this out
+						bSuccess = false;
+					}
+				}
+				else {
+					// we are missing the obligatory '0', the regex should have filtered this out
+					bSuccess = false;
+				}
+				// we have reached the end of our parse
+				break;
+			}
+			else {
+				if (odd) {
+					byte += charLookup.at(*r) << 4;
+					value.setbyte(static_cast<size_t>(byteIndex), static_cast<uint8_t>(byte));
+					++byteIndex;
+				}
+				else {
+					byte = charLookup.at(*r);
+				}
+				odd = !odd;
+			}
+		}
+	}
+	else if (std::regex_match(number, decimal_regex)) {
+		//std::cout << "found a decimal integer representation\n";
+		Integer scale = 1;
+		bool sign{ false };
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			if (*r == '-') {
+				sign = true;;
+			}
+			else if (*r == '+') {
+				break;
+			}
+			else {
+				Integer digit = charLookup.at(*r);
+				value += scale * digit;
+				scale *= 10;
+			}
+		}
+		value.setsign(sign);
+		bSuccess = true;
+	}
 	return bSuccess;
 }
 
 template<typename BlockType>
 std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint<BlockType>& n) {
+	using AdaptiveInteger = adaptiveint<BlockType>;
+
 	if (n.limbs() == 0) return std::string("0");
 
 	// set the base of the target number system to convert to
@@ -557,65 +942,76 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint<B
 	if (base == 8 || base == 16) {
 		if (n.sign()) return std::string("negative value: ignored");
 
-		int shift = (base == 8 ? 3 : 4);
+		size_t shift = (base == 8 ? 3ull : 4ull);
 		BlockType mask = static_cast<BlockType>((1u << shift) - 1);
-		adaptiveint t(n);
+		AdaptiveInteger t(n);
 		result.assign(nbits / shift + ((nbits % shift) ? 1 : 0), '0');
-		std::string::difference_type pos = static_cast<int>(result.size()) - 1;
-		for (size_t i = 0; i < nbits / static_cast<size_t>(shift); ++i) {
+		size_t pos = result.size() - 1ull;
+		for (size_t i = 0; i < nbits / shift; ++i) {
 			char c = '0' + static_cast<char>(t.block(0) & mask);
 			if (c > '9')
 				c += 'A' - '9' - 1;
-			result[static_cast<size_t>(pos--)] = c;
-			t >>= shift;
+			result[pos--] = c;
+			t >>= static_cast<int>(shift);
 		}
 		if (nbits % shift) {
 			mask = static_cast<BlockType>((1u << (nbits % shift)) - 1);
 			char c = '0' + static_cast<char>(t.block(0) & mask);
 			if (c > '9')
 				c += 'A' - '9';
-			result[static_cast<size_t>(pos)] = c;
+			result[pos] = c;
 		}
 		//
 		// Get rid of leading zeros:
 		//
-		std::string::size_type n = result.find_first_not_of('0');
-		if (!result.empty() && (n == std::string::npos))
-			n = result.size() - 1;
-		result.erase(0, n);
+		std::string::size_type fnz = result.find_first_not_of('0');
+		if (!result.empty() && (fnz == std::string::npos)) fnz = result.size() - 1;
+		result.erase(0, fnz);
 		if (flags & std::ios_base::showbase) {
 			const char* pp = base == 8 ? "0" : "0x";
 			result.insert(static_cast<std::string::size_type>(0), pp);
 		}
 	}
 	else {
-		result.assign(nbits / 3 + 1u, '0');
-		std::string::difference_type pos = static_cast<int>(result.size()) - 1;
-		adaptiveint t(n);
-
-		unsigned block10{ 1'000'000'000 };
-		unsigned digits_in_block10 = 9;
+		unsigned block10;
+		unsigned digits_in_block10;
+		if constexpr (AdaptiveInteger::bitsInBlock == 8) {
+			block10 = 100u;
+			digits_in_block10 = 2;
+		}
+		else if constexpr (AdaptiveInteger::bitsInBlock == 16) {
+			block10 = 10'000ul;
+			digits_in_block10 = 4;
+		}
+		else if constexpr (AdaptiveInteger::bitsInBlock == 32) {
+			block10 = 1'000'000'000ul;
+			digits_in_block10 = 9;
+		}
+		else if constexpr (AdaptiveInteger::bitsInBlock == 64) {
+			// not allowed as the whole multi-digit arithmetic
+			// requires that there is a 'larger' type that
+			// can receive carries and borrows.
+			// If your platform does have a native 128bit
+			// integer, this could be enabled
+			//block10 = 1'000'000'000'000'000'000ull;
+			//digits_in_block10 = 18;
+		}
+		result.assign(nbits / 3 + 1ull, '0');
+		size_t pos = result.size() - 1ull;
+		AdaptiveInteger t(n);
 		while (!t.iszero()) {
-
-			//adaptiveint t2 = t / block10;
-			//adaptiveint r  = t % block10;
-			adaptiveint t2(t); t2 /= block10;
-			adaptiveint r(t); r %= block10;
-			//			std::cout << "t  " << long(t) << '\n';
-			//			std::cout << "t2 " << long(t2) << '\n';
-			//			std::cout << "r  " << long(r) << '\n';
-			t = t2;
+			AdaptiveInteger q,r;
+			q.reduce(t, block10, r);
 			BlockType v = r.block(0);
-			//			std::cout << "v  " << uint32_t(v) << '\n';
+//			std::cout << "v  " << uint32_t(v) << '\n';
 			for (unsigned i = 0; i < digits_in_block10; ++i) {
-				//				std::cout << i << " " << (v / 10) << " " << (v % 10) << '\n';
 				char c = '0' + static_cast<char>(v % 10);
 				v /= 10;
-				result[static_cast<size_t>(pos)] = c;
-				//				std::cout << result << '\n';
-				if (pos-- == 0)
-					break;
+				result[pos] = c;
+//				std::cout << result << " pos: " << pos << '\n';
+				if (pos-- == 0)	break;
 			}
+			t = q;
 		}
 
 		std::string::size_type firstDigit = result.find_first_not_of('0');
@@ -623,9 +1019,9 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const adaptiveint<B
 		if (result.empty())
 			result = "0";
 		if (n.isneg())
-			result.insert(static_cast<std::string::size_type>(0), 1, '-');
+			result.insert(0ull, 1ull, '-');
 		else if (flags & std::ios_base::showpos)
-			result.insert(static_cast<std::string::size_type>(0), 1, '+');
+			result.insert(0ull, 1ull, '+');
 	}
 	return result;
 }
@@ -689,9 +1085,9 @@ inline bool operator==(const adaptiveint<BlockType>& lhs, const adaptiveint<Bloc
 	if (lhs.limbs() != rhs.limbs()) {
 		return false;
 	}
-	typename std::vector<BlockType>::const_iterator li = lhs._blocks.begin();
-	typename std::vector<BlockType>::const_iterator ri = rhs._blocks.begin();
-	while (li != lhs._blocks.end()) {
+	typename std::vector<BlockType>::const_iterator li = lhs._block.begin();
+	typename std::vector<BlockType>::const_iterator ri = rhs._block.begin();
+	while (li != lhs._block.end()) {
 		if (*li != *ri) return false;
 		++li; ++ri;
 	}
@@ -705,6 +1101,20 @@ inline bool operator!=(const adaptiveint<BlockType>& lhs, const adaptiveint<Bloc
 
 template<typename BlockType>
 inline bool operator< (const adaptiveint<BlockType>& lhs, const adaptiveint<BlockType>& rhs) {
+	unsigned ll = lhs.limbs();
+	unsigned rl = rhs.limbs();
+	if (ll < rl) return true;
+	if (ll > rl) return false;
+	for (unsigned b = ll - 1; b > 0; --b) {
+		BlockType l = lhs.block(b);
+		BlockType r = rhs.block(b);
+		if (l < r) return true;
+		else if (l == r) continue;
+		else return false;
+	}
+	BlockType l = lhs.block(0);
+	BlockType r = rhs.block(0);
+	if (l < r) return true;
 	return false; // lhs and rhs are the same
 }
 
@@ -739,12 +1149,12 @@ inline bool operator!=(const adaptiveint<BlockType>& lhs, long long rhs) {
 
 template<typename BlockType>
 inline bool operator< (const adaptiveint<BlockType>& lhs, long long rhs) {
-	return operator<(lhs, adaptiveint(rhs));
+	return operator<(lhs, adaptiveint<BlockType>(rhs));
 }
 
 template<typename BlockType>
 inline bool operator> (const adaptiveint<BlockType>& lhs, long long rhs) {
-	return operator< (adaptiveint(rhs), lhs);
+	return operator< (adaptiveint<BlockType>(rhs), lhs);
 }
 
 template<typename BlockType>
@@ -764,7 +1174,7 @@ inline bool operator>=(const adaptiveint<BlockType>& lhs, long long rhs) {
 
 template<typename BlockType>
 inline bool operator==(long long lhs, const adaptiveint<BlockType>& rhs) {
-	return operator==(adaptiveint(lhs), rhs);
+	return operator==(adaptiveint<BlockType>(lhs), rhs);
 }
 
 template<typename BlockType>
@@ -774,7 +1184,7 @@ inline bool operator!=(long long lhs, const adaptiveint<BlockType>& rhs) {
 
 template<typename BlockType>
 inline bool operator< (long long lhs, const adaptiveint<BlockType>& rhs) {
-	return operator<(adaptiveint(lhs), rhs);
+	return operator<(adaptiveint<BlockType>(lhs), rhs);
 }
 
 template<typename BlockType>

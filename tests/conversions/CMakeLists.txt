@@ -1,3 +1,3 @@
-file (GLOB SOURCES "./*.cpp")
+file (GLOB SRCS "./*.cpp")
 
-compile_all("true" "conversions" "Number Systems/conversions" "${SOURCES}")
+compile_all("true" "conversions" "Number Systems/conversions" "${SRCS}")

@@ -321,17 +321,17 @@ public:
 	}
 
 	// conversion operators: Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator unsigned short() const { return to_ushort(); }
-	explicit operator unsigned int() const { return to_uint(); }
-	explicit operator unsigned long() const { return to_ulong(); }
-	explicit operator unsigned long long() const { return to_ulong_long(); }
-	explicit operator short() const { return to_short(); }
-	explicit operator int() const { return to_int(); }
-	explicit operator long() const { return to_long(); }
-	explicit operator long long() const { return to_long_long(); }
-	explicit operator float() const { return to_float(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator long double() const { return to_long_double(); }
+	explicit operator unsigned short()     const noexcept { return to_ushort(); }
+	explicit operator unsigned int()       const noexcept { return to_uint(); }
+	explicit operator unsigned long()      const noexcept { return to_ulong(); }
+	explicit operator unsigned long long() const noexcept { return to_ulong_long(); }
+	explicit operator short()              const noexcept { return to_short(); }
+	explicit operator int()                const noexcept { return to_int(); }
+	explicit operator long()               const noexcept { return to_long(); }
+	explicit operator long long()          const noexcept { return to_long_long(); }
+	explicit operator float()              const noexcept { return to_float(); }
+	explicit operator double()             const noexcept { return to_double(); }
+	explicit operator long double()        const noexcept { return to_long_double(); }
 
 	// selectors
 	inline bool iszero() const {
@@ -444,10 +444,10 @@ protected:
 	// HELPER methods
 
 	// conversion functions
-	inline short to_short() const { return short(to_long_long()); }
-	inline int to_int() const { return short(to_long_long()); }
-	inline long to_long() const { return short(to_long_long()); }
-	inline long long to_long_long() const {
+	inline short              to_short()       const noexcept { return short(to_long_long()); }
+	inline int                to_int()         const noexcept { return short(to_long_long()); }
+	inline long               to_long()        const noexcept { return short(to_long_long()); }
+	inline long long          to_long_long()   const noexcept {
 		long long v = 0;	
 		long long order = sign() ? -1 : 1;
 		for (decimal::const_iterator it = this->begin(); it != this->end(); ++it) {
@@ -456,13 +456,11 @@ protected:
 		}
 		return v;
 	}
-	inline unsigned short to_ushort() const { return static_cast<unsigned short>(to_ulong_long()); }
-	inline unsigned int to_uint() const { return static_cast<unsigned int>(to_ulong_long()); }
-	inline unsigned long to_ulong() const { return static_cast<unsigned long>(to_ulong_long()); }
-	inline unsigned long long to_ulong_long() const {
-		return static_cast<unsigned long long>(to_long_long());
-	}
-	inline float to_float() const {
+	inline unsigned short     to_ushort()      const noexcept { return static_cast<unsigned short>(to_ulong_long()); }
+	inline unsigned int       to_uint()        const noexcept { return static_cast<unsigned int>(to_ulong_long()); }
+	inline unsigned long      to_ulong()       const noexcept { return static_cast<unsigned long>(to_ulong_long()); }
+	inline unsigned long long to_ulong_long()  const noexcept { return static_cast<unsigned long long>(to_long_long()); }
+	inline float              to_float()       const noexcept {
 		float f = 0.0f;
 		float order = sign() ? -1.0f : 1.0f;
 		for (decimal::const_iterator it = this->begin(); it != this->end(); ++it) {
@@ -471,7 +469,7 @@ protected:
 		}
 		return f;
 	}
-	inline double to_double() const {
+	inline double             to_double()      const noexcept {
 		double d{ 0.0 };
 		double order = sign() ? -1.0 : 1.0;
 		for (decimal::const_iterator it = this->begin(); it != this->end(); ++it) {
@@ -480,7 +478,7 @@ protected:
 		}
 		return d;
 	}
-	inline long double to_long_double() const {
+	inline long double        to_long_double() const noexcept {
 		long double ld{ 0.0l };
 		long double order = sign() ? -1.0l : 1.0l;
 		for (decimal::const_iterator it = this->begin(); it != this->end(); ++it) {
@@ -609,14 +607,23 @@ inline int findMsd(const decimal& v) {
 
 /// stream operators
 
+inline std::string to_binary(const decimal& d) {
+	std::stringstream s;
+	if (d.isneg()) s << '-';
+	for (decimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
+		s << (int)*rit;
+	}
+	return s.str();
+}
+
 // generate an ASCII decimal string
 inline std::string to_string(const decimal& d) {
-	std::stringstream ss;
-	if (d.isneg()) ss << '-';
+	std::stringstream s;
+	if (d.isneg()) s << '-';
 	for (decimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
-		ss << (int)*rit;
+		s << (int)*rit;
 	}
-	return ss.str();
+	return s.str();
 }
 
 // generate an ASCII decimal format and send to ostream
@@ -812,7 +819,7 @@ struct decintdiv {
 
 // divide integer decimal a and b and return result argument
 decintdiv decint_divide(const decimal& _a, const decimal& _b) {
-	if (_b == 0) {
+	if (_b.iszero()) {
 #if DECIMAL_THROW_ARITHMETIC_EXCEPTION
 		throw decimal_integer_divide_by_zero{};
 #else

@@ -1,6 +1,6 @@
 // function_hyperbolic.cpp: test suite runner for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh)
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -122,8 +122,6 @@ void GenerateTestCaseAtanh(Ty a) {
 #define REGRESSION_LEVEL_4 0
 #endif
 
-const double pi = 3.14159265358979323846;
-
 int main()
 try {
 	using namespace sw::universal;
@@ -133,7 +131,7 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug

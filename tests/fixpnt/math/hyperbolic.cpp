@@ -1,6 +1,6 @@
 // hyperbolic.cpp: test suite runner for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh)
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -97,9 +97,21 @@ void GenerateTestCaseAtanh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 const double pi = 3.14159265358979323846;
 
@@ -107,10 +119,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "fixed-point mathlib hyperbolic trigonometry";
+	std::string test_tag    = "mathlib hyperbolic trigonometry";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "fixpnt hyperbolic trigonometry failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -125,25 +139,39 @@ try {
 
 	// manual exhaustive test
 	using FixedPoint = fixpnt<8, 4, Saturating, uint8_t>;
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag<FixedPoint>(), "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag<FixedPoint>(), "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag<FixedPoint>(), "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<FixedPoint>(true), type_tag<FixedPoint>(), "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<FixedPoint>(true), type_tag<FixedPoint>(), "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<FixedPoint>(true), type_tag<FixedPoint>(), "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag(FixedPoint()), "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag(FixedPoint()), "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag(FixedPoint()), "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<FixedPoint>(true), type_tag(FixedPoint()), "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<FixedPoint>(true), type_tag(FixedPoint()), "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<FixedPoint>(true), type_tag(FixedPoint()), "asinh");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
-	std::cout << "fixpnt hyperbolic trigonometry function validation\n";
+#if REGRESSION_LEVEL_1
+	using FixedPoint = fixpnt<8, 4, Saturating, uint8_t>;
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag(FixedPoint()), "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag(FixedPoint()), "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag(FixedPoint()), "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<FixedPoint>(true), type_tag(FixedPoint()), "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<FixedPoint>(true), type_tag(FixedPoint()), "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<FixedPoint>(true), type_tag(FixedPoint()), "asinh");
+#endif
 
+#if REGRESSION_LEVEL_2
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_3
+#endif
 
-	
-#endif  // STRESS_TESTING
+#if REGRESSION_LEVEL_4
+#endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

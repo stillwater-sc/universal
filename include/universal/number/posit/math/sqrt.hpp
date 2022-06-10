@@ -118,7 +118,7 @@ namespace sw { namespace universal {
 		if (_trace_sqrt) std::cout << "y adjusted " << y << std::endl;
 		// update exponent to undo range reduction.
 		internal::value<23> v(y);
-		v.setExponent((e >> 1) - 1);
+		v.setscale((e >> 1) - 1);
 		return v.to_float();
 	}
 

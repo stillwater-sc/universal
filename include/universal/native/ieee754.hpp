@@ -147,7 +147,7 @@ inline int scale(float v) {
 	int exponent{ 0 };
 	float frac = frexpf(v, &exponent);
 	if (frac == 0.0f) exponent = 0;
-	return exponent;
+	return exponent - 1;
 }
 /// <summary>
 /// return the binary scale ( = 2^scale ) of a double
@@ -158,7 +158,7 @@ inline int scale(double v) {
 	int exponent{ 0 };
 	double frac = frexp(v, &exponent);
 	if (frac == 0.0) exponent = 0;
-	return exponent;
+	return exponent - 1;
 }
 
 #if LONG_DOUBLE_SUPPORT
@@ -171,7 +171,7 @@ inline int scale(long double v) {
 	int exponent{ 0 };
 	long double frac = frexpl(v, &exponent);
 	if (frac == 0.0l) exponent = 0;
-	return exponent;
+	return exponent - 1;
 }
 #endif
 

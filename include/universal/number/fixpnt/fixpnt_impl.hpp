@@ -118,7 +118,7 @@ public:
 	static constexpr size_t MSU = nrBlocks - 1;
 	static constexpr bt     MSU_MASK = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
 
-	constexpr fixpnt() noexcept : bb(0) {}
+	constexpr fixpnt() noexcept : _block(0) {}
 
 	constexpr fixpnt(const fixpnt&) noexcept = default;
 	fixpnt(fixpnt&&) noexcept = default;
@@ -137,7 +137,7 @@ public:
 	fixpnt(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept { *this = a; }
 
 	// specific value constructor
-	constexpr fixpnt(const SpecificValue code) : bb{ 0 } {
+	constexpr fixpnt(const SpecificValue code) : _block{ 0 } {
 		switch (code) {
 		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
@@ -169,7 +169,7 @@ public:
 
 	// assignment operator for blockbinary type
 	template<size_t nnbits, typename Bbt>
-	constexpr fixpnt& operator=(const blockbinary<nnbits, Bbt>& rhs) { bb = rhs; return *this; }
+	constexpr fixpnt& operator=(const blockbinary<nnbits, Bbt>& rhs) { _block = rhs; return *this; }
 
 	// fixpnt size adapter
 	template<size_t src_nbits, size_t src_rbits>
@@ -178,7 +178,7 @@ public:
 		//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
 		// TODO: do we want prohibit this condition? To be consistent with native types we need to round automatically.
 		if constexpr (src_nbits <= nbits) {
-			bb = a.getbb();
+			_block = a.getbb();
 			if constexpr (src_nbits < nbits) {
 				if (a.sign()) { // sign extend if necessary
 					for (size_t i = src_nbits; i < nbits; ++i) setbit(i);
@@ -189,11 +189,11 @@ public:
 			// we round on the difference between (src_rbits - rbits) fraction bits
 			// and modulo arithmetic, lop of the high order integer bits
 			if constexpr (src_rbits > rbits) {
-				auto rawbb = a.getbb();
+				auto rawbb = a.bits();
 				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
 				rawbb >>= src_rbits - rbits;
 				if (roundUp) ++rawbb;
-				bb = rawbb;
+				_block = rawbb;
 			}
 #endif
 		}
@@ -202,11 +202,11 @@ public:
 			// we round on the difference between (src_rbits - rbits) fraction bits
 			// and modulo arithmetic, lop of the high order integer bits
 			if constexpr (src_rbits > rbits) {
-				auto rawbb = a.getbb();
+				auto rawbb = a.bits();
 				bool roundUp = rawbb.roundingMode(src_rbits - rbits);
 				rawbb >>= src_rbits - rbits;
 				if (roundUp) ++rawbb;
-				bb = rawbb;
+				_block = rawbb;
 			}
 		}
 		return *this;
@@ -254,6 +254,8 @@ public:
 #endif
 
 	// assign the value of the textual representation to the fixpnt: can be binary/octal/decimal/hexadecimal
+	// we want to make this a constexpr so that we could create arbitrary constants, but Clang
+	// doesn't have full STL constexpr support yet, so if failing this.
 	fixpnt& assign(const std::string& number) {
 		clear();
 
@@ -325,7 +327,7 @@ public:
 				r != number.rend();
 				++r) {
 				if (*r != '.') {
-					int64_t digit = charLookup.at(*r); // TODO: deal with look up fail
+					int64_t digit = charLookup.at(*r);
 					fraction += scale * digit;
 					scale *= 10;
 				}
@@ -432,23 +434,23 @@ public:
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {
 		if constexpr (arithmetic == Modulo) {
-			bb += rhs.bb;
+			_block += rhs._block;
 		}
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
-			biggerbb c = uradd(bb, rhs.bb);  // c = a + b
+			biggerbb c = uradd(_block, rhs._block);  // c = a + b
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			biggerbb saturation = maxpos.getbb();		
+			biggerbb saturation = maxpos.bits();		
 			if (c >= saturation) {
-				bb = saturation;
+				_block = saturation;
 				return *this;
 			}
-			saturation = maxneg.getbb();
+			saturation = maxneg.bits();
 			if (c <= saturation) {
-				bb = saturation;
+				_block = saturation;
 				return *this;
 			}
-			bb = c;
+			_block = c;
 		}
 		return *this;
 	}
@@ -458,48 +460,48 @@ public:
 		}
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
-			biggerbb c = ursub(bb, rhs.getbb());  // c = a - b
+			biggerbb c = ursub(_block, rhs.bits());  // c = a - b
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			biggerbb saturation = maxpos.getbb();
+			biggerbb saturation = maxpos.bits();
 			if (c >= saturation) {
-				bb = saturation;
+				_block = saturation;
 				return *this;
 			}
-			saturation = maxneg.getbb();
+			saturation = maxneg.bits();
 			if (c <= saturation) {
-				bb = saturation;
+				_block = saturation;
 				return *this;
 			}
-			bb = c;
+			_block = c;
 		}
 		return *this;
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
 		if constexpr (arithmetic == Modulo) {
-//			blockbinary<2 * nbits, bt> c = urmul(this->bb, rhs.bb);
-			blockbinary<2 * nbits, bt> c = urmul2(this->bb, rhs.bb);
+//			blockbinary<2 * nbits, bt> c = urmul(_block, rhs._block);
+			blockbinary<2 * nbits, bt> c = urmul2(_block, rhs._block);
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;
 			if (roundUp) ++c;
-			this->bb = c; // select the lower nbits of the result
+			this->_block = c; // select the lower nbits of the result
 		}
 		else {
-			blockbinary<2 * nbits, bt> c = urmul2(this->bb, rhs.bb);
+			blockbinary<2 * nbits, bt> c = urmul2(_block, rhs._block);
 			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg); // TODO: can these be static?
-			blockbinary<2 * nbits, bt> saturation = maxpos.getbb();
+			blockbinary<2 * nbits, bt> saturation = maxpos.bits();
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;
 			if (c >= saturation) {
-				bb = saturation;
+				_block = saturation;
 				return *this;
 			}
-			saturation = maxneg.getbb();
+			saturation = maxneg.bits();
 			if (c < saturation) {
-				bb = saturation;
+				_block = saturation;
 				return *this;
 			}
 			if (roundUp) ++c;
-			this->bb = c; // select the lower nbits of the result
+			_block = c; // select the lower nbits of the result
 		}
 		return *this;
 	}
@@ -510,16 +512,16 @@ public:
 		if (rhs.iszero()) std::cerr << "fixpnt_divide_by_zero" << std::endl;
 #endif
 		if constexpr (arithmetic == Modulo) {
-			bool positive = (ispos() & rhs.ispos()) | (isneg() & rhs.isneg());  // XNOR
+			bool positive = (ispos() && rhs.ispos()) || (isneg() && rhs.isneg());  // XNOR
 
 			// a fixpnt<nbits,rbits> division scale to a fixpnt<2 * nbits + 1, nbits - 1> 
 			// via an upshift by 2 * rbits of the dividend and un upshift by rbits of the divisor
 			constexpr size_t roundingBits = nbits;
 			constexpr size_t accumulatorSize = 2 * nbits + 2 * rbits + 2 * roundingBits;
-			blockbinary<accumulatorSize, bt> dividend(this->bb);
+			blockbinary<accumulatorSize, bt> dividend(_block);
 			if (dividend.isneg()) dividend.twosComplement();
 			dividend <<= (2 * (rbits + roundingBits)); // scale up to include rounding bits
-			blockbinary<accumulatorSize, bt> divisor(rhs.getbb());
+			blockbinary<accumulatorSize, bt> divisor(rhs.bits());
 			if (divisor.isneg()) divisor.twosComplement();
 			divisor <<= rbits + roundingBits;
 			blockbinary<accumulatorSize, bt> quotient = dividend / divisor;
@@ -532,7 +534,7 @@ public:
 			quotient >>= roundingBits;
 			if (roundUp) ++quotient;
 //			std::cout << "quotient : " << to_binary(quotient, true) << " : " << quotient << (roundUp ? " rounded up": " truncated") << '\n';
-			this->bb = (positive ? quotient : quotient.twosComplement());
+			_block = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
 			std::cerr << "TBD: saturating divide not implemented yet\n";
@@ -540,27 +542,27 @@ public:
 		return *this;
 	}
 	fixpnt& operator%=(const fixpnt& rhs) {
-		bb %= rhs.bb;
+		_block %= rhs._block;
 		return *this;
 	}
 	fixpnt& operator<<=(const signed shift) {
-		bb <<= shift;
+		_block <<= shift;
 		return *this;
 	}
 	fixpnt& operator>>=(const signed shift) {
-		bb >>= shift;
+		_block >>= shift;
 		return *this;
 	}
 	
 	// modifiers
-	inline constexpr void clear() noexcept { bb.clear(); }
-	inline constexpr void setzero() noexcept { bb.clear(); }
-	inline constexpr void setbit(size_t bitIndex, bool v = true) noexcept {
-		if (bitIndex < nbits) bb.setbit(bitIndex, v);
+	constexpr void clear() noexcept { _block.clear(); }
+	constexpr void setzero() noexcept { _block.clear(); }
+	constexpr void setbit(size_t bitIndex, bool v = true) noexcept {
+		if (bitIndex < nbits) _block.setbit(bitIndex, v);
 		// when bitIndex is out-of-bounds, fail silently as no-op
 	}
 	// use un-interpreted raw bits to set the bits of the fixpnt: TODO: expand the API to support fixed-points > 64 bits
-	inline constexpr void setbits(uint64_t value) noexcept { bb.setbits(value); }
+	constexpr void setbits(uint64_t value) noexcept { _block.setbits(value); }
 
 	// specific number system values we would like to have as constexpr
 	// 01111....11111 is max pos
@@ -614,18 +616,20 @@ public:
 	
 		
 	// in-place 1's complement
-	inline constexpr fixpnt& flip() noexcept { bb.flip(); return *this; }
+	constexpr fixpnt& flip() noexcept { _block.flip(); return *this; }
 	// in-place 2's complement
-	inline constexpr fixpnt& twosComplement() noexcept { bb.twosComplement(); return *this; }
+	constexpr fixpnt& twosComplement() noexcept { _block.twosComplement(); return *this; }
 
 	// selectors
-	inline constexpr bool sign()   const noexcept { return bb.sign(); }
-	inline constexpr bool iszero() const noexcept { return bb.iszero(); }
-	inline constexpr bool ispos()  const noexcept { return bb.ispos(); }
-	inline constexpr bool isneg()  const noexcept { return bb.isneg(); }
-	inline constexpr bool at(size_t bitIndex) const noexcept { return bb.at(bitIndex); }
-	inline constexpr bool test(size_t bitIndex) const noexcept { return bb.test(bitIndex); }
-	inline blockbinary<nbits, bt> getbb() const noexcept { return blockbinary<nbits, bt>(bb); }
+	constexpr bool   sign()                const noexcept { return _block.sign(); }
+	constexpr fixpnt integer()             const noexcept { return floor(*this); }
+	constexpr fixpnt fraction()            const noexcept { return (*this - integer()); }
+	blockbinary<nbits, bt> bits()          const noexcept { return blockbinary<nbits, bt>(_block); }
+	constexpr bool   iszero()              const noexcept { return _block.iszero(); }
+	constexpr bool   ispos()               const noexcept { return _block.ispos(); }
+	constexpr bool   isneg()               const noexcept { return _block.isneg(); }
+	constexpr bool   at(size_t bitIndex)   const noexcept { return _block.at(bitIndex); }
+	constexpr bool   test(size_t bitIndex) const noexcept { return _block.test(bitIndex); }
 
 protected:
 	// HELPER methods
@@ -635,7 +639,7 @@ protected:
 	// convert a signed integer into a fixpnt
 	// TODO: this method does not protect against being called with an unsigned integer
 	template<typename SignedInt>
-	inline constexpr fixpnt& convert_signed(SignedInt v) {
+	constexpr fixpnt& convert_signed(SignedInt v) {
 		clear();
 		if (0 == v) return *this;
 		if constexpr (arithmetic == Saturating) { 
@@ -666,7 +670,7 @@ protected:
 	// convert an unsigned integer into a fixpnt
 	// TODO: this method does not protect against being called with an signed integer
 	template<typename UnsignedInt>
-	inline constexpr fixpnt& convert_unsigned(UnsignedInt v) {
+	constexpr fixpnt& convert_unsigned(UnsignedInt v) {
 		clear();
 		if (0 == v) return *this;
 		if constexpr (arithmetic == Saturating) {	
@@ -685,7 +689,7 @@ protected:
 	}
 
 	template<typename Real>
-	inline CONSTEXPRESSION fixpnt& convert_ieee754(Real rhs) {
+	CONSTEXPRESSION fixpnt& convert_ieee754(Real rhs) {
 		clear();
 		if (rhs == 0.0) return *this;
 		if constexpr (arithmetic == Saturating) {	// check if the value is in the representable range
@@ -792,7 +796,7 @@ protected:
 	template<typename NativeInt>
 	typename std::enable_if< std::is_integral<NativeInt>::value&& std::is_unsigned<NativeInt>::value,
 		NativeInt>::type to_unsigned() const {
-		return NativeInt(bb.to_long_long());
+		return NativeInt(_block.to_long_long());
 	}
 
 	template<typename TargetFloat>
@@ -826,117 +830,8 @@ protected:
 		return (sign() ? -value : value);
 	}
 
-#ifdef DEPRECATED
-
-	unsigned short to_ushort() const {
-		return static_cast<unsigned short>(to_ulong_long());
-	}
-	unsigned int to_uint() const {
-		return static_cast<unsigned int>(to_ulong_long());
-	}
-	unsigned long to_ulong() const {
-		return static_cast<unsigned long>(to_ulong_long());
-	}
-	unsigned long long to_ulong_long() const {
-		return static_cast<unsigned long long>(bb.to_long_long());
-	}
-
-	float to_float() const {
-		// minimum positive normal value of a single precision float == 2^-126
-		// float minpos_normal = 1.1754943508222875079687365372222e-38
-		// minimum positive(subnormal) value is 2^-149
-		// float minpos_subnormal = 1.4012984643248170709237295832899e-45
-		static_assert(rbits <= 149, "to_float: fixpnt fraction is too small to represent with native float");
-		float multiplier = 0;
-		if (rbits > 126) { // value is a subnormal number
-			multiplier = 1.4012984643248170709237295832899e-45;
-			for (size_t i = 0; i < 149 - rbits; ++i) {
-				multiplier *= 2.0f; // these are error free multiplies
-			}
-		}
-		else {
-			// the value is a normal number
-			multiplier = 1.1754943508222875079687365372222e-38;
-			for (size_t i = 0; i < 126 - rbits; ++i) {
-				multiplier *= 2.0f; // these are error free multiplies
-			}
-		}
-		// you pop out here with the starting bit value
-		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? sw::universal::twosComplement(*this) : *this);
-		// construct the value
-		float value = 0;
-		for (size_t i = 0; i < nbits; ++i) {
-			if (raw.at(i)) value += multiplier;
-			multiplier *= 2.0; // these are error free multiplies
-		}
-		return (sign() ? -value : value);
-	}
-	double to_double() const {
-		// minimum positive normal value of a double precision float == 2^-1022
-		// double dbl_minpos_normal = 2.2250738585072013830902327173324e-308;
-		// minimum positive subnormal value of a double precision float == 2 ^ -1074
-		// double dbl_minpos_subnormal = 4.940656458412465441765687928622e-324;
-		static_assert(rbits <= 1074, "to_double: fixpnt fraction is too small to represent with native double");
-		double multiplier = 0;
-		if (rbits > 1022) { // value is a subnormal number
-			multiplier = 4.940656458412465441765687928622e-324;
-			for (size_t i = 0; i < 1074 - rbits; ++i) {
-				multiplier *= 2.0f; // these are error free multiplies
-			}
-		}
-		else {
-			// the value is a normal number
-			multiplier = 2.2250738585072013830902327173324e-308;
-			for (size_t i = 0; i < 1022 - rbits; ++i) {
-				multiplier *= 2.0f; // these are error free multiplies
-			}
-		}
-		// you pop out here with the starting bit value
-		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? sw::universal::twosComplement(*this) : *this);
-		// construct the value
-		double value = 0;
-		for (size_t i = 0; i < nbits; ++i) {
-			if (raw.at(i)) value += multiplier;
-			multiplier *= 2.0; // these are error free multiplies
-		}
-		return (sign() ? -value : value);
-
-	}
-	long double to_long_double() const {  // TODO : this is not a valid implementation
-		return (long double)to_double();
-	}
-
-	// from native to fixed-point
-	template<typename Ty>
-	void float_assign(Ty& rhs) {
-		clear();
-		if constexpr (arithmetic == Saturating) {
-			// we are implementing saturation for values that are outside of the fixed-point's range
-			// check if we are in the representable range
-			fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			if (rhs >= (Ty)maxpos) {
-				// set to max value
-				flip();
-				setbit(nbits - 1, false);
-				return;
-			}
-			if (rhs <= (Ty)maxneg) {
-				// set to max neg value
-				setbit(nbits - 1, true);
-				return;
-			}
-		}
-		// for proper rounding, we need to get the full bit representation
-
-		// generate the representation of one and cast to Ty
-		Ty one = Ty(0x1ll << rbits);
-		Ty tmp = rhs * one;
-		*this = uint64_t(tmp);
-	}
-#endif
-
 private:
-	blockbinary<nbits, bt> bb;
+	blockbinary<nbits, bt> _block;
 
 	// convert
 	template<size_t nnbits, size_t rrbits, bool aarithmetic, typename Bbt>
@@ -960,25 +855,6 @@ fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, 
 
 ////////////////////////    FIXED-POINT functions   /////////////////////////////////
 
-#ifdef LATER
-// findMsb takes an fixpnt<nbits,rbits> reference and returns the position of the most significant bit, -1 if v == 0
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline signed findMsb(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-	for (signed i = v.nrBlocks - 1; i >= 0; --i) {
-		if (v.b[i] != 0) {
-			uint8_t mask = 0x80;
-			for (signed j = 7; j >= 0; --j) {
-				if (v.b[i] & mask) {
-					return i * 8 + j;
-				}
-				mask >>= 1;
-			}
-		}
-	}
-	return -1; // no significant bit found, all bits are zero
-}
-#endif
-
 ////////////////////////    FIXED-POINT operators   /////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -987,7 +863,7 @@ inline signed findMsb(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 // equal: precondition is that the block-storage is properly nulled in all arithmetic paths
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline bool operator==(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return (lhs.bb == rhs.bb);
+	return (lhs._block == rhs._block);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
@@ -995,7 +871,7 @@ inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const fi
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {
-	return (lhs.bb < rhs.bb);
+	return (lhs._block < rhs._block);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline bool operator> (const fixpnt<nbits, rbits, arithmetic, bt>& lhs, const fixpnt<nbits, rbits, arithmetic, bt>& rhs) {

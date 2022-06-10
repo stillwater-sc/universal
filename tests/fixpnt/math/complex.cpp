@@ -1,27 +1,43 @@
 // complex.cpp: test suite runner for complex (real, imag, conj) functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default number system library configuration
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/verification/test_suite.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = false;
+	std::string test_suite  = "fixed-point mathlib complex";
+	std::string test_tag    = "mathlib complex";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "fixpnt complex failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	// manual exhaustive test
+	// generate individual testcases to hand trace/debug
 
 	{
 	    constexpr size_t nbits = 8;
@@ -34,9 +50,10 @@ try {
 	    a.real = 1.0f;
 	    a.imag = 1.0f;
 	}
-#else
 
-	std::cout << "fixpnt complex function validation\n";
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else
 
 	constexpr size_t nbits = 4;
 	constexpr size_t rbits = 3;
@@ -45,12 +62,24 @@ try {
 	using Real = fixpnt<nbits, rbits, arithmetic, bt>;
 	std::complex<Real> x, y;
 	auto bla = std::complex<Real>(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
-
 	std::cout << bla << '\n';
 
-#endif  // MANUAL_TESTING
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(0, test_tag, "tbd");
+#endif
 
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

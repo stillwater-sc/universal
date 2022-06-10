@@ -1,6 +1,6 @@
-//  rounding.cpp : rounding and assignment test suite for abitrary precision integers to real number types
+// rounding.cpp : rounding and assignment test suite for abitrary precision integers to real number types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -13,21 +13,7 @@
 #include <universal/number/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-
-/*
-   The goal of the arbitrary integers is to provide a constrained big integer type
-   that enables fast computation with exceptions for overflow, so that the type
-   can be used for forward error analysis studies.
-*/
-
-namespace sw {
-namespace universal {
-
-
-}
-}
-
+#include <universal/verification/test_suite.hpp>
 
 ////////////////// rounding rules
 
@@ -103,16 +89,33 @@ void VerifyScale() {
 	}
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
 
-	std::string tag = "Integer Rounding tests failed";
+	std::string test_suite  = "Integer Rounding";
+	std::string test_tag    = "rounding";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -164,20 +167,28 @@ try {
 	//cout << "minimum for integer<16> " << min_int<16>() << endl;
 	//cout << "maximum for integer<16> " << max_int<16>() << endl;
 
-	cout << "done" << endl;
 
-	return EXIT_SUCCESS;
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	std::cout << "Integer Rounding verfication" << std::endl;
+#if REGRESSION_LEVEL_1
 
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
 
-#endif // STRESS_TESTING
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
 #endif // MANUAL_TESTING
 }
 catch (char const* msg) {

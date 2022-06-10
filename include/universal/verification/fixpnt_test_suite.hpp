@@ -25,7 +25,7 @@ int Compare(double testValue, const fixpnt<nbits, rbits, arithmetic, BlockType>&
 	double result = double(presult);
 	if (std::fabs(result - reference) > 0.000000001) {
 		fail++;
-		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", testValue, reference, presult);
+		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", testValue, presult, reference);
 	}
 	else {
 		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", testValue, reference, presult);
