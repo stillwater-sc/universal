@@ -26,7 +26,7 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 	constexpr size_t fbits = TestType::fbits;
 	using bt = typename TestType::BlockType;
 	constexpr size_t NR_VALUES = (1 << nbits);
-	TestType v;
+	TestType v{};
 
 	if (csvFormat) {
 		ostr << "\"Generate Lookup table for a " << type_tag(v) << " in CSV format\"" << std::endl;
