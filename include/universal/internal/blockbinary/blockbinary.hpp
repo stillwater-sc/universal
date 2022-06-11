@@ -454,13 +454,13 @@ public:
 
 	// modifiers
 	 // clear a block binary number
-	inline constexpr void clear() noexcept {
+	constexpr void clear() noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(0ull);
 		}
 	}
-	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setbit(size_t i, bool v = true) noexcept {
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -470,7 +470,7 @@ public:
 		}
 		// nop if i is out of range
 	}
-	inline constexpr void setbits(uint64_t value) noexcept {
+	constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
 		}
@@ -482,45 +482,45 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	inline constexpr void setblock(size_t b, const bt& block) noexcept {
+	constexpr void setblock(size_t b, const bt& block) noexcept {
 		if (b < nrBlocks) _block[b] = block; // nop if b is out of range
 	}	
-	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
+	constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}		
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	inline constexpr blockbinary& twosComplement() noexcept { // in-place 2's complement
+	constexpr blockbinary& twosComplement() noexcept { // in-place 2's complement
 		blockbinary<nbits, bt> plusOne(1);
 		flip();
 		return *this += plusOne;
 	}
 
 	// selectors
-	inline constexpr bool sign() const noexcept { return _block[MSU] & SIGN_BIT_MASK; }
-	inline constexpr bool ispos() const noexcept { return !sign(); }
-	inline constexpr bool isneg() const noexcept { return sign(); }
-	inline constexpr bool iszero() const noexcept {
+	constexpr bool sign() const noexcept { return _block[MSU] & SIGN_BIT_MASK; }
+	constexpr bool ispos() const noexcept { return !sign(); }
+	constexpr bool isneg() const noexcept { return sign(); }
+	constexpr bool iszero() const noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
 	}
-	inline constexpr bool isallones() const noexcept {
+	constexpr bool isallones() const noexcept {
 		if constexpr (nrBlocks > 1) for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != ALL_ONES) return false;
 		if (_block[MSU] != MSU_MASK) return false;
 		return true;
 	}
-	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
-	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
-	inline constexpr bool at(size_t bitIndex) const noexcept {
+	constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
+	constexpr bool iseven() const noexcept { return !isodd(); }
+	constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
+	constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		bt word = _block[bitIndex / bitsInBlock];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
-	inline constexpr uint8_t nibble(size_t n) const noexcept {
+	constexpr uint8_t nibble(size_t n) const noexcept {
 		uint8_t retval{ 0 };
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
@@ -534,7 +534,7 @@ public:
 		}
 		return retval;
 	}
-	inline constexpr bt block(size_t b) const noexcept {
+	constexpr bt block(size_t b) const noexcept {
 		if (b < nrBlocks) return _block[b]; 
 		return bt(0); // return 0 when block index out of bounds
 	}
@@ -542,7 +542,7 @@ public:
 	// copy a value over from one blockbinary to this blockbinary
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	template<size_t srcbits>
-	inline blockbinary<nbits, bt>& assign(const blockbinary<srcbits, bt>& rhs) {
+	blockbinary<nbits, bt>& assign(const blockbinary<srcbits, bt>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -565,7 +565,7 @@ public:
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	// for fraction/significent encodings, we need to turn off sign-extending.
 	template<size_t srcbits>
-	inline blockbinary<nbits, bt>& assignWithoutSignExtend(const blockbinary<srcbits, bt>& rhs) {
+	blockbinary<nbits, bt>& assignWithoutSignExtend(const blockbinary<srcbits, bt>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -578,7 +578,7 @@ public:
 	}
 
 	// return the position of the most significant bit, -1 if v == 0
-	inline int msb() const noexcept {
+	int msb() const noexcept {
 		for (int i = int(MSU); i >= 0; --i) {
 			if (_block[i] != 0) {
 				bt mask = (bt(1u) << (bitsInBlock-1));
