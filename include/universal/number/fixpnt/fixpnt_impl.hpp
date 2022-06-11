@@ -689,21 +689,21 @@ protected:
 	}
 
 	template<typename Real>
-	CONSTEXPRESSION fixpnt& convert_ieee754(Real rhs) {
+	CONSTEXPRESSION fixpnt& convert_ieee754(Real v) {
 		clear();
-		if (rhs == 0.0) return *this;
+		if (v == 0.0) return *this;
 		if constexpr (arithmetic == Saturating) {	// check if the value is in the representable range
 			fixpnt<nbits, rbits, arithmetic, bt> a;
 			a.maxpos();
-			if (rhs >= float(a)) { return *this = a; } // set to max pos value
+			if (v >= float(a)) { return *this = a; } // set to max pos value
 			a.maxneg();
-			if (rhs <= float(a)) { return *this = a; } // set to max neg value
+			if (v <= float(a)) { return *this = a; } // set to max neg value
 		}
 
 		bool s{ false };
 		uint64_t unbiasedExponent{ 0 };
 		uint64_t raw{ 0 };
-		extractFields(rhs, s, unbiasedExponent, raw); // use native conversion
+		extractFields(v, s, unbiasedExponent, raw); // use native conversion
 		if (unbiasedExponent > 0) raw |= (1ull << ieee754_parameter<Real>::fbits);
 		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
 
@@ -1998,20 +1998,25 @@ inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithme
 // to_binary generates a binary presentation of the fixed-point number
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number, bool nibbleMarker = false) {
-	std::stringstream sstr;
-	sstr << "0b";
-	for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(rbits); --i) {
-		sstr << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-		if (nibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) sstr << '\'';
-	}
-	sstr << '.';
-	if constexpr (rbits > 0) {
-		for (int i = int(rbits) - 1; i >= 0; --i) {
-			sstr << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-			if (nibbleMarker && (rbits - i) % 4 == 0 && i != 0) sstr << '\'';
+	std::stringstream s;
+	s << "0b";
+	if constexpr (nbits > rbits) {
+		for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(rbits); --i) {
+			s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if (nibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) s << '\'';
 		}
 	}
-	return sstr.str();
+	else {
+		s << '0';
+	}
+	s << '.';
+	if constexpr (rbits > 0) {
+		for (int i = int(rbits) - 1; i >= 0; --i) {
+			s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if (nibbleMarker && (rbits - i) % 4 == 0 && i != 0) s << '\'';
+		}
+	}
+	return s.str();
 }
 
 // to_triple generates a triple (sign,scale,fraction) representation of the fixed-point number
