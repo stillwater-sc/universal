@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -11,6 +11,8 @@
 template<size_t nbits> 
 int VerifyAddition(bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
+
+	if (reportTestCases) std::cout << '\n';
 
 	return nrOfFailedTestCases;
 }
@@ -27,7 +29,7 @@ int VerifyAddition(bool reportTestCases) {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 

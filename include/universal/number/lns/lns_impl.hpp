@@ -50,39 +50,51 @@ lns<nbits, rbits, bt>& maxneg(lns<nbits, rbits, bt>& lmaxneg) {
 template<size_t _nbits, size_t _rbits, typename bt = uint8_t>
 class lns {
 public:
-	static constexpr size_t nbits = _nbits;
-	static constexpr size_t rbits = _rbits;
+	static constexpr size_t   nbits = _nbits;
+	static constexpr size_t   rbits = _rbits;
 	typedef bt BlockType;
-	static constexpr double scaling = double(1ull << rbits);
-	static constexpr size_t bitsInByte = 8ull;
-	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr double   scaling = double(1ull << rbits);
+	static constexpr size_t   bitsInByte = 8ull;
+	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr size_t   nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
+	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock));
+	static constexpr size_t   MSU = nrBlocks - 1;
+	static constexpr bt       MSU_MASK = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt       SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1ull) % bitsInBlock));
+	static constexpr bt       MSB_BIT_MASK = bt(bt(1) << ((nbits - 2ull) % bitsInBlock));
+	static constexpr bt       MSB_UNIT = (1 + ((nbits - 2) / bitsInBlock)) - 1;
 
-	lns() : _bits{ 0 } {}
+	lns() noexcept : _block{ 0 } {}
 
-	lns(const lns&) = default;
-	lns(lns&&) = default;
+	lns(const lns&) noexcept = default;
+	lns(lns&&) noexcept = default;
 
-	lns& operator=(const lns&) = default;
-	lns& operator=(lns&&) = default;
+	lns& operator=(const lns&) noexcept = default;
+	lns& operator=(lns&&) noexcept = default;
 
-	lns(signed char initial_value)        { *this = initial_value; }
-	lns(short initial_value)              { *this = initial_value; }
-	lns(int initial_value)                { *this = initial_value; }
-	lns(long long initial_value)          { *this = initial_value; }
-	lns(unsigned long long initial_value) { *this = initial_value; }
-	lns(float initial_value)              { *this = initial_value; }
-	lns(double initial_value)             { *this = initial_value; }
-	lns(long double initial_value)        { *this = initial_value; }
+	constexpr lns(signed char initial_value)        noexcept { *this = initial_value; }
+	constexpr lns(short initial_value)              noexcept { *this = initial_value; }
+	constexpr lns(int initial_value)                noexcept { *this = initial_value; }
+	constexpr lns(long long initial_value)          noexcept { *this = initial_value; }
+	constexpr lns(unsigned long long initial_value) noexcept { *this = initial_value; }
+	constexpr lns(float initial_value)              noexcept { *this = initial_value; }
+	constexpr lns(double initial_value)             noexcept { *this = initial_value; }
 
 	// assignment operators
-	lns& operator=(signed char rhs) { return *this = (long long)(rhs); }
-	lns& operator=(short rhs) { return *this = (long long)(rhs); }
-	lns& operator=(int rhs) { return *this = (long long)(rhs); }
-	lns& operator=(long long rhs) { return *this; }
-	lns& operator=(unsigned long long rhs) { return *this; }
-	constexpr lns& operator=(float rhs) { _bits = (long long)(std::log(rhs) * scaling); return *this; }
-	constexpr lns& operator=(double rhs) { _bits = (long long)(std::log(rhs) * scaling); return *this; }
-	lns& operator=(long double rhs) { _bits = (long long)(std::log(rhs) * scaling); return *this; }
+	constexpr lns& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr lns& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr lns& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr lns& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr lns& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	CONSTEXPRESSION lns& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
+	CONSTEXPRESSION lns& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
+
+	// guard long double support to enable ARM and RISC-V embedded environments
+#if LONG_DOUBLE_SUPPORT
+	lns(long double initial_value)                        noexcept { *this = initial_value; }
+	CONSTEXPRESSION lns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
+	explicit operator long double()                 const noexcept { return to_long_double(); }
+#endif
 
 	// arithmetic operators
 	// prefix operator
@@ -96,12 +108,40 @@ public:
 	lns& operator-=(const lns& rhs) { return *this; }
 	lns& operator-=(double rhs) { return *this -= lns(rhs); }
 	lns& operator*=(const lns& rhs) {
-		this->_bits += rhs._bits;
-		return *this; 
+		if constexpr (nrBlocks == 1) {
+			bool lhsSign = sign();
+			bool rhsSign = rhs.sign();
+			_block[0] = static_cast<bt>((~SIGN_BIT_MASK & _block[0]) + (~SIGN_BIT_MASK & rhs.block(0)));
+			setbit(nbits - 1, lhsSign ^ rhsSign);
+			// null any leading bits that fall outside of nbits
+			_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
+		}
+		else {
+			bool lhsSign = sign();
+			bool rhsSign = rhs.sign();
+			lns<nbits, rbits, BlockType> sum, r(rhs);
+			r.setsign(false);
+			BlockType* pA = _block;
+			BlockType const* pB = r._block;
+			BlockType* pC = sum._block;
+			BlockType* pEnd = pC + nrBlocks;
+			std::uint64_t carry = 0;
+			while (pC != pEnd) {
+				carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
+				*pC = static_cast<bt>(carry);
+				carry >>= bitsInBlock;
+				++pA; ++pB; ++pC;
+			}
+			setbit(nbits - 1, lhsSign ^ rhsSign);
+			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+			BlockType* pLast = pEnd - 1;
+			*pLast = static_cast<bt>(MSU_MASK & *pLast);
+			*this = sum;
+		}
+		return *this;
 	}
 	lns& operator*=(double rhs) { return *this *= lns(rhs); }
 	lns& operator/=(const lns& rhs) {
-		this->_bits -= rhs._bits;
 		return *this;
 	}
 	lns& operator/=(double rhs) { return *this /= lns(rhs); }
@@ -125,43 +165,103 @@ public:
 	}
 
 	// modifiers
-	void clear() noexcept { _bits.clear(); }
-	void setbits(uint64_t v) noexcept { _bits.setbits(v); } // API to be consistent with the other number systems
-
+	constexpr void clear() noexcept { 
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] = bt(0ull);
+		}
+	}
+	constexpr void setzero()                       noexcept { clear(); }
+	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
+	constexpr void setbit(size_t i, bool v = true) noexcept {
+		if (i < nbits) {
+			bt block = _block[i / bitsInBlock];
+			bt null = ~(1ull << (i % bitsInBlock));
+			bt bit = bt(v ? 1 : 0);
+			bt mask = bt(bit << (i % bitsInBlock));
+			_block[i / bitsInBlock] = bt((block & null) | mask);
+		}
+		// nop if i is out of range
+	}
+	constexpr void setbits(uint64_t value) noexcept {
+		if constexpr (1 == nrBlocks) {
+			_block[0] = value & storageMask;
+		}
+		else if constexpr (1 < nrBlocks) {
+			for (size_t i = 0; i < nrBlocks; ++i) {
+				_block[i] = value & storageMask;
+				value >>= bitsInBlock;
+			}
+		}
+		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+	}
+	
 	// selectors
-	constexpr bool iszero() const noexcept { return false; }
-	constexpr bool isneg()  const noexcept { return false; }
-	constexpr bool ispos()  const noexcept { return false; }
+	constexpr bool iszero() const noexcept { // special encoding
+		if constexpr (nrBlocks == 1) {
+			return ((_block[MSB_UNIT] & MSB_BIT_MASK) > 0);  // +- 0 is possible
+		}
+		else {
+			for (size_t i = 0; i < MSB_UNIT - 1; ++i) {
+				if (_block[i] != 0) return false;
+			}
+			return ((_block[MSB_UNIT] & MSB_BIT_MASK) > 0);
+		}
+	}
+	constexpr bool isneg()  const noexcept { return sign(); }
+	constexpr bool ispos()  const noexcept { return !sign(); }
 	constexpr bool isinf()  const noexcept { return false; }
-	constexpr bool isnan()  const noexcept { return false; }
-	constexpr bool sign()   const noexcept { return false; }
+	constexpr bool isnan()  const noexcept { // special encoding
+		return false; 
+	}
+	constexpr bool sign()   const noexcept { 
+		return (SIGN_BIT_MASK & _block[MSU]) != 0;
+	}
 	constexpr int  scale()  const noexcept { return false; }
 
 	constexpr bool at(size_t bitIndex) const noexcept {
-		return _bits.at(bitIndex);
+		if (bitIndex >= nbits) return false; // fail silently as no-op
+		bt word = _block[bitIndex / bitsInBlock];
+		bt mask = bt(1ull << (bitIndex % bitsInBlock));
+		return (word & mask);
 	}
-	std::string get() const noexcept {
-		std::stringstream s;
-		s << std::exp(double(_bits.to_long_long()));
-		return s.str(); 
+	inline constexpr bt block(size_t b) const noexcept {
+		if (b < nrBlocks) return _block[b];
+		return bt(0); // return 0 when block index out of bounds
 	}
 
 	long double to_long_double() const noexcept {
-		return std::exp((long double)(_bits.to_long_long()))/scaling;
+		return 0.0l;
 	}
 	double to_double() const noexcept {
-		return std::exp(double(_bits.to_long_long()))/scaling;
+		return 0.0;
 	}
 	float to_float() const noexcept {
-		return std::exp(float(_bits.to_long_long()))/scaling;
+		return 0.0f;
 	}
-	// Maybe remove explicit
-	explicit operator long double() const noexcept { return to_long_double(); }
+
 	explicit operator double() const noexcept { return to_double(); }
 	explicit operator float() const noexcept { return to_float(); }
 
+protected:
+
+	template<typename SignedInt>
+	constexpr lns& convert_signed(SignedInt v) {
+		clear();
+		return *this;
+	}
+	template<typename UnsignedInt>
+	constexpr lns& convert_unsigned(UnsignedInt v) {
+		clear();
+		return *this;
+	}
+	template<typename Real>
+	CONSTEXPRESSION lns& convert_ieee754(Real v) {
+		clear();
+		return *this;
+	}
+
 private:
-	blockbinary<nbits,bt>  _bits;
+	BlockType  _block[nrBlocks];
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t rrbits, typename nbt>
@@ -198,11 +298,61 @@ inline std::istream& operator>>(std::istream& istr, const lns<nnbits, rrbits, nb
 
 // lns - logic operators
 template<size_t nnbits, size_t rrbits, typename nbt>
-inline bool operator==(const lns<nnbits, rrbits, nbt>& lhs, const lns<nnbits, rrbits, nbt>& rhs) { return false; }
+inline bool operator==(const lns<nnbits, rrbits, nbt>& lhs, const lns<nnbits, rrbits, nbt>& rhs) {
+	using LNS = lns<nnbits, rrbits, nbt>;
+	if constexpr (LNS::nrBlocks == 1) {
+		return lhs._block[0] == rhs._block[0];
+	}
+	if constexpr (LNS::nrBlocks == 2) {
+		return (lhs._block[0] == rhs._block[0]) && 
+			   (lhs._block[1] == rhs._block[1]);
+	}
+	if constexpr (LNS::nrBlocks == 3) {
+		return (lhs._block[0] == rhs._block[0]) &&
+			   (lhs._block[1] == rhs._block[1]) &&
+			   (lhs._block[2] == rhs._block[2]);
+	}
+	if constexpr (LNS::nrBlocks == 4) {
+		return (lhs._block[0] == rhs._block[0]) &&
+			   (lhs._block[1] == rhs._block[1]) &&
+			   (lhs._block[2] == rhs._block[2]) &&
+			   (lhs._block[3] == rhs._block[3]);
+	}
+	else {
+		for (size_t i = 0; i < LNS::nrBlocks; ++i) {
+			if (lhs.block(i) != rhs.block(i)) return false;
+		}
+		return true;
+	}
+}
 template<size_t nnbits, size_t rrbits, typename nbt>
 inline bool operator!=(const lns<nnbits, rrbits, nbt>& lhs, const lns<nnbits, rrbits, nbt>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nnbits, size_t rrbits, typename nbt>
-inline bool operator< (const lns<nnbits, rrbits, nbt>& lhs, const lns<nnbits, rrbits, nbt>& rhs) { return false; }
+inline bool operator< (const lns<nnbits, rrbits, nbt>& lhs, const lns<nnbits, rrbits, nbt>& rhs) {
+	using LNS = lns<nnbits, rrbits, nbt>;
+	bool lhsSign = lhs.at(nnbits - 1);
+	bool rhsSign = rhs.at(nnbits - 1);
+	if (lhsSign) {
+		if (rhsSign) {
+			LNS l(lhs);
+			l.setbit(nnbits - 1, false);
+			LNS r(rhs);
+			r.setbit(nnbits - 1, false);
+		}
+		else {
+			return true;
+		}
+	}
+	else {
+		if (rhsSign) {
+			return false;
+		}
+		else {
+
+		}
+	}
+	return false; 
+}
 template<size_t nnbits, size_t rrbits, typename nbt>
 inline bool operator> (const lns<nnbits, rrbits, nbt>& lhs, const lns<nnbits, rrbits, nbt>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nnbits, size_t rrbits, typename nbt>
