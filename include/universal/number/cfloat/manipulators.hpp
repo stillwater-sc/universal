@@ -188,7 +188,7 @@ std::string info_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 
 // generate a binary, color-coded representation of the cfloat
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
+std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r, bool nibbleMarker = false) {
 	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	std::stringstream s;
 	bool sign{ false };
@@ -210,11 +210,13 @@ std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorma
 	// exponent bits
 	for (int i = int(es) - 1; i >= 0; --i) {
 		s << cyan << (e.test(static_cast<size_t>(i)) ? '1' : '0');
+		if ((i - es) > 0 && ((i - es) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 	}
 
 	// fraction bits
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
 		s << magenta << (f.test(static_cast<size_t>(i)) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
 	}
 
 	s << def;
