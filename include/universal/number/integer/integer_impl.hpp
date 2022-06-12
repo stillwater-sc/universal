@@ -81,6 +81,7 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& v);
 // idiv_t for integer<nbits, BlockType, NumberType> to capture quotient and remainder during long division
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 struct idiv_t {
+	idiv_t() : quot{ 0 }, rem{ 0 } {};
 	integer<nbits, BlockType, NumberType> quot; // quotient
 	integer<nbits, BlockType, NumberType> rem;  // remainder
 };
@@ -120,13 +121,8 @@ public:
 	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 	static constexpr uint64_t BASE = (ALL_ONES + 1ull);
 
-	constexpr integer() noexcept : _block{ 0 } {};
-
-	constexpr integer(const integer&) noexcept = default;
-	constexpr integer(integer&&) noexcept = default;
-
-	constexpr integer& operator=(const integer&) noexcept = default;
-	constexpr integer& operator=(integer&&) noexcept = default;
+	/// trivial constructor
+	constexpr integer() noexcept = default;
 
 	/// Construct a new integer from another, sign extend when necessary, BlockTypes must be the same
 	template<size_t srcbits>
@@ -1490,7 +1486,7 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 		}
 
 		result.assign(nbits / 3 + 1u, '0');
-		std::string::size_type pos = result.size() - 1;
+		int pos = static_cast<int>(result.size() - 1);
 		while (!t.iszero()) {
 			Integer t2 = t / block10;
 			Integer r  = t % block10;
@@ -1503,6 +1499,7 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 				if (pos-- == 0) break;
 			}
 			t = t2;
+			if (pos < 0) break;
 		}
 
 		std::string::size_type firstDigit = result.find_first_not_of('0');
