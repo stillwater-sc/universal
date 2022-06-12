@@ -18,5 +18,5 @@ if [[ $# == 0 ]]; then
 	docker build --force-rm -t stillwater/universal:test -f ../Dockerfile.testWithClang14 ..
 else
       echo "docker build --force-rm -t stillwater/universal:test --build-arg target=$TARGET -f ../Dockerfile.testWithClang14 .."
-	docker build --force-rm -t stillwater/universal:test --build-arg target=$TARGET -f ../Dockerfile.testWithClang14 ..
+	docker build --force-rm -t stillwater/universal:test --build-arg "target=$TARGET" -f ../Dockerfile.testWithClang14 ..
 fi
