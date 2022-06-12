@@ -22,7 +22,7 @@
 void CompilerBug() {
 	using namespace sw::universal;
 	{
-		cfloat<5, 1, uint8_t, true, true, false> a;
+		cfloat<5, 1, uint8_t, true, true, false> a; // uninitialized
 		a.setbits(0x0);
 		std::cout << "cfloat<5,1> : " << to_binary(a) << " : " << a << '\n';
 		float f = float(a);
@@ -31,7 +31,7 @@ void CompilerBug() {
 		std::cout << "double     : " << d << '\n';
 	}
 	{
-		cfloat<5, 1, uint8_t, true, true, false> a;
+		cfloat<5, 1, uint8_t, true, true, false> a; // uninitialized
 		a.setbits(0x10);
 		std::cout << "cfloat<5,1> : " << to_binary(a) << " : " << a << '\n';
 		float f = float(a);
@@ -41,7 +41,7 @@ void CompilerBug() {
 	}
 
 	{
-		cfloat<6, 1, uint8_t, true, true, false> a;
+		cfloat<6, 1, uint8_t, true, true, false> a; // uninitialized
 		a.setbits(0x0);
 		std::cout << "cfloat<6,1> : " << to_binary(a) << " : " << a << '\n';
 		float f = float(a);
@@ -50,7 +50,7 @@ void CompilerBug() {
 		std::cout << "double     : " << d << '\n';
 	}
 	{
-		cfloat<6, 1, uint8_t, true, true, false> a;
+		cfloat<6, 1, uint8_t, true, true, false> a; // uninitialized
 		a.setbits(0x20);
 		std::cout << "cfloat<6,1> : " << to_binary(a) << " : " << a << '\n';
 		float f = float(a);
@@ -126,7 +126,7 @@ void GenerateDoublePrecisionSubnormals()
 	constexpr size_t es = 11;
 	using bt = uint64_t;
 	using namespace sw::universal;
-	cfloat<nbits, es, bt> a;
+	cfloat<nbits, es, bt> a{};
 	++a;
 	double d = double(a);
 	std::cout << std::setprecision(20);
@@ -193,7 +193,7 @@ try {
 		double testValue = double(ref);
 		std::cout << "ref : " << to_binary(ref) << " : " << ref << '\n';
 		std::cout << "test: " << to_binary(testValue) << " : " << testValue << '\n';
-		cfloat<64, 8, uint8_t> nut;
+		cfloat<64, 8, uint8_t> nut;  // uninitialized
 		//		a.constexprClassParameters();
 		nut = testValue;
 		double da = double(nut);

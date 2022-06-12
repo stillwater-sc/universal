@@ -77,7 +77,7 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 		constexpr bool hasSupernormal = true;
 		constexpr bool isSaturating = true;
 		using Cfloat = cfloat < nbits, es, uint8_t, hasSubnormal, hasSupernormal, isSaturating >;
-		Cfloat a, b, c;
+		Cfloat a, b, c; // uninitialized
 //		GenerateTable<Cfloat>(cout);
 //		a.constexprClassParameters();
 		a = fa;

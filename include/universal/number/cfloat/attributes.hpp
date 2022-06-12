@@ -38,7 +38,7 @@ void report_range(std::ostream& ostr) {
 	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
 	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
 	using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
-	Cfloat c;
+	Cfloat c{};
 	ostr << std::setw(40) << type_tag(c) << " : [ "
 		<< c.maxneg() << " ... "
 		<< c.minneg() << " "

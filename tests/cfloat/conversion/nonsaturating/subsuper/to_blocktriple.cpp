@@ -73,7 +73,7 @@ try {
 			using Cfloat = cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 			constexpr size_t fbits = Cfloat::fbits;
 			typedef Cfloat::BlockType bt;
-			Cfloat nut;
+			Cfloat nut; // uninitialized
  			nut.setbits(0x1e);
 			float v = float(nut);
 			blocktriple<fbits, BlockTripleOperator::ADD, bt> b, ref; // blocktriple type that comes out of an ADD/SUB operation

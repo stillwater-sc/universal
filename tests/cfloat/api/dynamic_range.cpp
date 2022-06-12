@@ -25,7 +25,7 @@ void GenerateSinglePrecisionSubnormals()
 	constexpr bool hasSubnormals = true;
     constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = true;
-	cfloat<nbits, es, bt, hasSubnormals, !hasSupernormals, !isSaturating> a;
+	cfloat<nbits, es, bt, hasSubnormals, !hasSupernormals, !isSaturating> a{};
 	++a;
 	float f = float(a);
 	std::cout << std::setprecision(16);

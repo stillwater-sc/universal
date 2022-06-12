@@ -663,7 +663,7 @@ void RealIT_ak1(int* iFlag, int* NZ, double* sss, int N, double p[MDP1], int NN,
 // iFlag - flag to indicate a pair of zeros near real axis
 
 int i, j = 0, nm1 = N - 1;
-double ee, kv, mp, ms, omp, pv, s, t = 0;
+double ee, kv, mp, ms, omp{}, pv, s, t = 0;
 
 *iFlag = *NZ = 0;
 s = *sss;

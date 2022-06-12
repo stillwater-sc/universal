@@ -79,7 +79,7 @@ namespace sw { namespace universal {
 	template<typename Cfloat, sw::universal::BlockTripleOperator op>
 	void GenerateConversionTest(int scale, uint64_t rawBits) {
 		using namespace sw::universal;
-		Cfloat nut, ref;
+		Cfloat nut{}, ref{};
 //		std::cout << type_tag(nut) << '\n';
 		constexpr size_t fbits = Cfloat::fbits;
 		using bt = typename Cfloat::BlockType;
@@ -217,14 +217,14 @@ namespace sw { namespace universal {
 
 		// execute the test
 		int nrOfFailedTests = 0;
-		RefType refminpos;
+		RefType refminpos{};
 		refminpos.minpos();
 		double dminpos = double(refminpos);
 
 		// NUT: number under test
-		TestType nut, golden;
+		TestType nut{}, golden{};
 		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
-			RefType ref, prev, next;
+			RefType ref{}, prev{}, next{};
 			SrcType testValue{ 0.0 };
 			ref.setbits(i);
 			SrcType da = SrcType(ref);
@@ -464,8 +464,9 @@ namespace sw { namespace universal {
 		using SrcType = float;
 
 //		cfloat<32, 8, uint32_t, true, false, false> ref; // this is an IEEE-754 float
-		cfloat<32, 8, uint32_t, true, true, false> ref; // this is a superset of an IEEE-754 float with gradual overflow
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
+		cfloat<32, 8, uint32_t, true, true, false> ref{};
+		                                                // this is a superset of an IEEE-754 float with gradual overflow
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{};
 
 		if (reportTestCases) { std::cerr << type_tag(nut) << '\n'; }
 		// this is too verbose, so I turned it off
@@ -517,9 +518,9 @@ namespace sw { namespace universal {
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
  
-		cfloat<64, 11, uint64_t, true, false, false> ref;  // this is an IEEE-754 double
+		cfloat<64, 11, uint64_t, true, false, false> ref{};  // this is an IEEE-754 double
 //		cfloat<64, 11, uint64_t, true, false, false> ref;  // this is a superset of an IEEE-754 double with gradual overflow
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{};
 
 		if (reportTestCases) { std::cerr << type_tag(nut) << '\n'; }
 		// this is too verbose, so I turned it off
@@ -571,7 +572,7 @@ namespace sw { namespace universal {
 		constexpr bool hasSubnormals = true;
 		constexpr bool hasSupernormals = true;
 		constexpr bool isSaturating = false;
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{}, result{};
 		float f{ 0.0f };
 		int nrOfFailedTests{ 0 };
 
@@ -601,7 +602,7 @@ namespace sw { namespace universal {
 		constexpr bool hasSubnormals = true;
 		constexpr bool hasSupernormals = true;
 		constexpr bool isSaturating = false;
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{}, result{};
 		double d{ 0.0f };
 		int nrOfFailedTests{ 0 };
 
@@ -632,7 +633,7 @@ namespace sw { namespace universal {
 		constexpr bool hasSubnormals = true;
 		constexpr bool hasSupernormals = true;
 		constexpr bool isSaturating = false;
-		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut, result;
+		cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> nut{}, result{};
 		double d{ 0.0f };
 		int nrOfFailedTests{ 0 };
 
@@ -686,7 +687,7 @@ namespace sw { namespace universal {
 
 		int nrOfTestFailures{ 0 };
 
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{}, nut{};
 //		std::cout << dynamic_range(a) << '\n';
 		int minposScale = minpos_scale(a);
 		int maxposScale = maxpos_scale(a);
@@ -836,7 +837,7 @@ namespace sw { namespace universal {
 
 		int nrOfTestFailures{ 0 };
 
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, nut;
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{}, nut{};
 		//		std::cout << dynamic_range(a) << '\n';
 		int minposScale = minpos_scale(a);
 		int maxposScale = maxpos_scale(a);
@@ -890,7 +891,7 @@ namespace sw { namespace universal {
 
 		int nrOfTestFailures{ 0 };
 		constexpr size_t NR_VALUES = (1u << nbits);
-		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
+		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{};
 
 		// ADD
 		if constexpr (op == BlockTripleOperator::ADD) {
@@ -995,7 +996,7 @@ namespace sw { namespace universal {
 		// 0.11.111   nan
 
 		std::vector< Cfloat > s(NR_OF_REALS);
-		Cfloat c; // == TestType but marshalled
+		Cfloat c{}; // == TestType but marshalled
 		constexpr size_t NEGATIVE_ZERO = (1ull << (nbits - 1)); // pattern 1.00.000
 		constexpr size_t MAX_POS = (~0ull >> (64 - nbits + 1)); // pattern 0.11.111
 		size_t i = 0;
@@ -1091,7 +1092,7 @@ namespace sw { namespace universal {
 
 		int nrOfFailedTestCases = 0;
 
-		Cfloat c, ref; // == TestType but marshalled
+		Cfloat c{}, ref{}; // == TestType but marshalled
 		// starting from SNaN iterating from -inf, -maxpos to maxpos, +inf, +nan
 		for (typename std::vector < Cfloat >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 			c = *it;
@@ -1185,7 +1186,7 @@ namespace sw { namespace universal {
 
 		int nrOfFailedTestCases = 0;
 
-		Cfloat c, ref;
+		Cfloat c{}, ref{};
 		// starting from +nan, +inf, maxpos, ..., +0, -0, ..., maxneg, -inf, -nan
 		for (typename std::vector < Cfloat >::iterator it = set.end() - 1; it != set.begin(); --it) {
 			c = *it;
@@ -1226,7 +1227,7 @@ namespace sw { namespace universal {
 		// Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
-		Cfloat a, b, nut, cref;
+		Cfloat a{}, b{}, nut{}, cref{};
 		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
@@ -1372,7 +1373,7 @@ namespace sw { namespace universal {
 		// Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
-		Cfloat a, b, nut, cref;
+		Cfloat a{}, b{}, nut{}, cref{};
 		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
@@ -1519,7 +1520,7 @@ namespace sw { namespace universal {
 		// Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
-		Cfloat a, b, nut, cref;
+		Cfloat a{}, b{}, nut{}, cref{};
 		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
@@ -1659,7 +1660,7 @@ namespace sw { namespace universal {
 		// Cfloat maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
-		Cfloat a, b, nut, cref;
+		Cfloat a{}, b{}, nut{}, cref{};
 		for (size_t i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
