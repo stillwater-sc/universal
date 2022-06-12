@@ -1,6 +1,6 @@
 // api.cpp: test suite runner for class interface tests of the integer<> type
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -28,7 +28,7 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		// default construction using default arithmetic (Modulo) and default BlockType (uint8_t)
-		integer<8> a, b(-8), c(7), d(-7); 
+		integer<8> a(0), b(-8), c(7), d(-7);
 		
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (1 + b + c)) ++nrOfFailedTestCases;
@@ -63,7 +63,7 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and BlockType
-		integer<16, uint16_t> a, b(-2048), c(2047), d(-2047);
+		integer<16, std::uint16_t, IntegerNumberType::IntegerNumber> a(0), b(-2048), c(2047), d(-2047);
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a - 1 != (b + c)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
@@ -77,20 +77,20 @@ try {
 
 		// type tag to identify the type without having to depend on demangle
 	{
-		using Integer = integer<16, uint16_t>;
+		using Integer = integer<16, uint16_t, IntegerNumberType::IntegerNumber>;
 		Integer a{ 0 };
 		std::cout << "type identifier : " << type_tag(a) << '\n';
 		std::cout << "type identifier : " << type_tag(integer< 8>()) << '\n';
-		std::cout << "type identifier : " << type_tag(integer< 8, uint16_t>()) << '\n';
-		std::cout << "type identifier : " << type_tag(integer<32, uint32_t>()) << '\n';
-		std::cout << "type identifier : " << type_tag(integer<64, uint64_t>()) << '\n';
-		std::cout << "type identifier : " << type_tag(integer<96, uint32_t>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer< 8, uint16_t, IntegerNumberType::WholeNumber>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer<32, uint32_t, IntegerNumberType::IntegerNumber>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer<64, uint64_t, IntegerNumberType::IntegerNumber>()) << '\n';
+		std::cout << "type identifier : " << type_tag(integer<96, uint32_t, IntegerNumberType::NaturalNumber>()) << '\n';
 	}
 
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 8;
-		integer<nbits> a, b;
+		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a, b;
 		a = 1;
 		if (a.test(4)) ++nrOfFailedTestCases;
 		if (!a.test(0)) ++nrOfFailedTestCases;
@@ -109,7 +109,7 @@ try {
 		int start = nrOfFailedTestCases;
 		// state/bit management
 		constexpr size_t nbits = 8;
-		integer<nbits> a, b, c, d;
+		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a, b, c, d;
 		// set all bits of 'a' which represents -1
 		for (unsigned i = 0; i < nbits; ++i) {
 			a.setbit(i, true);
@@ -138,7 +138,7 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 8;
-		integer<nbits> a, b;
+		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a, b;
 		a.setbits(0xFF);
 		b = onesComplement(a);
 		if (b != 0) ++nrOfFailedTestCases;
@@ -157,7 +157,7 @@ try {
 		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 16;
 		using blocktype = std::uint8_t;
-		integer<nbits, blocktype> a, b, c, d, e(SpecificValue::minpos);
+		integer<nbits, blocktype, IntegerNumberType::IntegerNumber> a, b, c, d, e(SpecificValue::minpos);
 		a.maxpos();
 		b.maxneg();
 		c.minpos();
@@ -190,7 +190,7 @@ try {
 		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 8;
 		using blocktype = uint32_t;
-		integer<nbits, blocktype> a, b, c, d;
+		integer<nbits, blocktype, IntegerNumberType::IntegerNumber> a, b, c, d;
 		a = 1;
 		b = 2l;
 		c = 3ll;
@@ -296,7 +296,7 @@ try {
 	// printing of large integers
 	{
 		constexpr size_t nbits = 8;
-		integer<nbits> a{ 1 };
+		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a{ 1 };
 		std::cout << std::showpos;
 		for (unsigned i = 0; i < nbits; ++i) {
 			std::cout << to_binary(a) << " : ";
@@ -317,7 +317,7 @@ try {
 	}
 	{
 		constexpr size_t nbits = 8;
-		integer<nbits> a{ 1 };
+		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a{ 1 };
 		std::cout << std::oct;
 		for (unsigned i = 0; i < nbits; ++i) {
 			std::cout << to_binary(a) << " : ";
@@ -327,7 +327,7 @@ try {
 	}
 	{
 		constexpr size_t nbits = 8;
-		integer<nbits> a{ 1 };
+		integer<nbits, std::uint8_t, IntegerNumberType::IntegerNumber> a{ 1 };
 		std::cout << std::hex;
 		for (unsigned i = 0; i < nbits; ++i) {
 			std::cout << to_binary(a) << " : ";
@@ -337,7 +337,7 @@ try {
 	}
 	std::cout << std::dec;
 	{
-		integer<32> a{ 1 };
+		integer<32, std::uint32_t, IntegerNumberType::IntegerNumber> a{ 1 };
 		std::cout << std::showpos;
 		for (unsigned i = 0; i < 32; ++i) {
 			std::cout << to_binary(a) << " : ";
@@ -364,12 +364,12 @@ try {
 	}
 
 	{
-		integer<32> a{ 128 };
+		integer<32, std::uint32_t, IntegerNumberType::IntegerNumber> a{ 128 };
 		std::cout << a << '\n';
 	}
 
 	{
-		integer<1024, std::uint32_t> a;
+		integer<1024, std::uint32_t, IntegerNumberType::IntegerNumber> a;
 		a = 1;
 		constexpr unsigned NR_DIGITS = 10;
 		for (unsigned i = 0; i < NR_DIGITS; ++i) {
@@ -379,7 +379,6 @@ try {
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	nrOfFailedTestCases = 0; // TODO: fix this test
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
