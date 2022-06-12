@@ -64,13 +64,8 @@ public:
 	static constexpr bt       MSB_BIT_MASK = bt(bt(1) << ((nbits - 2ull) % bitsInBlock));
 	static constexpr bt       MSB_UNIT = (1 + ((nbits - 2) / bitsInBlock)) - 1;
 
-	lns() noexcept : _block{ 0 } {}
-
-	lns(const lns&) noexcept = default;
-	lns(lns&&) noexcept = default;
-
-	lns& operator=(const lns&) noexcept = default;
-	lns& operator=(lns&&) noexcept = default;
+	/// tivial constructor
+	lns() noexcept = default;
 
 	constexpr lns(signed char initial_value)        noexcept { *this = initial_value; }
 	constexpr lns(short initial_value)              noexcept { *this = initial_value; }
@@ -408,9 +403,17 @@ template<size_t nbits, size_t rbits, typename bt>
 inline std::string to_binary(const lns<nbits, rbits, bt>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
-	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
+	s << (number.sign() ? "1." : "0.");
+	for (int i = static_cast<int>(nbits) - 2; i >= rbits; --i) {
 		s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+		if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	if constexpr (rbits > 0) {
+		s << '.';
+		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+			s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+		}
 	}
 	return s.str();
 }
