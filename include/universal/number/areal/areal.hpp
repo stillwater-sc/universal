@@ -1,6 +1,6 @@
-// <universal/areal/areal>: arbitrary real arithmetic type standard header
+// <universal/number/areal/areal.hpp>: arbitrary real arithmetic type standard header
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _AREAL_STANDARD_HEADER_

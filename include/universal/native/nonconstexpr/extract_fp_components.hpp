@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>
 
 namespace sw { namespace universal {
 
@@ -11,7 +12,7 @@ namespace sw { namespace universal {
 inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, unsigned int& _fraction) {
 	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
 	_sign = fp < 0.0 ? true : false;
-	_fr = std::frexpf(fp, &_exponent);
+	_fr = frexpf(fp, &_exponent);
 	_fraction = static_cast<std::uint32_t>(0x007F'FFFFul) & reinterpret_cast<uint32_t&>(_fr);
 }
 

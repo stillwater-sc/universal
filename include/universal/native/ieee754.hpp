@@ -145,7 +145,7 @@ inline constexpr Real ipow(size_t exp) {
 /// <returns>binary scale</returns>
 inline int scale(float v) {
 	int exponent{ 0 };
-	float frac = std::frexpf(v, &exponent);
+	float frac = frexpf(v, &exponent);
 	if (frac == 0.0f) exponent = 0;
 	return exponent - 1;
 }
@@ -169,7 +169,7 @@ inline int scale(double v) {
 /// <returns>binary scale</returns>
 inline int scale(long double v) {
 	int exponent{ 0 };
-	long double frac = std::frexpl(v, &exponent);
+	long double frac = frexpl(v, &exponent);
 	if (frac == 0.0l) exponent = 0;
 	return exponent - 1;
 }
