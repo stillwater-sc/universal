@@ -1231,16 +1231,6 @@ public:
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	// truncate the fraction, that is, null all fraction bits
-	inline constexpr cfloat& truncate() noexcept {
-		if constexpr (FSU > 0) {
-			for (size_t b = 0; b < FSU; ++b) {
-				_block[b] = bt(0);
-			}
-		}
-		_block[FSU] &= bt(~FSU_MASK);
-		return *this;
-	}
 
 	/// <summary>
 	/// assign the value of the string representation to the cfloat
@@ -2476,13 +2466,13 @@ public:
 					// f = 1.ffff  2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 					// -exponent because we are right shifting and exponent in this range is negative
 					adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-					
+#if TRACE_CONVERSION					
 					std::cout << "source is subnormal: TBD\n";
 					std::cout << "shift to LSB    " << (rightShift + adjustment) << '\n';
 					std::cout << "adjustment      " << adjustment << '\n';
 					std::cout << "exponent        " << exponent << '\n';
 					std::cout << "subnormal shift " << subnormal_reciprocal_shift[es] << '\n';
-
+#endif
 					if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
 						// the value is a subnormal number in this representation
 					}
@@ -3701,20 +3691,23 @@ inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-//////////////                  standard floating-point formats                  //////////////
-///////////////////////////////////////////////////////////////////////////////////////////////
 
-// IEEE-754
-using quarter = cfloat<  8,  2, uint16_t, true, false, false>;
-using fp8     = quarter;
-using half    = cfloat< 16,  5, uint16_t, true, false, false>;
-using fp16    = half;
-using single  = cfloat< 32,  8, uint32_t, true, false, false>;
-using fp32    = single;
-using dble    = cfloat< 64, 11, uint32_t, true, false, false>;
-using fp64    = dble;
-using quad    = cfloat<128, 15, uint32_t, true, false, false>;
-using fp128   = quad;
+// standard library functions for floating point
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> frexp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& x, int* exp) {
+	*exp = x.scale();
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> fraction(x);
+	fraction.setexponent(0);
+	return fraction;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ldexp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& x, int exp) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> result(x);
+	int xexp = x.scale();
+	result.setexponent(xexp + exp);
+	return result;
+}
 
 }} // namespace sw::universal

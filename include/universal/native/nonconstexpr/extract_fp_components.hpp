@@ -11,7 +11,7 @@ namespace sw { namespace universal {
 inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, unsigned int& _fraction) {
 	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
 	_sign = fp < 0.0 ? true : false;
-	_fr = frexpf(fp, &_exponent);
+	_fr = std::frexpf(fp, &_exponent);
 	_fraction = static_cast<std::uint32_t>(0x007F'FFFFul) & reinterpret_cast<uint32_t&>(_fr);
 }
 
@@ -19,7 +19,7 @@ inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& 
 inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, unsigned long long& _fraction) {
 	static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
 	_sign = fp < 0.0 ? true : false;
-	_fr = frexp(fp, &_exponent);
+	_fr = std::frexp(fp, &_exponent);
 	_fraction = static_cast<uint64_t>(0x000F'FFFF'FFFF'FFFFull) & reinterpret_cast<uint64_t&>(_fr);
 }
 
