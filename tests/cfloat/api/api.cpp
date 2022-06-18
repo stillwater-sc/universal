@@ -1,6 +1,6 @@
 // api.cpp: application programming interface tests for cfloat number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -114,6 +114,27 @@ try {
 		std::cout << "maxpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
 
 		std::cout << "---\n";
+	}
+
+	// use type aliases of standard configurations
+	std::cout << "Type aliases for some industry standard float configurations\n";
+	{
+		float f1, f2, f3;
+		f1 = 1.0f;
+		f2 = 1.0e-3f;
+		f3 = f1 / f2;
+		std::cout << "float32  : " << type_tag(f3) << '\n';
+		std::cout << f1 << " / " << f2 << " = " << f3 << " : " << to_binary(f3) << '\n';
+
+		sw::universal::bfloat16 b1(f1), b2(f2), b3;
+		b3 = b1 / b2;
+		std::cout << "bfloat16 : " << type_tag(b3) << '\n';
+		std::cout << b1 << " / " << b2 << " = " << b3 << " : " << to_binary(b3) << '\n';
+
+		sw::universal::half h1(f1), h2(f2), h3;
+		h3 = h1 / h2;
+		std::cout << "half     : " << type_tag(h3) << '\n';
+		std::cout << h1 << " / " << h2 << " = " << h3 << " : " << to_binary(h3) << '\n';
 	}
 
 	// constexpr and specific values

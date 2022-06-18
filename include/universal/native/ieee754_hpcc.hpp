@@ -1,7 +1,7 @@
 #pragma once
 // ieee754.hpp: HP C/C++ specific manipulation functions for IEEE-754 native types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #if defined(__HP_cc) || defined(__HP_aCC)

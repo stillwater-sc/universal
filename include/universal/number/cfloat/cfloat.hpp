@@ -1,6 +1,6 @@
 // arbitrary configuration classic floating-point arithmetic standard header
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _CFLOAT_STANDARD_HEADER_
@@ -61,11 +61,33 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// aliases for industry standard floating point configurations
+namespace sw { namespace universal {
 
+// IEEE-754
+// IEEE-754 quarter precision floating-point
+using quarter  = cfloat<  8, 2, uint16_t, true, false, false>;
+using fp8      = quarter;
 // IEEE-754 half precision floating-point
-using half     = sw::universal::cfloat<16, 5, uint16_t, true, false, false>;
+using half     = cfloat< 16, 5, uint16_t, true, false, false>;
+using fp16     = half;
+// IEEE-754 single precision floating-point
+using single   = cfloat< 32, 8, uint32_t, true, false, false>;
+using fp32     = single;
+// IEEE-754 double precision floating-point
+using duble    = cfloat< 64, 11, uint32_t, true, false, false>;
+using fp64     = duble;
+// IEEE-754 quad (128bit) precision floating-point
+using quad     = cfloat<128, 15, uint32_t, true, false, false>;
+using fp128    = quad;
 
+// DL
 // Google brain float
-using bfloat16 = sw::universal::cfloat<16, 8, uint16_t, false, false, false>;
+using bfloat16 = cfloat<16, 8, std::uint16_t, false, false, false>;
+using msfp8    = cfloat<8, 2, std::uint8_t, false, false, false>;
+using msfp9    = cfloat<9, 3, std::uint16_t, false, false, false>;
+using amd24    = cfloat<24, 8, std::uint32_t, false, false, false>;
+
+}}  // namespace sw::universal
+
 
 #endif

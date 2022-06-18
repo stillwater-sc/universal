@@ -1,7 +1,7 @@
 #pragma once
 // truncate.hpp: truncation functions (trunc, round, floor, and ceil) for classic floating-point cfloats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -41,8 +41,7 @@ static double huge = 1.0e300;
 #define __HI(x) x
 #define __LO(x) x
 // algorithm for floor(double)
-template<size_t nbits, size_t es>
-cfloat<nbits, es> floor(cfloat<nbits, es> x) {
+double floor(double x) {
 	int i0, i1, j0;
 	unsigned i, j;
 	i0 = __HI(x);

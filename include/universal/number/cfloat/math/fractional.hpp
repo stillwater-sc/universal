@@ -7,14 +7,36 @@
 
 namespace sw { namespace universal {
 
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> cfloatmod(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
+	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	if (y.iszero() || x.isinf() || x.isnan() || y.isnan()) {
+		Real nan;
+		nan.setnan(false);  // quiet NaN
+		return nan;
+	}
+	if (y.isinf() || x.iszero()) {
+		return x;
+	}
+
+	y.setsign(false); // equivalent but faster than y = abs(y);
+	int yexp;
+	Real yfr = frexp(y, &yexp);
+	Real r = x;
+	if (x < 0) r = -x;
+	Real d = r / y;
+	if (d.isinf()) return x;
+	Real n = trunc(d);
+	r = r - n * y;
+	if (x < 0) r = -r;
+
+	return r;
+}
+
 // fmod retuns x - n*y where n = x/y with the fractional part truncated
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> fmod(cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> x, cfloat<nbits,es, bt, hasSubnormals, hasSupernormals, isSaturating> y) {
-	if (x < y) return x;
-	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
-	Real n(x/y);
-	n.truncate();
-	return x - n * y;
+	return cfloatmod(x, y);
 }
 
 // shim to stdlib
