@@ -1,8 +1,9 @@
 // stream.cpp: stream benchmarks of vector operations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <math.h>
 #include <stdint.h>
 #include <iostream>
@@ -58,7 +59,7 @@ void Scale(std::vector<Scalar>& c, const Scalar& a, const std::vector<Scalar>& b
 template<typename Scalar>
 void Triad(std::vector<Scalar>& c, const std::vector<Scalar>& a, const std::vector<Scalar>& b, size_t start, size_t end) {
 	constexpr double pi = 3.14159265358979323846;
-	Scalar alpha(pi);
+	Scalar alpha(static_cast<Scalar>(pi));
 	for (size_t i = start; i < end; ++i) {
 		c[i] = a[i] + alpha*b[i];
 	}
@@ -78,12 +79,17 @@ void Reset(std::vector<Scalar>& v, Scalar resetValue) {
 	}
 }
 
+// sweep vector operators for different vector sizes.
+// The sweep selected is defined by startSample and endSample
+// and read through vectors sizes defined by 2^startSample, 2^(startSample+1), ... 2^(endSample-1)
 template<typename Scalar>
-void Sweep(size_t startSample = 13, size_t endSample = 28) {
+void Sweep(size_t startSample, size_t endSample) {   // 13, 28
 	using namespace std;
 	using namespace std::chrono;
 	constexpr double pi = 3.14159265358979323846;
-	Scalar alpha(pi);
+	Scalar alpha(static_cast<Scalar>(pi));
+
+	std::cout << "STREAM benchmark for Universal type : " << type_tag(alpha) << '\n';
 
 	// create storage
 	size_t leftShift = endSample;
@@ -183,22 +189,29 @@ try {
 
 	std::string test_suite  = "STREAM performance measurement";
 	std::string test_tag    = "stream";
-	//bool reportTestCases    = true;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+	size_t startSample = 11;
+	size_t endSample = 13;
 #if MANUAL_TESTING
-	Sweep<float>();
-	Sweep < fixpnt<8, 4> >();
+	Sweep<float>(startSample, endSample);
+	Sweep < fixpnt<8, 4> >(startSample, endSample);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
-
 #else
 
 #if REGRESSION_LEVEL_1
-	Sweep<float>(10, 15);
+	startSample = 10;
+	endSample   = 11; // just one pass through the operators
+	Sweep< float >(startSample, endSample);
+	Sweep< double >(startSample, endSample);
+	Sweep< fixpnt<8, 4, Modulo, std::uint8_t> >(startSample, endSample);
+	Sweep< fixpnt<8, 4, Saturating, std::uint8_t> >(startSample, endSample);
+	Sweep< cfloat<32, 8, std::uint32_t, true, false, false> >(startSample, endSample);
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -238,3 +251,53 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+
+/*
+
+Ryzen
+	  1024 copies per           9e-07sec ->   1 Gops/sec
+	  2048 copies per         1.3e-06sec ->   1 Gops/sec
+	  4096 copies per         2.6e-06sec ->   1 Gops/sec
+	  8192 copies per         4.5e-06sec ->   1 Gops/sec
+	 16384 copies per         9.5e-06sec ->   1 Gops/sec
+	  1024 adds   per           1e-06sec ->   1 Gops/sec
+	  2048 adds   per         2.1e-06sec -> 975 Mops/sec
+	  4096 adds   per         3.4e-06sec ->   1 Gops/sec
+	  8192 adds   per           5e-06sec ->   1 Gops/sec
+	 16384 adds   per        1.11e-05sec ->   1 Gops/sec
+	  1024 muls   per         1.1e-06sec -> 930 Mops/sec
+	  2048 muls   per         1.2e-06sec ->   1 Gops/sec
+	  4096 muls   per         2.2e-06sec ->   1 Gops/sec
+	  8192 muls   per         5.9e-06sec ->   1 Gops/sec
+	 16384 muls   per         1.3e-05sec ->   1 Gops/sec
+	  1024 triads per         1.8e-06sec -> 568 Mops/sec
+	  2048 triads per         3.5e-06sec -> 585 Mops/sec
+	  4096 triads per         4.5e-06sec -> 910 Mops/sec
+	  8192 triads per         6.8e-06sec ->   1 Gops/sec
+	 16384 triads per        1.96e-05sec -> 835 Mops/sec
+
+
+Intel Xeon
+STREAM performance measurement
+	  1024 copies per       2.236e-06sec -> 457 Mops/sec
+	  2048 copies per       3.635e-06sec -> 563 Mops/sec
+	  4096 copies per       5.084e-06sec -> 805 Mops/sec
+	  8192 copies per       9.865e-06sec -> 830 Mops/sec
+	 16384 copies per      1.9088e-05sec -> 858 Mops/sec
+	  1024 adds   per       1.952e-06sec -> 524 Mops/sec
+	  2048 adds   per       3.485e-06sec -> 587 Mops/sec
+	  4096 adds   per       6.618e-06sec -> 618 Mops/sec
+	  8192 adds   per      1.2515e-05sec -> 654 Mops/sec
+	 16384 adds   per      2.6708e-05sec -> 613 Mops/sec
+	  1024 muls   per       1.188e-06sec -> 861 Mops/sec
+	  2048 muls   per       2.613e-06sec -> 783 Mops/sec
+	  4096 muls   per        4.25e-06sec -> 963 Mops/sec
+	  8192 muls   per       8.506e-06sec -> 963 Mops/sec
+	 16384 muls   per       1.766e-05sec -> 927 Mops/sec
+	  1024 triads per       1.985e-06sec -> 515 Mops/sec
+	  2048 triads per       5.009e-06sec -> 408 Mops/sec
+	  4096 triads per      8.8654e-05sec ->  46 Mops/sec
+	  8192 triads per      8.5967e-05sec ->  95 Mops/sec
+	 16384 triads per     0.000158844sec -> 103 Mops/sec
+
+*/
