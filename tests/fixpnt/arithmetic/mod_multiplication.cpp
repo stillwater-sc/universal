@@ -17,9 +17,9 @@
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, typename Ty>
+template<size_t nbits, size_t rbits, bool arithmetic, typename bt, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::fixpnt<nbits, rbits> a, b, cref, result;
+	sw::universal::fixpnt<nbits, rbits, arithmetic, bt> a, b, cref, result;
 	sw::universal::blockbinary<2 * nbits> full;
 	a = _a;
 	b = _b;
@@ -150,6 +150,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 4, Modulo, uint8_t>(reportTestCases), "fixpnt< 6, 4,Modulo,uint8_t >", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 5, Modulo, uint8_t>(reportTestCases), "fixpnt< 6, 5,Modulo,uint8_t >", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 6, 6, Modulo, uint8_t>(reportTestCases), "fixpnt< 6, 6,Modulo,uint8_t >", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< 8, 4, Modulo, uint8_t>(reportTestCases), "fixpnt< 8, 4,Modulo,uint8_t >", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
