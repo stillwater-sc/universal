@@ -1,6 +1,6 @@
 //  exceptions.cpp : test suite for arithmetic exceptions of integer<> numbers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -29,20 +29,21 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "integer arithmetic exceptions ";
-	std::string test_tag = "exceptions";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "integer arithmetic exceptions";
+	std::string test_tag    = "exceptions";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
 	using Number = sw::universal::integer<16, uint16_t>;
 
-	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
+	nrOfFailedTestCases += TestDivisionByZero<Number>(reportTestCases);
 
 	// is an integer sqrt function useful?
-	//nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
+	//nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(reportTestCases);
 
 #ifdef IMPLEMENTED
 
@@ -50,10 +51,10 @@ try {
 	constexpr Number maxpos(SpecificValue::maxpos);
 	constexpr Number minpos(SpecificValue::minpos);
 	constexpr Number maxneg(SpecificValue::maxneg);
-	nrOfFailedTestCases += TestOverflowOnAddition(bReportIndividualTestCases, maxpos, maxpos);
-	nrOfFailedTestCases += TestOverflowOnSubtraction(bReportIndividualTestCases, maxneg, maxpos);
-	nrOfFailedTestCases += TestOverflowOnMultiplication(bReportIndividualTestCases, maxneg, maxpos);
-	nrOfFailedTestCases += TestOverflowOnDivision(bReportIndividualTestCases, maxneg, minpos);
+	nrOfFailedTestCases += TestOverflowOnAddition(reportTestCases, maxpos, maxpos);
+	nrOfFailedTestCases += TestOverflowOnSubtraction(reportTestCases, maxneg, maxpos);
+	nrOfFailedTestCases += TestOverflowOnMultiplication(reportTestCases, maxneg, maxpos);
+	nrOfFailedTestCases += TestOverflowOnDivision(reportTestCases, maxneg, minpos);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
