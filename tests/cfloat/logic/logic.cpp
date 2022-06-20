@@ -376,7 +376,7 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	cfloat<16, 5> a;
+	cfloat<16, 5> a{};
 
 	std::cout << "Logic: operator==()\n";
 

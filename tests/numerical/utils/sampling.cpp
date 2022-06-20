@@ -86,7 +86,7 @@ try {
 
 
 		{
-			cfloat < 8, 4, uint8_t > a, b, c;
+			cfloat < 8, 4, uint8_t > a, b, c; // uninitialized
 
 			a = fa;
 			b = fb;

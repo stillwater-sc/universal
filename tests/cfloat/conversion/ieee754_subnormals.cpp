@@ -50,11 +50,11 @@ try {
 		using bt = uint32_t;
 		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 		constexpr size_t fbits = Cfloat::fbits;
-		Cfloat a{ 0 }, b;
+		Cfloat a{};
 		++a;
 		for (int i = 0; i < static_cast<int>(fbits); ++i) {
 			float f = float(a);
-			b = f;
+			Cfloat b = f;
 			std::cout << to_binary(f) << " : " << color_print(f) << " : " << f << '\n';
 			std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
 			std::cout << to_binary(b) << " : " << color_print(b) << " : " << b << '\n';
@@ -73,11 +73,11 @@ try {
 		using bt = uint32_t;
 		using Cfloat = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 		constexpr size_t fbits = Cfloat::fbits;
-		Cfloat a{ 0 }, b;
+		Cfloat a{};
 		++a;
 		for (int i = 0; i < static_cast<int>(fbits); ++i) {
 			double f = double(a);
-			b = f;
+			Cfloat b = f;
 			std::cout << to_binary(f) << " : " << color_print(f) << " : " << f << '\n';
 			std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
 			std::cout << to_binary(b) << " : " << color_print(b) << " : " << b << '\n';

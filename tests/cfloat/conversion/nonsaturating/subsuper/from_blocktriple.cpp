@@ -84,7 +84,7 @@ try {
 			b.setbits(0x03);
 			b.setscale(-1);
 			float v = float(b);
-			Cfloat nut, ref;
+			Cfloat nut, ref; // uninitialized
 			convert(b, nut);
 			ref = v;
 			std::cout << "blocktriple: " << to_binary(b) << " : " << float(b) << '\n';
@@ -96,7 +96,7 @@ try {
 			// checking the other side of the exponential adjustments with cfloats
 			// that expand on the dynamic range of IEEE-754
 			using Cfloat = cfloat<80, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-			Cfloat a;
+			Cfloat a; // uninitialized
 			a = -1.0f;
 			std::cout << type_tag(a) << '\n' << to_binary(a) << " : " << a << '\n';
 			//			a.constexprClassParameters();
@@ -110,7 +110,7 @@ try {
 			// 0b01.1110  == 1.875
 			b.setbits(0x1e);
 			float v = float(b);
-			Cfloat nut, ref;
+			Cfloat nut, ref; // uninitialized
 			convert(b, nut);
 			ref = v;
 			std::cout << "blocktriple: " << to_binary(b) << " : " << float(b) << '\n';

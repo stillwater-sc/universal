@@ -43,7 +43,7 @@ void Test()
 // 	constexpr size_t fbits = nbits - es - 1ull;
 //	using Btriple = blocktriple<fbits, op, BlockType>;
 
-	Cfloat a;
+	Cfloat a; // uninitialized
 	std::cout << "\n-----------------\n" << sw::universal::type_tag(a) << '\n';
 
 	Cfloat eps = std::numeric_limits<Cfloat>::epsilon();
@@ -104,7 +104,7 @@ try {
 		constexpr size_t fbits = nbits - es - 1ull;
 		using BlockType = uint8_t;
 		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
-		Cfloat a;
+		Cfloat a; // uninitialized
 		a.assign(std::string("0b0.0111'1111.0'0000'0000'0000'0000'0001"));
 		std::cout << "a =        eps : " << to_binary(a) << " : " << a << '\n';
 	}
@@ -118,7 +118,7 @@ try {
 		constexpr BlockTripleOperator op = BlockTripleOperator::ADD;
 		using Btriple = blocktriple<fbits, op, BlockType>;
 
-		Cfloat a;
+		Cfloat a; // uninitialized
 		a = std::numeric_limits<Cfloat>::epsilon();
 
 		std::cout << '\n';
@@ -157,7 +157,7 @@ try {
 	// then normalize and apply the rounding decision.
 	{
 		using Cfloat = cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-		Cfloat a; 
+		Cfloat a; // uninitialized
 		a.constexprClassParameters();
 		std::cout << dynamic_range(a) << '\n';
 		std::cout << "maxpos : " << a.maxpos() << '\n';
@@ -174,7 +174,7 @@ try {
 		// checking the other side of the exponential adjustments with cfloats
 		// that expand on the dynamic range of IEEE-754
 		using Cfloat = cfloat<80, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-		Cfloat a;
+		Cfloat a; // uninitialized
 		a = -1.0f;
 		std::cout << type_tag(a) << '\n' << to_binary(a) << " : " << a << '\n';
 		//			a.constexprClassParameters();

@@ -352,13 +352,7 @@ public:
 	typedef bt BlockType;
 
 	// constructors
-	constexpr cfloat() noexcept : _block{ 0 } {};
-
-	constexpr cfloat(const cfloat&) noexcept = default;
-	constexpr cfloat(cfloat&&) noexcept = default;
-
-	constexpr cfloat& operator=(const cfloat&) noexcept = default;
-	constexpr cfloat& operator=(cfloat&&) noexcept = default;
+	constexpr cfloat() = default;
 
 	// decorated/converting constructors
 	constexpr cfloat(const std::string& stringRep) {
@@ -3716,5 +3710,11 @@ using dble    = cfloat< 64, 11, uint32_t, true, false, false>;
 using fp64    = dble;
 using quad    = cfloat<128, 15, uint32_t, true, false, false>;
 using fp128   = quad;
+
+static_assert( std:: is_trivial_v<fp8    > );
+static_assert( std:: is_trivial_v<fp16   > );
+static_assert( std:: is_trivial_v<fp32   > );
+static_assert( std:: is_trivial_v<fp64   > );
+static_assert( std:: is_trivial_v<fp128  > );
 
 }} // namespace sw::universal

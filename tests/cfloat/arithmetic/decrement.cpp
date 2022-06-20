@@ -40,7 +40,7 @@ try {
 
 	{
 		using Cfloat = cfloat<4, 1, uint8_t, true, true, false>;
-		Cfloat c;
+		Cfloat c; // uninitialized
 		c.setbits(0x00);
 		--c;
 		for (int i = 0; i < 5; ++i) {

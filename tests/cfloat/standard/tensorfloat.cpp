@@ -26,7 +26,7 @@ try {
 
 	std::cout << "Standard NVIDIA TensorFloat, which is equivalent to a cfloat<19,8> configuration tests\n";
 
-	tensorfloat r;
+	tensorfloat r; // uninitialized
 	r = 1.2345;
 	std::cout << r << '\n';
 

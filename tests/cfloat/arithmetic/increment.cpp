@@ -49,7 +49,7 @@ try {
 	}
 		{
 		using Cfloat = cfloat<17,2, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		Cfloat c;
+		Cfloat c; // uninitialized
 		c.setbits(0x0FEFD);
 		for (int i = 0; i < 10; ++i) {
 			std::cout << to_binary(c) << " : " << c++ << '\n';

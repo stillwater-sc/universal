@@ -66,7 +66,7 @@ try {
 //		float fa = std::numeric_limits<float>::infinity();
 		float fb = 0.5f; // 7.625f; // 0.0625f; 3.9375f; 
 
-		cfloat < 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating > a, b, c;
+		cfloat < 8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating > a, b, c; // uninitialized
 		a.constexprClassParameters();
 		a = fa;
 		b = fb;

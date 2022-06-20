@@ -27,7 +27,7 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a, b;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{}, b{};
 	// b1.00111111.00011001011010001001001 != b1.01111111.00011001011010001001001
 	a.assign("0b1.00111111.00011001011010001001001");
 	std::cout << "cfloat   : " << to_binary(a) << '\n';
@@ -94,7 +94,7 @@ void GenerateSinglePrecisionSubnormals()
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a;
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{};
 	++a;
 	float f = float(a);
 	std::cout << std::setprecision(16);
@@ -114,7 +114,7 @@ void GenerateSinglePrecisionSubnormals()
 template<typename cfloatType>
 void Test1() 
 {
-	cfloatType a;
+	cfloatType a{};
 	a.constexprClassParameters();
 
 	float testValue = 8.0f;
@@ -128,7 +128,7 @@ void Test2()
 {
 	using namespace sw::universal;
 	
-	cfloat<8, 6, uint8_t, cfloatType::hasSubnormals, cfloatType::hasSupernormals, cfloatType::isSaturating> a;
+	cfloat<8, 6, uint8_t, cfloatType::hasSubnormals, cfloatType::hasSupernormals, cfloatType::isSaturating> a{};
 	float testValue = 14680063.0f;
 	a = testValue;
 	float f = float(a);
@@ -144,7 +144,7 @@ void Test2()
 
 template<size_t nbits, size_t es, typename bt>
 void testConversion(float f) {
-	sw::universal::cfloat<nbits, es, bt> a;
+	sw::universal::cfloat<nbits, es, bt> a{};
 	a.convert_ieee754(f);
 }
 
@@ -207,19 +207,19 @@ try {
 		Cfloat a("0b0.01110000100.11110101000111000011111000000000000000000000000000000000000000000000");
 		std::cout << to_binary(a) << " : " << a << '\n';
 
-		cfloat<32, 8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> ref; // this is a superset of IEEE-754 float with supernormals
+		cfloat<32, 8, uint32_t, hasSubnormals, hasSupernormals, isSaturating> ref{}; // this is a superset of IEEE-754 float with supernormals
 		ref.setbits(0x027a8e1f);
 		float refValue = float(ref);
 		std::cout << to_binary(refValue) << " : " << refValue << '\n';
 		{
-			cfloat<80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> nut;
+			cfloat<80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> nut{};
 			nut = refValue;
 			float testValue = float(nut);
 			std::cout << to_binary(testValue) << " : " << testValue << '\n';
 			std::cout << to_binary(nut) << " : " << nut << '\n';
 		}
 		{
-			cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating> nut;
+			cfloat<80, 11, uint16_t, hasSubnormals, hasSupernormals, isSaturating> nut{};
 			nut = refValue;
 			float testValue = float(nut);
 			std::cout << to_binary(testValue) << " : " << testValue << '\n';
@@ -231,7 +231,7 @@ try {
 		f = 0.125f; // - std::pow(2.0f, -20.0f);
 		std::cout << to_binary(f) << " : " << f << std::endl;
 
-		cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> a;
+		cfloat<6, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> a{};
 		a.convert_ieee754(f);
 		std::cout << to_binary(a, true) << " : " << a << '\n';
 	}

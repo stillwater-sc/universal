@@ -83,7 +83,7 @@ try {
 
 		std::cout << "---\n";
 
-		quarter q;
+		quarter q; // uninitialized
 		q.setbits(0x01);  // smallest subnormal
 		std::cout << "minpos  cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
 		q.setbits(0x5f);  // max normal
@@ -91,7 +91,7 @@ try {
 		q.setbits(0x7d);  // max supernormal
 		std::cout << "maxpos  cfloat<8,2> : " << to_binary(q) << " : " << q << '\n';
 
-		half h;
+		half h; // uninitialized
 		h.setbits(0x0001); // smallest subnormal
 		std::cout << "minpos  cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
 		h.setbits(0x7bff);  // max normal
@@ -100,14 +100,14 @@ try {
 		std::cout << "maxpos  cfloat<16,5>: " << to_binary(h) << " : " << h << '\n';
 
 		using QuarterNormal = cfloat<  8, 2, uint8_t, false, false, false>; // no sub or supernormals
-		QuarterNormal qn;
+		QuarterNormal qn; // uninitialized
 		qn.minpos();
 		std::cout << "minpos quarterNormal: " << to_binary(qn) << " : " << qn << '\n';
 		qn.maxpos();
 		std::cout << "maxpos quarterNormal: " << to_binary(qn) << " : " << qn << '\n';
 
 		using halfNormal = cfloat< 16, 5, uint16_t, false, false, false>; // no sub or supernormals
-		halfNormal hn;
+		halfNormal hn; // uninitialized
 		hn.minpos();
 		std::cout << "minpos halfNormal   : " << to_binary(hn) << " : " << hn << '\n';
 		hn.maxpos();
@@ -123,7 +123,7 @@ try {
 		constexpr size_t es = 3;
 		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
 
-		CONSTEXPRESSION Real a; // zero constexpr
+		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
 
 		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
@@ -143,7 +143,7 @@ try {
 		constexpr size_t es = 5;
 		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
 
-		Real a;
+		Real a; // uninitialized
 		std::cout << type_tag(a) << '\n';
 
 		a.setbits(0x0000);
@@ -161,7 +161,7 @@ try {
 
 	std::cout << "set specific values of interest\n";
 	{
-		cfloat<8, 2> a;
+		cfloat<8, 2> a; // uninitialized
 		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
 		std::cout << "minpos : " << a.minpos() << " : " << scale(a) << '\n';
 		std::cout << "zero   : " << a.zero() << " : " << scale(a) << '\n';
@@ -177,7 +177,7 @@ try {
 		using BlockType = uint32_t;
 		using Cfloat = cfloat<nbits, es, BlockType, true>;
 		constexpr size_t fbits = Cfloat::fbits;
-		Cfloat a, b;
+		Cfloat a, b; // uninitialized
 
 		// enumerate the subnormals
 		uint32_t pattern = 1ul;
@@ -206,7 +206,7 @@ try {
 		using BlockType = uint32_t;
 		float subnormal = std::nextafter(0.0f, 1.0f);
 		using Cfloat = cfloat<32, 8, BlockType, true>;
-		Cfloat a;
+		Cfloat a; // uninitialized
 		blockbinary<a.fhbits, BlockType> significant;
 
 		uint32_t pattern = 0x00000001ul;

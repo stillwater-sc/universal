@@ -29,7 +29,7 @@ public:
 		return Cfloat(0.5f);
 	}
 	static constexpr Cfloat denorm_min() {  // return minimum denormalized value
-		Cfloat dmin;
+		Cfloat dmin{};
 		++dmin;
 		return dmin;
 	}

@@ -63,7 +63,7 @@ try {
 		using Cfloat = cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 //		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 1000);
 
-		Cfloat a, b, c;
+		Cfloat a, b, c; // uninitialized
 		a.assign("0b1.11100011.00100010101110100100101");
 		b.assign("0b1.11111111.01100000000011101110110");
 		c = a + b;
@@ -82,7 +82,7 @@ try {
 		using Cfloat = cfloat<40, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
 //		nrOfFailedTestCases += Randoms<Cfloat>(reportTestCases, test_tag, 10);
 
-		Cfloat a, b, c;
+		Cfloat a, b, c; // uninitialized
 		a.assign("0b1.01111001.0101101001000110000101011011110");
 		b.assign("0b0.10100101.0111101101110011110011100111011");
 		c = a + b;
