@@ -746,7 +746,8 @@ namespace sw { namespace universal {
 			convert(b, nut);
 			a = double(b); // optimizing compiler does NOT honor sign on 0
 			if (a != nut) {
-				// ++nrOfTestFailures;
+				if (a.iszero() && nut.iszero()) continue;
+				++nrOfTestFailures;
 				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 			}
 			else {
@@ -796,6 +797,7 @@ namespace sw { namespace universal {
 
 							if (a.isnan() && b.isnan()) continue;
 							if (a.isinf() && b.isinf()) continue;
+							if (a.iszero() && b.iszero()) continue; // optimizer adds a sign to 0
 
 							++nrOfTestFailures;
 							if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
