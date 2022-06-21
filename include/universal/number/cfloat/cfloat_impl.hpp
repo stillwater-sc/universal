@@ -3696,18 +3696,16 @@ inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> frexp
 	return fraction;
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ldexp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& x, int exp) {
-	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> result(x);
-	int xexp = x.scale();
-	result.setexponent(xexp + exp);
-	return result;
-}
-
-static_assert( std:: is_trivial_v<fp8    > );
-static_assert( std:: is_trivial_v<fp16   > );
-static_assert( std:: is_trivial_v<fp32   > );
-static_assert( std:: is_trivial_v<fp64   > );
-static_assert( std:: is_trivial_v<fp128  > );
+// IEEE-754
+using quarter = cfloat<  8,  2, uint16_t, true, false, false>;
+using fp8     = quarter;
+using half    = cfloat< 16,  5, uint16_t, true, false, false>;
+using fp16    = half;
+using single  = cfloat< 32,  8, uint32_t, true, false, false>;
+using fp32    = single;
+using dble    = cfloat< 64, 11, uint32_t, true, false, false>;
+using fp64    = dble;
+using quad    = cfloat<128, 15, uint32_t, true, false, false>;
+using fp128   = quad;
 
 }} // namespace sw::universal
