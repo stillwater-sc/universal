@@ -95,7 +95,7 @@ try {
 	}
 
 	{
-		float fa = std::numeric_limits<float>::infinity();
+		constexpr float fa = std::numeric_limits<float>::infinity();
 		float fb = -fa;
 		std::cout << fa << " + " << fa << " = " << (fa + fa) << '\n';
 		std::cout << fa << " + " << fb << " = " << (fa + fb) << '\n';

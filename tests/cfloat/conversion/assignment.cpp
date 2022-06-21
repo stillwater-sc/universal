@@ -1,4 +1,4 @@
-// astrignment.cpp: functional tests for astrignments of native types to cfloats
+// assignment.cpp: functional tests for assignments of native types to cfloats
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -149,69 +149,104 @@ int VerifySpecialCases(const std::string& tag, bool reportTestCases = false) {
 	// test sNaN
 	a.setnan(NAN_TYPE_SIGNALLING);
 	fa = NativeFloatingPointType(a);
-	std::cout << to_binary(fa) << " " << fa << " : ";
 	a = fa;
-	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
-	if (!a.isnan(NAN_TYPE_SIGNALLING)) ++nrOfFailedTests;
-	if (reportTestCases && a.isnan(NAN_TYPE_SIGNALLING)) std::cout << "PASS snan\n"; else std::cout << "FAIL snan\n";
+	if (!a.isnan(NAN_TYPE_SIGNALLING)) {
+		++nrOfFailedTests;
+		std::cout << type_tag(fa) << " : " << to_binary(fa) << " " << fa << " : ";
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL snan\n";
+	}
 
 	// test qNaN
 	a.setnan(NAN_TYPE_QUIET);
 	fa = NativeFloatingPointType(a);
-	std::cout << to_binary(fa) << " " << fa << " : ";
 	a = fa;
-	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
-	if (!a.isnan(NAN_TYPE_QUIET)) ++nrOfFailedTests;
-	if (reportTestCases && a.isnan(NAN_TYPE_QUIET)) std::cout << "PASS qnan\n"; else std::cout << "FAIL qnan\n";
+	if (!a.isnan(NAN_TYPE_QUIET)) {
+		++nrOfFailedTests;
+		std::cout << type_tag(fa) << " : " << to_binary(fa) << " " << fa << " : ";
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL qnan\n";
+	}
 
 	// test +inf
 	a.setinf(false); // +inf
 	fa = NativeFloatingPointType(a);
-	std::cout << to_binary(fa) << " " << fa << " : ";
 	a = fa;
-	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
-	if (!a.isinf(INF_TYPE_POSITIVE)) ++nrOfFailedTests;
-	if (reportTestCases && a.isinf(INF_TYPE_POSITIVE)) std::cout << "PASS +inf\n"; else std::cout << "FAIL +inf\n";
+	if (!a.isinf(INF_TYPE_POSITIVE)) {
+		++nrOfFailedTests;
+		std::cout << type_tag(fa) << " : " << to_binary(fa) << " " << fa << " : ";
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL +inf\n";
+	}
+	fa = INFINITY;
+	a = fa;
+	if (!a.isinf(INF_TYPE_POSITIVE)) {
+		++nrOfFailedTests;
+		std::cout << type_tag(fa) << " : " << to_binary(fa) << " " << fa << " : ";
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL +inf\n";
+	}
 
 	// test -inf
 	a.setinf(true); // -inf
 	fa = NativeFloatingPointType(a);
-	std::cout << to_binary(fa) << " " << fa << " : ";
 	a = fa;
-	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
-	if (!a.isinf(INF_TYPE_NEGATIVE)) ++nrOfFailedTests;
-	if (reportTestCases && a.isinf(INF_TYPE_NEGATIVE)) std::cout << "PASS -inf\n"; else std::cout << "FAIL -inf\n";
+	if (!a.isinf(INF_TYPE_NEGATIVE)) {
+		++nrOfFailedTests;
+		std::cout << type_tag(fa) << " : " << to_binary(fa) << " " << fa << " : ";
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL -inf\n";
+	}
+	fa = -INFINITY;
+	a = fa;
+	if (!a.isinf(INF_TYPE_NEGATIVE)) {
+		++nrOfFailedTests;
+		std::cout << type_tag(fa) << " : " << to_binary(fa) << " " << fa << " : ";
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL -inf\n";
+	}
 
 	std::cout << "Representations of zero in " << typeid(NativeFloatingPointType).name() << '\n';
 	NativeFloatingPointType zero;
 	zero = 0.0;
-	std::cout << "+0.0 = " << to_binary(+zero) << " " << zero << '\n';
-	std::cout << "-0.0 = " << to_binary(-zero) << " " << -zero << '\n';
+//	std::cout << "+0.0 = " << to_binary(+zero) << " " << zero << '\n';
+//	std::cout << "-0.0 = " << to_binary(-zero) << " " << -zero << '\n';
 
 	// test 0.0
 	std::cout << "Test positive 0.0\n";
-	a.setbits(0x00);
-	std::cout << "conversion(a)= " << NativeFloatingPointType(a) << '\n';
-	fa = NativeFloatingPointType(a);
-	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
+	fa = zero;
 	a = fa;
-	std::cout << "astrignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
-	if (!a.iszero()) ++nrOfFailedTests;
-	if (reportTestCases && a.iszero()) std::cout << "PASS +0 == iszero()\n"; else std::cout << "FAIL +0 != iszero()\n";
+	if (!a.iszero()) {
+		++nrOfFailedTests;
+		std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
+		std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL +0 != iszero()\n";
+	}
 
 	// Testing problem: the optimizer might destroy the sign of a copy of a -0.0
 	// test -0.0
 	std::cout << "Test negative 0.0\n";
-	a.setbits(0x80);
-	std::cout << "conversion(a)= " << double(a) << '\n';
-	fa = NativeFloatingPointType(a);
-	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
+	fa = -zero;
 	a = fa;
-	std::cout << "astrignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
-	if (!a.iszero()) ++nrOfFailedTests;
-	if (reportTestCases && a.iszero()) std::cout << "PASS -0 == iszero()\n"; else std::cout << "FAIL -0 != iszero()\n";
+	if (!a.iszero()) {
+		++nrOfFailedTests;
+		std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
+		std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		if (reportTestCases) std::cout << "FAIL -0 != iszero()\n";
+	}
 
 	return nrOfFailedTests;
+}
+
+template<typename CfloatConfiguration>
+int TestSpecialCases(bool reportTestCases) {
+	int nrOfFailedTestCases = 0;
+	nrOfFailedTestCases += VerifySpecialCases<CfloatConfiguration, float>("float->cfloat special cases", reportTestCases);
+	nrOfFailedTestCases += VerifySpecialCases<CfloatConfiguration, double>("double->cfloat special cases", reportTestCases);
+#if LONG_DOUBLE_SUPPORT
+	nrOfFailedTestCases += VerifySpecialCases<CfloatConfiguration, long double>("long double->cfloat special cases", reportTestCases);
+#endif
+	return nrOfFailedTestCases;
 }
 
 #ifdef EXPERIMENT
@@ -467,22 +502,28 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 
 #else //!MANUAL_TESTING
-	bool bVerbose = false;
-
-	std::cout << "Special cases: zero, inf, nan\n";
-	using Real = sw::universal::cfloat<8, 2>;
-	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->cfloat special cases", reportTestCases);
-	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->cfloat special cases", reportTestCases);
-#if LONG_DOUBLE_SUPPORT
-	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->cfloat special cases", reportTestCases);
-#endif
-
-	nrOfFailedTestCases = 0;
+	constexpr bool bVerbose        = false;
 	constexpr bool hasSubnormals   = true;
 	constexpr bool noSubnormals    = false;
 	constexpr bool hasSupernormals = true;
 	constexpr bool noSupernormals  = false;
 	constexpr bool notSaturating   = false;
+
+#if REGRESSION_LEVEL_1
+
+	std::cout << "Special cases: zero, inf, nan\n";
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat< 8, 2, std::uint8_t, noSubnormals, noSupernormals, notSaturating> >(reportTestCases), "cfloat< 8, 2, std::uint8_t, noSubnormals, noSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat< 8, 2, std::uint8_t, hasSubnormals, noSupernormals, notSaturating> >(reportTestCases), "cfloat< 8, 2, std::uint8_t, hasSubnormals, noSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat< 8, 2, std::uint8_t, noSubnormals, hasSupernormals, notSaturating> >(reportTestCases), "cfloat< 8, 2, std::uint8_t, noSubnormals, hasSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat< 8, 2, std::uint8_t, hasSubnormals, hasSupernormals, notSaturating> >(reportTestCases), "cfloat< 8, 2, std::uint8_t, hasSubnormals, hasSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat<32, 8, std::uint32_t, noSubnormals, noSupernormals, notSaturating> >(reportTestCases), "cfloat<32, 8, std::uint32_t, noSubnormals, noSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat<32, 8, std::uint32_t, hasSubnormals, noSupernormals, notSaturating> >(reportTestCases), "cfloat<32, 8, std::uint32_t, hasSubnormals, noSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat<32, 8, std::uint32_t, noSubnormals, hasSupernormals, notSaturating> >(reportTestCases), "cfloat<32, 8, std::uint32_t, noSubnormals, hasSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat<32, 8, std::uint32_t, hasSubnormals, hasSupernormals, notSaturating> >(reportTestCases), "cfloat<32, 8, std::uint32_t, hasSubnormals, hasSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat<64,11, std::uint32_t, noSubnormals, noSupernormals, notSaturating> >(reportTestCases), "cfloat<64,11, std::uint32_t, noSubnormals, noSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat<64,11, std::uint32_t, hasSubnormals, noSupernormals, notSaturating> >(reportTestCases), "cfloat<64,11, std::uint32_t, hasSubnormals, noSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat<64,11, std::uint32_t, noSubnormals, hasSupernormals, notSaturating> >(reportTestCases), "cfloat<64,11, std::uint32_t, noSubnormals, hasSupernormals, notSaturating>", "special cases");
+	nrOfFailedTestCases += ReportTestResult(TestSpecialCases<sw::universal::cfloat<64,11, std::uint32_t, hasSubnormals, hasSupernormals, notSaturating> >(reportTestCases), "cfloat<64,11, std::uint32_t, hasSubnormals, hasSupernormals, notSaturating>", "special cases");
 
 	std::cout << "\ncfloat<> with only normal encodings\n";
 	std::cout << "Single block representations\n--------------------------------------------- es = 2 encodings\n";
@@ -589,7 +630,19 @@ try {
 	std::cout << "Triple block representations\n--------------------------------------------- es = 1 encodings\n";
 	nrOfFailedTestCases += TestTripleBlockRepresentations<1, hasSubnormals, hasSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
 	nrOfFailedTestCases += TestTripleBlockRepresentations<1, hasSubnormals, hasSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
+#endif
 
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -407,18 +407,18 @@ public:
 	/// construct an cfloat from a native type, specialized for size
 	/// </summary>
 	/// <param name="iv">initial value to construct</param>
-	constexpr cfloat(signed char iv)                    noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(short iv)                          noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(int iv)                            noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(long iv)                           noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(long long iv)                      noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(char iv)                           noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned short iv)                 noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned int iv)                   noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned long iv)                  noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned long long iv)             noexcept : _block{ 0 } { *this = iv; }
-	CONSTEXPRESSION cfloat(float iv)                    noexcept : _block{ 0 } { *this = iv; }
-	CONSTEXPRESSION cfloat(double iv)                   noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(signed char iv)                    noexcept { *this = iv; }
+	constexpr cfloat(short iv)                          noexcept { *this = iv; }
+	constexpr cfloat(int iv)                            noexcept { *this = iv; }
+	constexpr cfloat(long iv)                           noexcept { *this = iv; }
+	constexpr cfloat(long long iv)                      noexcept { *this = iv; }
+	constexpr cfloat(char iv)                           noexcept { *this = iv; }
+	constexpr cfloat(unsigned short iv)                 noexcept { *this = iv; }
+	constexpr cfloat(unsigned int iv)                   noexcept { *this = iv; }
+	constexpr cfloat(unsigned long iv)                  noexcept { *this = iv; }
+	constexpr cfloat(unsigned long long iv)             noexcept { *this = iv; }
+	CONSTEXPRESSION cfloat(float iv)                    noexcept { *this = iv; }
+	CONSTEXPRESSION cfloat(double iv)                   noexcept { *this = iv; }
 
 	// assignment operators
 	constexpr cfloat& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
@@ -2159,6 +2159,32 @@ public:
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
 			extractFields(rhs, s, rawExponent, rawFraction);
+			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
+					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
+					// 1.11111111.00000000.......00000001 signalling nan
+					// 0.11111111.00000000000000000000001 signalling nan
+					// MSVC
+					// 1.11111111.10000000.......00000001 signalling nan
+					// 0.11111111.10000000.......00000001 signalling nan
+					setnan(NAN_TYPE_SIGNALLING);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					return *this;
+				}
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
+					// 1.11111111.10000000.......00000000 quiet nan
+					// 0.11111111.10000000.......00000000 quiet nan
+					setnan(NAN_TYPE_QUIET);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					return *this;
+				}
+				if (rawFraction == 0ull) {
+					// 1.11111111.0000000.......000000000 -inf
+					// 0.11111111.0000000.......000000000 +inf
+					setinf(s);
+					return *this;
+				}
+			}
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 31;
 			raw |= (rawExponent << fbits);
@@ -2173,7 +2199,7 @@ public:
 			uint64_t rawFraction{ 0 };
 			// use native conversion
 			extractFields(rhs, s, rawExponent, rawFraction);
-			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
+			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
 				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
 					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
 					// 1.11111111.00000000.......00000001 signalling nan
