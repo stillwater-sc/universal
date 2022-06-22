@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>
 
 namespace sw { namespace universal {
 
@@ -19,7 +20,7 @@ inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& 
 inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, unsigned long long& _fraction) {
 	static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
 	_sign = fp < 0.0 ? true : false;
-	_fr = frexp(fp, &_exponent);
+	_fr = std::frexp(fp, &_exponent);
 	_fraction = static_cast<uint64_t>(0x000F'FFFF'FFFF'FFFFull) & reinterpret_cast<uint64_t&>(_fr);
 }
 

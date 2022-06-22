@@ -1,6 +1,6 @@
 // subnormals.cpp: showcase for cfloat subnormals
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -14,7 +14,6 @@
 int main()
 try {
 	using namespace sw::universal;
-
 
 	// generate individual testcases to hand trace/debug
 	constexpr bool hasSubnormals = true;

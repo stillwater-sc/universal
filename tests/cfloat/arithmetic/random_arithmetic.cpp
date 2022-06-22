@@ -1,6 +1,6 @@
 // random_arithmetic.cpp: test suite runner for arithmetic operators for classic floats using randoms
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -50,12 +50,12 @@ try {
 	constexpr bool hasSupernormals = false;
 	constexpr bool isSaturating    = false;
 
-	std::string test_suite  = "Random test generation for large classic floating-point configurations";
-	std::string test_tag    = "randoms";
-	bool reportTestCases    = true;
-	int nrOfFailedTestCases = 0;
+	std::string test_suite         = "Random test generation for large classic floating-point configurations";
+	std::string test_tag           = "randoms";
+	bool reportTestCases           = true;
+	int nrOfFailedTestCases        = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 

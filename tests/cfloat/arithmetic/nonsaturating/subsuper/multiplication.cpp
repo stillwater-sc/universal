@@ -45,7 +45,7 @@ try {
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// shorthand alias types
 	using c16  = cfloat< 16, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>;

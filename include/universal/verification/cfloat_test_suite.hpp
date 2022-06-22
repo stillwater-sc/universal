@@ -746,7 +746,8 @@ namespace sw { namespace universal {
 			convert(b, nut);
 			a = double(b); // optimizing compiler does NOT honor sign on 0
 			if (a != nut) {
-				// ++nrOfTestFailures;
+				if (a.iszero() && nut.iszero()) continue;
+				++nrOfTestFailures;
 				if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
 			}
 			else {
@@ -796,6 +797,7 @@ namespace sw { namespace universal {
 
 							if (a.isnan() && b.isnan()) continue;
 							if (a.isinf() && b.isinf()) continue;
+							if (a.iszero() && b.iszero()) continue; // optimizer adds a sign to 0
 
 							++nrOfTestFailures;
 							if (reportTestCases) std::cout << "FAIL: " << to_triple(b) << " : " << std::setw(15) << b << " -> " << to_binary(nut) << " != ref " << to_binary(a) << " or " << nut << " != " << a << '\n';
@@ -1182,7 +1184,7 @@ namespace sw { namespace universal {
 		constexpr bool isSaturating = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 		std::vector< Cfloat > set;
-		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, nan]
+		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, qnan]
 
 		int nrOfFailedTestCases = 0;
 
@@ -1194,6 +1196,11 @@ namespace sw { namespace universal {
 			ref = *(it - 1);
 
 			if (c != ref) {
+				// in the no supernormal case, we are decrementing the pattern, but
+				// any supernormal evaluates to nan, and that lands us in side the != check
+				// We check explicity below to filter out all these nan cases.
+				// To see that pattern decrements, uncomment the following line
+				// std::cout << to_binary(*it) << " > " << to_binary(*(it - 1)) << " decremented value " << to_binary(c) << '\n';
 				if (c.isnan() && ref.isnan()) continue; // nan != nan, so the regular equivalance test fails
 				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;

@@ -13,7 +13,7 @@ namespace sw { namespace universal {
 	>
 	std::string type_tag(Real f) {
 		// can't use a simple typeid(Real).name() because gcc and clang obfuscate the native types
-		constexpr unsigned nbits = sizeof(f);
+		constexpr unsigned nbits = sizeof(f) * 8;
 		std::string real;
 		if constexpr (nbits == 32) {
 			real = std::string("float");

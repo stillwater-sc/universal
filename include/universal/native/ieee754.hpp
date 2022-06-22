@@ -1,7 +1,7 @@
 #pragma once
 // ieee754.hpp: manipulation functions for IEEE-754 native types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
@@ -156,7 +156,7 @@ inline int scale(float v) {
 /// <returns>binary scale</returns>
 inline int scale(double v) {
 	int exponent{ 0 };
-	double frac = frexp(v, &exponent);
+	double frac = std::frexp(v, &exponent);
 	if (frac == 0.0) exponent = 0;
 	return exponent - 1;
 }

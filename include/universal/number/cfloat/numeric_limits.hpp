@@ -1,7 +1,7 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for classic cfloat types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/cfloat/cfloat_impl.hpp>
@@ -21,11 +21,11 @@ public:
 	static constexpr Cfloat lowest() { // return most negative value
 		return Cfloat(sw::universal::SpecificValue::maxneg);
 	} 
-	static constexpr Cfloat epsilon() { // return smallest effective increment from 1.0
+	static CONSTEXPRESSION Cfloat epsilon() { // return smallest effective increment from 1.0
 		Cfloat one{ 1.0f }, incr{ 1.0f };
 		return ++incr - one;
 	}
-	static constexpr Cfloat round_error() { // return largest rounding error
+	static CONSTEXPRESSION Cfloat round_error() { // return largest rounding error
 		return Cfloat(0.5f);
 	}
 	static constexpr Cfloat denorm_min() {  // return minimum denormalized value

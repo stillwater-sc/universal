@@ -1,6 +1,6 @@
 // division.cpp: test suite runner for division on classic floats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -39,11 +39,11 @@ try {
 	constexpr bool isSaturating    = false;
 
 	std::string test_suite         = "classic cfloat division validation with just normals, no subnormals or supernormals";
-	std::string test_tag           = "cfloat_fff division";
+	std::string test_tag           = "cfloat_tff division";
 	bool reportTestCases           = true;
 	int nrOfFailedTestCases        = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 

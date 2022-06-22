@@ -683,7 +683,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
-			if (ispos()) {
+			if (!sign()) {
 				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
 					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan 
 				}
@@ -701,7 +701,7 @@ public:
 			}
 		}
 		else {
-			if (ispos()) {
+			if (!sign()) {
 				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
 				if (isnanencoding()) {
 					setnan(NAN_TYPE_SIGNALLING);
@@ -764,7 +764,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
-			if (ispos()) {
+			if (!sign()) {
 				if (_block[MSU] == 0) { // pattern: 0.00.000 = 0
 					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.00.000 = -0 
 				}
@@ -783,7 +783,7 @@ public:
 
 		}
 		else {
-			if (ispos()) {
+			if (!sign()) {
 				// special case: pattern: 0.00.000 = +0 transitions to pattern: 1.00.000 = -0 
 				if (iszeroencoding()) {
 					setsign(true);
@@ -1225,16 +1225,6 @@ public:
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	// truncate the fraction, that is, null all fraction bits
-	inline constexpr cfloat& truncate() noexcept {
-		if constexpr (FSU > 0) {
-			for (size_t b = 0; b < FSU; ++b) {
-				_block[b] = bt(0);
-			}
-		}
-		_block[FSU] &= bt(~FSU_MASK);
-		return *this;
-	}
 
 	/// <summary>
 	/// assign the value of the string representation to the cfloat
@@ -1362,8 +1352,14 @@ public:
 		}
 		return e;
 	}
-	inline constexpr bool isneg() const noexcept { return sign(); }
-	inline constexpr bool ispos() const noexcept { return !sign(); }
+	inline constexpr bool isneg() const noexcept {
+		if (isnan()) return false;
+		return sign(); 
+	}
+	inline constexpr bool ispos() const noexcept { 
+		if (isnan()) return false;
+		return !sign(); 
+	}
 	inline constexpr bool iszeroencoding() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return true;
@@ -1490,8 +1486,8 @@ public:
 			if (issupernormal()) {
 				// all these supernormal encodings are NANs, except for the encoding representing INF
 				bool isNaN = isinf() ? false : true;
-				bool isNegNaN = isNaN && isneg();
-				bool isPosNaN = isNaN && ispos();
+				bool isNegNaN = isNaN && sign();
+				bool isPosNaN = isNaN && !sign();
 				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
 					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
 						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
@@ -2169,6 +2165,32 @@ public:
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
 			extractFields(rhs, s, rawExponent, rawFraction);
+			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
+					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
+					// 1.11111111.00000000.......00000001 signalling nan
+					// 0.11111111.00000000000000000000001 signalling nan
+					// MSVC
+					// 1.11111111.10000000.......00000001 signalling nan
+					// 0.11111111.10000000.......00000001 signalling nan
+					setnan(NAN_TYPE_SIGNALLING);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					return *this;
+				}
+				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
+					// 1.11111111.10000000.......00000000 quiet nan
+					// 0.11111111.10000000.......00000000 quiet nan
+					setnan(NAN_TYPE_QUIET);
+					//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+					return *this;
+				}
+				if (rawFraction == 0ull) {
+					// 1.11111111.0000000.......000000000 -inf
+					// 0.11111111.0000000.......000000000 +inf
+					setinf(s);
+					return *this;
+				}
+			}
 			uint64_t raw{ s ? 1ull : 0ull };
 			raw <<= 31;
 			raw |= (rawExponent << fbits);
@@ -2183,7 +2205,7 @@ public:
 			uint64_t rawFraction{ 0 };
 			// use native conversion
 			extractFields(rhs, s, rawExponent, rawFraction);
-			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
+			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
 				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
 					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
 					// 1.11111111.00000000.......00000001 signalling nan
@@ -2470,13 +2492,13 @@ public:
 					// f = 1.ffff  2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 					// -exponent because we are right shifting and exponent in this range is negative
 					adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-					
+#if TRACE_CONVERSION					
 					std::cout << "source is subnormal: TBD\n";
 					std::cout << "shift to LSB    " << (rightShift + adjustment) << '\n';
 					std::cout << "adjustment      " << adjustment << '\n';
 					std::cout << "exponent        " << exponent << '\n';
 					std::cout << "subnormal shift " << subnormal_reciprocal_shift[es] << '\n';
-
+#endif
 					if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
 						// the value is a subnormal number in this representation
 					}
@@ -3159,32 +3181,34 @@ inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, co
 	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
 	if constexpr (nsub) {
 		cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
-		return (!diff.iszero() && diff.isneg()) ? true : false;  // got to guard against -0
-	}
-	if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
-	if (lhs.isneg() && rhs.ispos()) return true;
-	if (lhs.ispos() && rhs.isneg()) return false;
-	bool positive = lhs.ispos();
-	if (positive) {
-		if (lhs.scale() < rhs.scale()) return true;
-		if (lhs.scale() > rhs.scale()) return false;
+		return (!diff.iszero() && diff.sign()) ? true : false;  // got to guard against -0
 	}
 	else {
-		if (lhs.scale() > rhs.scale()) return true;
-		if (lhs.scale() < rhs.scale()) return false;
+		if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
+		if (lhs.sign() && !rhs.sign()) return true;
+		if (!lhs.sign() && rhs.sign()) return false;
+		bool positive = lhs.ispos();
+		if (positive) {
+			if (lhs.scale() < rhs.scale()) return true;
+			if (lhs.scale() > rhs.scale()) return false;
+		}
+		else {
+			if (lhs.scale() > rhs.scale()) return true;
+			if (lhs.scale() < rhs.scale()) return false;
+		}
+		// sign and scale are the same
+		if (lhs.scale() == rhs.scale()) {
+			// compare fractions: we do not have subnormals, so we can ignore the hidden bit
+			blockbinary<nnbits - 1ull - nes, nbt> l, r;
+			lhs.fraction(l);
+			rhs.fraction(r);
+			blockbinary<nnbits - nes, nbt> ll, rr; // fbits + 1 so we can 0 extend to honor 2's complement encoding of blockbinary
+			ll.assignWithoutSignExtend(l);
+			rr.assignWithoutSignExtend(r);
+			return (positive ? (ll < rr) : (ll > rr));
+		}
+		return false;
 	}
-	// sign and scale are the same
-	if (lhs.scale() == rhs.scale()) {
-		// compare fractions: we do not have subnormals, so we can ignore the hidden bit
-		blockbinary<nnbits - 1ull - nes, nbt> l, r; 
-		lhs.fraction(l);
-		rhs.fraction(r);
-		blockbinary<nnbits - nes, nbt> ll, rr; // fbits + 1 so we can 0 extend to honor 2's complement encoding of blockbinary
-		ll.assignWithoutSignExtend(l);
-		rr.assignWithoutSignExtend(r);
-		return (positive ? (ll < rr) : (ll > rr));
-	}
-	return false;
 }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
@@ -3695,26 +3719,23 @@ inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-//////////////                  standard floating-point formats                  //////////////
-///////////////////////////////////////////////////////////////////////////////////////////////
 
-// IEEE-754
-using quarter = cfloat<  8,  2, uint16_t, true, false, false>;
-using fp8     = quarter;
-using half    = cfloat< 16,  5, uint16_t, true, false, false>;
-using fp16    = half;
-using single  = cfloat< 32,  8, uint32_t, true, false, false>;
-using fp32    = single;
-using dble    = cfloat< 64, 11, uint32_t, true, false, false>;
-using fp64    = dble;
-using quad    = cfloat<128, 15, uint32_t, true, false, false>;
-using fp128   = quad;
+// standard library functions for floating point
 
-static_assert( std:: is_trivial_v<fp8    > );
-static_assert( std:: is_trivial_v<fp16   > );
-static_assert( std:: is_trivial_v<fp32   > );
-static_assert( std:: is_trivial_v<fp64   > );
-static_assert( std:: is_trivial_v<fp128  > );
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> frexp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& x, int* exp) {
+	*exp = x.scale();
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> fraction(x);
+	fraction.setexponent(0);
+	return fraction;
+}
+
+template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ldexp(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& x, int exp) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> result(x);
+	int xexp = x.scale();
+	result.setexponent(xexp + exp);  // TODO: this does not work for subnormals
+	return result;
+}
 
 }} // namespace sw::universal

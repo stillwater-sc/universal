@@ -1,8 +1,8 @@
-// primes.cpp: prime finding tests
+// primes.cpp: prime number finding tests on arbitrary fixed-size integers
 //
 // prime number generation and Fermat factorization
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,6 +11,7 @@
 #include <chrono>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/integer/primes.hpp>
+#include <universal/verification/test_suite.hpp>
 
 // conditional compilation
 #define MANUAL_TESTING 0
@@ -103,11 +104,22 @@ void MeasureElapsedTimeOfPrimeGeneration()
 int main() 
 try {
 	using namespace sw::universal;
-	constexpr size_t nbits = 34;
-	using BlockType = uint32_t;
+
+	std::string test_suite  = "Prime generation for integer<>";
+	std::string test_tag    = "integer<> primes";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	constexpr size_t nbits = 40;
+	using BlockType = std::uint32_t;
 	using Integer = integer<nbits, BlockType>;
 
 #if MANUAL_TESTING
+
+	Integer a, b;
+	std::vector<Integer> v;
 
 	std::cout << "\nFind all prime numbers in a range\n";
 	v.clear();
@@ -170,13 +182,18 @@ try {
 	}
 #endif
 
-#else // MANUAL_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else
 
+#if REGRESSION_LEVEL_1
 	long l1 = 1024l;
 	long l2 = 512;
 	std::cout << "gcd of " << l1 << " and " << l2 << " = " << sw::universal::gcd(l1, l2) << '\n';
 	std::cout << "gcd of " << l1 << " and " << l2 << " = " << std::gcd(l1, l2) << '\n';
+#endif
 
+#if REGRESSION_LEVEL_2
 	std::cout << "\nFind all prime numbers in a range\n";
 	{
 		Integer a, b;
@@ -186,9 +203,6 @@ try {
 		std::cout << v.size() << " prime numbers in range [" << a << ", " << b << ")\n";
 		printPrimes(v);
 	}
-
-	// GCD of three numbers is
-	// gcd(a, b, c) == gcd(a, gcd(b, c)) == gcd(gcd(a, b), c) == gcd(b, gcd(a, c))
 
 	std::cout << "\nFind all prime factors of the number : ";
 	{
@@ -207,13 +221,16 @@ try {
 			std::cout << " factor " << factors[i].first << " exponent " << factors[i].second << '\n';
 		}
 	}
+#endif
 
+#if REGRESSION_LEVEL_3
 	{
 		constexpr Integer a(SpecificValue::maxpos);
 		std::cout << "maxpos for " << type_tag(a) << " = " << a << '\n' << to_binary(a) << '\n';
 	}
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 	std::cout << "\nFind all prime factors of a number\n";
 	{
 		Integer a;
@@ -235,13 +252,15 @@ try {
 			std::cout << " factor " << factors[i].first << " exponent " << factors[i].second << '\n';
 		}
 	}
-
-#endif // STRESS_TESTING
-
-#endif // MANUAL_TESTING
+#endif
 
 
-	return EXIT_SUCCESS;
+
+
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
