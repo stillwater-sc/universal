@@ -21,7 +21,7 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> cfloatmod(cf
 
 	y.setsign(false); // equivalent but faster than y = abs(y);
 	int yexp;
-	Real yfr = frexp(y, &yexp);
+	frexp(y, &yexp);  // ignore the fraction that comes back
 	Real r = x;
 	if (x < 0) r = -x;
 	Real d = r / y;
