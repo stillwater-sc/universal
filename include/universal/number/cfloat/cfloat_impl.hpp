@@ -407,18 +407,18 @@ public:
 	/// construct an cfloat from a native type, specialized for size
 	/// </summary>
 	/// <param name="iv">initial value to construct</param>
-	constexpr cfloat(signed char iv)                    noexcept { *this = iv; }
-	constexpr cfloat(short iv)                          noexcept { *this = iv; }
-	constexpr cfloat(int iv)                            noexcept { *this = iv; }
-	constexpr cfloat(long iv)                           noexcept { *this = iv; }
-	constexpr cfloat(long long iv)                      noexcept { *this = iv; }
-	constexpr cfloat(char iv)                           noexcept { *this = iv; }
-	constexpr cfloat(unsigned short iv)                 noexcept { *this = iv; }
-	constexpr cfloat(unsigned int iv)                   noexcept { *this = iv; }
-	constexpr cfloat(unsigned long iv)                  noexcept { *this = iv; }
-	constexpr cfloat(unsigned long long iv)             noexcept { *this = iv; }
-	CONSTEXPRESSION cfloat(float iv)                    noexcept { *this = iv; }
-	CONSTEXPRESSION cfloat(double iv)                   noexcept { *this = iv; }
+	constexpr cfloat(signed char iv)                    noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(short iv)                          noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(int iv)                            noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(long iv)                           noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(long long iv)                      noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(char iv)                           noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned short iv)                 noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned int iv)                   noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned long iv)                  noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(unsigned long long iv)             noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(float iv)                    noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(double iv)                   noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
 	constexpr cfloat& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
@@ -683,7 +683,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
-			if (ispos()) {
+			if (!sign()) {
 				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
 					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan 
 				}
@@ -701,7 +701,7 @@ public:
 			}
 		}
 		else {
-			if (ispos()) {
+			if (!sign()) {
 				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
 				if (isnanencoding()) {
 					setnan(NAN_TYPE_SIGNALLING);
@@ -764,7 +764,7 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
-			if (ispos()) {
+			if (!sign()) {
 				if (_block[MSU] == 0) { // pattern: 0.00.000 = 0
 					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.00.000 = -0 
 				}
@@ -783,7 +783,7 @@ public:
 
 		}
 		else {
-			if (ispos()) {
+			if (!sign()) {
 				// special case: pattern: 0.00.000 = +0 transitions to pattern: 1.00.000 = -0 
 				if (iszeroencoding()) {
 					setsign(true);
@@ -1352,8 +1352,14 @@ public:
 		}
 		return e;
 	}
-	inline constexpr bool isneg() const noexcept { return sign(); }
-	inline constexpr bool ispos() const noexcept { return !sign(); }
+	inline constexpr bool isneg() const noexcept {
+		if (isnan()) return false;
+		return sign(); 
+	}
+	inline constexpr bool ispos() const noexcept { 
+		if (isnan()) return false;
+		return !sign(); 
+	}
 	inline constexpr bool iszeroencoding() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return true;
@@ -1480,8 +1486,8 @@ public:
 			if (issupernormal()) {
 				// all these supernormal encodings are NANs, except for the encoding representing INF
 				bool isNaN = isinf() ? false : true;
-				bool isNegNaN = isNaN && isneg();
-				bool isPosNaN = isNaN && ispos();
+				bool isNegNaN = isNaN && sign();
+				bool isPosNaN = isNaN && !sign();
 				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
 					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
 						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
@@ -3175,11 +3181,11 @@ inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, co
 	if (lhs.isinf(INF_TYPE_POSITIVE) && rhs.isinf(INF_TYPE_POSITIVE)) return false;
 	if constexpr (nsub) {
 		cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
-		return (!diff.iszero() && diff.isneg()) ? true : false;  // got to guard against -0
+		return (!diff.iszero() && diff.sign()) ? true : false;  // got to guard against -0
 	}
 	if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
-	if (lhs.isneg() && rhs.ispos()) return true;
-	if (lhs.ispos() && rhs.isneg()) return false;
+	if (lhs.sign() && !rhs.sign()) return true;
+	if (!lhs.sign() && rhs.sign()) return false;
 	bool positive = lhs.ispos();
 	if (positive) {
 		if (lhs.scale() < rhs.scale()) return true;
