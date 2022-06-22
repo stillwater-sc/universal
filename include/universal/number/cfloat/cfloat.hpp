@@ -79,6 +79,9 @@ using fp64     = duble;
 // IEEE-754 quad (128bit) precision floating-point
 using quad     = cfloat<128, 15, uint32_t, true, false, false>;
 using fp128    = quad;
+// IEEE-754 octo (256bit) precision floating-point
+using octo     = cfloat<256, 19, uint32_t, true, false, false>;
+using fp256    = octo;
 
 // DL
 // Google brain float
