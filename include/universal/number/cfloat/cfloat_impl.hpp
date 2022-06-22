@@ -3183,30 +3183,32 @@ inline bool operator< (const cfloat<nnbits, nes, nbt, nsub, nsup, nsat>& lhs, co
 		cfloat<nnbits, nes, nbt, nsub, nsup, nsat> diff = (lhs - rhs);
 		return (!diff.iszero() && diff.sign()) ? true : false;  // got to guard against -0
 	}
-	if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
-	if (lhs.sign() && !rhs.sign()) return true;
-	if (!lhs.sign() && rhs.sign()) return false;
-	bool positive = lhs.ispos();
-	if (positive) {
-		if (lhs.scale() < rhs.scale()) return true;
-		if (lhs.scale() > rhs.scale()) return false;
-	}
 	else {
-		if (lhs.scale() > rhs.scale()) return true;
-		if (lhs.scale() < rhs.scale()) return false;
+		if (lhs.iszero() && rhs.iszero()) return false;  // we need to 'collapse' all zero encodings
+		if (lhs.sign() && !rhs.sign()) return true;
+		if (!lhs.sign() && rhs.sign()) return false;
+		bool positive = lhs.ispos();
+		if (positive) {
+			if (lhs.scale() < rhs.scale()) return true;
+			if (lhs.scale() > rhs.scale()) return false;
+		}
+		else {
+			if (lhs.scale() > rhs.scale()) return true;
+			if (lhs.scale() < rhs.scale()) return false;
+		}
+		// sign and scale are the same
+		if (lhs.scale() == rhs.scale()) {
+			// compare fractions: we do not have subnormals, so we can ignore the hidden bit
+			blockbinary<nnbits - 1ull - nes, nbt> l, r;
+			lhs.fraction(l);
+			rhs.fraction(r);
+			blockbinary<nnbits - nes, nbt> ll, rr; // fbits + 1 so we can 0 extend to honor 2's complement encoding of blockbinary
+			ll.assignWithoutSignExtend(l);
+			rr.assignWithoutSignExtend(r);
+			return (positive ? (ll < rr) : (ll > rr));
+		}
+		return false;
 	}
-	// sign and scale are the same
-	if (lhs.scale() == rhs.scale()) {
-		// compare fractions: we do not have subnormals, so we can ignore the hidden bit
-		blockbinary<nnbits - 1ull - nes, nbt> l, r; 
-		lhs.fraction(l);
-		rhs.fraction(r);
-		blockbinary<nnbits - nes, nbt> ll, rr; // fbits + 1 so we can 0 extend to honor 2's complement encoding of blockbinary
-		ll.assignWithoutSignExtend(l);
-		rr.assignWithoutSignExtend(r);
-		return (positive ? (ll < rr) : (ll > rr));
-	}
-	return false;
 }
 template<size_t nnbits, size_t nes, typename nbt, bool nsub, bool nsup, bool nsat>
 inline bool operator> (const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& lhs, const cfloat<nnbits,nes,nbt,nsub,nsup,nsat>& rhs) { 
