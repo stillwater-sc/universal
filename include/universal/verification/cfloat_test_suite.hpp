@@ -1184,7 +1184,7 @@ namespace sw { namespace universal {
 		constexpr bool isSaturating = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 		std::vector< Cfloat > set;
-		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, nan]
+		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, qnan]
 
 		int nrOfFailedTestCases = 0;
 
@@ -1196,6 +1196,11 @@ namespace sw { namespace universal {
 			ref = *(it - 1);
 
 			if (c != ref) {
+				// in the no supernormal case, we are decrementing the pattern, but
+				// any supernormal evaluates to nan, and that lands us in side the != check
+				// We check explicity below to filter out all these nan cases.
+				// To see that pattern decrements, uncomment the following line
+				// std::cout << to_binary(*it) << " > " << to_binary(*(it - 1)) << " decremented value " << to_binary(c) << '\n';
 				if (c.isnan() && ref.isnan()) continue; // nan != nan, so the regular equivalance test fails
 				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
