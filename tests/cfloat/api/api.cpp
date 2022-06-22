@@ -24,7 +24,7 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// default behavior
-	std::cout << "Default cfloat has no subnormals, no supernormals and is not saturating\n";
+	std::cout << "+---------    Default cfloat has no subnormals, no supernormals and is not saturating\n";
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
@@ -42,7 +42,7 @@ try {
 	}
 
 	// explicit configuration
-	std::cout << "Explicit configuration of a cfloat\n";
+	std::cout << "+---------    Explicit configuration of a cfloat\n";
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 3;
@@ -64,18 +64,13 @@ try {
 	}
 
 	// report on the dynamic range of some standard configurations
-	std::cout << "Dynamic ranges of some standard cfloat<> configurations\n";
+	std::cout << "+---------    Dynamic ranges of some standard cfloat<> configurations   --------+\n";
 	{
-		using quarter = cfloat<  8,  2, uint8_t, false, false, false>;
-		using half    = cfloat< 16,  5, uint8_t, false, false, false>;
-		using single  = cfloat< 32,  8, uint8_t, true, false, false>;
-		using dual    = cfloat< 64, 11, uint8_t, true, false, false>;
-//		using quad    = cfloat<128, 15, uint8_t, true, false, false>;  // TODO: our printing needs to improve to enable these large precisions
-//		using octo    = cfloat<256, 18, uint8_t, true, false, false>;
+		// quarter, half, single, duble, quad, and octo precision IEEE-754 style floating-point
 		report_range<quarter>(std::cout);
 		report_range<half>(std::cout);
 		report_range<single>(std::cout);
-		report_range<dual>(std::cout);
+		report_range<duble>(std::cout);
 		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
 		std::cout << "performance of printing of quad and larger precision needs to improve to be practical\n";
 //		report_range<quad>(std::cout);
@@ -117,7 +112,7 @@ try {
 	}
 
 	// use type aliases of standard configurations
-	std::cout << "Type aliases for some industry standard float configurations\n";
+	std::cout << "+---------    Type aliases for some industry standard float configurations   --------+\n";
 	{
 		float f1, f2, f3;
 		f1 = 1.0f;
@@ -138,7 +133,7 @@ try {
 	}
 
 	// constexpr and specific values
-	std::cout << "constexpr and specific values\n";
+	std::cout << "+---------    constexpr and specific values   --------+\n";
 	{
 		constexpr size_t nbits = 10;
 		constexpr size_t es = 3;
@@ -158,7 +153,7 @@ try {
 	}
 
 	// set bit patterns
-	std::cout << "set bit patterns API\n";
+	std::cout << "+---------    set bit patterns API   --------+\n";
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 5;
@@ -180,7 +175,7 @@ try {
 		std::cout << to_binary(a) << " : " << a << '\n';
 	}
 
-	std::cout << "set specific values of interest\n";
+	std::cout << "+---------    set specific values of interest   --------+\n";
 	{
 		cfloat<8, 2> a; // uninitialized
 		std::cout << "maxpos : " << a.maxpos() << " : " << scale(a) << '\n';
@@ -191,7 +186,7 @@ try {
 		std::cout << dynamic_range(a) << std::endl;
 	}
 
-	std::cout << "cfloat<16, 5, uint32_t, true>         half-precision subnormals\n";
+	std::cout << "+---------    cfloat<16, 5, uint32_t, hasSubnormals, noSupernormals, notSaturating>         half-precision subnormals   --------+\n";
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 5;
@@ -222,7 +217,7 @@ try {
 		std::cout << std::setprecision(precision);
 		std::cout << std::scientific;
 	}
-	std::cout << "cfloat<32, 8, uint32_t, true>         IEEE-754 float subnormals\n";
+	std::cout << "+---------    cfloat<32, 8, uint32_t, hasSubnormals, noSupernormals, notSaturating>         IEEE-754 float subnormals   --------+\n";
 	{
 		using BlockType = uint32_t;
 		float subnormal = std::nextafter(0.0f, 1.0f);
@@ -247,7 +242,7 @@ try {
 		}
 	}
 
-	std::cout << "Subnormal exponent values\n";
+	std::cout << "+---------    Subnormal exponent values   --------+\n";
 	{
 		// we are not using element [0] as es = 0 is not supported in the cfloat spec
 		int exponents[] = {
@@ -258,7 +253,7 @@ try {
 		}
 	}
 
-	std::cout << "human-readable output for large cfloats\n";
+	std::cout << "+---------    human-readable output for large cfloats   --------+\n";
 	{
 		using dp   = cfloat< 64, 11, uint32_t, true, false, false>;  // double precision
 //		using ep   = cfloat< 80, 11, uint32_t, true, false, false>;  // extended precision
@@ -280,6 +275,29 @@ try {
 		std::cout << std::setprecision(precision);
 	}
 
+	std::cout << "+---------    special value properties cfloat vs IEEE754   --------+\n";
+	{
+		float fa;
+		fa = NAN;
+		std::cout << "qNAN   : " << to_binary(NAN) << '\n';
+		std::cout << "sNAN   : " << to_binary(-NAN) << '\n';
+		if (fa < 0.0f && fa > 0.0f && fa != 0.0f) {
+			std::cout << "IEEE-754 is incorrectly implemented\n";
+		}
+		else {
+			std::cout << "IEEE-754 NAN has no sign\n";
+		}
+
+		single a(fa);
+		if ((a < 0.0f && a > 0.0f && a != 0.0f) || a.isneg()) {
+			std::cout << "cfloat is incorrectly implemented\n";
+			++nrOfFailedTestCases;
+		}
+		else {
+			std::cout << "cfloat NAN has no sign\n";
+		}
+
+	}
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
