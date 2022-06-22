@@ -24,10 +24,10 @@ namespace sw {
 			if (shift != nbits) ++nrOfFailedTests;
 
 			a = UnsignedInteger(1);
-			for (int i = 1; i <= nbits; ++i) {
+			for (int i = 1; i <= static_cast<int>(nbits); ++i) {
 				shift = nlz(a);
 				if (reportTestCases) std::cout << to_binary(a, nbits, true) << " : nlz shift " << shift << '\n';
-				if (shift != (nbits - i)) ++nrOfFailedTests;
+				if (shift != (static_cast<int>(nbits) - i)) ++nrOfFailedTests;
 				a <<= 1;
 			}
 
