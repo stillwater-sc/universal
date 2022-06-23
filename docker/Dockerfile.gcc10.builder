@@ -34,6 +34,8 @@ RUN set -ex \
 RUN useradd -ms /bin/bash stillwater
 USER stillwater
 
+WORKDIR /home/stillwater
+
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Builder V3 GCC 10.3"]
-# normally, you would want to give it a bash command to enter an interactive session
+ENV CONTAINER_ID "Universal Numbers Library Builder V3 GCC 10.3"
+CMD ["/usr/bin/env", "bash"]
