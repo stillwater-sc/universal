@@ -20,7 +20,7 @@ WORKDIR /home/stillwater/universal/build
 # full RUN statement to execute full regression test suite
 # default is SANITY regression level: -DBUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
 # or -DBUILD_REGRESSION_STRESS=ON for stress testing
-RUN cmake -DBUILD_ALL=ON .. && make -j8
+RUN cmake -DBUILD_ALL=ON .. && make
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
