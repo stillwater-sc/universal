@@ -60,7 +60,7 @@ try {
 	a = e; std::cout << a << '\n';
 	b = 1.0 / e;
 	c = a * b;
-	std::cout << c.to_long_double() << '\n';
+	std::cout << double(c) << '\n';
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);

@@ -9,6 +9,8 @@
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 #include <limits>
 #include <tuple>
+#include <universal/utility/bit_cast.hpp>
+#include <universal/utility/long_double.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
 
