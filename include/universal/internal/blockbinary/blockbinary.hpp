@@ -77,7 +77,7 @@ We could use a sint64_t and then convert to uint64_t and observe the MSB. Very d
 logic though.
 */
 
-// a block-based 2's complement binary number
+// a block-based binary number configurable to be signed or unsigned. When signed it uses 2's complement encoding
 template<size_t _nbits, typename BlockType = uint8_t, BinaryNumberType _NumberType = BinaryNumberType::Signed>
 class blockbinary {
 public:
@@ -99,14 +99,8 @@ public:
 	static constexpr bool     uniblock64 = (bitsInBlock == 64) && (nrBlocks == 1);
 	static_assert(bitsInBlock < 64 || uniblock64, "storage unit for multi-block arithmetic needs to be one of [uint8_t | uint16_t | uint32_t]");
 
-	// constructors
-	constexpr blockbinary() noexcept : _block{ 0 } {}
-
-	blockbinary(const blockbinary&) noexcept = default;
-	blockbinary(blockbinary&&) noexcept = default;
-
-	blockbinary& operator=(const blockbinary&) noexcept = default;
-	blockbinary& operator=(blockbinary&&) noexcept = default;
+	// trivial constructor
+	blockbinary() = default;
 
 	/// construct a blockbinary from another: bt must be the same
 	template<size_t nnbits>
@@ -147,6 +141,9 @@ public:
 	explicit operator long double() const        { return (long double)to_long_long(); }
 #endif
 
+	// access operators
+	BlockType& operator[](size_t index) { return _block[index]; }
+	const BlockType operator[](size_t index) const { return _block[index]; }
 	// prefix operators
 	blockbinary operator-() const {
 		blockbinary negated(*this);
@@ -865,7 +862,7 @@ inline blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbi
 // using nbits modulo arithmetic with final sign
 template<size_t N, typename B, BinaryNumberType T>
 inline blockbinary<2 * N, B, T> urmul2(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
-	blockbinary<2 * N, B, T> result;
+	blockbinary<2 * N, B, T> result(0);
 	if (a.iszero() || b.iszero()) return result;
 
 	// compute the result

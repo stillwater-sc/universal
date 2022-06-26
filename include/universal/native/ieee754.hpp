@@ -1,7 +1,7 @@
 #pragma once
 // ieee754.hpp: manipulation functions for IEEE-754 native types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
@@ -9,6 +9,8 @@
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 #include <limits>
 #include <tuple>
+#include <universal/utility/bit_cast.hpp>
+#include <universal/utility/long_double.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
 

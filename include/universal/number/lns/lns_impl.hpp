@@ -62,10 +62,14 @@ public:
 	static constexpr bt       MSU_MASK = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr bt       SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt       MSB_BIT_MASK = bt(bt(1) << ((nbits - 2ull) % bitsInBlock));
+	static constexpr bt       MSU_ZERO = MSU_MASK & MSB_BIT_MASK;
+	static constexpr bt       MSU_NAN = MSU_ZERO | SIGN_BIT_MASK;
 	static constexpr bt       MSB_UNIT = (1 + ((nbits - 2) / bitsInBlock)) - 1;
+	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + lns exponent
+	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the lns exponent
 
-	/// tivial constructor
-	lns() noexcept = default;
+	/// trivial constructor
+	lns() = default;
 
 	constexpr lns(signed char initial_value)        noexcept { *this = initial_value; }
 	constexpr lns(short initial_value)              noexcept { *this = initial_value; }
@@ -103,40 +107,20 @@ public:
 	lns& operator-=(const lns& rhs) { return *this; }
 	lns& operator-=(double rhs) { return *this -= lns(rhs); }
 	lns& operator*=(const lns& rhs) {
-		if constexpr (nrBlocks == 1) {
-			bool lhsSign = sign();
-			bool rhsSign = rhs.sign();
-			_block[0] = static_cast<bt>((~SIGN_BIT_MASK & _block[0]) + (~SIGN_BIT_MASK & rhs.block(0)));
-			setbit(nbits - 1, lhsSign ^ rhsSign);
-			// null any leading bits that fall outside of nbits
-			_block[MSU] = static_cast<bt>(MSU_MASK & _block[MSU]);
-		}
-		else {
-			bool lhsSign = sign();
-			bool rhsSign = rhs.sign();
-			lns<nbits, rbits, BlockType> sum, r(rhs);
-			r.setsign(false);
-			BlockType* pA = _block;
-			BlockType const* pB = r._block;
-			BlockType* pC = sum._block;
-			BlockType* pEnd = pC + nrBlocks;
-			std::uint64_t carry = 0;
-			while (pC != pEnd) {
-				carry += static_cast<std::uint64_t>(*pA) + static_cast<std::uint64_t>(*pB);
-				*pC = static_cast<bt>(carry);
-				carry >>= bitsInBlock;
-				++pA; ++pB; ++pC;
-			}
-			setbit(nbits - 1, lhsSign ^ rhsSign);
-			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-			BlockType* pLast = pEnd - 1;
-			*pLast = static_cast<bt>(MSU_MASK & *pLast);
-			*this = sum;
-		}
+		ExponentBlockBinary exp(_block), rhsExp(rhs._block);
+		exp += rhsExp;
+		bool negative = sign() ^ rhs.sign();
+		_block.assign(exp);
+		setsign(negative);
 		return *this;
 	}
 	lns& operator*=(double rhs) { return *this *= lns(rhs); }
 	lns& operator/=(const lns& rhs) {
+		ExponentBlockBinary exp(_block), rhsExp(rhs._block);
+		exp -= rhsExp;
+		bool negative = sign() ^ rhs.sign();
+		_block.assign(exp);
+		setsign(negative);
 		return *this;
 	}
 	lns& operator/=(double rhs) { return *this /= lns(rhs); }
@@ -160,12 +144,22 @@ public:
 	}
 
 	// modifiers
-	constexpr void clear() noexcept { 
-		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = bt(0ull);
+	// clear sets the lns value to special encoding for 0
+	constexpr void clear() noexcept {
+		if constexpr (nrBlocks == 1) {
+			_block[0] = MSU_ZERO;
+		}
+		else if constexpr (nrBlocks == 2) {
+			_block[0] = 0;
+			_block[1] = MSU_ZERO;
+		}
+		else {
+			_block.clear();
+			_block[MSU] = MSU_ZERO;
 		}
 	}
 	constexpr void setzero()                       noexcept { clear(); }
+	constexpr void setnan()                        noexcept { clear(); _block[MSU] = MSU_NAN; }
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
@@ -193,25 +187,43 @@ public:
 	// selectors
 	constexpr bool iszero() const noexcept { // special encoding
 		if constexpr (nrBlocks == 1) {
-			return ((_block[MSB_UNIT] & MSB_BIT_MASK) > 0);  // +- 0 is possible
+			return (_block[MSB_UNIT] == MSU_ZERO);  // +0  is zero, -0 is NaN
+		}
+		else if constexpr (nrBlocks == 2) {
+			return (_block[0] == 0 && _block[1] == MSU_ZERO);
 		}
 		else {
-			for (size_t i = 0; i < MSB_UNIT - 1; ++i) {
+			for (size_t i = 0; i < nrBlocks - 1; ++i) {
 				if (_block[i] != 0) return false;
 			}
-			return ((_block[MSB_UNIT] & MSB_BIT_MASK) > 0);
+			return (_block[MSB_UNIT] == MSU_ZERO);
 		}
 	}
 	constexpr bool isneg()  const noexcept { return sign(); }
 	constexpr bool ispos()  const noexcept { return !sign(); }
 	constexpr bool isinf()  const noexcept { return false; }
 	constexpr bool isnan()  const noexcept { // special encoding
-		return false; 
+		if constexpr (nrBlocks == 1) {
+			return (_block[MSB_UNIT] == MSU_NAN);  // +0  is zero, -0 is NaN
+		}
+		else if constexpr (nrBlocks == 2) {
+			return (_block[0] == 0 && _block[1] == MSU_NAN);
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks - 1; ++i) {
+				if (_block[i] != 0) return false;
+			}
+			return (_block[MSB_UNIT] == MSU_NAN);
+		}
 	}
 	constexpr bool sign()   const noexcept { 
 		return (SIGN_BIT_MASK & _block[MSU]) != 0;
 	}
-	constexpr int  scale()  const noexcept { return false; }
+	constexpr int  scale()  const noexcept {
+		ExponentBlockBinary exp(_block);
+		exp >>= rbits;
+		return long(exp);
+	}
 
 	constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
@@ -224,18 +236,8 @@ public:
 		return bt(0); // return 0 when block index out of bounds
 	}
 
-	long double to_long_double() const noexcept {
-		return 0.0l;
-	}
-	double to_double() const noexcept {
-		return 0.0;
-	}
-	float to_float() const noexcept {
-		return 0.0f;
-	}
-
-	explicit operator double() const noexcept { return to_double(); }
-	explicit operator float() const noexcept { return to_float(); }
+	explicit operator double() const noexcept { return to_ieee754<double>(); }
+	explicit operator float() const noexcept { return to_ieee754<float>(); }
 
 protected:
 
@@ -252,11 +254,150 @@ protected:
 	template<typename Real>
 	CONSTEXPRESSION lns& convert_ieee754(Real v) {
 		clear();
+		if (std::fpclassify(v) == FP_NAN) {
+			setnan();
+			return *this;
+		}
+		if (v == 0.0) return *this;
+
+		bool negative = (v < Real(0.0f));
+		v = (negative ? -v : v);
+		Real logv = std::log2(v);
+//		Real integerPart = std::trunc(logv);
+//		Real fractionPart = logv - integerPart;
+//		std::cout << "value           : " << v << '\n';
+//		std::cout << "logarithmic part: " << logv << '\n';
+//		std::cout << "integer    part : " << integerPart << '\n';
+//		std::cout << "fractional part : " << fractionPart << '\n';
+
+		if (logv == 0.0) {
+			_block.clear();
+			_block.setbit(nbits - 1, negative);
+			return *this;
+		}
+		// check if the value is in the representable range
+
+		ExponentBlockBinary lnsExponent;
+
+		bool s{ false };
+		uint64_t unbiasedExponent{ 0 };
+		uint64_t raw{ 0 };
+		extractFields(logv, s, unbiasedExponent, raw); // use native conversion
+		if (unbiasedExponent > 0) raw |= (1ull << ieee754_parameter<Real>::fbits);
+		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
+
+		// our fixed-point has its radixPoint at rbits
+		int shiftRight = radixPoint - int(rbits);
+		if (shiftRight > 0) {
+			// we need to round the raw bits
+			// collect guard, round, and sticky bits
+			// this same logic will work for the case where 
+			// we only have a guard bit and no round and/or sticky bits
+			// because the mask logic will make round and sticky both 0
+			// so no need to special case it
+			uint64_t mask = (1ull << (shiftRight - 1));
+			bool guard = (mask & raw);
+			mask >>= 1;
+			bool round = (mask & raw);
+			if (shiftRight > 1) {
+				mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
+				mask = ~mask;
+			}
+			else {
+				mask = 0;
+			}
+			bool sticky = (mask & raw);
+
+			raw >>= shiftRight;  // shift out the bits we are rounding away
+			bool lsb = (raw & 0x1ul);
+			//  ... lsb | guard  round sticky   round
+			//       x     0       x     x       down
+			//       0     1       0     0       down  round to even
+			//       1     1       0     0        up   round to even
+			//       x     1       0     1        up
+			//       x     1       1     0        up
+			//       x     1       1     1        up
+			if (guard) {
+				if (lsb && (!round && !sticky)) ++raw; // round to even
+				if (round || sticky) ++raw;
+			}
+			raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
+			lnsExponent.setbits(raw);
+		}
+		else {
+			int shiftLeft = -shiftRight;
+			if (shiftLeft < (64 - ieee754_parameter<Real>::fbits)) {  // what is the distance between the MSB and 64?
+				// no need to round, just shift the bits in place
+				raw <<= shiftLeft;
+				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
+				lnsExponent.setbits(raw);
+			}
+			else {
+				// we need to project the bits we have on the fixpnt
+				for (size_t i = 0; i < ieee754_parameter<Real>::fbits + 1; ++i) {
+					if (raw & 0x01) {
+						lnsExponent.setbit(i + shiftLeft);
+					}
+					raw >>= 1;
+				}
+				if (s) lnsExponent.twosComplement();
+			}
+		}
+//		std::cout << "lns exponent : " << to_binary(lnsExponent) << " : " << lnsExponent << '\n';
+		_block = lnsExponent;
+		setsign(negative);
 		return *this;
 	}
 
+	template<typename TargetFloat>
+	CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {
+		// special case handling
+		if (isnan()) return TargetFloat(NAN);
+		if (iszero()) return TargetFloat(0.0f);
+		bool negative = sign(); // cache for later decision
+		// pick up the absolute value of the minimum normal and subnormal exponents 
+		constexpr size_t minNormalExponent = static_cast<size_t>(-ieee754_parameter<TargetFloat > ::minNormalExp);
+		constexpr size_t minSubnormalExponent = static_cast<size_t>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
+		static_assert(rbits <= minSubnormalExponent, "lns::to_ieee754: fraction is too small to represent with requested floating-point type");
+		TargetFloat multiplier = 0;
+		if constexpr (rbits > minNormalExponent) { // value is a subnormal number
+			multiplier = ieee754_parameter<TargetFloat>::minSubnormal;
+			for (size_t i = 0; i < minSubnormalExponent - rbits; ++i) {
+				multiplier *= 2.0f; // these are error free multiplies
+			}
+		}
+		else {
+			// the value is a normal number
+			multiplier = ieee754_parameter<TargetFloat>::minNormal;
+			for (size_t i = 0; i < minNormalExponent - rbits; ++i) {
+				multiplier *= 2.0f; // these are error free multiplies
+			}
+		}
+		// you pop out here with multiplier set to the weight of the starting bit
+		ExponentBlockBinary bb(_block);  // strip the sign bit
+		bool expNegative = bb.sign();
+		if (expNegative) bb.twosComplement();
+		// construct the value
+		TargetFloat value{ 0.0 };
+		size_t bit = 0;
+		for (size_t b = 0; b < nrBlocks; ++b) {
+			BlockType mask = static_cast<BlockType>(1ull);
+			BlockType block = bb[b];
+			for (size_t i = 0; i < bitsInBlock; ++i) {
+				if (block & mask) value += multiplier;
+				if (bit == nbits - 2) break; // skip the sign bit of the lns
+				++bit;
+				mask <<= 1;
+				multiplier *= 2.0;
+			}
+		}
+		value = (expNegative ? -value : value);
+		value = std::pow(TargetFloat(2.0f), value);
+		return (negative ? -value : value);
+	}
+
 private:
-	BlockType  _block[nrBlocks];
+	BlockBinary _block;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t rrbits, typename nbt>
@@ -281,7 +422,7 @@ private:
 ////////////////////// operators
 template<size_t nnbits, size_t rrbits, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const lns<nnbits, rrbits, nbt>& v) {
-	ostr << v.to_double();
+	ostr << v.to_ieee754<double>();
 	return ostr;
 }
 
@@ -298,16 +439,16 @@ inline bool operator==(const lns<nnbits, rrbits, nbt>& lhs, const lns<nnbits, rr
 	if constexpr (LNS::nrBlocks == 1) {
 		return lhs._block[0] == rhs._block[0];
 	}
-	if constexpr (LNS::nrBlocks == 2) {
+	else if constexpr (LNS::nrBlocks == 2) {
 		return (lhs._block[0] == rhs._block[0]) && 
 			   (lhs._block[1] == rhs._block[1]);
 	}
-	if constexpr (LNS::nrBlocks == 3) {
+	else if constexpr (LNS::nrBlocks == 3) {
 		return (lhs._block[0] == rhs._block[0]) &&
 			   (lhs._block[1] == rhs._block[1]) &&
 			   (lhs._block[2] == rhs._block[2]);
 	}
-	if constexpr (LNS::nrBlocks == 4) {
+	else if constexpr (LNS::nrBlocks == 4) {
 		return (lhs._block[0] == rhs._block[0]) &&
 			   (lhs._block[1] == rhs._block[1]) &&
 			   (lhs._block[2] == rhs._block[2]) &&
@@ -404,9 +545,11 @@ inline std::string to_binary(const lns<nbits, rbits, bt>& number, bool nibbleMar
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
-	for (int i = static_cast<int>(nbits) - 2; i >= rbits; --i) {
-		s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-		if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << '\'';
+	if constexpr (nbits - 2 >= rbits) {
+		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
+			s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << '\'';
+		}
 	}
 	if constexpr (rbits > 0) {
 		s << '.';
