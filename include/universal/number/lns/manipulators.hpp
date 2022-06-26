@@ -63,7 +63,7 @@ std::string dynamic_range(const lns<nbits, rbits, bt>& a) {
 		s << red << (l.sign() ? "1" : "0");
 	
 		// integer bits
-		for (int i = static_cast<int>(nbits) - 2; i >= rbits; --i) {
+		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
 			s << cyan << (l.at(static_cast<size_t>(i)) ? '1' : '0');
 			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 		}

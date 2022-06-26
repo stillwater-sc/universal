@@ -1,7 +1,7 @@
 #pragma once
 // blockbinary.hpp: parameterized blocked binary number system representing a 2's complement binary number
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -829,7 +829,7 @@ inline blockbinary<N + 1, B, T> ursub(const blockbinary<N, B, T>& a, const block
 template<size_t N, typename B, BinaryNumberType T>
 inline blockbinary<2*N, B, T> urmul(const blockbinary<N, B, T>& a, const blockbinary<N, B, T>& b) {
 	using BlockBinary = blockbinary<2 * N, B, T>;
-	BlockBinary result;
+	BlockBinary result(0);
 	if (a.iszero() || b.iszero()) return result;
 
 	// compute the result

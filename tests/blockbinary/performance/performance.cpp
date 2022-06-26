@@ -52,7 +52,7 @@ namespace sw::universal::bb {
 	template<typename BlockbinaryConfiguration>
 	void AdditionSubtractionWorkload(size_t NR_OPS) {
 		std::vector<BlockbinaryConfiguration> data = { 3, -3 };
-		BlockbinaryConfiguration a, b{ 1 };
+		BlockbinaryConfiguration a{ 0 }, b{ 1 };
 		for (size_t i = 1; i < NR_OPS; ++i) {
 			a = data[i % 2];
 			b = b + a;
@@ -66,7 +66,7 @@ namespace sw::universal::bb {
 	template<typename BlockbinaryConfiguration>
 	void MultiplicationWorkload(size_t NR_OPS) {
 		std::vector<BlockbinaryConfiguration> data = { 1, -1 };
-		BlockbinaryConfiguration a, b{ 3 };
+		BlockbinaryConfiguration a{ 0 }, b{ 3 };
 		for (size_t i = 1; i < NR_OPS; ++i) {
 			a = data[i % 2];
 			b = b * a;
@@ -80,7 +80,7 @@ namespace sw::universal::bb {
 	template<typename BlockbinaryConfiguration>
 	void DivisionWorkload(size_t NR_OPS) {
 		std::vector<BlockbinaryConfiguration> data = { 1, -1 };
-		BlockbinaryConfiguration a, b{ 3 };
+		BlockbinaryConfiguration a{ 0 }, b{ 3 };
 		for (size_t i = 1; i < NR_OPS; ++i) {
 			a = data[i % 2];
 			b = b / a;
@@ -94,7 +94,7 @@ namespace sw::universal::bb {
 	template<typename BlockbinaryConfiguration>
 	void RemainderWorkload(size_t NR_OPS) {
 		std::vector<BlockbinaryConfiguration> data = { 1, -1 };
-		BlockbinaryConfiguration a, b{ 3 };
+		BlockbinaryConfiguration a{ 0 }, b{ 3 };
 		for (size_t i = 0; i < NR_OPS; ++i) {
 			a = data[i % 2];
 			b = b % a;

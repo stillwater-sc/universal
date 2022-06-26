@@ -283,7 +283,7 @@ protected:
 		}
 		// check if the value is in the representable range
 
-		ExponentBlockBinary lnsExponent;
+		ExponentBlockBinary lnsExponent{ 0 };
 
 		bool s{ false };
 		uint64_t unbiasedExponent{ 0 };

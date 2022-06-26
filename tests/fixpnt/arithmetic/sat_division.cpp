@@ -22,7 +22,7 @@
 template<size_t nbits, typename BlockType>
 inline sw::universal::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::universal::blockbinary<nbits, BlockType>& a, const sw::universal::blockbinary<nbits, BlockType>& b) {
 	using namespace sw::universal;
-	blockbinary<2 * nbits, BlockType> result;
+	blockbinary<2 * nbits, BlockType> result(0);
 	if (a.iszero() || b.iszero()) return result;
 
 	// compute the result
