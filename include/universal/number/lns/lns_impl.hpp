@@ -88,13 +88,6 @@ public:
 	CONSTEXPRESSION lns& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
 	CONSTEXPRESSION lns& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
 
-	// guard long double support to enable ARM and RISC-V embedded environments
-#if LONG_DOUBLE_SUPPORT
-	lns(long double initial_value)                        noexcept { *this = initial_value; }
-	CONSTEXPRESSION lns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
-	explicit operator long double()                 const noexcept { return to_long_double(); }
-#endif
-
 	// arithmetic operators
 	// prefix operator
 	lns operator-() const {				
@@ -236,10 +229,23 @@ public:
 		return bt(0); // return 0 when block index out of bounds
 	}
 
-	explicit operator double() const noexcept { return to_ieee754<double>(); }
-	explicit operator float() const noexcept { return to_ieee754<float>(); }
+	explicit operator int()       const noexcept { return to_signed<int>(); }
+	explicit operator long()      const noexcept { return to_signed<long>(); }
+	explicit operator long long() const noexcept { return to_signed<long long>(); }
+	explicit operator float()     const noexcept { return to_ieee754<float>(); }
+	explicit operator double()    const noexcept { return to_ieee754<double>(); }
+	
+	// guard long double support to enable ARM and RISC-V embedded environments
+#if LONG_DOUBLE_SUPPORT
+	lns(long double initial_value)                        noexcept { *this = initial_value; }
+	CONSTEXPRESSION lns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
+	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
+#endif
 
 protected:
+
+	//////////////////////////////////////////////////////
+	/// convertion routines from native types
 
 	template<typename SignedInt>
 	constexpr lns& convert_signed(SignedInt v) {
@@ -349,6 +355,19 @@ protected:
 		return *this;
 	}
 
+	//////////////////////////////////////////////////////
+/// convertion routines to native types
+
+	template<typename SignedInt>
+	typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
+		to_signed() const {
+		return SignedInt(to_ieee754<double>());
+	}
+	template<typename UnsignedInt>
+	typename std::enable_if< std::is_integral<UnsignedInt>::value&& std::is_unsigned<UnsignedInt>::value, UnsignedInt>::type
+		to_unsigned() const {
+		return UnsignedInt(to_ieee754<double>());
+	}
 	template<typename TargetFloat>
 	CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {
 		// special case handling
@@ -422,7 +441,7 @@ private:
 ////////////////////// operators
 template<size_t nnbits, size_t rrbits, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const lns<nnbits, rrbits, nbt>& v) {
-	ostr << v.to_ieee754<double>();
+	ostr << double(v);
 	return ostr;
 }
 
