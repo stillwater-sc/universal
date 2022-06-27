@@ -38,26 +38,6 @@ try {
 
 #if MANUAL_TESTING
 
-/*
-	{
-		using Cfloat = cfloat<4, 1, uint8_t>;
-		std::vector<Cfloat> set;
-		GenerateOrderedCfloatSet<Cfloat>(set);
-		for (auto v : set) {
-			std::cout << to_binary(v) << " : " << v << '\n';
-		}
-	}
-		{
-		using Cfloat = cfloat<17,2, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
-		Cfloat c; // uninitialized
-		c.setbits(0x0FEFD);
-		for (int i = 0; i < 10; ++i) {
-			std::cout << to_binary(c) << " : " << c++ << '\n';
-		}
-	}
-
-*/
-
 	{	
 		constexpr bool hasSubnormals = true;
 		constexpr bool hasSupernormals = true;

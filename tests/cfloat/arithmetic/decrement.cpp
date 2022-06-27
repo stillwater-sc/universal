@@ -39,20 +39,10 @@ try {
 #if MANUAL_TESTING
 
 	{
-		using Cfloat = cfloat<4, 1, uint8_t, true, true, false>;
-		Cfloat c; // uninitialized
-		c.setbits(0x00);
-		--c;
-		for (int i = 0; i < 5; ++i) {
-			std::cout << to_binary(c) << " : " << c-- << '\n';
-		}
-	}
-
-	{
 		constexpr bool hasSubnormals = true;
 		constexpr bool hasSupernormals = true;
-		constexpr bool isSaturating = true;
-		using Cfloat = cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, !isSaturating>;
+		constexpr bool notSaturating = false;
+		using Cfloat = cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating>;
 		nrOfFailedTestCases += ReportTestResult(VerifyCfloatDecrement< Cfloat >(true), "cfloat<4,1,uint8_t,subnormals,supernormals,!saturating>", test_tag);
 	}
 
