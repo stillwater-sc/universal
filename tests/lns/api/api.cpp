@@ -45,6 +45,26 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+	// important behavioral traits
+	{
+		using Real = lns<8, 2>;
+		bool isTrivial = bool(std::is_trivial<Real>());
+		static_assert(std::is_trivial<Real>(), "lns should be trivial but failed the assertion");
+		std::cout << (isTrivial ? "lns is trivial" : "lns failed trivial: FAIL") << '\n';
+
+		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Real>());
+		static_assert(std::is_trivially_constructible<Real>(), "lns should be trivially constructible but failed the assertion");
+		std::cout << (isTriviallyConstructible ? "lns is trivial constructible" : "lns failed trivial constructible: FAIL") << '\n';
+
+		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Real>());
+		static_assert(std::is_trivially_copyable<Real>(), "lns should be trivially copyable but failed the assertion");
+		std::cout << (isTriviallyCopyable ? "lns is trivially copyable" : "lns failed trivially copyable: FAIL") << '\n';
+
+		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<Real>());
+		static_assert(std::is_trivially_copy_assignable<Real>(), "lns should be trivially copy-assignable but failed the assertion");
+		std::cout << (isTriviallyCopyAssignable ? "lns is trivially copy-assignable" : "lns failed trivially copy-assignable: FAIL") << '\n';
+	}
+
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
