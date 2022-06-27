@@ -1026,48 +1026,45 @@ namespace sw { namespace universal {
 		constexpr bool isSaturating = TestType::isSaturating;
 		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		Cfloat minneg(SpecificValue::minneg);
-		Cfloat minpos(SpecificValue::minpos);
+		constexpr Cfloat minneg(SpecificValue::minneg);
+		constexpr Cfloat minpos(SpecificValue::minpos);
 
 		int nrOfFailedTestCases = 0;
 
 		// special cases are transitions to different regimes and special encodings
 		if constexpr (hasSubnormals) {
 			TestType a(minneg);
-			++a;  // we are going to be -0
-			if (!a.iszero() && a.isneg()) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != -0\n";
+			++a;  // we are going from minneg to be 0
+			if (!a.iszero()) {
+				if (reportTestCases) std::cout << " FAIL " << to_binary(a) << " : " << a << " !=  0\n";
 				++nrOfFailedTestCases;
 			}
-			++a; // going from -0 to +0
-			if (!a.iszero() && a.ispos()) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != +0\n";
-				++nrOfFailedTestCases;
-			}
-			if (++a != minpos) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+			++a; // going from 0 to minpos
+			if (a != minpos) {
+				if (reportTestCases) std::cout << " FAIL " << to_binary(a) << " : " << a << " != " << minpos << std::endl;
 				++nrOfFailedTestCases;
 			}
 		}
 		else {  // the logic is exactly the same, but the values are very different
 			TestType a(minneg);
 			if (++a != 0) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != 0\n";
+				if (reportTestCases) std::cout << " FAIL " << to_binary(a) << " : " << a << " != 0\n";
 				++nrOfFailedTestCases;
 			}
 			a = 0;
 			if (++a != minpos) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << to_binary(a) << " : " << a << " != " << minpos << std::endl;
 				++nrOfFailedTestCases;
 			}
 		}
 		
+		// TODO: implement special cases for supernormals
 		if constexpr (hasSupernormals) {
 		}
 		else {
 		}
 		
-		// special case of saturing arithmetic: sequences will terminate at maxneg and maxpos
+		// TODO: special case of saturing arithmetic: sequences will terminate at maxneg and maxpos
 		if constexpr (isSaturating) {
 
 			// Cfloat maxneg(SpecificValue::maxneg);
@@ -1100,9 +1097,10 @@ namespace sw { namespace universal {
 			c = *it;
 			c++; // this will test both postfix and prefix operators
 			ref = *(it + 1);
-			std::cout << to_binary(*it) << " -> " << to_binary(*(it + 1)) << " increment " << to_binary(c) << " : " << c << '\n';
+//			std::cout << to_binary(*it) << " < " << to_binary(*(it + 1)) << " increment " << to_binary(c) << " : " << c << '\n';
 			if (c != ref) {
 				if (c.isnan() && ref.isnan()) continue; // nan != nan, so the regular equivalance test fails
+				std::cout << to_binary(*it) << " < " << to_binary(*(it + 1)) << " incremented value " << to_binary(c) << '\n';
 				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
@@ -1129,31 +1127,26 @@ namespace sw { namespace universal {
 
 		// special cases are transitions to different regimes and special encodings
 		if constexpr (hasSubnormals) {
-			TestType a(0);
-			--a;  // we are going to be -0
-			if (!a.iszero() && a.isneg()) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != -0\n";
+			TestType a(minpos);
+			--a;  // we are going minpos to 0
+			if (!a.iszero()) {
+				if (reportTestCases) std::cout << " FAIL " << to_binary(a) << " : " << a << " != 0\n";
 				++nrOfFailedTestCases;
 			}
-			++a; // going from -0 to +0
-			if (!a.iszero() && a.ispos()) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != +0\n";
-				++nrOfFailedTestCases;
-			}
-			if (++a != minpos) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+			// going from 0 to minneg
+			if (--a != minneg) {
+				if (reportTestCases) std::cout << " FAIL " << a << " != " << minneg << std::endl;
 				++nrOfFailedTestCases;
 			}
 		}
 		else {  // the logic is exactly the same, but the values are very different
-			TestType a(minneg);
-			if (++a != 0) {
+			TestType a(minpos);
+			if (--a != 0) {
 				if (reportTestCases) std::cout << " FAIL " << a << " != 0\n";
 				++nrOfFailedTestCases;
 			}
-			a = 0;
-			if (++a != minpos) {
-				if (reportTestCases) std::cout << " FAIL " << a << " != " << minpos << std::endl;
+			if (--a != minneg) {
+				if (reportTestCases) std::cout << " FAIL " << a << " != " << minneg << std::endl;
 				++nrOfFailedTestCases;
 			}
 		}
@@ -1204,7 +1197,7 @@ namespace sw { namespace universal {
 			c = *it;
 			c--;  // this will test both postfix and prefix operators
 			ref = *(it + 1);
-//			std::cout << to_binary(*it) << " -> " << to_binary(ref) << " decrement " << to_binary(c) << " : " << c << '\n';
+//			std::cout << to_binary(*it) << " > " << to_binary(ref) << " decrement " << to_binary(c) << " : " << c << '\n';
 			if (c != ref) {
 				// in the no supernormal case, we are decrementing the pattern, but
 				// any supernormal evaluates to nan, and that lands us in side the != check

@@ -684,51 +684,27 @@ public:
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
-			if (!sign()) {
-				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
-					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan 
-				}
-				else {
-					++_block[MSU];
-				}
-			}
-			else {
-				if ((_block[MSU] & SIGN_BIT_MASK) == _block[MSU]) { // pattern: 1.00.000 = -0
+			if (sign()) {
+				if (_block[MSU] == (SIGN_BIT_MASK | 1ul)) { // pattern: 1.00.001 = minneg
 					_block[MSU] = 0; // pattern: 0.00.000 = +0 
 				}
 				else {
 					--_block[MSU];
 				}
 			}
-		}
-		else {
-			if (!sign()) {
-				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
-				if (isnanencoding()) {
-					setnan(NAN_TYPE_SIGNALLING);
+			else {
+				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
+					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan : wrap to the other side of the encoding
 				}
 				else {
-					bool carry = true;
-					for (unsigned i = 0; i < MSU; ++i) {
-						if (carry) {
-							if ((_block[i] & storageMask) == storageMask) { // block will overflow
-								_block[i] = 0;
-								carry = true;
-							}
-							else {
-								++_block[i];
-								carry = false;
-							}
-						}
-					}
-					if (carry) {
-						++_block[MSU];
-					}
+					++_block[MSU];
 				}
 			}
-			else {
-				// special case: pattern: 1.00.000 = -0 transitions to pattern: 0.00.000 = +0 
-				if (iszeroencoding()) {
+		}
+		else {
+			if (sign()) {
+				// special case: pattern: 1.00.001 = minneg transitions to pattern: 0.00.000 = +0 
+				if (isminnegencoding()) {
 					setzero();
 				}
 				else {
@@ -749,6 +725,30 @@ public:
 					}
 					if (borrow) {
 						--_block[MSU];
+					}
+				}
+			}
+			else {
+				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
+				if (isnanencoding()) {
+					setnan(NAN_TYPE_SIGNALLING);
+				}
+				else {
+					bool carry = true;
+					for (unsigned i = 0; i < MSU; ++i) {
+						if (carry) {
+							if ((_block[i] & storageMask) == storageMask) { // block will overflow
+								_block[i] = 0;
+								carry = true;
+							}
+							else {
+								++_block[i];
+								carry = false;
+							}
+						}
+					}
+					if (carry) {
+						++_block[MSU];
 					}
 				}
 			}
@@ -1351,27 +1351,6 @@ public:
 		if (isnan()) return false;
 		return !sign(); 
 	}
-	constexpr bool iszeroencoding() const noexcept {
-		if constexpr (0 == nrBlocks) {
-			return true;
-		}
-		else if constexpr (1 == nrBlocks) {
-			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-		else if constexpr (2 == nrBlocks) {
-			return (_block[0] == 0) && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-		else if constexpr (3 == nrBlocks) {
-			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-		else if constexpr (4 == nrBlocks) {
-			return (_block[0] == 0) && _block[1] == 0 && _block[2] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-		else {
-			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != 0) return false;
-			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-	}
 	constexpr bool iszero() const noexcept {
 		if constexpr (hasSubnormals) {
 			return iszeroencoding();
@@ -1434,6 +1413,68 @@ public:
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
+	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
+		if constexpr (hasSupernormals) {
+			return isnanencoding(NaNType);
+		}
+		else {
+			if (issupernormal()) {
+				// all these supernormal encodings are NANs, except for the encoding representing INF
+				bool isNaN = isinf() ? false : true;
+				bool isNegNaN = isNaN && sign();
+				bool isPosNaN = isNaN && !sign();
+				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
+					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
+						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+			}
+			else {
+				return false;
+			}
+		}
+	}
+	constexpr bool iszeroencoding() const noexcept {
+		if constexpr (0 == nrBlocks) {
+			return true;
+		}
+		else if constexpr (1 == nrBlocks) {
+			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+		else if constexpr (2 == nrBlocks) {
+			return (_block[0] == 0) && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+		else if constexpr (3 == nrBlocks) {
+			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+		else if constexpr (4 == nrBlocks) {
+			return (_block[0] == 0) && _block[1] == 0 && _block[2] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != 0) return false;
+			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+	}
+	constexpr bool isminnegencoding() const noexcept {  // 1.00.00001
+		if constexpr (0 == nrBlocks) {
+			return false;
+		}
+		else if constexpr (1 == nrBlocks) {
+			return (_block[MSU] & (SIGN_BIT_MASK | 1ul));
+		}
+		else if constexpr (2 == nrBlocks) {
+			return ((_block[0] == 1ul) && (_block[1] == SIGN_BIT_MASK));
+		}
+		else if constexpr (3 == nrBlocks) {
+			return ((_block[0] == 1ul) && (_block[1] == 0) && (_block[2] == SIGN_BIT_MASK));
+		}
+		else if constexpr (4 == nrBlocks) {
+			return ((_block[0] == 1ul) && (_block[1] == 0) && (_block[2] == 0) && (_block[3] == SIGN_BIT_MASK));
+		}
+		else {
+			if (_block[0] != 1ul) return false;
+			for (size_t i = 1; i < nrBlocks - 2; ++i) if (_block[i] != 0) return false;
+			return (_block[MSU] == SIGN_BIT_MASK);
+		}
+	}
 	constexpr bool isnanencoding(int NaNType = NAN_TYPE_EITHER) const noexcept {
 		// the bit encoding of NaN is independent of the gradual overflow configuration
 		bool isNaN = true;
@@ -1468,25 +1509,6 @@ public:
 		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
 			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
 				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
-	}
-	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
-		if constexpr (hasSupernormals) {
-			return isnanencoding(NaNType);
-		}
-		else {
-			if (issupernormal()) {
-				// all these supernormal encodings are NANs, except for the encoding representing INF
-				bool isNaN = isinf() ? false : true;
-				bool isNegNaN = isNaN && sign();
-				bool isPosNaN = isNaN && !sign();
-				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
-					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
-						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
-			}
-			else {
-				return false;
-			}
-		}
 	}
 
 	constexpr bool isnormal() const noexcept {

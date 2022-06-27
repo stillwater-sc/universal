@@ -93,6 +93,40 @@ try {
 		VerifyCfloatDecrement < cfloat<10, 3, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<10, 3, uint8_t, true, true, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatDecrement < cfloat<17, 3, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<17, 4, uint8_t, true, true, false>()), test_tag);
+
+#ifdef LATER
+	// these are failing because the test assumes that we jump around the encoding, where as operator++ just cycles through the encodings
+	// simplified classic floats without subnormals nor supernormals
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< cfloat<16, 5, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<16, 5, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< cfloat<32, 8, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<32, 8, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< cfloat<64, 11, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<64, 11, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< cfloat<128, 15, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<128, 15, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
+#endif
+
+	// traditional, IEEE-754 standard floats with just subnormals
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< half >(reportTestCases), type_tag(half()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< single >(reportTestCases), type_tag(single()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< duble >(reportTestCases), type_tag(duble()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< quad >(reportTestCases), type_tag(quad()), test_tag + std::string(" special cases"));
+
+	// fancy, fully encoded classic floats
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< cfloat<16, 5, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<16, 5, uint32_t, true, true, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< cfloat<32, 8, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<32, 8, uint32_t, true, true, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< cfloat<64, 11, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<64, 11, uint32_t, true, true, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrementSpecialCases< cfloat<128, 15, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<128, 15, uint32_t, true, true, false>()), test_tag + std::string(" special cases"));
+
 #endif
 
 #if REGRESSION_LEVEL_2

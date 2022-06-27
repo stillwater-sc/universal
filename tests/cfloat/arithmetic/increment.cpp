@@ -38,6 +38,14 @@ try {
 
 #if MANUAL_TESTING
 
+	{
+		constexpr bool hasSubnormals = true;
+		constexpr bool hasSupernormals = true;
+		constexpr bool notSaturating = false;
+		using Cfloat = cfloat<4, 1, uint8_t, hasSubnormals, hasSupernormals, notSaturating>;
+		nrOfFailedTestCases += ReportTestResult(VerifyCfloatIncrement< Cfloat >(true), "cfloat<4,1,uint8_t,subnormals,supernormals,!saturating>", test_tag);
+	}
+
 	{	
 		constexpr bool hasSubnormals = true;
 		constexpr bool hasSupernormals = true;
@@ -86,12 +94,38 @@ try {
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatIncrement < cfloat<17, 3, uint8_t, true, true, false> >(reportTestCases), type_tag(cfloat<17, 4, uint8_t, true, true, false>()), test_tag);
 
+#ifdef LATER
+	// these are failing because the test assumes that we jump around the encoding, where as operator++ just cycles through the encodings
+	// simplified classic floats without subnormals nor supernormals
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrementSpecialCases< cfloat<32, 8, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<32, 8, uint32_t, true, true, false>()), test_tag);
+		VerifyCfloatIncrementSpecialCases< cfloat<16, 5, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<16, 5, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrementSpecialCases< cfloat<64, 11, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<64, 11, uint32_t, true, true, false>()), test_tag);
+		VerifyCfloatIncrementSpecialCases< cfloat<32, 8, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<32, 8, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
 	nrOfFailedTestCases += ReportTestResult(
-		VerifyCfloatIncrementSpecialCases< cfloat<128, 15, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<128, 15, uint32_t, true, true, false>()), test_tag);
+		VerifyCfloatIncrementSpecialCases< cfloat<64, 11, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<64, 11, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< cfloat<128, 15, uint32_t, false, false, false> >(reportTestCases), type_tag(cfloat<128, 15, uint32_t, false, false, false>()), test_tag + std::string(" special cases"));
+#endif
+
+	// traditional, IEEE-754 standard floats with just subnormals
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< half >(reportTestCases), type_tag(half()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< single >(reportTestCases), type_tag(single()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< duble >(reportTestCases), type_tag(duble()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< quad >(reportTestCases), type_tag(quad()), test_tag + std::string(" special cases"));
+
+	// fancy, fully encoded classic floats
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< cfloat<16, 5, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<16, 5, uint32_t, true, true, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< cfloat<32, 8, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<32, 8, uint32_t, true, true, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< cfloat<64, 11, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<64, 11, uint32_t, true, true, false>()), test_tag + std::string(" special cases"));
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrementSpecialCases< cfloat<128, 15, uint32_t, true, true, false> >(reportTestCases), type_tag(cfloat<128, 15, uint32_t, true, true, false>()), test_tag + std::string(" special cases"));
 
 #endif
 
