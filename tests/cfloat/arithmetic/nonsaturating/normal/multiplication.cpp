@@ -83,6 +83,32 @@ try {
 
 #if MANUAL_TESTING
 
+	{
+		float fa(0), fb(INFINITY), fc = fa * fb;
+		std::cout << to_binary(fc) << " : " << fc << '\n';
+		fa = 1.0f;
+		fc = fa * fb;
+		std::cout << to_binary(fc) << " : " << fc << '\n';
+		fc = std::numeric_limits<float>::quiet_NaN();
+		std::cout << to_binary(fc) << " : " << fc << '\n';
+		fc = std::numeric_limits<float>::signaling_NaN();
+		std::cout << to_binary(fc) << " : " << fc << '\n';
+
+
+		cfloat<32, 8, std::uint32_t> a(fa), b(fb), c;
+
+		a = 1.0f;
+		c = a * b;
+		std::cout << to_binary(c) << " : " << c << '\n';
+		a = 0.0f;
+		c = a * b;
+		std::cout << to_binary(c) << " : " << c << '\n';
+		b = 0.0f;
+		c = a * b;
+		std::cout << to_binary(c) << " : " << c << '\n';
+	}
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatMultiplication< cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat< 4, 2,uint8_t,f,f,f>", "multiplication");
+
 	TestCase< cfloat<32, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, -1.0e5f, 1.0e5f);
 	TestCase< cfloat<48, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(TestCaseOperator::MUL, -1.0e5f, 1.0e5f);
 

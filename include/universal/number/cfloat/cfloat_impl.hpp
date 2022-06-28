@@ -549,22 +549,25 @@ public:
 		// -inf * inf = -inf
 		// -inf * -inf = inf
 		//	0 * inf = -nan(ind)
+		//	inf * 0 = -nan(ind)
 		bool resultSign = sign() != rhs.sign();
 		if (isinf()) {
-			if (rhs.isinf()) {
-				setsign(resultSign);
-				return *this;
+			if (rhs.iszero()) {
+				setnan(NAN_TYPE_QUIET);
 			}
 			else {
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
+				setsign(resultSign);
 			}
+			return *this;
 		}
-		else {
-			if (rhs.isinf()) {
-				setinf(resultSign);
-				return *this;
+		if (rhs.isinf()) {
+			if (iszero()) {
+				setnan(NAN_TYPE_QUIET);
 			}
+			else {
+				setinf(resultSign);
+			}
+			return *this;
 		}
 
 		if (iszero() || rhs.iszero()) {			

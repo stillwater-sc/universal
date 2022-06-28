@@ -1571,16 +1571,22 @@ namespace sw { namespace universal {
 					// -inf +inf = -inf
 					// -inf -inf = +inf
 					//  0   +inf = snan
+					// +inf  0   = snan
 					if (a.isinf()) {
-						if (b.isinf()) {
-							cref.setinf(a.sign() != b.sign());
+						if (b.iszero()) {
+							cref.setnan(NAN_TYPE_QUIET);
 						}
 						else {
-							cref.setnan(NAN_TYPE_SIGNALLING);
+							cref.setinf(a.sign() != b.sign());
 						}
 					}
 					else {
-						cref.setnan(NAN_TYPE_SIGNALLING);
+						if (a.iszero()) {
+							cref.setnan(NAN_TYPE_QUIET);
+						}
+						else {
+							cref.setinf(a.sign() != b.sign());
+						}
 					}
 				}
 				else {
