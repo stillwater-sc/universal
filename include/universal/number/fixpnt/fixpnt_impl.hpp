@@ -213,18 +213,18 @@ public:
 	}
 
 	// initializers for native types
-	constexpr fixpnt(signed char initial_value)        noexcept { *this = initial_value; }
-	constexpr fixpnt(short initial_value)              noexcept { *this = initial_value; }
-	constexpr fixpnt(int initial_value)                noexcept { *this = initial_value; }
-	constexpr fixpnt(long initial_value)               noexcept { *this = initial_value; }
-	constexpr fixpnt(long long initial_value)          noexcept { *this = initial_value; }
-	constexpr fixpnt(char initial_value)               noexcept { *this = initial_value; }
-	constexpr fixpnt(unsigned short initial_value)     noexcept { *this = initial_value; }
-	constexpr fixpnt(unsigned int initial_value)       noexcept { *this = initial_value; }
-	constexpr fixpnt(unsigned long initial_value)      noexcept { *this = initial_value; }
-	constexpr fixpnt(unsigned long long initial_value) noexcept { *this = initial_value; }
-	CONSTEXPRESSION fixpnt(float initial_value)        noexcept { *this = initial_value; }
-	CONSTEXPRESSION fixpnt(double initial_value)       noexcept { *this = initial_value; }
+	constexpr fixpnt(signed char initial_value)        noexcept : fixpnt{convert_signed(initial_value)} {}
+	constexpr fixpnt(short initial_value)              noexcept : fixpnt{convert_signed(initial_value)} {}
+	constexpr fixpnt(int initial_value)                noexcept : fixpnt{convert_signed(initial_value)} {}
+	constexpr fixpnt(long initial_value)               noexcept : fixpnt{convert_signed(initial_value)} {}
+	constexpr fixpnt(long long initial_value)          noexcept : fixpnt{convert_signed(initial_value)} {}
+	constexpr fixpnt(char initial_value)               noexcept : fixpnt{convert_unsigned(initial_value)} {}
+	constexpr fixpnt(unsigned short initial_value)     noexcept : fixpnt{convert_unsigned(initial_value)} {}
+	constexpr fixpnt(unsigned int initial_value)       noexcept : fixpnt{convert_unsigned(initial_value)} {}
+	constexpr fixpnt(unsigned long initial_value)      noexcept : fixpnt{convert_unsigned(initial_value)} {}
+	constexpr fixpnt(unsigned long long initial_value) noexcept : fixpnt{convert_unsigned(initial_value)} {}
+	CONSTEXPRESSION fixpnt(float initial_value)        noexcept : fixpnt{convert_ieee754(initial_value)} {}
+	CONSTEXPRESSION fixpnt(double initial_value)       noexcept : fixpnt{convert_ieee754(initial_value)} {}
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -248,7 +248,7 @@ public:
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	CONSTEXPRESSION fixpnt(long double initial_value)   noexcept { *this = initial_value; }
+	CONSTEXPRESSION fixpnt(long double initial_value)   noexcept : fixpnt{ convert_ieee754(initial_value) } {}
 	CONSTEXPRESSION fixpnt& operator=(long double rhs)  noexcept { return convert_ieee754(rhs);  }
 	CONSTEXPRESSION explicit operator long double() const noexcept { return to_native<long double>(); }
 #endif
@@ -640,6 +640,7 @@ protected:
 	// TODO: this method does not protect against being called with an unsigned integer
 	template<typename SignedInt>
 	constexpr fixpnt& convert_signed(SignedInt v) {
+		static_assert(std::is_signed_v<SignedInt>);
 		clear();
 		if (0 == v) return *this;
 		if constexpr (arithmetic == Saturating) { 
@@ -671,6 +672,7 @@ protected:
 	// TODO: this method does not protect against being called with an signed integer
 	template<typename UnsignedInt>
 	constexpr fixpnt& convert_unsigned(UnsignedInt v) {
+		static_assert(!std::is_signed_v<UnsignedInt>);
 		clear();
 		if (0 == v) return *this;
 		if constexpr (arithmetic == Saturating) {	
@@ -690,6 +692,7 @@ protected:
 
 	template<typename Real>
 	CONSTEXPRESSION fixpnt& convert_ieee754(Real v) {
+		static_assert(std::is_floating_point_v<Real>);
 		clear();
 		if (v == 0.0) return *this;
 		if constexpr (arithmetic == Saturating) {	// check if the value is in the representable range
