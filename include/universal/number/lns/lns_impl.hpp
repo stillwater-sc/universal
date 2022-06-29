@@ -100,6 +100,16 @@ public:
 	lns& operator-=(const lns& rhs) { return *this; }
 	lns& operator-=(double rhs) { return *this -= lns(rhs); }
 	lns& operator*=(const lns& rhs) {
+		if (isnan()) return *this;
+		if (rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+		if (iszero()) return *this;
+		if (rhs.iszero()) {
+			setzero();
+			return *this;
+		}
 		ExponentBlockBinary exp(_block), rhsExp(rhs._block);
 		exp += rhsExp;
 		bool negative = sign() ^ rhs.sign();
@@ -109,6 +119,20 @@ public:
 	}
 	lns& operator*=(double rhs) { return *this *= lns(rhs); }
 	lns& operator/=(const lns& rhs) {
+		if (isnan()) return *this;
+		if (rhs.isnan()) {
+			setnan();
+			return *this;
+		}
+		if (iszero()) return *this;
+		if (rhs.iszero()) {
+#if LNS_THROW_ARITHMETIC_EXCEPTION
+			throw lns_divide_by_zero();
+#else
+			setnan();
+			return *this;
+#endif
+		}
 		ExponentBlockBinary exp(_block), rhsExp(rhs._block);
 		exp -= rhsExp;
 		bool negative = sign() ^ rhs.sign();
@@ -295,39 +319,45 @@ protected:
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
 		if (shiftRight > 0) {
-			// we need to round the raw bits
-			// collect guard, round, and sticky bits
-			// this same logic will work for the case where 
-			// we only have a guard bit and no round and/or sticky bits
-			// because the mask logic will make round and sticky both 0
-			// so no need to special case it
-			uint64_t mask = (1ull << (shiftRight - 1));
-			bool guard = (mask & raw);
-			mask >>= 1;
-			bool round = (mask & raw);
-			if (shiftRight > 1) {
-				mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
-				mask = ~mask;
+			if (shiftRight > 63) {
+				// this shift degree would be undefined behavior, but the intended transformation is that we have no bits
+				raw = 0;
 			}
 			else {
-				mask = 0;
-			}
-			bool sticky = (mask & raw);
+				// we need to round the raw bits
+				// collect guard, round, and sticky bits
+				// this same logic will work for the case where 
+				// we only have a guard bit and no round and/or sticky bits
+				// because the mask logic will make round and sticky both 0
+				// so no need to special case it
+				uint64_t mask = (1ull << (shiftRight - 1));
+				bool guard = (mask & raw);
+				mask >>= 1;
+				bool round = (mask & raw);
+				if (shiftRight > 1) {
+					mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
+					mask = ~mask;
+				}
+				else {
+					mask = 0;
+				}
+				bool sticky = (mask & raw);
 
-			raw >>= shiftRight;  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1ul);
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			//       x     1       1     0        up
-			//       x     1       1     1        up
-			if (guard) {
-				if (lsb && (!round && !sticky)) ++raw; // round to even
-				if (round || sticky) ++raw;
+				raw >>= shiftRight;  // shift out the bits we are rounding away
+				bool lsb = (raw & 0x1ul);
+				//  ... lsb | guard  round sticky   round
+				//       x     0       x     x       down
+				//       0     1       0     0       down  round to even
+				//       1     1       0     0        up   round to even
+				//       x     1       0     1        up
+				//       x     1       1     0        up
+				//       x     1       1     1        up
+				if (guard) {
+					if (lsb && (!round && !sticky)) ++raw; // round to even
+					if (round || sticky) ++raw;
+				}
+				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
 			}
-			raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
 			lnsExponent.setbits(raw);
 		}
 		else {

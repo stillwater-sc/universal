@@ -4,8 +4,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// minimum set of include files to reflect source code dependencies
+// configure the number system
+#define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/lns/table.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace sw { namespace universal {
@@ -31,6 +33,8 @@ namespace sw { namespace universal {
 				double ref = da * db;
 				c = a * b;
 				cref = ref;
+//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
+//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				if (c != cref) {
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
@@ -39,12 +43,68 @@ namespace sw { namespace universal {
 					// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
 				}
 			}
+			if (nrOfFailedTestCases > 24) return 25;
 		}
 		return nrOfFailedTestCases;
 	}
 
 } }
 
+/*
+Generate Value table for an LNS<4,2> in TXT format
+   #           Binary    sign   scale                         value          format
+   0:         0b0.0.00       0       0                             1                1
+   1:         0b0.0.01       0       0                       1.18921          1.18921
+   2:         0b0.0.10       0       0                       1.41421          1.41421
+   3:         0b0.0.11       0       0                       1.68179          1.68179
+   4:         0b0.1.00       0      -1                             0                0
+   5:         0b0.1.01       0      -1                      0.594604         0.594604
+   6:         0b0.1.10       0      -1                      0.707107         0.707107
+   7:         0b0.1.11       0      -1                      0.840896         0.840896
+   8:         0b1.0.00       1       0                            -1               -1
+   9:         0b1.0.01       1       0                      -1.18921         -1.18921
+  10:         0b1.0.10       1       0                      -1.41421         -1.41421
+  11:         0b1.0.11       1       0                      -1.68179         -1.68179
+  12:         0b1.1.00       1      -1                     -nan(ind)        -nan(ind)
+  13:         0b1.1.01       1      -1                     -0.594604        -0.594604
+  14:         0b1.1.10       1      -1                     -0.707107        -0.707107
+  15:         0b1.1.11       1      -1                     -0.840896        -0.840896
+
+Generate Value table for an LNS<5,2> in TXT format
+   #           Binary    sign   scale                         value          format
+   0:        0b0.00.00       0       0                             1                1
+   1:        0b0.00.01       0       0                       1.18921          1.18921
+   2:        0b0.00.10       0       0                       1.41421          1.41421
+   3:        0b0.00.11       0       0                       1.68179          1.68179
+   4:        0b0.01.00       0       1                             2                2
+   5:        0b0.01.01       0       1                       2.37841          2.37841
+   6:        0b0.01.10       0       1                       2.82843          2.82843
+   7:        0b0.01.11       0       1                       3.36359          3.36359
+   8:        0b0.10.00       0      -2                             0                0
+   9:        0b0.10.01       0      -2                      0.297302         0.297302
+  10:        0b0.10.10       0      -2                      0.353553         0.353553
+  11:        0b0.10.11       0      -2                      0.420448         0.420448
+  12:        0b0.11.00       0      -1                           0.5              0.5
+  13:        0b0.11.01       0      -1                      0.594604         0.594604
+  14:        0b0.11.10       0      -1                      0.707107         0.707107
+  15:        0b0.11.11       0      -1                      0.840896         0.840896
+  16:        0b1.00.00       1       0                            -1               -1
+  17:        0b1.00.01       1       0                      -1.18921         -1.18921
+  18:        0b1.00.10       1       0                      -1.41421         -1.41421
+  19:        0b1.00.11       1       0                      -1.68179         -1.68179
+  20:        0b1.01.00       1       1                            -2               -2
+  21:        0b1.01.01       1       1                      -2.37841         -2.37841
+  22:        0b1.01.10       1       1                      -2.82843         -2.82843
+  23:        0b1.01.11       1       1                      -3.36359         -3.36359
+  24:        0b1.10.00       1      -2                     -nan(ind)        -nan(ind)
+  25:        0b1.10.01       1      -2                     -0.297302        -0.297302
+  26:        0b1.10.10       1      -2                     -0.353553        -0.353553
+  27:        0b1.10.11       1      -2                     -0.420448        -0.420448
+  28:        0b1.11.00       1      -1                          -0.5             -0.5
+  29:        0b1.11.01       1      -1                     -0.594604        -0.594604
+  30:        0b1.11.10       1      -1                     -0.707107        -0.707107
+  31:        0b1.11.11       1      -1                     -0.840896        -0.840896
+ */
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -75,47 +135,42 @@ try {
 
 #if MANUAL_TESTING
 
+	using LNS4_1 = lns<4, 1, std::uint8_t>;
 	using LNS4_2 = lns<4, 2, std::uint8_t>;
-	using LNS8_2 = lns<8, 2, std::uint8_t>;
+	using LNS5_2 = lns<5, 2, std::uint8_t>;
+	using LNS8_3 = lns<8, 3, std::uint8_t>;
+	using LNS9_4 = lns<9, 4, std::uint8_t>;
 	using LNS16_5 = lns<16, 5, std::uint16_t>;
 
-
 	// generate individual testcases to hand trace/debug
-//	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
-//	TestCase<LNS8_2, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
+	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
+	TestCase<LNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
+	// GenerateLnsTable<5, 2>(std::cout);
 
-	{
-		constexpr double e = 2.71828182845904523536;
-		lns<16, 5, std::uint16_t> a, b, c;
-		a = 0.5; std::cout << a << '\n';
-		a = e; std::cout << a << '\n';
-		b = 1.0 / e;
-		c = a * b;
-		std::cout << double(c) << '\n';
-
-		std::cout << "-----\n";
-		a = 1.0f; b = 2.0f;
-		c = a * b;
-		std::cout << float(c) << '\n';
-		a = 0.0f; b = 2.0f;
-		c = a * b;
-		std::cout << float(c) << '\n';
-		a = 3.5f; b = 0.0f;
-		c = a * b;
-		std::cout << float(c) << '\n';
-	}
-	return 0;
-
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
-	using LNS8_2 = lns<8, 2, std::uint8_t>;
+	using LNS4_1 = lns<4, 1, std::uint8_t>;
+	using LNS4_2 = lns<4, 2, std::uint8_t>;
+	using LNS5_2 = lns<5, 2, std::uint8_t>;
+	using LNS8_3 = lns<8, 3, std::uint8_t>;
+	using LNS9_4 = lns<9, 4, std::uint8_t>;
+	using LNS10_4 = lns<10, 4, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS8_2>(reportTestCases), "lns<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS10_4>(reportTestCases), "lns<10,4>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
