@@ -1,14 +1,9 @@
 // posits.cpp: create detailed component tables that decompose the components that comprise a posit
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#pragma warning(disable : 4820)  // bytes padding added after data member
-#pragma warning(disable : 5045)  // compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif 
+#include <universal/utility/directives.hpp>
 // enable/disable special posit format I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 1
 #include <universal/number/posit/posit.hpp>

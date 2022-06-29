@@ -84,15 +84,20 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 	if (i.sign()) { // special case handling
 		v = twosComplement(v);
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
-			return long(nbits - rbits - 1);
+			if constexpr (nbits == rbits) {
+				return 0;
+			}
+			else {
+				return static_cast<int>(nbits) - static_cast<int>(rbits) - 1;
+			}
 		}
 	}
 	// calculate scale
-	long scale = 0;
+	int scale = 0;
 	if (!v.iszero()) {
-		for (int bitIndex = nbits - 2; bitIndex >= 0; --bitIndex) {
-			if (v.test(bitIndex)) {
-				scale = bitIndex - rbits;
+		for (int bitIndex = static_cast<int>(nbits) - 2; bitIndex >= 0; --bitIndex) {
+			if (v.test(static_cast<size_t>(bitIndex))) {
+				scale = bitIndex - static_cast<int>(rbits);
 				break;
 			}
 		}

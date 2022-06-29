@@ -1,13 +1,9 @@
 // cfloats.cpp: create detailed component tables that decompose the components that comprise a classic cfloat
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#pragma warning(disable : 5045)  // compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif 
+#include <universal/utility/directives.hpp>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -56,8 +52,6 @@ void GenerateCfloatTables(std::ostream& ostr, bool csv) {
 
 }
 
-#define MANUAL_TESTING 0
-
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -81,28 +75,28 @@ try {
 	extension = (csv ? ".csv" : ".txt");
 	filename = std::string("cfloat_fff") + extension;
 	ostr.open(filename);
-	// no subnormals, has normals, no supernormals, not saturating
+	// no subnormals, normals, no supernormals, not saturating
 	GenerateCfloatTables<noSubnormals, noSupernormals, notSaturating, uint8_t>(ostr, csv);
 	std::cout << "Created cfloat tables for noSubnormals, Normals, noSupernormals in " << filename << '\n';
 	ostr.close();
 
 	filename = std::string("cfloat_tff") + extension;
 	ostr.open(filename);
-	// has subnormals, has normals, no supernormals, not saturating
+	// has subnormals, normals, no supernormals, not saturating
 	GenerateCfloatTables<hasSubnormals, noSupernormals, notSaturating>(ostr, csv);
 	std::cout << "Created cfloat tables for Subnormals, Normals, noSupernormals in " << filename << '\n';
 	ostr.close();
 
 	filename = std::string("cfloat_ftf") + extension;
 	ostr.open(filename);
-	// no subnormals, has normals, has supernormals, not saturating
+	// no subnormals, normals, has supernormals, not saturating
 	GenerateCfloatTables<noSubnormals, hasSupernormals, notSaturating, uint8_t>(ostr, csv);
 	std::cout << "Created cfloat tables for noSubnormals, Normals, Supernormals in " << filename << '\n';
 	ostr.close();
 
 	filename = std::string("cfloat_ttf") + extension;
 	ostr.open(filename);
-	// has subnormals, has normals, has supernormals, not saturating
+	// has subnormals, normals, has supernormals, not saturating
 	GenerateCfloatTables<hasSubnormals, hasSupernormals, notSaturating>(ostr, csv);
 	std::cout << "Created cfloat tables for Subnormals, Normals, and Supernormals in " << filename << '\n';
 	ostr.close();
