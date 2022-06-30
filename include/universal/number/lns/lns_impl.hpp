@@ -300,23 +300,18 @@ protected:
 	}
 	template<typename Real>
 	CONSTEXPRESSION lns& convert_ieee754(Real v) {
-		clear();
 		if (std::fpclassify(v) == FP_NAN) {
 			setnan();
 			return *this;
 		}
-		if (v == 0.0) return *this;
+		if (v == 0.0) {
+			setzero();
+			return *this;
+		}
 
 		bool negative = (v < Real(0.0f));
 		v = (negative ? -v : v);
 		Real logv = std::log2(v);
-//		Real integerPart = std::trunc(logv);
-//		Real fractionPart = logv - integerPart;
-//		std::cout << "value           : " << v << '\n';
-//		std::cout << "logarithmic part: " << logv << '\n';
-//		std::cout << "integer    part : " << integerPart << '\n';
-//		std::cout << "fractional part : " << fractionPart << '\n';
-
 		if (logv == 0.0) {
 			_block.clear();
 			_block.setbit(nbits - 1, negative);

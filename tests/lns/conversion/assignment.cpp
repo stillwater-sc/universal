@@ -30,7 +30,7 @@ int ValidateAssignment(bool reportTestCases) {
 			if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
 		}
 		else {
-			if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
+			// if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
 		}
 	}
 
@@ -74,7 +74,7 @@ try {
 
 	std::string test_suite  = "lns assignment validation";
 	std::string test_tag    = "assignment";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
