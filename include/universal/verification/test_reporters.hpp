@@ -58,6 +58,37 @@ void ReportConversionSuccess(const std::string& test_case, const std::string& op
 }
 
 template<typename TestType>
+void ReportLogicError(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, bool testResult) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
+		<< " yielded "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << (testResult ? "true" : "false")
+		<< " " << to_binary(lhs) << op << to_binary(rhs)
+		<< std::setprecision(old_precision)
+		<< '\n';
+}
+
+template<typename TestType>
+void ReportLogicSuccess(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, bool testResult) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
+		<< " yielded "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << (testResult ? "true" : "false")
+		<< " " << to_binary(lhs) << op << to_binary(rhs)
+		<< std::setprecision(old_precision)
+		<< '\n';
+}
+
+template<typename TestType>
 void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const TestType& argument, const TestType& result, const TestType& ref) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -131,10 +162,10 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< " " << op << " "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
 		<< " != "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result 
+		<< " golden reference is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< '\n'
-		<< " result " << to_binary(result) 
+		<< "\n result " << to_binary(result) 
 		<< "\n vs ref " << to_binary(ref)
 		<< '\n'
 		<< to_binary(lhs)

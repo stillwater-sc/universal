@@ -62,8 +62,10 @@ public:
 	static constexpr bt       MSU_MASK = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr bt       SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt       MSB_BIT_MASK = bt(bt(1) << ((nbits - 2ull) % bitsInBlock));
+	static constexpr bt       BLOCK_MSB_MASK = bt(bt(1) << (bitsInBlock - 1));
+	static constexpr bool     SPECIAL_BITS_TOGETHER = (nbits > ((nrBlocks - 1) * bitsInBlock + 2));
 	static constexpr bt       MSU_ZERO = MSU_MASK & MSB_BIT_MASK;
-	static constexpr bt       MSU_NAN = MSU_ZERO | SIGN_BIT_MASK;
+	static constexpr bt       MSU_NAN = SIGN_BIT_MASK | MSU_ZERO;
 	static constexpr bt       MSB_UNIT = (1 + ((nbits - 2) / bitsInBlock)) - 1;
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + lns exponent
 	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the lns exponent
@@ -124,7 +126,6 @@ public:
 			setnan();
 			return *this;
 		}
-		if (iszero()) return *this;
 		if (rhs.iszero()) {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
 			throw lns_divide_by_zero();
@@ -133,6 +134,8 @@ public:
 			return *this;
 #endif
 		}
+		if (iszero()) return *this;
+
 		ExponentBlockBinary exp(_block), rhsExp(rhs._block);
 		exp -= rhsExp;
 		bool negative = sign() ^ rhs.sign();
@@ -161,22 +164,10 @@ public:
 	}
 
 	// modifiers
-	// clear sets the lns value to special encoding for 0
-	constexpr void clear() noexcept {
-		if constexpr (nrBlocks == 1) {
-			_block[0] = MSU_ZERO;
-		}
-		else if constexpr (nrBlocks == 2) {
-			_block[0] = 0;
-			_block[1] = MSU_ZERO;
-		}
-		else {
-			_block.clear();
-			_block[MSU] = MSU_ZERO;
-		}
-	}
-	constexpr void setzero()                       noexcept { clear(); }
-	constexpr void setnan()                        noexcept { clear(); _block[MSU] = MSU_NAN; }
+	// clear resets all bits
+	constexpr void clear()                         noexcept { _block.clear(); }
+	constexpr void setzero()                       noexcept { _block.clear(); setbit(nbits - 2, true); }
+	constexpr void setnan()                        noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
@@ -202,18 +193,31 @@ public:
 	}
 	
 	// selectors
-	constexpr bool iszero() const noexcept { // special encoding
+	constexpr bool iszero() const noexcept { // special encoding: 0.1000.0000
 		if constexpr (nrBlocks == 1) {
-			return (_block[MSB_UNIT] == MSU_ZERO);  // +0  is zero, -0 is NaN
+			return (_block[MSB_UNIT] == MSU_ZERO);
 		}
 		else if constexpr (nrBlocks == 2) {
-			return (_block[0] == 0 && _block[1] == MSU_ZERO);
+			if constexpr (SPECIAL_BITS_TOGETHER) {
+				return (_block[0] == 0 && _block[1] == MSU_ZERO);
+			}
+			else {
+				return !sign() && _block[0] == BLOCK_MSB_MASK;
+			}
 		}
 		else {
-			for (size_t i = 0; i < nrBlocks - 1; ++i) {
-				if (_block[i] != 0) return false;
+			if constexpr (SPECIAL_BITS_TOGETHER) {
+				for (size_t i = 0; i < nrBlocks - 1; ++i) {
+					if (_block[i] != 0) return false;
+				}
+				return (_block[MSB_UNIT] == MSU_ZERO);  // this will cover the sign != 1 condition
 			}
-			return (_block[MSB_UNIT] == MSU_ZERO);
+			else {
+				for (size_t i = 0; i < nrBlocks - 2; ++i) {
+					if (_block[i] != 0) return false;
+				}
+				return !sign() && _block[MSB_UNIT] == BLOCK_MSB_MASK;
+			}
 		}
 	}
 	constexpr bool isneg()  const noexcept { return sign(); }
@@ -221,16 +225,29 @@ public:
 	constexpr bool isinf()  const noexcept { return false; }
 	constexpr bool isnan()  const noexcept { // special encoding
 		if constexpr (nrBlocks == 1) {
-			return (_block[MSB_UNIT] == MSU_NAN);  // +0  is zero, -0 is NaN
+			return (_block[MSB_UNIT] == MSU_NAN);  // 1.1000.0000 is NaN
 		}
 		else if constexpr (nrBlocks == 2) {
-			return (_block[0] == 0 && _block[1] == MSU_NAN);
+			if constexpr (SPECIAL_BITS_TOGETHER) {
+				return (_block[0] == 0 && _block[1] == MSU_NAN);
+			}
+			else {
+				return sign() && (_block[MSU - 1] == BLOCK_MSB_MASK);
+			}
 		}
 		else {
-			for (size_t i = 0; i < nrBlocks - 1; ++i) {
-				if (_block[i] != 0) return false;
+			if constexpr (SPECIAL_BITS_TOGETHER) {
+				for (size_t i = 0; i < nrBlocks - 1; ++i) {
+					if (_block[i] != 0) return false;
+				}
+				return (_block[MSB_UNIT] == MSU_NAN);
 			}
-			return (_block[MSB_UNIT] == MSU_NAN);
+			else {
+				for (size_t i = 0; i < nrBlocks - 2; ++i) {
+					if (_block[i] != 0) return false;
+				}
+				return sign() && (_block[MSU - 1] == BLOCK_MSB_MASK);
+			}
 		}
 	}
 	constexpr bool sign()   const noexcept { 

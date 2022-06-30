@@ -16,7 +16,7 @@ namespace sw { namespace universal {
 	//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
 	//>
 	template<typename LnsType>
-	int ValidateMultiplication(bool reportTestCases) {
+	int VerifyMutliplication(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
@@ -38,12 +38,14 @@ namespace sw { namespace universal {
 				if (c != cref) {
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
+					std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
+					std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				}
 				else {
 					// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
 				}
+				if (nrOfFailedTestCases > 0) return 25;
 			}
-			if (nrOfFailedTestCases > 24) return 25;
 		}
 		return nrOfFailedTestCases;
 	}
@@ -142,17 +144,25 @@ try {
 	using LNS9_4 = lns<9, 4, std::uint8_t>;
 	using LNS16_5 = lns<16, 5, std::uint16_t>;
 
+	{
+		LNS9_4 a;
+		a = 279.17;
+		std::cout << to_binary(a) << " : " << a << '\n';
+	}
+//	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
+
+	return 0;
 	// generate individual testcases to hand trace/debug
 	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
 	TestCase<LNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
 	// GenerateLnsTable<5, 2>(std::cout);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -165,12 +175,12 @@ try {
 	using LNS10_4 = lns<10, 4, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<LNS10_4>(reportTestCases), "lns<10,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS10_4>(reportTestCases), "lns<10,4>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
