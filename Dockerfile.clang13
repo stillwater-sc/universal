@@ -4,7 +4,7 @@
 # docker build --target release -t stillwater/universal:release will just build a release container
 
 # BUILDER stage
-FROM stillwater/universal:gcc10.builder as builder
+FROM stillwater/universal:clang13.builder as builder
 LABEL Theodore Omtzigt
 
 # make certain you have a good .dockerignore file installed so that this layer isn't ginormous
