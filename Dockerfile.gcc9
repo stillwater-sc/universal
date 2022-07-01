@@ -6,6 +6,7 @@
 # BUILDER stage
 FROM stillwater/universal:gcc9.builder as builder
 LABEL Theodore Omtzigt
+ARG target=BUILD_ALL
 
 # make certain you have a good .dockerignore file installed so that this layer isn't ginormous
 COPY --chown=stillwater:stillwater . /home/stillwater/universal
@@ -15,12 +16,10 @@ RUN ls -la /home/stillwater/universal && cmake -version
 # set up the cmake/make environment to issue the build commands
 RUN mkdir -p /home/stillwater/universal/build 
 WORKDIR /home/stillwater/universal/build
-# test RUN statement to speed-up CI testing
-#RUN cmake -DBUILD_VALIDATION_HW=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
-# full RUN statement to execute full regression test suite
+# test RUN statement to drive CI testing
 # default is SANITY regression level: -DBUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
 # or -DBUILD_REGRESSION_STRESS=ON for stress testing
-RUN cmake -DBUILD_ALL=ON .. && make
+RUN cmake -D$target=ON  -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
@@ -70,7 +69,8 @@ COPY --from=builder /home/stillwater/universal/build/tools/cmd/posit /usr/local/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/prop* /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/signedint /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/unsignedint /usr/local/bin/
-COPY --from=builder /home/stillwater/universal/build/validation/hw/* /usr/local/bin/
+# reenable when you figure out how to make this conditional to BUILD target
+#COPY --from=builder /home/stillwater/universal/build/validation/hw/* /usr/local/bin/
 
 # double check we have all the executables of interest
 #RUN find /home/stillwater/universal/build
