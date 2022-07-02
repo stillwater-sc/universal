@@ -33,8 +33,8 @@ namespace sw { namespace universal {
 		static constexpr uint64_t fmsb            = 0; // mask of the most significant fraction bit
 		static constexpr uint64_t qnanmask        = 0; // mask of quiet NaN
 		static constexpr uint64_t snanmask        = 0; // mask of signalling NaN
-		static constexpr Real     minNormal       = 0.0; // value of smallest normal value
-		static constexpr Real     minSubnormal    = 0.0; // value of the smallest subnormal value
+		static constexpr Real     minNormal       = Real(0.0); // value of smallest normal value
+		static constexpr Real     minSubnormal    = Real(0.0); // value of the smallest subnormal value
 		static constexpr int      minNormalExp    = 0;   // exponent value of smallest normal value
 		static constexpr int      minSubnormalExp = 0;   // exponent value of smallest subnormal value
 	};

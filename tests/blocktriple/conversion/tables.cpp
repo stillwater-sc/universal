@@ -1,6 +1,6 @@
 // tables.cpp: test suite runner for blocktriple value enumeration
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -14,6 +14,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/native/integers.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/verification/test_suite.hpp>
 
 namespace sw::universal {
 
@@ -106,11 +107,22 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	// Usage: tables [-csv]
+	// Usage: tables <txt|csv>
+	std::string test_suite  = "blocktriple table generator utility";
+	std::string test_tag    = "bt_table";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
 	bool csv = false;
-	if (argc == 2) {
-		if (std::string(argv[1]) == std::string("-csv")) csv = true;
+	if (argc != 2) {
+		// this test should be ignored during regressions
+		ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+		return EXIT_SUCCESS;
 	}
+
+	if (std::string(argv[1]) == std::string("csv")) csv = true;
 
 	std::string tag = "Generate value tables for blocktriple configurations";
 	std::cout << tag << '\n';
@@ -123,6 +135,7 @@ try {
 	GenerateTable < blocktriple<4, BlockTripleOperator::MUL, uint8_t> >(std::cout, csv);
 	GenerateTable < blocktriple<5, BlockTripleOperator::MUL, uint8_t> >(std::cout, csv);   // a fascimile to a quarter precision IEEE float<8,2>
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

@@ -1,6 +1,6 @@
 // multiplication.cpp: functional tests for blocktriple number multiplication
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -22,6 +22,7 @@
 #include <universal/verification/test_reporters.hpp>
 
 // enumerate all multiplication cases for an blocktriple<nbits,BlockType> configuration
+// TODO: fix test failures in VerifyMultiplication<BlockTripleConfiguration>
 template<typename BlockTripleConfiguration>
 int VerifyMultiplication(bool reportTestCases) {
 	using namespace sw::universal;
@@ -112,9 +113,9 @@ int VerifyMultiplication(bool reportTestCases) {
 				double btref = double(reference);  // map the double result to the unrounded blocktriple representation
 
 				if (btref != double(c)) {
-					std::cout << "test case   : " << a << " * " << b << " = " << c << '\n';
-					std::cout << "conversion  : " << aref << " * " << bref << " = " << cref << " vs " << btref << '\n';
-					std::cout << "blocktriple : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " : " << c << '\n';
+//					std::cout << "test case   : " << a << " * " << b << " = " << c << '\n';
+//					std::cout << "conversion  : " << aref << " * " << bref << " = " << cref << " vs " << btref << '\n';
+//					std::cout << "blocktriple : " << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " : " << c << '\n';
 
 					++nrOfFailedTests;
 					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, double(c), btref);

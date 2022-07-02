@@ -1,6 +1,6 @@
 // division.cpp: functional tests for blocktriple number division
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -22,6 +22,7 @@
 #include <universal/verification/test_reporters.hpp>
 
 // enumerate all division cases for an blocktriple<nbits,BlockType> configuration
+// TODO: fix test failures in VerifyMultiplication<BlockTripleConfiguration>
 template<typename BlockTripleConfiguration>
 int VerifyDivision(bool reportTestCases) {
 	using namespace sw::universal;

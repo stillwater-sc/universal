@@ -1,6 +1,6 @@
 // conversion.cpp: test suite runner for blocktriple conversions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -14,54 +14,71 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/native/integers.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/verification/test_suite.hpp>
 
-template<size_t fbits, sw::universal::BlockTripleOperator op, typename Ty>
-std::string convert(Ty f) {
-	using default_bt = uint8_t;
-	std::stringstream s;
-	sw::universal::blocktriple<fbits, op, default_bt> a(f);
-	s << std::setw(30) << sw::universal::to_binary(a) << " : " << a << " " << typeid(a).name();
-	return s.str();
-}
+namespace sw { namespace universal { 
 
-template<size_t fbits, sw::universal::BlockTripleOperator op, typename ConversionType>
-int VerifyConversion() {
-	using namespace sw::universal;
-
-	std::cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", " << op << ", uint8_t>\n";
-	int nrOfFailures = 0;
-	blocktriple<fbits, op, uint8_t> a, nut;
-	constexpr size_t NR_VALUES = (1ull << (fbits + 1));
-	for (size_t i = 0; i < NR_VALUES; ++i) {
-		if (i == 0) a.setzero(); else a.setnormal();
-		a.setbits(i);
-		ConversionType v = ConversionType(a);
-		nut = v;
-		if (v != float(nut)) {
-			++nrOfFailures;
-			std::cout << "FAIL: " << std::setw(10) << i << " : " << to_binary(a) << " != " << to_binary(nut) << '\n';
-		}
-		else {
-			std::cout << "PASS: " << std::setw(10) << i << " : " << to_binary(a) << " == " << to_binary(nut) << '\n';
-		}
+	template<size_t fbits, sw::universal::BlockTripleOperator op, typename Ty>
+	std::string convert(Ty f) {
+		using default_bt = uint8_t;
+		std::stringstream s;
+		sw::universal::blocktriple<fbits, op, default_bt> a(f);
+		s << std::setw(30) << sw::universal::to_binary(a) << " : " << a << " " << typeid(a).name();
+		return s.str();
 	}
-	std::cout << ' ' << typeid(ConversionType).name() << " to and from blocktriple<" << fbits << ", " << op << ", uint8_t>  ";
-	std::cout << (nrOfFailures ? "FAIL\n" : "PASS\n");
-	return nrOfFailures;
-}
 
-// conditional compile flags
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+	template<size_t fbits, sw::universal::BlockTripleOperator op, typename ConversionType>
+	int VerifyBlocktripleConversion(bool reportTestCases) {
+		using namespace sw::universal;
 
-int main(int argc, char** argv)
+		int nrOfFailures = 0;
+		blocktriple<fbits, op, uint8_t> a, nut;
+		constexpr size_t NR_VALUES = (1ull << (fbits + 1));
+		for (size_t i = 0; i < NR_VALUES; ++i) {
+			if (i == 0) a.setzero(); else a.setnormal();
+			a.setbits(i);
+			ConversionType v = ConversionType(a);
+			nut = v;
+			if (v != float(nut)) {
+				++nrOfFailures;
+				if (reportTestCases) std::cout << "FAIL: " << std::setw(10) << i << " : " << to_binary(a) << " != " << to_binary(nut) << '\n';
+			}
+			else {
+				// if (reportTestCases) std::cout << "PASS: " << std::setw(10) << i << " : " << to_binary(a) << " == " << to_binary(nut) << '\n';
+			}
+		}
+
+		return nrOfFailures;
+	}
+
+}}  // namespace sw::universal
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
+int main()
 try {
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
-
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "blocktriple conversion validation";
+	std::string test_tag    = "bt conversion";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	std::string tag = "blocktriple conversion validation: ";
 
@@ -147,29 +164,45 @@ try {
 	std::cout << convert<9, BlockTripleOperator::ADD, long>(l) << '\n';
 	std::cout << convert<8, BlockTripleOperator::ADD, long>(l) << '\n';
 
-//	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::REPRESENTATION, float>();
-	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, float>();
-//	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::MUL, float>();
-	nrOfFailedTestCases = 0;
+//	nrOfFailedTestCases += VerifyBlocktripleConversion<5, BlockTripleOperator::REPRESENTATION, float>(reportTestCases);
+	nrOfFailedTestCases += VerifyBlocktripleConversion<5, BlockTripleOperator::ADD, float>(reportTestCases);
+//	nrOfFailedTestCases += VerifyBlocktripleConversion<5, BlockTripleOperator::MUL, float>(reportTestCases);
 
-#if STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else  // !MANUAL_TESTING
 
-	// manual exhaustive test
+#if REGRESSION_LEVEL_1
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<5, BlockTripleOperator::ADD, float>(reportTestCases), "convert blocktriple<5, ADD> to and from float", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<9, BlockTripleOperator::ADD, float>(reportTestCases), "convert blocktriple<9, ADD> to and from float", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<12, BlockTripleOperator::ADD, float>(reportTestCases), "convert blocktriple<12, ADD> to and from float", "=");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<5, BlockTripleOperator::ADD, double>(reportTestCases), "convert blocktriple<5, ADD> to and from double", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<9, BlockTripleOperator::ADD, double>(reportTestCases), "convert blocktriple<9, ADD> to and from double", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<12, BlockTripleOperator::ADD, double>(reportTestCases), "convert blocktriple<12, ADD> to and from double", "=");
+
+	// test scale progression
+	int scaleTestFailures = 0;
+	for (int i = 1; i < 1025; i *= 2) {
+		float f = float(i);
+		blocktriple<9, BlockTripleOperator::ADD, uint8_t> nut = f;
+		// std::cout << std::setw(4) << i << " : " << to_binary(nut) << '\n';
+		if (f != float(nut)) {
+			++scaleTestFailures;
+		}
+	}
+	nrOfFailedTestCases += ReportTestResult(scaleTestFailures, "bt scale progression", "=");
 
 #endif
 
-#else  // !MANUAL_TESTING
+#if REGRESSION_LEVEL_2
+#endif
 
-	std::cout << tag << endl;
+#if REGRESSION_LEVEL_3
+#endif
 
-	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, float>();
-	nrOfFailedTestCases += VerifyConversion<9, BlockTripleOperator::ADD, float>();
-	nrOfFailedTestCases += VerifyConversion<12, BlockTripleOperator::ADD, float>();
-
-	nrOfFailedTestCases += VerifyConversion<5, BlockTripleOperator::ADD, double>();
-	nrOfFailedTestCases += VerifyConversion<9, BlockTripleOperator::ADD, double>();
-	nrOfFailedTestCases += VerifyConversion<12, BlockTripleOperator::ADD, double>();
-
+#if REGRESSION_LEVEL_4
 	for (int i = 1; i < 257; i *= 2) {
 		float f = float(i);
 		blocktriple<9, BlockTripleOperator::ADD, uint8_t> nut = f;
@@ -177,16 +210,11 @@ try {
 			++nrOfFailedTestCases;
 		}
 	}
+#endif
 
-	std::cout << tag << ((0 == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
-
-#if STRESS_TESTING
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
