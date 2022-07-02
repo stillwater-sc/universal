@@ -5,6 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <iostream>
+#include <iomanip>
 #include <string>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
@@ -27,26 +28,25 @@ namespace sw { namespace universal {
 	//           typename = typename std::enable_if< std::is_unsigned<UnsignedInteger>::value, UnsignedInteger >::type >
 	//  int VerifyNLZ(bool reportTestCases) { .. }
 
+	template<unsigned nbits, typename BlockType>
+	int VerifyFindMsb(bool reportTestCases) {
+		using Integer = sw::universal::integer<nbits, BlockType>;
+		int nrOfFailedTests = 0;
 
-template<unsigned nbits, typename BlockType>
-int VerifyFindMsb(bool reportTestCases) {
-	using Integer = sw::universal::integer<nbits, BlockType>;
-	int nrOfFailedTests = 0;
-
-	Integer a(0);
-	int msb = findMsb(a);
-	if (reportTestCases) std::cout << to_binary(a, true) << " : msb at " << msb << '\n';
-	if (msb != -1) ++nrOfFailedTests;
-	a.setbit(0u);
-	for (unsigned i = 0; i < nbits; ++i) {
-		msb = findMsb(a);
+		Integer a(0);
+		int msb = findMsb(a);
 		if (reportTestCases) std::cout << to_binary(a, true) << " : msb at " << msb << '\n';
-		if (msb != static_cast<int>(i)) ++nrOfFailedTests;
-		a <<= 1;
-	}
+		if (msb != -1) ++nrOfFailedTests;
+		a.setbit(0u);
+		for (unsigned i = 0; i < nbits; ++i) {
+			msb = findMsb(a);
+			if (reportTestCases) std::cout << to_binary(a, true) << " : msb at " << msb << '\n';
+			if (msb != static_cast<int>(i)) ++nrOfFailedTests;
+			a <<= 1;
+		}
 
-	return nrOfFailedTests;
-}
+		return nrOfFailedTests;
+	}
 
 } } // namespace sw::universal
 
@@ -86,6 +86,41 @@ void TestNLZ() {
 			a <<= 1;
 		}
 	}
+}
+
+template<size_t nbits, typename BlockType>
+void TestSignBitMask() {
+	sw::universal::integer<nbits, BlockType> a;
+	std::cout << std::right << std::setw(50) << type_tag(a) << '\n';
+	std::cout << "EXACT_FIT           : " << (a.EXACT_FIT ? "yes\n" : "no\n");
+	std::cout << "bitsInBlock         : " << a.bitsInBlock << '\n';
+	std::cout << "bitSurplus          : " << a.bitSurplus << '\n';
+	std::cout << "bitsInMSU           : " << a.bitsInMSU << '\n';
+	std::cout << "signBitShift        : " << a.signBitShift << '\n';
+	std::cout << "SIGN_BIT_MASK       : " << sw::universal::to_binary(a.SIGN_BIT_MASK, a.bitsInBlock) << '\n';
+	std::cout << "SIGN_EXTENTION_BITS : " << sw::universal::to_binary(a.SIGN_EXTENTION_BITS, a.bitsInBlock) << '\n';
+	std::cout << "MSU_MASK            : " << sw::universal::to_binary(a.MSU_MASK, a.bitsInBlock) << '\n';
+}
+
+void TestBitMasks() {
+	TestSignBitMask<3, uint8_t>();
+	TestSignBitMask<4, uint8_t>();
+	TestSignBitMask<5, uint8_t>();
+	TestSignBitMask<6, uint8_t>();
+	TestSignBitMask<7, uint8_t>();
+	TestSignBitMask<8, uint8_t>();
+	TestSignBitMask<9, uint8_t>();
+	TestSignBitMask<10, uint8_t>();
+	TestSignBitMask<11, uint8_t>();
+	TestSignBitMask<12, uint8_t>();
+
+	TestSignBitMask<12, uint16_t>();
+	TestSignBitMask<16, uint16_t>();
+	TestSignBitMask<28, uint32_t>();
+	TestSignBitMask<32, uint32_t>();
+	TestSignBitMask<56, uint64_t>();
+	TestSignBitMask<60, uint64_t>();
+	TestSignBitMask<64, uint64_t>();
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -130,6 +165,8 @@ try {
 	}
 
 	TestNLZ();  // TODO: we should have a native int
+
+	TestBitMasks();
 
 	nrOfFailedTestCases += ReportTestResult(VerifyFindMsb< 40, uint64_t>(reportTestCases), "integer< 40, uint64_t>", test_tag);
 
