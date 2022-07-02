@@ -17,12 +17,135 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "integer<> class API test suite ";
-	std::cout << test_suite << '\n';
+	std::string test_suite  = "integer<> class API test suite ";
+	std::string test_tag    = "integer<> class API";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR integers
+
+	// whole numbers
+	{
+		int start = nrOfFailedTestCases;
+		bool exceptionThrown;
+		integer<16, std::uint16_t, IntegerNumberType::WholeNumber> a, b, c;
+		try {
+			exceptionThrown = false;
+			a = 0;  // can't assign 0 to a whole number
+		}
+		catch (const integer_encoding_exception& e) {
+			std::cout << "Correctly caught illegal assignment: " << e.what() << '\n';
+			exceptionThrown = true;
+		}
+		if (!exceptionThrown) {
+			std::cout << "Incorrect: illegal assignment to 0 did not throw an exception\n";
+			++nrOfFailedTestCases;
+		}
+
+		// whole numbers cannot be negative
+		try {
+			exceptionThrown = false;
+			b = -1;  // can't assign negative values to a whole number
+		}
+		catch (const integer_encoding_exception& e) {
+			std::cout << "Correctly caught illegal assignment: " << e.what() << '\n';
+			exceptionThrown = true;
+		}
+		if (!exceptionThrown) {
+			std::cout << "Incorrect: illegal assignment to negative value did not throw an exception\n";
+			++nrOfFailedTestCases;
+		}
+
+		try {
+			exceptionThrown = false;
+			a = 1;
+			b = 2;
+			c = a / b;  // can't represent result
+			std::cout << a << " / " << b << " = " << c << '\n';
+		}
+		catch (const integer_encoding_exception& e) {
+			std::cout << "Correctly caught impossible result: " << e.what() << '\n';
+			exceptionThrown = true;
+		}
+		if (!exceptionThrown) {
+			std::cout << "Incorrect: impossible value did not throw an exception\n";
+			++nrOfFailedTestCases;
+		}
+
+		try {
+			exceptionThrown = false;
+			a = 1;
+			b = 2;
+			c = a - b;  // can't represent result
+			std::cout << a << " - " << b << " = " << c << '\n';
+		}
+		catch (const integer_encoding_exception& e) {
+			std::cout << "Correctly caught impossible result: " << e.what() << '\n';
+			exceptionThrown = true;
+		}
+		if (!exceptionThrown) {
+			std::cout << "Incorrect: impossible value did not throw an exception\n";
+			++nrOfFailedTestCases;
+		}
+
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL : whole number test cases\n";
+		}
+	}
+
+	// natural numbers
+	{
+		int start = nrOfFailedTestCases;
+		bool exceptionThrown;
+		integer<16, std::uint16_t, IntegerNumberType::NaturalNumber> a, b, c;
+
+		// natural numbers cannot be negative
+		try {
+			exceptionThrown = false;
+			b = -1;  // can't assign negative values to a natural number
+		}
+		catch (const integer_encoding_exception& e) {
+			std::cout << "Correctly caught illegal assignment: " << e.what() << '\n';
+			exceptionThrown = true;
+		}
+		if (!exceptionThrown) {
+			std::cout << "Incorrect: illegal assignment to negative value did not throw an exception\n";
+			++nrOfFailedTestCases;
+		}
+
+		try {
+			exceptionThrown = false;
+			a = 1;
+			b = 2;
+			c = a / b;
+			if (reportTestCases) std::cout << a << " / " << b << " = " << c << '\n';
+		}
+		catch (const integer_encoding_exception& e) {
+			std::cout << "Incorrect: encoding exception thrown: " << e.what() << '\n';
+			++nrOfFailedTestCases;
+		}
+		if (exceptionThrown) {
+			std::cout << "Incorrect: impossible value did not throw an exception\n";
+		}
+
+		try {
+			exceptionThrown = false;
+			a = 1;
+			b = 2;
+			c = a - b;  // modulo arithmetic will wrap values around
+			if (reportTestCases) std::cout << a << " - " << b << " = " << c << '\n';
+		}
+		catch (...) {
+			std::cout << "Incorrect: unexpected exception thrown\n";
+			++nrOfFailedTestCases;
+		}
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << "FAIL : natural number test cases\n";
+		}
+	}
 
 	// construction
 	{
