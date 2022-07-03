@@ -309,8 +309,25 @@ public:
 		return *this;
 	}
 	integer& operator-=(const integer& rhs) {
-		integer twos(rhs);
-		operator+=(twos.twosComplement());
+		if constexpr (NumberType == WholeNumber) {
+			if (*this < rhs) {
+				throw integer_wholenumber_cannot_be_negative{};
+			}
+			if (*this == rhs) {
+				throw integer_wholenumber_cannot_be_zero{};
+			}
+			std::cerr << "subtractor for WholeNumbers TBD\n";
+		}
+		else if constexpr (NumberType == NaturalNumber) {
+			if (*this < rhs) {
+				throw integer_wholenumber_cannot_be_negative{};
+			}
+			std::cerr << "subtractor for NaturalNumbers TBD\n";
+		}
+		else {
+			integer twos(rhs);
+			operator+=(twos.twosComplement());
+		}
 		return *this;
 	}
 	integer& operator*=(const integer& rhs) {
@@ -380,13 +397,22 @@ public:
 		return *this;
 	}
 	integer& operator/=(const integer& rhs) {
-		if constexpr (nbits == (sizeof(BlockType)*8) ) {
+		if constexpr (EXACT_FIT && 1 == nrBlocks) {
 			if (rhs._block[0] == 0) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				throw integer_divide_by_zero{};
 #else
 				std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+			}
+			if constexpr (NumberType == WholeNumber) {
+				if (*this < rhs) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+					throw integer_wholenumber_cannot_be_zero{};
+#else
+					std::cerr << "whole number cannot be zero but division would yield 0\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+				}
 			}
 			if constexpr (sizeof(BlockType) == 1) {
 				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
@@ -457,11 +483,14 @@ public:
 			}
 			// adjust the shift
 			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
-			if (bitsToShift == 0) return *this;
+			if (bitsToShift == 0) {
+				_block[MSU] &= MSU_MASK;
+				return *this;
+			}
 		}
 		if constexpr (MSU > 0) {
 			// construct the mask for the upper bits in the block that needs to move to the higher word
-			bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+			bt mask = 0xFFFFFFFFFFFFFFFFull << (bitsInBlock - bitsToShift);
 			for (size_t i = MSU; i > 0; --i) {
 				_block[i] <<= bitsToShift;
 				// mix in the bits from the right
@@ -996,16 +1025,14 @@ public:
 #endif
 		}
 
-		constexpr size_t argbits = sizeof(rhs);
 		int64_t v = rhs;
-		unsigned upper = (nbits <= _nbits ? nbits : argbits);
-		for (unsigned i = 0; i < upper && v != 0; ++i) {
+		for (unsigned i = 0; i < nbits && v != 0; ++i) {
 			if (v & 0x1ull) setbit(i);
 			v >>= 1;
 		}
 		if constexpr (nbits > 64) {
 			if (rhs < 0) {	// sign extend if negative
-				for (unsigned i = upper; i < nbits; ++i) {
+				for (unsigned i = 64; i < nbits; ++i) {
 					setbit(i);
 				}
 			}
@@ -1078,9 +1105,7 @@ protected:
 	template<typename TargetInt>
 	TargetInt to_integer() const noexcept {
 		TargetInt v{ 0 };
-		if constexpr (NumberType == NaturalNumber || NumberType == IntegerNumber) {
-			if (*this == 0) return v;
-		}
+		if (iszero()) return v;  // this should only occur for Integer and Natural Numbers
 
 		constexpr unsigned sizeoftarget   = 8 * sizeof(TargetInt);
 		constexpr size_t upperTargetBlock = (sizeoftarget - 1ul) / bitsInBlock;
@@ -1114,7 +1139,7 @@ protected:
 	template<typename TargetInt>
 	TargetInt to_unsigned_integer() const noexcept {
 		TargetInt v{ 0 };
-		if (*this == 0) return v;
+		if (iszero()) return v;  // this should only occur for Integer and Natural Numbers
 
 		constexpr unsigned sizeoftarget = 8 * sizeof(TargetInt);
 		constexpr size_t upperTargetBlock = (sizeoftarget - 1ul) / bitsInBlock;

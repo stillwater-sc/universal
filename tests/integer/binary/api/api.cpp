@@ -120,28 +120,30 @@ try {
 			exceptionThrown = false;
 			a = 1;
 			b = 2;
-			c = a / b;
+			c = a / b;  // natural numbers can represent 0
 			if (reportTestCases) std::cout << a << " / " << b << " = " << c << '\n';
 		}
-		catch (const integer_encoding_exception& e) {
-			std::cout << "Incorrect: encoding exception thrown: " << e.what() << '\n';
+		catch (...) {
+			std::cout << "Incorrect: exception thrown\n";
 			++nrOfFailedTestCases;
-		}
-		if (exceptionThrown) {
-			std::cout << "Incorrect: impossible value did not throw an exception\n";
 		}
 
 		try {
 			exceptionThrown = false;
 			a = 1;
 			b = 2;
-			c = a - b;  // modulo arithmetic will wrap values around
+			c = a - b;  // natural numbers can represent negative: throw
 			if (reportTestCases) std::cout << a << " - " << b << " = " << c << '\n';
 		}
-		catch (...) {
-			std::cout << "Incorrect: unexpected exception thrown\n";
+		catch (const integer_encoding_exception& e) {
+			std::cout << "Correctly caught exception: " << e.what() << '\n';
+			exceptionThrown = true;
+		}
+		if (!exceptionThrown) {
+			std::cout << "Incorrect: illegal assignment to negative value did not throw an exception\n";
 			++nrOfFailedTestCases;
 		}
+
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : natural number test cases\n";
 		}

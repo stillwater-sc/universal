@@ -22,40 +22,39 @@
 
 namespace sw { namespace universal {
 
-		// enumerate all shift left cases for an integer<nbits, BlockType> configuration
-		template<size_t nbits, typename BlockType = uint8_t, IntegerNumberType NumberType = IntegerNumberType::IntegerNumber>
-		int VerifyLeftShift(bool reportTestCases) {
-			using namespace sw::universal;
-			using Integer = integer<nbits, BlockType>;
+	// enumerate all shift left cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType = uint8_t, IntegerNumberType NumberType = IntegerNumberType::IntegerNumber>
+	int VerifyLeftShift(bool reportTestCases) {
+		using namespace sw::universal;
+		using Integer = integer<nbits, BlockType>;
 
-			if (reportTestCases) std::cout << type_tag(Integer()) << '\n';
+		if (reportTestCases) std::cout << type_tag(Integer()) << '\n';
 
-			// take 1 and shift it left in all possible strides
-			int nrOfFailedTests = 0;
-			Integer a, result;
-			int64_t shiftRef, resultRef;
-			for (size_t i = 0; i < nbits + 1; i++) {
-				shiftRef = (-1ll << i);
-				if (i == nbits) shiftRef = 0; // shift all bits out
+		// take 1 and shift it left in all possible strides
+		int nrOfFailedTests = 0;
+		Integer a, result, ref;
+		uint64_t shiftRef;
+		for (size_t i = 0; i < nbits + 1; i++) {
+			shiftRef = (~0ull << i);
+			if (i == nbits) shiftRef = 0; // shift all bits out
+			ref.setbits(shiftRef);
 
-				a = -1;
-				result = a << long(i);
-				resultRef = (long long)result;
+			a = -1;
+			result = a << static_cast<int>(i);
 
-				if (shiftRef != resultRef) {
-					nrOfFailedTests++;
-					if (reportTestCases) ReportArithmeticShiftError("FAIL", "<<", a, i, result, resultRef);
-				}
-				else {
-					if (reportTestCases) ReportArithmeticShiftSuccess("PASS", "<<", a, i, result, resultRef);
-				}
-				if (nrOfFailedTests > 100) return nrOfFailedTests;
+			if (ref != result) {
+				nrOfFailedTests++;
+				if (reportTestCases) ReportArithmeticShiftError("FAIL", "<<", a, i, result, shiftRef);
 			}
-			return nrOfFailedTests;
+			else {
+				if (reportTestCases) ReportArithmeticShiftSuccess("PASS", "<<", a, i, result, shiftRef);
+			}
+			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-
+		return nrOfFailedTests;
 	}
-} // namespace sw::universal
+
+} } // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -79,7 +78,7 @@ try {
 
 	std::string test_suite  = "Integer arithmetic/logic shift left verfication";
 	std::string test_tag    = "shift left";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
