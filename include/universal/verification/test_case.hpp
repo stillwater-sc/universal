@@ -1,5 +1,5 @@
 #pragma once
-//  test_case.cpp : functions to generate specific test cases
+//  test_case.hpp : functions to generate specific test cases
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -86,6 +86,12 @@ namespace sw { namespace universal {
 		std::cout << "\n+--------  Test Case: Done ---------------------------------------------------\n\n";
 		std::cout << std::setprecision(oldprecision);
 		return (reference == c) ? 0 : 1;  // return 1 to indicate 1 test failure
+	}
+
+	template<typename TestType>
+	void ReportValues(const TestType& a, const std::string& op, const TestType& b, const TestType& c) {
+		std::cout << to_binary(a) << ' ' << op << ' ' << to_binary(b) << " = " << to_binary(c) << '\n';
+		std::cout << a << ' ' << op << ' ' << b << " = " << c << '\n';
 	}
 
 }} // namespace sw::universal

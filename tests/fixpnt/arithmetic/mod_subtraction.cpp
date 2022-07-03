@@ -54,7 +54,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fixed-point modular subtraction ";
+	std::string test_suite  = "fixed-point modular subtraction";
 	std::string test_tag    = "modular subtraction";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

@@ -22,6 +22,8 @@ else
 	COMPILER=$1
 	if [[ $# == 2 ]]; then
 		TARGET=$2
+	else
+		TARGET=BUILD_ALL
 	fi
 	docker build --force-rm -t "stillwater/universal:$VERSION" --build-arg "target=$TARGET" -f "../Dockerfile.$COMPILER" ..
 fi

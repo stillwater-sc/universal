@@ -1,12 +1,8 @@
 // test_suite.hpp: reusable test suite for small number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)
-#pragma warning(disable : 4710)
-#endif
 #include <iostream>
 #include <iomanip>
 #include <string>

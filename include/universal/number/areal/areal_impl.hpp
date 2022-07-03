@@ -74,7 +74,6 @@ namespace sw { namespace universal {
 // Forward definitions
 template<size_t nbits, size_t es, typename bt> class areal;
 template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
-template<typename bt> inline std::string to_binary(const bt&, bool);
 
 /// <summary>
 /// decode an areal value into its constituent parts
@@ -1459,25 +1458,6 @@ inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMark
 	}
 	return ss.str();
 }
-
-#ifdef DEPRECATED
-// helper to report on BlockType blocks
-template<typename bt>
-inline std::string to_binary(const bt& number, bool nibbleMarker) {
-	std::stringstream ss;
-	ss << 'b';
-	constexpr size_t nbits = sizeof(bt) * 8;
-	bt mask = bt(bt(1ull) << (nbits - 1ull));
-	size_t index = nbits;
-	for (size_t i = 0; i < nbits; ++i) {
-		ss << (number & mask ? '1' : '0');
-		--index;
-		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
-		mask >>= 1ul;
-	}
-	return ss.str();
-}
-#endif
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es, typename bt>

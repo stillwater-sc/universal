@@ -57,7 +57,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fixed-point modular multiplication ";
+	std::string test_suite  = "fixed-point modular multiplication";
 	std::string test_tag    = "modular multiplication";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
