@@ -23,6 +23,7 @@ namespace sw { namespace universal {
 		int nrOfFailedTestCases = 0;
 		bool firstTime = true;
 		LnsType a, b, c, cref;
+		a.debugConstexprParameters();
 		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i);
 			double da = double(a);
@@ -147,9 +148,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "lns division validation";
-	std::string test_tag = "division";
-	bool reportTestCases = true;
+	std::string test_suite  = "lns division validation";
+	std::string test_tag    = "division";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -160,20 +161,47 @@ try {
 	using LNS4_2 = lns<4, 2, std::uint8_t>;
 	using LNS5_2 = lns<5, 2, std::uint8_t>;
 	using LNS8_3 = lns<8, 3, std::uint8_t>;
+	using LNS8_4 = lns<8, 4, std::uint8_t>;
 	using LNS9_4 = lns<9, 4, std::uint8_t>;
 	using LNS16_5 = lns<16, 5, std::uint16_t>;
 
+	// : FAIL 1                    / 267.33408830141792123 != 0.0037406378152288035158 golden reference is 62757.488603861726006
+	// : result 0b0.1111.1111
+	// : vs ref 0b0.0111.1111
+	//  0b0.0000.0000 / 0b0.0000.0001
+	// 0b0.0000.0000 / 0b1.1111.1111
+	{
+		LNS9_4 a, b, c;
+		a.setbits(0);
+		b.setbits(0x1);
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << '\n';
+		std::cout << (a) << " / " << (b) << " = " << (c) << '\n';
+		c.setbits(0x010);
+		std::cout << to_binary(c) << " : " << c << '\n';
+		c.setbits(0x0F0);
+		std::cout << to_binary(c) << " : " << c << '\n';
+	}
+	{
+		LNS8_4 a, b, c;
+		a.setbits(0);
+		b.setbits(0x1);
+		c = a / b;
+		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << '\n';
+		std::cout << (a) << " / " << (b) << " = " << (c) << '\n';
+	}
+	return 0;
 	// generate individual testcases to hand trace/debug
 	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
 	TestCase<LNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
 	// GenerateLnsTable<5, 2>(std::cout);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1>(reportTestCases), "lns<4,1,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2>(reportTestCases), "lns<4,2,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2>(reportTestCases), "lns<5,2,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3>(reportTestCases), "lns<8,3,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4>(reportTestCases), "lns<9,4,uint8_t>>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -183,15 +211,17 @@ try {
 	using LNS5_2 = lns<5, 2, std::uint8_t>;
 	using LNS8_3 = lns<8, 3, std::uint8_t>;
 	using LNS9_4 = lns<9, 4, std::uint8_t>;
+	using LNS9_4_uint16 = lns<9, 4, std::uint16_t>;
 	using LNS10_4 = lns<10, 4, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS10_4>(reportTestCases), "lns<10,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1>(reportTestCases),  "lns< 4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2>(reportTestCases),  "lns< 4,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2>(reportTestCases),  "lns< 5,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3>(reportTestCases),  "lns< 8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4>(reportTestCases),  "lns< 9,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_uint16>(reportTestCases), "lns< 9,4,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS10_4>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

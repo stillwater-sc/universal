@@ -8,10 +8,10 @@
 namespace sw { namespace universal {
 
 // generate a full binary representation table for a given posit configuration
-template<size_t nbits, size_t rbits>
+template<size_t nbits, size_t rbits, typename BlockType = std::uint8_t>
 void GenerateLnsTable(std::ostream& ostr, bool csvFormat = false) {
 	const size_t size = (1 << nbits);
-	sw::universal::lns<nbits, rbits> v;
+	sw::universal::lns<nbits, rbits, BlockType> v;
 	if (csvFormat) {
 		ostr << "\"Generate Value table for an LNS<" << nbits << "," << rbits << "> in CSV format\"" << std::endl;
 		ostr << "#, Binary, sign, scale, value\n";

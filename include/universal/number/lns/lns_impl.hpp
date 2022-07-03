@@ -60,13 +60,14 @@ public:
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock));
 	static constexpr size_t   MSU = nrBlocks - 1;
 	static constexpr bt       MSU_MASK = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr bt       SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1ull) % bitsInBlock));
-	static constexpr bt       MSB_BIT_MASK = bt(bt(1) << ((nbits - 2ull) % bitsInBlock));
-	static constexpr bt       BLOCK_MSB_MASK = bt(bt(1) << (bitsInBlock - 1));
+	static constexpr bt       SIGN_BIT_MASK = bt(1ull << ((nbits - 1ull) % bitsInBlock));
+	static constexpr size_t   MSB_UNIT = (1ull + ((nbits - 2) / bitsInBlock)) - 1ull;
+	static constexpr bt       MSB_BIT_MASK = bt(1ull << ((nbits - 2ull) % bitsInBlock));
+	static constexpr bt       BLOCK_MSB_MASK = bt(1ull << (bitsInBlock - 1));
 	static constexpr bool     SPECIAL_BITS_TOGETHER = (nbits > ((nrBlocks - 1) * bitsInBlock + 1));
-	static constexpr bt       MSU_ZERO = MSU_MASK & MSB_BIT_MASK;
-	static constexpr bt       MSU_NAN = SIGN_BIT_MASK | MSU_ZERO;
-	static constexpr bt       MSB_UNIT = (1 + ((nbits - 2) / bitsInBlock)) - 1;
+	static constexpr bt       MSU_ZERO = MSB_BIT_MASK;
+	static constexpr bt       MSU_NAN = SIGN_BIT_MASK | MSU_ZERO;  // only valid when special bits together is true
+
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + lns exponent
 	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the lns exponent
 
@@ -202,7 +203,7 @@ public:
 				return (_block[0] == 0 && _block[1] == MSU_ZERO);
 			}
 			else {
-				return !sign() && _block[0] == BLOCK_MSB_MASK;
+				return !sign() && _block[0] == MSB_BIT_MASK;
 			}
 		}
 		else {
@@ -282,6 +283,24 @@ public:
 	CONSTEXPRESSION lns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
 #endif
+
+	void debugConstexprParameters() {
+		std::cout << "constexpr parameters for " << type_tag(*this) << '\n';
+		std::cout << "scaling               " << scaling << '\n';
+		std::cout << "bitsInByte            " << bitsInByte << '\n';
+		std::cout << "bitsInBlock           " << bitsInBlock << '\n';
+		std::cout << "nrBlocks              " << nrBlocks << '\n';
+		std::cout << "storageMask           " << to_binary(storageMask, bitsInBlock) << '\n';
+		std::cout << "MSU                   " << MSU << '\n';
+		std::cout << "MSU_MASK              " << to_binary(MSU_MASK, bitsInBlock) << '\n';
+		std::cout << "MSB_UNIT              " << MSB_UNIT << '\n';
+		std::cout << "SPECIAL_BITS_TOGETHER " << (SPECIAL_BITS_TOGETHER ? "yes" : "no") << '\n';
+		std::cout << "SIGN_BIT_MASK         " << to_binary(SIGN_BIT_MASK, bitsInBlock) << '\n';
+		std::cout << "MSB_BIT_MASK          " << to_binary(MSB_BIT_MASK, bitsInBlock) << '\n';
+		std::cout << "BLOCK_MSB_MASK        " << to_binary(BLOCK_MSB_MASK, bitsInBlock) << '\n';
+		std::cout << "MSU_ZERO              " << to_binary(MSU_ZERO, bitsInBlock) << '\n';
+		std::cout << "MSU_NAN               " << to_binary(MSU_NAN, bitsInBlock) << '\n';
+	}
 
 protected:
 
