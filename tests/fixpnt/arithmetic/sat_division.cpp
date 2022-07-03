@@ -255,8 +255,10 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(3.0f, 1.5f); 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(reportTestCases), "fixpnt<4,0,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(reportTestCases), "fixpnt<4,1,Saturating,uint8_t>", test_tag);
+	std::cout << "Saturated fixpnt division not implemented yet\n";
+	nrOfFailedTestCases = 1;
+	// nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Saturating, uint8_t>(reportTestCases), "fixpnt<4,0,Saturating,uint8_t>", test_tag);
+	// nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Saturating, uint8_t>(reportTestCases), "fixpnt<4,1,Saturating,uint8_t>", test_tag);
 	
 	// a stress test
 	// nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Saturating, uint8_t>(reportTestCases), "fixpnt<8,4,Saturating,uint8_t>", test_tag);
