@@ -158,11 +158,11 @@ try {
 
 	// GenerateLnsTable<5, 2>(std::cout);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1>(reportTestCases), "lns<4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_2>(reportTestCases), "lns<4,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS5_2>(reportTestCases), "lns<5,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS8_3>(reportTestCases), "lns<8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4,uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -175,12 +175,12 @@ try {
 	using LNS10_4 = lns<10, 4, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1>(reportTestCases), "lns<4,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_2>(reportTestCases), "lns<4,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS5_2>(reportTestCases), "lns<5,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS8_3>(reportTestCases), "lns<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS10_4>(reportTestCases), "lns<10,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1>(reportTestCases), "lns<4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_2>(reportTestCases), "lns<4,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS5_2>(reportTestCases), "lns<5,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS8_3>(reportTestCases), "lns<8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS10_4>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

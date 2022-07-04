@@ -98,10 +98,24 @@ public:
 	}
 
 	// in-place arithmetic assignment operators
-	lns& operator+=(const lns& rhs) { return *this; }
-	lns& operator+=(double rhs) { return *this += lns(rhs); }
-	lns& operator-=(const lns& rhs) { return *this; }
-	lns& operator-=(double rhs) { return *this -= lns(rhs); }
+	lns& operator+=(const lns& rhs) {
+		float sum = float(*this) + float(rhs);  // TODO: why floats? because this is a shortcut and we focus on small values
+		return *this = sum; 
+	}
+	lns& operator+=(double rhs) { 
+		float sum = float(*this) + float(rhs);  // TODO: why floats? because this is a shortcut and we focus on small values
+		return *this = sum;
+//		return *this += lns(rhs); 
+	}
+	lns& operator-=(const lns& rhs) { 
+		float diff = float(*this) - float(rhs);  // TODO: why floats? because this is a shortcut and we focus on small values
+		return *this = diff;
+	}
+	lns& operator-=(double rhs) {
+		float diff = float(*this) - float(rhs);  // TODO: why floats? because this is a shortcut and we focus on small values
+		return *this = diff;
+		// return *this -= lns(rhs); 
+	}
 	lns& operator*=(const lns& rhs) {
 		if (isnan()) return *this;
 		if (rhs.isnan()) {
@@ -430,7 +444,7 @@ protected:
 		return UnsignedInt(to_ieee754<double>());
 	}
 	template<typename TargetFloat>
-	CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {
+	CONSTEXPRESSION TargetFloat to_ieee754() const noexcept {   // TODO: don't use bit math, use proper limb math to speed this up
 		// special case handling
 		if (isnan()) return TargetFloat(NAN);
 		if (iszero()) return TargetFloat(0.0f);
@@ -460,11 +474,11 @@ protected:
 		// construct the value
 		TargetFloat value{ 0.0 };
 		size_t bit = 0;
-		for (size_t b = 0; b < nrBlocks; ++b) {
+		for (size_t b = 0; b < bb.nrBlocks; ++b) {
 			BlockType mask = static_cast<BlockType>(1ull);
-			BlockType block = bb[b];
+			BlockType limb = bb[b];
 			for (size_t i = 0; i < bitsInBlock; ++i) {
-				if (block & mask) value += multiplier;
+				if (limb & mask) value += multiplier;
 				if (bit == nbits - 2) break; // skip the sign bit of the lns
 				++bit;
 				mask <<= 1;
