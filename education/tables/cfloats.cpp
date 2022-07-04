@@ -52,6 +52,45 @@ void GenerateCfloatTables(std::ostream& ostr, bool csv) {
 
 }
 
+template<bool hasSubnormals, bool hasSupernormals, bool isSaturating, typename BlockType>
+void GenerateCfloatTableFiles(bool csv) {
+	std::ofstream ostr;
+	std::string filename, extension;
+	extension = (csv ? ".csv" : ".txt");
+	std::string sub, subTypename, sup, supTypename, sat, satTypename;
+	if constexpr (hasSubnormals) {
+		sub = "t";
+		subTypename = "Subnormals";
+	}
+	else {
+		sub = "f";
+		subTypename = "noSubnormals";
+	}
+	if constexpr (hasSupernormals) {
+		sup = "t";
+		supTypename = "Supernormals";
+	}
+	else {
+		sup = "f";
+		supTypename = "noSupernormals";
+	}
+	if constexpr (isSaturating) {
+		sat = "t";
+		satTypename = "Saturating";
+	}
+	else {
+		sat = "f";
+		satTypename = "notSaturating";
+	}
+	filename = std::string("cfloat_") + sub + sup + sat + extension;
+	ostr.open(filename);
+	GenerateCfloatTables<hasSubnormals, hasSupernormals, isSaturating, uint8_t>(ostr, csv);
+	ostr.close();
+
+	std::cout << "Created " << satTypename << " cfloat tables for " << subTypename << ", Normals, " << supTypename << " in " << filename << '\n';
+
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -67,39 +106,13 @@ try {
 	constexpr bool noSubnormals = false;
 	constexpr bool hasSupernormals = true;
 	constexpr bool noSupernormals = false;
-//	constexpr bool isSaturating = true;
+	//	constexpr bool isSaturating = true;
 	constexpr bool notSaturating = false;
 
-	std::ofstream ostr;
-	std::string filename, extension;
-	extension = (csv ? ".csv" : ".txt");
-	filename = std::string("cfloat_fff") + extension;
-	ostr.open(filename);
-	// no subnormals, normals, no supernormals, not saturating
-	GenerateCfloatTables<noSubnormals, noSupernormals, notSaturating, uint8_t>(ostr, csv);
-	std::cout << "Created cfloat tables for noSubnormals, Normals, noSupernormals in " << filename << '\n';
-	ostr.close();
-
-	filename = std::string("cfloat_tff") + extension;
-	ostr.open(filename);
-	// has subnormals, normals, no supernormals, not saturating
-	GenerateCfloatTables<hasSubnormals, noSupernormals, notSaturating>(ostr, csv);
-	std::cout << "Created cfloat tables for Subnormals, Normals, noSupernormals in " << filename << '\n';
-	ostr.close();
-
-	filename = std::string("cfloat_ftf") + extension;
-	ostr.open(filename);
-	// no subnormals, normals, has supernormals, not saturating
-	GenerateCfloatTables<noSubnormals, hasSupernormals, notSaturating, uint8_t>(ostr, csv);
-	std::cout << "Created cfloat tables for noSubnormals, Normals, Supernormals in " << filename << '\n';
-	ostr.close();
-
-	filename = std::string("cfloat_ttf") + extension;
-	ostr.open(filename);
-	// has subnormals, normals, has supernormals, not saturating
-	GenerateCfloatTables<hasSubnormals, hasSupernormals, notSaturating>(ostr, csv);
-	std::cout << "Created cfloat tables for Subnormals, Normals, and Supernormals in " << filename << '\n';
-	ostr.close();
+	GenerateCfloatTableFiles<noSubnormals, noSupernormals, notSaturating, uint8_t>(csv);
+	GenerateCfloatTableFiles<hasSubnormals, noSupernormals, notSaturating, uint8_t>(csv);
+	GenerateCfloatTableFiles<noSubnormals, hasSupernormals, notSaturating, uint8_t>(csv);
+	GenerateCfloatTableFiles<hasSubnormals, hasSupernormals, notSaturating, uint8_t>(csv);
 
 	return EXIT_SUCCESS;
 }

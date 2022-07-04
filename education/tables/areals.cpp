@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 // enable/disable special hex format I/O
@@ -42,40 +43,36 @@ try {
 
 	GenerateArealTable<8, 3>(cout, ubit, csv);
 
-	/*
-	* #include <fstream>
-	ofstream ostr;
-	ostr.open("areal_8_1.csv");
-	GenerateArealTable<8, 1>(ostr, false, true);
-	ostr.close();
-	ostr.open("areal_8_2.csv");
-	GenerateArealTable<8, 2>(ostr, false, true);
-	ostr.close();
-	ostr.open("areal_8_3.csv");
-	GenerateArealTable<8, 3>(ostr, false, true);
-	ostr.close();
-	*/
-
 #else // !MANUAL_TESTING
-	GenerateArealTable<4, 1>(std::cout, ubit, csv);
 
-	GenerateArealTable<5, 1>(std::cout, ubit, csv);
-	GenerateArealTable<5, 2>(std::cout, ubit, csv);
+	std::ofstream ostr;
+	std::string filename, extension;
+	extension = (csv ? ".csv" : ".txt");
+	filename = std::string("areal") + extension;
+	ostr.open(filename);
 
-	GenerateArealTable<6, 1>(std::cout, ubit, csv);
-	GenerateArealTable<6, 2>(std::cout, ubit, csv);
-	GenerateArealTable<6, 3>(std::cout, ubit, csv);
+	GenerateArealTable<4, 1>(ostr, ubit, csv);
 
-	GenerateArealTable<7, 1>(std::cout, ubit, csv);
-	GenerateArealTable<7, 2>(std::cout, ubit, csv);
-	GenerateArealTable<7, 3>(std::cout, ubit, csv);
-	GenerateArealTable<7, 4>(std::cout, ubit, csv);
+	GenerateArealTable<5, 1>(ostr, ubit, csv);
+	GenerateArealTable<5, 2>(ostr, ubit, csv);
 
-	GenerateArealTable<8, 1>(std::cout, ubit, csv);
-	GenerateArealTable<8, 2>(std::cout, ubit, csv);
-	GenerateArealTable<8, 3>(std::cout, ubit, csv);
-	GenerateArealTable<8, 4>(std::cout, ubit, csv);
-	GenerateArealTable<8, 5>(std::cout, ubit, csv);
+	GenerateArealTable<6, 1>(ostr, ubit, csv);
+	GenerateArealTable<6, 2>(ostr, ubit, csv);
+	GenerateArealTable<6, 3>(ostr, ubit, csv);
+
+	GenerateArealTable<7, 1>(ostr, ubit, csv);
+	GenerateArealTable<7, 2>(ostr, ubit, csv);
+	GenerateArealTable<7, 3>(ostr, ubit, csv);
+	GenerateArealTable<7, 4>(ostr, ubit, csv);
+
+	GenerateArealTable<8, 1>(ostr, ubit, csv);
+	GenerateArealTable<8, 2>(ostr, ubit, csv);
+	GenerateArealTable<8, 3>(ostr, ubit, csv);
+	GenerateArealTable<8, 4>(ostr, ubit, csv);
+	GenerateArealTable<8, 5>(ostr, ubit, csv);
+
+	ostr.close();
+	std::cout << "Created value tables for areal<> in " << filename << '\n';
 
 #endif
 
