@@ -928,8 +928,8 @@ namespace sw { namespace universal {
 				a.normalizeMultiplication(b);
 				ref = double(b);
 				if (double(ref) != double(b)) {
-					std::cout << "ref  : " << to_triple(ref) << " : " << ref << '\n';
-					std::cout << "norm : " << to_triple(b) << " : " << b << '\n';
+//					std::cout << "ref  : " << to_triple(ref) << " : " << ref << '\n';
+//					std::cout << "norm : " << to_triple(b) << " : " << b << '\n';
 					if (a.isnan() && b.isnan()) continue;
 					if (a.isinf() && b.isinf()) continue;
 					++nrOfTestFailures;
@@ -953,8 +953,8 @@ namespace sw { namespace universal {
 				a.normalizeDivision(b);
 				ref = double(b);
 				if (double(ref) != double(b)) {
-					std::cout << "ref  : " << to_triple(ref) << " : " << ref << '\n';
-					std::cout << "norm : " << to_triple(b) << " : " << b << '\n';
+//					std::cout << "ref  : " << to_triple(ref) << " : " << ref << '\n';
+//					std::cout << "norm : " << to_triple(b) << " : " << b << '\n';
 					if (a.isnan() && b.isnan()) continue;
 					if (a.isinf() && b.isinf()) continue;
 					++nrOfTestFailures;
