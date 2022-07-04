@@ -21,7 +21,8 @@
 /*
 the integer arithmetic can be configured to:
 - throw exceptions on overflow
-- throw execptions on arithmetic
+- throw exceptions on arithmetic
+- throw exceptions on encoding errors for Whole and Natural Numbers
 
 you need the exception types defined, but you have the option to throw them
  */
@@ -81,7 +82,6 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& v);
 // idiv_t for integer<nbits, BlockType, NumberType> to capture quotient and remainder during long division
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 struct idiv_t {
-	idiv_t() : quot{ 0 }, rem{ 0 } {};
 	integer<nbits, BlockType, NumberType> quot; // quotient
 	integer<nbits, BlockType, NumberType> rem;  // remainder
 };
@@ -116,8 +116,13 @@ public:
 	static constexpr size_t   nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
 	static constexpr size_t   MSU = nrBlocks - 1ull;
 	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
-	static constexpr bt       MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr size_t   bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
+	static constexpr size_t   bitSurplus = (nrBlocks * bitsInBlock - nbits);
+	static constexpr size_t   bitsInMSU = bitsInBlock - bitSurplus;
+	static constexpr bool     EXACT_FIT = (bitSurplus == 0);
+	static constexpr size_t   signBitShift = (EXACT_FIT ? (bitsInBlock - 1) : bitsInMSU - 1);
+	static constexpr bt       SIGN_BIT_MASK = bt(1ull << signBitShift);
+	static constexpr bt       MSU_MASK = bt(ALL_ONES >> bitSurplus);
+	static constexpr bt       SIGN_EXTENTION_BITS = bt(~MSU_MASK);
 	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 	static constexpr uint64_t BASE = (ALL_ONES + 1ull);
 
@@ -193,20 +198,20 @@ public:
 	// simpler interface for now, using at(i) and set(i)/reset(i)
 
 	// assignment operators for native types
-	constexpr integer& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
-	constexpr integer& operator=(short rhs)              noexcept { return convert_signed(rhs); }
-	constexpr integer& operator=(int rhs)                noexcept { return convert_signed(rhs); }
-	constexpr integer& operator=(long rhs)               noexcept { return convert_signed(rhs); }
-	constexpr integer& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	constexpr integer& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
-	constexpr integer& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
-	constexpr integer& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
-	constexpr integer& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
-	constexpr integer& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
-	constexpr integer& operator=(float rhs)              noexcept { return convert_ieee(rhs); }
-	constexpr integer& operator=(double rhs)             noexcept { return convert_ieee(rhs); }
+	constexpr integer& operator=(signed char rhs)        { return convert_signed(rhs); }
+	constexpr integer& operator=(short rhs)              { return convert_signed(rhs); }
+	constexpr integer& operator=(int rhs)                { return convert_signed(rhs); }
+	constexpr integer& operator=(long rhs)               { return convert_signed(rhs); }
+	constexpr integer& operator=(long long rhs)          { return convert_signed(rhs); }
+	constexpr integer& operator=(char rhs)               { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned short rhs)     { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned int rhs)       { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned long rhs)      { return convert_unsigned(rhs); }
+	constexpr integer& operator=(unsigned long long rhs) { return convert_unsigned(rhs); }
+	constexpr integer& operator=(float rhs)              { return convert_ieee(rhs); }
+	constexpr integer& operator=(double rhs)             { return convert_ieee(rhs); }
 #if LONG_DOUBLE_SUPPORT
-	constexpr integer& operator=(long double rhs)        noexcept { return convert_ieee(rhs); }
+	constexpr integer& operator=(long double rhs)        { return convert_ieee(rhs); }
 #endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
@@ -304,8 +309,25 @@ public:
 		return *this;
 	}
 	integer& operator-=(const integer& rhs) {
-		integer twos(rhs);
-		operator+=(twos.twosComplement());
+		if constexpr (NumberType == WholeNumber) {
+			if (*this < rhs) {
+				throw integer_wholenumber_cannot_be_negative{};
+			}
+			if (*this == rhs) {
+				throw integer_wholenumber_cannot_be_zero{};
+			}
+			std::cerr << "subtractor for WholeNumbers TBD\n";
+		}
+		else if constexpr (NumberType == NaturalNumber) {
+			if (*this < rhs) {
+				throw integer_wholenumber_cannot_be_negative{};
+			}
+			std::cerr << "subtractor for NaturalNumbers TBD\n";
+		}
+		else {
+			integer twos(rhs);
+			operator+=(twos.twosComplement());
+		}
 		return *this;
 	}
 	integer& operator*=(const integer& rhs) {
@@ -375,13 +397,22 @@ public:
 		return *this;
 	}
 	integer& operator/=(const integer& rhs) {
-		if constexpr (nbits == (sizeof(BlockType)*8) ) {
+		if constexpr (EXACT_FIT && 1 == nrBlocks) {
 			if (rhs._block[0] == 0) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				throw integer_divide_by_zero{};
 #else
 				std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+			}
+			if constexpr (NumberType == WholeNumber) {
+				if (*this < rhs) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+					throw integer_wholenumber_cannot_be_zero{};
+#else
+					std::cerr << "whole number cannot be zero but division would yield 0\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+				}
 			}
 			if constexpr (sizeof(BlockType) == 1) {
 				_block[0] = static_cast<bt>(std::int8_t(_block[0]) / std::int8_t(rhs._block[0]));
@@ -452,11 +483,14 @@ public:
 			}
 			// adjust the shift
 			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
-			if (bitsToShift == 0) return *this;
+			if (bitsToShift == 0) {
+				_block[MSU] &= MSU_MASK;
+				return *this;
+			}
 		}
 		if constexpr (MSU > 0) {
 			// construct the mask for the upper bits in the block that needs to move to the higher word
-			bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+			bt mask = 0xFFFFFFFFFFFFFFFFull << (bitsInBlock - bitsToShift);
 			for (size_t i = MSU; i > 0; --i) {
 				_block[i] <<= bitsToShift;
 				// mix in the bits from the right
@@ -804,18 +838,48 @@ public:
 			return;
 		}
 		if constexpr (nrBlocks == 1) { // completely reduce this to native div and rem
-			std::int64_t a0 = static_cast<std::int64_t>(a._block[0]);
-			std::int64_t b0 = static_cast<std::uint64_t>(b._block[0]);
-			*this = static_cast<BlockType>(a0 / b0);
-			r = static_cast<BlockType>(a0 % b0);
+			BlockType _a = a._block[0];
+			BlockType _b = b._block[0];
+			if constexpr (NumberType == IntegerNumber) {
+				bool sign_a = _a & SIGN_BIT_MASK;
+				bool sign_b = _b & SIGN_BIT_MASK;
+				if constexpr (8 == bitsInBlock) {
+					std::int8_t a0 = (sign_a ? SIGN_EXTENTION_BITS | _a : _a);
+					std::int8_t b0 = (sign_b ? SIGN_EXTENTION_BITS | _b : _b);
+					*this = static_cast<BlockType>(a0 / b0);
+					r = static_cast<BlockType>(a0 % b0);
+				}
+				else if constexpr (16 == bitsInBlock) {
+					std::int16_t a0 = (sign_a ? SIGN_EXTENTION_BITS | _a : _a);
+					std::int16_t b0 = (sign_b ? SIGN_EXTENTION_BITS | _b : _b);
+					*this = static_cast<BlockType>(a0 / b0);
+					r = static_cast<BlockType>(a0 % b0);
+				}
+				else if constexpr (32 == bitsInBlock) {
+					std::int32_t a0 = (sign_a ? SIGN_EXTENTION_BITS | _a : _a);
+					std::int32_t b0 = (sign_b ? SIGN_EXTENTION_BITS | _b : _b);
+					*this = static_cast<BlockType>(a0 / b0);
+					r = static_cast<BlockType>(a0 % b0);
+				}
+				else {
+					std::int64_t a0 = (sign_a ? SIGN_EXTENTION_BITS | _a : _a);
+					std::int64_t b0 = (sign_b ? SIGN_EXTENTION_BITS | _b : _b);
+					*this = static_cast<BlockType>(a0 / b0);
+					r = static_cast<BlockType>(a0 % b0);
+				}
+			}
+			else {
+				*this = static_cast<BlockType>(_a / _b);
+				r = static_cast<BlockType>(_a % _b);
+			}
 		}
 		else {
-
+			clear();
 			// no need to constexpr guard this for IntegerNumber as sign() will return false for Whole and Natural Numbers
 			bool sign_a = a.sign();
 			bool sign_b = b.sign();
 			bool sign_q = sign_a ^ sign_b;
-			using Integer = integer<nbits, BlockType, NumberType>; // TODO: this does not deal with maxneg
+			using Integer = integer<nbits+1, BlockType, NumberType>; // nbits+1 to deal with maxneg
 			Integer _a(a), _b(b);
 			if (sign_a) _a.twosComplement();
 			if (sign_b) _b.twosComplement();			
@@ -826,13 +890,13 @@ public:
 			// determine first non-zero limbs
 			unsigned m{ 0 }, n{ 0 };
 			for (size_t i = nrBlocks; i > 0; --i) {
-				if (_a._block[i - 1] != 0) {
+				if (_a.block(i - 1) != 0) {
 					m = static_cast<unsigned>(i);
 					break;
 				}
 			}
 			for (size_t i = nrBlocks; i > 0; --i) {
-				if (_b._block[i - 1] != 0) {
+				if (_b.block(i - 1) != 0) {
 					n = static_cast<unsigned>(i);
 					break;
 				}
@@ -841,9 +905,9 @@ public:
 			// single limb divisor
 			if (n == 1) {
 				std::uint64_t remainder{ 0 };
-				auto divisor = _b._block[0];
+				auto divisor = _b.block(0);
 				for (size_t j = m; j > 0; --j) {
-					std::uint64_t dividend = remainder * BASE + _a._block[j - 1];
+					std::uint64_t dividend = remainder * BASE + _a.block(j - 1);
 					std::uint64_t limbQuotient = dividend / divisor;
 					_block[j - 1] = static_cast<BlockType>(limbQuotient);
 					remainder = dividend - limbQuotient * divisor;
@@ -902,7 +966,7 @@ public:
 				std::int64_t signedBorrow = static_cast<int64_t>(normalized_a.block(j + n) - borrow);
 				normalized_a.setblock(j + n, static_cast<BlockType>(signedBorrow));
 
-				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
+//				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
 
 				setblock(static_cast<unsigned>(j), static_cast<BlockType>(qhat));
 				if (signedBorrow < 0) { // subtracted too much, add back
@@ -917,7 +981,7 @@ public:
 					BlockType rectified = static_cast<BlockType>(normalized_a.block(j + n) + carry);
 					normalized_a.setblock(j + n, rectified);
 				}
-				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
+//				std::cout << "   updated a : " << normalized_a.showLimbs() << " : " << normalized_a.showLimbValues() << '\n';
 			}
 			if (sign_q) twosComplement();
 
@@ -932,19 +996,43 @@ public:
 	}
 	// signed integer conversion
 	template<typename SignedInt>
-	constexpr integer& convert_signed(SignedInt rhs) noexcept {
+	constexpr integer& convert_signed(SignedInt rhs) {
 		clear();
-		if (0 == rhs) return *this;
-		constexpr size_t argbits = sizeof(rhs);
+		if (0 == rhs) {
+			if constexpr (NumberType == WholeNumber) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				throw integer_wholenumber_cannot_be_zero();
+#else
+				return *this;
+#endif
+			}
+			else {
+				return *this;
+			}
+		}
+		if constexpr (NumberType == WholeNumber) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+			if (rhs < 0) throw integer_wholenumber_cannot_be_negative();
+#else
+			if (rhs < 0) return *this;
+#endif
+		}
+		if constexpr (NumberType == NaturalNumber) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+			if (rhs < 0) throw integer_naturalnumber_cannot_be_negative();
+#else
+			if (rhs < 0) return *this;
+#endif
+		}
+
 		int64_t v = rhs;
-		unsigned upper = (nbits <= _nbits ? nbits : argbits);
-		for (unsigned i = 0; i < upper && v != 0; ++i) {
+		for (unsigned i = 0; i < nbits && v != 0; ++i) {
 			if (v & 0x1ull) setbit(i);
 			v >>= 1;
 		}
 		if constexpr (nbits > 64) {
 			if (rhs < 0) {	// sign extend if negative
-				for (unsigned i = upper; i < nbits; ++i) {
+				for (unsigned i = 64; i < nbits; ++i) {
 					setbit(i);
 				}
 			}
@@ -953,9 +1041,20 @@ public:
 	}
 	// unsigned integer conversion
 	template<typename UnsignedInt>
-	constexpr integer& convert_unsigned(UnsignedInt rhs) noexcept {
+	constexpr integer& convert_unsigned(UnsignedInt rhs) {
 		clear();
-		if (0 == rhs) return *this;
+		if (0 == rhs) {
+			if constexpr (NumberType == WholeNumber) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				throw integer_wholenumber_cannot_be_zero();
+#else
+				return *this;
+#endif
+			}
+			else {
+				return *this;
+			}
+		}
 		uint64_t v = rhs;
 		constexpr size_t argbits = sizeof(rhs);
 		unsigned upper = (nbits <= _nbits ? nbits : argbits);
@@ -1006,7 +1105,7 @@ protected:
 	template<typename TargetInt>
 	TargetInt to_integer() const noexcept {
 		TargetInt v{ 0 };
-		if (*this == 0) return v;
+		if (iszero()) return v;  // this should only occur for Integer and Natural Numbers
 
 		constexpr unsigned sizeoftarget   = 8 * sizeof(TargetInt);
 		constexpr size_t upperTargetBlock = (sizeoftarget - 1ul) / bitsInBlock;
@@ -1040,7 +1139,7 @@ protected:
 	template<typename TargetInt>
 	TargetInt to_unsigned_integer() const noexcept {
 		TargetInt v{ 0 };
-		if (*this == 0) return v;
+		if (iszero()) return v;  // this should only occur for Integer and Natural Numbers
 
 		constexpr unsigned sizeoftarget = 8 * sizeof(TargetInt);
 		constexpr size_t upperTargetBlock = (sizeoftarget - 1ul) / bitsInBlock;
@@ -1195,7 +1294,6 @@ idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, Number
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
 
-
 	idiv_t<nbits, BlockType, NumberType> divresult;
 
 	// generate the absolute values to do long division
@@ -1209,8 +1307,9 @@ idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, Number
 		Integer b; b.bitcopy(b_negative ? -_b : _b);
 
 		if (a < b) {
+			divresult.quot = 0; // a / b = 0
 			divresult.rem = _a; // a % b = a when a / b = 0
-			return divresult; // a / b = 0 when b > a
+			return divresult;
 		}
 		// initialize the long division
 		integer<nbits + 1, BlockType, NumberType> accumulator = a;
@@ -1220,6 +1319,7 @@ idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, Number
 		int msb_a = findMsb(a);
 		int shift = msb_a - msb_b;
 		subtractand <<= shift;
+		divresult.quot = 0;
 		// long division
 		for (int i = shift; i >= 0; --i) {
 			if (subtractand <= accumulator) {
@@ -1265,7 +1365,6 @@ idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, Number
 			}
 			subtractand >>= 1;
 			//		std::cout << "i = " << i << " subtractand : " << long(subtractand) << '\n';
-
 		}
 		divresult.rem = accumulator;
 	}
@@ -1436,7 +1535,7 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 		for (size_t i = 0; i < nbits / static_cast<size_t>(shift); ++i) {
 			char c = '0' + static_cast<char>(t.block(0) & mask);
 			if (c > '9')
-				c += 'A' - '9' - 1;
+				c += 'A' - '9' - static_cast<char>(1);
 			result[pos--] = c;
 			t >>= static_cast<int>(shift);
 		}
@@ -1486,15 +1585,15 @@ std::string convert_to_string(std::ios_base::fmtflags flags, const integer<nbits
 		}
 
 		result.assign(nbits / 3 + 1u, '0');
-		int pos = static_cast<int>(result.size() - 1);
+		int pos = static_cast<int>(result.size() - 1u);
 		while (!t.iszero()) {
 			Integer t2 = t / block10;
 			Integer r  = t % block10;
 			BlockType v = r.block(0);
 			for (unsigned i = 0; i < digits_in_block10; ++i) {
-				char c = '0' + v % 10;
+				char c = '0' + static_cast<char>(v % 10);
 				v /= 10;
-				result[pos] = c;
+				result[static_cast<size_t>(pos)] = c;
 //				std::cout << "result : " << result << " : pos : " << pos << '\n';
 				if (pos-- == 0) break;
 			}
@@ -1569,26 +1668,35 @@ inline bool operator!=(const integer<nbits, BlockType, NumberType>& lhs, const i
 }
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline bool operator< (const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {
-	bool lhs_is_negative = lhs.sign();
-	bool rhs_is_negative = rhs.sign();
-	if (lhs_is_negative && !rhs_is_negative) return true;
-	if (rhs_is_negative && !lhs_is_negative) return false;
-	// arguments have the same sign
-	integer<nbits, BlockType, NumberType> diff(0);
+	if constexpr (NumberType == WholeNumber || NumberType == NaturalNumber) {
+		for (int i = static_cast<int>(lhs.nrBlocks) - 1; i >= 0; --i) {
+			if (lhs.block(static_cast<unsigned>(i)) == rhs.block(static_cast<unsigned>(i))) continue;
+			if (lhs.block(static_cast<unsigned>(i)) < rhs.block(static_cast<unsigned>(i))) return true;
+		}
+		return false;
+	}
+	else {
+		bool lhs_is_negative = lhs.sign();
+		bool rhs_is_negative = rhs.sign();
+		if (lhs_is_negative && !rhs_is_negative) return true;
+		if (rhs_is_negative && !lhs_is_negative) return false;
+		// arguments have the same sign
+		integer<nbits, BlockType, NumberType> diff;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-	// we need to catch and ignore the exception
-	try {
-		diff = (lhs - rhs);
-	}
-	catch (const integer_overflow& e) {
-		// all good as the arithmetic is modulo
-		const char* p = e.what();
-		if (p) --p;
-	}
+		// we need to catch and ignore the exception
+		try {
+			diff = (lhs - rhs);
+		}
+		catch (const integer_overflow& e) {
+			// all good as the arithmetic is modulo
+			const char* p = e.what();
+			if (p) --p;
+		}
 #else 
-	diff = (lhs - rhs);
+		diff = (lhs - rhs);
 #endif
-	return diff.sign();
+		return diff.sign();
+	}
 }
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 inline bool operator> (const integer<nbits, BlockType, NumberType>& lhs, const integer<nbits, BlockType, NumberType>& rhs) {

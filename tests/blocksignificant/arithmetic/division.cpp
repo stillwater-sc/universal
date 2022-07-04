@@ -1,6 +1,6 @@
 // division.cpp: functional tests for blocksignificant division
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -16,6 +16,7 @@
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
 // enumerate all division cases for an blocksignificant<nbits,BlockType> configuration
+// TODO: fix test failures in VerifyBlockSignificantDivision<blocksignificantConfiguration>
 template<typename blocksignificantConfiguration>
 int VerifyBlockSignificantDivision(bool reportTestCases) {
 	constexpr size_t nbits = blocksignificantConfiguration::nbits;
@@ -111,9 +112,9 @@ try {
 		c.div(a, b);
 	}
 
-	TestMostSignificantBit<27, uint8_t>();
-	TestMostSignificantBit<27, uint16_t>();
-	TestMostSignificantBit<33, uint32_t>();
+//	TestMostSignificantBit<27, uint8_t>();
+//	TestMostSignificantBit<27, uint16_t>();
+//	TestMostSignificantBit<33, uint32_t>();
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4>", "division");
 //	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8>", "division");

@@ -1,14 +1,9 @@
 #pragma once
 // table.hpp: generate a table for an areal<> configuration
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
-#include <iomanip>
-#include <typeinfo>  // for typeid()
-#include <universal/number/areal/areal_impl.hpp>
-#include <universal/number/areal/manipulators.hpp>  // hex_print and the like
 
 namespace sw { namespace universal {
 

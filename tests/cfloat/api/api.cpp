@@ -23,6 +23,26 @@ try {
 	std::string test_suite = "cfloat<> Application Programming Interface tests";
 	int nrOfFailedTestCases = 0;
 
+	// important behavioral traits
+	{
+		using Cfloat = cfloat<8, 2>;
+		bool isTrivial = bool(std::is_trivial<Cfloat>());	
+		static_assert(std::is_trivial<Cfloat>(), "cfloat should be trivial but failed the assertion");
+		std::cout << (isTrivial ? "cfloat is trivial" : "cfloat failed trivial: FAIL") << '\n';
+
+		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Cfloat>());
+		static_assert(std::is_trivially_constructible<Cfloat>(), "cfloat should be trivially constructible but failed the assertion");
+		std::cout << (isTriviallyConstructible ? "cfloat is trivial constructible" : "cfloat failed trivial constructible: FAIL") << '\n';
+		
+		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Cfloat>());
+		static_assert(std::is_trivially_copyable<Cfloat>(), "cfloat should be trivially copyable but failed the assertion");
+		std::cout << (isTriviallyCopyable ? "cfloat is trivially copyable" : "cfloat failed trivially copyable: FAIL") << '\n';
+
+		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<Cfloat>());
+		static_assert(std::is_trivially_copy_assignable<Cfloat>(), "cfloat should be trivially copy-assignable but failed the assertion");
+		std::cout << (isTriviallyCopyAssignable ? "cfloat is trivially copy-assignable" : "cfloat failed trivially copy-assignable: FAIL") << '\n';
+	}
+
 	// default behavior
 	std::cout << "+---------    Default cfloat has no subnormals, no supernormals and is not saturating\n";
 	{
@@ -296,8 +316,30 @@ try {
 		else {
 			std::cout << "cfloat NAN has no sign\n";
 		}
-
 	}
+
+	{
+		using cfloat = sw::universal::cfloat<32, 8, uint32_t, true, false, false>;
+
+		std::cout << "cfloat(INFINITY): " << cfloat(INFINITY) << "\n";
+		std::cout << "cfloat(-INFINITY): " << cfloat(-INFINITY) << "\n";
+
+		std::cout << "cfloat(std::numeric_limits<float>::infinity())  : " << cfloat(std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "cfloat(-std::numeric_limits<float>::infinity()) : " << cfloat(-std::numeric_limits<float>::infinity()) << "\n";
+
+		std::cout << " 2 * std::numeric_limits<float>::infinity()  : " << 2 * std::numeric_limits<float>::infinity() << "\n";
+		std::cout << " 2 * std::numeric_limits<cfloat>::infinity() : " << 2 * std::numeric_limits<cfloat>::infinity() << "\n";
+		std::cout << "-2 * std::numeric_limits<cfloat>::infinity() : " << -2 * std::numeric_limits<cfloat>::infinity() << "\n";
+
+		std::cout << "sw::universal::nextafter(cfloat(0), std::numeric_limits<cfloat>::infinity())  : " << sw::universal::nextafter(cfloat(-0), std::numeric_limits<cfloat>::infinity()) << "\n";
+		std::cout << "std::nextafter(float(0), std::numeric_limits<float>::infinity())              : " << std::nextafter(float(-0), std::numeric_limits<float>::infinity()) << "\n";
+		std::cout << "sw::universal::nextafter(cfloat(0), -std::numeric_limits<cfloat>::infinity()) : " << sw::universal::nextafter(cfloat(0), -std::numeric_limits<cfloat>::infinity()) << "\n";
+		std::cout << "std::nextafter(float(0), -std::numeric_limits<float>::infinity())             : " << std::nextafter(float(0), -std::numeric_limits<float>::infinity()) << "\n";
+
+		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
+		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

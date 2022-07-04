@@ -352,19 +352,20 @@ public:
 	typedef bt BlockType;
 
 	// constructors
-	constexpr cfloat() = default;
+	cfloat() = default;
 
 	// decorated/converting constructors
 	constexpr cfloat(const std::string& stringRep) {
 		assign(stringRep);
 	}
 	/// <summary>
-	/// construct an cfloat from another, block type bt must be the same
+	/// construct a cfloat from another, block type bt must be the same
 	/// </summary>
 	/// <param name="rhs"></param>
 	template<size_t nnbits, size_t ees>
 	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-		// this->assign(rhs);
+		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
+		*this = double(rhs);
 	}
 
 	// specific value constructor
@@ -548,22 +549,25 @@ public:
 		// -inf * inf = -inf
 		// -inf * -inf = inf
 		//	0 * inf = -nan(ind)
+		//	inf * 0 = -nan(ind)
 		bool resultSign = sign() != rhs.sign();
 		if (isinf()) {
-			if (rhs.isinf()) {
-				setsign(resultSign);
-				return *this;
+			if (rhs.iszero()) {
+				setnan(NAN_TYPE_QUIET);
 			}
 			else {
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
+				setsign(resultSign);
 			}
+			return *this;
 		}
-		else {
-			if (rhs.isinf()) {
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
+		if (rhs.isinf()) {
+			if (iszero()) {
+				setnan(NAN_TYPE_QUIET);
 			}
+			else {
+				setinf(resultSign);
+			}
+			return *this;
 		}
 
 		if (iszero() || rhs.iszero()) {			
@@ -678,56 +682,32 @@ public:
 	/// move to the next bit encoding modulo 2^nbits
 	/// </summary>
 	/// <typeparam name="bt"></typeparam>
-	inline cfloat& operator++() {
+	cfloat& operator++() {
 		if constexpr (0 == nrBlocks) {
 			return *this;
 		}
 		else if constexpr (1 == nrBlocks) {
-			if (!sign()) {
-				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
-					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan 
-				}
-				else {
-					++_block[MSU];
-				}
-			}
-			else {
-				if ((_block[MSU] & SIGN_BIT_MASK) == _block[MSU]) { // pattern: 1.00.000 = -0
+			if (sign()) {
+				if (_block[MSU] == (SIGN_BIT_MASK | 1ul)) { // pattern: 1.00.001 = minneg
 					_block[MSU] = 0; // pattern: 0.00.000 = +0 
 				}
 				else {
 					--_block[MSU];
 				}
 			}
-		}
-		else {
-			if (!sign()) {
-				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
-				if (isnanencoding()) {
-					setnan(NAN_TYPE_SIGNALLING);
+			else {
+				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
+					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan : wrap to the other side of the encoding
 				}
 				else {
-					bool carry = true;
-					for (unsigned i = 0; i < MSU; ++i) {
-						if (carry) {
-							if ((_block[i] & storageMask) == storageMask) { // block will overflow
-								_block[i] = 0;
-								carry = true;
-							}
-							else {
-								++_block[i];
-								carry = false;
-							}
-						}
-					}
-					if (carry) {
-						++_block[MSU];
-					}
+					++_block[MSU];
 				}
 			}
-			else {
-				// special case: pattern: 1.00.000 = -0 transitions to pattern: 0.00.000 = +0 
-				if (iszeroencoding()) {
+		}
+		else {
+			if (sign()) {
+				// special case: pattern: 1.00.001 = minneg transitions to pattern: 0.00.000 = +0 
+				if (isminnegencoding()) {
 					setzero();
 				}
 				else {
@@ -751,66 +731,10 @@ public:
 					}
 				}
 			}
-		}
-		return *this;
-	}
-	inline cfloat operator++(int) {
-		cfloat tmp(*this);
-		operator++();
-		return tmp;
-	}
-	inline cfloat& operator--() {
-		if constexpr (0 == nrBlocks) {
-			return *this;
-		}
-		else if constexpr (1 == nrBlocks) {
-			if (!sign()) {
-				if (_block[MSU] == 0) { // pattern: 0.00.000 = 0
-					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.00.000 = -0 
-				}
-				else {
-					--_block[MSU];
-				}
-			}
 			else {
-				if ((_block[MSU] & MSU_MASK) == MSU_MASK) { // pattern: 1.11.111 = snan
-					_block[MSU] &= ~SIGN_BIT_MASK; // pattern: 0.11.111 = qnan 
-				}
-				else {
-					++_block[MSU];
-				}
-			}
-
-		}
-		else {
-			if (!sign()) {
-				// special case: pattern: 0.00.000 = +0 transitions to pattern: 1.00.000 = -0 
-				if (iszeroencoding()) {
-					setsign(true);
-				}
-				else {
-					bool borrow = true;
-					for (unsigned i = 0; i < MSU; ++i) {
-						if (borrow) {
-							if ((_block[i] & storageMask) == 0) { // block will underflow
-								--_block[i];
-								borrow = true;
-							}
-							else {
-								--_block[i];
-								borrow = false;
-							}
-						}
-					}
-					if (borrow) {
-						--_block[MSU];
-					}
-				}
-			}
-			else {
-				// special case: pattern: 1.11.111 = snan transitions to pattern: 0.11.111 = qnan 
+				// special case: pattern: 0.11.111 = nan transitions to pattern: 1.11.111 = snan 
 				if (isnanencoding()) {
-					setsign(false);
+					setnan(NAN_TYPE_SIGNALLING);
 				}
 				else {
 					bool carry = true;
@@ -834,14 +758,84 @@ public:
 		}
 		return *this;
 	}
-	inline cfloat operator--(int) {
+	cfloat operator++(int) {
+		cfloat tmp(*this);
+		operator++();
+		return tmp;
+	}
+	cfloat& operator--() {
+		if constexpr (0 == nrBlocks) {
+			return *this;
+		}
+		else if constexpr (1 == nrBlocks) {
+			if (sign()) {
+				++_block[MSU];
+			}
+			else {
+				// positive range
+				if (_block[MSU] == 0) { // pattern: 0.00.000 = 0
+					_block[MSU] |= SIGN_BIT_MASK | bt(1u); // pattern: 1.00.001 = minneg 
+				}
+				else {
+					--_block[MSU];
+				}
+			}
+		}
+		else {
+			if (sign()) {
+				bool carry = true;
+				for (unsigned i = 0; i < MSU; ++i) {
+					if (carry) {
+						if ((_block[i] & storageMask) == storageMask) { // block will overflow
+							_block[i] = 0;
+							carry = true;
+						}
+						else {
+							++_block[i];
+							carry = false;
+						}
+					}
+				}
+				if (carry) {
+					++_block[MSU];
+				}
+			}
+			else {
+				// special case: pattern: 0.00.000 = +0 transitions to pattern: 1.00.001 = minneg
+				if (iszeroencoding()) {
+					setsign(true);
+					setbit(0, true);
+				}
+				else {
+					bool borrow = true;
+					for (unsigned i = 0; i < MSU; ++i) {
+						if (borrow) {
+							if ((_block[i] & storageMask) == 0) { // block will underflow
+								--_block[i];
+								borrow = true;
+							}
+							else {
+								--_block[i];
+								borrow = false;
+							}
+						}
+					}
+					if (borrow) {
+						--_block[MSU];
+					}
+				}
+			}
+		}
+		return *this;
+	}
+	cfloat operator--(int) {
 		cfloat tmp(*this);
 		operator--();
 		return tmp;
 	}
 
 	// modifiers	
-	inline constexpr void clear() noexcept {
+	constexpr void clear() noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
 		}
@@ -903,8 +897,8 @@ public:
 			}
 		}
 	}
-	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setinf(bool sign = true) noexcept {
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setinf(bool sign = true) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
 		}
@@ -968,7 +962,7 @@ public:
 			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 		}	
 	}
-	inline constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
+	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return;
 		}
@@ -1024,7 +1018,7 @@ public:
 		}
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
-	inline constexpr void setsign(bool sign = true) {
+	constexpr void setsign(bool sign = true) {
 		if (sign) {
 			_block[MSU] |= SIGN_BIT_MASK;
 		}
@@ -1032,7 +1026,7 @@ public:
 			_block[MSU] &= ~SIGN_BIT_MASK;
 		}
 	}
-	inline constexpr bool setexponent(int scale) {
+	constexpr bool setexponent(int scale) {
 		if (scale < MIN_EXP_SUBNORMAL || scale > MAX_EXP) return false; // this scale cannot be represented
 		if constexpr (nbits < 65) {
 			uint32_t exponentBits = static_cast<uint32_t>(scale + EXP_BIAS);
@@ -1057,7 +1051,7 @@ public:
 		}
 		return true;
 	}
-	inline constexpr void setfraction(uint64_t raw_bits) {
+	constexpr void setfraction(uint64_t raw_bits) {
 		// unoptimized as it is not meant to be an end-user API, it is a test API
 		if constexpr (fbits < 65) {
 			uint64_t mask{ 1ull };
@@ -1067,7 +1061,7 @@ public:
 			}
 		}
 	}
-	inline constexpr void setbit(size_t i, bool v = true) noexcept {
+	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -1077,7 +1071,7 @@ public:
 			return;
 		}
 	}
-	inline constexpr cfloat& setbits(uint64_t raw_bits) noexcept {
+	constexpr cfloat& setbits(uint64_t raw_bits) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return *this;
 		}
@@ -1143,12 +1137,12 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;
 	}
-	inline constexpr void setblock(size_t b, bt data) noexcept {
+	constexpr void setblock(size_t b, bt data) noexcept {
 		if (b < nrBlocks) _block[b] = data;
 	}
 	
 	// create specific number system values of interest
-	inline constexpr cfloat& maxpos() noexcept {
+	constexpr cfloat& maxpos() noexcept {
 		if constexpr (hasSupernormals) {
 			// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
 			clear();
@@ -1165,7 +1159,7 @@ public:
 		}
 		return *this;
 	}
-	inline constexpr cfloat& minpos() noexcept {
+	constexpr cfloat& minpos() noexcept {
 		if constexpr (hasSubnormals) {
 			// minimum positive value has this bit pattern: 0-000-00...01, that is, sign = 0, e = 000, f = 00001
 			clear();
@@ -1178,12 +1172,12 @@ public:
 		}
 		return *this;
 	}
-	inline constexpr cfloat& zero() noexcept {
+	constexpr cfloat& zero() noexcept {
 		// the zero value
 		clear();
 		return *this;
 	}
-	inline constexpr cfloat& minneg() noexcept {
+	constexpr cfloat& minneg() noexcept {
 		if constexpr (hasSubnormals) {
 			// minimum negative value has this bit pattern: 1-000-00...01, that is, sign = 1, e = 00, f = 00001
 			clear();
@@ -1198,7 +1192,7 @@ public:
 		}
 		return *this;
 	}
-	inline constexpr cfloat& maxneg() noexcept {
+	constexpr cfloat& maxneg() noexcept {
 		if constexpr (hasSupernormals) {
 			// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1..1, f = 111...101
 			clear();
@@ -1232,7 +1226,7 @@ public:
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
-	inline CONSTEXPRESSION cfloat& assign(const std::string& str) noexcept {
+	CONSTEXPRESSION cfloat& assign(const std::string& str) noexcept {
 		clear();
 		size_t nrChars = str.size();
 		size_t nrBits = 0;
@@ -1312,8 +1306,8 @@ public:
 	}
 
 	// selectors
-	inline constexpr bool sign() const noexcept { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
-	inline constexpr int  scale() const noexcept {
+	constexpr bool sign() const noexcept { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
+	constexpr int  scale() const noexcept {
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_EXP) {
 			e = static_cast<int>((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
@@ -1352,36 +1346,15 @@ public:
 		}
 		return e;
 	}
-	inline constexpr bool isneg() const noexcept {
+	constexpr bool isneg() const noexcept {
 		if (isnan()) return false;
 		return sign(); 
 	}
-	inline constexpr bool ispos() const noexcept { 
+	constexpr bool ispos() const noexcept { 
 		if (isnan()) return false;
 		return !sign(); 
 	}
-	inline constexpr bool iszeroencoding() const noexcept {
-		if constexpr (0 == nrBlocks) {
-			return true;
-		}
-		else if constexpr (1 == nrBlocks) {
-			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-		else if constexpr (2 == nrBlocks) {
-			return (_block[0] == 0) && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-		else if constexpr (3 == nrBlocks) {
-			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-		else if constexpr (4 == nrBlocks) {
-			return (_block[0] == 0) && _block[1] == 0 && _block[2] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-		else {
-			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != 0) return false;
-			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		}
-	}
-	inline constexpr bool iszero() const noexcept {
+	constexpr bool iszero() const noexcept {
 		if constexpr (hasSubnormals) {
 			return iszeroencoding();
 		}
@@ -1391,7 +1364,7 @@ public:
 			if (ebits.iszero()) return true; else return false;
 		}
 	}
-	inline constexpr bool isone() const noexcept {
+	constexpr bool isone() const noexcept {
 		// unbiased exponent = scale = 0, fraction = 0
 		int s = scale();
 		if (s == 0) {
@@ -1401,7 +1374,7 @@ public:
 		}
 		return false;
 	}
-	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
+	constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
 		// the bit pattern encoding of Inf is independent of gradual overflow (supernormal) configuration
 		bool isNegInf = false;
 		bool isPosInf = false;
@@ -1443,7 +1416,69 @@ public:
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
-	inline constexpr bool isnanencoding(int NaNType = NAN_TYPE_EITHER) const noexcept {
+	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
+		if constexpr (hasSupernormals) {
+			return isnanencoding(NaNType);
+		}
+		else {
+			if (issupernormal()) {
+				// all these supernormal encodings are NANs, except for the encoding representing INF
+				bool isNaN = isinf() ? false : true;
+				bool isNegNaN = isNaN && sign();
+				bool isPosNaN = isNaN && !sign();
+				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
+					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
+						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+			}
+			else {
+				return false;
+			}
+		}
+	}
+	constexpr bool iszeroencoding() const noexcept {
+		if constexpr (0 == nrBlocks) {
+			return true;
+		}
+		else if constexpr (1 == nrBlocks) {
+			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+		else if constexpr (2 == nrBlocks) {
+			return (_block[0] == 0) && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+		else if constexpr (3 == nrBlocks) {
+			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+		else if constexpr (4 == nrBlocks) {
+			return (_block[0] == 0) && _block[1] == 0 && _block[2] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != 0) return false;
+			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
+	}
+	constexpr bool isminnegencoding() const noexcept {  // 1.00.00001
+		if constexpr (0 == nrBlocks) {
+			return false;
+		}
+		else if constexpr (1 == nrBlocks) {
+			return (_block[MSU] & (SIGN_BIT_MASK | 1ul));
+		}
+		else if constexpr (2 == nrBlocks) {
+			return ((_block[0] == 1ul) && (_block[1] == SIGN_BIT_MASK));
+		}
+		else if constexpr (3 == nrBlocks) {
+			return ((_block[0] == 1ul) && (_block[1] == 0) && (_block[2] == SIGN_BIT_MASK));
+		}
+		else if constexpr (4 == nrBlocks) {
+			return ((_block[0] == 1ul) && (_block[1] == 0) && (_block[2] == 0) && (_block[3] == SIGN_BIT_MASK));
+		}
+		else {
+			if (_block[0] != 1ul) return false;
+			for (size_t i = 1; i < nrBlocks - 2; ++i) if (_block[i] != 0) return false;
+			return (_block[MSU] == SIGN_BIT_MASK);
+		}
+	}
+	constexpr bool isnanencoding(int NaNType = NAN_TYPE_EITHER) const noexcept {
 		// the bit encoding of NaN is independent of the gradual overflow configuration
 		bool isNaN = true;
 		bool isNegNaN = false;
@@ -1478,46 +1513,27 @@ public:
 			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
 				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
-	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
-		if constexpr (hasSupernormals) {
-			return isnanencoding(NaNType);
-		}
-		else {
-			if (issupernormal()) {
-				// all these supernormal encodings are NANs, except for the encoding representing INF
-				bool isNaN = isinf() ? false : true;
-				bool isNegNaN = isNaN && sign();
-				bool isPosNaN = isNaN && !sign();
-				return (NaNType == NAN_TYPE_EITHER ? (isNaN) :
-					(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
-						(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
-			}
-			else {
-				return false;
-			}
-		}
-	}
 
-	inline constexpr bool isnormal() const noexcept {
+	constexpr bool isnormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
 //		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
 		// isnormal returns true if exponent bits are not all zero or one, false otherwise
 		return !e.iszero() && !e.isallones();
 	}
-	inline constexpr bool isdenormal() const noexcept {
+	constexpr bool isdenormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
 		return e.iszero(); // isdenormal returns true if exponent bits are all zero, false otherwise
 	}
-	inline constexpr bool issupernormal() const noexcept {
+	constexpr bool issupernormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
 		return e.isallones();// issupernormal returns true if exponent bits are all one, false otherwise
 	}
 	
 	template<typename NativeReal>
-	inline constexpr bool inrange(NativeReal v) {
+	constexpr bool inrange(NativeReal v) {
 		// the valid range for this cfloat includes the interval between 
 		// maxpos and the value that would round down to maxpos
 		bool bIsInRange = true;		
@@ -1538,10 +1554,10 @@ public:
 
 		return bIsInRange;
 	}
-	inline constexpr bool test(size_t bitIndex) const noexcept {
+	constexpr bool test(size_t bitIndex) const noexcept {
 		return at(bitIndex);
 	}
-	inline constexpr bool at(size_t bitIndex) const noexcept {
+	constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];
 			bt mask = bt(1ull << (bitIndex % bitsInBlock));
@@ -1549,7 +1565,7 @@ public:
 		}
 		return false;
 	}
-	inline constexpr uint8_t nibble(size_t n) const noexcept {
+	constexpr uint8_t nibble(size_t n) const noexcept {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
@@ -1559,17 +1575,17 @@ public:
 		}
 		return false;
 	}
-	inline constexpr bt block(size_t b) const noexcept {
+	constexpr bt block(size_t b) const noexcept {
 		if (b < nrBlocks) {
 			return _block[b];
 		}
 		return 0;
 	}
 
-	inline constexpr void sign(bool& s) const {
+	constexpr void sign(bool& s) const {
 		s = sign();
 	}
-	inline constexpr void exponent(blockbinary<es, bt>& e) const {
+	constexpr void exponent(blockbinary<es, bt>& e) const {
 		e.clear();
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
@@ -1587,7 +1603,7 @@ public:
 		}
 	}
 	template<size_t targetFractionBits>
-	inline constexpr blockbinary<targetFractionBits, bt>& fraction(blockbinary<targetFractionBits, bt>& f) const {
+	constexpr blockbinary<targetFractionBits, bt>& fraction(blockbinary<targetFractionBits, bt>& f) const {
 		static_assert(targetFractionBits >= fbits, "target blockbinary is too small and can't receive all fraction bits");
 		f.clear();
 		if constexpr (0 == nrBlocks) return f;
@@ -1600,7 +1616,7 @@ public:
 		}
 		return f;
 	}
-	inline constexpr uint64_t fraction_ull() const {
+	constexpr uint64_t fraction_ull() const {
 		uint64_t raw{ 0 };
 		if constexpr (nbits - es - 1ull < 65ull) { // no-op if precondition doesn't hold
 			if constexpr (1 == nrBlocks) {
@@ -1632,7 +1648,7 @@ public:
 		return raw;
 	}
 	// construct the significant from the encoding, returns normalization offset
-	inline constexpr size_t significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
+	constexpr size_t significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
 		size_t shift = 0;
 		if (iszero()) return 0;
 		if constexpr (0 == nrBlocks) return 0;
@@ -1675,7 +1691,7 @@ public:
 		return shift;
 	}
 	template<size_t targetbits>
-	inline constexpr void getbits(blockbinary<targetbits, bt>& b) const {
+	constexpr void getbits(blockbinary<targetbits, bt>& b) const {
 		size_t upperbound = (nbits > targetbits ? targetbits : nbits);
 		b.clear();
 		for (size_t i = 0; i < upperbound; ++i) { b.setbit(i, at(i)); }
@@ -3718,7 +3734,6 @@ template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSuper
 inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
 	return !operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
-
 
 // standard library functions for floating point
 

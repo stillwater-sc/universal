@@ -15,7 +15,6 @@
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/integer_test_suite.hpp>
-
 #include <universal/native/integers.hpp>
 
 /*
@@ -208,10 +207,11 @@ void ExamplePattern() {
 }
 
 namespace sw { namespace universal {
+
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
-	template<size_t nbits, typename BlockType>
+	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
 	int VerifyLimbsDivision(bool reportTestCases) {
-		using Integer = integer<nbits, BlockType>;
+		using Integer = integer<nbits, BlockType, NumberType>;
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 
 		Integer ia, ib, iresult, iref, ir;
@@ -255,23 +255,112 @@ namespace sw { namespace universal {
 					iref = i64a / i64b;
 				}
 				if (iresult != iref) {
-					nrOfFailedTests++;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
+					++nrOfFailedTests;
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", ia, ib, iresult, iref);
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iresult, iref);
 				}
-				if (nrOfFailedTests > 100) return nrOfFailedTests;
+				if (nrOfFailedTests > 4) return nrOfFailedTests;
 			}
-			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
+			//if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
-		if (reportTestCases) std::cout << std::endl;
+		//if (reportTestCases) std::cout << std::endl;
+		return nrOfFailedTests;
+	}
+
+	// enumerate all division cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+	int VerifyIntegerDivision(bool reportTestCases) {
+		using Integer = integer<nbits, BlockType, NumberType>;
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		size_t startValue = 0;
+		if constexpr (NumberType == WholeNumber) {
+			startValue = 1;
+		}
+		Integer ia, ib, iresult, iref;
+
+		int nrOfFailedTests = 0;
+		for (size_t i = startValue; i < NR_INTEGERS; i++) {
+			ia.setbits(i);
+			int64_t i64a = int64_t(ia);
+			for (size_t j = startValue; j < NR_INTEGERS; j++) {
+				ib.setbits(j);
+				int64_t i64b = int64_t(ib);
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					iresult = ia / ib;
+					// std::cout << ia << " / " << ib << " = " << iresult << '\n';
+				}
+				catch (const integer_divide_by_zero& e) {
+					if (ib.iszero()) {
+						// correctly caught the exception
+						continue;
+					}
+					else {
+						std::cerr << "unexpected : " << e.what() << std::endl;
+						nrOfFailedTests++;
+					}
+				}
+				catch (const integer_overflow& e) {
+					std::cerr << e.what() << std::endl;
+					// TODO: how do you validate the overflow?
+				}
+				catch (const integer_encoding_exception& e) {
+					if (i == 0 || j == 0 || ib > ia) {
+						// correctly caught the encoding exception
+						continue;
+					}
+					else {
+						std::cerr << "unexpected : " << e.what() << std::endl;
+						nrOfFailedTests++;
+					}
+				}
+				catch (...) {
+					std::cerr << "unexpected exception" << std::endl;
+					nrOfFailedTests++;
+				}
+#else
+				iresult.reduce(ia, ib, ir);
+#endif
+				if (j == 0) {
+					iref = 0; // or maxneg?
+				}
+				else {
+					iref = i64a / i64b;
+				}
+				if (iresult != iref) {
+					++nrOfFailedTests;
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", ia, ib, iresult, iref);
+				}
+				else {
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iresult, iref);
+				}
+				if (nrOfFailedTests > 4) return nrOfFailedTests;
+			}
+			// if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
+		}
+//		if (reportTestCases) std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 } } // namespace sw::universal
 
+template<size_t nbits, typename BlockType>
+void TestIntegerDivideAndRemainder() {
+	sw::universal::integer<nbits, BlockType> a, b, c, r, iresult;
+	a = 1;
+	b = -1;
+	c = a / b;
+	std::cout << a << " / " << b << " = " << c << '\n';
+
+	iresult.reduce(a, b, r);
+	std::cout << a << " / " << b << " = " << c << " and " << r << '\n';
+}
+
+
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -300,6 +389,50 @@ try {
 #if MANUAL_TESTING
 
 	using BlockType = std::uint8_t;
+
+	{
+		integer<9, uint8_t, IntegerNumber> a, b, c, r, iresult;
+		a = -256;
+		b = 1;
+		c = a / b;
+		r = a % b;
+		std::cout << a << " / " << b << " = " << c << '\n';
+		std::cout << a << " % " << b << " = " << r << '\n';
+
+		iresult.reduce(a, b, r);
+		std::cout << a << " / " << b << " = " << iresult << " and " << r << '\n';
+	}
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision< 9, uint8_t, IntegerNumber >(reportTestCases), "integer< 9, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision< 9, uint16_t, IntegerNumber>(reportTestCases), "integer< 9, uint16_t>", test_tag);
+
+
+	// The long division algorithm assumes that the number system has a zero representation
+	// as it repeated subtracts to zero out msbs. This is creating a problem for
+	// supporting the divide operator for WholeNumber encodings: TODO
+#ifdef WHOLENUMBER_DIVISION
+	{
+		integer<4, uint8_t, WholeNumber> a, b, c, r, iresult;
+		a = 1;
+		b = 1;
+		c = a / b;
+		std::cout << a << " / " << b << " = " << c << '\n';
+
+		iresult.reduce(a, b, r);
+		std::cout << a << " / " << b << " = " << iresult << " and " << r << '\n';
+	}
+
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<4, uint8_t, WholeNumber>(reportTestCases), "integer<4, uint8_t, wholenumber>", test_tag);
+#endif
+
+	{
+		integer<4, uint8_t, IntegerNumber> a, b, c;
+		a = 1;
+		b = 1;
+		c = a / b;
+		std::cout << a << " / " << b << " = " << c << '\n';
+	}
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<4, uint8_t, IntegerNumber>(reportTestCases), "integer<4, uint8_t, integernumber>", test_tag);
 
 	{
 		integer<32, BlockType> a, b, c;
@@ -404,36 +537,57 @@ try {
 		std::cout << to_binary(q) << " : " << q << '\n';
 		std::cout << to_binary(r) << " : " << r << '\n';
 	}
-//	TestFastdiv();
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(reportTestCases), "integer<4, uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint8_t>(reportTestCases), "integer<11, uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<16, uint8_t>(reportTestCases), "integer<16, uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t >(reportTestCases), "integer<16, uint8_t >", test_tag);
+//	TestFastdiv();
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<4, uint8_t, IntegerNumber>(reportTestCases), "integer<4, uint8_t, IntegerNumber>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<11, uint8_t, IntegerNumber>(reportTestCases), "integer<11, uint8_t, IntegerNumber>", test_tag);
+
+//	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<16, uint8_t, IntegerNumber>(reportTestCases), "integer<16, uint8_t, IntegerNumber>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<16, uint16_t, IntegerNumber>(reportTestCases), "integer<16, uint16_t, IntegerNumber>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t>(reportTestCases), "integer<16, uint8_t >", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t, IntegerNumber>(reportTestCases), "integer<4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t, IntegerNumber>(reportTestCases), "integer<6, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t, IntegerNumber>(reportTestCases), "integer<8, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t, WholeNumber>(reportTestCases), "integer<4, uint8_t, wholenumber>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t, WholeNumber>(reportTestCases), "integer<6, uint8_t, wholenumber>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t, WholeNumber>(reportTestCases), "integer<8, uint8_t, wholenumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<4, uint8_t, IntegerNumber>(reportTestCases), "integer<4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<6, uint8_t, IntegerNumber>(reportTestCases), "integer<6, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<8, uint8_t, IntegerNumber>(reportTestCases), "integer<8, uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<4, uint8_t, IntegerNumber>(reportTestCases), "integer<4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<6, uint8_t, IntegerNumber>(reportTestCases), "integer<6, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<8, uint8_t, IntegerNumber>(reportTestCases), "integer<8, uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision< 9, uint8_t, IntegerNumber >(reportTestCases), "integer< 9, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision< 9, uint16_t, IntegerNumber>(reportTestCases), "integer< 9, uint16_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision< 9, uint8_t, IntegerNumber >(reportTestCases), "integer< 9, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision< 9, uint16_t, IntegerNumber>(reportTestCases), "integer< 9, uint16_t>", test_tag);
+
+#ifdef	WHOLENUMBER_DIVISION
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<4, uint8_t, WholeNumber>(reportTestCases), "integer<4, uint8_t, wholenumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<6, uint8_t, WholeNumber>(reportTestCases), "integer<6, uint8_t, wholenumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<8, uint8_t, WholeNumber>(reportTestCases), "integer<8, uint8_t, wholenumber>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<4, uint8_t, WholeNumber>(reportTestCases), "integer<4, uint8_t, wholenumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<6, uint8_t, WholeNumber>(reportTestCases), "integer<6, uint8_t, wholenumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<8, uint8_t, WholeNumber>(reportTestCases), "integer<8, uint8_t, wholenumber>", test_tag);
+#endif // WHOLENUMBER_DIVISION
+
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint8_t >(reportTestCases), "integer< 9, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision< 9, uint16_t>(reportTestCases), "integer< 9, uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint8_t >(reportTestCases), "integer<11, uint8_t >", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(reportTestCases), "integer<11, uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<11, uint8_t,  IntegerNumber >(reportTestCases), "integer<11, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerDivision<11, uint16_t, IntegerNumber>(reportTestCases), "integer<11, uint16_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<11, uint8_t,  IntegerNumber >(reportTestCases), "integer<11, uint8_t >", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<11, uint16_t, IntegerNumber>(reportTestCases), "integer<11, uint16_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint8_t >(reportTestCases), "integer<13, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(reportTestCases), "integer<13, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<13, uint8_t,  IntegerNumber >(reportTestCases), "integer<13, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyLimbsDivision<13, uint16_t, IntegerNumber>(reportTestCases), "integer<13, uint16_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4

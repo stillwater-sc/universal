@@ -4,36 +4,8 @@
 # docker build --target release -t stillwater/universal:release will just build a release container
 
 # BUILDER stage
-FROM gcc:10.3 as builder
+FROM stillwater/universal:gcc10.builder as builder
 LABEL Theodore Omtzigt
-# create a build environment
-RUN apt-get update && apt-get install -y --no-install-recommends -V \
-    apt-utils \
-    build-essential \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# install a specific cmake version
-RUN set -ex \
-  && for key in C6C265324BBEBDC350B513D02D2CEF1034921684; do \
-    gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys "$key" ; \
-  done
-
-ENV CMAKE_DIR v3.23
-ENV CMAKE_VERSION 3.23.1
-
-RUN set -ex \
-  && curl -fsSLO --compressed https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz \
-  && curl -fsSLO https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-SHA-256.txt.asc \
-  && curl -fsSLO https://cmake.org/files/${CMAKE_DIR}/cmake-${CMAKE_VERSION}-SHA-256.txt \
-  && gpg --verify cmake-${CMAKE_VERSION}-SHA-256.txt.asc cmake-${CMAKE_VERSION}-SHA-256.txt \
-  && grep "cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz\$" cmake-${CMAKE_VERSION}-SHA-256.txt | sha256sum -c - \
-  && tar xzf cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz -C /usr/local --strip-components=1 --no-same-owner \
-  && rm -rf cmake-${CMAKE_VERSION}*
-
-# create and use user stillwater
-RUN useradd -ms /bin/bash stillwater
-USER stillwater
 
 # make certain you have a good .dockerignore file installed so that this layer isn't ginormous
 COPY --chown=stillwater:stillwater . /home/stillwater/universal
@@ -48,12 +20,9 @@ WORKDIR /home/stillwater/universal/build
 # full RUN statement to execute full regression test suite
 # default is SANITY regression level: -DBUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
 # or -DBUILD_REGRESSION_STRESS=ON for stress testing
-RUN cmake -DBUILD_ALL=ON .. && make
+RUN cmake -DBUILD_ALL=ON .. && make 
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
-
-# add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Builder Version 3.56.1"]
 
 
 # RELEASE stage
@@ -111,4 +80,5 @@ WORKDIR /home/stillwater/universal/build
 
 # the command 'make test' is run as part of the CI test pipeline of this release container
 
-CMD ["echo", "Universal Numbers Library Version 3.56.1"]
+ENV CONTAINER_ID "Universal Numbers Library Container"
+CMD ["/usr/bin/env", "bash"]

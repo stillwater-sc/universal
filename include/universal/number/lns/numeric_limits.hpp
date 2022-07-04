@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-
 namespace std {
 
 template <size_t nbits, size_t rbits, typename bt> 
@@ -14,15 +13,15 @@ public:
 	using LNS = sw::universal::lns<nbits, rbits, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr LNS  min() { // return minimum value
-		LNS lminpos;
+		LNS lminpos(0);
 		return sw::universal::minpos<nbits, rbits, bt>(lminpos);
 	} 
 	static constexpr LNS  max() { // return maximum value
-		LNS lmaxpos;
+		LNS lmaxpos(0);
 		return sw::universal::maxpos<nbits, rbits, bt>(lmaxpos);
 	} 
 	static constexpr LNS  lowest() { // return most negative value
-		LNS lmaxneg;
+		LNS lmaxneg(0);
 		return sw::universal::maxneg<nbits, rbits, bt>(lmaxneg);
 	} 
 	static constexpr LNS  epsilon() { // return smallest effective increment from 1.0

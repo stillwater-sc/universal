@@ -48,4 +48,36 @@ std::string dynamic_range(const lns<nbits, rbits, bt>& a) {
 }
 */
 
+	template<size_t nbits, size_t rbits, typename BlockType>
+	std::string color_print(const lns<nbits, rbits, BlockType>& l, bool nibbleMarker = false) {
+
+		std::stringstream s;
+
+		Color red(ColorCode::FG_RED);
+		Color yellow(ColorCode::FG_YELLOW);
+		Color blue(ColorCode::FG_BLUE);
+		Color magenta(ColorCode::FG_MAGENTA);
+		Color cyan(ColorCode::FG_CYAN);
+		Color white(ColorCode::FG_WHITE);
+		Color def(ColorCode::FG_DEFAULT);
+		s << red << (l.sign() ? "1" : "0");
+	
+		// integer bits
+		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
+			s << cyan << (l.at(static_cast<size_t>(i)) ? '1' : '0');
+			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
+		}
+
+		// fraction bits
+		if constexpr (rbits > 0) {
+			s << magenta << '.';
+			for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+				s << magenta << (l.at(static_cast<size_t>(i)) ? '1' : '0');
+				if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
+			}
+		}
+		s << def;
+		return s.str();
+	}
+
 }} // namespace sw::universal

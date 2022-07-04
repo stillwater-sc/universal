@@ -124,10 +124,20 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion< 8, uint8_t, IntegerNumberType::WholeNumber>(reportTestCases), "integer< 8, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<16, uint8_t, IntegerNumberType::WholeNumber>(reportTestCases), "integer<16, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<32, uint8_t, IntegerNumberType::WholeNumber>(reportTestCases), "integer<32, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<64, uint8_t, IntegerNumberType::WholeNumber>(reportTestCases), "integer<64, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion< 8, uint8_t, IntegerNumberType::WholeNumber>(reportTestCases), "integer< 8, uint8_t, WholeNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<16, uint8_t, IntegerNumberType::WholeNumber>(reportTestCases), "integer<16, uint8_t, WholeNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<32, uint8_t, IntegerNumberType::WholeNumber>(reportTestCases), "integer<32, uint8_t, WholeNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<64, uint8_t, IntegerNumberType::WholeNumber>(reportTestCases), "integer<64, uint8_t, WholeNumber>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion< 8, uint8_t, IntegerNumberType::NaturalNumber>(reportTestCases), "integer< 8, uint8_t, NaturalNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<16, uint8_t, IntegerNumberType::NaturalNumber>(reportTestCases), "integer<16, uint8_t, NaturalNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<32, uint8_t, IntegerNumberType::NaturalNumber>(reportTestCases), "integer<32, uint8_t, NaturalNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<64, uint8_t, IntegerNumberType::NaturalNumber>(reportTestCases), "integer<64, uint8_t, NaturalNumber>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion< 8, uint8_t, IntegerNumberType::IntegerNumber>(reportTestCases), "integer< 8, uint8_t, IntegerNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<16, uint8_t, IntegerNumberType::IntegerNumber>(reportTestCases), "integer<16, uint8_t, IntegerNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<32, uint8_t, IntegerNumberType::IntegerNumber>(reportTestCases), "integer<32, uint8_t, IntegerNumber>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyToIntegerConversion<64, uint8_t, IntegerNumberType::IntegerNumber>(reportTestCases), "integer<64, uint8_t, IntegerNumber>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -35,6 +35,9 @@ namespace sw { namespace universal {
 		Fixed x_next;
 		Fixed x_n = half * v;
 		Fixed diff;
+		std::cout << "v    " << v << '\n';
+		std::cout << "x_n  " << x_n << '\n';
+		std::cout << "half " << half << '\n';
 		do {
 			x_next = (x_n + v / x_n) * half;
 			diff = x_next - x_n;

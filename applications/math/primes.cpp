@@ -191,6 +191,9 @@ try {
 	long l2 = 512;
 	std::cout << "gcd of " << l1 << " and " << l2 << " = " << sw::universal::gcd(l1, l2) << '\n';
 	std::cout << "gcd of " << l1 << " and " << l2 << " = " << std::gcd(l1, l2) << '\n';
+
+	Integer a(l1), b(l2);
+	std::cout << "gcd of " << a  << " and " << b  << " = " << sw::universal::gcd(a, b) << '\n';
 #endif
 
 #if REGRESSION_LEVEL_2

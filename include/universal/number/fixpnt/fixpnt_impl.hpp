@@ -84,15 +84,20 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 	if (i.sign()) { // special case handling
 		v = twosComplement(v);
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
-			return long(nbits - rbits - 1);
+			if constexpr (nbits == rbits) {
+				return 0;
+			}
+			else {
+				return static_cast<int>(nbits) - static_cast<int>(rbits) - 1;
+			}
 		}
 	}
 	// calculate scale
-	long scale = 0;
+	int scale = 0;
 	if (!v.iszero()) {
-		for (int bitIndex = nbits - 2; bitIndex >= 0; --bitIndex) {
-			if (v.test(bitIndex)) {
-				scale = bitIndex - rbits;
+		for (int bitIndex = static_cast<int>(nbits) - 2; bitIndex >= 0; --bitIndex) {
+			if (v.test(static_cast<size_t>(bitIndex))) {
+				scale = bitIndex - static_cast<int>(rbits);
 				break;
 			}
 		}
@@ -213,18 +218,18 @@ public:
 	}
 
 	// initializers for native types
-	constexpr fixpnt(signed char initial_value)        noexcept { *this = initial_value; }
-	constexpr fixpnt(short initial_value)              noexcept { *this = initial_value; }
-	constexpr fixpnt(int initial_value)                noexcept { *this = initial_value; }
-	constexpr fixpnt(long initial_value)               noexcept { *this = initial_value; }
-	constexpr fixpnt(long long initial_value)          noexcept { *this = initial_value; }
-	constexpr fixpnt(char initial_value)               noexcept { *this = initial_value; }
-	constexpr fixpnt(unsigned short initial_value)     noexcept { *this = initial_value; }
-	constexpr fixpnt(unsigned int initial_value)       noexcept { *this = initial_value; }
-	constexpr fixpnt(unsigned long initial_value)      noexcept { *this = initial_value; }
-	constexpr fixpnt(unsigned long long initial_value) noexcept { *this = initial_value; }
-	CONSTEXPRESSION fixpnt(float initial_value)        noexcept { *this = initial_value; }
-	CONSTEXPRESSION fixpnt(double initial_value)       noexcept { *this = initial_value; }
+	constexpr fixpnt(signed char initial_value)        noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(short initial_value)              noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(int initial_value)                noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(long initial_value)               noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(long long initial_value)          noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(char initial_value)               noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(unsigned short initial_value)     noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(unsigned int initial_value)       noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(unsigned long initial_value)      noexcept : fixpnt{convert(initial_value)} {}
+	constexpr fixpnt(unsigned long long initial_value) noexcept : fixpnt{convert(initial_value)} {}
+	CONSTEXPRESSION fixpnt(float initial_value)        noexcept : fixpnt{convert(initial_value)} {}
+	CONSTEXPRESSION fixpnt(double initial_value)       noexcept : fixpnt{convert(initial_value)} {}
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -233,23 +238,23 @@ public:
 	// simpler interface for now, using at(i) and set(i)/reset(i)
 
 	// assignment operators for native types
-	constexpr fixpnt& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
-	constexpr fixpnt& operator=(short rhs)              noexcept { return convert_signed(rhs); }
-	constexpr fixpnt& operator=(int rhs)                noexcept { return convert_signed(rhs); }
-	constexpr fixpnt& operator=(long rhs)               noexcept { return convert_signed(rhs); }
-	constexpr fixpnt& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	constexpr fixpnt& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
-	constexpr fixpnt& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
-	constexpr fixpnt& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
-	constexpr fixpnt& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
-	constexpr fixpnt& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
-	CONSTEXPRESSION fixpnt& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
-	CONSTEXPRESSION fixpnt& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
+	constexpr fixpnt& operator=(signed char rhs)        noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(short rhs)              noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(int rhs)                noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(long rhs)               noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(long long rhs)          noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(char rhs)               noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(unsigned short rhs)     noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(unsigned int rhs)       noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(unsigned long rhs)      noexcept { return *this = convert(rhs); }
+	constexpr fixpnt& operator=(unsigned long long rhs) noexcept { return *this = convert(rhs); }
+	CONSTEXPRESSION fixpnt& operator=(float rhs)        noexcept { return *this = convert(rhs); }
+	CONSTEXPRESSION fixpnt& operator=(double rhs)       noexcept { return *this = convert(rhs); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	CONSTEXPRESSION fixpnt(long double initial_value)   noexcept { *this = initial_value; }
-	CONSTEXPRESSION fixpnt& operator=(long double rhs)  noexcept { return convert_ieee754(rhs);  }
+	CONSTEXPRESSION fixpnt(long double initial_value)   noexcept : fixpnt{ convert(initial_value) } {}
+	CONSTEXPRESSION fixpnt& operator=(long double rhs)  noexcept { return convert(rhs);  }
 	CONSTEXPRESSION explicit operator long double() const noexcept { return to_native<long double>(); }
 #endif
 
@@ -636,143 +641,136 @@ protected:
 	// 
 	// conversion helpers
 
-	// convert a signed integer into a fixpnt
-	// TODO: this method does not protect against being called with an unsigned integer
-	template<typename SignedInt>
-	constexpr fixpnt& convert_signed(SignedInt v) {
-		clear();
-		if (0 == v) return *this;
-		if constexpr (arithmetic == Saturating) { 
-			constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			// check if we are in the representable range
-			if (v >= static_cast<SignedInt>(maxpos)) { return *this = maxpos; }
-			if (v <= static_cast<SignedInt>(maxneg)) { return *this = maxneg; }
-		}
-		constexpr size_t sizeofInteger = 8 * sizeof(v);
-		if (v == -v) {
-			// v is at maxneg 0x10...000
-			if constexpr (sizeofInteger <= (nbits - rbits)) {
-				setbit(sizeofInteger + rbits - 1);
+	// convert arithmetic types into a fixpnt
+	template<typename Arith>
+	static constexpr fixpnt convert(Arith v) {
+		static_assert(std::is_arithmetic_v<Arith>);
+		fixpnt f;
+		f.clear();
+		if constexpr (std::is_integral_v<Arith> && std::is_signed_v<Arith>) {
+			if (0 == v) return f;
+			if constexpr (arithmetic == Saturating) {
+				constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+				// check if we are in the representable range
+				if (v >= static_cast<Arith>(maxpos)) { return maxpos; }
+				if (v <= static_cast<Arith>(maxneg)) { return maxneg; }
+			}
+			constexpr size_t sizeofInteger = 8 * sizeof(v);
+			if (v == -v) {
+				// v is at maxneg 0x10...000
+				if constexpr (sizeofInteger <= (nbits - rbits)) {
+					f.setbit(sizeofInteger + rbits - 1);
+				}
+			}
+			else {
+				bool negative = (v < 0 ? true : false);
+				v = (v < 0 ? -v : v);
+				unsigned upper = (sizeofInteger < (nbits - rbits)) ? sizeofInteger : (nbits - rbits);
+				for (unsigned i = 0; i < upper; ++i) {
+					if (v & 0x1) f.setbit(i + rbits);
+					v >>= 1;
+				}
+				if (negative) f.twosComplement();
 			}
 		}
-		else {
-			bool negative = (v < 0 ? true : false);
-			v = (v < 0 ? -v : v);
-			unsigned upper = (sizeofInteger < (nbits - rbits)) ? sizeofInteger : (nbits - rbits);
-			for (unsigned i = 0; i < upper; ++i) {
-				if (v & 0x1) setbit(i + rbits);
+		else if constexpr (std::is_unsigned_v<Arith>) {
+			if (0 == v) return f;
+			if constexpr (arithmetic == Saturating) {
+				constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+				// check if we are in the representable range
+				if (v >= static_cast<Arith>(maxpos)) { return maxpos; }
+				if (v <= static_cast<Arith>(maxneg)) { return maxneg; }
+			}
+			constexpr uint64_t mask = 0x1;
+			unsigned upper = (nbits - rbits) <= 64 ? nbits : 64;
+			for (unsigned i = 0; i < upper - rbits && v > 0; ++i) {
+				if (v & mask) f.setbit(i + rbits); // we have no fractional part in v
 				v >>= 1;
 			}
-			if (negative) twosComplement();
 		}
-		return *this;
-	}
-	// convert an unsigned integer into a fixpnt
-	// TODO: this method does not protect against being called with an signed integer
-	template<typename UnsignedInt>
-	constexpr fixpnt& convert_unsigned(UnsignedInt v) {
-		clear();
-		if (0 == v) return *this;
-		if constexpr (arithmetic == Saturating) {	
-			constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			// check if we are in the representable range
-			if (v >= static_cast<UnsignedInt>(maxpos)) { return *this = maxpos; }
-			if (v <= static_cast<UnsignedInt>(maxneg)) { return *this = maxneg; }
-		}
-		constexpr uint64_t mask = 0x1;
-		unsigned upper = (nbits - rbits) <= 64 ? nbits : 64;
-		for (unsigned i = 0; i < upper - rbits && v > 0; ++i) {
-			if (v & mask) setbit(i + rbits); // we have no fractional part in v
-			v >>= 1;
-		}
-		return *this;
-	}
-
-	template<typename Real>
-	CONSTEXPRESSION fixpnt& convert_ieee754(Real rhs) {
-		clear();
-		if (rhs == 0.0) return *this;
-		if constexpr (arithmetic == Saturating) {	// check if the value is in the representable range
-			fixpnt<nbits, rbits, arithmetic, bt> a;
-			a.maxpos();
-			if (rhs >= float(a)) { return *this = a; } // set to max pos value
-			a.maxneg();
-			if (rhs <= float(a)) { return *this = a; } // set to max neg value
-		}
-
-		bool s{ false };
-		uint64_t unbiasedExponent{ 0 };
-		uint64_t raw{ 0 };
-		extractFields(rhs, s, unbiasedExponent, raw); // use native conversion
-		if (unbiasedExponent > 0) raw |= (1ull << ieee754_parameter<Real>::fbits);
-		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
-
-		// our fixed-point has its radixPoint at rbits
-		int shiftRight = radixPoint - int(rbits);
-		if (shiftRight > 0) {
-			// we need to round the raw bits
-			// collect guard, round, and sticky bits
-			// this same logic will work for the case where 
-			// we only have a guard bit and no round and/or sticky bits
-			// because the mask logic will make round and sticky both 0
-			// so no need to special case it
-			uint64_t mask = (1ull << (shiftRight - 1));
-			bool guard = (mask & raw);
-			mask >>= 1;
-			bool round = (mask & raw);
-			if (shiftRight > 1) {
-				mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
-				mask = ~mask;
+		else if constexpr (std::is_floating_point_v<Arith>) {
+			if (v == 0.0) return f;
+			if constexpr (arithmetic == Saturating) {	// check if the value is in the representable range
+				fixpnt<nbits, rbits, arithmetic, bt> a;
+				a.maxpos();
+				if (v >= float(a)) { return a; } // set to max pos value
+				a.maxneg();
+				if (v <= float(a)) { return a; } // set to max neg value
 			}
-			else {
-				mask = 0;
-			}
-			bool sticky = (mask & raw);
 
-			raw >>= shiftRight;  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1ul);
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			//       x     1       1     0        up
-			//       x     1       1     1        up
-			if (guard) {
-				if (lsb && (!round && !sticky)) ++raw; // round to even
-				if (round || sticky) ++raw;
-			}
-			raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
-			setbits(raw);
-		}
-		else {
-			int shiftLeft = -shiftRight;
-			if (shiftLeft < (64 - ieee754_parameter<Real>::fbits)) {  // what is the distance between the MSB and 64?
-				// no need to round, just shift the bits in place
-				raw <<= shiftLeft;
-				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
-				setbits(raw);
-			}
-			else {
-				// we need to project the bits we have on the fixpnt
-				for (size_t i = 0; i < ieee754_parameter<Real>::fbits + 1; ++i) {
-					if (raw & 0x01) {
-						setbit(i + shiftLeft);
-					}
-					raw >>= 1;
+			bool s{ false };
+			uint64_t unbiasedExponent{ 0 };
+			uint64_t raw{ 0 };
+			extractFields(v, s, unbiasedExponent, raw); // use native conversion
+			if (unbiasedExponent > 0) raw |= (1ull << ieee754_parameter<Arith>::fbits);
+			int radixPoint = ieee754_parameter<Arith>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Arith>::bias);
+
+			// our fixed-point has its radixPoint at rbits
+			int shiftRight = radixPoint - int(rbits);
+			if (shiftRight > 0) {
+				// we need to round the raw bits
+				// collect guard, round, and sticky bits
+				// this same logic will work for the case where
+				// we only have a guard bit and no round and/or sticky bits
+				// because the mask logic will make round and sticky both 0
+				// so no need to special case it
+				uint64_t mask = (1ull << (shiftRight - 1));
+				bool guard = (mask & raw);
+				mask >>= 1;
+				bool round = (mask & raw);
+				if (shiftRight > 1) {
+					mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
+					mask = ~mask;
 				}
-				if (s) twosComplement();
+				else {
+					mask = 0;
+				}
+				bool sticky = (mask & raw);
+
+				raw >>= shiftRight;  // shift out the bits we are rounding away
+				bool lsb = (raw & 0x1ul);
+				//  ... lsb | guard  round sticky   round
+				//       x     0       x     x       down
+				//       0     1       0     0       down  round to even
+				//       1     1       0     0        up   round to even
+				//       x     1       0     1        up
+				//       x     1       1     0        up
+				//       x     1       1     1        up
+				if (guard) {
+					if (lsb && (!round && !sticky)) ++raw; // round to even
+					if (round || sticky) ++raw;
+				}
+				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
+				f.setbits(raw);
+			}
+			else {
+				int shiftLeft = -shiftRight;
+				if (shiftLeft < (64 - ieee754_parameter<Arith>::fbits)) {  // what is the distance between the MSB and 64?
+					// no need to round, just shift the bits in place
+					raw <<= shiftLeft;
+					raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
+					f.setbits(raw);
+				}
+				else {
+					// we need to project the bits we have on the fixpnt
+					for (size_t i = 0; i < ieee754_parameter<Arith>::fbits + 1; ++i) {
+						if (raw & 0x01) {
+							f.setbit(i + shiftLeft);
+						}
+						raw >>= 1;
+					}
+					if (s) f.twosComplement();
+				}
 			}
 		}
-
-		return *this;
+		return f;
 	}
 
 	// conversion functions
 
 	// from fixed-point to native signed integer
 	template<typename NativeInt>
-	typename std::enable_if< std::is_integral<NativeInt>::value && std::is_signed<NativeInt>::value,
+	typename std::enable_if< std::is_integral_v<NativeInt> && std::is_signed_v<NativeInt>,
 		NativeInt>::type to_signed() const {
 		if constexpr (nbits <= rbits) return 0;
 		constexpr unsigned sizeOfInteger = 8 * sizeof(NativeInt);
@@ -794,7 +792,7 @@ protected:
 	
 	// from fixed-point to native unsigned integer
 	template<typename NativeInt>
-	typename std::enable_if< std::is_integral<NativeInt>::value&& std::is_unsigned<NativeInt>::value,
+	typename std::enable_if< std::is_unsigned_v<NativeInt>,
 		NativeInt>::type to_unsigned() const {
 		return NativeInt(_block.to_long_long());
 	}
@@ -1998,20 +1996,25 @@ inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithme
 // to_binary generates a binary presentation of the fixed-point number
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number, bool nibbleMarker = false) {
-	std::stringstream sstr;
-	sstr << "0b";
-	for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(rbits); --i) {
-		sstr << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-		if (nibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) sstr << '\'';
-	}
-	sstr << '.';
-	if constexpr (rbits > 0) {
-		for (int i = int(rbits) - 1; i >= 0; --i) {
-			sstr << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-			if (nibbleMarker && (rbits - i) % 4 == 0 && i != 0) sstr << '\'';
+	std::stringstream s;
+	s << "0b";
+	if constexpr (nbits > rbits) {
+		for (int i = static_cast<int>(nbits) - 1; i >= static_cast<int>(rbits); --i) {
+			s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if (nibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) s << '\'';
 		}
 	}
-	return sstr.str();
+	else {
+		s << '0';
+	}
+	s << '.';
+	if constexpr (rbits > 0) {
+		for (int i = int(rbits) - 1; i >= 0; --i) {
+			s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if (nibbleMarker && (rbits - i) % 4 == 0 && i != 0) s << '\'';
+		}
+	}
+	return s.str();
 }
 
 // to_triple generates a triple (sign,scale,fraction) representation of the fixed-point number

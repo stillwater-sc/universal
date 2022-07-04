@@ -1,6 +1,6 @@
 // double-double.cpp: experiments with double-double floating-point arithmetic
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,6 +12,7 @@
 #include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
 #include <universal/common/numeric_limits_utility.hpp>
 #include <universal/verification/performance_runner.hpp>
+#include <universal/verification/test_suite.hpp>
 
 // select the number systems we would like to compare
 #include <universal/number/fixpnt/fixpnt.hpp>
@@ -34,9 +35,24 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "Experiments with double-double floating-point arithmetic\n";
+	std::string test_suite  = "experiment with double-double floating-point arithmetic";
+	std::string test_tag    = "double-double";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	std::streamsize precision = std::cout.precision();
+	
+	{
+		using lns = lns<16, 10, std::uint16_t>;
+
+		lns a, b, c;
+		a = 0.5;
+		b = 2.0;
+		c = a * b;
+		ReportValues(a, "*", b, c);
+	}
 
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;
