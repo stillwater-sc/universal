@@ -65,6 +65,21 @@ try {
 		std::cout << (isTriviallyCopyAssignable ? "lns is trivially copy-assignable" : "lns failed trivially copy-assignable: FAIL") << '\n';
 	}
 
+	{
+		using Real = lns<8, 2, std::uint8_t>;
+		Real a, b, c;
+		a = 1.0f;
+		b = 1.0f;
+		c = a + b;
+		ReportValues(a, "+", b, c);
+		c = a - b;
+		ReportValues(a, "-", b, c);
+		c = a * b;
+		ReportValues(a, "*", b, c);
+		c = a / b;
+		ReportValues(a, "/", b, c);
+
+	}
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug

@@ -322,14 +322,12 @@ protected:
 	/// convertion routines from native types
 
 	template<typename SignedInt>
-	constexpr lns& convert_signed(SignedInt v) {
-		clear();
-		return *this;
+	CONSTEXPRESSION lns& convert_signed(SignedInt v) {
+		return convert_ieee754(double(v));
 	}
 	template<typename UnsignedInt>
-	constexpr lns& convert_unsigned(UnsignedInt v) {
-		clear();
-		return *this;
+	CONSTEXPRESSION lns& convert_unsigned(UnsignedInt v) {
+		return convert_ieee754(double(v));
 	}
 	template<typename Real>
 	CONSTEXPRESSION lns& convert_ieee754(Real v) {
@@ -605,30 +603,90 @@ template<size_t nnbits, size_t rrbits, typename nbt>
 inline bool operator>=(const lns<nnbits, rrbits, nbt>& lhs, double rhs) { return !operator< (lhs, rhs); }
 
 // lns - lns binary arithmetic operators
-// BINARY ADDITION
+
 template<size_t nbits, size_t rbits, typename bt>
 inline lns<nbits, rbits, bt> operator+(const lns<nbits, rbits, bt>& lhs, const lns<nbits, rbits, bt>& rhs) {
 	lns<nbits, rbits, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-// BINARY SUBTRACTION
+
 template<size_t nbits, size_t rbits, typename bt>
 inline lns<nbits, rbits, bt> operator-(const lns<nbits, rbits, bt>& lhs, const lns<nbits, rbits, bt>& rhs) {
 	lns<nbits, rbits, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-// BINARY MULTIPLICATION
+
 template<size_t nbits, size_t rbits, typename bt>
 inline lns<nbits, rbits, bt> operator*(const lns<nbits, rbits, bt>& lhs, const lns<nbits, rbits, bt>& rhs) {
 	lns<nbits, rbits, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-// BINARY DIVISION
+
 template<size_t nbits, size_t rbits, typename bt>
 inline lns<nbits, rbits, bt> operator/(const lns<nbits, rbits, bt>& lhs, const lns<nbits, rbits, bt>& rhs) {
+	lns<nbits, rbits, bt> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
+}
+
+// lns - literal binary arithmetic operators
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator+(const lns<nbits, rbits, bt>& lhs, double rhs) {
+	lns<nbits, rbits, bt> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator-(const lns<nbits, rbits, bt>& lhs, double rhs) {
+	lns<nbits, rbits, bt> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator*(const lns<nbits, rbits, bt>& lhs, double rhs) {
+	lns<nbits, rbits, bt> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator/(const lns<nbits, rbits, bt>& lhs, double rhs) {
+	lns<nbits, rbits, bt> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
+}
+
+// literal - lns binary arithmetic operators
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator+(double lhs, const lns<nbits, rbits, bt>& rhs) {
+	lns<nbits, rbits, bt> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator-(double lhs, const lns<nbits, rbits, bt>& rhs) {
+	lns<nbits, rbits, bt> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator*(double lhs, const lns<nbits, rbits, bt>& rhs) {
+	lns<nbits, rbits, bt> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator/(double lhs, const lns<nbits, rbits, bt>& rhs) {
 	lns<nbits, rbits, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
