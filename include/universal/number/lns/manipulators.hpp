@@ -33,20 +33,18 @@ namespace sw { namespace universal {
 		return type_tag(l);
 	}
 
-/* TBD
-// report dynamic range of a type, specialized for lns
-template<size_t nbits, size_t rbits, typename bt>
-std::string dynamic_range(const lns<nbits, rbits, bt>& a) {
-	std::stringstream s;
-	lns<nbits, bt> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-	s << type_tag(a) << ": ";
-	s << "minpos scale " << std::setw(10) << d.scale() << "     ";
-	s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
-	s << "[" << b << " ... " << c << ", -0, +0, " << d << " ... " << e << "]\n";
-	s << "[" << to_binary(b) << " ... " << to_binary(c) << ", -0, +0, " << to_binary(d) << " ... " << to_binary(e) << "]\n";
-	return s.str();
-}
-*/
+	// report dynamic range of a type, specialized for lns
+	template<size_t nbits, size_t rbits, typename bt>
+	std::string dynamic_range(const lns<nbits, rbits, bt>& a) {
+		std::stringstream s;
+		lns<nbits, rbits, bt> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		s << type_tag(a) << ": ";
+		s << "minpos scale " << std::setw(10) << d.scale() << "     ";
+		s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
+		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
+		s << "[" << to_binary(b) << " ... " << to_binary(c) << ", 0, " << to_binary(d) << " ... " << to_binary(e) << "]\n";
+		return s.str();
+	}
 
 	template<size_t nbits, size_t rbits, typename BlockType>
 	std::string color_print(const lns<nbits, rbits, BlockType>& l, bool nibbleMarker = false) {

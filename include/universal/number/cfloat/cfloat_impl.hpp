@@ -1210,7 +1210,7 @@ public:
 	/// 1's complement of the encoding
 	/// </summary>
 	/// <returns>reference to this cfloat object</returns>
-	inline constexpr cfloat& flip() noexcept { // in-place one's complement
+	constexpr cfloat& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}

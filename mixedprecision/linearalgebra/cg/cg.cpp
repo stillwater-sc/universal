@@ -1,7 +1,7 @@
-// cg_mvfdp_cmpfdp.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver using Fused Dot Products
+// cg.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver using Fused Dot Products
 // using matrix-vector fused dot product operator, and compensation fused dot product operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 // Authors: Theodore Omtzigt
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.

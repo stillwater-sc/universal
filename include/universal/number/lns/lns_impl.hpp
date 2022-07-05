@@ -74,6 +74,45 @@ public:
 	/// trivial constructor
 	lns() = default;
 
+	// decorated/converting constructors
+	constexpr lns(const std::string& stringRep) {
+		assign(stringRep);
+	}
+
+	// specific value constructor
+	constexpr lns(const SpecificValue code) noexcept
+		: _block{ 0 } {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::zero:
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		case SpecificValue::infpos:
+			setinf(false);
+			break;
+		case SpecificValue::infneg:
+			setinf(true);
+			break;
+		case SpecificValue::nar: // approximation as lns don't have a NaR
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+			setnan();
+			break;
+		}
+	}
+
 	constexpr lns(signed char initial_value)        noexcept { *this = initial_value; }
 	constexpr lns(short initial_value)              noexcept { *this = initial_value; }
 	constexpr lns(int initial_value)                noexcept { *this = initial_value; }
@@ -183,6 +222,7 @@ public:
 	constexpr void clear()                         noexcept { _block.clear(); }
 	constexpr void setzero()                       noexcept { _block.clear(); setbit(nbits - 2, true); }
 	constexpr void setnan()                        noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
+	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
@@ -207,6 +247,44 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
 	
+	// create specific number system values of interest
+	constexpr lns& maxpos() noexcept {
+		// maximum positive value has this bit pattern: 0-01..1-111...111, that is, sign = 0, integer = 01..11, fraction = 11..11
+		clear();
+		flip();
+		setbit(nbits - 1ull, false); // sign = 0
+		setbit(nbits - 2ull, false); // msb  = 0
+		return *this;
+	}
+	constexpr lns& minpos() noexcept {
+		// minimum positive value has this bit pattern: 0-100-00...01, that is, sign = 0, integer = 10..00, fraction = 00..01
+		clear();
+		setbit(nbits - 2, true);    // msb  = 1
+		setbit(0, true);            // lsb  = 1
+		return *this;
+	}
+	constexpr lns& zero() noexcept {
+		// the zero value has this bit pattern: 0-100..00-00..000, sign = 0, msb = 1, rest 0
+		clear(); 
+		setbit(nbits - 2, true);    // msb = 1
+		return *this;
+	}
+	constexpr lns& minneg() noexcept {
+		// minimum negative value has this bit pattern: 1-100-00...01, that is, sign = 1, integer = 10..00, fraction = 00..01
+		clear();
+		setbit(nbits - 1ull, true); // sign = 1
+		setbit(nbits - 2, true);    // msb  = 1
+		setbit(0, true);            // lsb  = 1
+		return *this;
+	}
+	constexpr lns& maxneg() noexcept {
+		// maximum negative value has this bit pattern: 1-01..1-11..11, that is, sign = 1, integer = 01..1, fraction = 11..11
+		clear();
+		flip();
+		setbit(nbits - 2ull, false); // msb  = 0
+		return *this;
+	}
+
 	// selectors
 	constexpr bool iszero() const noexcept { // special encoding: 0.1000.0000
 		if constexpr (nrBlocks == 1) {
@@ -317,6 +395,29 @@ public:
 	}
 
 protected:
+
+	/// <summary>
+	/// 1's complement of the encoding. Used internally to create specific bit patterns
+	/// </summary>
+	/// <returns>reference to this cfloat object</returns>
+	constexpr lns& flip() noexcept { // in-place one's complement
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] = bt(~_block[i]);
+		}
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+
+	/// <summary>
+	/// assign the value of the string representation to the cfloat
+	/// </summary>
+	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
+	/// <returns>reference to this cfloat</returns>
+	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
+	CONSTEXPRESSION lns& assign(const std::string& str) noexcept {
+		clear();
+		return *this;
+	}
 
 	//////////////////////////////////////////////////////
 	/// convertion routines from native types
@@ -429,7 +530,7 @@ protected:
 	}
 
 	//////////////////////////////////////////////////////
-/// convertion routines to native types
+	/// convertion routines to native types
 
 	template<typename SignedInt>
 	typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type

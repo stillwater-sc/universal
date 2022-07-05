@@ -133,12 +133,12 @@ option(BUILD_BENCHMARK_ENERGY            "Set to ON to build mixed-prec energy b
 option(BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
 
 # mixed-precision algorithm design and optimization
-option(BUILD_MIXEDPRECISION_ROOTS        "Set to ON to build mixed-precision root finders"     OFF)
-option(BUILD_MIXEDPRECISION_APPROXIMATE  "Set to ON to build mixed-precision approximation"    OFF)
-option(BUILD_MIXEDPRECISION_INTEGRATE    "Set to ON to build mixed-precision integration"      OFF)
-option(BUILD_MIXEDPRECISION_INTERPOLATE  "Set to ON to build mixed-precision interpolation"    OFF)
-option(BUILD_MIXEDPRECISION_OPTIMIZE     "Set to ON to build mixed-precision optimization"     OFF)
-option(BUILD_MIXEDPRECISION_CONJUGATE    "Set to ON to build mixed-precision CG"               OFF)
+option(BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
+option(BUILD_MIXEDPRECISION_APPROXIMATE   "Set to ON to build mixed-precision approximation"   OFF)
+option(BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-precision integration"     OFF)
+option(BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
+option(BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
+option(BUILD_MIXEDPRECISION_LINEARALGEBRA "Set to ON to build mixed-precision linear algebra"  OFF)
 
 # validation
 option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -625,7 +625,7 @@ if(BUILD_MIXEDPRECISION_SDK)
 	set(BUILD_MIXEDPRECISION_INTEGRATE ON)
 	set(BUILD_MIXEDPRECISION_INTERPOLATE ON)
 	set(BUILD_MIXEDPRECISION_OPTIMIZE ON)
-	set(BUILD_MIXEDPRECISION_CONJUGATE ON)
+	set(BUILD_MIXEDPRECISION_LINEARALGEBRA ON)
 endif(BUILD_MIXEDPRECISION_SDK)
 
 if(BUILD_APP_ENVIRONMENT)
@@ -727,9 +727,9 @@ if(BUILD_MIXEDPRECISION_OPTIMIZE)
 add_subdirectory("mixedprecision/optimization")
 endif(BUILD_MIXEDPRECISION_OPTIMIZE)
 
-if(BUILD_MIXEDPRECISION_CONJUGATE)
-add_subdirectory("mixedprecision/linearalgebra/cg")
-endif(BUILD_MIXEDPRECISION_CONJUGATE)
+if(BUILD_MIXEDPRECISION_LINEARALGEBRA)
+add_subdirectory("mixedprecision/linearalgebra")
+endif(BUILD_MIXEDPRECISION_LINEARALGEBRA)
 
 # performance benchmarks
 if(BUILD_BENCHMARK_PERFORMANCE)
