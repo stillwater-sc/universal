@@ -65,8 +65,10 @@ try {
 		std::cout << (isTriviallyCopyAssignable ? "lns is trivially copy-assignable" : "lns failed trivially copy-assignable: FAIL") << '\n';
 	}
 
+	// default behavior
+	std::cout << "+---------    default lns bahavior\n";
 	{
-		using Real = lns<8, 2, std::uint8_t>;
+		using Real = lns<8, 3>;
 		Real a, b, c;
 		a = 1.0f;
 		b = 1.0f;
@@ -80,12 +82,68 @@ try {
 		ReportValues(a, "/", b, c);
 
 	}
-#if MANUAL_TESTING
 
-	// generate individual testcases to hand trace/debug
-	//TestCase< lns<16, 5, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	//TestCase< lns<8, 2, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	// configuration
+	std::cout << "+---------    explicit alignment bahavior\n";
+	{
+		using Real = lns<16, 5, std::uint16_t>;
+		Real a, b, c;
+		a = 1.0f;
+		b = 1.0f;
+		c = a + b;
+		ReportValues(a, "+", b, c);
+		c = a - b;
+		ReportValues(a, "-", b, c);
+		c = a * b;
+		ReportValues(a, "*", b, c);
+		c = a / b;
+		ReportValues(a, "/", b, c);
+	}
+	{
+		using Real = lns<24, 5, std::uint32_t>;
+		Real a, b, c;
+		a = 1.0f;
+		b = 1.0f;
+		c = a + b;
+		ReportValues(a, "+", b, c);
+		c = a - b;
+		ReportValues(a, "-", b, c);
+		c = a * b;
+		ReportValues(a, "*", b, c);
+		c = a / b;
+		ReportValues(a, "/", b, c);
+	}
 
+	std::cout << "+---------    Dynamic ranges of lns<> configurations   --------+\n";
+	{
+		std::cout << dynamic_range(lns< 4, 2>()) << '\n';
+		std::cout << dynamic_range(lns< 8, 3>()) << '\n';
+		std::cout << dynamic_range(lns<12, 4>()) << '\n';
+		std::cout << dynamic_range(lns<16, 5>()) << '\n';
+		std::cout << dynamic_range(lns<20, 6>()) << '\n';
+	}
+
+	std::cout << "+---------    constexpr and specific values   --------+\n";
+	{
+		constexpr size_t nbits = 10;
+		constexpr size_t es = 3;
+		using Real = lns<nbits, es>;  // bt = uint8_t
+
+		CONSTEXPRESSION Real a{}; // zero constexpr
+		std::cout << type_tag(a) << '\n';
+
+		// TODO: needs a constexpr version of log2() function
+//		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
+//		std::cout << to_binary(b) << " : " << b << '\n';
+
+		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
+		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
+
+		CONSTEXPRESSION Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding
+		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
+	}
+
+	std::cout << "---------    comparison to classic floats\n";
 	{
 		using LNS = lns<16, 8, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
@@ -98,27 +156,8 @@ try {
 		std::cout << std::setw(80) << type_tag(b) << " : " << to_binary(b, true) << " : " << color_print(b, true) << " : " << float(b) << '\n';
 	}
 	
-	//nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>(reportTestCases), "lns<8>", test_tag);
-
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
-#else
-#if REGRESSION_LEVEL_1
-
-#endif
-
-#if REGRESSION_LEVEL_2
-#endif
-
-#if REGRESSION_LEVEL_3
-#endif
-
-#if REGRESSION_LEVEL_4
-#endif
-
-	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

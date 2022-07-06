@@ -53,12 +53,13 @@ try {
 		Real a(1.0f), b(0.5f), c(0.0);
 		std::cout << type_tag(a) << '\n';
 		c = a + b;
-		std::cout << "c = " << c << '\n';
-		c = c - a;
-		std::cout << "c = " << c << '\n';
-		c = c * b;
-		std::cout << "c = " << c << '\n';
-		std::cout << "---\n";
+		ReportValues(a, "+", b, c);
+		c = a - b;
+		ReportValues(a, "-", b, c);
+		c = a * b;
+		ReportValues(a, "*", b, c);
+		c = a / b;
+		ReportValues(a, "/", b, c);
 	}
 
 	// explicit configuration
@@ -75,12 +76,13 @@ try {
 		Real a(1.0f), b(0.5f), c(0.0);
 		std::cout << type_tag(a) << '\n';
 		c = a + b;
-		std::cout << "c = " << c << '\n';
-		c = c - a;
-		std::cout << "c = " << c << '\n';
-		c = c * b;
-		std::cout << "c = " << c << '\n';
-		std::cout << "---\n";
+		ReportValues(a, "+", b, c);
+		c = a - b;
+		ReportValues(a, "-", b, c);
+		c = a * b;
+		ReportValues(a, "*", b, c);
+		c = a / b;
+		ReportValues(a, "/", b, c);
 	}
 
 	// report on the dynamic range of some standard configurations

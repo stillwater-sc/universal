@@ -142,8 +142,9 @@ public:
 #endif
 
 	// access operators
-	BlockType& operator[](size_t index) { return _block[index]; }
-	const BlockType operator[](size_t index) const { return _block[index]; }
+	constexpr BlockType& operator[](size_t index) { return _block[index]; }
+	constexpr BlockType operator[](size_t index) const { return _block[index]; }
+
 	// prefix operators
 	blockbinary operator-() const {
 		blockbinary negated(*this);
