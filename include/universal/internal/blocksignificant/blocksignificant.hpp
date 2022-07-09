@@ -374,63 +374,7 @@ public:
 	// modifiers
 	 // clear a block binary number
 	inline constexpr void clear() noexcept {
-		if constexpr (1 == nrBlocks) {
-			_block[0] = 0;
-		}
-		else if constexpr (2 == nrBlocks) {
-			_block[0] = 0;
-			_block[1] = 0;
-		}
-		else if constexpr (3 == nrBlocks) {
-			_block[0] = 0;
-			_block[1] = 0;
-			_block[2] = 0;
-		}
-		else if constexpr (4 == nrBlocks) {
-			_block[0] = 0;
-			_block[1] = 0;
-			_block[2] = 0;
-			_block[3] = 0;
-		}
-		else if constexpr (5 == nrBlocks) {
-			_block[0] = 0;
-			_block[1] = 0;
-			_block[2] = 0;
-			_block[3] = 0;
-			_block[4] = 0;
-		}
-		else if constexpr (6 == nrBlocks) {
-			_block[0] = 0;
-			_block[1] = 0;
-			_block[2] = 0;
-			_block[3] = 0;
-			_block[4] = 0;
-			_block[5] = 0;
-		}
-		else if constexpr (7 == nrBlocks) {
-			_block[0] = 0;
-			_block[1] = 0;
-			_block[2] = 0;
-			_block[3] = 0;
-			_block[4] = 0;
-			_block[5] = 0;
-			_block[6] = 0;
-		}
-		else if constexpr (8 == nrBlocks) {
-			_block[0] = 0;
-			_block[1] = 0;
-			_block[2] = 0;
-			_block[3] = 0;
-			_block[4] = 0;
-			_block[5] = 0;
-			_block[6] = 0;
-			_block[7] = 0;
-		}
-		else {
-			for (size_t i = 0; i < nrBlocks; ++i) {
-				_block[i] = static_cast<bt>(0ull);
-			}
-		}
+		*this = {};
 	}
 	inline constexpr void setzero() noexcept { clear(); }
 	inline constexpr void setradix(int radix) { radixPoint = radix; }
