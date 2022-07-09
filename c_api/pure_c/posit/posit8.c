@@ -40,7 +40,7 @@ int posit8_cmpp8(posit8_t a, posit8_t b) {
 }
 
 // string conversion functions
-void posit8_str(char* str, posit8_t a) {
+void posit8_str(char str[static 16], posit8_t a) {
 	float f = posit8_tof(a);
 	sprintf(str, "%f", f);
 }
