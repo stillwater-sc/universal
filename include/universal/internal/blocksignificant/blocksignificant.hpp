@@ -123,31 +123,14 @@ public:
 
 	// constructors
 	constexpr blocksignificant() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block { 0 } {}
-	constexpr blocksignificant(const uint64_t raw, int radixPoint) noexcept : radixPoint{ radixPoint }, encoding{ BitEncoding::Flex }, _block{ 0 } {
-		if constexpr (1 == nrBlocks) {
-			_block[0] = static_cast<bt>(storageMask & raw);;
-		}
-		else if constexpr (2 == nrBlocks) {
-			_block[0] = static_cast<bt>(storageMask & raw);
-			_block[1] = static_cast<bt>(storageMask & (raw >> bitsInBlock));
-		}
-		else if constexpr (3 == nrBlocks) {
-			_block[0] = static_cast<bt>(storageMask & raw);
-			_block[1] = static_cast<bt>(storageMask & (raw >> bitsInBlock));
-			_block[2] = static_cast<bt>(storageMask & (raw >> 2*bitsInBlock));
-		}
-		else if constexpr (4 == nrBlocks) {
-			_block[0] = static_cast<bt>(storageMask & raw);
-			_block[1] = static_cast<bt>(storageMask & (raw >> bitsInBlock));
-			_block[2] = static_cast<bt>(storageMask & (raw >> 2 * bitsInBlock));
-			_block[3] = static_cast<bt>(storageMask & (raw >> 3 * bitsInBlock));
-		}
-		else {
-			for (size_t i = 0; i < nrBlocks; ++i) {
-				_block[i] = static_cast<bt>(storageMask & (raw >> i * bitsInBlock));
-			}
-		}
-	}
+
+	template <size_t... I>
+	constexpr blocksignificant(const uint64_t raw, int radixPoint, std::index_sequence<I...>) noexcept
+	          : radixPoint{ radixPoint }, encoding{ BitEncoding::Flex }
+		  , _block{ static_cast<bt>(storageMask & (raw >> I*bitsInBlock))... } {}
+
+	constexpr blocksignificant(const uint64_t raw, int radixPoint) noexcept
+	        : blocksignificant(raw, radixPoint, std::make_index_sequence<nrBlocks>{}) {}
 
 	constexpr blocksignificant(const blocksignificant&) noexcept = default;
 	constexpr blocksignificant(blocksignificant&&) noexcept = default;
@@ -474,51 +457,23 @@ public:
 		raw &= fractionBits;
 		return raw;
 	}
-	inline constexpr uint64_t significant_ull() const noexcept {
-		uint64_t raw{ 0 };
-		if constexpr (bitsInBlock < 64) {
-			if constexpr (1 == nrBlocks) {
-				raw = _block[MSU];
-				raw &= MSU_MASK;
+	template <size_t... I>
+	constexpr uint64_t significant_ull(std::index_sequence<I...> = {}) const noexcept {
+		uint64_t raw{};
+		raw = _block[MSU];
+		raw &= MSU_MASK;
+		if constexpr (sizeof...(I) == 0) {
+			if constexpr (bitsInBlock < 64 && nrBlocks > 1) {
+				return blocksignificant::significant_ull(std::make_index_sequence<MSU>{});
 			}
-			else if constexpr (2 == nrBlocks) {
-				raw = _block[MSU];
-				raw &= MSU_MASK;
-				raw <<= bitsInBlock;
-				raw |= _block[0];
-			}
-			else if constexpr (3 == nrBlocks) {
-				raw = _block[MSU];
-				raw &= MSU_MASK;
-				raw <<= bitsInBlock;
-				raw |= _block[1];
-				raw <<= bitsInBlock;
-				raw |= _block[0];
-			}
-			else if constexpr (4 == nrBlocks) {
-				raw = _block[MSU];
-				raw &= MSU_MASK;
-				raw <<= bitsInBlock;
-				raw |= _block[2];
-				raw <<= bitsInBlock;
-				raw |= _block[1];
-				raw <<= bitsInBlock;
-				raw |= _block[0];
-			}
-			else {
-				raw = _block[MSU];
-				raw &= MSU_MASK;
-				for (int i = MSU - 1; i >= 0; --i) {
-					raw <<= bitsInBlock;
-					raw |= _block[i];
-				}
+			else { // if bitsInBlock < 64, take top 64bits and ignore the rest
+				return raw;
 			}
 		}
-		else { // take top 64bits and ignore the rest
-			raw = _block[MSU];
-			raw &= MSU_MASK;
+		else {
+			return ((raw <<= bitsInBlock,
+			         raw |= _block[MSU - 1 - I]), ...);
 		}
-		return raw;
 	}
 #ifdef DEPRECATED
 	// copy a value over from one blocksignificant to this blocksignificant
