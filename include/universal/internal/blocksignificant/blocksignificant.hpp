@@ -602,29 +602,63 @@ public:
 	BitEncoding encoding;
 	bt _block[nrBlocks];
 
-private:
 	//////////////////////////////////////////////////////////////////////////////
 	// friend functions
 
 	// integer - integer logic comparisons
-	template<size_t N, typename B>
-	friend constexpr bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept;
-	template<size_t N, typename B>
-	friend constexpr bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept;
-	// the other logic operators are defined in terms of arithmetic terms
+	friend constexpr bool operator==(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+		for (size_t i = 0; i < lhs.nrBlocks; ++i) {
+			if (lhs._block[i] != rhs._block[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
 
-	template<size_t N, typename B>
-	friend std::ostream& operator<<(std::ostream& ostr, const blocksignificant<N, B>& v);
+	friend constexpr bool operator!=(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+		return !operator==(lhs, rhs);
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	// logic operators
+
+	friend constexpr bool operator<(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+		blocksignificant diff;
+		diff.sub(lhs, rhs);
+		return diff.isneg();
+	}
+
+	friend constexpr bool operator<=(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+		return (lhs < rhs || lhs == rhs);
+	}
+
+	friend constexpr bool operator>(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+		return !(lhs <= rhs);
+	}
+
+	friend constexpr bool operator>=(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
+		return !(lhs < rhs);
+	}
+
+	///////////////////////////////////////////////////////////////////////////////
+	// binary operators
+
+	friend constexpr  blocksignificant operator<<(const blocksignificant& a, const long b) noexcept {
+		blocksignificant c(a);
+		return c <<= b;
+	}
+
+	friend constexpr  blocksignificant operator>>(const blocksignificant& a, const long b) noexcept {
+		blocksignificant c(a);
+		return c >>= b;
+	}
+
+
+	// ostream operator
+	friend std::ostream& operator<<(std::ostream& ostr, const blocksignificant& v) {
+		return ostr << double(v);
+	}
 };
-
-//////////////////////////////////////////////////////////////////////////////////
-// stream operators
-
-// ostream operator
-template<size_t nbits, typename bt>
-std::ostream& operator<<(std::ostream& ostr, const blocksignificant<nbits, bt>& number) {
-	return ostr << double(number);
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // conversions to string representations
@@ -665,55 +699,6 @@ std::string to_hex(const blocksignificant<nbits, bt>& number, bool wordMarker = 
 		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-// logic operators
-
-template<size_t N, typename B>
-constexpr bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
-	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
-		if (lhs._block[i] != rhs._block[i]) {
-			return false;
-		}
-	}
-	return true;
-}
-template<size_t N, typename B>
-constexpr bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
-	return !operator==(lhs, rhs);
-}
-template<size_t N, typename B>
-constexpr bool operator<(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
-	blocksignificant<N, B> diff;
-	diff.sub(lhs, rhs);
-	return diff.isneg();
-}
-template<size_t N, typename B>
-constexpr bool operator<=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
-	return (lhs < rhs || lhs == rhs);
-}
-template<size_t N, typename B>
-constexpr bool operator>(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
-	return !(lhs <= rhs);
-}
-template<size_t N, typename B>
-constexpr bool operator>=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
-	return !(lhs < rhs);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// binary operators
-
-template<size_t nbits, typename bt>
-inline blocksignificant<nbits, bt> operator<<(const blocksignificant<nbits, bt>& a, const long b) noexcept {
-	blocksignificant<nbits, bt> c(a);
-	return c <<= b;
-}
-template<size_t nbits, typename bt>
-inline blocksignificant<nbits, bt> operator>>(const blocksignificant<nbits, bt>& a, const long b) noexcept {
-	blocksignificant<nbits, bt> c(a);
-	return c >>= b;
 }
 
 // divide a by b and return both quotient and remainder
