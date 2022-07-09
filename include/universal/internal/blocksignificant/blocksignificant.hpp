@@ -178,7 +178,7 @@ public:
 
 #if LONG_DOUBLE_SUPPORT
 	explicit operator long double() const noexcept { return (long double)to_long_double(); }
-	inline constexpr long double to_long_double() const noexcept {
+	constexpr long double to_long_double() const noexcept {
 		return (long double)to_double();
 	}
 #endif
@@ -356,12 +356,12 @@ public:
 
 	// modifiers
 	 // clear a block binary number
-	inline constexpr void clear() noexcept {
+	constexpr void clear() noexcept {
 		*this = {};
 	}
-	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setradix(int radix) noexcept { radixPoint = radix; }
-	inline constexpr void setbit(size_t i, bool v = true) noexcept {
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setradix(int radix) noexcept { radixPoint = radix; }
+	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -371,11 +371,11 @@ public:
 		}
 		// when i is out of bounds, fail silently as no-op
 	}
-	inline constexpr void setblock(size_t b, const bt& block) noexcept {
+	constexpr void setblock(size_t b, const bt& block) noexcept {
 		if (b < nrBlocks) _block[b] = block;
 		// when b is out of bounds, fail silently as no-op
 	}
-	inline constexpr void setbits(uint64_t value) noexcept {
+	constexpr void setbits(uint64_t value) noexcept {
 		// radixPoint needs to be set, either using the constructor or the setradix() function
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
@@ -394,7 +394,7 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	inline constexpr blocksignificant& flip() noexcept { // in-place one's complement
+	constexpr blocksignificant& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}		
@@ -402,7 +402,7 @@ public:
 		return *this;
 	}
 	// in-place 2's complement
-	inline constexpr blocksignificant& twosComplement() noexcept {
+	constexpr blocksignificant& twosComplement() noexcept {
 		blocksignificant<nbits, bt> plusOne;
 		plusOne.setbit(0);
 		flip();
@@ -411,26 +411,26 @@ public:
 	}
 
 	// selectors
-	inline constexpr bool iszero() const noexcept {
+	constexpr bool iszero() const noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
 	}
-	inline constexpr int  radix() const noexcept { return radixPoint; }
-	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
-	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool sign() const noexcept { return test(nbits - 1); }
-	inline constexpr bool isneg() const noexcept { return sign(); }
-	inline constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
-	inline constexpr bool at(size_t bitIndex) const noexcept {
+	constexpr int  radix() const noexcept { return radixPoint; }
+	constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
+	constexpr bool iseven() const noexcept { return !isodd(); }
+	constexpr bool sign() const noexcept { return test(nbits - 1); }
+	constexpr bool isneg() const noexcept { return sign(); }
+	constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
+	constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false;
 		bt word = _block[bitIndex / bitsInBlock];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
 	// check carry bit in output of the ALU
-	inline constexpr bool checkCarry() const noexcept { return at(nbits - 2); }
+	constexpr bool checkCarry() const noexcept { return at(nbits - 2); }
 	// helpers
-	inline constexpr uint8_t nibble(size_t n) const noexcept {
+	constexpr uint8_t nibble(size_t n) const noexcept {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			size_t nibbleIndexInWord = n % (bitsInBlock >> 2);
@@ -440,7 +440,7 @@ public:
 		}
 		throw "nibble index out of bounds";
 	}
-	inline constexpr bt block(size_t b) const noexcept {
+	constexpr bt block(size_t b) const noexcept {
 		if (b >= nrBlocks) return bt{ 0 };
 		return _block[b];
 	}
@@ -450,7 +450,7 @@ public:
 		fractionBits.setbit(static_cast<size_t>(radixPoint), false);
 		return fractionBits;
 	}
-	inline constexpr uint64_t fraction_ull() const noexcept {
+	constexpr uint64_t fraction_ull() const noexcept {
 		uint64_t raw = significant_ull();
 		// remove the non-fraction bits
 		uint64_t fractionBits = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - radixPoint));
@@ -515,7 +515,7 @@ public:
 	}
 #endif
 	// return the position of the most significant bit, -1 if v == 0
-	inline int msb() const noexcept {
+	constexpr int msb() const noexcept {
 		for (int i = int(MSU); i >= 0; --i) {
 			if (_block[i] != 0) {
 				bt mask = (bt(1u) << (bitsInBlock-1));
@@ -531,10 +531,10 @@ public:
 	}
 
 	// conversion to native types
-	inline constexpr float to_float() const noexcept {
+	constexpr float to_float() const noexcept {
 		return float(to_double());
 	}
-	inline constexpr double to_double() const noexcept {
+	constexpr double to_double() const noexcept {
 		double d{ 0.0 };
 		double s{ 1.0 };
 		blocksignificant<nbits, bt> tmp(*this);
