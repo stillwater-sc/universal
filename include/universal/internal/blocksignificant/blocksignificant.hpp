@@ -48,14 +48,14 @@ enum class BitEncoding {
 
 // forward references
 template<size_t nbits, typename bt> class blocksignificant;
-template<size_t nbits, typename bt> constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>&);
+template<size_t nbits, typename bt> constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>&) noexcept;
 template<size_t nbits, typename bt> struct bfquorem;
 template<size_t nbits, typename bt> bfquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>&, const blocksignificant<nbits, bt>&);
 
 // idiv_t for blocksignificant<nbits> to capture quotient and remainder during long division
 template<size_t nbits, typename bt>
 struct bfquorem {
-	bfquorem() : exceptionId{ 0 } {} // default constructors
+	constexpr bfquorem() noexcept : exceptionId{} {} // default constructors
 	int exceptionId;
 	blocksignificant<nbits, bt> quo; // quotient
 	blocksignificant<nbits, bt> rem; // remainder
@@ -187,7 +187,7 @@ public:
 	//
 	// 
 	// one's complement
-	constexpr blocksignificant operator~() const {
+	constexpr blocksignificant operator~() const noexcept {
 		blocksignificant complement(*this);
 		complement.flip();
 		return complement;
@@ -199,7 +199,7 @@ public:
 	/// arithmetic operators
 	// none
 
-	void increment() {
+	void increment() noexcept {
 		bool carry = true;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
@@ -217,7 +217,7 @@ public:
 	/// </summary>
 	/// <param name="lhs">nbits of fraction in the form 00h.ffff</param>
 	/// <param name="rhs">nbits of fraction in the form 00h.ffff</param>
-	void add(const blocksignificant& lhs, const blocksignificant& rhs) {
+	void add(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
@@ -230,11 +230,11 @@ public:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
 	}
-	void sub(const blocksignificant& lhs, const blocksignificant& rhs) {
+	void sub(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
 		blocksignificant<nbits, bt> b(twosComplementFree(rhs)); 
 		add(lhs, b);
 	}
-	void mul(const blocksignificant& lhs, const blocksignificant& rhs) {
+	void mul(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
 		blocksignificant<nbits, bt> base(lhs);
 		blocksignificant<nbits, bt> multiplicant(rhs);
 		clear();
@@ -247,7 +247,7 @@ public:
 		// since we used operator+=, which enforces the nulling of leading bits
 		// we don't need to null here
 	}
-	void div(const blocksignificant& lhs, const blocksignificant& rhs) {
+	void div(const blocksignificant& lhs, const blocksignificant& rhs) noexcept {
 		blocksignificant<nbits, bt> base(lhs);
 		blocksignificant<nbits, bt> divider(rhs);
 		clear();
@@ -266,14 +266,14 @@ public:
 
 #ifdef FRACTION_REMAINDER
 	// remainder operator
-	blocksignificant& operator%=(const blocksignificant& rhs) {
+	blocksignificant& operator%=(const blocksignificant& rhs) noexcept {
 		bfquorem<nbits, bt> result = longdivision(*this, rhs);
 		*this = result.rem;
 		return *this;
 	}
 #endif
 
-	constexpr blocksignificant& operator<<=(int bitsToShift) {
+	constexpr blocksignificant& operator<<=(int bitsToShift) noexcept {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
@@ -302,7 +302,7 @@ public:
 		_block[0] <<= bitsToShift;
 		return *this;
 	}
-	constexpr blocksignificant& operator>>=(int bitsToShift) {
+	constexpr blocksignificant& operator>>=(int bitsToShift) noexcept {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {
@@ -360,7 +360,7 @@ public:
 		*this = {};
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setradix(int radix) { radixPoint = radix; }
+	inline constexpr void setradix(int radix) noexcept { radixPoint = radix; }
 	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
@@ -415,11 +415,11 @@ public:
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
 	}
-	inline constexpr int  radix() const { return radixPoint; }
+	inline constexpr int  radix() const noexcept { return radixPoint; }
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool sign() const { return test(nbits - 1); } 
-	inline constexpr bool isneg() const { return sign(); }
+	inline constexpr bool sign() const noexcept { return test(nbits - 1); }
+	inline constexpr bool isneg() const noexcept { return sign(); }
 	inline constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
 	inline constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false;
@@ -430,7 +430,7 @@ public:
 	// check carry bit in output of the ALU
 	inline constexpr bool checkCarry() const noexcept { return at(nbits - 2); }
 	// helpers
-	inline constexpr uint8_t nibble(size_t n) const {
+	inline constexpr uint8_t nibble(size_t n) const noexcept {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			size_t nibbleIndexInWord = n % (bitsInBlock >> 2);
@@ -444,7 +444,7 @@ public:
 		if (b >= nrBlocks) return bt{ 0 };
 		return _block[b];
 	}
-	constexpr blocksignificant fraction() const {
+	constexpr blocksignificant fraction() const noexcept {
 		// return a copy of the significant with the integer bits removed
 		blocksignificant fractionBits(*this);
 		fractionBits.setbit(static_cast<size_t>(radixPoint), false);
@@ -479,7 +479,7 @@ public:
 	// copy a value over from one blocksignificant to this blocksignificant
 	// blocksignificant is a 2's complement encoding, so we sign-extend by default
 	template<size_t srcbits>
-	inline blocksignificant<nbits, bt>& assign(const blocksignificant<srcbits, bt>& rhs) {
+	inline blocksignificant<nbits, bt>& assign(const blocksignificant<srcbits, bt>& rhs) noexcept {
 		clear();
 		// since bt is the same, we can directly copy the blocks in
 		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -502,7 +502,7 @@ public:
 	// blocksignificant is a 2's complement encoding, so we sign-extend by default
 	// for fraction/significent encodings, we need to turn off sign-extending.
 	template<size_t srcbits>
-	inline blocksignificant<nbits, bt>& assignWithoutSignExtend(const blocksignificant<srcbits, bt>& rhs) {
+	inline blocksignificant<nbits, bt>& assignWithoutSignExtend(const blocksignificant<srcbits, bt>& rhs) noexcept {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -573,7 +573,7 @@ public:
 
 	// determine the rounding direction for round-to-even: returns true if we need to round up, false if we need to truncate
 	// Function argument is the bit position of the LSB of the target number.
-	bool roundingDirection(size_t targetLsb) const {
+	bool roundingDirection(size_t targetLsb) const noexcept {
 		bool lsb    = at(targetLsb);
 		bool guard  = (targetLsb == 0 ? false : at(targetLsb - 1));
 		bool round  = (targetLsb <= 1 ? false : at(targetLsb - 2));
@@ -581,7 +581,7 @@ public:
 		bool tie = guard && !round && !sticky;
 		return (lsb && tie) || (guard && !tie);
 	}
-	bool any(size_t msb) const {
+	bool any(size_t msb) const noexcept {
 		msb = (msb > nbits - 1 ? nbits - 1 : msb);
 		size_t topBlock = msb / bitsInBlock;
 		bt mask = bt(ALL_ONES >> (bitsInBlock - 1 - (msb % bitsInBlock)));
@@ -608,9 +608,9 @@ private:
 
 	// integer - integer logic comparisons
 	template<size_t N, typename B>
-	friend bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs);
+	friend bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept;
 	template<size_t N, typename B>
-	friend bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs);
+	friend bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept;
 	// the other logic operators are defined in terms of arithmetic terms
 
 	template<size_t N, typename B>
@@ -671,7 +671,7 @@ std::string to_hex(const blocksignificant<nbits, bt>& number, bool wordMarker = 
 // logic operators
 
 template<size_t N, typename B>
-inline bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
+inline bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -680,25 +680,25 @@ inline bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant
 	return true;
 }
 template<size_t N, typename B>
-inline bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
+inline bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	return !operator==(lhs, rhs);
 }
 template<size_t N, typename B>
-inline bool operator<(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
+inline bool operator<(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	blocksignificant<N, B> diff;
 	diff.sub(lhs, rhs);
 	return diff.isneg();
 }
 template<size_t N, typename B>
-inline bool operator<=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
+inline bool operator<=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	return (lhs < rhs || lhs == rhs);
 }
 template<size_t N, typename B>
-inline bool operator>(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
+inline bool operator>(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	return !(lhs <= rhs);
 }
 template<size_t N, typename B>
-inline bool operator>=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) {
+inline bool operator>=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	return !(lhs < rhs);
 }
 
@@ -706,19 +706,19 @@ inline bool operator>=(const blocksignificant<N, B>& lhs, const blocksignificant
 // binary operators
 
 template<size_t nbits, typename bt>
-inline blocksignificant<nbits, bt> operator<<(const blocksignificant<nbits, bt>& a, const long b) {
+inline blocksignificant<nbits, bt> operator<<(const blocksignificant<nbits, bt>& a, const long b) noexcept {
 	blocksignificant<nbits, bt> c(a);
 	return c <<= b;
 }
 template<size_t nbits, typename bt>
-inline blocksignificant<nbits, bt> operator>>(const blocksignificant<nbits, bt>& a, const long b) {
+inline blocksignificant<nbits, bt> operator>>(const blocksignificant<nbits, bt>& a, const long b) noexcept {
 	blocksignificant<nbits, bt> c(a);
 	return c >>= b;
 }
 
 // divide a by b and return both quotient and remainder
 template<size_t nbits, typename bt>
-bfquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const blocksignificant<nbits, bt>& _b) {
+bfquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const blocksignificant<nbits, bt>& _b)  {
 	bfquorem<nbits, bt> result;
 	if (_b.iszero()) {
 		result.exceptionId = 1; // division by zero
@@ -840,7 +840,7 @@ inline blocksignificant<2 * nbits + roundingBits, bt> urdiv(const blocksignifica
 
 // free function generator of the 2's complement of a blocksignificant
 template<size_t nbits, typename bt>
-inline constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>& a) {
+inline constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>& a) noexcept {
 	blocksignificant<nbits, bt> b(a);
 	return b.twosComplement();
 }
