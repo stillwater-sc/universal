@@ -173,11 +173,11 @@ public:
 #endif
 
 	/// explicit conversion operators
-	explicit operator float()       const noexcept { return float(to_float()); }
-	explicit operator double()      const noexcept { return double(to_double()); }
+	explicit constexpr operator float() const noexcept { return float(to_float()); }
+	explicit constexpr operator double() const noexcept { return double(to_double()); }
 
 #if LONG_DOUBLE_SUPPORT
-	explicit operator long double() const noexcept { return (long double)to_long_double(); }
+	explicit constexpr operator long double() const noexcept { return (long double)to_long_double(); }
 	constexpr long double to_long_double() const noexcept {
 		return (long double)to_double();
 	}
@@ -199,7 +199,7 @@ public:
 	/// arithmetic operators
 	// none
 
-	void increment() noexcept {
+	constexpr void increment() noexcept {
 		bool carry = true;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
@@ -573,7 +573,7 @@ public:
 
 	// determine the rounding direction for round-to-even: returns true if we need to round up, false if we need to truncate
 	// Function argument is the bit position of the LSB of the target number.
-	bool roundingDirection(size_t targetLsb) const noexcept {
+	constexpr bool roundingDirection(size_t targetLsb) const noexcept {
 		bool lsb    = at(targetLsb);
 		bool guard  = (targetLsb == 0 ? false : at(targetLsb - 1));
 		bool round  = (targetLsb <= 1 ? false : at(targetLsb - 2));
@@ -581,7 +581,7 @@ public:
 		bool tie = guard && !round && !sticky;
 		return (lsb && tie) || (guard && !tie);
 	}
-	bool any(size_t msb) const noexcept {
+	constexpr bool any(size_t msb) const noexcept {
 		msb = (msb > nbits - 1 ? nbits - 1 : msb);
 		size_t topBlock = msb / bitsInBlock;
 		bt mask = bt(ALL_ONES >> (bitsInBlock - 1 - (msb % bitsInBlock)));
@@ -608,9 +608,9 @@ private:
 
 	// integer - integer logic comparisons
 	template<size_t N, typename B>
-	friend bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept;
+	friend constexpr bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept;
 	template<size_t N, typename B>
-	friend bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept;
+	friend constexpr bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept;
 	// the other logic operators are defined in terms of arithmetic terms
 
 	template<size_t N, typename B>
@@ -671,7 +671,7 @@ std::string to_hex(const blocksignificant<nbits, bt>& number, bool wordMarker = 
 // logic operators
 
 template<size_t N, typename B>
-inline bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
+constexpr bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -680,25 +680,25 @@ inline bool operator==(const blocksignificant<N, B>& lhs, const blocksignificant
 	return true;
 }
 template<size_t N, typename B>
-inline bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
+constexpr bool operator!=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	return !operator==(lhs, rhs);
 }
 template<size_t N, typename B>
-inline bool operator<(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
+constexpr bool operator<(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	blocksignificant<N, B> diff;
 	diff.sub(lhs, rhs);
 	return diff.isneg();
 }
 template<size_t N, typename B>
-inline bool operator<=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
+constexpr bool operator<=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	return (lhs < rhs || lhs == rhs);
 }
 template<size_t N, typename B>
-inline bool operator>(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
+constexpr bool operator>(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	return !(lhs <= rhs);
 }
 template<size_t N, typename B>
-inline bool operator>=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
+constexpr bool operator>=(const blocksignificant<N, B>& lhs, const blocksignificant<N, B>& rhs) noexcept {
 	return !(lhs < rhs);
 }
 
