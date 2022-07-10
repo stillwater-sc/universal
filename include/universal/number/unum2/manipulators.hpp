@@ -33,7 +33,7 @@ std::string unum2_range() {
 
 // Generate a type tag for this unum, for example, unum<8,1>
 template<size_t essize, size_t fsize>
-std::string type_tag(const unum2<essize, fsize>& p) {
+std::string type_tag(const unum2<essize, fsize>& = {}) {
 	std::stringstream ss;
 	ss << "unum2<" << essize << "," << fsize << ">";
 	return ss.str();

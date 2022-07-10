@@ -10,20 +10,10 @@ namespace sw { namespace universal {
 
 // Generate a type tag for adaptiveint
 template<typename BlockType>
-std::string type_tag(const adaptiveint<BlockType>& v) {
+std::string type_tag(const adaptiveint<BlockType>& = {}) {
 	std::stringstream s;
-	if (v.iszero()) s << ' '; // remove 'unreferenced formal parameter warning from compilation log
 	s << "adaptiveint<" << typeid(BlockType).name() << '>';
 	return s.str();
 }
-
-
-#ifdef ADAPTIVEINT_TYPE_GUARD
-// Generate a type tag for adaptiveint
-template<typename AdaptiveInt>
-std::string type_tag() {
-	return type_tag(adaptiveint());
-}
-#endif
 
 }} // namespace sw::universal

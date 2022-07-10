@@ -18,7 +18,7 @@ namespace sw { namespace universal {
 
 // Generate a type tag for this cfloat, for example, cfloat<8,1, unsigned char, hasSubnormals, noSupernormals, notSaturating>
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& = {}) {
 	std::stringstream s;
 	s << "cfloat<"
 		<< std::setw(3) << nbits << ", "
@@ -27,7 +27,6 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 		<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
 		<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
 		<< (isSaturating ? "   Saturating>" : "notSaturating>");
-	if (v.iszero()) s << ' ';
 	return s.str();
 }
 

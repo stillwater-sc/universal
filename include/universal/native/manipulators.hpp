@@ -11,9 +11,9 @@ namespace sw { namespace universal {
 	template<typename Real, 
 		std::enable_if_t< std::is_floating_point<Real>::value, bool> = true
 	>
-	std::string type_tag(Real f) {
+	std::string type_tag(Real = {}) {
 		// can't use a simple typeid(Real).name() because gcc and clang obfuscate the native types
-		constexpr unsigned nbits = sizeof(f) * 8;
+		constexpr unsigned nbits = sizeof(Real) * 8;
 		std::string real;
 		if constexpr (nbits == 32) {
 			real = std::string("float");
@@ -28,14 +28,6 @@ namespace sw { namespace universal {
 			real = std::string("unknown");
 		}
 		return real;
-	}
-
-	template<typename Real,
-		std::enable_if_t< std::is_floating_point<Real>::value, bool > = true
-	>
-	std::string type_tag() {
-		Real f{ 0.0 };
-		return type_tag(f);
 	}
 
 }} // namespace sw::universal
