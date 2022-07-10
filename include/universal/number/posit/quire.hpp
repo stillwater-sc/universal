@@ -959,8 +959,8 @@ internal::value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const pos
 	// special case handling
 	if (lhs.isnar() || rhs.isnar()) { sum.setinf(); return sum; }
 	if (lhs.iszero() && rhs.iszero()) return sum;
-	if (lhs.iszero()) { rhs.normalize_to<abits+1>(sum); return sum; }
-	if (rhs.iszero()) { lhs.normalize_to<abits+1>(sum); return sum; }
+	if (lhs.iszero()) { rhs.template normalize_to<abits+1>(sum); return sum; }
+	if (rhs.iszero()) { lhs.template normalize_to<abits+1>(sum); return sum; }
 
 	// transform the inputs into (sign,scale,fraction) triples
 	a.set(sign(lhs), scale(lhs), extract_fraction<nbits, es, fbits>(lhs), lhs.iszero(), lhs.isnar());
