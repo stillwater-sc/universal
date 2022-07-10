@@ -90,7 +90,7 @@ void TestNLZ() {
 
 template<size_t nbits, typename BlockType>
 void TestSignBitMask() {
-	sw::universal::integer<nbits, BlockType> a;
+	sw::universal::integer<nbits, BlockType> a{};
 	std::cout << std::right << std::setw(50) << type_tag(a) << '\n';
 	std::cout << "EXACT_FIT           : " << (a.EXACT_FIT ? "yes\n" : "no\n");
 	std::cout << "bitsInBlock         : " << a.bitsInBlock << '\n';
