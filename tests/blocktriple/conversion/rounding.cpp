@@ -50,8 +50,8 @@ That is:  patterns of the form
 			// for add/sub ops    0b0ii.fffff with only a single bit of rounding. 
 			// TODO is that always true? if you have dynamic range, don't you have 2*fhbits of bits to examine?
 			// for mul op         0bii.fffff`fffff with fbits of rounding
-			auto retval = a.roundingDecision();
-//			std::cout << to_triple(a) << (retval.first ? " rounds up\n" : " rounds down\n");
+			//auto retval = a.roundingDecision();
+			//std::cout << to_triple(a) << (retval.first ? " rounds up\n" : " rounds down\n");
 
 			bool correct = true;
 			if (!correct) {
