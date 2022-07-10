@@ -663,9 +663,8 @@ private:
 
 // Generate a type tag for blockbinary
 template<size_t N, typename B, BinaryNumberType T>
-std::string type_tag(const blockbinary<N, B, T>& v) {
+std::string type_tag(const blockbinary<N, B, T>& = {}) {
 	std::stringstream str;
-	if (v.isneg()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
 	str << "blockbinary<"
 		<< std::setw(4) << N << ", "
 		<< typeid(B).name() << ", "

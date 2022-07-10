@@ -18,7 +18,7 @@ namespace sw { namespace universal {
 
 // Generate a type tag for this posit, for example, posit<8,1>
 template<size_t nbits, size_t es, typename bt>
-std::string type_tag(const areal<nbits, es, bt>& v) {
+std::string type_tag(const areal<nbits, es, bt>& = {}) {
 	std::stringstream ss;
 	ss << "areal<" << nbits << "," << es << ">";
 	return ss.str();

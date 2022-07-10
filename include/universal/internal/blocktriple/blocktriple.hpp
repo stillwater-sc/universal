@@ -93,7 +93,7 @@ blocktriple<fbits, op, bt>& convert(unsigned long long uint, blocktriple<fbits, 
 
 // Generate a type tag for this type: blocktriple<fbits, operator, unsigned int>
 template<size_t fbits, BlockTripleOperator op, typename bt>
-std::string type_tag(const blocktriple<fbits, op, bt>& v) {
+std::string type_tag(const blocktriple<fbits, op, bt>& = {}) {
 	std::stringstream s;
 	s << "blocktriple<"
 		<< fbits << ", ";
@@ -117,7 +117,6 @@ std::string type_tag(const blocktriple<fbits, op, bt>& v) {
 		s << "unknown operator, ";
 	}
 	s << typeid(bt).name() << '>';
-	if (v.iszero()) s << ' ';
 	return s.str();
 }
 
