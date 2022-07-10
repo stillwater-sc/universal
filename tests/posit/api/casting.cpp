@@ -54,7 +54,7 @@ void TestCase1() {
 	std::cout << color_print(p32_2) << " " << pretty_print(p32_2) << " " << hex_print(p32_2) << '\n';
 
 	// Posit = 0x7B32352A00000013
-	// Stillwater’s result = 0x434C8D4A
+	// Stillwater result = 0x434C8D4A
 	// Expected result = 0x434C8D4B
 
 	float f = float(p);
@@ -64,8 +64,11 @@ void TestCase1() {
 	p = f;
 	std::cout << color_print(p) << " " << p << '\n';
 
-	uint32_t fh = *(uint32_t*)&f;
-	uint64_t dh = *(uint64_t*)&d;
+	union f2u { float f; uint32_t u; };
+	union d2u { double d; uint64_t u; };
+
+	uint32_t fh = f2u{f}.u;
+	uint64_t dh = d2u{d}.u;
 	std::cout << "SP Float = " << std::hexfloat << f << " " << std::defaultfloat << f << " " << std::fixed << f << " " << std::hex << fh << '\n';
 	std::cout << "DP Float = " << std::hexfloat << d << " " << std::defaultfloat << d << " " << std::hex << dh << '\n';
 
