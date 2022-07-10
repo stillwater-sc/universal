@@ -1,4 +1,4 @@
-// fractions.cpp: test suite runner for mod/frac/reminder functions specialized for classic floats
+// fractional.cpp: test suite runner for mod/frac/reminder functions specialized for classic floats
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -96,6 +96,32 @@ int VerifyCfloatFmod(bool reportTestCases) {
 }}
 
 /*
+cfloatmod(cfloat x, cfloat y) {
+	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
+	if (y.iszero() || x.isinf() || x.isnan() || y.isnan()) {
+		Real nan;
+		nan.setnan(false);  // quiet NaN
+		return nan;
+	}
+	if (y.isinf() || x.iszero()) {
+		return x;
+	}
+
+	y.setsign(false); // equivalent but faster than y = abs(y);
+	int yexp;
+	frexp(y, &yexp);  // ignore the fraction that comes back
+	Real r = x;
+	if (x < 0) r = -x;
+	Real d = r / y;
+	if (d.isinf()) return x;
+	Real n = trunc(d);
+	r = r - n * y;
+	if (x < 0) r = -r;
+
+	return r;
+}
+*/
+/*
  std::fmod(x, y)
  The floating-point remainder of the division operation x/y calculated by this function is 
  exactly the value x - n*y, where n is x/y with its fractional part truncated.
@@ -111,21 +137,29 @@ If a domain error occurs, an implementation-defined value is returned (NaN where
 If a range error occurs due to underflow, the correct result (after rounding) is returned.
 */
 template<typename Real>
-Real test_fmod(Real x, Real y) {
+Real trace_fmod(Real x, Real y) {
 	using namespace sw::universal;
 	using std::trunc;  // incase Real is a native
+	constexpr size_t NR_DIGITS = 20;
+
+	auto old_precision = std::cout.precision();
+	std::cout << std::setprecision(NR_DIGITS);
 	std::cout << "fmod( " << x << ", " << y << ")\n";
 	if (x < y) return x;
 	Real c = x / y;
-	std::cout << x << " / " << y << " = " << c << '\n';
+	std::cout << x << " / " << y << " = " << to_binary(c) << " : " << c << '\n';
 	Real n = trunc(c);
 	//n.truncate();
 
+	std::cout << "x         = " << to_binary(x) << " : " << x << '\n';
+	std::cout << "n         = " << to_binary(n) << " : " << n << '\n';
 	Real n_times_y = n * y;
-	std::cout << "x       = " << x << '\n';
-	std::cout << "n       = " << n << '\n';
-	std::cout << "n*y     = " << n_times_y << '\n';
-	std::cout << "x - n*y = " << x - n_times_y << '\n';
+	std::cout << "n*y       = " << to_binary(n_times_y) << " : " << n_times_y << '\n';
+	Real diff = x - n_times_y;
+	std::cout << "x - n*y   = " << to_binary(diff) << " : " << diff << '\n';
+	float floatmod = std::fmod(float(x), float(y));
+	std::cout << "std::fmod = " << to_binary(floatmod) << " : " << floatmod << '\n';
+	std::cout << std::setprecision(old_precision);
 
 	return x - n_times_y;
 }
@@ -150,7 +184,25 @@ If a range error occurs due to underflow, the correct result is returned.
 
 If y is zero, but the domain error does not occur, zero is returned.
 */
+template<typename Real>
+Real trace_remainder(Real x, Real y) {
+	using namespace sw::universal;
+	using std::trunc;  // incase Real is a native
+	std::cout << "remainder( " << x << ", " << y << ")\n";
+	if (x < y) return x;
+	Real c = x / y;
+	std::cout << x << " / " << y << " = " << c << '\n';
+	Real n = trunc(c);
+	//n.truncate();
 
+	Real n_times_y = n * y;
+	std::cout << "x       = " << x << '\n';
+	std::cout << "n       = " << n << '\n';
+	std::cout << "n*y     = " << n_times_y << '\n';
+	std::cout << "x - n*y = " << x - n_times_y << '\n';
+
+	return x - n_times_y;
+}
 
 /*
 frac(x) returns the fractional value of x
@@ -192,12 +244,59 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
+
+	{
+		std::cout << std::setprecision(8);
+		float f = 1e9f / 3.0f;
+		std::cout << to_binary(f) << " : " << f << '\n';
+		f = 3 * f;
+		std::cout << to_binary(f) << " : " << f << '\n';
+	}
+
+	{
+		float f = 3;
+		trace_fmod(1e1f, f);
+		trace_fmod(1e3f, f);
+		trace_fmod(1e6f, f);
+		trace_fmod(1e9f, f);
+	}
+	{
+		double f = 3;
+		trace_fmod(1e1, f);
+		trace_fmod(1e3, f);
+		trace_fmod(1e6, f);
+		trace_fmod(1e9, f);
+	}
+
+	{
+		float f = 3.14159265358979f;
+		trace_fmod(1e1f, f);
+		trace_fmod(1e3f, f);
+		trace_fmod(1e6f, f);
+		trace_fmod(1e9f, f);
+	}
+
+	{
+		using cfloat = sw::universal::cfloat<32, 8, uint32_t, true, false, false>;
+		// cfloat c = sw::universal::fmod(cfloat(1e9), cfloat(3.14159265358979));
+		cfloat pi = cfloat(3.14159265358979);
+		std::cout << to_binary(pi) << " : " << pi << '\n';
+		for (int i = 0; i < 10; ++i) {
+			cfloat powerOfTen = cfloat(std::pow(10.0f, float(i)));
+			std::cout << to_binary(powerOfTen) << " : " << powerOfTen << '\n';
+			cfloat cmod = cfloatmod(powerOfTen, pi);
+			float fmod = std::fmod(float(powerOfTen), float(pi));
+			std::cout << "cfloatmod: " << to_binary(cmod) << " : " << cmod << "\n";
+			std::cout << " floatmod: " << to_binary(fmod) << " : " << fmod << '\n';
+		}
+
+		//		std::cout << "float: " << std::fmod(1e9f, 3.14159265358979f) << "\n";
+	}
+
 
 // #define MY_DBL_MIN          2.2250738585072014e-308 // minpos value
 
 	{
-
 		constexpr size_t nbits = 32;
 		constexpr size_t es = 8;
 		using bt = uint32_t;
@@ -247,13 +346,13 @@ try {
 		using Real = cfloat<16, 2, uint8_t, false, false, false>;
 		Real a, b, c;
 		a = 1.5; b = 2.25;
-		c = test_fmod(a, b);
+		c = trace_fmod(a, b);
 		std::cout << "fmod = " << c << '\n';
-		c = test_fmod(b, a);
+		c = trace_fmod(b, a);
 		std::cout << "fmod = " << c << '\n';
-		c = test_fmod(-a, b);
+		c = trace_fmod(-a, b);
 		std::cout << "fmod = " << c << '\n';
-		c = test_fmod(b, -a);
+		c = trace_fmod(b, -a);
 		std::cout << "fmod = " << c << '\n';
 	}
 
@@ -261,9 +360,9 @@ try {
 		using Real = cfloat<32, 8, uint8_t, false, false, false>;
 		Real a, b, c;
 		a = 1.5; b = 2.25;
-		c = test_fmod(a, b);
+		c = trace_fmod(a, b);
 		std::cout << "fmod = " << c << '\n';
-		c = test_fmod(b, a);
+		c = trace_fmod(b, a);
 		std::cout << "fmod = " << c << '\n';
 	}
 
@@ -273,9 +372,9 @@ try {
 		Real a(fa), b(fb), c;
 		std::cout << "cfloat : " << fmod(Real(a), Real(b)) << "\n";
 		std::cout << "float  : " << std::fmod(fa, fb) << "\n";
-		fc = test_fmod(fa, fb);
+		fc = trace_fmod(fa, fb);
 		std::cout << "fmod = " << fc << '\n';
-		c = test_fmod(a, b);
+		c = trace_fmod(a, b);
 		std::cout << "fmod = " << c << '\n';
 	}
 
@@ -316,30 +415,6 @@ try {
 	return EXIT_SUCCESS; // ignore failures
 #else
 
-	{
-		using cfloat = sw::universal::cfloat<32, 8, uint32_t, true, false, false>;
-		// cfloat c = sw::universal::fmod(cfloat(1e9), cfloat(3.14159265358979));
-		cfloat pi = cfloat(3.14159265358979);
-		std::cout << to_binary(pi) << " : " << pi << '\n';
-		for (int i = 0; i < 10; ++i) {
-			cfloat powerOfTen = cfloat(std::pow(10.0f, float(i)));
-			std::cout << to_binary(powerOfTen) << " : " << powerOfTen << '\n';
-			cfloat cmod = cfloatmod(powerOfTen, pi);
-			float fmod = std::fmod(float(powerOfTen), float(pi));
-			std::cout << "cfloatmod: " << to_binary(cmod) << " : " << cmod << "\n";
-			std::cout << " floatmod: " << to_binary(fmod) << " : " << fmod << '\n';
-		}
-
-//		std::cout << "float: " << std::fmod(1e9f, 3.14159265358979f) << "\n";
-	}
-
-/*
-		a / b = 3
-		n * y = 0.0175781
-		fmod = 0
-		fmod = 0.00390625
-		fref = 0.00390625
-*/
 	{
 		using Real = cfloat<8, 4, uint8_t, true, false, false>;
 		Real a, b, c;
