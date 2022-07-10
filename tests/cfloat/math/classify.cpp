@@ -4,15 +4,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// use default number system configuration
+#include <cmath>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/cfloat_math_test_suite.hpp>
 
 bool isdenorm(float f) {
-	return (fpclassify(f) == FP_SUBNORMAL);
+	return (std::fpclassify(f) == FP_SUBNORMAL);
 }
 bool isdenorm(double d) {
-	return (fpclassify(d) == FP_SUBNORMAL);
+	return (std::fpclassify(d) == FP_SUBNORMAL);
 }
 
 #define MANUAL_TESTING 0

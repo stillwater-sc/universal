@@ -1,10 +1,10 @@
-// fractional.cpp: test suite runner for classification functions specialized for classic floats
+// fractions.cpp: test suite runner for mod/frac/reminder functions specialized for classic floats
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// use default number system configuration
+// #define TRACE_CONVERSION 1
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/cfloat_math_test_suite.hpp>
 
@@ -316,6 +316,23 @@ try {
 	return EXIT_SUCCESS; // ignore failures
 #else
 
+	{
+		using cfloat = sw::universal::cfloat<32, 8, uint32_t, true, false, false>;
+		// cfloat c = sw::universal::fmod(cfloat(1e9), cfloat(3.14159265358979));
+		cfloat pi = cfloat(3.14159265358979);
+		std::cout << to_binary(pi) << " : " << pi << '\n';
+		for (int i = 0; i < 10; ++i) {
+			cfloat powerOfTen = cfloat(std::pow(10.0f, float(i)));
+			std::cout << to_binary(powerOfTen) << " : " << powerOfTen << '\n';
+			cfloat cmod = cfloatmod(powerOfTen, pi);
+			float fmod = std::fmod(float(powerOfTen), float(pi));
+			std::cout << "cfloatmod: " << to_binary(cmod) << " : " << cmod << "\n";
+			std::cout << " floatmod: " << to_binary(fmod) << " : " << fmod << '\n';
+		}
+
+//		std::cout << "float: " << std::fmod(1e9f, 3.14159265358979f) << "\n";
+	}
+
 /*
 		a / b = 3
 		n * y = 0.0175781
@@ -365,6 +382,7 @@ try {
 		c = fmod(a, b);
 		std::cout << a << " " << b << " = " << c << '\n';
 	}
+
 
 
 #if REGRESSION_LEVEL_1
