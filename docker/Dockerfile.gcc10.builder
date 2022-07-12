@@ -3,7 +3,7 @@
 # docker build --target gcc10builder -t stillwater/universal:gcc10builder 
 
 # BUILDER stage
-FROM gcc:10.3 as gcc10builder
+FROM gcc:10.4 as gcc10builder
 LABEL Theodore Omtzigt
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
