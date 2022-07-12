@@ -314,6 +314,7 @@ elseif(MSVC)
 	# Zc:__cplusplus not specified		Any value					199711L
 	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
+      set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus")
 	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
 	# for the moment turn off since we are getting: cl : Command line warning D9002: ignoring unknown option '/Zc:__cplusplus`
 	#set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} /std:c++17")
