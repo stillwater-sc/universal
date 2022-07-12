@@ -1,6 +1,6 @@
 ﻿// lerp.cpp: evaluation of linear interpolation function
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <random>  // only valid for native types
@@ -73,7 +73,7 @@ try {
 	printSamples(std::cout, samples);
 
 	for (int i = 1; i < N; ++i) {
-		samples[i - 1] = lerp(samples[i - 1], samples[i]);
+		samples[i - 1] = sw::universal::lerp(samples[i - 1], samples[i]);
 	}
 	samples.pop_back();
 	printSamples(std::cout, samples);
