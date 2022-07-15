@@ -37,72 +37,24 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// important behavioral traits
-	{
-		using Real = lns<8, 2>;
-		bool isTrivial = bool(std::is_trivial<Real>());
-		static_assert(std::is_trivial<Real>(), "lns should be trivial but failed the assertion");
-		std::cout << (isTrivial ? "lns is trivial" : "lns failed trivial: FAIL") << '\n';
-
-		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Real>());
-		static_assert(std::is_trivially_constructible<Real>(), "lns should be trivially constructible but failed the assertion");
-		std::cout << (isTriviallyConstructible ? "lns is trivial constructible" : "lns failed trivial constructible: FAIL") << '\n';
-
-		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Real>());
-		static_assert(std::is_trivially_copyable<Real>(), "lns should be trivially copyable but failed the assertion");
-		std::cout << (isTriviallyCopyable ? "lns is trivially copyable" : "lns failed trivially copyable: FAIL") << '\n';
-
-		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<Real>());
-		static_assert(std::is_trivially_copy_assignable<Real>(), "lns should be trivially copy-assignable but failed the assertion");
-		std::cout << (isTriviallyCopyAssignable ? "lns is trivially copy-assignable" : "lns failed trivially copy-assignable: FAIL") << '\n';
-	}
+	ReportTrivialityOfType<lns<8, 2>>();
 
 	// default behavior
 	std::cout << "+---------    default lns bahavior\n";
 	{
 		using Real = lns<8, 3>;
-		Real a, b, c;
-		a = 1.0f;
-		b = 1.0f;
-		c = a + b;
-		ReportValues(a, "+", b, c);
-		c = a - b;
-		ReportValues(a, "-", b, c);
-		c = a * b;
-		ReportValues(a, "*", b, c);
-		c = a / b;
-		ReportValues(a, "/", b, c);
-
+		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 
 	// configuration
 	std::cout << "+---------    explicit alignment bahavior\n";
 	{
 		using Real = lns<16, 5, std::uint16_t>;
-		Real a, b, c;
-		a = 1.0f;
-		b = 1.0f;
-		c = a + b;
-		ReportValues(a, "+", b, c);
-		c = a - b;
-		ReportValues(a, "-", b, c);
-		c = a * b;
-		ReportValues(a, "*", b, c);
-		c = a / b;
-		ReportValues(a, "/", b, c);
+		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 	{
 		using Real = lns<24, 5, std::uint32_t>;
-		Real a, b, c;
-		a = 1.0f;
-		b = 1.0f;
-		c = a + b;
-		ReportValues(a, "+", b, c);
-		c = a - b;
-		ReportValues(a, "-", b, c);
-		c = a * b;
-		ReportValues(a, "*", b, c);
-		c = a / b;
-		ReportValues(a, "/", b, c);
+		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 
 	std::cout << "+---------    Dynamic ranges of lns<> configurations   --------+\n";

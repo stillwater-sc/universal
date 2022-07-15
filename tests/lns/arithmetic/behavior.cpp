@@ -115,7 +115,7 @@ try {
 		a = 1;
 		b = 2;
 		c = 3;
-		ReportValues(a, "+", b, c);
+		ReportBinaryOperation(a, "+", b, c);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -25,22 +25,8 @@ try {
 
 	// important behavioral traits
 	{
-		using Cfloat = cfloat<8, 2>;
-		bool isTrivial = bool(std::is_trivial<Cfloat>());	
-		static_assert(std::is_trivial<Cfloat>(), "cfloat should be trivial but failed the assertion");
-		std::cout << (isTrivial ? "cfloat is trivial" : "cfloat failed trivial: FAIL") << '\n';
-
-		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Cfloat>());
-		static_assert(std::is_trivially_constructible<Cfloat>(), "cfloat should be trivially constructible but failed the assertion");
-		std::cout << (isTriviallyConstructible ? "cfloat is trivial constructible" : "cfloat failed trivial constructible: FAIL") << '\n';
-		
-		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Cfloat>());
-		static_assert(std::is_trivially_copyable<Cfloat>(), "cfloat should be trivially copyable but failed the assertion");
-		std::cout << (isTriviallyCopyable ? "cfloat is trivially copyable" : "cfloat failed trivially copyable: FAIL") << '\n';
-
-		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<Cfloat>());
-		static_assert(std::is_trivially_copy_assignable<Cfloat>(), "cfloat should be trivially copy-assignable but failed the assertion");
-		std::cout << (isTriviallyCopyAssignable ? "cfloat is trivially copy-assignable" : "cfloat failed trivially copy-assignable: FAIL") << '\n';
+		using TestType = cfloat<8, 2>;
+		ReportTrivialityOfType<TestType>();
 	}
 
 	// default behavior
@@ -50,16 +36,8 @@ try {
 		constexpr size_t es = 3;
 		using Real = cfloat<nbits, es>;  // bt = uint8_t, hasSubnormals = false, hasSupernormals = false, isSaturating = false
 
-		Real a(1.0f), b(0.5f), c(0.0);
-		std::cout << type_tag(a) << '\n';
-		c = a + b;
-		ReportValues(a, "+", b, c);
-		c = a - b;
-		ReportValues(a, "-", b, c);
-		c = a * b;
-		ReportValues(a, "*", b, c);
-		c = a / b;
-		ReportValues(a, "/", b, c);
+		Real a(1.0f), b(0.5f);
+		ArithmeticOperators(a, b);
 	}
 
 	// explicit configuration
@@ -73,16 +51,8 @@ try {
 		constexpr bool isSaturating    = false;
 		using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 
-		Real a(1.0f), b(0.5f), c(0.0);
-		std::cout << type_tag(a) << '\n';
-		c = a + b;
-		ReportValues(a, "+", b, c);
-		c = a - b;
-		ReportValues(a, "-", b, c);
-		c = a * b;
-		ReportValues(a, "*", b, c);
-		c = a / b;
-		ReportValues(a, "/", b, c);
+		Real a(1.0f), b(0.5f);
+		ArithmeticOperators(a, b);
 	}
 
 	// report on the dynamic range of some standard configurations

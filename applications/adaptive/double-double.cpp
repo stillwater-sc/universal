@@ -51,7 +51,7 @@ try {
 		a = 0.5;
 		b = 2.0;
 		c = a * b;
-		ReportValues(a, "*", b, c);
+		ReportBinaryOperation(a, "*", b, c);
 	}
 
 	std::cout << std::setprecision(precision);

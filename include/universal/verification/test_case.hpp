@@ -89,7 +89,18 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	void ReportValues(const TestType& a, const std::string& op, const TestType& b, const TestType& c) {
+	void ReportValue(const TestType& a) {
+		std::cout << to_binary(a) << " : " << a << '\n';
+	}
+
+	template<typename TestType>
+	void ReportUnaryOperation(const std::string& op, const TestType& a, const TestType& c) {
+		std::cout << op << ' ' << to_binary(a) << " -> " << to_binary(c) << '\n';
+		std::cout << op << ' ' << a << " -> " << c << '\n';
+	}
+
+	template<typename TestType>
+	void ReportBinaryOperation(const TestType& a, const std::string& op, const TestType& b, const TestType& c) {
 		std::cout << to_binary(a) << ' ' << op << ' ' << to_binary(b) << " = " << to_binary(c) << '\n';
 		std::cout << a << ' ' << op << ' ' << b << " = " << c << '\n';
 	}

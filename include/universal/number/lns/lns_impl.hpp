@@ -133,8 +133,10 @@ public:
 
 	// arithmetic operators
 	// prefix operator
-	lns operator-() const {				
-		return *this;
+	lns operator-() const noexcept {
+		lns negate(*this);
+		negate.setbit(nbits - 1, !sign());
+		return negate;
 	}
 
 	// in-place arithmetic assignment operators
@@ -202,6 +204,7 @@ public:
 
 	// prefix/postfix operators
 	lns& operator++() {
+		++_block;
 		return *this;
 	}
 	lns operator++(int) {
@@ -210,6 +213,7 @@ public:
 		return tmp;
 	}
 	lns& operator--() {
+		--_block;
 		return *this;
 	}
 	lns operator--(int) {
@@ -223,7 +227,7 @@ public:
 	constexpr void clear()                         noexcept { _block.clear(); }
 	constexpr void setzero()                       noexcept { _block.clear(); setbit(nbits - 2, true); }
 	constexpr void setnan()                        noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
-	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want
+	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
