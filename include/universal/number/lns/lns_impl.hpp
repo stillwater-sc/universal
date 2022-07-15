@@ -133,7 +133,7 @@ public:
 
 	// arithmetic operators
 	// prefix operator
-	lns operator-() const noexcept {
+	constexpr lns operator-() const noexcept {
 		lns negate(*this);
 		negate.setbit(nbits - 1, !sign());
 		return negate;

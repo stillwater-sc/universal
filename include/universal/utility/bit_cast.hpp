@@ -37,7 +37,7 @@ static_assert(false, "BIT_CAST_SUPPORT is deprecated; bit_cast.hpp now defines "
 #include <type_traits>
 
 #if __cpp_lib_bit_cast
-#  define BIT_CAST using std::bit_cast;
+#  define BIT_CAST using std::bit_cast
 #  define BIT_CAST_CONSTEXPR constexpr
 #  define BIT_CAST_IS_CONSTEXPR true
 #elif defined(__has_builtin)

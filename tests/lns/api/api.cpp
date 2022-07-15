@@ -43,7 +43,12 @@ try {
 	std::cout << "+---------    default lns bahavior\n";
 	{
 		using Real = lns<8, 3>;
-		ArithmeticOperators<Real>(1.0f, 1.0f);
+		Real a(1.0f), b(1.0f), c;
+		ArithmeticOperators<Real>(a, b);
+		a = 1;  // integer assignment
+		b = 1;
+		c = a + b;
+		ReportBinaryOperation(a, "*", b, c);
 	}
 
 	// configuration
@@ -86,7 +91,23 @@ try {
 		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
 	}
 
-	std::cout << "---------    comparison to classic floats\n";
+	std::cout << "+---------    extreme values   --------+\n";
+	{
+		constexpr size_t nbits = 10;
+		constexpr size_t es = 3;
+		using Real = lns<nbits, es>;  // bt = uint8_t
+
+		Real a, b, c;
+
+		a = INFINITY;
+		b = 2;
+		c = a / b;
+		std::cout << "scale(" << a << ") = " << a.scale() << '\n';
+		std::cout << "scale(" << b << ") = " << b.scale() << '\n';
+		ReportBinaryOperation(a, "/", b, c);
+	}
+
+	std::cout << "+---------    comparison to classic floats\n";
 	{
 		using LNS = lns<16, 8, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
