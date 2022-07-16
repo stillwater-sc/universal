@@ -57,6 +57,16 @@ try {
 	}
 
 	{
+		using TestType = fixpnt<8, 4, Modulo, uint8_t>;
+		if constexpr (static_cast<bool>(std::is_trivial<TestType>())) {
+			ReportTrivialityOfType<TestType>();
+		}
+		else {
+			std::cout << "FAIL: " << type_tag(TestType()) << " is not yet trivial\n";
+		}
+	}
+
+	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
 		fixpnt<8, 4, Modulo> a, b(-8.125), c(7.875), d(-7.875);

@@ -142,8 +142,9 @@ public:
 #endif
 
 	// access operators
-	BlockType& operator[](size_t index) { return _block[index]; }
-	const BlockType operator[](size_t index) const { return _block[index]; }
+	constexpr BlockType& operator[](size_t index) { return _block[index]; }
+	constexpr BlockType operator[](size_t index) const { return _block[index]; }
+
 	// prefix operators
 	blockbinary operator-() const {
 		blockbinary negated(*this);
@@ -662,9 +663,8 @@ private:
 
 // Generate a type tag for blockbinary
 template<size_t N, typename B, BinaryNumberType T>
-std::string type_tag(const blockbinary<N, B, T>& v) {
+std::string type_tag(const blockbinary<N, B, T>& = {}) {
 	std::stringstream str;
-	if (v.isneg()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
 	str << "blockbinary<"
 		<< std::setw(4) << N << ", "
 		<< typeid(B).name() << ", "

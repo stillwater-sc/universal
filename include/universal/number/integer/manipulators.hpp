@@ -10,9 +10,8 @@ namespace sw { namespace universal {
 
 // Generate a type tag for general integer
 template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
-std::string type_tag(const integer<nbits, BlockType, NumberType>& v) {
+std::string type_tag(const integer<nbits, BlockType, NumberType>& = {}) {
 	std::stringstream str;
-	if (v.iszero()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
 	str << "integer<"
 	    << std::setw(4) << nbits << ", "
 	    << typeid(BlockType).name() << ", "

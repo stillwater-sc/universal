@@ -10,6 +10,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/abstract/triple.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>
 
 namespace sw { namespace universal {
 		
@@ -74,6 +75,45 @@ public:
 	/// trivial constructor
 	lns() = default;
 
+	// decorated/converting constructors
+	constexpr lns(const std::string& stringRep) {
+		assign(stringRep);
+	}
+
+	// specific value constructor
+	constexpr lns(const SpecificValue code) noexcept
+		: _block{ 0 } {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::zero:
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		case SpecificValue::infpos:
+			setinf(false);
+			break;
+		case SpecificValue::infneg:
+			setinf(true);
+			break;
+		case SpecificValue::nar: // approximation as lns don't have a NaR
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+			setnan();
+			break;
+		}
+	}
+
 	constexpr lns(signed char initial_value)        noexcept { *this = initial_value; }
 	constexpr lns(short initial_value)              noexcept { *this = initial_value; }
 	constexpr lns(int initial_value)                noexcept { *this = initial_value; }
@@ -93,8 +133,10 @@ public:
 
 	// arithmetic operators
 	// prefix operator
-	lns operator-() const {				
-		return *this;
+	constexpr lns operator-() const noexcept {
+		lns negate(*this);
+		negate.setbit(nbits - 1, !sign());
+		return negate;
 	}
 
 	// in-place arithmetic assignment operators
@@ -162,6 +204,7 @@ public:
 
 	// prefix/postfix operators
 	lns& operator++() {
+		++_block;
 		return *this;
 	}
 	lns operator++(int) {
@@ -170,6 +213,7 @@ public:
 		return tmp;
 	}
 	lns& operator--() {
+		--_block;
 		return *this;
 	}
 	lns operator--(int) {
@@ -183,6 +227,7 @@ public:
 	constexpr void clear()                         noexcept { _block.clear(); }
 	constexpr void setzero()                       noexcept { _block.clear(); setbit(nbits - 2, true); }
 	constexpr void setnan()                        noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
+	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
@@ -207,6 +252,44 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
 	
+	// create specific number system values of interest
+	constexpr lns& maxpos() noexcept {
+		// maximum positive value has this bit pattern: 0-01..1-111...111, that is, sign = 0, integer = 01..11, fraction = 11..11
+		clear();
+		flip();
+		setbit(nbits - 1ull, false); // sign = 0
+		setbit(nbits - 2ull, false); // msb  = 0
+		return *this;
+	}
+	constexpr lns& minpos() noexcept {
+		// minimum positive value has this bit pattern: 0-100-00...01, that is, sign = 0, integer = 10..00, fraction = 00..01
+		clear();
+		setbit(nbits - 2, true);    // msb  = 1
+		setbit(0, true);            // lsb  = 1
+		return *this;
+	}
+	constexpr lns& zero() noexcept {
+		// the zero value has this bit pattern: 0-100..00-00..000, sign = 0, msb = 1, rest 0
+		clear(); 
+		setbit(nbits - 2, true);    // msb = 1
+		return *this;
+	}
+	constexpr lns& minneg() noexcept {
+		// minimum negative value has this bit pattern: 1-100-00...01, that is, sign = 1, integer = 10..00, fraction = 00..01
+		clear();
+		setbit(nbits - 1ull, true); // sign = 1
+		setbit(nbits - 2, true);    // msb  = 1
+		setbit(0, true);            // lsb  = 1
+		return *this;
+	}
+	constexpr lns& maxneg() noexcept {
+		// maximum negative value has this bit pattern: 1-01..1-11..11, that is, sign = 1, integer = 01..1, fraction = 11..11
+		clear();
+		flip();
+		setbit(nbits - 2ull, false); // msb  = 0
+		return *this;
+	}
+
 	// selectors
 	constexpr bool iszero() const noexcept { // special encoding: 0.1000.0000
 		if constexpr (nrBlocks == 1) {
@@ -318,24 +401,70 @@ public:
 
 protected:
 
+	/// <summary>
+	/// 1's complement of the encoding. Used internally to create specific bit patterns
+	/// </summary>
+	/// <returns>reference to this cfloat object</returns>
+	constexpr lns& flip() noexcept { // in-place one's complement
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] = bt(~_block[i]);
+		}
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+
+	/// <summary>
+	/// assign the value of the string representation to the cfloat
+	/// </summary>
+	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
+	/// <returns>reference to this cfloat</returns>
+	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
+	CONSTEXPRESSION lns& assign(const std::string& str) noexcept {
+		clear();
+		return *this;
+	}
+
 	//////////////////////////////////////////////////////
 	/// convertion routines from native types
 
 	template<typename SignedInt>
-	constexpr lns& convert_signed(SignedInt v) {
-		clear();
-		return *this;
+	CONSTEXPRESSION lns& convert_signed(SignedInt v) noexcept {
+		return convert_ieee754(double(v));
 	}
 	template<typename UnsignedInt>
-	constexpr lns& convert_unsigned(UnsignedInt v) {
-		clear();
-		return *this;
+	CONSTEXPRESSION lns& convert_unsigned(UnsignedInt v) noexcept {
+		return convert_ieee754(double(v));
 	}
 	template<typename Real>
-	CONSTEXPRESSION lns& convert_ieee754(Real v) {
-		if (std::fpclassify(v) == FP_NAN) {
-			setnan();
-			return *this;
+	CONSTEXPRESSION lns& convert_ieee754(Real v) noexcept {
+		bool s{ false };
+		uint64_t unbiasedExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		extractFields(v, s, unbiasedExponent, rawFraction);
+		if (unbiasedExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
+			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
+				rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
+				// 1.11111111.00000000.......00000001 signalling nan
+				// 0.11111111.00000000000000000000001 signalling nan
+				// MSVC
+				// 1.11111111.10000000.......00000001 signalling nan
+				// 0.11111111.10000000.......00000001 signalling nan
+				setnan();
+				return *this;
+			}
+			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
+				// 1.11111111.10000000.......00000000 quiet nan
+				// 0.11111111.10000000.......00000000 quiet nan
+				setnan();
+				//setsign(s);  a cfloat encodes a signalling nan with sign = 1, and a quiet nan with sign = 0
+				return *this;
+			}
+			if (rawFraction == 0ull) {
+				// 1.11111111.0000000.......000000000 -inf
+				// 0.11111111.0000000.......000000000 +inf
+				setinf(s);
+				return *this;
+			}
 		}
 		if (v == 0.0) {
 			setzero();
@@ -354,11 +483,8 @@ protected:
 
 		ExponentBlockBinary lnsExponent{ 0 };
 
-		bool s{ false };
-		uint64_t unbiasedExponent{ 0 };
-		uint64_t raw{ 0 };
-		extractFields(logv, s, unbiasedExponent, raw); // use native conversion
-		if (unbiasedExponent > 0) raw |= (1ull << ieee754_parameter<Real>::fbits);
+		extractFields(logv, s, unbiasedExponent, rawFraction); // use native conversion
+		if (unbiasedExponent > 0) rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
 		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
 
 		// our fixed-point has its radixPoint at rbits
@@ -366,7 +492,7 @@ protected:
 		if (shiftRight > 0) {
 			if (shiftRight > 63) {
 				// this shift degree would be undefined behavior, but the intended transformation is that we have no bits
-				raw = 0;
+				rawFraction = 0;
 			}
 			else {
 				// we need to round the raw bits
@@ -376,9 +502,9 @@ protected:
 				// because the mask logic will make round and sticky both 0
 				// so no need to special case it
 				uint64_t mask = (1ull << (shiftRight - 1));
-				bool guard = (mask & raw);
+				bool guard = (mask & rawFraction);
 				mask >>= 1;
-				bool round = (mask & raw);
+				bool round = (mask & rawFraction);
 				if (shiftRight > 1) {
 					mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
 					mask = ~mask;
@@ -386,10 +512,10 @@ protected:
 				else {
 					mask = 0;
 				}
-				bool sticky = (mask & raw);
+				bool sticky = (mask & rawFraction);
 
-				raw >>= shiftRight;  // shift out the bits we are rounding away
-				bool lsb = (raw & 0x1ul);
+				rawFraction >>= shiftRight;  // shift out the bits we are rounding away
+				bool lsb = (rawFraction & 0x1ul);
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
 				//       0     1       0     0       down  round to even
@@ -398,28 +524,28 @@ protected:
 				//       x     1       1     0        up
 				//       x     1       1     1        up
 				if (guard) {
-					if (lsb && (!round && !sticky)) ++raw; // round to even
-					if (round || sticky) ++raw;
+					if (lsb && (!round && !sticky)) ++rawFraction; // round to even
+					if (round || sticky) ++rawFraction;
 				}
-				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
+				rawFraction = (s ? (~rawFraction + 1) : rawFraction); // if negative, map to two's complement
 			}
-			lnsExponent.setbits(raw);
+			lnsExponent.setbits(rawFraction);
 		}
 		else {
 			int shiftLeft = -shiftRight;
 			if (shiftLeft < (64 - ieee754_parameter<Real>::fbits)) {  // what is the distance between the MSB and 64?
 				// no need to round, just shift the bits in place
-				raw <<= shiftLeft;
-				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
-				lnsExponent.setbits(raw);
+				rawFraction <<= shiftLeft;
+				rawFraction = (s ? (~rawFraction + 1) : rawFraction); // if negative, map to two's complement
+				lnsExponent.setbits(rawFraction);
 			}
 			else {
 				// we need to project the bits we have on the fixpnt
 				for (size_t i = 0; i < ieee754_parameter<Real>::fbits + 1; ++i) {
-					if (raw & 0x01) {
+					if (rawFraction & 0x01) {
 						lnsExponent.setbit(i + shiftLeft);
 					}
-					raw >>= 1;
+					rawFraction >>= 1;
 				}
 				if (s) lnsExponent.twosComplement();
 			}
@@ -431,7 +557,7 @@ protected:
 	}
 
 	//////////////////////////////////////////////////////
-/// convertion routines to native types
+	/// convertion routines to native types
 
 	template<typename SignedInt>
 	typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
@@ -605,30 +731,90 @@ template<size_t nnbits, size_t rrbits, typename nbt>
 inline bool operator>=(const lns<nnbits, rrbits, nbt>& lhs, double rhs) { return !operator< (lhs, rhs); }
 
 // lns - lns binary arithmetic operators
-// BINARY ADDITION
+
 template<size_t nbits, size_t rbits, typename bt>
 inline lns<nbits, rbits, bt> operator+(const lns<nbits, rbits, bt>& lhs, const lns<nbits, rbits, bt>& rhs) {
 	lns<nbits, rbits, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
-// BINARY SUBTRACTION
+
 template<size_t nbits, size_t rbits, typename bt>
 inline lns<nbits, rbits, bt> operator-(const lns<nbits, rbits, bt>& lhs, const lns<nbits, rbits, bt>& rhs) {
 	lns<nbits, rbits, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
-// BINARY MULTIPLICATION
+
 template<size_t nbits, size_t rbits, typename bt>
 inline lns<nbits, rbits, bt> operator*(const lns<nbits, rbits, bt>& lhs, const lns<nbits, rbits, bt>& rhs) {
 	lns<nbits, rbits, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
-// BINARY DIVISION
+
 template<size_t nbits, size_t rbits, typename bt>
 inline lns<nbits, rbits, bt> operator/(const lns<nbits, rbits, bt>& lhs, const lns<nbits, rbits, bt>& rhs) {
+	lns<nbits, rbits, bt> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
+}
+
+// lns - literal binary arithmetic operators
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator+(const lns<nbits, rbits, bt>& lhs, double rhs) {
+	lns<nbits, rbits, bt> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator-(const lns<nbits, rbits, bt>& lhs, double rhs) {
+	lns<nbits, rbits, bt> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator*(const lns<nbits, rbits, bt>& lhs, double rhs) {
+	lns<nbits, rbits, bt> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator/(const lns<nbits, rbits, bt>& lhs, double rhs) {
+	lns<nbits, rbits, bt> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
+}
+
+// literal - lns binary arithmetic operators
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator+(double lhs, const lns<nbits, rbits, bt>& rhs) {
+	lns<nbits, rbits, bt> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator-(double lhs, const lns<nbits, rbits, bt>& rhs) {
+	lns<nbits, rbits, bt> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator*(double lhs, const lns<nbits, rbits, bt>& rhs) {
+	lns<nbits, rbits, bt> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> operator/(double lhs, const lns<nbits, rbits, bt>& rhs) {
 	lns<nbits, rbits, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;

@@ -1,6 +1,6 @@
 //  perf.cpp : baseline performance benchmarking for cfloat arithmetic operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -116,22 +116,22 @@ namespace sw::universal::internal {
 		std::cout << "\nArithmetic operator performance\n";
 
 		size_t NR_OPS = 1024ull * 1024ull * 4ull;
-		PerformanceRunner("cfloat<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
-		PerformanceRunner("cfloat<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("cfloat<128>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::cfloat<128, 15, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("cfloat< 16, 5>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 32, 8>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 64,11>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS);
+		PerformanceRunner("cfloat<128,15>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::cfloat<128, 15, uint32_t> >, NR_OPS / 2);
 
 		NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("cfloat<16>   multiplication", MultiplicationWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<32>   multiplication", MultiplicationWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS / 2);
-		PerformanceRunner("cfloat<64>   multiplication", MultiplicationWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS / 4);
-		PerformanceRunner("cfloat<128>  multiplication", MultiplicationWorkload< sw::universal::cfloat<128, 15, uint32_t> >, NR_OPS / 64);
+		PerformanceRunner("cfloat< 16, 5>   multiplication", MultiplicationWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 32, 8>   multiplication", MultiplicationWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("cfloat< 64,11>   multiplication", MultiplicationWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS / 4);
+		PerformanceRunner("cfloat<128,15>   multiplication", MultiplicationWorkload< sw::universal::cfloat<128, 15, uint32_t> >, NR_OPS / 64);
 
 		NR_OPS = 1024ull * 512ull;
-		PerformanceRunner("cfloat<16>   division      ", DivisionWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<32>   division      ", DivisionWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
-		PerformanceRunner("cfloat<64>   division      ", DivisionWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS / 2);
-		PerformanceRunner("cfloat<128>  division      ", DivisionWorkload< sw::universal::cfloat<128, 15, uint32_t> >, NR_OPS / 4);
+		PerformanceRunner("cfloat< 16, 5>   division      ", DivisionWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 32, 8>   division      ", DivisionWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 64,11>   division      ", DivisionWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("cfloat<128,15>   division      ", DivisionWorkload< sw::universal::cfloat<128, 15, uint32_t> >, NR_OPS / 4);
 	}
 
 	/*
@@ -144,23 +144,24 @@ namespace sw::universal::internal {
 
 		constexpr size_t NR_OPS = 32ull * 1024ull * 1024ull;
 
-		PerformanceRunner("cfloat<8,uint8_t>      add   ", AdditionSubtractionWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<16,uint8_t>     add   ", AdditionSubtractionWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<32,uint8_t>     add   ", AdditionSubtractionWorkload< sw::universal::cfloat<32, 8, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<64,uint8_t>     add   ", AdditionSubtractionWorkload< sw::universal::cfloat<64, 11, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<128,uint8_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<128, 15, uint8_t> >, NR_OPS / 2);
+		PerformanceRunner("cfloat<  8, 2, uint8_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 16, 5, uint8_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 32, 8, uint8_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<32, 8, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 64,11, uint8_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<64, 11, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat<128,15, uint8_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<128, 15, uint8_t> >, NR_OPS / 2);
 
-		PerformanceRunner("cfloat<8,uint32_t>     add   ", AdditionSubtractionWorkload< sw::universal::cfloat<8, 2, uint32_t> >, NR_OPS);
-		PerformanceRunner("cfloat<16,uint32_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<16, 5, uint32_t> >, NR_OPS);
-		PerformanceRunner("cfloat<32,uint32_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
-		PerformanceRunner("cfloat<64,uint32_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("cfloat<128,uint32_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<128, 15, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("cfloat<  8, 2, uint32_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<8, 2, uint32_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 16, 5, uint32_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<16, 5, uint32_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 32, 8, uint32_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<32, 8, uint32_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 64,11, uint32_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<64, 11, uint32_t> >, NR_OPS);
+		PerformanceRunner("cfloat<128,15, uint32_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<128, 15, uint32_t> >, NR_OPS / 2);
 
-		PerformanceRunner("cfloat<8,uint64_t>     add   ", AdditionSubtractionWorkload< sw::universal::cfloat<8, 2, uint64_t> >, NR_OPS);
-		PerformanceRunner("cfloat<16,uint64_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<16, 5, uint64_t> >, NR_OPS);
-		PerformanceRunner("cfloat<32,uint64_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<32, 8, uint64_t> >, NR_OPS);
-		PerformanceRunner("cfloat<64,uint64_t>    add   ", AdditionSubtractionWorkload< sw::universal::cfloat<64, 11, uint64_t> >, NR_OPS);
-		PerformanceRunner("cfloat<128,uint64_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<128, 15, uint64_t> >, NR_OPS / 2);
+		PerformanceRunner("cfloat<  8, 2, uint64_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<8, 2, uint64_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 16, 5, uint64_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<16, 5, uint64_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 32, 8, uint64_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<32, 8, uint64_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 64,11, uint64_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<64, 11, uint64_t> >, NR_OPS);
+		// this does not work!!! just a sense of performance. we don't have a mechanism to receive a carry from uint64_t limb arithmetic
+		PerformanceRunner("cfloat<128,15, uint64_t>   add   ", AdditionSubtractionWorkload< sw::universal::cfloat<128, 15, uint64_t> >, NR_OPS / 2);
 	}
 
 	void TestBlockPerformanceOnDiv() {
@@ -168,11 +169,11 @@ namespace sw::universal::internal {
 		std::cout << "\nDIVISION: cfloat arithemetic performance as a function of size and BlockType\n";
 
 		constexpr size_t NR_OPS = 1024ull * 1024;
-		PerformanceRunner("cfloat<8,uint8>      div   ", DivisionWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<16,uint8>     div   ", DivisionWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<32,uint8>     div   ", DivisionWorkload< sw::universal::cfloat<32, 8, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<64,uint8>     div   ", DivisionWorkload< sw::universal::cfloat<64, 11, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<128,uint8>    div   ", DivisionWorkload< sw::universal::cfloat<128, 15, uint8_t> >, NR_OPS / 2);
+		PerformanceRunner("cfloat<  8, 2, uint8_t>    div   ", DivisionWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 16, 5, uint8_t>    div   ", DivisionWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 32, 8, uint8_t>    div   ", DivisionWorkload< sw::universal::cfloat<32, 8, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 64,11, uint8_t>    div   ", DivisionWorkload< sw::universal::cfloat<64, 11, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat<128,15, uint8_t>    div   ", DivisionWorkload< sw::universal::cfloat<128, 15, uint8_t> >, NR_OPS / 2);
 	}
 
 	void TestBlockPerformanceOnMul() {
@@ -180,11 +181,11 @@ namespace sw::universal::internal {
 		std::cout << "\nMULTIPLICATION: cfloat arithemetic performance as a function of size and BlockType\n";
 
 		constexpr size_t NR_OPS = 512ull * 1024;
-		PerformanceRunner("cfloat<8,uint8>      mul   ", MultiplicationWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<16,uint8>     mul   ", MultiplicationWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<32,uint8>     mul   ", MultiplicationWorkload< sw::universal::cfloat<32, 8, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<64,uint8>     mul   ", MultiplicationWorkload< sw::universal::cfloat<64, 11, uint8_t> >, NR_OPS);
-		PerformanceRunner("cfloat<128,uint8>    mul   ", MultiplicationWorkload< sw::universal::cfloat<128, 15, uint8_t> >, NR_OPS / 2);
+		PerformanceRunner("cfloat<  8, 2, uint8_t>    mul   ", MultiplicationWorkload< sw::universal::cfloat<8, 2, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 16, 5, uint8_t>    mul   ", MultiplicationWorkload< sw::universal::cfloat<16, 5, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 32, 8, uint8_t>    mul   ", MultiplicationWorkload< sw::universal::cfloat<32, 8, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat< 64,11, uint8_t>    mul   ", MultiplicationWorkload< sw::universal::cfloat<64, 11, uint8_t> >, NR_OPS);
+		PerformanceRunner("cfloat<128,15, uint8_t>    mul   ", MultiplicationWorkload< sw::universal::cfloat<128, 15, uint8_t> >, NR_OPS / 2);
 	}
 }
 
@@ -209,12 +210,12 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 
-	std::string test_suite = "cfloat operator performance benchmarking";
-//	std::string test_tag = "cfloat performance";
-//	bool reportTestCases = true;
+	std::string test_suite  = "cfloat operator performance benchmarking";
+	std::string test_tag    = "performance";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 

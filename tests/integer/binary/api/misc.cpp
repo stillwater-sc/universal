@@ -50,10 +50,10 @@ void TestSizeof() {
 	using int128 = integer<128, uint32_t>;
 	using int1024 = integer<1024, uint32_t>;
 
-	int8 a;
-	int64 k;
-	int128 m;
-	int1024 o;
+	int8 a{};
+	int64 k{};
+	int128 m{};
+	int1024 o{};
 
 	constexpr int WIDTH = 30;
 	std::cout << std::setw(WIDTH) << type_tag(a) << "  size in bytes " << a.nbits / 8 << '\n';
