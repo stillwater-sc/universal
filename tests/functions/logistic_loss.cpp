@@ -1,8 +1,10 @@
-﻿// logistic-loss.cpp: logictic loss function and its tempered and bi-tempered variants
+﻿// logistic_loss.cpp: logistic loss function and its tempered and bi-tempered variants
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+
 #define ALIASING_ALLOWED
 #include <universal/number/posit/posit.hpp>
 #include <universal/functions/loss.hpp>
@@ -16,22 +18,56 @@ try {
 	using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
-	//bool verbose = false;
 
 	// preserve the existing ostream precision
 	auto precision = std::cout.precision();
 	std::cout << std::setprecision(12);
 
-	Posit tmps[] = { Posit(0.0), Posit(0.2), Posit(0.4), Posit(0.6), Posit(0.8), --Posit(1.0) };
+	Posit one_minus_1ulp(1.0f);
+	--one_minus_1ulp;
+	Posit one_plus_1ulp(1.0f);
+	++one_plus_1ulp;
 
-	for (Posit t : tmps) {
-		Posit ub = Posit(4.0);
-		constexpr unsigned nrSamples = 16;
-		Posit step = ub / nrSamples;
-		Posit x = Posit(0); // minpos<nbits, es>();
-		for (unsigned i = 0; i <= nrSamples; ++i) {
-			std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << logt(t, x) << '\n';
-			x += step;
+	{
+
+		// has to be in double as floats do not have the precision to capture 1 - ULP of 32bit posit
+		double tmps[] = { 0.0, 0.2, 0.4, 0.6, 0.8, double(one_minus_1ulp) };   // temperature can't be 1
+
+
+		// logt(x) := (1 / (1 – t)) * (x ^ (1–t) – 1)
+		// plot tempered logarithm
+		for (Posit t : tmps) {
+			Posit upperbound = Posit(4.0);
+			constexpr unsigned nrSamples = 16;
+			Posit step = upperbound / nrSamples;
+			Posit x = 0;
+			for (unsigned i = 0; i <= nrSamples; ++i) {
+				std::cout << "x = " << x << " logt(" << t << "," << x << ") = " << logt(t, x) << '\n';
+				x += step;
+			}
+		}
+	}
+
+	// expt(x) : = [1 + (1 – t) x]+ ^ (1 / (1–t))
+	// plot tempered exponent
+	{
+
+		// has to be in double as floats do not have the precision to capture 1 - ULP of 32bit posit
+		double tmps[] = { double(one_plus_1ulp), 1.5, 2.0, 2.5, 3.0, 3.5 };   // temperature can't be 1
+
+
+		// expt(x) : = [1 + (1 – t) x]+ ^ (1 / (1–t))
+		// plot tempered exponent
+		for (Posit t : tmps) {
+			Posit lowerbound = Posit(-4.0);
+			Posit upperbound = Posit(0.5);
+			constexpr unsigned nrSamples = 16;
+			Posit step = (upperbound - lowerbound)/ nrSamples;
+			Posit x = lowerbound;
+			for (unsigned i = 0; i <= nrSamples; ++i) {
+				std::cout << "x = " << x << " expt(" << t << "," << x << ") = " << expt(t, x) << '\n';
+				x += step;
+			}
 		}
 	}
 
