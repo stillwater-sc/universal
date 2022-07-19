@@ -58,6 +58,14 @@ posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y) {
 	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y)));
 }
 
+// _MSVC_LANG Defined as an integer literal that specifies the C++ language standard targeted by the compiler.
+// It's set only in code compiled as C++. 
+// The macro is the integer literal value 201402L by default, or when the /std:c++14 compiler option is specified. 
+// The macro is set to 201703L if the /std:c++17 compiler option is specified. 
+// The macro is set to 202002L if the /std:c++20 compiler option is specified. 
+// It's set to a higher, unspecified value when the / std:c++latest option is specified.Otherwise, the macro is undefined.
+
+#ifdef LATER
 // since C++17
 template<size_t nbits, size_t es>
 posit<nbits,es> hypot(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
@@ -73,5 +81,6 @@ template<size_t nbits, size_t es>
 posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
 	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y),(long double)(z)));
 }
+#endif
 
 }} // namespace sw::universal

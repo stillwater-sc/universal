@@ -1,4 +1,4 @@
-// function_logarithm.cpp: test suite runner for the logarithm functions (log2, log10, ln)
+// logarithm.cpp: test suite runner for the logarithm functions (log2, log10, ln)
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
