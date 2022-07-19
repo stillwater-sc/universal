@@ -68,5 +68,30 @@ public:
 
 }} // namespace sw::universal
 
+// RISC-V has a greatly reduced <cmath> so we are going to stub
+// the missing functions out so software compiles, but will
+// provide user feedback of the missing implementation
+namespace std {
+
+	template<typename Scalar,
+		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+		Scalar nextafter(Scalar x, Scalar target) {
+		return nextafter(double(x), double(target));
+	}
+
+	template<typename Scalar,
+		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+		Scalar trunc(Scalar x) {
+		return trunc(double(x));  // call the math.h function
+	}
+
+	template<typename Scalar,
+		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+		Scalar round(Scalar x) {
+		return round(double(x));   // call the math.h function
+	}
+
+}
+
 #endif // RISC-V G++ tool chain
 

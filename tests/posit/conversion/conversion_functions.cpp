@@ -1,12 +1,11 @@
 // conversion_functions.cpp : api experiments for conversion algorithms
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// minimum set of include files
-#include "universal/number/posit/posit_impl.hpp"
-#include "universal/number/posit/manipulators.hpp"
+#include <universal/utility/directives.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/verification/test_suite.hpp>
 
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const sw::universal::posit<nbits, es>& presult, const sw::universal::posit<nbits + 1, es>& pnext) {
@@ -196,7 +195,7 @@ bool increment_bitblock(sw::universal::bitblock<nbits>& number) {
 	for (size_t i = 0; i < nbits; i++) {
 		bool _a = number[i];
 		number[i] = _a ^ carry;
-		carry = carry & (_a ^ false);
+		carry = carry && (_a ^ false);
 	}
 	return carry;
 }
@@ -208,7 +207,7 @@ bool decrement_bitblock(sw::universal::bitblock<nbits>& number) {
 	for (size_t i = 0; i < nbits; i++) {
 		bool _a = number[i];
 		number[i] = _a ^ borrow;
-		borrow = (!(!_a ^ true) & borrow);
+		borrow = (!(!_a ^ true) && borrow);
 	}
 	return borrow;
 }
@@ -296,17 +295,21 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 #else
 	float e = std::floor(std::log2(y));
 #endif
+
+
 	if (bPrintIntermediateSteps) std::cout << "e        = " << e << '\n';
 	float f = y / float(pow(2.0, scale)) - 1.0f;
 	if (bPrintIntermediateSteps) std::cout << "f        = " << f << '\n';
 	if (bPrintIntermediateSteps) std::cout << "bits     = " << bits << '\n';
-	int run = (int)std::abs(std::floor(e / pow(2, es))) + r;
+	unsigned run = static_cast<unsigned>(std::abs(std::floor(e / pow(2, es)))) + r;
 	if (bPrintIntermediateSteps) std::cout << "run      = " << run << '\n';
-	unsigned _run = (r ? 1 + (scale >> es) : -(scale >> es));
+
+	unsigned _run = static_cast<unsigned>(r ? 1 + (scale >> es) : -(scale >> es));
 	if (bPrintIntermediateSteps) std::cout << "_run     = " << _run << '\n';
+
 	// reg   = BitOr[BitShiftLeft[r * (2^run - 1), 1], BitXor[1, r]];
 	regime.set(0, 1 ^ r);
-	for (int i = 1; i <= run; i++) regime.set(i, r);
+	for (size_t i = 1; i <= run; ++i) regime.set(i, r);
 	if (bPrintIntermediateSteps) std::cout << "reg      = " << LowerSegment(regime,run) << '\n';
 	sw::universal::regime<nbits, es> _reg; _reg.assign(scale);
 	if (bPrintIntermediateSteps) std::cout << "_reg     = " << _reg << '\n';
@@ -318,9 +321,9 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	// copy the most significant nf fraction bits into fraction
 	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - nf + i];
 	if (bPrintIntermediateSteps) std::cout << "fraction = " << fraction << '\n';
-	float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
+	float fv = std::floor(f * float(unsigned(1) << nf));
 	if (bPrintIntermediateSteps) std::cout << "fv       = " << fv << '\n';
-	bool sb = ((f * (unsigned(1) << nf)) > fv);
+	bool sb = ((f * float(unsigned(1) << nf)) > fv);
 	if (bPrintIntermediateSteps) std::cout << "sb       = " << (sb ? "1" : "0") << '\n';
 
 	// construct the bigger posit
@@ -368,6 +371,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	posit<nbits, es> p;
 	p.setbits(ptt_t.to_ullong());
 	std::cout << "p = " << components(p) << '\n';
+
 }
 
 template<size_t nbits, size_t es, size_t nrfbits>
@@ -621,17 +625,32 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 	std::cout << components_to_string(p3) << '\n';
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = false;
+	std::string test_suite  = "posit conversion validation";
+	std::string test_tag    = test_tag;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Conversion failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	const size_t nbits = 5;
@@ -650,20 +669,33 @@ try {
 	convert_to_posit<nbits, es>(f2, true);
 	convert_to_posit<nbits, es>(f3, true);
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
+
+#if REGRESSION_LEVEL_1
 	ReportPositScales();
 
 	GenerateLogicPatternsForDebug<5, 0>();
 	GenerateLogicPatternsForDebug<5, 1>();
 	GenerateLogicPatternsForDebug<5, 2>();
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
 
-#endif // STRESS_TESTING
+#endif
 
-#endif // MANUAL_TESTING
+#if REGRESSION_LEVEL_3
 
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif // REGRESSION_LEVEL_4
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

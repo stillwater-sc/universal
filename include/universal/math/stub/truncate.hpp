@@ -1,7 +1,7 @@
 #pragma once
 // truncate.hpp: templated truncation function stubs for native floating-point (trunc, round, floor, and ceil) for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -18,6 +18,7 @@ namespace sw { namespace universal {
 		Scalar round(Scalar x) {
 		return std::round(x);
 	}
+	
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 		Scalar floor(Scalar x) {

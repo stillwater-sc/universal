@@ -55,9 +55,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "posit trancate function validation";
-	std::string test_tag = "truncate failed: ";
-	bool reportTestCases = false;
+	std::string test_suite  = "posit truncate function validation";
+	std::string test_tag    = "truncate failed: ";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
