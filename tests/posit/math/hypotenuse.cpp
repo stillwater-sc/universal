@@ -28,7 +28,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -60,13 +60,17 @@ try {
 	GenerateTestCase< 8, 2, float>(3.0f, 4.0f);
 	GenerateTestCase<16, 2, float>(3.0f, 4.0f);
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyHypot<2, 0>(reportTestCases), "posit<2,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<2, 0>(reportTestCases), "posit<2,0>", "hypot");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<4, 0>(reportTestCases), "posit<4,0>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<4, 1>(reportTestCases), "posit<4,1>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<5, 2>(reportTestCases), "posit<5,2>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot<6, 2>(reportTestCases), "posit<6,2>", "hypot");
 
 #endif
 

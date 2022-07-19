@@ -24,7 +24,7 @@ namespace sw { namespace universal {
 
 // enumerate all NATURAL LOGARITHM cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyLog(bool bReportIndividualTestCases) {
+int VerifyLog(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, plog, pref;
@@ -37,18 +37,19 @@ int VerifyLog(bool bReportIndividualTestCases) {
 		pref = std::log(da);
 		if (plog != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "log", pa, pref, plog);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log", pa, plog, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "log", pa, pref, plog);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "log", pa, plog, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all BINARY LOGARITHM cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyLog2(bool bReportIndividualTestCases) {
+int VerifyLog2(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, plog2, pref;
@@ -61,10 +62,10 @@ int VerifyLog2(bool bReportIndividualTestCases) {
 		pref = std::log2(da);
 		if (plog2 != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "log2", pa, pref, plog2);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log2", pa, plog2, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "log2", pa, pref, plog2);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "log2", pa, plog2, pref);
 		}
 	}
 	return nrOfFailedTests;
@@ -73,7 +74,7 @@ int VerifyLog2(bool bReportIndividualTestCases) {
 
 // enumerate all DECIMAL LOGARITHM cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyLog10(bool bReportIndividualTestCases) {
+int VerifyLog10(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, plog10, pref;
@@ -86,10 +87,10 @@ int VerifyLog10(bool bReportIndividualTestCases) {
 		pref = std::log10(da);
 		if (plog10 != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "log10", pa, pref, plog10);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log10", pa, plog10, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "log10", pa, pref, plog10);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "log10", pa, plog10, pref);
 		}
 	}
 	return nrOfFailedTests;
@@ -98,7 +99,7 @@ int VerifyLog10(bool bReportIndividualTestCases) {
 
 // enumerate all base-e exponent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyExp(bool bReportIndividualTestCases) {
+int VerifyExp(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pexp, pref;
@@ -112,19 +113,20 @@ int VerifyExp(bool bReportIndividualTestCases) {
 		if (pexp != pref) {
 			if (std::exp(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp", pa, pref, pexp);
+				if (reportTestCases)	ReportOneInputFunctionError("FAIL", "exp", pa, pexp, pref);
 			}
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "exp", pa, pref, pexp);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "exp", pa, pexp, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all base-2 exponent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyExp2(bool bReportIndividualTestCases) {
+int VerifyExp2(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pexp2, pref;
@@ -138,19 +140,20 @@ int VerifyExp2(bool bReportIndividualTestCases) {
 		if (pexp2 != pref) {
 			if (std::exp2(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp2", pa, pref, pexp2);
+				if (reportTestCases)	ReportOneInputFunctionError("FAIL", "exp2", pa, pexp2, pref);
 			}
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "exp2", pa, pref, pexp2);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "exp2", pa, pexp2, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all power method cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
+int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
 	constexpr size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, ppow, pref;
@@ -168,7 +171,7 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 			}
 			catch (const posit_arithmetic_exception& err) {
 				if (pa.isnar()) {
-					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+					if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
 					throw err;
@@ -180,10 +183,10 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 			pref = std::pow(da, db);
 			if (ppow != pref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportTwoInputFunctionError("FAIL", "pow", pa, pb, pref, ppow);
+				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", pa, pb, ppow, pref);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportTwoInputFunctionSuccess("PASS", "pow", pa, pb, pref, ppow);
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "pow", pa, pb, ppow, pref);
 			}
 			++testNr;
 			if (testNr > maxSamples) {
@@ -196,9 +199,10 @@ int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples
 	return nrOfFailedTests;
 }
 
+
 // enumerate all trigonometric sine cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifySine(bool bReportIndividualTestCases) {
+int VerifySine(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, psin, pref;
@@ -211,18 +215,19 @@ int VerifySine(bool bReportIndividualTestCases) {
 		pref = std::sin(da);
 		if (psin != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "sin", pa, pref, psin);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sin", pa, psin, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "sin", pa, pref, psin);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "sin", pa, psin, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all trigonometric cosine cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyCosine(bool bReportIndividualTestCases) {
+int VerifyCosine(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pcos, pref;
@@ -235,18 +240,19 @@ int VerifyCosine(bool bReportIndividualTestCases) {
 		pref = std::cos(da);
 		if (pcos != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "cos", pa, pref, pcos);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cos", pa, pcos, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "cos", pa, pref, pcos);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "cos", pa, pcos, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all trigonometric tangent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyTangent(bool bReportIndividualTestCases) {
+int VerifyTangent(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, ptan, pref;
@@ -259,18 +265,19 @@ int VerifyTangent(bool bReportIndividualTestCases) {
 		pref = std::tan(da);
 		if (ptan != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "tan", pa, pref, ptan);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tan", pa, ptan, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "tan", pa, pref, ptan);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "tan", pa, ptan, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all trigonometric cotangent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAtan(bool bReportIndividualTestCases) {
+int VerifyAtan(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, patan, pref;
@@ -283,18 +290,19 @@ int VerifyAtan(bool bReportIndividualTestCases) {
 		pref = std::atan(da);
 		if (patan != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "atan", pa, pref, patan);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atan", pa, patan, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "atan", pa, pref, patan);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "atan", pa, patan, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all trigonometric sec cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAsin(bool bReportIndividualTestCases) {
+int VerifyAsin(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pasin, pref;
@@ -307,18 +315,19 @@ int VerifyAsin(bool bReportIndividualTestCases) {
 		pref = std::asin(da);
 		if (pasin != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "asin", pa, pref, pasin);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asin", pa, pasin, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "asin", pa, pref, pasin);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "asin", pa, pasin, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all trigonometric cosec cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAcos(bool bReportIndividualTestCases) {
+int VerifyAcos(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pacos, pref;
@@ -331,18 +340,19 @@ int VerifyAcos(bool bReportIndividualTestCases) {
 		pref = std::acos(da);
 		if (pacos != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "acos", pa, pref, pacos);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "acos", pa, pacos, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "acos", pa, pref, pacos);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "acos", pa, pacos, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all hyperbolic sine cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifySinh(bool bReportIndividualTestCases) {
+int VerifySinh(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, psinh, pref;
@@ -355,18 +365,19 @@ int VerifySinh(bool bReportIndividualTestCases) {
 		pref = std::sinh(da);
 		if (psinh != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "sinh", pa, pref, psinh);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sinh", pa, psinh, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "sinh", pa, pref, psinh);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "sinh", pa, psinh, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all hyperbolic cosine cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyCosh(bool bReportIndividualTestCases) {
+int VerifyCosh(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pcosh, pref;
@@ -379,18 +390,19 @@ int VerifyCosh(bool bReportIndividualTestCases) {
 		pref = std::cosh(da);
 		if (pcosh != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "cosh", pa, pref, pcosh);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cosh", pa, pcosh, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "cosh", pa, pref, pcosh);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "cosh", pa, pcosh, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all hyperbolic tangent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyTanh(bool bReportIndividualTestCases) {
+int VerifyTanh(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, ptanh, pref;
@@ -403,18 +415,19 @@ int VerifyTanh(bool bReportIndividualTestCases) {
 		pref = std::tanh(da);
 		if (ptanh != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "tanh", pa, pref, ptanh);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tanh", pa, ptanh, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "tanh", pa, pref, ptanh);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "tanh", pa, ptanh, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all hyperbolic cotangent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAtanh(bool bReportIndividualTestCases) {
+int VerifyAtanh(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, patanh, pref;
@@ -427,18 +440,19 @@ int VerifyAtanh(bool bReportIndividualTestCases) {
 		pref = std::atanh(da);
 		if (patanh != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "atanh", pa, pref, patanh);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atanh", pa, patanh, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "atanh", pa, pref, patanh);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "atanh", pa, patanh, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all hyperbolic sec cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAsinh(bool bReportIndividualTestCases) {
+int VerifyAsinh(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pasinh, pref;
@@ -451,18 +465,19 @@ int VerifyAsinh(bool bReportIndividualTestCases) {
 		pref = std::asinh(da);
 		if (pasinh != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "asinh", pa, pref, pasinh);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asinh", pa, pasinh, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "asinh", pa, pref, pasinh);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "asinh", pa, pasinh, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
 // enumerate all hyperbolic cosec cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAcosh(bool bReportIndividualTestCases) {
+int VerifyAcosh(bool reportTestCases) {
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pacosh, pref;
@@ -475,15 +490,43 @@ int VerifyAcosh(bool bReportIndividualTestCases) {
 		pref = std::acosh(da);
 		if (pacosh != pref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "acosh", pa, pref, pacosh);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "acosh", pa, pacosh, pref);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "acosh", pa, pref, pacosh);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("PASS", "acosh", pa, pacosh, pref);
 		}
 	}
 	return nrOfFailedTests;
 }
 
+
+// enumerate all hypotenuse cases for a posit configuration
+template<size_t nbits, size_t es>
+int VerifyHypot(bool reportTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	posit<nbits, es> pa, pb, phypot, pref;
+
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+		pa.setbits(i);
+		double da = double(pa);
+		for (size_t j = 1; j < NR_TEST_CASES; ++j) {
+			pb.setbits(j);
+			phypot = sw::universal::hypot(pa, pb);
+			// generate reference
+			double db = double(pb);
+			pref = std::hypot(da, db);
+			if (phypot != pref) {
+				nrOfFailedTests++;
+				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "hypot", pa, pb, phypot, pref);
+			}
+			else {
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "hypot", pa, pb, phypot, pref);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
 //////////////////////////////////// RANDOMIZED TEST SUITE FOR BINARY OPERATORS ////////////////////////
 
 
