@@ -551,13 +551,23 @@ private:
 
 ////////////////////// VALUE operators
 
+// ETLO 7/19/2022
+// OLD compiler guard
+// we are trying to get value<> to use a native string conversion so that we can support arbitrary large values
+// but this is turning out to be a complicated implementation with deep history and named algorithms, such as Dragon4, etc.
+// For the moment, we still take the easy way out.
 #define OLD
 #ifdef OLD
 template<size_t nfbits>
 inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, std::streamsize precision = 0) {
 	std::stringstream s;
 	if (v.isinf()) {
-		s << FP_INFINITE;
+		if (v.sign()) {
+			s << "-inf";
+		}
+		else {
+			s << (flags & std::ios_base::showpos) ? "+inf" : "inf";
+		}
 	}
 	else {
 		if (precision) {
