@@ -527,6 +527,8 @@ int VerifyHypot(bool reportTestCases) {
 	}
 	return nrOfFailedTests;
 }
+
+
 //////////////////////////////////// RANDOMIZED TEST SUITE FOR BINARY OPERATORS ////////////////////////
 
 

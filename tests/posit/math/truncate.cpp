@@ -25,28 +25,98 @@
 #endif
 
 namespace sw { namespace universal {
-template<size_t nbits, size_t es>
-int VerifyFloor(bool bReportIndividualTestCases) {
-	using namespace sw::universal;
-	constexpr size_t NR_VALUES = (1 << nbits);
-	int nrOfFailedTestCases = 0;
 
-	posit<nbits, es> p;
-	for (size_t i = 0; i < NR_VALUES; ++i) {
-		p.setbits(i);
-		long l1 = long(sw::universal::floor(p));
-		// generate the reference
-		float f = float(p);
-		long l2 = long(std::floor(f));
-		if (l1 != l2) {
-			++nrOfFailedTestCases;
-			if (bReportIndividualTestCases) 
-				ReportOneInputFunctionError("floor", "floor",
-					p, posit<nbits, es>(l1), posit<nbits, es>(l2));
+	template<size_t nbits, size_t es>
+	int VerifyFloor(bool reportTestCases) {
+		using namespace sw::universal;
+		constexpr size_t NR_VALUES = (1 << nbits);
+		int nrOfFailedTestCases = 0;
+
+		posit<nbits, es> p;
+		for (size_t i = 0; i < NR_VALUES; ++i) {
+			p.setbits(i);
+			long l1 = long(sw::universal::floor(p));
+			// generate the reference
+			float f = float(p);
+			long l2 = long(std::floor(f));
+			if (l1 != l2) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) 
+					ReportOneInputFunctionError("floor", "floor",
+						p, posit<nbits, es>(l1), posit<nbits, es>(l2));
+			}
 		}
+		return nrOfFailedTestCases;
 	}
-	return nrOfFailedTestCases;
-}
+
+	template<size_t nbits, size_t es>
+	int VerifyCeil(bool reportTestCases) {
+		using namespace sw::universal;
+		constexpr size_t NR_VALUES = (1 << nbits);
+		int nrOfFailedTestCases = 0;
+
+		posit<nbits, es> p;
+		for (size_t i = 0; i < NR_VALUES; ++i) {
+			p.setbits(i);
+			long l1 = long(sw::universal::ceil(p));
+			// generate the reference
+			float f = float(p);
+			long l2 = long(std::ceil(f));
+			if (l1 != l2) {
+				++nrOfFailedTestCases;
+				if (reportTestCases)
+					ReportOneInputFunctionError("ceil", "ceil",
+						p, posit<nbits, es>(l1), posit<nbits, es>(l2));
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	template<size_t nbits, size_t es>
+	int VerifyTrunc(bool reportTestCases) {
+		using namespace sw::universal;
+		constexpr size_t NR_VALUES = (1 << nbits);
+		int nrOfFailedTestCases = 0;
+
+		posit<nbits, es> p;
+		for (size_t i = 0; i < NR_VALUES; ++i) {
+			p.setbits(i);
+			long l1 = long(sw::universal::trunc(p));
+			// generate the reference
+			float f = float(p);
+			long l2 = long(std::trunc(f));
+			if (l1 != l2) {
+				++nrOfFailedTestCases;
+				if (reportTestCases)
+					ReportOneInputFunctionError("trunc", "trunc",
+						p, posit<nbits, es>(l1), posit<nbits, es>(l2));
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	template<size_t nbits, size_t es>
+	int VerifyRound(bool reportTestCases) {
+		using namespace sw::universal;
+		constexpr size_t NR_VALUES = (1 << nbits);
+		int nrOfFailedTestCases = 0;
+
+		posit<nbits, es> p;
+		for (size_t i = 0; i < NR_VALUES; ++i) {
+			p.setbits(i);
+			long l1 = long(sw::universal::round(p));
+			// generate the reference
+			float f = float(p);
+			long l2 = long(std::round(f));
+			if (l1 != l2) {
+				++nrOfFailedTestCases;
+				if (reportTestCases)
+					ReportOneInputFunctionError("round", "round",
+						p, posit<nbits, es>(l1), posit<nbits, es>(l2));
+			}
+		}
+		return nrOfFailedTestCases;
+	}
 
 } }  // namespace sw::universal
 
@@ -65,13 +135,21 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor<6, 0>(bReportIndividualTestCases), "floor", "floor<4,0>()");
+	nrOfFailedTestCases = ReportTestResult(VerifyTrunc<4, 0>(reportTestCases), "trunc", "posit<4,0>()");
+	nrOfFailedTestCases = ReportTestResult(VerifyRound<4, 0>(reportTestCases), "round", "posit<4,0>()");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor<4, 0>(reportTestCases), "floor", "posit<4,0>()");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil<4, 0>(reportTestCases), "ceil", "posit<4,0>()");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases = ReportTestResult(VerifyTrunc<6, 2>(reportTestCases), "trunc", "posit<6,2>()");
+	nrOfFailedTestCases = ReportTestResult(VerifyRound<6, 2>(reportTestCases), "round", "posit<6,2>()");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor<6, 2>(reportTestCases), "floor", "posit<6,2>()");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil<6, 2>(reportTestCases), "ceil", "posit<6,2>()");
+
 
 #endif
 

@@ -4,16 +4,14 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define POSIT_VERBOSE_OUTPUT
-#include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/verification/cfloat_math_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in posit.hpp
+// generate specific test case that you can trace with the trace conditions in cfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
+template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::posit<nbits, es> a, b, pref, result;
+	sw::universal::cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> a, b, pref, result;
 	a = _a;
 	b = _b;
 	Ty ref = std::hypot(_a, _b);
@@ -48,30 +46,32 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit hypotenuse validation";
+	std::string test_suite  = "cfloat hypotenuse validation";
 	std::string test_tag    = "hypotenuse";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase< 8, 2, float>(3.0f, 4.0f);
-	GenerateTestCase<16, 2, float>(3.0f, 4.0f);
+	cfloat<8, 3, std::uint8_t, true, false, false> a(SpecificValue::maxpos);
+	std::cout << "maxpos " << type_tag(a) << " : " << a << '\n';
+	GenerateTestCase< 8, 3, std::uint8_t, true, false, false, float>(3.0f, 4.0f);
+	GenerateTestCase<16, 5, std::uint8_t, true, false, false, float>(3.0f, 4.0f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<2, 0>(reportTestCases), "posit<2,0>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< cfloat<8, 2, std::uint8_t, true, true, false> >(reportTestCases), "cfloat<8,2,sub+normal+super>", "hypot");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<4, 0>(reportTestCases), "posit<4,0>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<4, 1>(reportTestCases), "posit<4,1>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<5, 2>(reportTestCases), "posit<5,2>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot<6, 2>(reportTestCases), "posit<6,2>", "hypot");
-
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< cfloat<4, 1, std::uint8_t, true, true, false> >(reportTestCases), "cfloat<4, 1,sub+normal+super>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< cfloat<5, 1, std::uint8_t, true, true, false> >(reportTestCases), "cfloat<5, 1,sub+normal+super>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< cfloat<6, 2, std::uint8_t, true, true, false> >(reportTestCases), "cfloat<6, 2,sub+normal+super>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< cfloat<7, 2, std::uint8_t, true, true, false> >(reportTestCases), "cfloat<7, 2,sub+normal+super>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< cfloat<8, 3, std::uint8_t, true, true, false> >(reportTestCases), "cfloat<8, 3,sub+normal+super>", "hypot");
 #endif
 
 #if REGRESSION_LEVEL_2

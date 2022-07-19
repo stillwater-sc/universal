@@ -13,7 +13,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in posit.h
+// generate specific test case that you can trace with the trace conditions in posit.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
