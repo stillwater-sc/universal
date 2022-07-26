@@ -45,6 +45,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/lns/math_functions.hpp>
+#include <universal/number/lns/mathlib.hpp>
 
 #endif

@@ -856,11 +856,24 @@ inline std::string components(const lns<nbits, rbits, bt>& v) {
 	return s.str();
 }
 
+// standard library functions for floating point
+
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<size_t nbits, size_t rbits, typename bt>
-lns<nbits, rbits, bt> abs(const lns<nbits, rbits, bt>& v) {
-	return lns<nbits, rbits, bt>();
+inline lns<nbits, rbits, bt> abs(const lns<nbits, rbits, bt>& v) {
+	lns<nbits, rbits, bt> magnitude(v);
+	magnitude.setsign(false);
+	return magnitude;
 }
 
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> frexp(const lns<nbits, rbits, bt>& x, int* exp) {
+	return lns<nbits, rbits, bt>(std::frexp(double(x), exp));
+}
+
+template<size_t nbits, size_t rbits, typename bt>
+inline lns<nbits, rbits, bt> ldexp(const lns<nbits, rbits, bt>& x, int exp) {
+		return lns<nbits, rbits, bt>(std::ldexp(double(x), exp));
+}
 
 }} // namespace sw::universal
