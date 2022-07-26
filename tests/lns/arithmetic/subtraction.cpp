@@ -52,7 +52,7 @@ namespace sw { namespace universal {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -88,8 +88,8 @@ try {
 	using LNS16_5 = lns<16, 5, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
-	TestCase< LNS16_5, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	TestCase< LNS8_3, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< LNS16_5, double>(TestCaseOperator::SUB, INFINITY, INFINITY);
+	TestCase< LNS8_3, float>(TestCaseOperator::SUB, 0.5f, -0.5f);
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<LNS8_3>(reportTestCases), "lns<8,2,uint8_t>", test_tag);

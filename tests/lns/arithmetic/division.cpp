@@ -129,7 +129,7 @@ Generate Value table for an LNS<5,2> in TXT format
  */
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -175,25 +175,23 @@ try {
 		a.setbits(0);
 		b.setbits(0x1);
 		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << '\n';
-		std::cout << (a) << " / " << (b) << " = " << (c) << '\n';
-		c.setbits(0x010);
-		std::cout << to_binary(c) << " : " << c << '\n';
-		c.setbits(0x0F0);
-		std::cout << to_binary(c) << " : " << c << '\n';
+		ReportBinaryOperation(a, "/", b, c);
 	}
 	{
 		LNS8_4 a, b, c;
 		a.setbits(0);
 		b.setbits(0x1);
 		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << '\n';
-		std::cout << (a) << " / " << (b) << " = " << (c) << '\n';
+		ReportBinaryOperation(a, "/", b, c);
+		a = b * c;
+		ReportBinaryOperation(b, "*", c, a);
+		b = a / c;
+		ReportBinaryOperation(a, "/", c, b);
 	}
-	return 0;
+
 	// generate individual testcases to hand trace/debug
-	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
-	TestCase<LNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
+	TestCase<LNS16_5, double>(TestCaseOperator::DIV, INFINITY, INFINITY);
+	TestCase<LNS8_3, float>(TestCaseOperator::DIV, 0.5f, -0.5f);
 
 	// GenerateLnsTable<5, 2>(std::cout);
 

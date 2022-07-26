@@ -151,7 +151,7 @@ try {
 	}
 //	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
 
-	return 0;
+
 	// generate individual testcases to hand trace/debug
 	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
 	TestCase<LNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
