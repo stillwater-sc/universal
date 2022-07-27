@@ -116,6 +116,7 @@ public:
 	constexpr lns(signed char initial_value)        noexcept { *this = initial_value; }
 	constexpr lns(short initial_value)              noexcept { *this = initial_value; }
 	constexpr lns(int initial_value)                noexcept { *this = initial_value; }
+	constexpr lns(long initial_value)               noexcept { *this = initial_value; }
 	constexpr lns(long long initial_value)          noexcept { *this = initial_value; }
 	constexpr lns(unsigned long long initial_value) noexcept { *this = initial_value; }
 	constexpr lns(float initial_value)              noexcept { *this = initial_value; }
@@ -125,6 +126,7 @@ public:
 	constexpr lns& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
 	constexpr lns& operator=(short rhs)              noexcept { return convert_signed(rhs); }
 	constexpr lns& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr lns& operator=(long rhs)               noexcept { return convert_signed(rhs); }
 	constexpr lns& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
 	constexpr lns& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
 	CONSTEXPRESSION lns& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }

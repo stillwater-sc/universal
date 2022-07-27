@@ -8,34 +8,37 @@
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
-#ifdef DEPRECATED
-#define FLOAT_TABLE_WIDTH 20
+namespace sw { namespace universal {
+
+	template<size_t nbits, size_t es, typename Ty>
+	int ValidateAssignment(bool reportTestCases) {
+		const size_t NR_POSITS = (size_t(1) << nbits);
+		int nrOfFailedTestCases = 0;
+
+		// use only valid posit values
+		// posit_raw -> to value in Ty -> assign to posit -> compare posits
+		sw::universal::posit<nbits, es> p, assigned;
+		for (size_t i = 0; i < NR_POSITS; i++) {
+			p.setbits(i); // std::cout << p.get() << endl;
+			if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
+			Ty value = (Ty)(p);
+			assigned = value;
+			// TODO: how to make this work for integers: std::cout << p << " " << value << " " << assigned << std::endl;
+			if (p != assigned) {
+				nrOfFailedTestCases++;
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
+			}
+			else {
+				//if (reportTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+} } // namespace sw::universal
 
 template<size_t nbits, size_t es, typename Ty>
-void ReportAssignmentError(const std::string& test_case, const std::string& op, const sw::universal::posit<nbits, es>& pref, const sw::universal::posit<nbits, es>& presult, const Ty& value) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FLOAT_TABLE_WIDTH) << value
-		<< " != "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult
-		<< " " << presult.get() << " vs " << pref.get() << std::endl;
-}
-
-template<size_t nbits, size_t es, typename Ty>
-void ReportAssignmentSuccess(const std::string& test_case, const std::string& op, const sw::universal::posit<nbits, es>& pref, const sw::universal::posit<nbits, es>& presult, const Ty& value) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FLOAT_TABLE_WIDTH) << value
-		<< " == "
-		<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
-		<< std::setw(FLOAT_TABLE_WIDTH) << pref
-		<< "               posit fields " << sw::universal::pretty_print(presult) << std::endl;
-}
-#endif
-
-template<size_t nbits, size_t es, typename Ty>
-Ty GenerateValue(const sw::universal::posit<nbits,es>& p) {
+Ty GenerateValue(const sw::universal::posit<nbits, es>& p) {
 	Ty value = 0;
 	if (std::numeric_limits<Ty>::is_exact) {
 		if (std::numeric_limits<Ty>::is_signed) {
@@ -51,75 +54,85 @@ Ty GenerateValue(const sw::universal::posit<nbits,es>& p) {
 	return value;
 }
 
-template<size_t nbits, size_t es, typename Ty>
-int ValidateAssignment(bool bReportIndividualTestCases) {
-	const size_t NR_POSITS = (size_t(1) << nbits);
-	int nrOfFailedTestCases = 0;
-
-	// use only valid posit values
-	// posit_raw -> to value in Ty -> assign to posit -> compare posits
-	sw::universal::posit<nbits, es> p, assigned;
-	for (size_t i = 0; i < NR_POSITS; i++) {
-		p.setbits(i); // std::cout << p.get() << endl;
-		if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
-		Ty value = (Ty)(p);
-		assigned = value;
-		// TODO: how to make this work for integers: std::cout << p << " " << value << " " << assigned << std::endl;
-		if (p != assigned) {
-			nrOfFailedTestCases++;
-			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
-		}
-		else {
-			//if (bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
-		}
-	}
-	return nrOfFailedTestCases;
-}
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = true;
+	std::string test_suite  = "posit assignment validation";
+	std::string test_tag    = "assignment";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
-	std::string tag = "Assignment";
 
-	// 
-	// TODO: How to make this work for integers
-	// nrOfFailedTestCases = ReportTestResult(ValidateAssignment<3, 0, int>(bReportIndividualTestCases), tag, "posit<3,0> int");
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<3, 0, float>(bReportIndividualTestCases), tag, "posit<3,0>");
+#if MANUAL_TESTING
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 0, float>(bReportIndividualTestCases), tag, "posit<4,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1, float>(bReportIndividualTestCases), tag, "posit<4,1>");
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
+#else
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 0, float>(bReportIndividualTestCases), tag, "posit<5,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 1, float>(bReportIndividualTestCases), tag, "posit<5,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 2, float>(bReportIndividualTestCases), tag, "posit<5,2>");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<3, 0, float>(reportTestCases), test_tag, "posit<3,0>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 0, float>(bReportIndividualTestCases), tag, "posit<6,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 1, float>(bReportIndividualTestCases), tag, "posit<6,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 2, float>(bReportIndividualTestCases), tag, "posit<6,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 3, float>(bReportIndividualTestCases), tag, "posit<6,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 0, float>(reportTestCases), test_tag, "posit<4,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1, float>(reportTestCases), test_tag, "posit<4,1>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 0, float>(bReportIndividualTestCases), tag, "posit<7,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 1, float>(bReportIndividualTestCases), tag, "posit<7,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 2, float>(bReportIndividualTestCases), tag, "posit<7,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 3, float>(bReportIndividualTestCases), tag, "posit<7,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 0, float>(reportTestCases), test_tag, "posit<5,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 1, float>(reportTestCases), test_tag, "posit<5,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 2, float>(reportTestCases), test_tag, "posit<5,2>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 0, float>(bReportIndividualTestCases), tag, "posit<8,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 1, float>(bReportIndividualTestCases), tag, "posit<8,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 2, float>(bReportIndividualTestCases), tag, "posit<8,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 3, float>(bReportIndividualTestCases), tag, "posit<8,3>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 4, float>(bReportIndividualTestCases), tag, "posit<8,4>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 0, float>(reportTestCases), test_tag, "posit<6,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 1, float>(reportTestCases), test_tag, "posit<6,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 2, float>(reportTestCases), test_tag, "posit<6,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 3, float>(reportTestCases), test_tag, "posit<6,3>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 0, float>(bReportIndividualTestCases), tag, "posit<9,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 1, float>(bReportIndividualTestCases), tag, "posit<9,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 2, float>(bReportIndividualTestCases), tag, "posit<9,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 3, float>(bReportIndividualTestCases), tag, "posit<9,3>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 4, float>(bReportIndividualTestCases), tag, "posit<9,4>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 0, float>(reportTestCases), test_tag, "posit<7,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 1, float>(reportTestCases), test_tag, "posit<7,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 2, float>(reportTestCases), test_tag, "posit<7,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 3, float>(reportTestCases), test_tag, "posit<7,3>");
 
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 0, float>(reportTestCases), test_tag, "posit<8,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 1, float>(reportTestCases), test_tag, "posit<8,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 2, float>(reportTestCases), test_tag, "posit<8,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 3, float>(reportTestCases), test_tag, "posit<8,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 4, float>(reportTestCases), test_tag, "posit<8,4>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 0, float>(reportTestCases), test_tag, "posit<9,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 1, float>(reportTestCases), test_tag, "posit<9,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 2, float>(reportTestCases), test_tag, "posit<9,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 3, float>(reportTestCases), test_tag, "posit<9,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 4, float>(reportTestCases), test_tag, "posit<9,4>");
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

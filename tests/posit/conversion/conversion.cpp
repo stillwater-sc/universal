@@ -11,7 +11,6 @@
 #define POSIT_ENABLE_LITERALS 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 template<size_t nbits, size_t es>
