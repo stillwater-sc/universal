@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 
-using LNS8 = sw::universal::lns<8, 2, std::uint8_t>;
+using LNS8 = sw::universal::lns<8, 2, sw::universal::Saturating, std::uint8_t>;
 
 LNS8 lnsPolynomial(const std::vector<int>& coef, const LNS8& x) {
 	using namespace sw::universal;
