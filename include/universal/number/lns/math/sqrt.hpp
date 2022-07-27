@@ -28,11 +28,12 @@ namespace sw { namespace universal {
 
 	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
 	inline lns<nbits, rbits, behavior, bt> BabylonianMethod(const lns<nbits, rbits, behavior, bt>& v) {
-		const double eps = 1.0e-5;
-		lns<nbits, rbits, bt> half(0.5);
-		lns<nbits, rbits, bt> x_next;
-		lns<nbits, rbits, bt> x_n = half * v;
-		lns<nbits, rbits, bt> diff;
+		using LnsType = lns<nbits, rbits, behavior, bt>;
+		constexpr double eps = 1.0e-5;
+		LnsType half(0.5);
+		LnsType x_next;
+		LnsType x_n = half * v;
+		LnsType diff;
 		do {
 			x_next = (x_n + v / x_n) * half;
 			diff = x_next - x_n;

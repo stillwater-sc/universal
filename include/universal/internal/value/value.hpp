@@ -566,7 +566,7 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 			s << "-inf";
 		}
 		else {
-			s << (flags & std::ios_base::showpos) ? "+inf" : "inf";
+			s << ((flags & std::ios_base::showpos) ? "+inf" : "inf");
 		}
 	}
 	else {
@@ -591,7 +591,7 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 			result = "-inf";
 		}
 		else {
-			result = (flags & std::ios_base::showpos) ? "+inf" : "inf";
+			result = ((flags & std::ios_base::showpos) ? "+inf" : "inf");
 		}
 		return result;
 	}
