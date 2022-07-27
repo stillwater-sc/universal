@@ -15,8 +15,8 @@ struct is_lns_trait
 {
 };
 
-template<size_t nbits, size_t rbits, typename BlockType>
-struct is_lns_trait< sw::universal::lns<nbits, rbits, BlockType> >
+template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename BlockType>
+struct is_lns_trait< lns<nbits, rbits, behavior, BlockType> >
 	: true_type
 {
 };

@@ -1,5 +1,6 @@
 #pragma once
-// arithmetic.hpp: enum types used to classify arithmetic behavior, such as Modular vs Saturating arithmetic, Projective vs Real arithmetic, etc.
+// arithmetic.hpp: enum types used to classify arithmetic behavior, 
+//                 such as Modular vs Saturating arithmetic, Projective vs Real arithmetic, etc.
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //

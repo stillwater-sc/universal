@@ -94,16 +94,16 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor< lns<8, 2, uint8_t> >(reportTestCases), "floor", "lns<8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCeil < lns<8, 2, uint8_t> >(reportTestCases), "ceil ", "lns<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "floor", "lns<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < lns<8, 2, Saturating, uint8_t> >(reportTestCases), "ceil ", "lns<8,2>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;  // ignore failures in manual testing mode
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor< lns<8, 2, uint8_t> >(reportTestCases), "floor", "lns<8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCeil < lns<8, 2, uint8_t> >(reportTestCases), "ceil ", "lns<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "floor", "lns<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < lns<8, 2, Saturating, uint8_t> >(reportTestCases), "ceil ", "lns<8,2>");
 
 #endif
 

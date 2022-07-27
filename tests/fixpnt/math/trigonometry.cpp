@@ -204,12 +204,12 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-//	GenerateTestCase<8, 0, Saturating, uint8_t, double>(m_pi);
-//	GenerateTestCase<16, 1, Saturating, uint8_t, double>(m_pi);
-//	GenerateTestCase<32, 2, Saturating, uint8_t, double>(m_pi);
-//	GenerateTestCase<64, 3, Saturating, uint8_t, float>(m_pi);
-//	GenerateTestCase<128, 4, Saturating, uint8_t, float>(m_pi);
-//	GenerateTestCase<256, 5, Saturating, uint8_t, float>(m_pi);
+//	GenerateTestCase<8, 0, Saturate, uint8_t, double>(m_pi);
+//	GenerateTestCase<16, 1, Saturate, uint8_t, double>(m_pi);
+//	GenerateTestCase<32, 2, Saturate, uint8_t, double>(m_pi);
+//	GenerateTestCase<64, 3, Saturate, uint8_t, float>(m_pi);
+//	GenerateTestCase<128, 4, Saturate, uint8_t, float>(m_pi);
+//	GenerateTestCase<256, 5, Saturate, uint8_t, float>(m_pi);
 
 	std::cout << "Standard sin(pi/2) : " << std::sin(m_pi*0.5) << " vs sinpi(0.5): " << sinpi(0.5) << '\n';
 	std::cout << "Standard sin(pi)   : " << std::sin(m_pi)     << " vs sinpi(1.0): " << sinpi(1.0) << '\n';
@@ -219,9 +219,9 @@ try {
 	std::cout << "haversine(0.0, 0.0, 90.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 90.0, 0.0, 1.0) << '\n';
 	std::cout << "haversine(0.0, 0.0, 180.0, 0.0, 1.0)  = " << haversine(0.0, 0.0, 180, 0.0, 1.0) << '\n';
 
-	GenerateTestCase<16, 1, Saturating, uint8_t, double>(m_pi_2);
+	GenerateTestCase<16, 1, Saturate, uint8_t, double>(m_pi_2);
 
-	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
+	using FixedPoint = fixpnt<8, 2, Saturate, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag(FixedPoint()), "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag(FixedPoint()), "cos");
 	nrOfFailedTestCases += ReportTestResult(VerifyTangent<FixedPoint >(true), type_tag(FixedPoint()), "tan");
@@ -234,7 +234,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
+	using FixedPoint = fixpnt<8, 2, Saturate, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifySine<   FixedPoint >(true), type_tag(FixedPoint()), "sin");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosine< FixedPoint >(true), type_tag(FixedPoint()), "cos");
 	nrOfFailedTestCases += ReportTestResult(VerifyTangent<FixedPoint >(true), type_tag(FixedPoint()), "tan");

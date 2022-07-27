@@ -45,7 +45,7 @@ try {
 	std::streamsize precision = std::cout.precision();
 	
 	{
-		using lns = lns<16, 10, std::uint16_t>;
+		using lns = lns<16, 10, Saturating, std::uint16_t>;
 
 		lns a, b, c;
 		a = 0.5;

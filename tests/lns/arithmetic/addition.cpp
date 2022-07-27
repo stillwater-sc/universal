@@ -80,12 +80,12 @@ try {
 
 #if MANUAL_TESTING
 
-	using LNS4_1 = lns<4, 1, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, std::uint8_t>;
-	using LNS16_5 = lns<16, 5, std::uint16_t>;
+	using LNS4_1 = lns<4, 1, Saturating, std::uint8_t>;
+	using LNS4_2 = lns<4, 2, Saturating, std::uint8_t>;
+	using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
+	using LNS8_3 = lns<8, 3, Saturating, std::uint8_t>;
+	using LNS9_4 = lns<9, 4, Saturating, std::uint8_t>;
+	using LNS16_5 = lns<16, 5, Saturating, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
 	TestCase< LNS16_5, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
@@ -97,12 +97,12 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
-	using LNS4_1 = lns<4, 1, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, std::uint8_t>;
-	using LNS10_4 = lns<10, 4, std::uint8_t>;
+	using LNS4_1 = lns<4, 1, Saturating, std::uint8_t>;
+	using LNS4_2 = lns<4, 2, Saturating, std::uint8_t>;
+	using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
+	using LNS8_3 = lns<8, 3, Saturating, std::uint8_t>;
+	using LNS9_4 = lns<9, 4, Saturating, std::uint8_t>;
+	using LNS10_4 = lns<10, 4, Saturating, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<LNS4_1>(reportTestCases), "lns<4,1,uint8_t>", test_tag);

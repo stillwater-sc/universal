@@ -8,27 +8,27 @@
 namespace sw { namespace universal {
 
 // Natural logarithm of x
-template<size_t nbits, size_t rbits, typename bt>
-lns<nbits, rbits, bt> log(lns<nbits, rbits, bt> x) {
-	return lns<nbits, rbits, bt>(std::log(double(x)));
+template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
+lns<nbits, rbits, behavior, bt> log(lns<nbits, rbits, behavior, bt> x) {
+	return lns<nbits, rbits, behavior, bt>(std::log(double(x)));
 }
 
 // Binary logarithm of x
-template<size_t nbits, size_t rbits, typename bt>
-lns<nbits, rbits, bt> log2(lns<nbits, rbits, bt> x) {
-	return lns<nbits, rbits, bt>(std::log2(double(x)));
+template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
+lns<nbits, rbits, behavior, bt> log2(lns<nbits, rbits, behavior, bt> x) {
+	return lns<nbits, rbits, behavior, bt>(std::log2(double(x)));
 }
 
 // Decimal logarithm of x
-template<size_t nbits, size_t rbits, typename bt>
-lns<nbits, rbits, bt> log10(lns<nbits, rbits, bt> x) {
-	return lns<nbits, rbits, bt>(std::log10(double(x)));
+template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
+lns<nbits, rbits, behavior, bt> log10(lns<nbits, rbits, behavior, bt> x) {
+	return lns<nbits, rbits, behavior, bt>(std::log10(double(x)));
 }
 		
 // Natural logarithm of 1+x
-template<size_t nbits, size_t rbits, typename bt>
-lns<nbits, rbits, bt> log1p(lns<nbits, rbits, bt> x) {
-	return lns<nbits, rbits, bt>(std::log1p(double(x)));
+template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
+lns<nbits, rbits, behavior, bt> log1p(lns<nbits, rbits, behavior, bt> x) {
+	return lns<nbits, rbits, behavior, bt>(std::log1p(double(x)));
 }
 
 }} // namespace sw::universal

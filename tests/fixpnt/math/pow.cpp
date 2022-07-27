@@ -87,7 +87,7 @@ try {
 
 	std::cout << "fixpnt pow() function validation\n";
 
-	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
+	using FixedPoint = fixpnt<8, 2, Saturate, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "pow");
 
 

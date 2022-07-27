@@ -54,7 +54,7 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 1, Saturating, uint8_t, float>(4.0f);
+	GenerateTestCase<16, 1, Saturate, uint8_t, float>(4.0f);
 
 #if GENERATE_LOG_TABLES
 	GenerateLogarithmTable<3, 0>();
@@ -71,7 +71,7 @@ try {
 #endif
 
 	// manual exhaustive test
-	using FixedPoint = fixpnt<10, 5, Saturating, uint8_t>;
+	using FixedPoint = fixpnt<10, 5, Saturate, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log2");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log10");
@@ -81,7 +81,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	using FixedPoint = fixpnt<10, 5, Saturating, uint8_t>;
+	using FixedPoint = fixpnt<10, 5, Saturate, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log2");
 	nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log10");
@@ -97,21 +97,21 @@ try {
 	// nbits=64 requires long double compiler support
 
 	{
-		using FixedPoint = fixpnt<10, 5, Saturating, uint8_t>;
+		using FixedPoint = fixpnt<10, 5, Saturate, uint8_t>;
 		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log");
 		nrOfFailedTestCases += ReportTestResult(VerifyLog2< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log2");
 		nrOfFailedTestCases += ReportTestResult(VerifyLog10< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log10");
 	}
 	{
-		using FixedPoint = fixpnt<12, 6, Saturating, uint8_t>;
+		using FixedPoint = fixpnt<12, 6, Saturate, uint8_t>;
 		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint), "log");
 	}
 	{
-		using FixedPoint = fixpnt<14, 7, Saturating, uint8_t>;
+		using FixedPoint = fixpnt<14, 7, Saturate, uint8_t>;
 		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint), "log");
 	}
 	{
-		using FixedPoint = fixpnt<16, 8, Saturating, uint8_t>;
+		using FixedPoint = fixpnt<16, 8, Saturate, uint8_t>;
 		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint), "log");
 	}
 #endif

@@ -6,8 +6,8 @@
 #include <universal/number/lns/lns.hpp>
 
 // quick helper to report on a posit's specialness
-template<size_t nbits, size_t rbits, typename bt>
-void checkSpecialCases(sw::universal::lns<nbits, rbits, bt> p) {
+template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt>
+void checkSpecialCases(sw::universal::lns<nbits, rbits, behavior, bt> p) {
 	std::cout << "lns is " << (p.iszero() ? "zero " : "non-zero ") << (p.ispos() ? "positive " : "negative ") << (p.isnan() ? "Not a Number" : "Its a Real") << std::endl;
 }
 
@@ -18,7 +18,7 @@ try {
 
 	constexpr size_t nbits = 16;
 	constexpr size_t rbits = 5;
-	using LNS16 = lns<nbits, rbits, std::uint16_t>;
+	using LNS16 = lns<nbits, rbits, Saturating, std::uint16_t>;
 	LNS16 p1, p2, p3, p4, p5, p6;
 
 //	/* constexpr */ double minpos = minpos_value<nbits>();

@@ -28,7 +28,7 @@ try {
 	using fixpnt32 = fixpnt<32, 16, Modulo, std::uint32_t>;
 	using posit32  = posit<32, 2>;
 	using areal32  = areal<32, 8, std::uint32_t>;
-	using lns32    = lns<32, 8, std::uint32_t>;
+	using lns32    = lns<32, 8, Saturating, std::uint32_t>;
 
 	// report on precision and dynamic range of the number system
 

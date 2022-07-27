@@ -42,7 +42,7 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns< 16, 5, std::uint16_t> >(reportTestCases), "lns< 16, 5>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns< 16, 5, Saturating, std::uint16_t> >(reportTestCases), "lns< 16, 5>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
@@ -50,10 +50,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns<  8, 2, std::uint8_t > >(reportTestCases), "lns<  8, 2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns< 16, 5, std::uint16_t> >(reportTestCases), "lns< 16, 5>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns< 32, 8, std::uint32_t> >(reportTestCases), "lns< 32, 8>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns< 64,11, std::uint64_t> >(reportTestCases), "lns< 64,11>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns<  8, 2, Saturating, std::uint8_t > >(reportTestCases), "lns<  8, 2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns< 16, 5, Saturating, std::uint16_t> >(reportTestCases), "lns< 16, 5>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns< 32, 8, Saturating, std::uint32_t> >(reportTestCases), "lns< 32, 8>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNextafter< lns< 64,11, Saturating, std::uint64_t> >(reportTestCases), "lns< 64,11>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

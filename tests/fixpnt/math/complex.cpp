@@ -57,7 +57,7 @@ try {
 
 	constexpr size_t nbits = 4;
 	constexpr size_t rbits = 3;
-	constexpr bool arithmetic = Saturating;
+	constexpr bool arithmetic = Saturate;
 	using bt = uint8_t;
 	using Real = fixpnt<nbits, rbits, arithmetic, bt>;
 	std::complex<Real> x, y;

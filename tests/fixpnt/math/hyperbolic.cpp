@@ -128,17 +128,17 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCaseSinh<16, 8, Saturating, uint8_t, double>(pi / 4.0);
-	GenerateTestCaseCosh<16, 8, Saturating, uint8_t, double>(pi / 4.0);
-	GenerateTestCaseTanh<16, 8, Saturating, uint8_t, double>(pi / 4.0);
-	GenerateTestCaseAsinh<16, 8, Saturating, uint8_t, double>(pi / 2.0);
-	GenerateTestCaseAcosh<16, 8, Saturating, uint8_t, double>(pi / 2.0);
-	GenerateTestCaseAtanh<16, 8, Saturating, uint8_t, double>(pi / 4.0);
+	GenerateTestCaseSinh<16, 8, Saturate, uint8_t, double>(pi / 4.0);
+	GenerateTestCaseCosh<16, 8, Saturate, uint8_t, double>(pi / 4.0);
+	GenerateTestCaseTanh<16, 8, Saturate, uint8_t, double>(pi / 4.0);
+	GenerateTestCaseAsinh<16, 8, Saturate, uint8_t, double>(pi / 2.0);
+	GenerateTestCaseAcosh<16, 8, Saturate, uint8_t, double>(pi / 2.0);
+	GenerateTestCaseAtanh<16, 8, Saturate, uint8_t, double>(pi / 4.0);
 
 	std::cout << '\n';
 
 	// manual exhaustive test
-	using FixedPoint = fixpnt<8, 4, Saturating, uint8_t>;
+	using FixedPoint = fixpnt<8, 4, Saturate, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag(FixedPoint()), "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag(FixedPoint()), "cosh");
 	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag(FixedPoint()), "tanh");
@@ -151,7 +151,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	using FixedPoint = fixpnt<8, 4, Saturating, uint8_t>;
+	using FixedPoint = fixpnt<8, 4, Saturate, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifySinh<FixedPoint>(true), type_tag(FixedPoint()), "sinh");
 	nrOfFailedTestCases += ReportTestResult(VerifyCosh<FixedPoint>(true), type_tag(FixedPoint()), "cosh");
 	nrOfFailedTestCases += ReportTestResult(VerifyTanh<FixedPoint>(true), type_tag(FixedPoint()), "tanh");

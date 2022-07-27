@@ -38,9 +38,9 @@ try {
 #define MY_DBL_MIN          2.2250738585072014e-308 // minpos value
 
 	constexpr size_t nbits = 32;
-	constexpr size_t es = 8;
+	constexpr size_t rbits = 8;
 	using bt = uint32_t;
-	using Number = lns<nbits, es, bt>;
+	using Number = lns<nbits, rbits, Saturating, bt>;
 	Number cnan; cnan.setnan();
 	Number cinf; cinf.setinf(false);
 	Number czero(0);

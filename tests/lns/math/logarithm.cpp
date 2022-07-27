@@ -9,10 +9,10 @@
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits, bt> pa, pref, plog;
+	sw::universal::lns<nbits, rbits, behavior, bt> pa, pref, plog;
 	pa = a;
 	ref = std::log(a);
 	pref = ref;
@@ -40,7 +40,7 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 1, uint8_t>(4.0f);
+	GenerateTestCase<16, 1, Saturating, uint8_t>(4.0f);
 
 #if GENERATE_LOG_TABLES
 	GenerateLogarithmTable<3, 0>();
@@ -57,9 +57,9 @@ try {
 #endif
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyLog< lns<8, 4, uint8_t> >(reportTestCases), "lns<8,4>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog2< lns<8, 4, uint8_t> >(reportTestCases), "lns<8,4>", "log2");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog10< lns <8, 4, uint8_t > >(reportTestCases), "lns<8,4>", "log10");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog< lns<8, 4, Saturating, uint8_t> >(reportTestCases), "lns<8,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2< lns<8, 4, Saturating, uint8_t> >(reportTestCases), "lns<8,4>", "log2");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10< lns <8, 4, Saturating, uint8_t > >(reportTestCases), "lns<8,4>", "log10");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

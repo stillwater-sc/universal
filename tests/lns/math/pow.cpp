@@ -9,10 +9,10 @@
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, typename Ty>
+template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits> pa, pb, pref, ppow;
+	sw::universal::lns<nbits, rbits, behavior, bt> pa, pb, pref, ppow;
 	pa = a;
 	pb = b;
 	ref = std::pow(a,b);
@@ -41,7 +41,7 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 1, float>(4.0f, 2.0f);
+	GenerateTestCase<16, 1, Saturating, std::uint16_t, float>(4.0f, 2.0f);
 
 #if GENERATE_POW_TABLES
 	GeneratePowTable<3, 0>();
@@ -69,7 +69,7 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction< lns<8, 2> >(reportTestCases), "lns<8,2>", "pow");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

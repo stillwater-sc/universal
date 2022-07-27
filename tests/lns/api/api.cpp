@@ -54,11 +54,11 @@ try {
 	// configuration
 	std::cout << "+---------    explicit alignment bahavior\n";
 	{
-		using Real = lns<16, 5, std::uint16_t>;
+		using Real = lns<16, 5, Saturating, std::uint16_t>;
 		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 	{
-		using Real = lns<24, 5, std::uint32_t>;
+		using Real = lns<24, 5, Saturating, std::uint32_t>;
 		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 
@@ -74,8 +74,8 @@ try {
 	std::cout << "+---------    constexpr and specific values   --------+\n";
 	{
 		constexpr size_t nbits = 10;
-		constexpr size_t es = 3;
-		using Real = lns<nbits, es>;  // bt = uint8_t
+		constexpr size_t rbits = 3;
+		using Real = lns<nbits, rbits>;  // bt = uint8_t
 
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
@@ -94,8 +94,8 @@ try {
 	std::cout << "+---------    extreme values   --------+\n";
 	{
 		constexpr size_t nbits = 10;
-		constexpr size_t es = 3;
-		using Real = lns<nbits, es>;  // bt = uint8_t
+		constexpr size_t rbits = 3;
+		using Real = lns<nbits, rbits>;  // bt = uint8_t
 
 		Real a, b, c;
 
@@ -109,7 +109,7 @@ try {
 
 	std::cout << "+---------    comparison to classic floats\n";
 	{
-		using LNS = lns<16, 8, std::uint16_t>;
+		using LNS = lns<16, 8, Saturating, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
 		LNS a;
 		Real b;

@@ -9,9 +9,9 @@
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::lns<nbits, es, bt> a, b, pref, result;
+	sw::universal::lns<nbits, rbits, behavior, bt> a, b, pref, result;
 	a = _a;
 	b = _b;
 	Ty ref = std::hypot(_a, _b);
@@ -57,22 +57,22 @@ try {
 	// generate individual testcases to hand trace/debug
 	lns<8, 3, std::uint8_t> a(SpecificValue::maxpos);
 	std::cout << "maxpos " << type_tag(a) << " : " << a << '\n';
-	GenerateTestCase< 8, 3, std::uint8_t, float>(3.0f, 4.0f);
-	GenerateTestCase<16, 5, std::uint8_t, float>(3.0f, 4.0f);
+	GenerateTestCase< 8, 3, Saturating, std::uint8_t, float>(3.0f, 4.0f);
+	GenerateTestCase<16, 5, Saturating, std::uint8_t, float>(3.0f, 4.0f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<4, 1, std::uint8_t> >(reportTestCases), "lns<4, 1>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<8, 4, std::uint8_t> >(reportTestCases), "lns<8, 4>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<4, 1, Saturating, std::uint8_t> >(reportTestCases), "lns<4, 1>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<8, 4, Saturating, std::uint8_t> >(reportTestCases), "lns<8, 4>", "hypot");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<4, 1, std::uint8_t> >(reportTestCases), "lns<4, 1>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<5, 1, std::uint8_t> >(reportTestCases), "lns<5, 1>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<6, 2, std::uint8_t> >(reportTestCases), "lns<6, 2>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<7, 2, std::uint8_t> >(reportTestCases), "lns<7, 2>", "hypot");
-	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<8, 3, std::uint8_t> >(reportTestCases), "lns<8, 3>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<4, 1, Saturating, std::uint8_t> >(reportTestCases), "lns<4, 1>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<5, 1, Saturating, std::uint8_t> >(reportTestCases), "lns<5, 1>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<6, 2, Saturating, std::uint8_t> >(reportTestCases), "lns<6, 2>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<7, 2, Saturating, std::uint8_t> >(reportTestCases), "lns<7, 2>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyHypot< lns<8, 3, Saturating, std::uint8_t> >(reportTestCases), "lns<8, 3>", "hypot");
 #endif
 
 #if REGRESSION_LEVEL_2

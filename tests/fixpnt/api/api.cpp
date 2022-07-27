@@ -1,4 +1,4 @@
-// api.cpp: test suite runner for class interface tests of the fixpnt<nbits,rbits,Modulo/Saturating,BlockType> type
+// api.cpp: test suite runner for class interface tests of the fixpnt<nbits,rbits,Modulo/Saturate,BlockType> type
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -98,18 +98,18 @@ try {
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// SATURATING fixed-point
+	//// Saturate fixed-point
 
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
-		fixpnt<8, 4, Saturating> a(-8.0), b(-8.125), c(7.875), d(-7.875);
-		// b initialized to -8.125 in saturating arithmetic becomes -8
+		fixpnt<8, 4, Saturate> a(-8.0), b(-8.125), c(7.875), d(-7.875);
+		// b initialized to -8.125 in Saturate arithmetic becomes -8
 //		if (0 != (c + d)) ++nrOfFailedTestCases; //cout << to_binary(c + d) << endl;
 		if (a != b) ++nrOfFailedTestCases;
 
-		if (a != (d - 1)) ++nrOfFailedTestCases; // saturating to maxneg
-		if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
+		if (a != (d - 1)) ++nrOfFailedTestCases; // Saturate to maxneg
+		if (a != (d - 0.5)) ++nrOfFailedTestCases; // Saturate to maxneg
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
 			std::cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << '\n';
@@ -141,7 +141,7 @@ try {
 		Fixed a{ 0 };
 		std::cout << "type identifier : " << type_tag(a) << '\n';
 		std::cout << "type identifier : " << type_tag(fixpnt<8, 4>()) << '\n';
-		std::cout << "type identifier : " << type_tag(fixpnt<8, 4, Saturating, uint16_t>()) << '\n';
+		std::cout << "type identifier : " << type_tag(fixpnt<8, 4, Saturate, uint16_t>()) << '\n';
 	}
 
 	{

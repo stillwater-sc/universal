@@ -7,16 +7,16 @@
 
 namespace sw { namespace universal {
 
-template<size_t nbits, size_t rbits, typename bt>
-lns<nbits, rbits, bt> 
-min(lns<nbits, rbits, bt> x, lns<nbits, rbits, bt> y) {
-	return lns<nbits, rbits, bt>(std::min(double(x), double(y)));
+template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
+lns<nbits, rbits, behavior, bt>
+min(lns<nbits, rbits, behavior, bt> x, lns<nbits, rbits, behavior, bt> y) {
+	return lns<nbits, rbits, behavior, bt>(std::min(double(x), double(y)));
 }
 
-template<size_t nbits, size_t rbits, typename bt>
-lns<nbits, rbits, bt> 
-max(lns<nbits, rbits, bt> x, lns<nbits, rbits, bt> y) {
-	return lns<nbits, rbits, bt>(std::max(double(x), double(y)));
+template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
+lns<nbits, rbits, behavior, bt>
+max(lns<nbits, rbits, behavior, bt> x, lns<nbits, rbits, behavior, bt> y) {
+	return lns<nbits, rbits, behavior, bt>(std::max(double(x), double(y)));
 }
 
 }} // namespace sw::universal

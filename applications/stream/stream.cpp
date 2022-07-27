@@ -210,7 +210,7 @@ try {
 	Sweep< float >(startSample, endSample);
 	Sweep< double >(startSample, endSample);
 	Sweep< fixpnt<8, 4, Modulo, std::uint8_t> >(startSample, endSample);
-	Sweep< fixpnt<8, 4, Saturating, std::uint8_t> >(startSample, endSample);
+	Sweep< fixpnt<8, 4, Saturate, std::uint8_t> >(startSample, endSample);
 	Sweep< cfloat<32, 8, std::uint32_t, true, false, false> >(startSample, endSample);
 #endif
 
