@@ -57,6 +57,7 @@ try {
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;
 	
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
