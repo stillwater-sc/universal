@@ -48,7 +48,7 @@ try {
 		a = 1;  // integer assignment
 		b = 1;
 		c = a + b;
-		ReportBinaryOperation(a, "*", b, c);
+		ReportBinaryOperation(a, "+", b, c);
 	}
 
 	// configuration

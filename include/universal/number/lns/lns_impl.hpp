@@ -54,6 +54,7 @@ public:
 	static constexpr size_t   nbits = _nbits;
 	static constexpr size_t   rbits = _rbits;
 	typedef bt BlockType;
+	static_assert(nbits > rbits, "rbits parameter is larger than available fraction bits");
 	static constexpr double   scaling = double(1ull << rbits);
 	static constexpr size_t   bitsInByte = 8ull;
 	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
