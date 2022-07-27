@@ -52,7 +52,7 @@ lns<nbits, rbits, behavior, bt> hypotf(lns<nbits, rbits, behavior, bt> x, lns<nb
 
 #if LONG_DOUBLE_SUPPORT
 template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, bt> hypotl(lns<nbits, rbits, behavior, bt> x, lns<nbits, rbits, behavior, bt> y) {
+lns<nbits, rbits, behavior, bt> hypotl(lns<nbits, rbits, behavior, bt> x, lns<nbits, rbits, behavior, bt> y) {
 	return lns<nbits, rbits, behavior, bt>(std::hypotl((long double)(x),(long double)(y)));
 }
 #endif
