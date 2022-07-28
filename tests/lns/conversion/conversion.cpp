@@ -9,16 +9,49 @@
 
 namespace sw { namespace universal {
 
-		template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-		int Compare(double input, const lns<nbits, rbits, behavior, bt>& presult, double reference, bool reportTestCases) {
+		template<typename TestType, typename RefType>
+		void ReportConversionError(const std::string& test_case, const std::string& op, double input, const TestType& result, RefType ref, const std::string& rounding) {
+			constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+			auto old_precision = std::cerr.precision();
+			std::cerr << std::setprecision(10);
+			std::cerr << test_case
+				<< " " << op << " "
+				<< std::setw(NUMBER_COLUMN_WIDTH) << input
+				<< " did not convert to "
+				<< std::setw(NUMBER_COLUMN_WIDTH) << ref << " instead it yielded  "
+				<< std::setw(NUMBER_COLUMN_WIDTH) << double(result)
+				<< "  encoding " << std::setw(nbits) << to_binary(result) << " converted from " << to_binary(ref) << " " << rounding;
+			std::cerr << '\n';
+			std::cerr << std::setprecision(old_precision);
+		}
+
+		template<typename TestType, typename RefType>
+		void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, const TestType& result, RefType ref, const std::string& rounding) {
+			constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+			auto old_precision = std::cerr.precision();
+			std::cerr << std::setprecision(10); 
+			std::cerr << test_case
+				<< " " << op << " "
+				<< std::setw(NUMBER_COLUMN_WIDTH) << input
+				<< " success            "
+				<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
+				<< std::setw(NUMBER_COLUMN_WIDTH) << ref
+				<< "  encoding " << std::setw(nbits) << to_binary(result) << " converted from " << to_binary(ref) << " " << rounding;
+			std::cerr << '\n';
+			std::cerr << std::setprecision(old_precision);
+		}
+
+		template<typename TestType, typename RefType>
+		int Compare(double input, const TestType& result, const RefType& ref, const std::string& rounding, bool reportTestCases) {
 			int fail = 0;
-			double result = double(presult);
-			if (std::fabs(result - reference) > 0.000000001) {
+			double dresult = double(result);
+			double dref = double(ref);
+			if (std::fabs(dresult - dref) > 0.000000001) {
 				fail++;
-				if (reportTestCases)	ReportConversionError("FAIL", "=", input, presult, reference);
+				if (reportTestCases) ReportConversionError("FAIL", "=", input, result, ref, rounding);
 			}
 			else {
-				// if (reportTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+				if (reportTestCases) ReportConversionSuccess("PASS", "=", input, result, ref, rounding);
 			}
 			return fail;
 		}
@@ -36,24 +69,30 @@ namespace sw { namespace universal {
 
 			constexpr size_t max = nbits > 16 ? 16 : nbits;
 			size_t NR_TEST_CASES = (size_t(1) << (max + 1));
+			size_t QUARTER = (size_t(1) << (max - 1));
 			size_t HALF = (size_t(1) << max);
 
 			if constexpr (nbits > 16) {
 				std::cout << "VerifyConversion: " << type_tag(TestType()) << " : NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 16" << std::endl;
 			}
 
-			double halfMinpos = double(ContainingType(SpecificValue::minpos)) / 2.0;
+			ContainingType minpos(SpecificValue::minpos);
+			double quarterMinpos = double(minpos) / 4.0;
+			std::cerr << "        minpos : " << minpos << " : " << to_binary(minpos) << '\n';
+			std::cerr << "quarter minpos : " << quarterMinpos << '\n';
 			// execute the test
 			int nrOfFailedTests = 0;
-			for (size_t i = 0; i < NR_TEST_CASES; i++) {
-				ContainingType ref, prev, next;
-
+//			for (size_t i = 0; i < NR_TEST_CASES; i++) {
+			for (size_t i = 17; i < 18; i++) {
+					ContainingType ref, prev, next;
+				std::cerr << "i : " << i << '\n';
 				ref.setbits(i);
 				double da = double(ref);
-				double eps = double(i == 0 ? halfMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
+				double eps = quarterMinpos; //  double(i == 0 ? quarterMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
 				double input;
 				TestType a;
 				if (i % 2) {
+					/*
 					if (i == 1) {
 						// special case of projecting to +minpos
 						// even the -delta goes to +minpos
@@ -65,19 +104,23 @@ namespace sw { namespace universal {
 						a = input;
 						nrOfFailedTests += Compare(input, a, double(next), reportTestCases);
 					}
-					else if (i == HALF - 1) {
-						// special case of projecting to +maxpos
+					else */ 
+					if (i == QUARTER - 1) {
+						// special case of maxpos
 						input = da - eps;
 						a = input;
-						prev.setbits(HALF - 2);
-						nrOfFailedTests += Compare(input, a, double(prev), reportTestCases);
+						next.setbits(QUARTER - 2);
+						nrOfFailedTests += Compare(input, a, next, "round up to maxpos", reportTestCases);
+						input = da + eps;
+						a = input;
+						nrOfFailedTests += Compare(input, a, next, "round down to maxpos", reportTestCases);
 					}
 					else if (i == HALF + 1) {
 						// special case of projecting to -maxpos
 						input = da - eps;
 						a = input;
 						prev.setbits(HALF + 2);
-						nrOfFailedTests += Compare(input, a, double(prev), reportTestCases);
+						nrOfFailedTests += Compare(input, a, prev, "project to maxneg", reportTestCases);
 					}
 					else if (i == NR_TEST_CASES - 1) {
 						// special case of projecting to -minpos
@@ -85,54 +128,59 @@ namespace sw { namespace universal {
 						input = da - eps;
 						a = input;
 						prev.setbits(i - 1);
-						nrOfFailedTests += Compare(input, a, double(prev), reportTestCases);
+						nrOfFailedTests += Compare(input, a, prev, "project to minneg", reportTestCases);
 						input = da + eps;
 						a = input;
-						nrOfFailedTests += Compare(input, a, double(prev), reportTestCases);
+						nrOfFailedTests += Compare(input, a, prev, "project to minneg", reportTestCases);
 					}
 					else {
-						// for odd values, we are between posit values, so we create the round-up and round-down cases
+						// for odd values, we are between lns values, so we create the round-up and round-down cases
+						std::cerr << "between value case\n";
 						// round-down
 						input = da - eps;
 						a = input;
 						prev.setbits(i - 1);
-						nrOfFailedTests += Compare(input, a, double(prev), reportTestCases);
+						nrOfFailedTests += Compare(input, a, prev, "round down", reportTestCases);
 						// round-up
 						input = da + eps;
 						a = input;
 						next.setbits(i + 1);
-						nrOfFailedTests += Compare(input, a, double(next), reportTestCases);
+						nrOfFailedTests += Compare(input, a, next, "round up", reportTestCases);
 					}
 				}
 				else {
 					// for the even values, we generate the round-to-actual cases
-					if (i == 0) {
+					if (i == QUARTER) {
 						// special case of assigning to 0
+						input = eps;
+						a = input;
+						nrOfFailedTests += Compare(input, a, ref, "round down", reportTestCases);
 						input = 0.0;
 						a = input;
-						nrOfFailedTests += Compare(input, a, da, reportTestCases);
-						// special case of projecting to +minpos
-						input = da + eps;
+						nrOfFailedTests += Compare(input, a, ref, " == ", reportTestCases);
+						input = -eps;
 						a = input;
-						next.setbits(i + 2);
-						nrOfFailedTests += Compare(input, a, double(next), reportTestCases);
+						nrOfFailedTests += Compare(input, a, ref, "round up", reportTestCases);
 					}
 					else if (i == NR_TEST_CASES - 2) {
 						// special case of projecting to -minpos
 						input = da - eps;
 						a = input;
 						prev.setbits(NR_TEST_CASES - 2);
-						nrOfFailedTests += Compare(input, a, double(prev), reportTestCases);
+						nrOfFailedTests += Compare(input, a, prev, "project to minneg", reportTestCases);
 					}
 					else {
+						std::cerr << "same value case\n";
 						// round-up
 						input = da - eps;
 						a = input;
-						nrOfFailedTests += Compare(input, a, da, reportTestCases);
+						nrOfFailedTests += Compare(input, a, ref, "round up", reportTestCases);
+						a = da;
+						nrOfFailedTests += Compare(input, a, ref, " == ", reportTestCases);
 						// round-down
 						input = da + eps;
 						a = input;
-						nrOfFailedTests += Compare(input, a, da, reportTestCases);
+						nrOfFailedTests += Compare(input, a, ref, "round down", reportTestCases);
 					}
 				}
 			}
@@ -175,6 +223,15 @@ namespace sw { namespace universal {
 
 } } // namespace sw::universal
 
+template<typename TestType, typename Real>
+void GenerateTestCase(double input, double reference, const TestType& result) {
+	if (std::fabs(double(result) - reference) > 0.000000001)
+		ReportConversionError("FAIL", "=", input, result, reference, std::string("faithful x = x"));
+	else
+		ReportConversionSuccess("PASS", "=", input, result, reference, std::string("faithful x = x"));
+	std::cout << std::endl;
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -206,6 +263,29 @@ try {
 
 	{
 		using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
+		LNS5_2 minpos(SpecificValue::minpos);
+		double mp = double(minpos);
+		LNS5_2 result = mp;
+		GenerateTestCase<LNS5_2, double>(mp, mp, result);
+		double halfMinpos = mp / 2.0;
+		result = halfMinpos;
+		GenerateTestCase<LNS5_2, double>(halfMinpos, mp, result);
+		double quarterMinpos = halfMinpos / 2.0;
+		result = quarterMinpos;
+		GenerateTestCase<LNS5_2, double>(quarterMinpos, 0.0, result);
+
+		using LNS6_3 = lns<6, 3, Saturating, std::uint8_t>;
+		LNS6_3 ref;
+		ref.setbits(17);
+		std::cout << to_binary(ref) << " : " << ref << '\n';
+		double input = double(ref);
+		result = input;
+		std::cout << to_binary(ref) << " : " << ref << " -> " << result << " : " << to_binary(result) << '\n';
+		GenerateTestCase<LNS5_2, double>(input, input, result);
+	}
+	return 0;
+	{
+		using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
 		using LNS6_3 = lns<6, 3, Saturating, std::uint8_t>;
 
 		constexpr size_t NR_SAMPLES = 32;
@@ -214,7 +294,7 @@ try {
 		for (size_t i = 0; i < NR_SAMPLES; ++i) {
 			b.setbits(i);
 			if (i % 2 == 0) {
-				a.setbits(i);
+				a.setbits(i / 2);
 				std::cout << to_binary(b) << " : " << std::setw(10) << b << " - " << std::setw(10) << a << " : " << to_binary(a) << '\n';
 			}
 			else {
@@ -222,6 +302,8 @@ try {
 			}
 		}
 	}
+
+	VerifyConversion<5, 2, Saturating, std::uint8_t>(true);
 
 	return 0; 
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 1, Saturating, std::uint8_t>(true), "lns<4,1>", test_tag);
@@ -330,3 +412,39 @@ catch (...) {
 	return EXIT_FAILURE;
 }
 
+/*
+Generate Value table for an LNS<5,2> in TXT format
+   #           Binary    sign   scale                         value          format
+   0:        0b0.00.00       0       0                             1                1
+   1:        0b0.00.01       0       0                       1.18921          1.18921
+   2:        0b0.00.10       0       0                       1.41421          1.41421
+   3:        0b0.00.11       0       0                       1.68179          1.68179
+   4:        0b0.01.00       0       1                             2                2
+   5:        0b0.01.01       0       1                       2.37841          2.37841
+   6:        0b0.01.10       0       1                       2.82843          2.82843
+   7:        0b0.01.11       0       1                       3.36359          3.36359
+   8:        0b0.10.00       0      -2                             0                0
+   9:        0b0.10.01       0      -2                      0.297302         0.297302
+  10:        0b0.10.10       0      -2                      0.353553         0.353553
+  11:        0b0.10.11       0      -2                      0.420448         0.420448
+  12:        0b0.11.00       0      -1                           0.5              0.5
+  13:        0b0.11.01       0      -1                      0.594604         0.594604
+  14:        0b0.11.10       0      -1                      0.707107         0.707107
+  15:        0b0.11.11       0      -1                      0.840896         0.840896
+  16:        0b1.00.00       1       0                            -1               -1
+  17:        0b1.00.01       1       0                      -1.18921         -1.18921
+  18:        0b1.00.10       1       0                      -1.41421         -1.41421
+  19:        0b1.00.11       1       0                      -1.68179         -1.68179
+  20:        0b1.01.00       1       1                            -2               -2
+  21:        0b1.01.01       1       1                      -2.37841         -2.37841
+  22:        0b1.01.10       1       1                      -2.82843         -2.82843
+  23:        0b1.01.11       1       1                      -3.36359         -3.36359
+  24:        0b1.10.00       1      -2                     -nan(ind)        -nan(ind)
+  25:        0b1.10.01       1      -2                     -0.297302        -0.297302
+  26:        0b1.10.10       1      -2                     -0.353553        -0.353553
+  27:        0b1.10.11       1      -2                     -0.420448        -0.420448
+  28:        0b1.11.00       1      -1                          -0.5             -0.5
+  29:        0b1.11.01       1      -1                     -0.594604        -0.594604
+  30:        0b1.11.10       1      -1                     -0.707107        -0.707107
+  31:        0b1.11.11       1      -1                     -0.840896        -0.840896
+ */

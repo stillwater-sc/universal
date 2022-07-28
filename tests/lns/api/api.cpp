@@ -71,6 +71,18 @@ try {
 		std::cout << dynamic_range(lns<20, 6>()) << '\n';
 	}
 
+	std::cout << "+---------    Dynamic ranges of 8-bit lns<> configurations   --------+\n";
+	{
+		std::cout << dynamic_range(lns<8, 0>()) << '\n';
+		std::cout << dynamic_range(lns<8, 1>()) << '\n';
+		std::cout << dynamic_range(lns<8, 2>()) << '\n';
+		std::cout << dynamic_range(lns<8, 3>()) << '\n';
+		std::cout << dynamic_range(lns<8, 4>()) << '\n';
+		std::cout << dynamic_range(lns<8, 5>()) << '\n';
+		std::cout << dynamic_range(lns<8, 6>()) << '\n';
+		std::cout << dynamic_range(lns<8, 7>()) << '\n';
+	}
+
 	std::cout << "+---------    constexpr and specific values   --------+\n";
 	{
 		constexpr size_t nbits = 10;

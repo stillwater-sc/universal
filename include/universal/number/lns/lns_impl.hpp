@@ -472,6 +472,23 @@ protected:
 			return *this;
 		}
 
+		// check if the value is in the representable range
+		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
+			lns maxpos(SpecificValue::maxpos);
+			if (v >= Real(maxpos)) {
+				return *this = maxpos;
+			}
+			lns minpos(SpecificValue::minpos);
+			double halfMinpos = double(minpos) / 2.0;
+			if (v < Real(halfMinpos)) {
+				setzero();
+				return *this;
+			}
+			//else if (v == Real(halfMinpos)) {   // <--- this feels so wrong: round to even should go to 0
+			//	return *this = minpos;
+			//}
+		}
+
 		bool negative = (v < Real(0.0f));
 		v = (negative ? -v : v);
 		Real logv = std::log2(v);
@@ -480,7 +497,7 @@ protected:
 			_block.setbit(nbits - 1, negative);
 			return *this;
 		}
-		// check if the value is in the representable range
+
 
 		ExponentBlockBinary lnsExponent{ 0 };
 
@@ -554,6 +571,7 @@ protected:
 //		std::cout << "lns exponent : " << to_binary(lnsExponent) << " : " << lnsExponent << '\n';
 		_block = lnsExponent;
 		setsign(negative);
+
 		return *this;
 	}
 
