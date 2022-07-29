@@ -18,6 +18,9 @@ namespace sw { namespace universal {
 	template<typename LnsType>
 	int VerifyMutliplication(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
+		constexpr size_t rbits = LnsType::rbits;
+		constexpr ArithmeticBehavior behavior = LnsType::behavior;
+		using bt = LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;
@@ -31,6 +34,9 @@ namespace sw { namespace universal {
 				double db = double(b);
 
 				double ref = da * db;
+				if (!isInRange<nbits, rbits, behavior, bt>(ref)) {
+					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, behavior, bt>() << '\n';
+				}
 				c = a * b;
 				cref = ref;
 //				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
@@ -38,13 +44,13 @@ namespace sw { namespace universal {
 				if (c != cref) {
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
-					std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-					std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
+//					std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
+//					std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				}
 				else {
-					// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
 				}
-				if (nrOfFailedTestCases > 0) return 25;
+				if (nrOfFailedTestCases > 25) return 25;
 			}
 		}
 		return nrOfFailedTestCases;
@@ -53,6 +59,25 @@ namespace sw { namespace universal {
 } }
 
 /*
+Generate Value table for an LNS<4,1> in TXT format
+   #           Binary    sign   scale                         value          format
+   0:         0b0.00.0       0       0                             1                1
+   1:         0b0.00.1       0       0                       1.41421          1.41421
+   2:         0b0.01.0       0       1                             2                2
+   3:         0b0.01.1       0       1                       2.82843          2.82843
+   4:         0b0.10.0       0      -2                             0                0
+   5:         0b0.10.1       0      -2                      0.353553         0.353553
+   6:         0b0.11.0       0      -1                           0.5              0.5
+   7:         0b0.11.1       0      -1                      0.707107         0.707107
+   8:         0b1.00.0       1       0                            -1               -1
+   9:         0b1.00.1       1       0                      -1.41421         -1.41421
+  10:         0b1.01.0       1       1                            -2               -2
+  11:         0b1.01.1       1       1                      -2.82843         -2.82843
+  12:         0b1.10.0       1      -2                     -nan(ind)        -nan(ind)
+  13:         0b1.10.1       1      -2                     -0.353553        -0.353553
+  14:         0b1.11.0       1      -1                          -0.5             -0.5
+  15:         0b1.11.1       1      -1                     -0.707107        -0.707107
+
 Generate Value table for an LNS<4,2> in TXT format
    #           Binary    sign   scale                         value          format
    0:         0b0.0.00       0       0                             1                1
@@ -137,32 +162,27 @@ try {
 
 #if MANUAL_TESTING
 
-	using LNS4_1 = lns<4, 1, Saturating, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, Saturating, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, Saturating, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, Saturating, std::uint8_t>;
-	using LNS16_5 = lns<16, 5, Saturating, std::uint16_t>;
-
-	{
-		LNS9_4 a;
-		a = 279.17;
-		std::cout << to_binary(a) << " : " << a << '\n';
-	}
-//	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4>", test_tag);
-
+	using LNS4_1_mod = lns<4, 1, Modular, std::uint8_t>;
+	using LNS4_1_sat = lns<4, 1, Saturating, std::uint8_t>;
+	using LNS4_2     = lns<4, 2, Saturating, std::uint8_t>;
+	using LNS5_2     = lns<5, 2, Saturating, std::uint8_t>;
+	using LNS8_3     = lns<8, 3, Saturating, std::uint8_t>;
+	using LNS9_4     = lns<9, 4, Saturating, std::uint8_t>;
+	using LNS16_5    = lns<16, 5, Saturating, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
+	TestCase<LNS4_1_sat, float>(TestCaseOperator::MUL, 1.0f, 1.414f);
 	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
 	TestCase<LNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
 	// GenerateLnsTable<5, 2>(std::cout);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1>(reportTestCases), "lns<4,1, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_2>(reportTestCases), "lns<4,2, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS5_2>(reportTestCases), "lns<5,2, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS8_3>(reportTestCases), "lns<8,3, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4, Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1_mod>(false), "lns<4,1, Modular,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_1_sat>(reportTestCases), "lns<4,1, Saturating,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS4_2>(reportTestCases), "lns<4,2, Saturating,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS5_2>(reportTestCases), "lns<5,2, Saturating,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS8_3>(reportTestCases), "lns<8,3, Saturating,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMutliplication<LNS9_4>(reportTestCases), "lns<9,4, Saturating,uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

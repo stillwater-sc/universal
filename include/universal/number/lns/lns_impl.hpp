@@ -46,11 +46,12 @@ lns<nbits, rbits, behavior, bt>& maxneg(lns<nbits, rbits, behavior, bt>& lmaxneg
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<size_t _nbits, size_t _rbits, ArithmeticBehavior behavior = Saturating, typename bt = uint8_t>
+template<size_t _nbits, size_t _rbits, ArithmeticBehavior _behavior = Saturating, typename bt = uint8_t>
 class lns {
 public:
-	static constexpr size_t   nbits = _nbits;
-	static constexpr size_t   rbits = _rbits;
+	static constexpr size_t             nbits    = _nbits;
+	static constexpr size_t             rbits    = _rbits;
+	static constexpr ArithmeticBehavior behavior = _behavior;
 	typedef bt BlockType;
 	static_assert(nbits > rbits, "rbits parameter is larger than available fraction bits");
 	static constexpr double   scaling = double(1ull << rbits);
@@ -142,22 +143,30 @@ public:
 
 	// in-place arithmetic assignment operators
 	lns& operator+=(const lns& rhs) {
-		float sum = float(*this) + float(rhs);  // TODO: why floats? because this is a shortcut and we focus on small values
-		return *this = sum; 
+		double sum{ 0.0 };
+		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
+			sum = double(*this) + double(rhs);  // TODO: native implementation
+		}
+		else {
+			sum = double(*this) + double(rhs);  // TODO: native implementation
+		}
+		return *this = sum; // <-- saturation happens in the assignment
 	}
 	lns& operator+=(double rhs) { 
-		float sum = float(*this) + float(rhs);  // TODO: why floats? because this is a shortcut and we focus on small values
-		return *this = sum;
-//		return *this += lns(rhs); 
+		return operator+=(lns(rhs));
 	}
 	lns& operator-=(const lns& rhs) { 
-		float diff = float(*this) - float(rhs);  // TODO: why floats? because this is a shortcut and we focus on small values
-		return *this = diff;
+		double diff{ 0.0 };
+		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
+			diff = double(*this) - double(rhs);  // TODO: native implementation
+		}
+		else {
+			diff = double(*this) - double(rhs);  // TODO: native implementation
+		}
+		return *this = diff; // <-- saturation happens in the assignment
 	}
 	lns& operator-=(double rhs) {
-		float diff = float(*this) - float(rhs);  // TODO: why floats? because this is a shortcut and we focus on small values
-		return *this = diff;
-		// return *this -= lns(rhs); 
+		return operator-=(lns(rhs));
 	}
 	lns& operator*=(const lns& rhs) {
 		if (isnan()) return *this;
@@ -170,14 +179,35 @@ public:
 			setzero();
 			return *this;
 		}
-		ExponentBlockBinary exp(_block), rhsExp(rhs._block);
-		exp += rhsExp;
-		bool negative = sign() ^ rhs.sign();
-		_block.assign(exp);
-		setsign(negative);
+		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) { // saturating, no infinite
+			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+			blockbinary<nbits, bt, BinaryNumberType::Signed> exp(_block), rhsExp(rhs._block), sum;
+			// clear any sign bits
+			exp.setbit(nbits - 1, false);
+			rhsExp.setbit(nbits - 1, false);
+			sum = uradd(exp, rhsExp);
+			// check if sum is in range
+			if (sum >= maxpos) {
+				_block = maxpos;
+				return *this;
+			}
+			if (sum <= maxneg) {
+				_block = maxneg;
+				return *this;
+			}
+			_block = sum;
+		}
+		else {
+			ExponentBlockBinary exp(_block), rhsExp(rhs._block);
+			exp += rhsExp;
+			bool negative = sign() ^ rhs.sign();
+			_block.assign(exp);
+			setsign(negative);
+		}
+
 		return *this;
 	}
-	lns& operator*=(double rhs) { return *this *= lns(rhs); }
+	lns& operator*=(double rhs) { return operator*=(lns(rhs)); }
 	lns& operator/=(const lns& rhs) {
 		if (isnan()) return *this;
 		if (rhs.isnan()) {
@@ -201,7 +231,7 @@ public:
 		setsign(negative);
 		return *this;
 	}
-	lns& operator/=(double rhs) { return *this /= lns(rhs); }
+	lns& operator/=(double rhs) { return operator/=(lns(rhs)); }
 
 	// prefix/postfix operators
 	lns& operator++() {

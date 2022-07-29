@@ -54,8 +54,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fixed-point Saturate subtraction ";
-	std::string test_tag    = "Saturate subtraction";
+	std::string test_suite  = "fixed-point saturating subtraction ";
+	std::string test_tag    = "saturating subtraction";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

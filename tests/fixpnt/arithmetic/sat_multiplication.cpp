@@ -12,7 +12,6 @@
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
-
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
@@ -58,8 +57,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fixed-point Saturate multiplication ";
-	std::string test_tag    = "Saturate multiplication";
+	std::string test_suite  = "fixed-point saturating multiplication ";
+	std::string test_tag    = "saturating multiplication";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
