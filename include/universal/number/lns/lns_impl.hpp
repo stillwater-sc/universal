@@ -473,20 +473,30 @@ protected:
 		}
 
 		// check if the value is in the representable range
+		// NOTE: this is required to protect the rounding code below, which only works for values between [minpos, maxpos]
+		// TODO: this is all incredibly slow as we are creating special values and converting them to Real to compare
 		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
 			lns maxpos(SpecificValue::maxpos);
-			if (v >= Real(maxpos)) {
+			lns maxneg(SpecificValue::maxneg);
+			Real absoluteValue = std::abs(v);
+			//std::cout << "maxpos : " << to_binary(maxpos) << " : " << maxpos << '\n';
+			if (v > 0 && v >= Real(maxpos)) {
 				return *this = maxpos;
 			}
+			if (v < 0 && v <= Real(maxneg)) {
+				return *this = maxneg;
+			}
 			lns minpos(SpecificValue::minpos);
-			double halfMinpos = double(minpos) / 2.0;
-			if (v < Real(halfMinpos)) {
+			lns<nbits + 1, rbits + 1, behavior, bt> halfMinpos(SpecificValue::minpos); // in log space
+			//std::cout << "minpos     : " << minpos << '\n';
+			//std::cout << "halfMinpos : " << halfMinpos << '\n';
+			if (absoluteValue <= Real(halfMinpos)) {
 				setzero();
 				return *this;
 			}
-			//else if (v == Real(halfMinpos)) {   // <--- this feels so wrong: round to even should go to 0
-			//	return *this = minpos;
-			//}
+			else if (absoluteValue <= Real(minpos)) {
+				return *this = (v > 0 ? minpos : -minpos);
+			}
 		}
 
 		bool negative = (v < Real(0.0f));

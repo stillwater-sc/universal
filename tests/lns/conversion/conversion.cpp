@@ -51,7 +51,7 @@ namespace sw { namespace universal {
 				if (reportTestCases) ReportConversionError("FAIL", "=", input, result, ref, rounding);
 			}
 			else {
-				if (reportTestCases) ReportConversionSuccess("PASS", "=", input, result, ref, rounding);
+				//if (reportTestCases) ReportConversionSuccess("PASS", "=", input, result, ref, rounding);
 			}
 			return fail;
 		}
@@ -76,70 +76,70 @@ namespace sw { namespace universal {
 				std::cout << "VerifyConversion: " << type_tag(TestType()) << " : NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 16" << std::endl;
 			}
 
-			ContainingType minpos(SpecificValue::minpos);
-			double quarterMinpos = double(minpos) / 4.0;
-			std::cerr << "        minpos : " << minpos << " : " << to_binary(minpos) << '\n';
-			std::cerr << "quarter minpos : " << quarterMinpos << '\n';
+//			ContainingType halfMinpos(SpecificValue::minpos);  // in the more precise type
+//			double dhalfMinpos = double(halfMinpos);
+//			std::cerr << "half minpos : " << halfMinpos << " : " << to_binary(halfMinpos) << '\n';
+	
 			// execute the test
 			int nrOfFailedTests = 0;
-//			for (size_t i = 0; i < NR_TEST_CASES; i++) {
-			for (size_t i = 17; i < 18; i++) {
-					ContainingType ref, prev, next;
-				std::cerr << "i : " << i << '\n';
+			for (size_t i = 0; i < NR_TEST_CASES; i++) {
+				ContainingType ref, prev, next;
+				// std::cerr << "i : " << i << '\n';
 				ref.setbits(i);
 				double da = double(ref);
-				double eps = quarterMinpos; //  double(i == 0 ? quarterMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
+				double eps = da * 1.0e-6; //  (da > 0 ? da * 1.0e-6 : da * -1.0e-6);
 				double input;
 				TestType a;
 				if (i % 2) {
-					/*
-					if (i == 1) {
-						// special case of projecting to +minpos
-						// even the -delta goes to +minpos
-						input = da - eps;
-						a = input;
-						next.setbits(i + 1);
-						nrOfFailedTests += Compare(input, a, double(next), reportTestCases);
-						input = da + eps;
-						a = input;
-						nrOfFailedTests += Compare(input, a, double(next), reportTestCases);
-					}
-					else */ 
 					if (i == QUARTER - 1) {
-						// special case of maxpos
-						input = da - eps;
-						a = input;
-						next.setbits(QUARTER - 2);
-						nrOfFailedTests += Compare(input, a, next, "round up to maxpos", reportTestCases);
-						input = da + eps;
-						a = input;
-						nrOfFailedTests += Compare(input, a, next, "round down to maxpos", reportTestCases);
-					}
-					else if (i == HALF + 1) {
-						// special case of projecting to -maxpos
-						input = da - eps;
-						a = input;
-						prev.setbits(HALF + 2);
-						nrOfFailedTests += Compare(input, a, prev, "project to maxneg", reportTestCases);
-					}
-					else if (i == NR_TEST_CASES - 1) {
-						// special case of projecting to -minpos
-						// even the +delta goes to -minpos
+						if (reportTestCases) std::cerr << " odd-1: special case of project to maxpos\n";
 						input = da - eps;
 						a = input;
 						prev.setbits(i - 1);
-						nrOfFailedTests += Compare(input, a, prev, "project to minneg", reportTestCases);
+						nrOfFailedTests += Compare(input, a, prev, "round down to maxpos", reportTestCases);
 						input = da + eps;
 						a = input;
-						nrOfFailedTests += Compare(input, a, prev, "project to minneg", reportTestCases);
+						nrOfFailedTests += Compare(input, a, prev, "project down to maxpos", reportTestCases);
+					}
+					else if (i == HALF - 1) {
+						if (reportTestCases) std::cerr << " odd-2: special case of project to 1.0\n";
+						input = da - eps;
+						a = input;
+						prev.setbits(i - 1);
+						nrOfFailedTests += Compare(input, a, prev, "round down to 1.0", reportTestCases);
+						input = da + eps;
+						a = input;
+						next.setbits(0);   // encoding of 1.0
+						nrOfFailedTests += Compare(input, a, next, "round up to 1.0", reportTestCases);
+					}
+					else if (i == NR_TEST_CASES - 1) {
+						if (reportTestCases) std::cerr << " odd-3: special case of project to -1.0\n";
+						input = da - eps;
+						a = input;
+						prev.setbits(i - 1);
+						nrOfFailedTests += Compare(input, a, prev, "round down to -1.0", reportTestCases);
+						input = da + eps;
+						a = input;
+						next.setbits(0);
+						next.setsign();       // encoding of -1.0
+						nrOfFailedTests += Compare(input, a, next, "round up to -1.0", reportTestCases);
 					}
 					else {
 						// for odd values, we are between lns values, so we create the round-up and round-down cases
-						std::cerr << "between value case\n";
+						// std::cerr << " odd-4: between value case\n";
 						// round-down
 						input = da - eps;
 						a = input;
 						prev.setbits(i - 1);
+						//next.setbits(i + 1);
+						//std::cout << "da       : " << da << '\n';
+						//std::cout << "eps      : " << eps << '\n';
+						//std::cout << "input    : " << input << '\n';
+						//std::cout << "previous : " << to_binary(prev) << " : " << prev << '\n';
+						//std::cout << "midpoint : " << to_binary(ref) << " : " << ref << '\n';
+						//std::cout << "next     : " << to_binary(next) << " : " << next << '\n';
+						//std::cout << "sample   : " << to_binary(a) << " : " << a << '\n';
+						//std::cout << input << " : " << float(ref) << " : " << float(next) << '\n';
 						nrOfFailedTests += Compare(input, a, prev, "round down", reportTestCases);
 						// round-up
 						input = da + eps;
@@ -151,7 +151,7 @@ namespace sw { namespace universal {
 				else {
 					// for the even values, we generate the round-to-actual cases
 					if (i == QUARTER) {
-						// special case of assigning to 0
+						if (reportTestCases) std::cerr << "even-1: special case of rounding to 0\n";
 						input = eps;
 						a = input;
 						nrOfFailedTests += Compare(input, a, ref, "round down", reportTestCases);
@@ -162,15 +162,8 @@ namespace sw { namespace universal {
 						a = input;
 						nrOfFailedTests += Compare(input, a, ref, "round up", reportTestCases);
 					}
-					else if (i == NR_TEST_CASES - 2) {
-						// special case of projecting to -minpos
-						input = da - eps;
-						a = input;
-						prev.setbits(NR_TEST_CASES - 2);
-						nrOfFailedTests += Compare(input, a, prev, "project to minneg", reportTestCases);
-					}
 					else {
-						std::cerr << "same value case\n";
+						// std::cerr << "even-2: same value case\n";
 						// round-up
 						input = da - eps;
 						a = input;
@@ -233,7 +226,7 @@ void GenerateTestCase(double input, double reference, const TestType& result) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -269,10 +262,13 @@ try {
 		GenerateTestCase<LNS5_2, double>(mp, mp, result);
 		double halfMinpos = mp / 2.0;
 		result = halfMinpos;
-		GenerateTestCase<LNS5_2, double>(halfMinpos, mp, result);
+		GenerateTestCase<LNS5_2, double>(halfMinpos, 0.0, result);
 		double quarterMinpos = halfMinpos / 2.0;
 		result = quarterMinpos;
 		GenerateTestCase<LNS5_2, double>(quarterMinpos, 0.0, result);
+		double threeQuarterMinpos = halfMinpos + quarterMinpos;
+		result = threeQuarterMinpos;
+		GenerateTestCase<LNS5_2, double>(threeQuarterMinpos, mp, result);
 
 		using LNS6_3 = lns<6, 3, Saturating, std::uint8_t>;
 		LNS6_3 ref;
@@ -281,9 +277,9 @@ try {
 		double input = double(ref);
 		result = input;
 		std::cout << to_binary(ref) << " : " << ref << " -> " << result << " : " << to_binary(result) << '\n';
-		GenerateTestCase<LNS5_2, double>(input, input, result);
+		GenerateTestCase<LNS5_2, double>(input, double(LNS5_2(SpecificValue::minpos)), result);
 	}
-	return 0;
+
 	{
 		using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
 		using LNS6_3 = lns<6, 3, Saturating, std::uint8_t>;
@@ -303,8 +299,8 @@ try {
 		}
 	}
 
-	VerifyConversion<5, 2, Saturating, std::uint8_t>(true);
-
+	nrOfFailedTestCases += VerifyConversion<5, 2, Saturating, std::uint8_t>(true);
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return 0; 
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 1, Saturating, std::uint8_t>(true), "lns<4,1>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<5, 2, Saturating, std::uint8_t>(true), "lns<5,2>", test_tag);
@@ -321,6 +317,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	/*
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0, Saturating, std::uint8_t>(reportTestCases), "lns<3,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0, Saturating, std::uint8_t>(reportTestCases), "lns<4,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<5, 0, Saturating, std::uint8_t>(reportTestCases), "lns<5,0>", test_tag);
@@ -328,32 +325,44 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<7, 0, Saturating, std::uint8_t>(reportTestCases), "lns<7,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<8, 0, Saturating, std::uint8_t>(reportTestCases), "lns<8,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<9, 0, Saturating, std::uint8_t>(reportTestCases), "lns<9,0>", test_tag);
+	*/
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 3, 0, Saturating, std::uint8_t>(reportTestCases), "lns<3,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 0, Saturating, std::uint8_t>(reportTestCases), "lns<4,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 0, Saturating, std::uint8_t>(reportTestCases), "lns<5,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 0, Saturating, std::uint8_t>(reportTestCases), "lns<6,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 0, Saturating, std::uint8_t>(reportTestCases), "lns<7,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 0, Saturating, std::uint8_t>(reportTestCases), "lns<8,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 0, Saturating, std::uint8_t>(reportTestCases), "lns<9,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 3, 0, Saturating, std::uint8_t>(reportTestCases), "lns<3,0,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 3, 1, Saturating, std::uint8_t>(reportTestCases), "lns<3,1,Saturating>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 1, Saturating, std::uint8_t>(reportTestCases), "lns<4,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 1, Saturating, std::uint8_t>(reportTestCases), "lns<5,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 1, Saturating, std::uint8_t>(reportTestCases), "lns<6,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 1, Saturating, std::uint8_t>(reportTestCases), "lns<7,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 1, Saturating, std::uint8_t>(reportTestCases), "lns<8,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 1, Saturating, std::uint8_t>(reportTestCases), "lns<9,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 0, Saturating, std::uint8_t>(reportTestCases), "lns<4,0,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 1, Saturating, std::uint8_t>(reportTestCases), "lns<4,1,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 2, Saturating, std::uint8_t>(reportTestCases), "lns<4,2,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 3, Saturating, std::uint8_t>(reportTestCases), "lns<4,3,Saturating>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 2, Saturating, std::uint8_t>(reportTestCases), "lns<5,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 2, Saturating, std::uint8_t>(reportTestCases), "lns<6,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 2, Saturating, std::uint8_t>(reportTestCases), "lns<7,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 2, Saturating, std::uint8_t>(reportTestCases), "lns<8,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 2, Saturating, std::uint8_t>(reportTestCases), "lns<9,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 0, Saturating, std::uint8_t>(reportTestCases), "lns<6,0,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 1, Saturating, std::uint8_t>(reportTestCases), "lns<6,1,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 2, Saturating, std::uint8_t>(reportTestCases), "lns<6,2,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 3, Saturating, std::uint8_t>(reportTestCases), "lns<6,3,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 4, Saturating, std::uint8_t>(reportTestCases), "lns<6,4,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 5, Saturating, std::uint8_t>(reportTestCases), "lns<6,5,Saturating>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 3, Saturating, std::uint8_t>(reportTestCases), "lns<6,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 3, Saturating, std::uint8_t>(reportTestCases), "lns<7,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 3, Saturating, std::uint8_t>(reportTestCases), "lns<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 3, Saturating, std::uint8_t>(reportTestCases), "lns<9,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 0, Saturating, std::uint8_t>(reportTestCases), "lns<8,0,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 1, Saturating, std::uint8_t>(reportTestCases), "lns<8,1,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 2, Saturating, std::uint8_t>(reportTestCases), "lns<8,2,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 3, Saturating, std::uint8_t>(reportTestCases), "lns<8,3,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 4, Saturating, std::uint8_t>(reportTestCases), "lns<8,4,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 5, Saturating, std::uint8_t>(reportTestCases), "lns<8,5,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 6, Saturating, std::uint8_t>(reportTestCases), "lns<8,6,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 7, Saturating, std::uint8_t>(reportTestCases), "lns<8,7,Saturating>", test_tag);
+
+
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 0, Saturating, std::uint8_t>(reportTestCases), "lns<9,0,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 1, Saturating, std::uint8_t>(reportTestCases), "lns<9,1,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 2, Saturating, std::uint8_t>(reportTestCases), "lns<9,2,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 3, Saturating, std::uint8_t>(reportTestCases), "lns<9,3,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 4, Saturating, std::uint8_t>(reportTestCases), "lns<9,4,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 5, Saturating, std::uint8_t>(reportTestCases), "lns<9,5,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 6, Saturating, std::uint8_t>(reportTestCases), "lns<9,6,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 7, Saturating, std::uint8_t>(reportTestCases), "lns<9,7,Saturating>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 8, Saturating, std::uint8_t>(reportTestCases), "lns<9,8,Saturating>", test_tag);
+
+
 #endif
 
 #if REGRESSION_LEVEL_2
