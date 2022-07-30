@@ -1,7 +1,7 @@
 #pragma once
 // posit_test_suite.hpp : posit number system verification test suite
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -13,177 +13,6 @@
 #include <universal/verification/test_reporters.hpp> 
 
 namespace sw { namespace universal {
-
-#if 0
-	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
-
-	template<size_t nbits, size_t es>
-	void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const posit<nbits, es>& presult) {
-		constexpr size_t fbits = nbits - 3 - es;
-
-		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(presult.get(), _sign, _regime, _exponent, _fraction);
-		int                  _scale = _regime.scale() + _exponent.scale();
-
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << input
-			<< " did not convert to "
-			<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
-			<< "  raw " << std::setw(nbits) << presult.get()
-			<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-			<< std::endl;
-	}
-
-	template<>
-	void ReportConversionError<2,0>(const std::string& test_case, const std::string& op, double input, double reference, const posit<2, 0>& presult) {
-		constexpr size_t nbits = 2;
-		//constexpr size_t es = 0;
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << input
-			<< " did not convert to "
-			<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
-			<< "  raw " << std::setw(nbits) << presult.get()
-//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-			<< std::endl;
-
-	}
-	template<>
-	void ReportConversionError<3, 1>(const std::string& test_case, const std::string& op, double input, double reference, const posit<3, 1>& presult) {
-		constexpr size_t nbits = 3;
-		//constexpr size_t es = 1; 
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << input
-			<< " did not convert to "
-			<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
-			<< "  raw " << std::setw(nbits) << presult.get()
-			//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-			<< std::endl;
-
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const posit<nbits, es>& presult) {
-		static_assert(nbits > 1, "component_to_string requires nbits >= 2");
-		if (nbits > 2) {
-			constexpr size_t fbits = nbits - 3 - es;
-
-			bool		     	 _sign;
-			regime<nbits, es>    _regime;
-			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(presult.get(), _sign, _regime, _exponent, _fraction);
-			int                  _scale = _regime.scale() + _exponent.scale();
-
-			std::cerr << test_case
-				<< " " << op << " "
-				<< std::setw(FLOAT_TABLE_WIDTH) << input
-				<< " did     convert to "
-				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
-				<< std::setw(FLOAT_TABLE_WIDTH) << reference
-				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-				<< std::endl;
-		}
-		else {
-			if (nbits == 2) {
-				std::cerr << test_case
-					<< " " << op << " "
-					<< std::setw(FLOAT_TABLE_WIDTH) << input
-					<< " did     convert to "
-					<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
-					<< std::setw(FLOAT_TABLE_WIDTH) << reference
-					<< "  raw " << std::setw(nbits) << presult.get()
-//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-					<< std::endl;
-			}
-		}
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-			<< " != "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult
-			<< " " << pref.get() << " vs " << presult.get() << std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-			<< " == "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref
-			<< " " << pretty_print(presult) << std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case << " " 
-			<< std::setprecision(20)
-			<< std::setw(FLOAT_TABLE_WIDTH) << lhs
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-			<< " != "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult
-			<< " " << pref.get() << " vs " << presult.get() 
-			<< std::setprecision(5)
-			<< std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportBinaryArithmeticErrorInBinary(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case << " "
-			<< std::setw(nbits) << lhs.get()
-			<< " " << op << " "
-			<< std::setw(nbits) << rhs.get()
-			<< " != "
-			<< std::setw(nbits) << pref.get() << " instead it yielded "
-			<< std::setw(nbits) << presult.get()
-			<< " " << pretty_print(presult,20) << std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case << " "
-			<< std::setprecision(20)
-			<< std::setw(FLOAT_TABLE_WIDTH) << lhs
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-			<< " == "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref
-			<< " " << pref.get() << " vs " << presult.get() 
-			<< std::setprecision(5)
-			<< std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportBinaryArithmeticSuccessInBinary(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case << " "
-			<< std::setw(nbits) << lhs.get()
-			<< " " << op << " "
-			<< std::setw(nbits) << rhs.get()
-			<< " == "
-			<< std::setw(nbits) << presult.get() << " reference value is "
-			<< std::setw(nbits) << pref.get()
-			<< " " << pretty_print(presult,20) << std::endl;
-	}
-#endif
 
 	template<size_t nbits, size_t es>
 	void ReportDecodeError(const std::string& test_case, const posit<nbits, es>& actual, double golden_value) {
@@ -331,6 +160,7 @@ namespace sw { namespace universal {
 		}
 		return nrOfFailedTests;
 	}
+
 	template<>
 	int VerifyConversion<NBITS_IS_2, ES_IS_0>(bool bReportIndividualTestCases) {
 		int nrOfFailedTestCases = 0;

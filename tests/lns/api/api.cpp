@@ -10,7 +10,7 @@
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -40,7 +40,7 @@ try {
 	ReportTrivialityOfType<lns<8, 2>>();
 
 	// default behavior
-	std::cout << "+---------    default lns bahavior\n";
+	std::cout << "+---------    default lns bahavior   --------+\n";
 	{
 		using Real = lns<8, 3>;
 		Real a(1.0f), b(1.0f), c;
@@ -48,17 +48,17 @@ try {
 		a = 1;  // integer assignment
 		b = 1;
 		c = a + b;
-		ReportBinaryOperation(a, "*", b, c);
+		ReportBinaryOperation(a, "+", b, c);
 	}
 
 	// configuration
-	std::cout << "+---------    explicit alignment bahavior\n";
+	std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
 	{
-		using Real = lns<16, 5, std::uint16_t>;
+		using Real = lns<16, 5, Saturating, std::uint16_t>;
 		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 	{
-		using Real = lns<24, 5, std::uint32_t>;
+		using Real = lns<24, 5, Saturating, std::uint32_t>;
 		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 
@@ -74,8 +74,8 @@ try {
 	std::cout << "+---------    constexpr and specific values   --------+\n";
 	{
 		constexpr size_t nbits = 10;
-		constexpr size_t es = 3;
-		using Real = lns<nbits, es>;  // bt = uint8_t
+		constexpr size_t rbits = 3;
+		using Real = lns<nbits, rbits>;  // behavior = Saturating, BlockType = uint8_t
 
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
@@ -94,8 +94,8 @@ try {
 	std::cout << "+---------    extreme values   --------+\n";
 	{
 		constexpr size_t nbits = 10;
-		constexpr size_t es = 3;
-		using Real = lns<nbits, es>;  // bt = uint8_t
+		constexpr size_t rbits = 3;
+		using Real = lns<nbits, rbits>;  // behavior = Saturating, BlockType = uint8_t
 
 		Real a, b, c;
 
@@ -107,9 +107,21 @@ try {
 		ReportBinaryOperation(a, "/", b, c);
 	}
 
-	std::cout << "+---------    comparison to classic floats\n";
+	std::cout << "+---------    Dynamic ranges of 8-bit lns<> configurations   --------+\n";
 	{
-		using LNS = lns<16, 8, std::uint16_t>;
+		std::cout << dynamic_range(lns<8, 0>()) << '\n';
+		std::cout << dynamic_range(lns<8, 1>()) << '\n';
+		std::cout << dynamic_range(lns<8, 2>()) << '\n';
+		std::cout << dynamic_range(lns<8, 3>()) << '\n';
+		std::cout << dynamic_range(lns<8, 4>()) << '\n';
+		std::cout << dynamic_range(lns<8, 5>()) << '\n';
+		std::cout << dynamic_range(lns<8, 6>()) << '\n';
+		std::cout << dynamic_range(lns<8, 7>()) << '\n';
+	}
+
+	std::cout << "+---------    comparison to classic floats   --------+\n";
+	{
+		using LNS = lns<16, 8, Saturating, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
 		LNS a;
 		Real b;

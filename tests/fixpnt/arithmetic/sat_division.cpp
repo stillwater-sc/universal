@@ -118,7 +118,7 @@ inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::fixpnt<nbits, rbits> a, b, cref, result;
+	sw::universal::fixpnt<nbits, rbits, sw::universal::Saturate> a, b, cref, result;
 	a = _a;
 	b = _b;
 	result = a / b;
@@ -250,7 +250,6 @@ try {
 
 	GenerateComparison<nbits, rbits>(0x3, 0x4); // 0110 and 0100 in 4bit formats
 	GenerateComparison<nbits, rbits>(0x4, 0x1); // 010.0 / 000.1 = 2 / 0.5 = 4 = 100.0 = -4
-
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(3.0f, 1.5f); 

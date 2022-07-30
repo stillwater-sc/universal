@@ -1,22 +1,38 @@
 // increment.cpp: test suite runner for increment operator
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/posit/manipulators.hpp>
+#include <universal/utility/directives.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = true;
+	std::string test_suite  = "posit increment validation";
+	std::string test_tag    = "increment";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	constexpr size_t nbits = 5;
@@ -29,78 +45,86 @@ try {
 		std::cout << s.get() << " " << s << std::endl;
 	});
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<nbits, es>(bReportIndividualTestCases), positConfig, "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<nbits, es>(reportTestCases), positConfig, test_tag);
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 	// Note: increment/decrement depend on the 2's complement ordering of the posit encoding
 	// This implies that this functionality is independent of the <nbits,es> configuration of the posit.
 	// Otherwise stated, an enumeration of tests for different posit configurations is a bit superfluous.
 
-	// INCREMENT tests
-	std::cout << "\n posit increment operator tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<3, 0>(bReportIndividualTestCases), "posit<3,0>", "operator++");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<3, 0>(reportTestCases), "posit<3,0>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<4, 0>(bReportIndividualTestCases), "posit<4,0>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<4, 1>(bReportIndividualTestCases), "posit<4,1>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<4, 0>(reportTestCases), "posit<4,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<4, 1>(reportTestCases), "posit<4,1>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 0>(bReportIndividualTestCases), "posit<5,0>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 1>(bReportIndividualTestCases), "posit<5,1>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 2>(bReportIndividualTestCases), "posit<5,2>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 0>(reportTestCases), "posit<5,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 1>(reportTestCases), "posit<5,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 2>(reportTestCases), "posit<5,2>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 0>(bReportIndividualTestCases), "posit<6,0>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 1>(bReportIndividualTestCases), "posit<6,1>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 2>(bReportIndividualTestCases), "posit<6,2>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 3>(bReportIndividualTestCases), "posit<6,3>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 0>(reportTestCases), "posit<6,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 1>(reportTestCases), "posit<6,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 2>(reportTestCases), "posit<6,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 3>(reportTestCases), "posit<6,3>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 0>(bReportIndividualTestCases), "posit<7,0>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 1>(bReportIndividualTestCases), "posit<7,1>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 2>(bReportIndividualTestCases), "posit<7,2>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 3>(bReportIndividualTestCases), "posit<7,3>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 4>(bReportIndividualTestCases), "posit<7,4>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 0>(reportTestCases), "posit<7,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 1>(reportTestCases), "posit<7,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 2>(reportTestCases), "posit<7,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 3>(reportTestCases), "posit<7,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 4>(reportTestCases), "posit<7,4>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 0>(bReportIndividualTestCases), "posit<8,0>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 1>(bReportIndividualTestCases), "posit<8,1>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 2>(bReportIndividualTestCases), "posit<8,2>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 3>(bReportIndividualTestCases), "posit<8,3>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 4>(bReportIndividualTestCases), "posit<8,4>", "operator++");
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 5>(bReportIndividualTestCases), "posit<8,5>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 0>(reportTestCases), "posit<8,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 1>(reportTestCases), "posit<8,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 2>(reportTestCases), "posit<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 3>(reportTestCases), "posit<8,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 4>(reportTestCases), "posit<8,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 5>(reportTestCases), "posit<8,5>", test_tag);
+#endif
 
-#endif // MANUAL_TESTING
+#if REGRESSION_LEVEL_2
+#endif
 
-	if (argc == 2 && std::string(argv[1]) == std::string("-l")) {
-		// AD/DA adapted data path configurations
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<10, 0>(bReportIndividualTestCases), "posit<10,0>", "operator++");
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<10, 1>(bReportIndividualTestCases), "posit<10,1>", "operator++");
+#if REGRESSION_LEVEL_3
+#endif
 
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<12, 0>(bReportIndividualTestCases), "posit<12,0>", "operator++");
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<12, 1>(bReportIndividualTestCases), "posit<12,1>", "operator++");
+#if REGRESSION_LEVEL_4
+	// AD/DA adapted data path configurations
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<10, 0>(reportTestCases), "posit<10,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<10, 1>(reportTestCases), "posit<10,1>", test_tag);
 
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<14, 0>(bReportIndividualTestCases), "posit<14,0>", "operator++");
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<14, 1>(bReportIndividualTestCases), "posit<14,1>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<12, 0>(reportTestCases), "posit<12,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<12, 1>(reportTestCases), "posit<12,1>", test_tag);
 
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<15, 0>(bReportIndividualTestCases), "posit<15,0>", "operator++");
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<15, 1>(bReportIndividualTestCases), "posit<15,1>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<14, 0>(reportTestCases), "posit<14,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<14, 1>(reportTestCases), "posit<14,1>", test_tag);
 
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 0>(bReportIndividualTestCases), "posit<16,0>", "operator++");
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 1>(bReportIndividualTestCases), "posit<16,1>", "operator++");
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 2>(bReportIndividualTestCases), "posit<16,2>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<15, 0>(reportTestCases), "posit<15,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<15, 1>(reportTestCases), "posit<15,1>", test_tag);
 
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 0>(bReportIndividualTestCases), "posit<18,0>", "operator++");
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 1>(bReportIndividualTestCases), "posit<18,1>", "operator++");
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 2>(bReportIndividualTestCases), "posit<18,2>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 0>(reportTestCases), "posit<16,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 1>(reportTestCases), "posit<16,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 2>(reportTestCases), "posit<16,2>", test_tag);
 
-		nrOfFailedTestCases += ReportTestResult(VerifyIncrement<20, 1>(bReportIndividualTestCases), "posit<20,1>", "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 0>(reportTestCases), "posit<18,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 1>(reportTestCases), "posit<18,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 2>(reportTestCases), "posit<18,2>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<20, 1>(reportTestCases), "posit<20,1>", test_tag);
 		
-		// legit float replacement
-		//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<24, 1>(bReportIndividualTestCases), "posit<24,1>", "operator++");
-		//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<28, 2>(bReportIndividualTestCases), "posit<28,2>", "operator++");
+	// legit float replacement
+	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<24, 1>(reportTestCases), "posit<24,1>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<28, 2>(reportTestCases), "posit<28,2>", test_tag);
 
-		// legit double replacement
-		//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<32, 2>(bReportIndividualTestCases), "posit<32,2>", "operator++");
+	// legit double replacement
+	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<32, 2>(reportTestCases), "posit<32,2>", test_tag);
+#endif // REGRESSION_LEVEL_4
 
-	}
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

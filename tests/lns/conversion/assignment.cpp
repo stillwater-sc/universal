@@ -34,6 +34,8 @@ int ValidateAssignment(bool reportTestCases) {
 		}
 	}
 
+	// test clipping or saturation
+
 	return nrOfFailedTestCases;
 }
 
@@ -52,8 +54,22 @@ void GenerateBitWeightTable() {
 	}
 }
 
+template<typename Real>
+void SampleTest(Real v) {
+	using namespace sw::universal;
+	std::cout << to_binary(lns<8, 0>(v)) << " : " << lns<8, 0>(v) << '\n';
+	std::cout << to_binary(lns<8, 1>(v)) << " : " << lns<8, 1>(v) << '\n';
+	std::cout << to_binary(lns<8, 2>(v)) << " : " << lns<8, 2>(v) << '\n';
+	std::cout << to_binary(lns<8, 3>(v)) << " : " << lns<8, 3>(v) << '\n';
+	std::cout << to_binary(lns<8, 4>(v)) << " : " << lns<8, 4>(v) << '\n';
+	std::cout << to_binary(lns<8, 5>(v)) << " : " << lns<8, 5>(v) << '\n';
+	std::cout << to_binary(lns<8, 6>(v)) << " : " << lns<8, 6>(v) << '\n';
+	std::cout << to_binary(lns<8, 7>(v)) << " : " << lns<8, 7>(v) << '\n';
+	// std::cout << to_binary(lns<8, 8>(v)) << " : " << lns<8, 8>(v) << '\n';
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -81,22 +97,16 @@ try {
 
 #if MANUAL_TESTING
 
-	using LNS16_5 = lns<16, 5, std::uint16_t>;
-	using LNS11_5 = lns<11, 5, std::uint8_t>;
-	using LNS8_2 = lns<8, 2, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, std::uint8_t>;
-	using LNS4_1 = lns<4, 1, std::uint8_t>;
+	using LNS16_5 = lns<16, 5, Saturating, std::uint16_t>;
+	using LNS11_5 = lns<11, 5, Saturating, std::uint8_t>;
+	using LNS8_2 = lns<8, 2, Saturating, std::uint8_t>;
+	using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
+	using LNS4_1 = lns<4, 1, Saturating, std::uint8_t>;
 
 	// GenerateBitWeightTable<double>();
+	SampleTest(1024.0f);
+	return 0;
 
-	// generate individual testcases to hand trace/debug
-	{
-		LNS5_2 a, b;
-		a.setnan();
-		float fa = float(a);
-		b = fa;
-		std::cout << fa << " vs " << b << '\n';
-	}
 
 	// manual exhaustive test
 //	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<LNS4_1>(reportTestCases), type_tag(LNS4_1()), test_tag);

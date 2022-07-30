@@ -1,9 +1,9 @@
 // arithmetic_reciprocate.cpp: test suite runner for posit arithmetic reciprocation
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // Configure the posit template environment
 // first: enable general or specialized posit configurations
 //#define POSIT_FAST_SPECIALIZATION
@@ -14,13 +14,8 @@
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_RECIPROCATE
 #define POSIT_TRACE_CONVERSION
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/posit/numeric_limits.hpp>
-#include <universal/number/posit/specializations.hpp>
-// posit type manipulators such as pretty printers
-#include <universal/number/posit/manipulators.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp
@@ -36,19 +31,32 @@ void GenerateTestCase(Ty a) {
 	std::cout << "input " << a << " reference 1/fa " << reference << " pref " << double(pref) << '(' << pref << ") result " << double(preciprocal) << '(' << preciprocal << ')' << std::endl;
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "posit reciprocation validation";
+	std::string test_tag    = "reciprocate";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "Posit reciprocate validation\n";
-
-	std::string tag = "Reciprocation failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -81,50 +89,61 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 2>(tag, true), "posit<8,2>", "reciprocation");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
-	tag = "Reciprocation failed: ";
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<3, 0>(bReportIndividualTestCases), "posit<3,0>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<4, 0>(bReportIndividualTestCases), "posit<4,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<4, 1>(bReportIndividualTestCases), "posit<4,1>", "reciprocation");
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<3, 0>(reportTestCases), "posit<3,0>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 0>(bReportIndividualTestCases), "posit<5,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 1>(bReportIndividualTestCases), "posit<5,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 2>(bReportIndividualTestCases), "posit<5,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<4, 0>(reportTestCases), "posit<4,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<4, 1>(reportTestCases), "posit<4,1>", "reciprocation");
 
-#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 0>(reportTestCases), "posit<5,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 1>(reportTestCases), "posit<5,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 2>(reportTestCases), "posit<5,2>", "reciprocation");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 0>(bReportIndividualTestCases), "posit<6,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 1>(bReportIndividualTestCases), "posit<6,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 2>(bReportIndividualTestCases), "posit<6,2>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 3>(bReportIndividualTestCases), "posit<6,3>", "reciprocation");
+#if REGRESSION_LEVEL_2
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 0>(bReportIndividualTestCases), "posit<7,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 1>(bReportIndividualTestCases), "posit<7,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 2>(bReportIndividualTestCases), "posit<7,2>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 3>(bReportIndividualTestCases), "posit<7,3>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 4>(bReportIndividualTestCases), "posit<7,4>", "reciprocation");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 0>(bReportIndividualTestCases), "posit<8,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 1>(bReportIndividualTestCases), "posit<8,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 2>(bReportIndividualTestCases), "posit<8,2>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 3>(bReportIndividualTestCases), "posit<8,3>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 4>(bReportIndividualTestCases), "posit<8,4>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 5>(bReportIndividualTestCases), "posit<8,5>", "reciprocation");
+#if REGRESSION_LEVEL_3
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<10, 1>(bReportIndividualTestCases), "posit<10,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<12, 1>(bReportIndividualTestCases), "posit<12,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<14, 1>(bReportIndividualTestCases), "posit<14,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<16, 1>(bReportIndividualTestCases), "posit<16,1>", "reciprocation");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<18, 1>(bReportIndividualTestCases), "posit<18,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<20, 1>(bReportIndividualTestCases), "posit<20,1>", "reciprocation");
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 0>(reportTestCases), "posit<6,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 1>(reportTestCases), "posit<6,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 2>(reportTestCases), "posit<6,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 3>(reportTestCases), "posit<6,3>", "reciprocation");
 
-#endif // STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 0>(reportTestCases), "posit<7,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 1>(reportTestCases), "posit<7,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 2>(reportTestCases), "posit<7,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 3>(reportTestCases), "posit<7,3>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 4>(reportTestCases), "posit<7,4>", "reciprocation");
 
-#endif // MANUAL_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 0>(reportTestCases), "posit<8,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 1>(reportTestCases), "posit<8,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 2>(reportTestCases), "posit<8,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 3>(reportTestCases), "posit<8,3>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 4>(reportTestCases), "posit<8,4>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 5>(reportTestCases), "posit<8,5>", "reciprocation");
 
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<10, 1>(reportTestCases), "posit<10,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<12, 1>(reportTestCases), "posit<12,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<14, 1>(reportTestCases), "posit<14,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<16, 1>(reportTestCases), "posit<16,1>", "reciprocation");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<18, 1>(reportTestCases), "posit<18,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<20, 1>(reportTestCases), "posit<20,1>", "reciprocation");
+#endif // REGRESSION_LEVEL_4
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

@@ -119,34 +119,34 @@ namespace sw::universal::internal {
 		std::cout << "\nArithmetic operator performance\n";
 
 		size_t NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("lns< 4, 1, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns< 4, 1, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns< 8, 3, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns< 8, 3, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns<12, 4, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns<12, 4, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns<12, 4, uint16_t>   add/subtract   ", AdditionSubtractionWorkload< lns<12, 4, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint16_t>   add/subtract   ", AdditionSubtractionWorkload< lns<16, 5, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint32_t>   add/subtract   ", AdditionSubtractionWorkload< lns<16, 5, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<20, 6, uint32_t>   add/subtract   ", AdditionSubtractionWorkload< lns<20, 6, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<32, 8, uint32_t>   add/subtract   ", AdditionSubtractionWorkload< lns<32, 8, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 4, 1, Saturating, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns< 4, 1, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns< 8, 3, Saturating, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns< 8, 3, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns<12, 4, Saturating, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns<12, 4, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns<12, 4, Saturating, uint16_t>   add/subtract   ", AdditionSubtractionWorkload< lns<12, 4, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint16_t>   add/subtract   ", AdditionSubtractionWorkload< lns<16, 5, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint32_t>   add/subtract   ", AdditionSubtractionWorkload< lns<16, 5, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<20, 6, Saturating, uint32_t>   add/subtract   ", AdditionSubtractionWorkload< lns<20, 6, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<32, 8, Saturating, uint32_t>   add/subtract   ", AdditionSubtractionWorkload< lns<32, 8, Saturating, uint32_t> >, NR_OPS);
 
 		NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("lns< 4, 1, uint8_t >   multiplication ", MultiplicationWorkload< lns< 4, 1, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns< 8, 3, uint8_t >   multiplication ", MultiplicationWorkload< lns< 8, 3, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns<12, 4, uint8_t >   multiplication ", MultiplicationWorkload< lns<12, 4, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns<12, 4, uint16_t>   multiplication ", MultiplicationWorkload< lns<12, 4, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint16_t>   multiplication ", MultiplicationWorkload< lns<16, 5, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint32_t>   multiplication ", MultiplicationWorkload< lns<16, 5, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<20, 6, uint32_t>   multiplication ", MultiplicationWorkload< lns<20, 6, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<32, 8, uint32_t>   multiplication ", MultiplicationWorkload< lns<32, 8, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 4, 1, Saturating, uint8_t >   multiplication ", MultiplicationWorkload< lns< 4, 1, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns< 8, 3, Saturating, uint8_t >   multiplication ", MultiplicationWorkload< lns< 8, 3, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns<12, 4, Saturating, uint8_t >   multiplication ", MultiplicationWorkload< lns<12, 4, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns<12, 4, Saturating, uint16_t>   multiplication ", MultiplicationWorkload< lns<12, 4, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint16_t>   multiplication ", MultiplicationWorkload< lns<16, 5, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint32_t>   multiplication ", MultiplicationWorkload< lns<16, 5, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<20, 6, Saturating, uint32_t>   multiplication ", MultiplicationWorkload< lns<20, 6, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<32, 8, Saturating, uint32_t>   multiplication ", MultiplicationWorkload< lns<32, 8, Saturating, uint32_t> >, NR_OPS);
 
 		NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("lns< 4, 1, uint8_t >   division       ", DivisionWorkload< lns< 4, 1, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns< 8, 3, uint8_t >   division       ", DivisionWorkload< lns< 8, 3, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns<12, 4, uint8_t >   division       ", DivisionWorkload< lns<12, 4, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns<12, 4, uint16_t>   division       ", DivisionWorkload< lns<12, 4, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint16_t>   division       ", DivisionWorkload< lns<16, 5, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint32_t>   division       ", DivisionWorkload< lns<16, 5, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<20, 6, uint32_t>   division       ", DivisionWorkload< lns<20, 6, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<32, 8, uint32_t>   division       ", DivisionWorkload< lns<32, 8, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 4, 1, Saturating, uint8_t >   division       ", DivisionWorkload< lns< 4, 1, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns< 8, 3, Saturating, uint8_t >   division       ", DivisionWorkload< lns< 8, 3, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns<12, 4, Saturating, uint8_t >   division       ", DivisionWorkload< lns<12, 4, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns<12, 4, Saturating, uint16_t>   division       ", DivisionWorkload< lns<12, 4, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint16_t>   division       ", DivisionWorkload< lns<16, 5, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint32_t>   division       ", DivisionWorkload< lns<16, 5, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<20, 6, Saturating, uint32_t>   division       ", DivisionWorkload< lns<20, 6, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<32, 8, Saturating, uint32_t>   division       ", DivisionWorkload< lns<32, 8, Saturating, uint32_t> >, NR_OPS);
 
 	}
 
@@ -176,25 +176,25 @@ namespace sw::universal::internal {
 		std::cout << "\nArithmetic operator performance\n";
 
 		size_t NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("lns<  8, 2, uint8_t >  add/subtract  ", AdditionSubtractionWorkload< lns<  8,  2, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns< 16, 5, uint16_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 16,  5, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns< 32, 8, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 32,  8, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns< 64,11, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns<128, 15, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("lns<  8, 2, Saturating, uint8_t >  add/subtract  ", AdditionSubtractionWorkload< lns<  8,  2, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns< 16, 5, Saturating, uint16_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 16,  5, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns< 32, 8, Saturating, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 32,  8, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 64,11, Saturating, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 64, 11, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<128,15, Saturating, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns<128, 15, Saturating, uint32_t> >, NR_OPS / 2);
 
 		NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("lns<  8, 2, uint8_t >  multiplication", MultiplicationWorkload< lns<  8, 2, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns< 16, 5, uint16_t>  multiplication", MultiplicationWorkload< lns< 16, 5, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns< 32, 8, uint32_t>  multiplication", MultiplicationWorkload< lns< 32, 8, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns< 64,11, uint32_t>  multiplication", MultiplicationWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  multiplication", MultiplicationWorkload< lns<128, 15, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<  8, 2, Saturating, uint8_t >  multiplication", MultiplicationWorkload< lns<  8,  2, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns< 16, 5, Saturating, uint16_t>  multiplication", MultiplicationWorkload< lns< 16,  5, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns< 32, 8, Saturating, uint32_t>  multiplication", MultiplicationWorkload< lns< 32,  8, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 64,11, Saturating, uint32_t>  multiplication", MultiplicationWorkload< lns< 64, 11, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<128,15, Saturating, uint32_t>  multiplication", MultiplicationWorkload< lns<128, 15, Saturating, uint32_t> >, NR_OPS);
 
 		NR_OPS = 1024ull * 1024ull;
-		PerformanceRunner("lns<  8, 2, uint8_t >  division      ", DivisionWorkload< lns<  8, 2, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns< 16, 5, uint16_t>  division      ", DivisionWorkload< lns< 16, 5, uint16_t> >, NR_OPS);
-		PerformanceRunner("lns< 32, 8, uint32_t>  division      ", DivisionWorkload< lns< 32, 8, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns< 64,11, uint32_t>  division      ", DivisionWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  division      ", DivisionWorkload< lns<128, 15, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<  8, 2, Saturating, uint8_t >  division      ", DivisionWorkload< lns<  8,  2, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns< 16, 5, Saturating, uint16_t>  division      ", DivisionWorkload< lns< 16,  5, Saturating, uint16_t> >, NR_OPS);
+		PerformanceRunner("lns< 32, 8, Saturating, uint32_t>  division      ", DivisionWorkload< lns< 32,  8, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 64,11, Saturating, uint32_t>  division      ", DivisionWorkload< lns< 64, 11, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<128,15, Saturating, uint32_t>  division      ", DivisionWorkload< lns<128, 15, Saturating, uint32_t> >, NR_OPS);
 	}
 
 	/*
@@ -217,17 +217,17 @@ namespace sw::universal::internal {
 
 		constexpr size_t NR_OPS = 32ull * 1024ull * 1024ull;
 
-		PerformanceRunner("lns< 8, 2, uint8_t>    assignment/copy   ", AssignmentCopyWorkload< lns< 8, 2, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint8_t>    assignment/copy   ", AssignmentCopyWorkload< lns<16, 5, uint8_t> >, NR_OPS);
-		PerformanceRunner("lns<32, 8, uint8_t>    assignment/copy   ", AssignmentCopyWorkload< lns<32, 8, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns< 8, 2, Saturating, uint8_t>    assignment/copy   ", AssignmentCopyWorkload< lns< 8, 2, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint8_t>    assignment/copy   ", AssignmentCopyWorkload< lns<16, 5, Saturating, uint8_t> >, NR_OPS);
+		PerformanceRunner("lns<32, 8, Saturating, uint8_t>    assignment/copy   ", AssignmentCopyWorkload< lns<32, 8, Saturating, uint8_t> >, NR_OPS);
 
-		PerformanceRunner("lns< 8, 2, uint32_t>   assignment/copy   ", AssignmentCopyWorkload< lns< 8, 2, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint32_t>   assignment/copy   ", AssignmentCopyWorkload< lns<16, 5, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<32, 8, uint32_t>   assignment/copy   ", AssignmentCopyWorkload< lns<32, 8, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 8, 2, Saturating, uint32_t>   assignment/copy   ", AssignmentCopyWorkload< lns< 8, 2, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint32_t>   assignment/copy   ", AssignmentCopyWorkload< lns<16, 5, Saturating, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns<32, 8, Saturating, uint32_t>   assignment/copy   ", AssignmentCopyWorkload< lns<32, 8, Saturating, uint32_t> >, NR_OPS);
 
-		PerformanceRunner("lns< 8, 2, uint64_t>   assignment/copy   ", AssignmentCopyWorkload< lns< 8, 2, uint64_t> >, NR_OPS);
-		PerformanceRunner("lns<16, 5, uint64_t>   assignment/copy   ", AssignmentCopyWorkload< lns<16, 5, uint64_t> >, NR_OPS);
-		PerformanceRunner("lns<32, 8, uint64_t>   assignment/copy   ", AssignmentCopyWorkload< lns<32, 8, uint64_t> >, NR_OPS);
+		PerformanceRunner("lns< 8, 2, Saturating, uint64_t>   assignment/copy   ", AssignmentCopyWorkload< lns< 8, 2, Saturating, uint64_t> >, NR_OPS);
+		PerformanceRunner("lns<16, 5, Saturating, uint64_t>   assignment/copy   ", AssignmentCopyWorkload< lns<16, 5, Saturating, uint64_t> >, NR_OPS);
+		PerformanceRunner("lns<32, 8, Saturating, uint64_t>   assignment/copy   ", AssignmentCopyWorkload< lns<32, 8, Saturating, uint64_t> >, NR_OPS);
 	}
 
 }

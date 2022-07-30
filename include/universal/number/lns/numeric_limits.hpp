@@ -7,22 +7,22 @@
 
 namespace std {
 
-template <size_t nbits, size_t rbits, typename bt> 
-class numeric_limits< sw::universal::lns<nbits, rbits, bt> > {
+template <size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt>
+class numeric_limits< sw::universal::lns<nbits, rbits, behavior, bt> > {
 public:
-	using LNS = sw::universal::lns<nbits, rbits, bt>;
+	using LNS = sw::universal::lns<nbits, rbits, behavior, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr LNS  min() { // return minimum value
 		LNS lminpos(0);
-		return sw::universal::minpos<nbits, rbits, bt>(lminpos);
+		return lminpos;
 	} 
 	static constexpr LNS  max() { // return maximum value
 		LNS lmaxpos(0);
-		return sw::universal::maxpos<nbits, rbits, bt>(lmaxpos);
+		return lmaxpos;
 	} 
 	static constexpr LNS  lowest() { // return most negative value
 		LNS lmaxneg(0);
-		return sw::universal::maxneg<nbits, rbits, bt>(lmaxneg);
+		return lmaxneg;
 	} 
 	static constexpr LNS  epsilon() { // return smallest effective increment from 1.0
 		LNS one{ 1.0f }, incr{ 1.0f };

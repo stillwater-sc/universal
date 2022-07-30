@@ -6,7 +6,11 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/test_suite.hpp>
+//#include <universal/verification/test_suite.hpp>    // there is a generic VerifySubtraction there: we need a trait to break template match
+// in the mean time: explicity bring in the dependencies to get the test running
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_case.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 namespace sw { namespace universal {
 
@@ -14,8 +18,11 @@ namespace sw { namespace universal {
 	//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
 	//>
 	template<typename LnsType>
-	int ValidateSubtraction(bool reportTestCases) {
+	int VerifySubtraction(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
+		constexpr size_t rbits = LnsType::rbits;
+		constexpr ArithmeticBehavior behavior = LnsType::behavior;
+		using bt = typename LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;
@@ -29,6 +36,9 @@ namespace sw { namespace universal {
 				double db = double(b);
 
 				double ref = da - db;
+				if (reportTestCases && !isInRange<nbits, rbits, behavior, bt>(ref)) {
+					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, behavior, bt>() << '\n';
+				}
 				c = a - b;
 				cref = ref;
 				//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
@@ -80,41 +90,44 @@ try {
 
 #if MANUAL_TESTING
 
-	using LNS4_1 = lns<4, 1, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, std::uint8_t>;
-	using LNS16_5 = lns<16, 5, std::uint16_t>;
+	using LNS4_1_sat = lns<4, 1, Saturating, std::uint8_t>;
+	using LNS4_2_sat = lns<4, 2, Saturating, std::uint8_t>;
+	using LNS5_2_sat = lns<5, 2, Saturating, std::uint8_t>;
+	using LNS8_3_sat = lns<8, 3, Saturating, std::uint8_t>;
+	using LNS9_4_sat = lns<9, 4, Saturating, std::uint8_t>;
+	using LNS16_5_sat = lns<16, 5, Saturating, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
-	TestCase< LNS16_5, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	TestCase< LNS8_3, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< LNS16_5_sat, double>(TestCaseOperator::SUB, INFINITY, INFINITY);
+	TestCase< LNS8_3_sat, float>(TestCaseOperator::SUB, 0.5f, -0.5f);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<LNS8_3>(reportTestCases), "lns<8,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<LNS8_3_sat>(reportTestCases), "lns<8,2,Saturating,uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
-	using LNS4_1 = lns<4, 1, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, std::uint8_t>;
-	using LNS10_4 = lns<10, 4, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<LNS4_1>(reportTestCases), "lns<4,1,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<LNS4_2>(reportTestCases), "lns<4,2,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<LNS5_2>(reportTestCases), "lns<5,2,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<LNS8_3>(reportTestCases), "lns<8,3,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<LNS9_4>(reportTestCases), "lns<9,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<LNS10_4>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
+	using LNS4_1_sat = lns<4, 1, Saturating, std::uint8_t>;
+	using LNS4_2_sat = lns<4, 2, Saturating, std::uint8_t>;
+	using LNS5_2_sat = lns<5, 2, Saturating, std::uint8_t>;
+	using LNS8_3_sat = lns<8, 3, Saturating, std::uint8_t>;
+
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<LNS4_1_sat>(reportTestCases), "lns<4,1, Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<LNS4_2_sat>(reportTestCases), "lns<4,2, Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<LNS5_2_sat>(reportTestCases), "lns<5,2, Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<LNS8_3_sat>(reportTestCases), "lns<8,3, Saturating,uint8_t>", test_tag);
 
 #endif
 
 #if REGRESSION_LEVEL_2
+	using LNS9_4_sat = lns<9, 4, Saturating, std::uint8_t>;
+	using LNS10_4_sat = lns<10, 4, Saturating, std::uint8_t>;
+
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<LNS9_4_sat>(reportTestCases), "lns<9,4, Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<LNS10_4_sat>(reportTestCases), "lns<10,4, Saturating,uint8_t>", test_tag);
+
 #endif
 
 #if REGRESSION_LEVEL_3

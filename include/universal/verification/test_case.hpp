@@ -37,6 +37,8 @@ namespace sw { namespace universal {
 		std::string op, opName;
 		Number c;
 		Real _c(0);
+		std::cerr << to_binary(a) << " : " << a << " vs " << _a << '\n';
+		std::cerr << to_binary(b) << " : " << b << " vs " << _b << '\n';
 		switch (_operator) {
 		case TestCaseOperator::ADD:
 			c = a + b;
@@ -71,13 +73,15 @@ namespace sw { namespace universal {
 
 		auto oldprecision = std::cout.precision();
 		std::cout << std::setprecision(10);
-		std::cout << "+--------  Test Case: " << opName << "  ---------------------------------------------------\ninput operands : " << typeid(Real).name() << '\n';
+		std::cout << "+--------  Test Case: " << opName << "  ---------------------------------------------------\n";
+		std::cout << "  input operands : " << type_tag(_a) << '\n';
 		std::cout << std::setw(nbits) << _a << op << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
-		std::cout << to_binary(_a) << " : " << _a << '\n';
-		std::cout << to_binary(_b) << " : " << _b << '\n';
-		std::cout << to_binary(_c) << " : " << _c << '\n';
-		std::cout << "+--------\ntarget number : " << typeid(Number).name() << '\n';
-		std::cout << a << op << b << " = " << c << " (reference: " << reference << ")\n";
+		std::cout << "a    " << to_binary(_a) << " : " << _a << '\n';
+		std::cout << "b    " << to_binary(_b) << " : " << _b << '\n';
+		std::cout << "c    " << to_binary(_c) << " : " << _c << '\n';
+		std::cout << "+-------- Test Case:\n";
+		std::cout << "  target type    : " << type_tag(a) << '\n';
+		std::cout << std::setw(nbits) << a << op << std::setw(nbits) << b << " = " << std::setw(nbits) << c << " (reference: " << reference << ")\n";
 		std::cout << "a    " << to_binary(a, true) << op << '\n';
 		std::cout << "b    " << to_binary(b, true) << " =\n";
 		std::cout << "c    " << to_binary(c, true) << '\n';

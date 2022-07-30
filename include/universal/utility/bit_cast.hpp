@@ -1,7 +1,7 @@
 #pragma once
 // bit_cast.hpp provides sw::bit_cast, a backport of C++20 std::bit_cast
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -47,12 +47,12 @@ static_assert(false, "BIT_CAST_SUPPORT is deprecated; bit_cast.hpp now defines "
 #    define BIT_CAST_CONSTEXPR constexpr
 #    define BIT_CAST_IS_CONSTEXPR true
 #  else
-#    define BIT_CAST using non_builtin::bit_cast;
+#    define BIT_CAST using non_builtin::bit_cast
 #    define BIT_CAST_CONSTEXPR
 #    define BIT_CAST_IS_CONSTEXPR false
 #  endif
 #else
-#  define BIT_CAST using non_builtin::bit_cast;
+#  define BIT_CAST using non_builtin::bit_cast
 #  define BIT_CAST_CONSTEXPR
 #  define BIT_CAST_IS_CONSTEXPR false
 #endif

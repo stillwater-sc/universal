@@ -17,7 +17,7 @@
 
 namespace sw { namespace universal {
 
-#define NUMBER_COLUMN_WIDTH 20
+#define NUMBER_COLUMN_WIDTH 25
 
 void ReportTestSuiteHeader(const std::string& test_suite, bool reportTestCases) {
 	std::cerr << test_suite << (reportTestCases ? ": report test cases" : ": results only") << '\n';

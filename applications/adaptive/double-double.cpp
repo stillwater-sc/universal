@@ -45,7 +45,7 @@ try {
 	std::streamsize precision = std::cout.precision();
 	
 	{
-		using lns = lns<16, 10, std::uint16_t>;
+		using lns = lns<16, 10, Saturating, std::uint16_t>;
 
 		lns a, b, c;
 		a = 0.5;
@@ -57,6 +57,7 @@ try {
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;
 	
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

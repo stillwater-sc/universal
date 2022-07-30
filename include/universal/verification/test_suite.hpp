@@ -1,3 +1,4 @@
+#pragma once
 // test_suite.hpp: reusable test suite for small number systems
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
