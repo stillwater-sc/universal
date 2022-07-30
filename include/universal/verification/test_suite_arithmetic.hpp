@@ -102,7 +102,7 @@ int VerifyAddition(bool reportTestCases) {
 				}
 			}
 #else
-			result = a + b;
+			c = a + b;
 #endif // THROW_ARITHMETIC_EXCEPTION
 			cref = ref;
 			if (c != cref) {
@@ -164,7 +164,7 @@ int VerifySubtraction(bool reportTestCases) {
 				}
 			}
 #else
-			result = a - b;
+			c = a - b;
 #endif // THROW_ARITHMETIC_EXCEPTION
 			cref = ref;
 			if (c != cref) {
