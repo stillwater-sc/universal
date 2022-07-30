@@ -37,6 +37,8 @@ namespace sw { namespace universal {
 		std::string op, opName;
 		Number c;
 		Real _c(0);
+		std::cerr << to_binary(a) << " : " << a << " vs " << _a << '\n';
+		std::cerr << to_binary(b) << " : " << b << " vs " << _b << '\n';
 		switch (_operator) {
 		case TestCaseOperator::ADD:
 			c = a + b;

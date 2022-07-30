@@ -179,32 +179,32 @@ public:
 			setzero();
 			return *this;
 		}
+		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the lns sign bit to yield the exponents
+		bool negative = sign() ^ rhs.sign(); // determine sign of result
 		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) { // saturating, no infinite
-			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
-			blockbinary<nbits, bt, BinaryNumberType::Signed> exp(_block), rhsExp(rhs._block), sum;
-			// clear any sign bits
-			exp.setbit(nbits - 1, false);
-			rhsExp.setbit(nbits - 1, false);
-			sum = uradd(exp, rhsExp);
+			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
+			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(maxexp), maxneg(minexp); // expand into type of sum
+			blockbinary<nbits, bt, BinaryNumberType::Signed> expandedLexp(lexp), expandedRexp(rexp); // expand and sign extend if necessary
+			blockbinary<nbits, bt, BinaryNumberType::Signed> sum;
+
+			sum = uradd(expandedLexp, expandedRexp);
 			// check if sum is in range
 			if (sum >= maxpos) {
 				_block = maxpos;
-				return *this;
 			}
-			if (sum <= maxneg) {
-				_block = maxneg;
-				return *this;
+			else if (sum <= maxneg) {
+				_block = maxneg;   // == zero encoding
+				negative = false;  // ignore lns sign, otherwise this becomes NaN
 			}
-			_block = sum;
+			else {
+				_block.assign(sum); // this might set the lns sign, but we are going to explicitly set it before returning
+			}
 		}
 		else {
-			ExponentBlockBinary exp(_block), rhsExp(rhs._block);
-			exp += rhsExp;
-			bool negative = sign() ^ rhs.sign();
-			_block.assign(exp);
-			setsign(negative);
+			lexp += rexp;
+			_block.assign(lexp);
 		}
-
+		setsign(negative);
 		return *this;
 	}
 	lns& operator*=(double rhs) { return operator*=(lns(rhs)); }
