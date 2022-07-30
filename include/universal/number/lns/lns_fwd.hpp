@@ -14,5 +14,6 @@ template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt> c
 template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt> lns<nbits, rbits, behavior, bt> abs(const lns<nbits, rbits, behavior, bt>&);
 template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt> lns<nbits, rbits, behavior, bt> sqrt(const lns<nbits, rbits, behavior, bt>&);
 
+
 }} // namespace sw::universal
 

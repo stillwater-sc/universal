@@ -54,6 +54,61 @@ try {
 	// configuration
 	std::cout << "+---------    explicit alignment bahavior\n";
 	{
+		using Real = lns<16, 5, std::uint16_t>;
+		ArithmeticOperators<Real>(1.0f, 1.0f);
+	}
+	{
+		using Real = lns<24, 5, std::uint32_t>;
+		ArithmeticOperators<Real>(1.0f, 1.0f);
+	}
+
+	std::cout << "+---------    Dynamic ranges of lns<> configurations   --------+\n";
+	{
+		std::cout << dynamic_range(lns< 4, 2>()) << '\n';
+		std::cout << dynamic_range(lns< 8, 3>()) << '\n';
+		std::cout << dynamic_range(lns<12, 4>()) << '\n';
+		std::cout << dynamic_range(lns<16, 5>()) << '\n';
+		std::cout << dynamic_range(lns<20, 6>()) << '\n';
+	}
+
+	std::cout << "+---------    constexpr and specific values   --------+\n";
+	{
+		constexpr size_t nbits = 10;
+		constexpr size_t es = 3;
+		using Real = lns<nbits, es>;  // bt = uint8_t
+
+		CONSTEXPRESSION Real a{}; // zero constexpr
+		std::cout << type_tag(a) << '\n';
+
+		// TODO: needs a constexpr version of log2() function
+//		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
+//		std::cout << to_binary(b) << " : " << b << '\n';
+
+		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
+		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
+
+		CONSTEXPRESSION Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding
+		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
+	}
+
+	std::cout << "+---------    extreme values   --------+\n";
+	{
+		constexpr size_t nbits = 10;
+		constexpr size_t es = 3;
+		using Real = lns<nbits, es>;  // bt = uint8_t
+
+		Real a, b, c;
+
+		a = INFINITY;
+		b = 2;
+		c = a / b;
+		std::cout << "scale(" << a << ") = " << a.scale() << '\n';
+		std::cout << "scale(" << b << ") = " << b.scale() << '\n';
+		ReportBinaryOperation(a, "/", b, c);
+	}
+
+	std::cout << "+---------    comparison to classic floats\n";
+	{
 		using Real = lns<16, 5, Saturating, std::uint16_t>;
 		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}

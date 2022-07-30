@@ -838,7 +838,6 @@ template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
 inline lns<nbits, rbits, behavior, bt> operator+(const lns<nbits, rbits, behavior, bt>& lhs, double rhs) {
 	lns<nbits, rbits, behavior, bt> sum(lhs);
 	sum += rhs;
-	return sum;
 }
 
 template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>

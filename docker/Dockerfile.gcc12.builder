@@ -38,4 +38,5 @@ WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
 ENV CONTAINER_ID "Universal Numbers Library Builder V3 GCC 12.1"
+
 CMD ["/usr/bin/env", "bash"]
