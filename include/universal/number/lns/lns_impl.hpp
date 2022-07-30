@@ -224,10 +224,31 @@ public:
 		}
 		if (iszero()) return *this;
 
-		ExponentBlockBinary exp(_block), rhsExp(rhs._block);
-		exp -= rhsExp;
-		bool negative = sign() ^ rhs.sign();
-		_block.assign(exp);
+		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the lns sign bit to yield the exponents
+		bool negative = sign() ^ rhs.sign(); // determine sign of result
+		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) { // saturating, no infinite
+			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
+			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(maxexp), maxneg(minexp); // expand into type of sum
+			blockbinary<nbits, bt, BinaryNumberType::Signed> expandedLexp(lexp), expandedRexp(rexp); // expand and sign extend if necessary
+			blockbinary<nbits, bt, BinaryNumberType::Signed> sum;
+
+			sum = ursub(expandedLexp, expandedRexp);
+			// check if sum is in range
+			if (sum >= maxpos) {
+				_block = maxpos;
+			}
+			else if (sum <= maxneg) {
+				_block = maxneg;   // == zero encoding
+				negative = false;  // ignore lns sign, otherwise this becomes NaN
+			}
+			else {
+				_block.assign(sum); // this might set the lns sign, but we are going to explicitly set it before returning
+			}
+		}
+		else {
+			lexp += rexp;
+			_block.assign(lexp);
+		}
 		setsign(negative);
 		return *this;
 	}

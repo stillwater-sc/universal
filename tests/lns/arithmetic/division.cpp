@@ -23,7 +23,7 @@ namespace sw { namespace universal {
 		int nrOfFailedTestCases = 0;
 		bool firstTime = true;
 		LnsType a, b, c, cref;
-		a.debugConstexprParameters();
+		if (reportTestCases) a.debugConstexprParameters();
 		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i);
 			double da = double(a);
@@ -129,7 +129,7 @@ Generate Value table for an LNS<5,2> in TXT format
  */
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -150,20 +150,20 @@ try {
 
 	std::string test_suite  = "lns division validation";
 	std::string test_tag    = "division";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 
 #if MANUAL_TESTING
 
-	using LNS4_1 = lns<4, 1, Saturating, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, Saturating, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, Saturating, std::uint8_t>;
-	using LNS8_4 = lns<8, 4, Saturating, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, Saturating, std::uint8_t>;
-	using LNS16_5 = lns<16, 5, Saturating, std::uint16_t>;
+	using LNS4_1_sat = lns<4, 1, Saturating, std::uint8_t>;
+	using LNS4_2_sat = lns<4, 2, Saturating, std::uint8_t>;
+	using LNS5_2_sat = lns<5, 2, Saturating, std::uint8_t>;
+	using LNS8_3_sat = lns<8, 3, Saturating, std::uint8_t>;
+	using LNS8_4_sat = lns<8, 4, Saturating, std::uint8_t>;
+	using LNS9_4_sat = lns<9, 4, Saturating, std::uint8_t>;
+	using LNS16_5_sat = lns<16, 5, Saturating, std::uint16_t>;
 
 	// : FAIL 1                    / 267.33408830141792123 != 0.0037406378152288035158 golden reference is 62757.488603861726006
 	// : result 0b0.1111.1111
@@ -171,14 +171,14 @@ try {
 	//  0b0.0000.0000 / 0b0.0000.0001
 	// 0b0.0000.0000 / 0b1.1111.1111
 	{
-		LNS9_4 a, b, c;
+		LNS9_4_sat a, b, c;
 		a.setbits(0);
 		b.setbits(0x1);
 		c = a / b;
 		ReportBinaryOperation(a, "/", b, c);
 	}
 	{
-		LNS8_4 a, b, c;
+		LNS8_4_sat a, b, c;
 		a.setbits(0);
 		b.setbits(0x1);
 		c = a / b;
@@ -190,39 +190,41 @@ try {
 	}
 
 	// generate individual testcases to hand trace/debug
-	TestCase<LNS16_5, double>(TestCaseOperator::DIV, INFINITY, INFINITY);
-	TestCase<LNS8_3, float>(TestCaseOperator::DIV, 0.5f, -0.5f);
+	TestCase<LNS16_5_sat, double>(TestCaseOperator::DIV, INFINITY, INFINITY);
+	TestCase<LNS8_3_sat, float>(TestCaseOperator::DIV, 0.5f, -0.5f);
 
 	// GenerateLnsTable<5, 2>(std::cout);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1>(reportTestCases), "lns<4,1,Saturating,uint8_t>>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2>(reportTestCases), "lns<4,2,Saturating,uint8_t>>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2>(reportTestCases), "lns<5,2,Saturating,uint8_t>>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3>(reportTestCases), "lns<8,3,Saturating,uint8_t>>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4>(reportTestCases), "lns<9,4,Saturating,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1_sat>(reportTestCases), "lns<4,1,Saturating,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2_sat>(reportTestCases), "lns<4,2,Saturating,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2_sat>(reportTestCases), "lns<5,2,Saturating,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3_sat>(reportTestCases), "lns<8,3,Saturating,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_sat>(reportTestCases), "lns<9,4,Saturating,uint8_t>>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
-	using LNS4_1 = lns<4, 1, Saturating, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, Saturating, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, Saturating, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, Saturating, std::uint8_t>;
-	using LNS9_4_uint16 = lns<9, 4, Saturating, std::uint16_t>;
-	using LNS10_4 = lns<10, 4, Saturating, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1>(reportTestCases),  "lns< 4,1,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2>(reportTestCases),  "lns< 4,2,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2>(reportTestCases),  "lns< 5,2,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3>(reportTestCases),  "lns< 8,3,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4>(reportTestCases),  "lns< 9,4,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_uint16>(reportTestCases), "lns< 9,4,Saturating,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS10_4>(reportTestCases), "lns<10,4,Saturating,uint8_t>", test_tag);
+	using LNS4_1_sat = lns<4, 1, Saturating, std::uint8_t>;
+//	using LNS4_2_sat = lns<4, 2, Saturating, std::uint8_t>;
+	using LNS5_2_sat = lns<5, 2, Saturating, std::uint8_t>;
+	using LNS8_3_sat = lns<8, 3, Saturating, std::uint8_t>;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1_sat>(reportTestCases),  "lns< 4,1,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2_sat>(reportTestCases),  "lns< 5,2,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3_sat>(reportTestCases),  "lns< 8,3,Saturating,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
+	using LNS9_4_sat = lns<9, 4, Saturating, std::uint8_t>;
+	using LNS9_4_sat_uint16 = lns<9, 4, Saturating, std::uint16_t>;
+	using LNS10_4_sat = lns<10, 4, Saturating, std::uint8_t>;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_sat>(reportTestCases), "lns< 9,4,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_sat_uint16>(reportTestCases), "lns< 9,4,Saturating,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS10_4_sat>(reportTestCases), "lns<10,4,Saturating,uint8_t>", test_tag);
+
 #endif
 
 #if REGRESSION_LEVEL_3
