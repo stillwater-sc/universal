@@ -98,8 +98,8 @@ try {
 	using LNS16_5_sat = lns<16, 5, Saturating, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
-	TestCase< LNS16_5, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	TestCase< LNS8_3, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< LNS16_5_sat, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+	TestCase< LNS8_3_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS4_2_sat>(reportTestCases), "lns<4,2,Saturating,uint8_t>", test_tag);
