@@ -50,7 +50,7 @@ namespace sw { namespace universal {
 				else {
 					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
 				}
-				if (nrOfFailedTestCases > 25) return 25;
+				if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
 			}
 		}
 		return nrOfFailedTestCases;

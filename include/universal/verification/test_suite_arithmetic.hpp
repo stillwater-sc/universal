@@ -35,10 +35,10 @@ namespace sw { namespace universal {
 /// enumerate all negation cases for a TestType
 /// </summary>
 /// <param name="tag"></param>
-/// <param name="bReportIndividualTestCases"></param>
+/// <param name="reportTestCases"></param>
 /// <returns></returns>
 template<typename TestType>
-int VerifyNegation(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyNegation(const std::string& tag, bool reportTestCases) {
 	constexpr size_t nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
@@ -52,10 +52,10 @@ int VerifyNegation(const std::string& tag, bool bReportIndividualTestCases) {
 		ref = -da;
 		if (neg != ref) {
 			nrOfFailedTests++;
-			if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "-", a, ref, neg);
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "-", a, ref, neg);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "-", a, ref, neg);
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "-", a, ref, neg);
 		}
 	}
 	return nrOfFailedTests;
@@ -67,10 +67,10 @@ int VerifyNegation(const std::string& tag, bool bReportIndividualTestCases) {
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
 /// <param name="tag">string representation of the type</param>
-/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
 /// <returns></returns>
 template<typename TestType>
-int VerifyAddition(bool bReportIndividualTestCases) {
+int VerifyAddition(bool reportTestCases) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
@@ -109,10 +109,10 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 			if (result != cref) {
 				if (ref == 0 and result.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
 			}
 			if (nrOfFailedTests > 9) return nrOfFailedTests;
 		}
