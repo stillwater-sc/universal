@@ -1,7 +1,7 @@
 #pragma once
-// test_suite_arithmetic.hpp : arithmetic test suite for arbitrary universal number systems
+// test_suite_arithmetic.hpp : generic arithmetic test suite for arbitrary universal number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -79,7 +79,7 @@ int VerifyAddition(bool reportTestCases) {
 	TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 
 	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
-	TestType a, b, result, cref;
+	TestType a, b, c, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i); // number system concept requires a member function setbits()
 		da = double(a);
@@ -90,7 +90,7 @@ int VerifyAddition(bool reportTestCases) {
 #if THROW_ARITHMETIC_EXCEPTION
 			// catching overflow
 			try {
-				result = a + b;
+				c = a + b;
 			}
 			catch (...) {
 				if (ref < double(maxneg) || ref > double(maxpos)) {
@@ -101,18 +101,17 @@ int VerifyAddition(bool reportTestCases) {
 					nrOfFailedTests++;
 				}
 			}
-
 #else
 			result = a + b;
 #endif // THROW_ARITHMETIC_EXCEPTION
 			cref = ref;
-			if (result != cref) {
-				if (ref == 0 and result.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
+			if (c != cref) {
+				if (ref == 0 and c.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, ref);
 			}
 			else {
-				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
 			}
 			if (nrOfFailedTests > 9) return nrOfFailedTests;
 		}
@@ -124,6 +123,66 @@ int VerifyAddition(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
+/// <summary>
+/// Enumerate all subtraction cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="tag">string representation of the type</param>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
+/// <returns></returns>
+template<typename TestType>
+int VerifySubtraction(bool reportTestCases) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	int nrOfFailedTests = 0;
 
+	// set the saturation clamps
+	TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+
+	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	TestType a, b, c, cref;
+	for (size_t i = 0; i < NR_VALUES; i++) {
+		a.setbits(i); // number system concept requires a member function setbits()
+		da = double(a);
+		for (size_t j = 0; j < NR_VALUES; j++) {
+			b.setbits(j);
+			db = double(b);
+			ref = da - db;
+#if THROW_ARITHMETIC_EXCEPTION
+			// catching overflow
+			try {
+				c = a - b;
+			}
+			catch (...) {
+				if (ref < double(maxneg) || ref > double(maxpos)) {
+					// correctly caught the overflow exception
+					continue;
+				}
+				else {
+					nrOfFailedTests++;
+				}
+			}
+#else
+			result = a - b;
+#endif // THROW_ARITHMETIC_EXCEPTION
+			cref = ref;
+			if (c != cref) {
+				if (ref == 0 and c.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
+				nrOfFailedTests++;
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, c, ref);
+			}
+			else {
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, ref);
+			}
+			if (nrOfFailedTests > 9) return nrOfFailedTests;
+		}
+		if constexpr (NR_VALUES > 256 * 256) {
+			if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+		}
+	}
+	std::cout << std::endl;
+	return nrOfFailedTests;
+}
 
 }} // namespace sw::universal

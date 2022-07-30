@@ -107,23 +107,26 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
+
+#if REGRESSION_LEVEL_1
 	using LNS4_1_sat = lns<4, 1, Saturating, std::uint8_t>;
 	using LNS4_2_sat = lns<4, 2, Saturating, std::uint8_t>;
 	using LNS5_2_sat = lns<5, 2, Saturating, std::uint8_t>;
 	using LNS8_3_sat = lns<8, 3, Saturating, std::uint8_t>;
-	using LNS9_4_sat = lns<9, 4, Saturating, std::uint8_t>;
-	using LNS10_4_sat = lns<10, 4, Saturating, std::uint8_t>;
 
-#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS4_1_sat>(reportTestCases), "lns<4,1,Saturating,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS4_2_sat>(reportTestCases), "lns<4,2,Saturating,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS5_2_sat>(reportTestCases), "lns<5,2,Saturating,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS8_3_sat>(reportTestCases), "lns<8,3,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS9_4_sat>(reportTestCases), "lns<9,4,Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS10_4_sat>(reportTestCases), "lns<10,4,Saturating,uint8_t>", test_tag);
+
 #endif
 
 #if REGRESSION_LEVEL_2
+	using LNS9_4_sat = lns<9, 4, Saturating, std::uint8_t>;
+	using LNS10_4_sat = lns<10, 4, Saturating, std::uint8_t>;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS9_4_sat>(reportTestCases), "lns<9,4,Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<LNS10_4_sat>(reportTestCases), "lns<10,4,Saturating,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

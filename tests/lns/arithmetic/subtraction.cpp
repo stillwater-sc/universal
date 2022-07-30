@@ -6,7 +6,11 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/test_suite.hpp>
+//#include <universal/verification/test_suite.hpp>    // there is a generic VerifySubtraction there: we need a trait to break template match
+// in the mean time: explicity bring in the dependencies to get the test running
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_case.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 namespace sw { namespace universal {
 
