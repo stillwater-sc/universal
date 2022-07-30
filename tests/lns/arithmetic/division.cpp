@@ -18,11 +18,15 @@ namespace sw { namespace universal {
 	template<typename LnsType>
 	int VerifyDivision(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
+		constexpr size_t rbits = LnsType::rbits;
+		constexpr ArithmeticBehavior behavior = LnsType::behavior;
+		using bt = typename LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;
 		bool firstTime = true;
 		LnsType a, b, c, cref;
+		double ref;
 		if (reportTestCases) a.debugConstexprParameters();
 		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i);
@@ -33,8 +37,7 @@ namespace sw { namespace universal {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
 				try {
 					c = a / b;
-					double ref = da / db;
-					cref = ref;
+					ref = da / db;
 				}
 				catch (const lns_divide_by_zero& err) {
 					if (b.iszero()) {
@@ -52,9 +55,12 @@ namespace sw { namespace universal {
 				}
 #else
 				c = a / b;
-				double ref = da / db;
-				cref = ref;
+				ref = da / db;
 #endif
+				if (reportTestCases && !isInRange<nbits, rbits, behavior, bt>(ref)) {
+					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, behavior, bt>() << '\n';
+				}
+				cref = ref;
 //				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
 //				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				if (c != cref) {

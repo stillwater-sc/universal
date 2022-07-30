@@ -20,7 +20,7 @@ namespace sw { namespace universal {
 		constexpr size_t nbits = LnsType::nbits;
 		constexpr size_t rbits = LnsType::rbits;
 		constexpr ArithmeticBehavior behavior = LnsType::behavior;
-		using bt = LnsType::BlockType;
+		using bt = typename LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;

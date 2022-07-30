@@ -20,6 +20,9 @@ namespace sw { namespace universal {
 	template<typename LnsType>
 	int VerifySubtraction(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
+		constexpr size_t rbits = LnsType::rbits;
+		constexpr ArithmeticBehavior behavior = LnsType::behavior;
+		using bt = typename LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;
@@ -33,6 +36,9 @@ namespace sw { namespace universal {
 				double db = double(b);
 
 				double ref = da - db;
+				if (reportTestCases && !isInRange<nbits, rbits, behavior, bt>(ref)) {
+					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, behavior, bt>() << '\n';
+				}
 				c = a - b;
 				cref = ref;
 				//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
