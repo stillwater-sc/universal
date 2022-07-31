@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
@@ -40,18 +40,18 @@ try {
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 0;
-		fixpnt<nbits, es> a(SpecialValue::maxpos), b(SpecialValue::maxpos), c(SpecialValue::maxneg);
+		fixpnt<nbits, es> a(SpecificValue::maxpos), b(SpecificValue::maxpos), c(SpecificValue::maxneg);
 		if (a == b) std::cout << "equal\n";
 	
 	}
 
 	{
-		nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<3, 0>(), "fixpnt<3,0>", "==");
-		nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<3, 0>(), "fixpnt<3,0>", "!=");
-		nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<3, 0>(), "fixpnt<3,0>", "<");
-		nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<3, 0>(), "fixpnt<3,0>", ">");
-		nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan<3, 0>(), "fixpnt<3,0>", "<=");
-		nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<3, 0>(), "fixpnt<3,0>", ">=");
+		nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", "==");
+		nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<3, 0> > (reportTestCases), "fixpnt<3,0>", "!=");
+		nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", "<");
+		nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", ">");
+		nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", "<=");
+		nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", ">=");
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -61,27 +61,27 @@ try {
 
 #if REGRESSION_LEVEL_1
 	std::cout << "Logic: operator==()\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual <fixpnt<3, 0> >(), "fixpnt<3,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<4, 0> >(), "fixpnt<4,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<4, 1> >(), "fixpnt<4,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<5, 0> >(), "fixpnt<5,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<5, 1> >(), "fixpnt<5,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<5, 2> >(), "fixpnt<5,2>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<6, 0> >(), "fixpnt<6,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<6, 1> >(), "fixpnt<6,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<6, 2> >(), "fixpnt<6,2>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<6, 3> >(), "fixpnt<6,3>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 0> >(), "fixpnt<7,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 1> >(), "fixpnt<7,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 2> >(), "fixpnt<7,2>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 3> >(), "fixpnt<7,3>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 4> >(), "fixpnt<7,4>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 0> >(), "fixpnt<8,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 1> >(), "fixpnt<8,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 2> >(), "fixpnt<8,2>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 3> >(), "fixpnt<8,3>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 4> >(), "fixpnt<8,4>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 5> >(), "fixpnt<8,5>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual <fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<4, 0> >(reportTestCases), "fixpnt<4,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<4, 1> >(reportTestCases), "fixpnt<4,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<5, 0> >(reportTestCases), "fixpnt<5,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<5, 1> >(reportTestCases), "fixpnt<5,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<5, 2> >(reportTestCases), "fixpnt<5,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<6, 0> >(reportTestCases), "fixpnt<6,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<6, 1> >(reportTestCases), "fixpnt<6,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<6, 2> >(reportTestCases), "fixpnt<6,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<6, 3> >(reportTestCases), "fixpnt<6,3>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 0> >(reportTestCases), "fixpnt<7,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 1> >(reportTestCases), "fixpnt<7,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 2> >(reportTestCases), "fixpnt<7,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 3> >(reportTestCases), "fixpnt<7,3>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<7, 4> >(reportTestCases), "fixpnt<7,4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 0> >(reportTestCases), "fixpnt<8,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 1> >(reportTestCases), "fixpnt<8,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 2> >(reportTestCases), "fixpnt<8,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 3> >(reportTestCases), "fixpnt<8,3>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 4> >(reportTestCases), "fixpnt<8,4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<8, 5> >(reportTestCases), "fixpnt<8,5>", "==");
 	if (!(a == 0)) { 
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> == 0", "== int literal");
 	}
@@ -110,24 +110,24 @@ try {
 #endif
 
 	std::cout << "Logic: operator!=()\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<3, 0> >(), "fixpnt<3,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<4, 0> >(), "fixpnt<4,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<4, 1> >(), "fixpnt<4,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<5, 0> >(), "fixpnt<5,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<5, 1> >(), "fixpnt<5,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<5, 2> >(), "fixpnt<5,2>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<6, 0> >(), "fixpnt<6,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<6, 1> >(), "fixpnt<6,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<6, 2> >(), "fixpnt<6,2>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<6, 3> >(), "fixpnt<6,3>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<7, 0> >(), "fixpnt<7,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<7, 1> >(), "fixpnt<7,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<7, 2> >(), "fixpnt<7,2>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<7, 3> >(), "fixpnt<7,3>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<8, 0> >(), "fixpnt<8,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<8, 1> >(), "fixpnt<8,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<8, 2> >(), "fixpnt<8,2>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<8, 3> >(), "fixpnt<8,3>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<4, 0> >(reportTestCases), "fixpnt<4,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<4, 1> >(reportTestCases), "fixpnt<4,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<5, 0> >(reportTestCases), "fixpnt<5,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<5, 1> >(reportTestCases), "fixpnt<5,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<5, 2> >(reportTestCases), "fixpnt<5,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<6, 0> >(reportTestCases), "fixpnt<6,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<6, 1> >(reportTestCases), "fixpnt<6,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<6, 2> >(reportTestCases), "fixpnt<6,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<6, 3> >(reportTestCases), "fixpnt<6,3>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<7, 0> >(reportTestCases), "fixpnt<7,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<7, 1> >(reportTestCases), "fixpnt<7,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<7, 2> >(reportTestCases), "fixpnt<7,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<7, 3> >(reportTestCases), "fixpnt<7,3>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<8, 0> >(reportTestCases), "fixpnt<8,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<8, 1> >(reportTestCases), "fixpnt<8,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<8, 2> >(reportTestCases), "fixpnt<8,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<8, 3> >(reportTestCases), "fixpnt<8,3>", "!=");
 	if (a != 0) { 
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> != 0", "!= int literal");
 	}
@@ -156,24 +156,24 @@ try {
 #endif
 
 	std::cout << "Logic: operator<()\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<3, 0> >(), "fixpnt<3,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<4, 0> >(), "fixpnt<4,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<4, 1> >(), "fixpnt<4,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<5, 0> >(), "fixpnt<5,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<5, 1> >(), "fixpnt<5,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<5, 2> >(), "fixpnt<5,2>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<6, 0> >(), "fixpnt<6,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<6, 1> >(), "fixpnt<6,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<6, 2> >(), "fixpnt<6,2>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<6, 3> >(), "fixpnt<6,3>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<7, 0> >(), "fixpnt<7,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<7, 1> >(), "fixpnt<7,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<7, 2> >(), "fixpnt<7,2>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<7, 3> >(), "fixpnt<7,3>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<8, 0> >(), "fixpnt<8,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<8, 1> >(), "fixpnt<8,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<8, 2> >(), "fixpnt<8,2>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<8, 3> >(), "fixpnt<8,3>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<4, 0> >(reportTestCases), "fixpnt<4,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<4, 1> >(reportTestCases), "fixpnt<4,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<5, 0> >(reportTestCases), "fixpnt<5,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<5, 1> >(reportTestCases), "fixpnt<5,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<5, 2> >(reportTestCases), "fixpnt<5,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<6, 0> >(reportTestCases), "fixpnt<6,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<6, 1> >(reportTestCases), "fixpnt<6,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<6, 2> >(reportTestCases), "fixpnt<6,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<6, 3> >(reportTestCases), "fixpnt<6,3>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<7, 0> >(reportTestCases), "fixpnt<7,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<7, 1> >(reportTestCases), "fixpnt<7,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<7, 2> >(reportTestCases), "fixpnt<7,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<7, 3> >(reportTestCases), "fixpnt<7,3>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<8, 0> >(reportTestCases), "fixpnt<8,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<8, 1> >(reportTestCases), "fixpnt<8,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<8, 2> >(reportTestCases), "fixpnt<8,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<8, 3> >(reportTestCases), "fixpnt<8,3>", "<");
 	if (a < 0) { 
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> < 0", "< int literal");
 	}
@@ -202,24 +202,24 @@ try {
 #endif
 
 	std::cout << "Logic: operator<=()\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<3, 0> >(), "fixpnt<3,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<4, 0> >(), "fixpnt<4,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<4, 1> >(), "fixpnt<4,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<5, 0> >(), "fixpnt<5,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<5, 1> >(), "fixpnt<5,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<5, 2> >(), "fixpnt<5,2>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<6, 0> >(), "fixpnt<6,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<6, 1> >(), "fixpnt<6,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<6, 2> >(), "fixpnt<6,2>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<6, 3> >(), "fixpnt<6,3>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<7, 0> >(), "fixpnt<7,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<7, 1> >(), "fixpnt<7,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<7, 2> >(), "fixpnt<7,2>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<7, 3> >(), "fixpnt<7,3>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<8, 0> >(), "fixpnt<8,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<8, 1> >(), "fixpnt<8,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<8, 2> >(), "fixpnt<8,2>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<8, 3> >(), "fixpnt<8,3>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<4, 0> >(reportTestCases), "fixpnt<4,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<4, 1> >(reportTestCases), "fixpnt<4,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<5, 0> >(reportTestCases), "fixpnt<5,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<5, 1> >(reportTestCases), "fixpnt<5,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<5, 2> >(reportTestCases), "fixpnt<5,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<6, 0> >(reportTestCases), "fixpnt<6,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<6, 1> >(reportTestCases), "fixpnt<6,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<6, 2> >(reportTestCases), "fixpnt<6,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<6, 3> >(reportTestCases), "fixpnt<6,3>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<7, 0> >(reportTestCases), "fixpnt<7,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<7, 1> >(reportTestCases), "fixpnt<7,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<7, 2> >(reportTestCases), "fixpnt<7,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<7, 3> >(reportTestCases), "fixpnt<7,3>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<8, 0> >(reportTestCases), "fixpnt<8,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<8, 1> >(reportTestCases), "fixpnt<8,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<8, 2> >(reportTestCases), "fixpnt<8,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<8, 3> >(reportTestCases), "fixpnt<8,3>", "<=");
 	if (!(a <= 0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> <= 0", "<= int literal");
 	}
@@ -248,24 +248,24 @@ try {
 #endif
 
 	std::cout << "Logic: operator>()\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<3, 0> >(), "fixpnt<3,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<4, 0> >(), "fixpnt<4,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<4, 1> >(), "fixpnt<4,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<5, 0> >(), "fixpnt<5,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<5, 1> >(), "fixpnt<5,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<5, 2> >(), "fixpnt<5,2>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<6, 0> >(), "fixpnt<6,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<6, 1> >(), "fixpnt<6,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<6, 2> >(), "fixpnt<6,2>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<6, 3> >(), "fixpnt<6,3>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<7, 0> >(), "fixpnt<7,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<7, 1> >(), "fixpnt<7,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<7, 2> >(), "fixpnt<7,2>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<7, 3> >(), "fixpnt<7,3>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<8, 0> >(), "fixpnt<8,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<8, 1> >(), "fixpnt<8,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<8, 2> >(), "fixpnt<8,2>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<8, 3> >(), "fixpnt<8,3>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<4, 0> >(reportTestCases), "fixpnt<4,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<4, 1> >(reportTestCases), "fixpnt<4,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<5, 0> >(reportTestCases), "fixpnt<5,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<5, 1> >(reportTestCases), "fixpnt<5,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<5, 2> >(reportTestCases), "fixpnt<5,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<6, 0> >(reportTestCases), "fixpnt<6,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<6, 1> >(reportTestCases), "fixpnt<6,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<6, 2> >(reportTestCases), "fixpnt<6,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<6, 3> >(reportTestCases), "fixpnt<6,3>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<7, 0> >(reportTestCases), "fixpnt<7,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<7, 1> >(reportTestCases), "fixpnt<7,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<7, 2> >(reportTestCases), "fixpnt<7,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<7, 3> >(reportTestCases), "fixpnt<7,3>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<8, 0> >(reportTestCases), "fixpnt<8,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<8, 1> >(reportTestCases), "fixpnt<8,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<8, 2> >(reportTestCases), "fixpnt<8,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<8, 3> >(reportTestCases), "fixpnt<8,3>", ">");
 	if (a > 0) { 
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> > 0", "> int literal");
 	}
@@ -294,24 +294,24 @@ try {
 #endif
 
 	std::cout << "Logic: operator>=()\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<3, 0> >(), "fixpnt<3,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<4, 0> >(), "fixpnt<4,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<4, 1> >(), "fixpnt<4,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<5, 0> >(), "fixpnt<5,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<5, 1> >(), "fixpnt<5,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<5, 2> >(), "fixpnt<5,2>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<6, 0> >(), "fixpnt<6,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<6, 1> >(), "fixpnt<6,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<6, 2> >(), "fixpnt<6,2>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<6, 3> >(), "fixpnt<6,3>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<7, 0> >(), "fixpnt<7,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<7, 1> >(), "fixpnt<7,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<7, 2> >(), "fixpnt<7,2>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<7, 3> >(), "fixpnt<7,3>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<8, 0> >(), "fixpnt<8,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<8, 1> >(), "fixpnt<8,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<8, 2> >(), "fixpnt<8,2>", ">=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<8, 3> >(), "fixpnt<8,3>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<3, 0> >(reportTestCases), "fixpnt<3,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<4, 0> >(reportTestCases), "fixpnt<4,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<4, 1> >(reportTestCases), "fixpnt<4,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<5, 0> >(reportTestCases), "fixpnt<5,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<5, 1> >(reportTestCases), "fixpnt<5,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<5, 2> >(reportTestCases), "fixpnt<5,2>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<6, 0> >(reportTestCases), "fixpnt<6,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<6, 1> >(reportTestCases), "fixpnt<6,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<6, 2> >(reportTestCases), "fixpnt<6,2>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<6, 3> >(reportTestCases), "fixpnt<6,3>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<7, 0> >(reportTestCases), "fixpnt<7,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<7, 1> >(reportTestCases), "fixpnt<7,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<7, 2> >(reportTestCases), "fixpnt<7,2>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<7, 3> >(reportTestCases), "fixpnt<7,3>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<8, 0> >(reportTestCases), "fixpnt<8,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<8, 1> >(reportTestCases), "fixpnt<8,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<8, 2> >(reportTestCases), "fixpnt<8,2>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<8, 3> >(reportTestCases), "fixpnt<8,3>", ">=");
 	if (!(a >= 0)) { 
 		nrOfFailedTestCases += ReportTestResult(1, "fixpnt<16,1> >= 0", ">= int literal");
 	}
@@ -350,12 +350,12 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<16, 1>(), "fixpnt<16,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<16, 1>(), "fixpnt<16,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<16, 1>(), "fixpnt<16,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan<16, 1>(), "fixpnt<16,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<16, 1>(), "fixpnt<16,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<16, 1>(), "fixpnt<16,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<16, 1>(reportTestCases), "fixpnt<16,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<16, 1>(reportTestCases), "fixpnt<16,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<16, 1>(reportTestCases), "fixpnt<16,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan<16, 1>(reportTestCases), "fixpnt<16,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<16, 1>(reportTestCases), "fixpnt<16,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<16, 1>(reportTestCases), "fixpnt<16,1>", ">=");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

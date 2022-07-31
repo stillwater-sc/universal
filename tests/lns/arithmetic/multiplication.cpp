@@ -42,6 +42,7 @@ namespace sw { namespace universal {
 //				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
 //				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				if (c != cref) {
+					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
 //					std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';

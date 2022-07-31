@@ -20,6 +20,7 @@ namespace sw { namespace universal {
 		s << "lns<"
 			<< std::setw(3) << nbits << ", "
 			<< std::setw(3) << rbits << ", "
+			<< std::setw(10) << type_tag(behavior) << ", "
 			<< typeid(BlockType).name() << '>';
 		return s.str();
 	}

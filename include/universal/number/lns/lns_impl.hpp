@@ -727,6 +727,7 @@ inline std::istream& operator>>(std::istream& istr, const lns<nnbits, rrbits, bb
 // lns - logic operators
 template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
 inline bool operator==(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) {
+	if (lhs.isnan() || rhs.isnan()) return false;
 	using LNS = lns<nnbits, rrbits, bbehavior, nbt>;
 	if constexpr (LNS::nrBlocks == 1) {
 		return lhs._block[0] == rhs._block[0];
@@ -754,18 +755,22 @@ inline bool operator==(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns
 	}
 }
 template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator!=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { return !operator==(lhs, rhs); }
+inline bool operator!=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { 
+	if (lhs.isnan() || rhs.isnan()) return true; 
+	return !operator==(lhs, rhs); 
+}
 template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
 inline bool operator< (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) {
-	using LNS = lns<nnbits, rrbits, bbehavior, nbt>;
-	bool lhsSign = lhs.at(nnbits - 1);
-	bool rhsSign = rhs.at(nnbits - 1);
+	using ExponentBlockBinary = blockbinary<nnbits - 1, nbt, BinaryNumberType::Signed>;
+
+	if (lhs.isnan() || rhs.isnan()) return false;
+
+	bool lhsSign = lhs.sign();
+	bool rhsSign = rhs.sign();
 	if (lhsSign) {
 		if (rhsSign) {
-			LNS l(lhs);
-			l.setbit(nnbits - 1, false);
-			LNS r(rhs);
-			r.setbit(nnbits - 1, false);
+			ExponentBlockBinary l(lhs._block), r(rhs._block); // extract the 2's complement exponent
+			return l > r;
 		}
 		else {
 			return true;
@@ -776,17 +781,26 @@ inline bool operator< (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns
 			return false;
 		}
 		else {
-
+			ExponentBlockBinary l(lhs._block), r(rhs._block); // extract the 2's complement exponent
+			return l < r;
 		}
 	}
-	return false; 
 }
 template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator> (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { return  operator< (rhs, lhs); }
+inline bool operator> (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { 
+	if (lhs.isnan() || rhs.isnan()) return false; 
+	return  operator< (rhs, lhs); 
+}
 template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator<=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { 
+	if (lhs.isnan() || rhs.isnan()) return false; 
+	return !operator> (lhs, rhs); 
+}
 template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator>=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { 
+	if (lhs.isnan() || rhs.isnan()) return false; 
+	return !operator< (lhs, rhs); 
+}
 
 // lns - literal logic operators
 template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
