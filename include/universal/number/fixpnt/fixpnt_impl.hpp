@@ -633,6 +633,8 @@ public:
 	constexpr bool   iszero()              const noexcept { return _block.iszero(); }
 	constexpr bool   ispos()               const noexcept { return _block.ispos(); }
 	constexpr bool   isneg()               const noexcept { return _block.isneg(); }
+	constexpr bool   isnan()               const noexcept { return false; }
+	constexpr bool   isinf()               const noexcept { return false; }
 	constexpr bool   at(size_t bitIndex)   const noexcept { return _block.at(bitIndex); }
 	constexpr bool   test(size_t bitIndex) const noexcept { return _block.test(bitIndex); }
 

@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-
+#include <limits>
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -153,12 +153,35 @@ try {
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	using SaturatingLns = lns<7, 4>;
+	SaturatingLns a;
+	std::string typetag = type_tag(a);
 
 #if MANUAL_TESTING
 
+	{
+		float fa, fb;
+		fa = 1;
+		fb = std::numeric_limits<float>::quiet_NaN();
+		std::cout << (fa < fb ? "a < b" : "a !< b") << '\n';
+		std::cout << (fa > fb ? "a > b" : "a !> b") << '\n';
+		std::cout << (fa == fb ? "a == b" : "a != b") << '\n';
+		std::cout << (fa != fb ? "a != b" : "a == b") << '\n';
+	}
+
 	nrOfFailedTestCases += VerifyZeroEncodings(reportTestCases);
 	nrOfFailedTestCases += VerifyNaNEncodings(reportTestCases);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< SaturatingLns >(reportTestCases), typetag, "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< SaturatingLns >(reportTestCases), typetag, "<");
+
+	// these are derived from equal and less then
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< SaturatingLns >(reportTestCases), typetag, "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< SaturatingLns >(reportTestCases), typetag, ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< SaturatingLns >(reportTestCases), typetag, "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< SaturatingLns >(reportTestCases), typetag, ">=");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -167,6 +190,42 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += VerifyZeroEncodings(reportTestCases);
 	nrOfFailedTestCases += VerifyNaNEncodings(reportTestCases);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< SaturatingLns >(reportTestCases), typetag, "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< SaturatingLns >(reportTestCases), typetag, "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< SaturatingLns >(reportTestCases), typetag, "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< SaturatingLns >(reportTestCases), typetag, ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< SaturatingLns >(reportTestCases), typetag, "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< SaturatingLns >(reportTestCases), typetag, ">=");
+
+	a = 0;
+
+	if (!(a == 0)) {
+		nrOfFailedTestCases += ReportTestResult(1, typetag + std::string(" == 0"), "== int literal");
+	}
+	else {
+		ReportTestResult(0, typetag + std::string(" == 0"), " == int literal");
+	}
+	if (!(a == 0.0f)) {
+		nrOfFailedTestCases += ReportTestResult(1, typetag + std::string(" == 0.0"), " == float literal");
+	}
+	else {
+		ReportTestResult(0, typetag + std::string(" == 0.0"), " == float literal");
+	}
+	if (!(a == 0.0)) {
+		nrOfFailedTestCases += ReportTestResult(1, typetag + std::string(" == 0.0"), " == double literal");
+}
+	else {
+		ReportTestResult(0, typetag + std::string(" == 0.0"), " == double literal");
+	}
+#if LONG_DOUBLE_SUPPORT
+	if (!(a == 0.0l)) {
+		nrOfFailedTestCases += ReportTestResult(1, typetag + std::string(" == 0.0"), " == long double literal");
+	}
+	else {
+		ReportTestResult(0, typetag + std::string(" == 0.0"), " == long double literal");
+	}
+#endif
 #endif
 
 #if REGRESSION_LEVEL_2
