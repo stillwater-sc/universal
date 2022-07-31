@@ -3,8 +3,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// minimum set of include files to reflect source code dependencies
+#include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/behavior/arithmetic.hpp>
@@ -91,7 +90,7 @@ try {
 #if MANUAL_TESTING
 
 	{
-		using Real = lns2<8, 2, Modular, std::uint8_t>;
+		using Real = lns<8, 2, Modular, std::uint8_t>;
 		bool isTrivial = bool(std::is_trivial<Real>());
 		static_assert(std::is_trivial<Real>(), "lns should be trivial but failed the assertion");
 		std::cout << (isTrivial ? "lns is trivial" : "lns failed trivial: FAIL") << '\n';
@@ -109,14 +108,55 @@ try {
 		std::cout << (isTriviallyCopyAssignable ? "lns is trivially copy-assignable" : "lns failed trivially copy-assignable: FAIL") << '\n';
 	}
 
+	std::cout << '\n';
+
 	{
-		using Real = lns2<8, 2, Modular, std::uint8_t>;
-		Real a, b, c;
-		a = 1;
-		b = 2;
-		c = 3;
-		ReportBinaryOperation(a, "+", b, c);
+		using Real = lns<8, 2, Saturating, std::uint8_t>;
+		bool isTrivial = bool(std::is_trivial<Real>());
+		static_assert(std::is_trivial<Real>(), "lns should be trivial but failed the assertion");
+		std::cout << (isTrivial ? "lns is trivial" : "lns failed trivial: FAIL") << '\n';
+
+		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Real>());
+		static_assert(std::is_trivially_constructible<Real>(), "lns should be trivially constructible but failed the assertion");
+		std::cout << (isTriviallyConstructible ? "lns is trivial constructible" : "lns failed trivial constructible: FAIL") << '\n';
+
+		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Real>());
+		static_assert(std::is_trivially_copyable<Real>(), "lns should be trivially copyable but failed the assertion");
+		std::cout << (isTriviallyCopyable ? "lns is trivially copyable" : "lns failed trivially copyable: FAIL") << '\n';
+
+		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<Real>());
+		static_assert(std::is_trivially_copy_assignable<Real>(), "lns should be trivially copy-assignable but failed the assertion");
+		std::cout << (isTriviallyCopyAssignable ? "lns is trivially copy-assignable" : "lns failed trivially copy-assignable: FAIL") << '\n';
 	}
+
+	std::cout << '\n';
+
+	{
+		using ModularLns = lns<8, 4, Modular, std::uint8_t>;
+		using SaturatingLns = lns<8, 4, Saturating, std::uint8_t>;
+
+		{
+			ModularLns a, b, c;
+			std::cout << dynamic_range(a) << '\n';
+			a = 4;
+			b = 4;
+			c = a * b;
+			ReportBinaryOperation(a, "*", b, c);
+
+		}
+		std::cout << '\n';
+		{
+			SaturatingLns a, b, c;
+			std::cout << dynamic_range(a) << '\n';
+			a = 4;
+			b = 4;
+			c = a * b;
+			ReportBinaryOperation(a, "*", b, c);
+
+		}
+	}
+
+	std::cout << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

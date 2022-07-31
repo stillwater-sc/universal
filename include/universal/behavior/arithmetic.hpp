@@ -23,4 +23,20 @@ constexpr ArithmeticBehavior Saturating(Arithmetic::Saturating, InfiniteLimit::F
 constexpr ArithmeticBehavior Projective(Arithmetic::Modular, InfiniteLimit::Infinite);
 constexpr ArithmeticBehavior Real(Arithmetic::Saturating, InfiniteLimit::Infinite);
 
+inline std::string type_tag(const ArithmeticBehavior& behavior) {
+	if (behavior.arith == Arithmetic::Modular && behavior.limit == InfiniteLimit::Finite) {
+		return std::string("Modular");
+	}
+	else 	if (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
+		return std::string("Saturating");
+	}
+	else 	if (behavior.arith == Arithmetic::Modular && behavior.limit == InfiniteLimit::Infinite) {
+		return std::string("Saturating");
+	}
+	else 	if (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Infinite) {
+		return std::string("Saturating");
+	}
+	return std::string("unknown arithmetic behavior");
+}
+
 }} // namespace sw::universal
