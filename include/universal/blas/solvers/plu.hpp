@@ -1,6 +1,5 @@
 #pragma once
 // plu.hpp: dense matrix PLU decomposition (PA = LU)
-
 //          via DooLittle Method
 // auto [P, L, U] = plu(A); // Returns P(ermutation matrix)
 //                             L(ower) Triangular
