@@ -1,0 +1,77 @@
+#pragma once
+// lu.hpp: dense matrix PLU decomposition
+//
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Quinlan, J.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
+#include <universal/utility/directives.hpp>
+#include <iostream>
+#include <tuple>
+#include <universal/number/posit/posit_fwd.hpp>
+#include <universal/blas/matrix.hpp>
+#include <universal/blas/blas_l1.hpp>
+
+namespace sw { namespace universal { namespace blas {  
+
+template<typename Scalar>
+std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scalar>& A){ 
+
+    using Matrix = sw::universal::blas::matrix<Scalar>;
+    using namespace std;
+
+    size_t n = num_rows(A);
+    Scalar absmax; // absmax = abs(A(i,j))
+    size_t argmax; // index of max element
+
+    Matrix P(n,n);
+    Matrix L(n,n);
+    Matrix U(n,n);
+
+    P = 1;
+    L = 1;
+    U = A;
+
+    size_t i = 0, j = 0, k = 0;
+    Scalar x;
+
+    // Elimination Process
+    for (i = 0; i < n-1; ++i){ // i-th row
+        absmax = abs(U(i,i));
+        argmax = i;
+
+        // Find largest element in ith column
+        for (k = i + 1; k < n; ++k){ // i = subsequent row (ele. in column k)
+            if (abs(U(k,i)) > absmax){
+                absmax = abs(U(k,i));
+                argmax = k;
+            }
+        }
+        // Check for necessary swaps
+        if (argmax != i){
+            // Swap rows loop
+            for (size_t j = 0; j < n;++j){
+                x = U(i,j);
+                U(i,j) = U(argmax,j);
+                U(argmax,j) = x;
+
+                x = P(i,j);
+                P(i,j) = P(argmax,j);
+                P(argmax,j) = x;
+            }
+            
+        }
+        // Continue with row reduction
+        for (k = i + 1; k < n; ++k){  // objective row
+            L(k,i) = U(k,i) / U(i,i);
+            for (j = i; j < n; ++j){
+                U(k,j) = U(k,j) - L(k,i)*U(i,j);
+            }
+        }
+    }
+    U = triu(U);
+    return std::make_tuple(P,L,U); 
+} // LU
+
+}}} // namespace sw::universal::blas
