@@ -14,6 +14,4 @@ sw::universal::blas::matrix<double>  q4 = {
 		{  2.0, -1.0, 10.0, -1.0},
 		{  0.0,  3.0, -1.0,  8.0} 
 };
-
 // Let b = {11, 12, 10, 10} for exact solution x = {1,1,1,1}.
-
