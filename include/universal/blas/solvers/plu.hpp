@@ -60,7 +60,7 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
         // Continue with row reduction
         for (size_t k = i + 1; k < n; ++k){  // objective row
             L(k,i) = U(k,i) / U(i,i);
-            for (j = i; j < n; ++j){
+            for (size_t j = i; j < n; ++j){
                 U(k,j) = U(k,j) - L(k,i)*U(i,j);
             }
         }
