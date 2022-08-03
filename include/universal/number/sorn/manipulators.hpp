@@ -61,7 +61,7 @@ namespace sw { namespace universal {
 
 	// transform sorn to a binary representation
 	template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
-	inline std::string to_binary(const sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& number, bool nibbleMarker = false) {
+	inline std::string to_binary(const sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& number, bool nibbleMarker) {
 		std::stringstream s;
 
 //		using Real = sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::Real;

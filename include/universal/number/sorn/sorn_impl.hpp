@@ -9,6 +9,8 @@
 #include <vector>
 #include <bitset>
 #include <cassert>
+#include <cmath>
+
 #include <universal/number/shared/specific_value_encoding.hpp>
 
 namespace sw { namespace universal {
@@ -49,6 +51,9 @@ inline std::vector<sornInterval<Real>> setSornDT(signed int start, signed int st
 									bool flagNeg, bool flagInf, bool flagZero, bool flagLin,
 									bool flagLog, bool flagHalfopen, bool flagOpen, size_t sornBits ) {
 	using SORN_INTERVAL = sornInterval<Real>;
+	using std::pow;
+	using std::fmax;
+
 	std::vector<SORN_INTERVAL> sornDT;
 	// 1. halfopen config
 	if (flagHalfopen) {
