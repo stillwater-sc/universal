@@ -14,22 +14,22 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for this lns
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename BlockType>
-	inline std::string type_tag(const lns<nbits, rbits, behavior, BlockType>& = {}) {
+	template<size_t nbits, size_t rbits, typename BlockType, auto... xtra>
+	inline std::string type_tag(const lns<nbits, rbits, BlockType, xtra...>& = {}) {
 		std::stringstream s;
 		s << "lns<"
 			<< std::setw(3) << nbits << ", "
 			<< std::setw(3) << rbits << ", "
-			<< std::setw(10) << type_tag(behavior) << ", "
+			<< std::setw(10) << type_tag(Behavior{xtra...}) << ", "
 			<< typeid(BlockType).name() << '>';
 		return s.str();
 	}
 
 	// report dynamic range of a type, specialized for lns
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-	inline std::string dynamic_range(const lns<nbits, rbits, behavior, bt>& a) {
+	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	inline std::string dynamic_range(const lns<nbits, rbits, bt, xtra...>& a) {
 		std::stringstream s;
-		lns<nbits, rbits, behavior, bt> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		lns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 		s << type_tag(a) << ": ";
 		s << "minpos scale " << std::setw(10) << d.scale() << "     ";
 		s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
@@ -38,27 +38,27 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
+	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
 	inline std::string range() {
 		std::stringstream s;
-		lns<nbits, rbits, behavior, bt> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		lns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
 		return s.str();
 	}
 
 	// report if a native floating-point value is within the dynamic range of the lns configuration
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
+	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
 	inline bool isInRange(double v) {
-		using LNS = lns<nbits, rbits, behavior, bt>;
-		LNS a;
+		using LNS = lns<nbits, rbits, bt, xtra...>;
+		LNS a{};
 
 		bool inRange = true;
 		if (v > double(a.maxpos()) || v < double(a.maxneg())) inRange = false;
 		return inRange;
 	}
 
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename BlockType>
-	inline std::string color_print(const lns<nbits, rbits, behavior, BlockType>& l, bool nibbleMarker = false) {
+	template<size_t nbits, size_t rbits, typename BlockType, auto... xtra>
+	inline std::string color_print(const lns<nbits, rbits, BlockType, xtra...>& l, bool nibbleMarker = false) {
 
 		std::stringstream s;
 

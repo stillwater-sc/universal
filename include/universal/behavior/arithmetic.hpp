@@ -9,34 +9,18 @@
 
 namespace sw { namespace universal {
 
-enum class InfiniteLimit : bool{Finite, Infinite};
-enum class Arithmetic : bool{Modular, Saturating};
 
-struct ArithmeticBehavior {
-	constexpr ArithmeticBehavior(Arithmetic a, InfiniteLimit l) : arith(a), limit(l) {};
-	Arithmetic    arith;
-	InfiniteLimit limit;
-};
+enum class Behavior : uint8_t {Saturating, Wrapping};
 
-constexpr ArithmeticBehavior Modular(Arithmetic::Modular, InfiniteLimit::Finite);
-constexpr ArithmeticBehavior Saturating(Arithmetic::Saturating, InfiniteLimit::Finite);
-constexpr ArithmeticBehavior Projective(Arithmetic::Modular, InfiniteLimit::Infinite);
-constexpr ArithmeticBehavior Real(Arithmetic::Saturating, InfiniteLimit::Infinite);
-
-inline std::string type_tag(const ArithmeticBehavior& behavior) {
-	if (behavior.arith == Arithmetic::Modular && behavior.limit == InfiniteLimit::Finite) {
-		return std::string("Modular");
+inline std::string type_tag(Behavior behavior) {
+	switch (behavior) {
+	case Behavior::Saturating:
+		return "Saturating";
+	case Behavior::Wrapping:
+		return "Wrapping";
+	default:
+		return "unknown arithmetic behavior";
 	}
-	else 	if (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
-		return std::string("Saturating");
-	}
-	else 	if (behavior.arith == Arithmetic::Modular && behavior.limit == InfiniteLimit::Infinite) {
-		return std::string("Saturating");
-	}
-	else 	if (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Infinite) {
-		return std::string("Saturating");
-	}
-	return std::string("unknown arithmetic behavior");
 }
 
 }} // namespace sw::universal

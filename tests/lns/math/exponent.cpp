@@ -92,22 +92,22 @@ try {
 
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 8, 2, Saturating, uint8_t> >(reportTestCases), "lns<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 8, 3, Saturating, uint8_t> >(reportTestCases), "lns<8,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 9, 2, Saturating, uint8_t> >(reportTestCases), "lns<9,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<10, 2, Saturating, uint8_t> >(reportTestCases), "lns<10,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<10, 3, Saturating, uint8_t> >(reportTestCases), "lns<10,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<12, 4, Saturating, uint8_t> >(reportTestCases), "lns<12,4>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<16, 5, Saturating, uint8_t> >(reportTestCases), "lns<16,5>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 8, 3, uint8_t> >(reportTestCases), "lns<8,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 9, 2, uint8_t> >(reportTestCases), "lns<9,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<10, 2, uint8_t> >(reportTestCases), "lns<10,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<10, 3, uint8_t> >(reportTestCases), "lns<10,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<12, 4, uint8_t> >(reportTestCases), "lns<12,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<16, 5, uint8_t> >(reportTestCases), "lns<16,5>", "exp");
 
 	// base-2 exponent testing
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns<8,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<8, 3, Saturating, uint8_t> >(reportTestCases), "lns<8,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<9, 2, Saturating, uint8_t> >(reportTestCases), "lns<9,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<10, 2, Saturating, uint8_t> >(reportTestCases), "lns<10,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<10, 3, Saturating, uint8_t> >(reportTestCases), "lns<10,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<12, 4, Saturating, uint8_t> >(reportTestCases), "lns<12,4>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<16, 5, Saturating, uint8_t> >(reportTestCases), "lns<16,5>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<8, 3, uint8_t> >(reportTestCases), "lns<8,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<9, 2, uint8_t> >(reportTestCases), "lns<9,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<10, 2, uint8_t> >(reportTestCases), "lns<10,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<10, 3, uint8_t> >(reportTestCases), "lns<10,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<12, 4, uint8_t> >(reportTestCases), "lns<12,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<16, 5, uint8_t> >(reportTestCases), "lns<16,5>", "exp2");
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

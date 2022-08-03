@@ -7,10 +7,10 @@
 
 namespace std {
 
-template <size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt>
-class numeric_limits< sw::universal::lns<nbits, rbits, behavior, bt> > {
+template <size_t nbits, size_t rbits, typename bt, auto... xtra>
+class numeric_limits< sw::universal::lns<nbits, rbits, bt, xtra...> > {
 public:
-	using LNS = sw::universal::lns<nbits, rbits, behavior, bt>;
+	using LNS = sw::universal::lns<nbits, rbits, bt, xtra...>;
 	static constexpr bool is_specialized = true;
 	static constexpr LNS  min() { // return minimum value
 		LNS lminpos(0);

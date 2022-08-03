@@ -40,7 +40,7 @@ try {
 	constexpr size_t nbits = 32;
 	constexpr size_t rbits = 8;
 	using bt = uint32_t;
-	using Number = lns<nbits, rbits, Saturating, bt>;
+	using Number = lns<nbits, rbits, bt>;
 	Number cnan; cnan.setnan();
 	Number cinf; cinf.setinf(false);
 	Number czero(0);
