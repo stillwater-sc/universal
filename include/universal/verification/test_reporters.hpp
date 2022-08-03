@@ -1,7 +1,7 @@
 #pragma once
 // test_reporters.hpp : test result reporters to guide verification
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,6 +10,7 @@
 #include <limits>
 #include <complex>
 #include <universal/native/integers.hpp>
+#include <universal/native/ieee754.hpp>
 #include <universal/math/complex_manipulators.hpp>
 #include <universal/verification/test_status.hpp>
 
