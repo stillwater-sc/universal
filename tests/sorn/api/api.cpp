@@ -81,6 +81,8 @@ try {
 	sornType c9 = aNeg * bNeg; // case 9
 	std::cout << "-- Case 9: \t" << aNeg << " * " << bNeg << " = " << c9 << "\n\n";
 
+return EXIT_SUCCESS;
+
 	sornType s8 = s2 * f1;
 	std::cout << "-- Scalar Multiplication: \t" << s2 << " * " << f1 << " = " << s8 << std::endl;
 	std::cout << '\n';
