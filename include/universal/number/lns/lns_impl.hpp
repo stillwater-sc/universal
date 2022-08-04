@@ -819,7 +819,7 @@ private:
 };
 
 template<size_t nbits, size_t rbits, typename bt, auto... xtra>
-constexpr std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleMarker = false) {
+std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
