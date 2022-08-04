@@ -120,6 +120,7 @@ option(BUILD_NUMBER_POSITS               "Set to ON to build unum Type 3 posit t
 option(BUILD_NUMBER_VALIDS               "Set to ON to build unum Type 3 valid tests"          OFF)
 option(BUILD_NUMBER_REALS                "Set to ON to build real tests"                       OFF)
 option(BUILD_NUMBER_LNS                  "Set to ON to build LNS tests"                        OFF)
+option(BUILD_NUMBER_SORNS                "Set to ON to build SORN tests"                       OFF)
 # conversion test suites
 option(BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -615,6 +616,7 @@ if(BUILD_NUMBER_SYSTEMS)
 	set(BUILD_NUMBER_POSITS ON)
 	set(BUILD_NUMBER_VALIDS ON)
 	set(BUILD_NUMBER_LNS ON)
+	set(BUILD_NUMBER_SORNS ON)
 	
 	# build the conversion test suites
 	set(BUILD_NUMBER_CONVERSIONS ON)
@@ -673,6 +675,10 @@ endif(BUILD_NUMBER_REALS)
 if(BUILD_NUMBER_LNS)
 add_subdirectory("tests/lns")
 endif(BUILD_NUMBER_LNS)
+
+if(BUILD_NUMBER_SORNS)
+add_subdirectory("tests/sorn")
+endif(BUILD_NUMBER_SORNS)
 
 if(BUILD_NUMBER_UNUM_TYPE_1)
 add_subdirectory("tests/unum")

@@ -26,9 +26,9 @@ namespace sw { namespace universal {
 	}
 */
 
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-	inline lns<nbits, rbits, behavior, bt> BabylonianMethod(const lns<nbits, rbits, behavior, bt>& v) {
-		using LnsType = lns<nbits, rbits, behavior, bt>;
+	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	inline lns<nbits, rbits, bt, xtra...> BabylonianMethod(const lns<nbits, rbits, bt, xtra...>& v) {
+		using LnsType = lns<nbits, rbits, bt, xtra...>;
 		constexpr double eps = 1.0e-5;
 		LnsType half(0.5);
 		LnsType x_next;
@@ -77,33 +77,33 @@ namespace sw { namespace universal {
 
 #if LNS_NATIVE_SQRT
 	// sqrt for arbitrary lns
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-	inline lns<nbits, rbits, behavior, bt> sqrt(const lns<nbits, rbits, behavior, bt>& a) {
+	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	inline lns<nbits, rbits, bt, xtra...> sqrt(const lns<nbits, rbits, bt, xtra...>& a) {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw lns_negative_sqrt_arg();
 #else
 		if (a.isneg()) std::cerr << "lns argument to sqrt is negative: " << a << std::endl;
 #endif
 		if (a.iszero()) return a;
-		return lns<nbits, rbits, behavior, bt>(std::sqrt((double)a));  // TBD
+		return lns<nbits, rbits, bt, xtra...>(std::sqrt((double)a));  // TBD
 	}
 #else
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-	inline lns<nbits, rbits, behavior, bt> sqrt(const lns<nbits, rbits, behavior, bt>& a) {
+	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	inline lns<nbits, rbits, bt, xtra...> sqrt(const lns<nbits, rbits, bt, xtra...>& a) {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw lns_negative_sqrt_arg();
 #else
 		if (a.isneg()) std::cerr << "lns argument to sqrt is negative: " << a << std::endl;
 #endif
 		if (a.iszero()) return a;
-		return lns<nbits, rbits, behavior, bt>(std::sqrt((double)a));
+		return lns<nbits, rbits, bt, xtra...>(std::sqrt((double)a));
 	}
 #endif
 
 	// reciprocal sqrt
-	template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-	inline lns<nbits, rbits, behavior, bt> rsqrt(const lns<nbits, rbits, behavior, bt>& a) {
-		lns<nbits, rbits, behavior, bt> v = sqrt(a);
+	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	inline lns<nbits, rbits, bt, xtra...> rsqrt(const lns<nbits, rbits, bt, xtra...>& a) {
+		lns<nbits, rbits, bt, xtra...> v = sqrt(a);
 		return v.reciprocate();
 	}
 

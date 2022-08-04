@@ -13,31 +13,31 @@
 namespace sw { namespace universal {
 
 	// TODO: needs a type trait to only match on lns<> type
-template<typename LnsType>
-int ValidateAssignment(bool reportTestCases) {
-	constexpr size_t nbits = LnsType::nbits;
-	constexpr size_t NR_ENCODINGS = (1ull << nbits);
-	int nrOfFailedTestCases = 0;
+	template<typename LnsType>
+	int ValidateAssignment(bool reportTestCases) {
+		constexpr size_t nbits = LnsType::nbits;
+		constexpr size_t NR_ENCODINGS = (1ull << nbits);
+		int nrOfFailedTestCases = 0;
 
-	LnsType a, b;
-	for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-		a.setbits(i);
-		double da = double(a);
-		b = da;
-//		std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
-		if (a != b) {
-			++nrOfFailedTestCases;
-			if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
+		LnsType a, b;
+		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
+			a.setbits(i);
+			double da = double(a);
+			b = da;
+	//		std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
+			if (a != b) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
+			}
+			else {
+				// if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
+			}
 		}
-		else {
-			// if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
-		}
+
+		// test clipping or saturation
+
+		return nrOfFailedTestCases;
 	}
-
-	// test clipping or saturation
-
-	return nrOfFailedTestCases;
-}
 
 } }
 
@@ -97,11 +97,11 @@ try {
 
 #if MANUAL_TESTING
 
-	using LNS16_5 = lns<16, 5, Saturating, std::uint16_t>;
-	using LNS11_5 = lns<11, 5, Saturating, std::uint8_t>;
-	using LNS8_2 = lns<8, 2, Saturating, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, Saturating, std::uint8_t>;
-	using LNS4_1 = lns<4, 1, Saturating, std::uint8_t>;
+//	using LNS16_5 = lns<16, 5, std::uint16_t>;
+//	using LNS11_5 = lns<11, 5, std::uint8_t>;
+//	using LNS8_2 = lns<8, 2, std::uint8_t>;
+	using LNS5_2 = lns<5, 2, std::uint8_t>;
+//	using LNS4_1 = lns<4, 1, std::uint8_t>;
 
 	// GenerateBitWeightTable<double>();
 	SampleTest(1024.0f);
@@ -145,6 +145,14 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

@@ -7,19 +7,19 @@
 
 namespace sw { namespace universal {
 
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt> pow(lns<nbits, rbits, behavior, bt> x, lns<nbits, rbits, behavior, bt> y) {
-	return lns<nbits, rbits, behavior, bt>(std::pow(double(x), double(y)));
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> pow(lns<nbits, rbits, bt, xtra...> x, lns<nbits, rbits, bt, xtra...> y) {
+	return lns<nbits, rbits, bt, xtra...>(std::pow(double(x), double(y)));
 }
 		
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt> pow(lns<nbits, rbits, behavior, bt> x, int y) {
-	return lns<nbits, rbits, behavior, bt>(std::pow(double(x), double(y)));
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> pow(lns<nbits, rbits, bt, xtra...> x, int y) {
+	return lns<nbits, rbits, bt, xtra...>(std::pow(double(x), double(y)));
 }
 		
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt> pow(lns<nbits, rbits, behavior, bt> x, double y) {
-	return lns<nbits, rbits, behavior, bt>(std::pow(double(x), y));
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> pow(lns<nbits, rbits, bt, xtra...> x, double y) {
+	return lns<nbits, rbits, bt, xtra...>(std::pow(double(x), y));
 }
 
 }} // namespace sw::universal

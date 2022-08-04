@@ -10,10 +10,10 @@
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, typename bt, typename Ty>
 void GenerateTestCaseSinh(Ty v) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits, behavior, bt> a, aref, asinh;
+	sw::universal::lns<nbits, rbits, bt> a, aref, asinh;
 	a = v;
 	ref = std::sinh(v);
 	aref = ref;
@@ -25,10 +25,10 @@ void GenerateTestCaseSinh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, typename bt, typename Ty>
 void GenerateTestCaseCosh(Ty v) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits, behavior, bt> a, aref, acosh;
+	sw::universal::lns<nbits, rbits, bt> a, aref, acosh;
 	a = v;
 	ref = std::cosh(v);
 	aref = ref;
@@ -40,10 +40,10 @@ void GenerateTestCaseCosh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, typename bt, typename Ty>
 void GenerateTestCaseTanh(Ty v) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits, behavior, bt> a, aref, atanh;
+	sw::universal::lns<nbits, rbits, bt> a, aref, atanh;
 	a = v;
 	ref = std::tanh(v);
 	aref = ref;
@@ -54,10 +54,10 @@ void GenerateTestCaseTanh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, typename bt, typename Ty>
 void GenerateTestCaseAsinh(Ty v) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits, behavior, bt> a, aref, aasinh;
+	sw::universal::lns<nbits, rbits, bt> a, aref, aasinh;
 	a = v;
 	ref = std::asinh(v);
 	aref = ref;
@@ -69,10 +69,10 @@ void GenerateTestCaseAsinh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, typename bt, typename Ty>
 void GenerateTestCaseAcosh(Ty v) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits, behavior, bt> a, aref, aacosh;
+	sw::universal::lns<nbits, rbits, bt> a, aref, aacosh;
 	a = v;
 	ref = std::acosh(v);
 	aref = ref;
@@ -84,10 +84,10 @@ void GenerateTestCaseAcosh(Ty v) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, typename bt, typename Ty>
 void GenerateTestCaseAtanh(Ty v) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits, behavior, bt> a, aref, aatanh;
+	sw::universal::lns<nbits, rbits, bt> a, aref, aatanh;
 	a = v;
 	ref = std::atanh(v);
 	aref = ref;
@@ -117,22 +117,22 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCaseSinh<16, 1, Saturating, uint16_t, double>(pi / 4.0);
-	GenerateTestCaseCosh<16, 1, Saturating, uint16_t, double>(pi / 4.0);
-	GenerateTestCaseTanh<16, 1, Saturating, uint16_t, double>(pi / 4.0);
-	GenerateTestCaseAsinh<16, 1, Saturating, uint16_t, double>(pi / 2.0);
-	GenerateTestCaseAcosh<16, 1, Saturating, uint16_t, double>(pi / 2.0);
-	GenerateTestCaseAtanh<16, 1, Saturating, uint16_t, double>(pi / 4.0);
+	GenerateTestCaseSinh<16, 1, uint16_t, double>(pi / 4.0);
+	GenerateTestCaseCosh<16, 1, uint16_t, double>(pi / 4.0);
+	GenerateTestCaseTanh<16, 1, uint16_t, double>(pi / 4.0);
+	GenerateTestCaseAsinh<16, 1, uint16_t, double>(pi / 2.0);
+	GenerateTestCaseAcosh<16, 1, uint16_t, double>(pi / 2.0);
+	GenerateTestCaseAtanh<16, 1, uint16_t, double>(pi / 4.0);
 
 	std::cout << '\n';
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySinh< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns<8,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns<8,2>", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns<8,2>", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns<8,2>", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns<8,2>", "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns<8,2>", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "asinh");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

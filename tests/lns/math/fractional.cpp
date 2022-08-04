@@ -14,7 +14,7 @@ int VerifyLnsFractionExponent(bool reportTestCases) {
 	constexpr size_t nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, b, c;
+	TestType a{}, b{}, c{};
 	int exp;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
@@ -43,7 +43,7 @@ int VerifyLnsFmod(bool reportTestCases) {
 	constexpr size_t nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, b, c, n, fref;
+	TestType a{}, b{}, c{}, n{}, fref{};
 
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
@@ -141,7 +141,7 @@ Real trace_fmod(Real x, Real y) {
 std::remainder(x, y)
 The IEEE floating-point remainder of the division operation x/y calculated by this function is 
 exactly the value x - n*y, where the value n is the integral value nearest the exact value x/y. 
-When |n-x/y| = ½, the value n is chosen to be even.
+When |n-x/y| = 1/2, the value n is chosen to be even.
 
 In contrast to std::fmod(), the returned value is not guaranteed to have the same sign as x.
 
@@ -250,7 +250,7 @@ try {
 	}
 
 	{
-		using Real = sw::universal::lns<32, 8, Saturating, uint32_t>;
+		using Real = sw::universal::lns<32, 8, uint32_t>;
 		Real pi = Real(3.14159265358979);
 		std::cout << to_binary(pi) << " : " << pi << '\n';
 		for (int i = 0; i < 10; ++i) {
@@ -272,7 +272,7 @@ try {
 		constexpr size_t nbits = 32;
 		constexpr size_t es = 8;
 		using bt = uint32_t;
-		using Real = lns<nbits, es, Saturating, bt>;
+		using Real = lns<nbits, es, bt>;
 
 		float fa(1.5), fb(2.25);
 		Real a(fa), b(fb);
@@ -304,7 +304,7 @@ try {
 	}
 
 	{
-		using Real = lns<16, 2, Saturating, uint8_t>;
+		using Real = lns<16, 2, uint8_t>;
 		Real a;
 		a = -1.5;
 //		a.showLimbs();
@@ -312,7 +312,7 @@ try {
 	}
 
 	{
-		using Real = lns<16, 2, Saturating, uint8_t>;
+		using Real = lns<16, 2, uint8_t>;
 		Real a, b, c;
 		a = 1.5; b = 2.25;
 		c = trace_fmod(a, b);
@@ -326,7 +326,7 @@ try {
 	}
 
 	{
-		using Real = lns<32, 8, Saturating, uint8_t>;
+		using Real = lns<32, 8, uint8_t>;
 		Real a, b, c;
 		a = 1.5; b = 2.25;
 		c = trace_fmod(a, b);
@@ -336,7 +336,7 @@ try {
 	}
 
 	{
-		using Real = lns<32, 8, Saturating, uint32_t>;
+		using Real = lns<32, 8, uint32_t>;
 		float fa(1e9f), fb(3.14159265358979f), fc;
 		Real a(fa), b(fb), c;
 		std::cout << "lns    : " << fmod(Real(a), Real(b)) << "\n";
@@ -348,7 +348,7 @@ try {
 	}
 
 	{
-		using Real = lns<32, 8, Saturating, uint8_t>;
+		using Real = lns<32, 8, uint8_t>;
 		Real a;
 		a = 1.5;
 		test_frac(a);
@@ -359,7 +359,7 @@ try {
 	}
 
 	{
-		using Real = lns<32, 23, Saturating, std::uint32_t>;
+		using Real = lns<32, 23, std::uint32_t>;
 		Real a, b, c;
 		float fa(32.0f), fb(0.0625f + 0.125f);
 		a = fa;

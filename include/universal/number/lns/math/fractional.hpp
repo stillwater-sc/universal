@@ -7,9 +7,9 @@
 
 namespace sw { namespace universal {
 
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt> lnsmod(lns<nbits, rbits, behavior, bt> x, lns<nbits, rbits, behavior, bt> y) {
-	using Real = lns<nbits, rbits, behavior, bt>;
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> lnsmod(lns<nbits, rbits, bt, xtra...> x, lns<nbits, rbits, bt, xtra...> y) {
+	using Real = lns<nbits, rbits, bt, xtra...>;
 	if (y.iszero() || x.isinf() || x.isnan() || y.isnan()) {
 		Real nan;
 		nan.setnan();  // quiet NaN
@@ -34,23 +34,23 @@ lns<nbits, rbits, behavior, bt> lnsmod(lns<nbits, rbits, behavior, bt> x, lns<nb
 }
 
 // fmod retuns x - n*y where n = x/y with the fractional part truncated
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt> fmod(lns<nbits, rbits, behavior, bt> x, lns<nbits, rbits, behavior, bt> y) {
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> fmod(lns<nbits, rbits, bt, xtra...> x, lns<nbits, rbits, bt, xtra...> y) {
 	return lnsmod(x, y);
 }
 
 // shim to stdlib
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt> remainder(lns<nbits, rbits, behavior, bt> x, lns<nbits, rbits, behavior, bt> y) {
-	return lns<nbits, rbits, behavior, bt>(std::remainder(double(x), double(y)));
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> remainder(lns<nbits, rbits, bt, xtra...> x, lns<nbits, rbits, bt, xtra...> y) {
+	return lns<nbits, rbits, bt, xtra...>(std::remainder(double(x), double(y)));
 }
 
 // TODO: validate the rounding of these conversion, versus a method that manipulates the fraction bits directly
 
 // frac returns the fraction of a lns value that is > 1
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt> frac(lns<nbits, rbits, behavior, bt> x) {
-	using Real = lns<nbits, rbits, behavior, bt>;
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> frac(lns<nbits, rbits, bt, xtra...> x) {
+	using Real = lns<nbits, rbits, bt, xtra...>;
 	long long intValue = (long long)(x);
 	return abs(x-Real(intValue));  // with the logic that fractions are unsigned quantities
 }
