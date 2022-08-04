@@ -161,10 +161,10 @@ double haversine(double lat1, double lon1, double lat2, double lon2, double radi
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, sw::universal::ArithmeticBehavior behavior, typename bt, typename Ty>
+template<size_t nbits, size_t rbits, typename bt, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::universal::lns<nbits, rbits, behavior, bt> pa, pref, psin;
+	sw::universal::lns<nbits, rbits, bt> pa{}, pref{}, psin{};
 	pa = a;
 	ref = std::sin(a);
 	pref = ref;
@@ -216,12 +216,12 @@ try {
 	return EXIT_SUCCESS;  // ignore failures in manual testing mode
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine   < lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns< 8,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine < lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns< 8,2>", "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent< lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns< 8,2>", "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan   < lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns< 8,2>", "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin   < lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns< 8,2>", "asin");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos   < lns<8, 2, Saturating, uint8_t> >(reportTestCases), "lns< 8,2>", "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifySine   < lns<8, 2, uint8_t> >(reportTestCases), "lns< 8,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine < lns<8, 2, uint8_t> >(reportTestCases), "lns< 8,2>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent< lns<8, 2, uint8_t> >(reportTestCases), "lns< 8,2>", "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan   < lns<8, 2, uint8_t> >(reportTestCases), "lns< 8,2>", "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin   < lns<8, 2, uint8_t> >(reportTestCases), "lns< 8,2>", "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos   < lns<8, 2, uint8_t> >(reportTestCases), "lns< 8,2>", "acos");
 
 	// nbits=64 requires long double compiler support
 	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(reportTestCases, OPCODE_SQRT, 1000), "lns<64,2>", "sin");

@@ -1,4 +1,4 @@
-// bheavior.cpp: test suite runner for arithmetic behavior experiment
+// behavior.cpp: test suite runner for arithmetic behavior experiment
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -10,7 +10,7 @@
 
 namespace sw { namespace universal {
 
-	template<size_t _nbits, size_t _rbits, ArithmeticBehavior behavior, typename bt>
+	template<size_t _nbits, size_t _rbits, typename bt, auto... xtra>
 	class lns2 {
 	public:
 		static constexpr size_t   nbits = _nbits;
@@ -40,18 +40,14 @@ namespace sw { namespace universal {
 	private:
 		BlockType _block[nrBlocks];
 
-		template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehave, typename nbt>
-		friend std::ostream& operator<< (std::ostream& ostr, const lns2<nnbits, rrbits, bbehave, nbt>& r);
+		friend std::ostream& operator<< (std::ostream& ostr, const lns2& r) {
+			return ostr << double(r);
+		}
 
 	};
 
-	template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehave, typename nbt>
-	std::ostream& operator<< (std::ostream& ostr, const lns2<nnbits, rrbits, bbehave, nbt>& r) {
-		return ostr << double(r);
-	}
-
-	template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehave, typename nbt>
-	std::string to_binary(const lns2<nnbits, rrbits, bbehave, nbt>& r) {
+	template<size_t nbits, size_t rbits, typename bt, auto... x>
+	std::string to_binary(const lns2<nbits, rbits, bt, x...>& r) {
 		std::stringstream s;
 		s << to_binary(r.block(0));
 		return s.str();
@@ -90,7 +86,7 @@ try {
 #if MANUAL_TESTING
 
 	{
-		using Real = lns<8, 2, Modular, std::uint8_t>;
+		using Real = lns<8, 2, std::uint8_t, Behavior::Wrapping>;
 		bool isTrivial = bool(std::is_trivial<Real>());
 		static_assert(std::is_trivial<Real>(), "lns should be trivial but failed the assertion");
 		std::cout << (isTrivial ? "lns is trivial" : "lns failed trivial: FAIL") << '\n';
@@ -111,7 +107,7 @@ try {
 	std::cout << '\n';
 
 	{
-		using Real = lns<8, 2, Saturating, std::uint8_t>;
+		using Real = lns<8, 2, std::uint8_t>; // Saturating by default (a smaller symbol results from not providing an explicit Saturating argument)
 		bool isTrivial = bool(std::is_trivial<Real>());
 		static_assert(std::is_trivial<Real>(), "lns should be trivial but failed the assertion");
 		std::cout << (isTrivial ? "lns is trivial" : "lns failed trivial: FAIL") << '\n';
@@ -132,11 +128,11 @@ try {
 	std::cout << '\n';
 
 	{
-		using ModularLns = lns<8, 4, Modular, std::uint8_t>;
-		using SaturatingLns = lns<8, 4, Saturating, std::uint8_t>;
+		using WrappingLns = lns<8, 4, std::uint8_t, Behavior::Wrapping>;
+		using SaturatingLns = lns<8, 4, std::uint8_t>;
 
 		{
-			ModularLns a, b, c;
+			WrappingLns a{}, b{}, c{};
 			std::cout << dynamic_range(a) << '\n';
 			a = 4;
 			b = 4;
@@ -146,7 +142,7 @@ try {
 		}
 		std::cout << '\n';
 		{
-			SaturatingLns a, b, c;
+			SaturatingLns a{}, b{}, c{};
 			std::cout << dynamic_range(a) << '\n';
 			a = 4;
 			b = 4;

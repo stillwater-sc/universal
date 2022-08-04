@@ -9,24 +9,24 @@
 namespace sw { namespace universal {
 
 // Real component of a complex lns
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt> 
-real(std::complex< lns<nbits, rbits, behavior, bt> > x) {
-	return lns<nbits, rbits, behavior, bt>(std::real(x));
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...>
+real(std::complex< lns<nbits, rbits, bt, xtra...> > x) {
+	return lns<nbits, rbits, bt, xtra...>(std::real(x));
 }
 
 // Imaginary component of a complex lns
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt>
-imag(std::complex< lns<nbits, rbits, behavior, bt> > x) {
-	return lns<nbits, rbits, behavior, bt>(std::imag(x));
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...>
+imag(std::complex< lns<nbits, rbits, bt, xtra...> > x) {
+	return lns<nbits, rbits, bt, xtra...>(std::imag(x));
 }
 
 // Conjucate of a complex lns
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-std::complex< lns<nbits, rbits, behavior, bt> >
-conj(std::complex< lns<nbits, rbits, behavior, bt> > x) {
-	return lns<nbits, rbits, behavior, bt>(std::conj(x));
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+std::complex< lns<nbits, rbits, bt, xtra...> >
+conj(std::complex< lns<nbits, rbits, bt, xtra...> > x) {
+	return lns<nbits, rbits, bt, xtra...>(std::conj(x));
 }
 
 }} // namespace sw::universal

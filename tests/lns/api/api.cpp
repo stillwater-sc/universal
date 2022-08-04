@@ -54,11 +54,11 @@ try {
 	// configuration
 	std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
 	{
-		using Real = lns<16, 5, Saturating, std::uint16_t>;
+		using Real = lns<16, 5, std::uint16_t>;
 		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 	{
-		using Real = lns<24, 5, Saturating, std::uint32_t>;
+		using Real = lns<24, 5, std::uint32_t>;
 		ArithmeticOperators<Real>(1.0f, 1.0f);
 	}
 
@@ -75,7 +75,7 @@ try {
 	{
 		constexpr size_t nbits = 10;
 		constexpr size_t rbits = 3;
-		using Real = lns<nbits, rbits>;  // behavior = Saturating, BlockType = uint8_t
+		using Real = lns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
 
 		CONSTEXPRESSION Real a{}; // zero constexpr
 		std::cout << type_tag(a) << '\n';
@@ -95,7 +95,7 @@ try {
 	{
 		constexpr size_t nbits = 10;
 		constexpr size_t rbits = 3;
-		using Real = lns<nbits, rbits>;  // behavior = Saturating, BlockType = uint8_t
+		using Real = lns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
 
 		Real a, b, c;
 
@@ -121,7 +121,7 @@ try {
 
 	std::cout << "+---------    comparison to classic floats   --------+\n";
 	{
-		using LNS = lns<16, 8, Saturating, std::uint16_t>;
+		using LNS = lns<16, 8, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
 		LNS a;
 		Real b;

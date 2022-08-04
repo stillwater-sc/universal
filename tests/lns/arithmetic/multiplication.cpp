@@ -19,13 +19,13 @@ namespace sw { namespace universal {
 	int VerifyMultiplication(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
 		constexpr size_t rbits = LnsType::rbits;
-		constexpr ArithmeticBehavior behavior = LnsType::behavior;
+		constexpr Behavior behavior = LnsType::behavior;
 		using bt = typename LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;
 
-		LnsType a, b, c, cref;
+		LnsType a{}, b{}, c{}, cref{};
 		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i);
 			double da = double(a);
@@ -34,8 +34,8 @@ namespace sw { namespace universal {
 				double db = double(b);
 
 				double ref = da * db;
-				if (reportTestCases && !isInRange<nbits, rbits, behavior, bt>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, behavior, bt>() << '\n';
+				if (reportTestCases && !isInRange<nbits, rbits, bt, behavior>(ref)) {
+					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, bt, behavior>() << '\n';
 				}
 				c = a * b;
 				cref = ref;
@@ -163,13 +163,13 @@ try {
 
 #if MANUAL_TESTING
 
-	using LNS4_1_mod = lns<4, 1, Modular, std::uint8_t>;
-	using LNS4_1_sat = lns<4, 1, Saturating, std::uint8_t>;
-	using LNS4_2     = lns<4, 2, Saturating, std::uint8_t>;
-	using LNS5_2     = lns<5, 2, Saturating, std::uint8_t>;
-	using LNS8_3     = lns<8, 3, Saturating, std::uint8_t>;
-	using LNS9_4     = lns<9, 4, Saturating, std::uint8_t>;
-	using LNS16_5    = lns<16, 5, Saturating, std::uint16_t>;
+	using LNS4_1_mod = lns<4, 1, std::uint8_t, Behavior::Wrapping>;
+	using LNS4_1_sat = lns<4, 1, std::uint8_t>;
+	using LNS4_2     = lns<4, 2, std::uint8_t>;
+	using LNS5_2     = lns<5, 2, std::uint8_t>;
+	using LNS8_3     = lns<8, 3, std::uint8_t>;
+	using LNS9_4     = lns<9, 4, std::uint8_t>;
+	using LNS16_5    = lns<16, 5, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
 	TestCase<LNS4_1_sat, float>(TestCaseOperator::MUL, 0.353f, -0.353f);
@@ -178,52 +178,52 @@ try {
 
 	// GenerateLnsTable<5, 2>(std::cout);
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_mod>(false), "lns<4,1, Modular,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, Saturating,uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_2>(reportTestCases), "lns<4,2, Saturating,uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS5_2>(reportTestCases), "lns<5,2, Saturating,uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_3>(reportTestCases), "lns<8,3, Saturating,uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_4>(reportTestCases), "lns<9,4, Saturating,uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_mod>(false), "lns<4,1,uint8_t,Behavior::Wrapping>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_2>(reportTestCases), "lns<4,2, uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS5_2>(reportTestCases), "lns<5,2, uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_3>(reportTestCases), "lns<8,3, uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_4>(reportTestCases), "lns<9,4, uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	using LNS4_0_sat = lns<4, 0, Saturating, std::uint8_t>;
-	using LNS4_1_sat = lns<4, 1, Saturating, std::uint8_t>;
-	using LNS4_2_sat = lns<4, 2, Saturating, std::uint8_t>;
-	using LNS4_3_sat = lns<4, 3, Saturating, std::uint8_t>;
-	using LNS5_2_sat = lns<5, 2, Saturating, std::uint8_t>;
-	using LNS8_1_sat = lns<8, 1, Saturating, std::uint8_t>;
-	using LNS8_4_sat = lns<8, 4, Saturating, std::uint8_t>;
-	using LNS8_7_sat = lns<8, 7, Saturating, std::uint8_t>;
-	using LNS9_0_sat = lns<9, 0, Saturating, std::uint8_t>;
-	using LNS9_4_sat = lns<9, 4, Saturating, std::uint8_t>;
-	using LNS9_8_sat = lns<9, 8, Saturating, std::uint8_t>;
+	using LNS4_0_sat = lns<4, 0, std::uint8_t>;
+	using LNS4_1_sat = lns<4, 1, std::uint8_t>;
+	using LNS4_2_sat = lns<4, 2, std::uint8_t>;
+	using LNS4_3_sat = lns<4, 3, std::uint8_t>;
+	using LNS5_2_sat = lns<5, 2, std::uint8_t>;
+	using LNS8_1_sat = lns<8, 1, std::uint8_t>;
+	using LNS8_4_sat = lns<8, 4, std::uint8_t>;
+	using LNS8_7_sat = lns<8, 7, std::uint8_t>;
+	using LNS9_0_sat = lns<9, 0, std::uint8_t>;
+	using LNS9_4_sat = lns<9, 4, std::uint8_t>;
+	using LNS9_8_sat = lns<9, 8, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_0_sat>(reportTestCases), "lns<4,0, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_2_sat>(reportTestCases), "lns<4,2, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_3_sat>(reportTestCases), "lns<4,3, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS5_2_sat>(reportTestCases), "lns<5,2, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_1_sat>(reportTestCases), "lns<8,1, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_4_sat>(reportTestCases), "lns<8,4, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_7_sat>(reportTestCases), "lns<8,7, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_0_sat>(reportTestCases), "lns<9,0, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_4_sat>(reportTestCases), "lns<9,4, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_8_sat>(reportTestCases), "lns<9,8, Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_0_sat>(reportTestCases), "lns<4,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_2_sat>(reportTestCases), "lns<4,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_3_sat>(reportTestCases), "lns<4,3, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS5_2_sat>(reportTestCases), "lns<5,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_1_sat>(reportTestCases), "lns<8,1, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_4_sat>(reportTestCases), "lns<8,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_7_sat>(reportTestCases), "lns<8,7, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_0_sat>(reportTestCases), "lns<9,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_4_sat>(reportTestCases), "lns<9,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_8_sat>(reportTestCases), "lns<9,8, uint8_t>", test_tag);
 
 #endif
 
 #if REGRESSION_LEVEL_2
-	using LNS10_0_sat = lns<10, 0, Saturating, std::uint8_t>;
-	using LNS10_4_sat = lns<10, 4, Saturating, std::uint8_t>;
-	using LNS10_9_sat = lns<10, 9, Saturating, std::uint8_t>;
+	using LNS10_0_sat = lns<10, 0, std::uint8_t>;
+	using LNS10_4_sat = lns<10, 4, std::uint8_t>;
+	using LNS10_9_sat = lns<10, 9, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_0_sat>(reportTestCases), "lns<10,0, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_4_sat>(reportTestCases), "lns<10,4, Saturating,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_9_sat>(reportTestCases), "lns<10,9, Saturating,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_0_sat>(reportTestCases), "lns<10,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_4_sat>(reportTestCases), "lns<10,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_9_sat>(reportTestCases), "lns<10,9, uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

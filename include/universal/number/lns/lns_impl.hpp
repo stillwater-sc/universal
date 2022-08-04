@@ -17,8 +17,8 @@
 namespace sw { namespace universal {
 		
 // convert a floating-point value to a specific lns configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt>& convert(const triple<nbits, bt>& v, lns<nbits, rbits, behavior, bt>& p) {
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+inline lns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, lns<nbits, rbits, bt, xtra...>& p) {
 	if (v.iszero()) {
 		return p.setnan();
 	}
@@ -28,32 +28,35 @@ inline lns<nbits, rbits, behavior, bt>& convert(const triple<nbits, bt>& v, lns<
 	return p;
 }
 
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt>& minpos(lns<nbits, rbits, behavior, bt>& lminpos) {
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+inline lns<nbits, rbits, bt, xtra...>& minpos(lns<nbits, rbits, bt, xtra...>& lminpos) {
 	return lminpos;
 }
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt>& maxpos(lns<nbits, rbits, behavior, bt>& lmaxpos) {
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...>& maxpos(lns<nbits, rbits, bt, xtra...>& lmaxpos) {
 	return lmaxpos;
 }
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt>& minneg(lns<nbits, rbits, behavior, bt>& lminneg) {
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...>& minneg(lns<nbits, rbits, bt, xtra...>& lminneg) {
 	return lminneg;
 }
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-lns<nbits, rbits, behavior, bt>& maxneg(lns<nbits, rbits, behavior, bt>& lmaxneg) {
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...>& maxneg(lns<nbits, rbits, bt, xtra...>& lmaxneg) {
 	return lmaxneg;
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<size_t _nbits, size_t _rbits, ArithmeticBehavior _behavior = Saturating, typename bt = uint8_t>
+template<size_t _nbits, size_t _rbits, typename bt = uint8_t, auto... xtra>
 class lns {
+	static_assert(_nbits > _rbits, "rbits parameter is larger than available fraction bits");
+	static_assert( sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported" );
 public:
-	static constexpr size_t             nbits    = _nbits;
-	static constexpr size_t             rbits    = _rbits;
-	static constexpr ArithmeticBehavior behavior = _behavior;
-	typedef bt BlockType;
-	static_assert(nbits > rbits, "rbits parameter is larger than available fraction bits");
+	using BlockType = bt;
+
+	static constexpr size_t   nbits    = _nbits;
+	static constexpr size_t   rbits    = _rbits;
+	static constexpr Behavior behavior = {xtra...};
+
 	static constexpr double   scaling = double(1ull << rbits);
 	static constexpr size_t   bitsInByte = 8ull;
 	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
@@ -144,7 +147,7 @@ public:
 	// in-place arithmetic assignment operators
 	lns& operator+=(const lns& rhs) {
 		double sum{ 0.0 };
-		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
+		if constexpr (behavior == Behavior::Saturating) {
 			sum = double(*this) + double(rhs);  // TODO: native implementation
 		}
 		else {
@@ -157,7 +160,7 @@ public:
 	}
 	lns& operator-=(const lns& rhs) { 
 		double diff{ 0.0 };
-		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
+		if constexpr (behavior == Behavior::Saturating) {
 			diff = double(*this) - double(rhs);  // TODO: native implementation
 		}
 		else {
@@ -181,7 +184,7 @@ public:
 		}
 		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the lns sign bit to yield the exponents
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
-		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) { // saturating, no infinite
+		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
 			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
 			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(maxexp), maxneg(minexp); // expand into type of sum
 			blockbinary<nbits, bt, BinaryNumberType::Signed> expandedLexp(lexp), expandedRexp(rexp); // expand and sign extend if necessary
@@ -226,7 +229,7 @@ public:
 
 		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the lns sign bit to yield the exponents
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
-		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) { // saturating, no infinite
+		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
 			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
 			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(maxexp), maxneg(minexp); // expand into type of sum
 			blockbinary<nbits, bt, BinaryNumberType::Signed> expandedLexp(lexp), expandedRexp(rexp); // expand and sign extend if necessary
@@ -322,7 +325,7 @@ public:
 	}
 	constexpr lns& zero() noexcept {
 		// the zero value has this bit pattern: 0-100..00-00..000, sign = 0, msb = 1, rest 0
-		clear(); 
+		clear();
 		setbit(nbits - 2, true);    // msb = 1
 		return *this;
 	}
@@ -526,7 +529,7 @@ protected:
 		// check if the value is in the representable range
 		// NOTE: this is required to protect the rounding code below, which only works for values between [minpos, maxpos]
 		// TODO: this is all incredibly slow as we are creating special values and converting them to Real to compare
-		if constexpr (behavior.arith == Arithmetic::Saturating && behavior.limit == InfiniteLimit::Finite) {
+		if constexpr (behavior == Behavior::Saturating) {
 			lns maxpos(SpecificValue::maxpos);
 			lns maxneg(SpecificValue::maxneg);
 			Real absoluteValue = std::abs(v);
@@ -538,7 +541,7 @@ protected:
 				return *this = maxneg;
 			}
 			lns minpos(SpecificValue::minpos);
-			lns<nbits + 1, rbits + 1, behavior, bt> halfMinpos(SpecificValue::minpos); // in log space
+			lns<nbits + 1, rbits + 1, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
 			//std::cout << "minpos     : " << minpos << '\n';
 			//std::cout << "halfMinpos : " << halfMinpos << '\n';
 			if (absoluteValue <= Real(halfMinpos)) {
@@ -699,214 +702,124 @@ protected:
 private:
 	BlockBinary _block;
 
-	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const lns<nnbits, rrbits, bbehavior, nbt>& r);
-	template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-	friend std::istream& operator>> (std::istream& istr, lns<nnbits, rrbits, bbehavior, nbt>& r);
+	////////////////////// operators
 
-	template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-	friend bool operator==(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs);
-	template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-	friend bool operator< (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs);
+	// lns - logic operators
+
+	friend std::ostream& operator<< (std::ostream& ostr, const lns& r) {
+		ostr << double(r);
+		return ostr;
+	}
+	friend std::istream& operator>> (std::istream& istr, lns& r) {
+		istr >> r._fraction;
+		return istr;
+	}
+	friend constexpr bool operator==(const lns& lhs, const lns& rhs) {
+		if (lhs.isnan() || rhs.isnan()) return false;
+		return lhs._block == rhs._block;
+	}
+	friend constexpr bool operator< (const lns& lhs, const lns& rhs) {
+		if (lhs.isnan() || rhs.isnan()) return false;
+		blockbinary<nbits-1, bt, BinaryNumberType::Signed> l(lhs._block), r(rhs._block); // extract the 2's complement exponent
+		bool lhs_is_negative = lhs.sign();
+		return (lhs_is_negative != rhs.sign()) ? lhs_is_negative
+		                                       : lhs_is_negative ? l > r : l < r;
+	}
+
+	friend constexpr bool operator!=(const lns& lhs, const lns& rhs) {
+		return !operator==(lhs, rhs);
+	}
+	friend constexpr bool operator> (const lns& lhs, const lns& rhs) {
+		return  operator< (rhs, lhs);
+	}
+	friend constexpr bool operator<=(const lns& lhs, const lns& rhs) {
+		if (lhs.isnan() || rhs.isnan()) return false;
+		return !operator> (lhs, rhs);
+	}
+	friend constexpr bool operator>=(const lns& lhs, const lns& rhs) {
+		if (lhs.isnan() || rhs.isnan()) return false;
+		return !operator< (lhs, rhs);
+	}
+	// lns - literal logic operators
+
+	friend constexpr bool operator==(const lns& lhs, double rhs) { return lhs == lns(rhs); }
+	friend constexpr bool operator!=(const lns& lhs, double rhs) { return !operator==(lhs, rhs); }
+	friend constexpr bool operator< (const lns& lhs, double rhs) { return lhs < lns(rhs); }
+	friend constexpr bool operator> (const lns& lhs, double rhs) { return  operator< (rhs, lhs); }
+	friend constexpr bool operator<=(const lns& lhs, double rhs) { return !operator> (lhs, rhs); }
+	friend constexpr bool operator>=(const lns& lhs, double rhs) { return !operator< (lhs, rhs); }
+
+	// lns - lns binary arithmetic operators
+
+	friend constexpr lns operator+(const lns& lhs, const lns& rhs) {
+		lns sum(lhs);
+		sum += rhs;
+		return sum;
+	}
+	friend constexpr lns operator-(const lns& lhs, const lns& rhs) {
+		lns diff(lhs);
+		diff -= rhs;
+		return diff;
+	}
+	friend constexpr lns operator*(const lns& lhs, const lns& rhs) {
+		lns mul(lhs);
+		mul *= rhs;
+		return mul;
+	}
+	friend constexpr lns operator/(const lns& lhs, const lns& rhs) {
+		lns ratio(lhs);
+		ratio /= rhs;
+		return ratio;
+	}
+
+	// lns - literal binary arithmetic operators
+
+	friend constexpr lns operator+(const lns& lhs, double rhs) {
+		lns sum(lhs);
+		sum += rhs;
+	}
+	friend constexpr lns operator-(const lns& lhs, double rhs) {
+		lns diff(lhs);
+		diff -= rhs;
+		return diff;
+	}
+	friend constexpr lns operator*(const lns& lhs, double rhs) {
+		lns mul(lhs);
+		mul *= rhs;
+		return mul;
+	}
+	friend constexpr lns operator/(const lns& lhs, double rhs) {
+		lns ratio(lhs);
+		ratio /= rhs;
+		return ratio;
+	}
+
+	// literal - lns binary arithmetic operators
+
+	friend constexpr lns operator+(double lhs, const lns& rhs) {
+		lns sum(lhs);
+		sum += rhs;
+		return sum;
+	}
+	friend constexpr lns operator-(double lhs, const lns& rhs) {
+		lns diff(lhs);
+		diff -= rhs;
+		return diff;
+	}
+	friend constexpr lns operator*(double lhs, const lns& rhs) {
+		lns mul(lhs);
+		mul *= rhs;
+		return mul;
+	}
+	friend constexpr lns operator/(double lhs, const lns& rhs) {
+		lns ratio(lhs);
+		ratio /= rhs;
+		return ratio;
+	}
 };
 
-////////////////////// operators
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline std::ostream& operator<<(std::ostream& ostr, const lns<nnbits, rrbits, bbehavior, nbt>& v) {
-	ostr << double(v);
-	return ostr;
-}
-
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const lns<nnbits, rrbits, bbehavior, nbt>& v) {
-	istr >> v._fraction;
-	return istr;
-}
-
-// lns - logic operators
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator==(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) {
-	if (lhs.isnan() || rhs.isnan()) return false;
-	using LNS = lns<nnbits, rrbits, bbehavior, nbt>;
-	if constexpr (LNS::nrBlocks == 1) {
-		return lhs._block[0] == rhs._block[0];
-	}
-	else if constexpr (LNS::nrBlocks == 2) {
-		return (lhs._block[0] == rhs._block[0]) && 
-			   (lhs._block[1] == rhs._block[1]);
-	}
-	else if constexpr (LNS::nrBlocks == 3) {
-		return (lhs._block[0] == rhs._block[0]) &&
-			   (lhs._block[1] == rhs._block[1]) &&
-			   (lhs._block[2] == rhs._block[2]);
-	}
-	else if constexpr (LNS::nrBlocks == 4) {
-		return (lhs._block[0] == rhs._block[0]) &&
-			   (lhs._block[1] == rhs._block[1]) &&
-			   (lhs._block[2] == rhs._block[2]) &&
-			   (lhs._block[3] == rhs._block[3]);
-	}
-	else {
-		for (size_t i = 0; i < LNS::nrBlocks; ++i) {
-			if (lhs.block(i) != rhs.block(i)) return false;
-		}
-		return true;
-	}
-}
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator!=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { 
-	if (lhs.isnan() || rhs.isnan()) return true; 
-	return !operator==(lhs, rhs); 
-}
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator< (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) {
-	using ExponentBlockBinary = blockbinary<nnbits - 1, nbt, BinaryNumberType::Signed>;
-
-	if (lhs.isnan() || rhs.isnan()) return false;
-
-	bool lhsSign = lhs.sign();
-	bool rhsSign = rhs.sign();
-	if (lhsSign) {
-		if (rhsSign) {
-			ExponentBlockBinary l(lhs._block), r(rhs._block); // extract the 2's complement exponent
-			return l > r;
-		}
-		else {
-			return true;
-		}
-	}
-	else {
-		if (rhsSign) {
-			return false;
-		}
-		else {
-			ExponentBlockBinary l(lhs._block), r(rhs._block); // extract the 2's complement exponent
-			return l < r;
-		}
-	}
-}
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator> (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { 
-	if (lhs.isnan() || rhs.isnan()) return false; 
-	return  operator< (rhs, lhs); 
-}
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator<=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { 
-	if (lhs.isnan() || rhs.isnan()) return false; 
-	return !operator> (lhs, rhs); 
-}
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator>=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, const lns<nnbits, rrbits, bbehavior, nbt>& rhs) { 
-	if (lhs.isnan() || rhs.isnan()) return false; 
-	return !operator< (lhs, rhs); 
-}
-
-// lns - literal logic operators
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator==(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, double rhs) { return lhs == lns<nnbits, rrbits, bbehavior, nbt>(rhs); }
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator!=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, double rhs) { return !operator==(lhs, rhs); }
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator< (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, double rhs) { return lhs < lns<nnbits, rrbits, bbehavior, nbt>(rhs); }
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator> (const lns<nnbits, rrbits, bbehavior, nbt>& lhs, double rhs) { return  operator< (rhs, lhs); }
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator<=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, double rhs) { return !operator> (lhs, rhs); }
-template<size_t nnbits, size_t rrbits, ArithmeticBehavior bbehavior, typename nbt>
-inline bool operator>=(const lns<nnbits, rrbits, bbehavior, nbt>& lhs, double rhs) { return !operator< (lhs, rhs); }
-
-// lns - lns binary arithmetic operators
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator+(const lns<nbits, rbits, behavior, bt>& lhs, const lns<nbits, rbits, behavior, bt>& rhs) {
-	lns<nbits, rbits, behavior, bt> sum(lhs);
-	sum += rhs;
-	return sum;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator-(const lns<nbits, rbits, behavior, bt>& lhs, const lns<nbits, rbits, behavior, bt>& rhs) {
-	lns<nbits, rbits, behavior, bt> diff(lhs);
-	diff -= rhs;
-	return diff;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator*(const lns<nbits, rbits, behavior, bt>& lhs, const lns<nbits, rbits, behavior, bt>& rhs) {
-	lns<nbits, rbits, behavior, bt> mul(lhs);
-	mul *= rhs;
-	return mul;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator/(const lns<nbits, rbits, behavior, bt>& lhs, const lns<nbits, rbits, behavior, bt>& rhs) {
-	lns<nbits, rbits, behavior, bt> ratio(lhs);
-	ratio /= rhs;
-	return ratio;
-}
-
-// lns - literal binary arithmetic operators
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator+(const lns<nbits, rbits, behavior, bt>& lhs, double rhs) {
-	lns<nbits, rbits, behavior, bt> sum(lhs);
-	sum += rhs;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator-(const lns<nbits, rbits, behavior, bt>& lhs, double rhs) {
-	lns<nbits, rbits, behavior, bt> diff(lhs);
-	diff -= rhs;
-	return diff;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator*(const lns<nbits, rbits, behavior, bt>& lhs, double rhs) {
-	lns<nbits, rbits, behavior, bt> mul(lhs);
-	mul *= rhs;
-	return mul;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator/(const lns<nbits, rbits, behavior, bt>& lhs, double rhs) {
-	lns<nbits, rbits, behavior, bt> ratio(lhs);
-	ratio /= rhs;
-	return ratio;
-}
-
-// literal - lns binary arithmetic operators
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator+(double lhs, const lns<nbits, rbits, behavior, bt>& rhs) {
-	lns<nbits, rbits, behavior, bt> sum(lhs);
-	sum += rhs;
-	return sum;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator-(double lhs, const lns<nbits, rbits, behavior, bt>& rhs) {
-	lns<nbits, rbits, behavior, bt> diff(lhs);
-	diff -= rhs;
-	return diff;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator*(double lhs, const lns<nbits, rbits, behavior, bt>& rhs) {
-	lns<nbits, rbits, behavior, bt> mul(lhs);
-	mul *= rhs;
-	return mul;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> operator/(double lhs, const lns<nbits, rbits, behavior, bt>& rhs) {
-	lns<nbits, rbits, behavior, bt> ratio(lhs);
-	ratio /= rhs;
-	return ratio;
-}
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline std::string to_binary(const lns<nbits, rbits, behavior, bt>& number, bool nibbleMarker = false) {
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+constexpr std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
@@ -926,8 +839,8 @@ inline std::string to_binary(const lns<nbits, rbits, behavior, bt>& number, bool
 	return s.str();
 }
 
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline std::string components(const lns<nbits, rbits, behavior, bt>& v) {
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b" << std::setw(nbits) << v.fraction();
@@ -944,21 +857,21 @@ inline std::string components(const lns<nbits, rbits, behavior, bt>& v) {
 // standard library functions for floating point
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> abs(const lns<nbits, rbits, behavior, bt>& v) {
-	lns<nbits, rbits, behavior, bt> magnitude(v);
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+constexpr lns<nbits, rbits, bt, xtra...> abs(const lns<nbits, rbits, bt, xtra...>& v) {
+	lns<nbits, rbits, bt, xtra...> magnitude(v);
 	magnitude.setsign(false);
 	return magnitude;
 }
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> frexp(const lns<nbits, rbits, behavior, bt>& x, int* exp) {
-	return lns<nbits, rbits, behavior, bt>(std::frexp(double(x), exp));
+// ToDo constexpt frexp
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> frexp(const lns<nbits, rbits, bt, xtra...>& x, int* exp) {
+	return lns<nbits, rbits, bt, xtra...>(std::frexp(double(x), exp));
 }
-
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt>
-inline lns<nbits, rbits, behavior, bt> ldexp(const lns<nbits, rbits, behavior, bt>& x, int exp) {
-		return lns<nbits, rbits, behavior, bt>(std::ldexp(double(x), exp));
+// ToDo constexpr ldexp
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+lns<nbits, rbits, bt, xtra...> ldexp(const lns<nbits, rbits, bt, xtra...>& x, int exp) {
+		return lns<nbits, rbits, bt, xtra...>(std::ldexp(double(x), exp));
 }
 
 }} // namespace sw::universal

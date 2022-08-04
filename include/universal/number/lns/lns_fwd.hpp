@@ -10,9 +10,9 @@
 namespace sw { namespace universal {
 
 // core lns types and functions
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt> class lns;
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt> lns<nbits, rbits, behavior, bt> abs(const lns<nbits, rbits, behavior, bt>&);
-template<size_t nbits, size_t rbits, ArithmeticBehavior behavior, typename bt> lns<nbits, rbits, behavior, bt> sqrt(const lns<nbits, rbits, behavior, bt>&);
+template<size_t nbits, size_t rbits, typename bt, auto...x> class lns;
+template<size_t nbits, size_t rbits, typename bt, auto...x> constexpr lns<nbits, rbits, bt, x...> abs(const lns<nbits, rbits, bt, x...>&);
+template<size_t nbits, size_t rbits, typename bt, auto...x> lns<nbits, rbits, bt, x...> sqrt(const lns<nbits, rbits, bt, x...>&);
 
 }} // namespace sw::universal
 
