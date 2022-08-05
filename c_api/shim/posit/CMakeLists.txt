@@ -8,7 +8,7 @@ if(C_API_LIB_PIC)
 endif()
 
 install(TARGETS posit_c_api_shim DESTINATION lib)
-install(FILES posit_c_api.h      DESTINATION include)
+#install(FILES posit_c_api.h      DESTINATION include)
 
 # TODO: we might not have the same API for the shim as for the pure C api as the C++ shim can support
 # arbitrary precision posits and the pure C api will only support standard posits (8/16/32/64/128/256)
