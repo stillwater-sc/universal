@@ -1,0 +1,29 @@
+logarithmic number systems with only integer bits
+lns<  4,   0, Saturating, unsigned short> : [ -8 ... -0.125 0 0.125 ... 8 ]
+lns<  8,   0, Saturating, unsigned short> : [ -9.22337e+18 ... -1.0842e-19 0 1.0842e-19 ... 9.22337e+18 ]
+lns< 12,   0, Saturating, unsigned short> : [ -8.98847e+307 ... -1.11254e-308 0 1.11254e-308 ... 8.98847e+307 ]
+lns< 16,   0, Saturating, unsigned short> : [ -inf ... -0 0 0 ... inf ]
+lns< 20,   0, Saturating, unsigned short> : [ -inf ... -0 0 0 ... inf ]
+lns< 24,   0, Saturating, unsigned short> : [ -inf ... -0 0 0 ... inf ]
+lns< 28,   0, Saturating, unsigned short> : [ -inf ... -0 0 0 ... inf ]
+lns< 32,   0, Saturating, unsigned short> : [ -inf ... -0 0 0 ... inf ]
+
+logarithmic number systems that evenly divide bits between integer and fraction bits
+lns<  4,   2, Saturating, unsigned short> : [ -1.68179 ... -0.594604 0 0.594604 ... 1.68179 ]
+lns<  8,   4, Saturating, unsigned short> : [ -15.3217 ... -0.0652671 0 0.0652671 ... 15.3217 ]
+lns< 12,   6, Saturating, unsigned short> : [ -64830 ... -1.54249e-05 0 1.54249e-05 ... 64830 ]
+lns< 16,   8, Saturating, unsigned short> : [ -1.83969e+19 ... -5.43571e-20 0 5.43571e-20 ... 1.83969e+19 ]
+lns< 20,  10, Saturating, unsigned short> : [ -1.15714e+77 ... -8.64202e-78 0 8.64202e-78 ... 1.15714e+77 ]
+lns< 24,  12, Saturating, unsigned short> : [ -1.79739e+308 ... -5.56363e-309 0 5.56363e-309 ... 1.79739e+308 ]
+lns< 28,  14, Saturating, unsigned short> : [ -inf ... -0 0 0 ... inf ]
+lns< 32,  16, Saturating, unsigned short> : [ -inf ... -0 0 0 ... inf ]
+
+logarithmic number systems with only fraction bits
+lns<  4,   3, Saturating, unsigned short> : [ -1.29684 ... -0.771105 0 0.771105 ... 1.29684 ]
+lns<  8,   7, Saturating, unsigned short> : [ -1.40658 ... -0.710946 0 0.710946 ... 1.40658 ]
+lns< 12,  11, Saturating, unsigned short> : [ -1.41374 ... -0.707346 0 0.707346 ... 1.41374 ]
+lns< 16,  15, Saturating, unsigned short> : [ -1.41418 ... -0.707122 0 0.707122 ... 1.41418 ]
+lns< 20,  19, Saturating, unsigned short> : [ -1.41421 ... -0.707108 0 0.707108 ... 1.41421 ]
+lns< 24,  23, Saturating, unsigned short> : [ -1.41421 ... -0.707107 0 0.707107 ... 1.41421 ]
+lns< 28,  27, Saturating, unsigned short> : [ -1.41421 ... -0.707107 0 0.707107 ... 1.41421 ]
+lns< 32,  31, Saturating, unsigned short> : [ -1.41421 ... -0.707107 0 0.707107 ... 1.41421 ]

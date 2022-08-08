@@ -761,8 +761,9 @@ endif(BUILD_CMD_LINE_TOOLS)
 
 # educational examples
 if(BUILD_EDUCATION)
-add_subdirectory("education/tables")
 add_subdirectory("education/number")
+add_subdirectory("education/tables")
+add_subdirectory("education/ranges")
 add_subdirectory("education/quire")
 endif(BUILD_EDUCATION)
 
