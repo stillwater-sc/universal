@@ -30,7 +30,7 @@ int scale_minpos_cfloat() {
 // generate the maxneg through maxpos value range of a cfloat configuration
 // TODO: needs SFINAE
 template<typename CfloatConfiguration>
-std::string cfloat_range(const CfloatConfiguration& v) {
+std::string cfloat_range() {
 	constexpr size_t nbits = CfloatConfiguration::nbits;
 	constexpr size_t es = CfloatConfiguration::es;
 	using BlockType = typename CfloatConfiguration::BlockType;
@@ -38,20 +38,15 @@ std::string cfloat_range(const CfloatConfiguration& v) {
 	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
 	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
 
-	return cfloat_range<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>(v);
-}
-
-template<size_t nbits, size_t es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-std::string cfloat_range(const cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+	Cfloat v;
 	std::stringstream s;
-	Cfloat c{};
-	s << std::setw(40) << type_tag(c) << " : [ "
-		<< c.maxneg() << " ... "
-		<< c.minneg() << " "
+	s << std::setw(40) << type_tag(v) << " : [ "
+		<< v.maxneg() << " ... "
+		<< v.minneg() << " "
 		<< "0 "
-		<< c.minpos() << " ... "
-		<< c.maxpos() << " ]";
+		<< v.minpos() << " ... "
+		<< v.maxpos() << " ]";
 	return s.str();
 }
 

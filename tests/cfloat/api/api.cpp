@@ -59,14 +59,14 @@ try {
 	std::cout << "+---------    Dynamic ranges of some standard cfloat<> configurations   --------+\n";
 	{
 		// quarter, half, single, duble, quad, and octo precision IEEE-754 style floating-point
-		report_range<quarter>(std::cout);
-		report_range<half>(std::cout);
-		report_range<single>(std::cout);
-		report_range<duble>(std::cout);
+		std::cout << "quarter  precision: " << cfloat_range<quarter>() << '\n';
+		std::cout << "half     precision: " << cfloat_range<half>() << '\n';
+		std::cout << "single   precision: " << cfloat_range<single>() << '\n';
+		std::cout << "double   precision: " << cfloat_range<duble>() << '\n';
 		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
 		std::cout << "performance of printing of quad and larger precision needs to improve to be practical\n";
-//		report_range<quad>(std::cout);
-//		report_range<octo>(std::cout);
+//		cfloat_range<quad>(std::cout);
+//		cfloat_range<octo>(std::cout);
 
 		std::cout << "---\n";
 
