@@ -13,12 +13,13 @@
 #pragma message("LONG_DOUBLE_SUPPORT is not defined")
 #define LONG_DOUBLE_SUPPORT 0
 #endif
+#include <universal/number/shared/specific_value_encoding.hpp>
 
 namespace sw { namespace universal {
 
 enum class BinaryNumberType {
-	Signed = 0,  // { ...,-3,-2,-1,0,1,2,3,... }
-	Unsigned = 1 // {              0,1,2,3,... }
+	Signed   = 0, // { ...,-3,-2,-1,0,1,2,3,... }    // 2's complement encoding
+	Unsigned = 1  // {              0,1,2,3,... }    // binary encoding
 };
 
 // forward references
@@ -106,6 +107,33 @@ public:
 	template<size_t nnbits>
 	blockbinary(const blockbinary<nnbits, BlockType, NumberType>& rhs) { this->assign(rhs); }
 
+	// specific value constructor
+	constexpr blockbinary(const SpecificValue code) : _block{ 0 } {
+		switch (code) {
+		case SpecificValue::infpos:
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+		case SpecificValue::nar:
+		case SpecificValue::zero:
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::infneg:
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
+	}
+
 	// initializer for long long
 	constexpr blockbinary(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
 
@@ -142,8 +170,9 @@ public:
 #endif
 
 	// access operators
-	BlockType& operator[](size_t index) { return _block[index]; }
-	const BlockType operator[](size_t index) const { return _block[index]; }
+	constexpr BlockType& operator[](size_t index) { return _block[index]; }
+	constexpr BlockType operator[](size_t index) const { return _block[index]; }
+
 	// prefix operators
 	blockbinary operator-() const {
 		blockbinary negated(*this);
@@ -495,6 +524,61 @@ public:
 		return *this += plusOne;
 	}
 
+	// minimum positive value of the blockbinary configuration
+	constexpr blockbinary& minpos() noexcept {
+		// minpos = 0000....00001
+		clear();
+		setbit(0, true);
+		return *this;
+	}
+	// maximum positive value of the blockbinary configuration
+	constexpr blockbinary& maxpos() noexcept {
+		if constexpr (NumberType == BinaryNumberType::Signed) {
+			// maxpos = 01111....1111
+			clear();
+			flip();
+			setbit(nbits - 1, false);
+		}
+		else {
+			// maxpos = 11111....1111
+			clear();
+			flip();
+		}
+		return *this;
+	}
+	// zero
+	constexpr blockbinary& zero() noexcept {
+		clear();
+		return *this;
+	}
+	// minimum negative value of the blockbinary configuration
+	constexpr blockbinary& minneg() noexcept {
+		if constexpr (NumberType == BinaryNumberType::Signed) {
+			// minneg = 11111....11111
+			clear();
+			flip();
+		}
+		else {
+			// minneg = 00000....00000
+			clear();
+		}
+		return *this;
+	}
+	// maximum negative value of the blockbinary configuration
+	constexpr blockbinary& maxneg() noexcept {
+		if constexpr (NumberType == BinaryNumberType::Signed) {
+			// maxneg = 10000....0000
+			clear();
+			setbit(nbits - 1);
+		}
+		else {
+			// maxneg = 00000....00000
+			clear();
+		}
+				
+		return *this;
+	}
+
 	// selectors
 	constexpr bool sign() const noexcept { return _block[MSU] & SIGN_BIT_MASK; }
 	constexpr bool ispos() const noexcept { return !sign(); }
@@ -662,9 +746,8 @@ private:
 
 // Generate a type tag for blockbinary
 template<size_t N, typename B, BinaryNumberType T>
-std::string type_tag(const blockbinary<N, B, T>& v) {
+std::string type_tag(const blockbinary<N, B, T>& = {}) {
 	std::stringstream str;
-	if (v.isneg()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
 	str << "blockbinary<"
 		<< std::setw(4) << N << ", "
 		<< typeid(B).name() << ", "

@@ -1,9 +1,9 @@
 // arithmetic_literals.cpp: test suite runner for the use of literals in posit equations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // Configure the posit template environment
 // first: enable general or specialized specialized posit configurations
 //#define POSIT_FAST_SPECIALIZATION
@@ -15,31 +15,23 @@
 #define POSIT_TRACE_ADD
 // forth: enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/posit/numeric_limits.hpp>
-#include <universal/number/posit/specializations.hpp>
-#include <universal/number/posit/mathlib.hpp>
-#include <universal/number/posit/manipulators.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-//#include <universal/verification/posit_test_suite.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
-int ValidateAdditionWithLiteral(const std::string& tag, bool bReportIndividualTestCases) {
+int ValidateAdditionWithLiteral(bool reportTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	sw::universal::posit<nbits, es> pa, pb, psum1, psum2, pref;
 
 	double da, db;
-	for (int i = 0; i < NR_POSITS; i++) {
+	for (size_t i = 0; i < NR_POSITS; ++i) {
 		pa.setbits(i);
 		da = double(pa);
-		for (int j = 0; j < NR_POSITS; j++) {
+		for (size_t j = 0; j < NR_POSITS; ++j) {
 			pb.setbits(j);
 			db = double(pb);
 			psum1 = pa + db;
@@ -47,10 +39,10 @@ int ValidateAdditionWithLiteral(const std::string& tag, bool bReportIndividualTe
 			pref = da + db;
 			if (psum1 != pref || psum2 != pref || psum1 != psum2) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum1);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum1);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum1);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum1);
 			}
 		}
 	}
@@ -60,16 +52,16 @@ int ValidateAdditionWithLiteral(const std::string& tag, bool bReportIndividualTe
 
 // enumerate all subtraction cases for a posit configuration
 template<size_t nbits, size_t es>
-int ValidateSubtractionWithLiteral(const std::string& tag, bool bReportIndividualTestCases) {
+int ValidateSubtractionWithLiteral(bool reportTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	sw::universal::posit<nbits, es> pa, pb, pdiff1, pdiff2, pref;
 
 	double da, db;
-	for (int i = 0; i < NR_POSITS; i++) {
+	for (size_t i = 0; i < NR_POSITS; ++i) {
 		pa.setbits(i);
 		da = double(pa);
-		for (int j = 0; j < NR_POSITS; j++) {
+		for (size_t j = 0; j < NR_POSITS; ++j) {
 			pb.setbits(j);
 			db = double(pb);
 			pdiff1 = pa - db;
@@ -77,10 +69,10 @@ int ValidateSubtractionWithLiteral(const std::string& tag, bool bReportIndividua
 			pref = da - db;
 			if (pdiff1 != pref || pdiff2 != pref || pdiff1 != pdiff2) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pref, pdiff1);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pref, pdiff1);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", pa, pb, pref, pdiff1);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", pa, pb, pref, pdiff1);
 			}
 		}
 	}
@@ -90,16 +82,16 @@ int ValidateSubtractionWithLiteral(const std::string& tag, bool bReportIndividua
 
 // enumerate all multiplication cases for a posit configuration
 template<size_t nbits, size_t es>
-int ValidateMultiplicationWithLiteral(const std::string& tag, bool bReportIndividualTestCases) {
+int ValidateMultiplicationWithLiteral(bool reportTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	sw::universal::posit<nbits, es> pa, pb, pmul1, pmul2, pref;
 
 	double da, db;
-	for (int i = 0; i < NR_POSITS; i++) {
+	for (size_t i = 0; i < NR_POSITS; ++i) {
 		pa.setbits(i);
 		da = double(pa);
-		for (int j = 0; j < NR_POSITS; j++) {
+		for (size_t j = 0; j < NR_POSITS; ++j) {
 			pb.setbits(j);
 			db = double(pb);
 			pmul1 = pa * db;
@@ -107,10 +99,10 @@ int ValidateMultiplicationWithLiteral(const std::string& tag, bool bReportIndivi
 			pref = da * db;
 			if (pmul1 != pref || pmul2 != pref || pmul1 != pmul2) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul1);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul1);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul1);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul1);
 			}
 		}
 	}
@@ -120,16 +112,16 @@ int ValidateMultiplicationWithLiteral(const std::string& tag, bool bReportIndivi
 
 // enumerate all division cases for a posit configuration
 template<size_t nbits, size_t es>
-int ValidateDivisionWithLiteral(const std::string& tag, bool bReportIndividualTestCases) {
+int ValidateDivisionWithLiteral(bool reportTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	sw::universal::posit<nbits, es> pa, pb, pdiv1, pdiv2, pref;
 
 	double da, db;
-	for (int i = 0; i < NR_POSITS; i++) {
+	for (size_t i = 0; i < NR_POSITS; ++i) {
 		pa.setbits(i);
 		da = double(pa);
-		for (int j = 0; j < NR_POSITS; j++) {
+		for (size_t j = 0; j < NR_POSITS; ++j) {
 			pb.setbits(j);
 			db = double(pb);
 			pdiv1 = pa / db;
@@ -137,10 +129,10 @@ int ValidateDivisionWithLiteral(const std::string& tag, bool bReportIndividualTe
 			pref = da / db;
 			if (pdiv1 != pref || pdiv2 != pref || pdiv1 != pdiv2) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, pdiv1);
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, pdiv1);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, pdiv1);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, pdiv1);
 			}
 		}
 	}
@@ -166,15 +158,32 @@ void GenerateTestCase(Ty a, Ty b) {
 	std::cout << std::setprecision(5);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "posit arithmetic with literals validation";
+	std::string test_tag    = "literals";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	std::string tag = "Arithmetic with literals failed: ";
 
@@ -198,52 +207,57 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>("Manual Testing", true), "posit<8,2>", "multiplication with literal");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>("Manual Testing", true), "posit<8,2>", "division with literal");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 
-	std::cout << "Posit addition validation\n";
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>      (reportTestCases), "posit<8,2>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 2>   (reportTestCases), "posit<8,2>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>(reportTestCases), "posit<8,2>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>      (reportTestCases), "posit<8,2>", "division with literal");
+#endif
 
+#if REGRESSION_LEVEL_2
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>      (tag, bReportIndividualTestCases), "posit<8,2>", "addition with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 2>   (tag, bReportIndividualTestCases), "posit<8,2>", "subtraction with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "multiplication with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>      (tag, bReportIndividualTestCases), "posit<8,2>", "division with literal");
+#if REGRESSION_LEVEL_3
+#endif
 
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 0>(reportTestCases), "posit<8,0>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 1>(reportTestCases), "posit<8,1>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>(reportTestCases), "posit<8,2>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 3>(reportTestCases), "posit<8,3>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 4>(reportTestCases), "posit<8,4>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 5>(reportTestCases), "posit<8,5>", "addition with literal");
 
-#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 0>(reportTestCases), "posit<8,0>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 1>(reportTestCases), "posit<8,1>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 2>(reportTestCases), "posit<8,2>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 3>(reportTestCases), "posit<8,3>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 4>(reportTestCases), "posit<8,4>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 5>(reportTestCases), "posit<8,5>", "subtraction with literal");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "addition with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "addition with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "addition with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "addition with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "addition with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 0>(reportTestCases), "posit<8,0>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 1>(reportTestCases), "posit<8,1>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>(reportTestCases), "posit<8,2>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 3>(reportTestCases), "posit<8,3>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 4>(reportTestCases), "posit<8,4>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 5>(reportTestCases), "posit<8,5>", "multiplication with literal");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "subtraction with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "subtraction with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "subtraction with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "subtraction with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "subtraction with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 0>(reportTestCases), "posit<8,0>", "division with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 1>(reportTestCases), "posit<8,1>", "division with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>(reportTestCases), "posit<8,2>", "division with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 3>(reportTestCases), "posit<8,3>", "division with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 4>(reportTestCases), "posit<8,4>", "division with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 5>(reportTestCases), "posit<8,5>", "division with literal");
+#endif // REGRESSION_LEVEL_4
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "multiplication with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "multiplication with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "multiplication with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "multiplication with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "multiplication with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "multiplication with literal");
-
-	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "division with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "division with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "division with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "division with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "division with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "division with literal");
-
-#endif  // STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

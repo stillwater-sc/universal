@@ -5,26 +5,28 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/lns/lns.hpp>
 
-namespace sw::universal {
+namespace sw {
+	namespace universal {
 
-	// return in triple form (sign, scale, fraction)
-	template<size_t nbits, size_t rbits, typename bt>
-	inline std::string to_triple(const lns<nbits, rbits, bt>& number) {
-		std::stringstream ss;
+		// return in triple form (sign, scale, fraction)
+		template<size_t nbits, size_t rbits, typename bt, auto... x>
+		inline std::string to_triple(const lns<nbits, rbits, bt, x...>& number) {
+			std::stringstream ss;
 
-		// print sign bit
-		ss << '(' << "tbd" << ',';
+			// print sign bit
+			ss << '(' << "tbd" << ',';
 
-		// scale
-		ss << "tbd" << ',';
+			// scale
+			ss << "tbd" << ',';
 
-		// print fraction bits
-		ss << "tbd";
+			// print fraction bits
+			ss << "tbd";
 
-		ss << ')';
-		return ss.str();
+			ss << ')';
+			return ss.str();
+		}
 	}
-}
+}  // namespace sw::universal
 
 
 // receive a float and print its components
@@ -44,7 +46,7 @@ try {
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	std::string arg = argv[1];
-	lns<32, 8, std::uint32_t> v;
+	lns<32, 8, std::uint32_t> v{};
 
 	constexpr size_t columnWidth = 50;
 	std::cout << std::setw(columnWidth) << std::left << typeid(v).name() << ": " << std::setprecision(max_digits10) << std::right << v << " " << to_triple(v) << '\n';

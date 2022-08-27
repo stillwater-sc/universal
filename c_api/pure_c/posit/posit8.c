@@ -1,6 +1,6 @@
 // posit8.c: example program showing the use of the posit8_t type of the C API of the posit library
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -39,8 +39,16 @@ int posit8_cmpp8(posit8_t a, posit8_t b) {
 	return a.v - b.v;
 }
 
+#if defined(__cplusplus) || defined(_MSC_VER)
 // string conversion functions
-void posit8_str(char* str, posit8_t a) {
+void posit8_str(char str[16], posit8_t a) {
 	float f = posit8_tof(a);
 	sprintf(str, "%f", f);
 }
+#else
+// string conversion functions
+void posit8_str(char str[static 16], posit8_t a) {
+	float f = posit8_tof(a);
+	sprintf(str, "%f", f);
+}
+#endif

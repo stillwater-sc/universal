@@ -477,7 +477,7 @@ public:
 		bitblock<srcbits> src_fraction = src.fraction();
 		if (!_inf && !_zero && !_nan) {
 			for (int s = srcbits - 1, t = tgtbits - 1; s >= 0 && t >= 0; --s, --t)
-				_fraction[t] = src_fraction[s];
+				_fraction[static_cast<size_t>(t)] = src_fraction[static_cast<size_t>(s)];
 		}
 	}
 	// round to a target size number of bits using round-to-nearest round-to-even-on-tie
@@ -551,13 +551,23 @@ private:
 
 ////////////////////// VALUE operators
 
+// ETLO 7/19/2022
+// OLD compiler guard
+// we are trying to get value<> to use a native string conversion so that we can support arbitrary large values
+// but this is turning out to be a complicated implementation with deep history and named algorithms, such as Dragon4, etc.
+// For the moment, we still take the easy way out.
 #define OLD
 #ifdef OLD
 template<size_t nfbits>
-inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, size_t precision = 0) {
+inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, std::streamsize precision = 0) {
 	std::stringstream s;
 	if (v.isinf()) {
-		s << FP_INFINITE;
+		if (v.sign()) {
+			s << "-inf";
+		}
+		else {
+			s << ((flags & std::ios_base::showpos) ? "+inf" : "inf");
+		}
 	}
 	else {
 		if (precision) {
@@ -581,7 +591,7 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 			result = "-inf";
 		}
 		else {
-			result = (flags & std::ios_base::showpos) ? "+inf" : "inf";
+			result = ((flags & std::ios_base::showpos) ? "+inf" : "inf");
 		}
 		return result;
 	}
@@ -625,9 +635,9 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 template<size_t nfbits>
 inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
 	std::streamsize nrDigits = ostr.precision();
-	std::string s = convert_to_string(ostr.flags(), v, static_cast<size_t>(nrDigits));
+	std::string s = convert_to_string(ostr.flags(), v, nrDigits);
 	std::streamsize width = ostr.width();
-	if (width > static_cast<std::streamsize>(s.size())) {
+	if (static_cast<size_t>(width) > s.size()) {
 		char fill = ostr.fill();
 		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
 			s.append(static_cast<std::string::size_type>(width - s.size()), fill);

@@ -4,16 +4,18 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-
+#include <limits>
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/test_suite.hpp>
 
-template<size_t nbits, size_t rbits, typename BlockType>
+namespace sw {
+	namespace universal {
+
+template<typename TestType>
 int VerifyZeroEncoding(bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
 
-	// single block configurations
-	sw::universal::lns<nbits, rbits, BlockType> a, b;
+	TestType a, b;
 	a.setzero();
 	b = a;
 	if (!b.iszero()) {
@@ -34,44 +36,44 @@ int VerifyZeroEncodings(bool reportTestCases) {
 	std::string test_tag = "iszero()";
 
 	// single block configurations
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< 8,  4, std::uint8_t>(reportTestCases), "lns<8,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<16,  8, std::uint16_t>(reportTestCases), "lns<16,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<32, 16, std::uint32_t>(reportTestCases), "lns<32,16,uint32_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<64, 32, std::uint64_t>(reportTestCases), "lns<64,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns< 8, 4, std::uint8_t > >(reportTestCases), "lns< 8, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<16, 8, std::uint16_t> >(reportTestCases), "lns<16, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<32, 16, std::uint32_t> >(reportTestCases), "lns<32,16,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<64, 32, std::uint64_t> >(reportTestCases), "lns<64,32,uint64_t>", test_tag);
 
 	// double block configurations with all special bits in the MSU
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<10, 4, std::uint8_t>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<18, 8, std::uint16_t>(reportTestCases), "lns<18,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<34, 16, std::uint32_t>(reportTestCases), "lns<34,16,uint32_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<66, 32, std::uint64_t>(reportTestCases), "lns<66,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<10, 4, std::uint8_t > >(reportTestCases), "lns<10, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<18, 8, std::uint16_t> >(reportTestCases), "lns<18, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<34, 16, std::uint32_t> >(reportTestCases), "lns<34,16,uint32_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<66, 32, std::uint64_t> >(reportTestCases), "lns<66,32,uint64_t>", test_tag);
 
 	// double block configurations with special bits split between MSU and MSU - 1
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< 9, 4, std::uint8_t>(reportTestCases), "lns<9,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<17, 8, std::uint16_t>(reportTestCases), "lns<17,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<33, 16, std::uint32_t>(reportTestCases), "lns<33,16,uint32_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<65, 32, std::uint64_t>(reportTestCases), "lns<65,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns< 9, 4, std::uint8_t > >(reportTestCases), "lns< 9, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<17, 8, std::uint16_t> >(reportTestCases), "lns<17, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<33, 16, std::uint32_t> >(reportTestCases), "lns<33,16,uint32_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<65, 32, std::uint64_t> >(reportTestCases), "lns<65,32,uint64_t>", test_tag);
 
 	// triple block configurations with all special bits in the MSU
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<26, 4, std::uint8_t>(reportTestCases), "lns<26,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<50, 8, std::uint16_t>(reportTestCases), "lns<50,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<98, 16, std::uint32_t>(reportTestCases), "lns<98,16,uint32_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<66, 32, std::uint64_t>(reportTestCases), "lns<66,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<26, 4, std::uint8_t > >(reportTestCases), "lns<26, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<50, 8, std::uint16_t> >(reportTestCases), "lns<50, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<98, 16, std::uint32_t> >(reportTestCases), "lns<98,16,uint32_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<66, 32, std::uint64_t> >(reportTestCases), "lns<66,32,uint64_t>", test_tag);
 
 	// triple block configurations with special bits split between MSU and MSU - 1
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<25, 4, std::uint8_t>(reportTestCases), "lns<25,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<49, 8, std::uint16_t>(reportTestCases), "lns<49,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<97, 16, std::uint32_t>(reportTestCases), "lns<97,16,uint32_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<65, 32, std::uint64_t>(reportTestCases), "lns<65,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<25, 4, std::uint8_t > >(reportTestCases), "lns<25, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<49, 8, std::uint16_t> >(reportTestCases), "lns<49, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<97, 16, std::uint32_t> >(reportTestCases), "lns<97,16,uint32_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<65, 32, std::uint64_t> >(reportTestCases), "lns<65,32,uint64_t>", test_tag);
 
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits, size_t rbits, typename BlockType>
+template<typename TestType>
 int VerifyNaNEncoding(bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
 
 	// single block configurations
-	sw::universal::lns<nbits, rbits, BlockType> a, b;
+	TestType a, b;
 	a.setnan();
 	b = a;
 	if (!b.isnan()) {
@@ -92,37 +94,39 @@ int VerifyNaNEncodings(bool reportTestCases) {
 	std::string test_tag = "isnan()";
 
 	// single block configurations
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< 8, 4, std::uint8_t>(reportTestCases), "lns<8,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<16, 8, std::uint16_t>(reportTestCases), "lns<16,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<32, 16, std::uint32_t>(reportTestCases), "lns<32,16,uint32_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<64, 32, std::uint64_t>(reportTestCases), "lns<64,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns< 8, 4, std::uint8_t > >(reportTestCases), "lns< 8, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<16, 8, std::uint16_t> >(reportTestCases), "lns<16, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<32, 16, std::uint32_t> >(reportTestCases), "lns<32,16,uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<64, 32, std::uint64_t> >(reportTestCases), "lns<64,32,uint64_t>", test_tag);
 
 	// double block configurations with all special bits in the MSU
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<10, 4, std::uint8_t>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<18, 8, std::uint16_t>(reportTestCases), "lns<18,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<34, 16, std::uint32_t>(reportTestCases), "lns<34,16,uint32_t>", test_tag);
-	//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<66, 32, std::uint64_t>(reportTestCases), "lns<66,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<10, 4, std::uint8_t > >(reportTestCases), "lns<10, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<18, 8, std::uint16_t> >(reportTestCases), "lns<18, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<34, 16, std::uint32_t> >(reportTestCases), "lns<34,16,uint32_t>", test_tag);
+	//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<66, 32, std::uint64_t> >(reportTestCases), "lns<66,32,uint64_t>", test_tag);
 
 		// double block configurations with special bits split between MSU and MSU - 1
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< 9, 4, std::uint8_t>(reportTestCases), "lns<9,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<17, 8, std::uint16_t>(reportTestCases), "lns<17,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<33, 16, std::uint32_t>(reportTestCases), "lns<33,16,uint32_t>", test_tag);
-	//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<65, 32, std::uint64_t>(reportTestCases), "lns<65,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns< 9, 4, std::uint8_t > >(reportTestCases), "lns< 9, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<17, 8, std::uint16_t> >(reportTestCases), "lns<17, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<33, 16, std::uint32_t> >(reportTestCases), "lns<33,16,uint32_t>", test_tag);
+	//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<65, 32, std::uint64_t> (reportTestCases), "lns<65,32,uint64_t>", test_tag);
 
 		// triple block configurations with all special bits in the MSU
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<26, 4, std::uint8_t>(reportTestCases), "lns<26,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<50, 8, std::uint16_t>(reportTestCases), "lns<50,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<98, 16, std::uint32_t>(reportTestCases), "lns<98,16,uint32_t>", test_tag);
-	//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<66, 32, std::uint64_t>(reportTestCases), "lns<66,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<26, 4, std::uint8_t > >(reportTestCases), "lns<26, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<50, 8, std::uint16_t> >(reportTestCases), "lns<50, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<98, 16, std::uint32_t> >(reportTestCases), "lns<98,16,uint32_t>", test_tag);
+	//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<66, 32, std::uint64_t> >(reportTestCases), "lns<66,32,uint64_t>", test_tag);
 
 		// triple block configurations with special bits split between MSU and MSU - 1
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<25, 4, std::uint8_t>(reportTestCases), "lns<25,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<49, 8, std::uint16_t>(reportTestCases), "lns<49,8,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding<97, 16, std::uint32_t>(reportTestCases), "lns<97,16,uint32_t>", test_tag);
-	//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding<65, 32, std::uint64_t>(reportTestCases), "lns<65,32,uint64_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<25, 4, std::uint8_t > >(reportTestCases), "lns<25, 4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<49, 8, std::uint16_t> >(reportTestCases), "lns<49, 8,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyNaNEncoding< lns<97, 16, std::uint32_t> >(reportTestCases), "lns<97,16,uint32_t>", test_tag);
+	//	nrOfFailedTestCases += ReportTestResult(VerifyZeroEncoding< lns<65, 32, std::uint64_t> >(reportTestCases), "lns<65,32,uint64_t>", test_tag);
 
 	return nrOfFailedTestCases;
 }
+
+} }  // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -149,12 +153,35 @@ try {
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	using SaturatingLns = lns<7, 4>;
+	SaturatingLns a;
+	std::string typetag = type_tag(a);
 
 #if MANUAL_TESTING
 
+	{
+		float fa, fb;
+		fa = 1;
+		fb = std::numeric_limits<float>::quiet_NaN();
+		std::cout << (fa < fb ? "a < b" : "a !< b") << '\n';
+		std::cout << (fa > fb ? "a > b" : "a !> b") << '\n';
+		std::cout << (fa == fb ? "a == b" : "a != b") << '\n';
+		std::cout << (fa != fb ? "a != b" : "a == b") << '\n';
+	}
+
 	nrOfFailedTestCases += VerifyZeroEncodings(reportTestCases);
 	nrOfFailedTestCases += VerifyNaNEncodings(reportTestCases);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< SaturatingLns >(reportTestCases), typetag, "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< SaturatingLns >(reportTestCases), typetag, "<");
+
+	// these are derived from equal and less then
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< SaturatingLns >(reportTestCases), typetag, "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< SaturatingLns >(reportTestCases), typetag, ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< SaturatingLns >(reportTestCases), typetag, "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< SaturatingLns >(reportTestCases), typetag, ">=");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -163,6 +190,42 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += VerifyZeroEncodings(reportTestCases);
 	nrOfFailedTestCases += VerifyNaNEncodings(reportTestCases);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< SaturatingLns >(reportTestCases), typetag, "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< SaturatingLns >(reportTestCases), typetag, "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< SaturatingLns >(reportTestCases), typetag, "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< SaturatingLns >(reportTestCases), typetag, ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< SaturatingLns >(reportTestCases), typetag, "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< SaturatingLns >(reportTestCases), typetag, ">=");
+
+	a = 0;
+
+	if (!(a == 0)) {
+		nrOfFailedTestCases += ReportTestResult(1, typetag + std::string(" == 0"), "== int literal");
+	}
+	else {
+		ReportTestResult(0, typetag + std::string(" == 0"), " == int literal");
+	}
+	if (!(a == 0.0f)) {
+		nrOfFailedTestCases += ReportTestResult(1, typetag + std::string(" == 0.0"), " == float literal");
+	}
+	else {
+		ReportTestResult(0, typetag + std::string(" == 0.0"), " == float literal");
+	}
+	if (!(a == 0.0)) {
+		nrOfFailedTestCases += ReportTestResult(1, typetag + std::string(" == 0.0"), " == double literal");
+}
+	else {
+		ReportTestResult(0, typetag + std::string(" == 0.0"), " == double literal");
+	}
+#if LONG_DOUBLE_SUPPORT
+	if (!(a == 0.0l)) {
+		nrOfFailedTestCases += ReportTestResult(1, typetag + std::string(" == 0.0"), " == long double literal");
+	}
+	else {
+		ReportTestResult(0, typetag + std::string(" == 0.0"), " == long double literal");
+	}
+#endif
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -181,6 +244,14 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

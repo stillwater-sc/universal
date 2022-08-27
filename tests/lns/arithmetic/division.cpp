@@ -18,12 +18,16 @@ namespace sw { namespace universal {
 	template<typename LnsType>
 	int VerifyDivision(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
+		constexpr size_t rbits = LnsType::rbits;
+		constexpr Behavior behavior = LnsType::behavior;
+		using bt = typename LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;
 		bool firstTime = true;
-		LnsType a, b, c, cref;
-		a.debugConstexprParameters();
+		LnsType a{}, b{}, c{}, cref{};
+		double ref{};
+		if (reportTestCases) a.debugConstexprParameters();
 		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i);
 			double da = double(a);
@@ -33,8 +37,7 @@ namespace sw { namespace universal {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
 				try {
 					c = a / b;
-					double ref = da / db;
-					cref = ref;
+					ref = da / db;
 				}
 				catch (const lns_divide_by_zero& err) {
 					if (b.iszero()) {
@@ -52,12 +55,16 @@ namespace sw { namespace universal {
 				}
 #else
 				c = a / b;
-				double ref = da / db;
-				cref = ref;
+				ref = da / db;
 #endif
+				if (reportTestCases && !isInRange<nbits, rbits, bt, behavior>(ref)) {
+					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, bt, behavior>() << '\n';
+				}
+				cref = ref;
 //				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
 //				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				if (c != cref) {
+					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
 				}
@@ -150,20 +157,20 @@ try {
 
 	std::string test_suite  = "lns division validation";
 	std::string test_tag    = "division";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 
 #if MANUAL_TESTING
 
-	using LNS4_1 = lns<4, 1, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, std::uint8_t>;
-	using LNS8_4 = lns<8, 4, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, std::uint8_t>;
-	using LNS16_5 = lns<16, 5, std::uint16_t>;
+	using LNS4_1_sat = lns<4, 1, std::uint8_t>;
+	using LNS4_2_sat = lns<4, 2, std::uint8_t>;
+	using LNS5_2_sat = lns<5, 2, std::uint8_t>;
+	using LNS8_3_sat = lns<8, 3, std::uint8_t>;
+	using LNS8_4_sat = lns<8, 4, std::uint8_t>;
+	using LNS9_4_sat = lns<9, 4, std::uint8_t>;
+	using LNS16_5_sat = lns<16, 5, std::uint16_t>;
 
 	// : FAIL 1                    / 267.33408830141792123 != 0.0037406378152288035158 golden reference is 62757.488603861726006
 	// : result 0b0.1111.1111
@@ -171,60 +178,60 @@ try {
 	//  0b0.0000.0000 / 0b0.0000.0001
 	// 0b0.0000.0000 / 0b1.1111.1111
 	{
-		LNS9_4 a, b, c;
+		LNS9_4_sat a, b, c;
 		a.setbits(0);
 		b.setbits(0x1);
 		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << '\n';
-		std::cout << (a) << " / " << (b) << " = " << (c) << '\n';
-		c.setbits(0x010);
-		std::cout << to_binary(c) << " : " << c << '\n';
-		c.setbits(0x0F0);
-		std::cout << to_binary(c) << " : " << c << '\n';
+		ReportBinaryOperation(a, "/", b, c);
 	}
 	{
-		LNS8_4 a, b, c;
+		LNS8_4_sat a, b, c;
 		a.setbits(0);
 		b.setbits(0x1);
 		c = a / b;
-		std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << '\n';
-		std::cout << (a) << " / " << (b) << " = " << (c) << '\n';
+		ReportBinaryOperation(a, "/", b, c);
+		a = b * c;
+		ReportBinaryOperation(b, "*", c, a);
+		b = a / c;
+		ReportBinaryOperation(a, "/", c, b);
 	}
-	return 0;
+
 	// generate individual testcases to hand trace/debug
-	TestCase<LNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
-	TestCase<LNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
+	TestCase<LNS16_5_sat, double>(TestCaseOperator::DIV, INFINITY, INFINITY);
+	TestCase<LNS8_3_sat, float>(TestCaseOperator::DIV, 0.5f, -0.5f);
 
 	// GenerateLnsTable<5, 2>(std::cout);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1>(reportTestCases), "lns<4,1,uint8_t>>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2>(reportTestCases), "lns<4,2,uint8_t>>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2>(reportTestCases), "lns<5,2,uint8_t>>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3>(reportTestCases), "lns<8,3,uint8_t>>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4>(reportTestCases), "lns<9,4,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1_sat>(reportTestCases), "lns<4,1,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2_sat>(reportTestCases), "lns<4,2,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2_sat>(reportTestCases), "lns<5,2,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3_sat>(reportTestCases), "lns<8,3,uint8_t>>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_sat>(reportTestCases), "lns<9,4,uint8_t>>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
-	using LNS4_1 = lns<4, 1, std::uint8_t>;
-	using LNS4_2 = lns<4, 2, std::uint8_t>;
-	using LNS5_2 = lns<5, 2, std::uint8_t>;
-	using LNS8_3 = lns<8, 3, std::uint8_t>;
-	using LNS9_4 = lns<9, 4, std::uint8_t>;
-	using LNS9_4_uint16 = lns<9, 4, std::uint16_t>;
-	using LNS10_4 = lns<10, 4, std::uint8_t>;
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1>(reportTestCases),  "lns< 4,1,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_2>(reportTestCases),  "lns< 4,2,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2>(reportTestCases),  "lns< 5,2,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3>(reportTestCases),  "lns< 8,3,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4>(reportTestCases),  "lns< 9,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_uint16>(reportTestCases), "lns< 9,4,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS10_4>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
+	using LNS4_1_sat = lns<4, 1, std::uint8_t>;
+//	using LNS4_2_sat = lns<4, 2, std::uint8_t>;
+	using LNS5_2_sat = lns<5, 2, std::uint8_t>;
+	using LNS8_3_sat = lns<8, 3, std::uint8_t>;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1_sat>(reportTestCases), "lns< 4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2_sat>(reportTestCases), "lns< 5,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3_sat>(reportTestCases), "lns< 8,3,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
+	using LNS9_4_sat = lns<9, 4, std::uint8_t>;
+	using LNS9_4_sat_uint16 = lns<9, 4, std::uint16_t>;
+	using LNS10_4_sat = lns<10, 4, std::uint8_t>;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_sat>(reportTestCases), "lns< 9,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_sat_uint16>(reportTestCases), "lns< 9,4,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS10_4_sat>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
+
 #endif
 
 #if REGRESSION_LEVEL_3
@@ -240,6 +247,14 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

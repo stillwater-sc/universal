@@ -55,12 +55,11 @@ std::string posit_range() {
 
 // Generate a type tag for this posit, for example, posit<8,1>
 template<size_t nbits, size_t es>
-std::string type_tag(const posit<nbits, es>& p) {
+std::string type_tag(const posit<nbits, es>& = {}) {
 	std::stringstream str;
 	str << "sw::universal::posit<" 
 		<< std::setw(3) << nbits << ", " 
 		<< std::setw(1) << es << '>';
-	if (p.iszero()) str << ' '; // to get rid of unused parameter warning
 	return str.str();
 }
 

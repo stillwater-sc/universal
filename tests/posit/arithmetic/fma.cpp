@@ -1,18 +1,17 @@
 // arithmetic_fma.cpp: test suite runner for fused-multiply-add
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <cstdint>	// uint8_t, etc.
 #include <cmath>	// for frexp/frexpf and std::fma
 #include <cfenv>	// feclearexcept/fetestexcept
 
-// minimum set of include files to reflect source code dependencies
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/posit/posit_impl.hpp>
-// posit type manipulators such as pretty printers
-#include <universal/number/posit/manipulators.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -35,22 +34,38 @@ void GenerateTestCase(Ty a, Ty b, Ty c) {
 	std::cout << std::setprecision(5);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 // forward references
 void ReportSizeof();
 void ReportFmaResults();
 void ReportErrors();
 
-int main(int argc, char** argv)
+// TODO
+int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = false;
+	std::string test_suite  = "posit fma validation";
+	std::string test_tag    = "fma";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Fused Multiply-Accumulate failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -80,7 +95,6 @@ try {
 		std::cout << pfma << " : " << (long double)(pfma) << '\n';
 	}
 
-	return 0;
 	{
 		// this is not a good test case, because 0.1 is not representable in binary so you get round-off in the conversion
 		GenerateTestCase<16, 1, double>(0.1, 10, -1);
@@ -88,19 +102,27 @@ try {
 		GenerateTestCase<64, 3, double>(0.1, 10, -1);
 	}
 
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(ValidateFMA<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "fused multiply-accumulate");
-
-
-#if STRESS_TESTING
-
 #endif
 
+#if REGRESSION_LEVEL_2
 #endif
 
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

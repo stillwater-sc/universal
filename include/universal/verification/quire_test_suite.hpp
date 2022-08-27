@@ -169,7 +169,7 @@ int GenerateRegimePatternsForQuireAccumulation(bool bReportIndividualTestCases) 
 	}
 	patterns[nrOfPatterns] = pattern & mask; // 1.0
 
-#if CONFIRM_PATTERNS
+#ifdef CONFIRM_PATTERNS
 	std::cout << hex;
 	for (std::vector<uint64_t>::const_iterator it = patterns.begin(); it != patterns.end(); it++) {
 		std::cout << std::setw(3) << right << *it << std::endl;

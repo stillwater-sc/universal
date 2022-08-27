@@ -1,26 +1,41 @@
 // logic.cpp :test suite runner for logic operators between posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// minimum set of include files to reflect source code dependencies
+#include <universal/utility/directives.hpp>
 // enable literals to simplify the testing codes
 #define POSIT_ENABLE_LITERALS 1
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/posit/manipulators.hpp>
-#include <universal/number/posit/math/classify.hpp>
-#include <universal/number/quire/exceptions.hpp>  // as we are catching quire exceptions
+#include <universal/number/posit/posit.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite  = "posit logic operator validation";
+	std::string test_tag    = "comparisons";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -54,10 +69,12 @@ try {
 		nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
 	}
 
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 	posit<16, 1> p;
 
+#if REGRESSION_LEVEL_1
 	std::cout << "Logic: operator==()\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<3, 0>(), "posit<3,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<4, 0>(), "posit<4,0>", "==");
@@ -324,21 +341,29 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> >= 0.0", ">= long double literal");
 	}
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
 
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<16, 1>(), "posit<16,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<16, 1>(), "posit<16,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<16, 1>(), "posit<16,1>", "<");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<16, 1>(), "posit<16,1>", "<=");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<16, 1>(), "posit<16,1>", ">");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<16, 1>(), "posit<16,1>", ">=");
+#endif // REGRESSION_LEVEL_4
 
-#endif // STRESS_TESTING
-
-#endif // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

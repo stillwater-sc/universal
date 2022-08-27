@@ -77,7 +77,7 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 1, Saturating, uint8_t, float>(4.0f);
+	GenerateTestCase<16, 1, Saturate, uint8_t, float>(4.0f);
 
 #if GENERATE_EXPONENT_TABLES
 
@@ -89,7 +89,7 @@ try {
 #endif
 
 	// manual exhaustive test
-	using FixedPoint = fixpnt<8, 2, Saturating, uint8_t>;
+	using FixedPoint = fixpnt<8, 2, Saturate, uint8_t>;
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<FixedPoint>(reportTestCases), type_tag(FixedPoint), "exp");
 	nrOfFailedTestCases += ReportTestResult(VerifyExp2<FixedPoint>(reportTestCases), type_tag(FixedPoint) "exp2");
 	
@@ -98,22 +98,22 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<8,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 3, Saturating, uint8_t> >(reportTestCases), "fixpnt<8,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 9, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<9,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<10,2>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 3, Saturating, uint8_t> >(reportTestCases), "fixpnt<10,3>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<12, 4, Saturating, uint8_t> >(reportTestCases), "fixpnt<12,4>", "exp");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<16, 5, Saturating, uint8_t> >(reportTestCases), "fixpnt<16,5>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 2, Saturate, uint8_t> >(reportTestCases), "fixpnt<8,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 8, 3, Saturate, uint8_t> >(reportTestCases), "fixpnt<8,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt< 9, 2, Saturate, uint8_t> >(reportTestCases), "fixpnt<9,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 2, Saturate, uint8_t> >(reportTestCases), "fixpnt<10,2>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<10, 3, Saturate, uint8_t> >(reportTestCases), "fixpnt<10,3>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<12, 4, Saturate, uint8_t> >(reportTestCases), "fixpnt<12,4>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp< fixpnt<16, 5, Saturate, uint8_t> >(reportTestCases), "fixpnt<16,5>", "exp");
 
 	// base-2 exponent testing
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<8,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 3, Saturating, uint8_t> >(reportTestCases), "fixpnt<8,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<9, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<9,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 2, Saturating, uint8_t> >(reportTestCases), "fixpnt<10,2>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 3, Saturating, uint8_t> >(reportTestCases), "fixpnt<10,3>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<12, 4, Saturating, uint8_t> >(reportTestCases), "fixpnt<12,4>", "exp2");
-	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<16, 5, Saturating, uint8_t> >(reportTestCases), "fixpnt<16,5>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 2, Saturate, uint8_t> >(reportTestCases), "fixpnt<8,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<8, 3, Saturate, uint8_t> >(reportTestCases), "fixpnt<8,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<9, 2, Saturate, uint8_t> >(reportTestCases), "fixpnt<9,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 2, Saturate, uint8_t> >(reportTestCases), "fixpnt<10,2>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<10, 3, Saturate, uint8_t> >(reportTestCases), "fixpnt<10,3>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<12, 4, Saturate, uint8_t> >(reportTestCases), "fixpnt<12,4>", "exp2");
+	nrOfFailedTestCases += ReportTestResult(VerifyExp2< fixpnt<16, 5, Saturate, uint8_t> >(reportTestCases), "fixpnt<16,5>", "exp2");
 
 #endif
 

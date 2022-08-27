@@ -1,9 +1,9 @@
 // arithmetic_divide.cpp: test suite runner for posit division
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // Configure the posit template environment
 // first: enable general or specialized posit configurations
 //#define POSIT_FAST_SPECIALIZATION
@@ -13,13 +13,8 @@
 // when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_DIV
-
-// minimum set of include files to reflect source code dependencies
-#include <universal/number/posit/posit_impl.hpp>
-#include <universal/number/posit/numeric_limits.hpp>
-#include <universal/number/posit/specializations.hpp>
-#include <universal/number/posit/mathlib.hpp>
-#include <universal/number/posit/manipulators.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 
@@ -176,15 +171,16 @@ void ToughDivisions2() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	std::cout << "Posit division validation\n";	
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "posit division validation";
+	std::string test_tag    = "division";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Division failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -217,85 +213,88 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0>("Manual Testing", true), "posit<5,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>("Manual Testing", true), "posit<8,0>", "division");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<2, 0>(bReportIndividualTestCases), "posit< 2,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<2, 0>(reportTestCases), "posit< 2,0>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 0>(bReportIndividualTestCases), "posit< 3,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 1>(bReportIndividualTestCases), "posit< 3,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 2>(bReportIndividualTestCases), "posit< 3,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 3>(bReportIndividualTestCases), "posit< 3,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 0>(reportTestCases), "posit< 3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 1>(reportTestCases), "posit< 3,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 2>(reportTestCases), "posit< 3,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 3>(reportTestCases), "posit< 3,3>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>(bReportIndividualTestCases), "posit< 4,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>(bReportIndividualTestCases), "posit< 4,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>(bReportIndividualTestCases), "posit< 4,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>(reportTestCases), "posit< 4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>(reportTestCases), "posit< 4,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>(reportTestCases), "posit< 4,2>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0>(bReportIndividualTestCases), "posit< 5,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 1>(bReportIndividualTestCases), "posit< 5,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 2>(bReportIndividualTestCases), "posit< 5,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 3>(bReportIndividualTestCases), "posit< 5,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0>(reportTestCases), "posit< 5,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 1>(reportTestCases), "posit< 5,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 2>(reportTestCases), "posit< 5,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 3>(reportTestCases), "posit< 5,3>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 0>(bReportIndividualTestCases), "posit< 6,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 1>(bReportIndividualTestCases), "posit< 6,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 2>(bReportIndividualTestCases), "posit< 6,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 3>(bReportIndividualTestCases), "posit< 6,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 4>(bReportIndividualTestCases), "posit< 6,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 0>(reportTestCases), "posit< 6,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 1>(reportTestCases), "posit< 6,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 2>(reportTestCases), "posit< 6,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 3>(reportTestCases), "posit< 6,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 4>(reportTestCases), "posit< 6,4>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 0>(bReportIndividualTestCases), "posit< 7,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 1>(bReportIndividualTestCases), "posit< 7,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 2>(bReportIndividualTestCases), "posit< 7,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 3>(bReportIndividualTestCases), "posit< 7,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 4>(bReportIndividualTestCases), "posit< 7,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 0>(reportTestCases), "posit< 7,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 1>(reportTestCases), "posit< 7,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 2>(reportTestCases), "posit< 7,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 3>(reportTestCases), "posit< 7,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 4>(reportTestCases), "posit< 7,4>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(bReportIndividualTestCases), "posit< 8,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1>(bReportIndividualTestCases), "posit< 8,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2>(bReportIndividualTestCases), "posit< 8,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3>(bReportIndividualTestCases), "posit< 8,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4>(bReportIndividualTestCases), "posit< 8,4>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5>(bReportIndividualTestCases), "posit< 8,5>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(reportTestCases), "posit< 8,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1>(reportTestCases), "posit< 8,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2>(reportTestCases), "posit< 8,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3>(reportTestCases), "posit< 8,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4>(reportTestCases), "posit< 8,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5>(reportTestCases), "posit< 8,5>", "division");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 0>(bReportIndividualTestCases), "posit<10,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 1>(bReportIndividualTestCases), "posit<10,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 2>(bReportIndividualTestCases), "posit<10,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 3>(bReportIndividualTestCases), "posit<10,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 0>(reportTestCases), "posit<10,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 1>(reportTestCases), "posit<10,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 2>(reportTestCases), "posit<10,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 3>(reportTestCases), "posit<10,3>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<16,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<24,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<16,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<24,2>", "division");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<20, 1>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<20,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<28, 1>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<28,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<20, 1>(reportTestCases, OPCODE_DIV, 1000), "posit<20,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<28, 1>(reportTestCases, OPCODE_DIV, 1000), "posit<28,1>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<32,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<32,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<32,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(reportTestCases, OPCODE_DIV, 1000), "posit<32,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<32,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(reportTestCases, OPCODE_DIV, 1000), "posit<32,3>", "division");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// nbits = 48 also shows failures
-    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<48,2>", "division");
+    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<48,2>", "division");
 
     // nbits=64 requires long double compiler support
-    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
-    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<64,3>", "division");
+    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
+    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(reportTestCases, OPCODE_DIV, 1000), "posit<64,3>", "division");
     // posit<64,4> is hitting subnormal numbers
-    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<64,4>", "division");
+    nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_DIV, 1000), "posit<64,4>", "division");
 
 #ifdef HARDWARE_ACCELERATION
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, 1>(bReportIndividualTestCases), "posit<12,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, 1>(bReportIndividualTestCases), "posit<14,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, 1>(bReportIndividualTestCases), "posit<16,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, 1>(reportTestCases), "posit<12,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, 1>(reportTestCases), "posit<14,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, 1>(reportTestCases), "posit<16,1>", "division");
 #endif // HARDWARE_ACCELERATION
 
 #endif // REGRESSION_LEVEL_4
 
-#endif // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

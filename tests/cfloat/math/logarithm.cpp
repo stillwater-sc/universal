@@ -1,6 +1,6 @@
 // logarithm.cpp: test suite runner for the logarithm functions (log2, log10, ln)
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -8,7 +8,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/cfloat_math_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in cfloat.h
+// generate specific test case that you can trace with the trace conditions in cfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating, typename Ty>
 void GenerateTestCase(Ty a) {

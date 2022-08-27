@@ -55,6 +55,15 @@ The library contains integers, decimals, fixed-points, rationals, linear floats,
 Please cite [our work](https://arxiv.org/abs/2012.11011) if you use _Universal_.
 
 ```bib
+@inproceedings{Omtzigt:2022,
+  title={Universal: Reliable, Reproducible, and Energy-Efficient Numerics},
+  author={E. Theodore L. Omtzigt and James Quinlan},
+  booktitle={Conference on Next Generation Arithmetic},
+  pages={100--116},
+  year={2022},
+  organization={Springer}
+}
+
 @article{Omtzigt2020,
     author    = {E. Theodore L. Omtzigt and Peter Gottschling and Mark Seligman and William Zorn},
     title     = {{Universal Numbers Library}: design and implementation of a high-performance reproducible number systems library},
@@ -78,14 +87,14 @@ CTestTestfile.cmake  c_api         education              tools       universal-
 
 ## How to build
 
-If you do want to work with the code, the universal numbers software library is built using cmake version v3.18. 
+If you do want to work with the code, the universal numbers software library is built using cmake version v3.23. 
 Install the latest [cmake](https://cmake.org/download).
 There are interactive installers for MacOS and Windows. 
 For Linux, a portable approach downloads the shell archive and installs it at /usr/local:
 
 ```text
-> wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2-Linux-x86_64.sh 
-> sudo sh cmake-3.18.2-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
+> wget https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1-Linux-x86_64.sh 
+> sudo sh cmake-3.23.1-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
 ```
 
 For Ubuntu, snap will install the latest cmake, and would be the preferred method:

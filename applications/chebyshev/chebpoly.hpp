@@ -23,7 +23,7 @@ namespace chebyshev {
         
 		blas::vector<Scalar>Tn(n+1);
 		if (n==0) Tn(0) = 1;
-        if (n==1) Tn(0) = 0;Tn(1) = 1;
+        if (n==1) { Tn(0) = 0; Tn(1) = 1; }
         if (n>1){
             blas::vector<Scalar> T0(n+1);
             blas::vector<Scalar> T1(n+1);

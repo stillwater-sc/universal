@@ -10,8 +10,8 @@ namespace sw {
 		template<typename Real, typename NumberSystem, typename EnvelopingNumberSystem>
 		void sampleviz(NumberSystem start, NumberSystem stop, Real sample) {
 			using namespace sw::universal;
-			NumberSystem a, s(sample);
-			EnvelopingNumberSystem b;
+			NumberSystem a{}, s(sample);
+			EnvelopingNumberSystem b{};
 			std::string tag1 = type_tag(a);
 			std::string tag2 = type_tag(b);
 			size_t twidth = tag2.size() + 5;

@@ -164,7 +164,7 @@ try {
 #endif
 
 	{
-		using FixedPoint = sw::universal::fixpnt<4, 3, sw::universal::Saturating, uint8_t>;
+		using FixedPoint = sw::universal::fixpnt<4, 3, sw::universal::Saturate, uint8_t>;
 		FixedPoint one = 1;
 		FixedPoint minus_one = -1;
 		FixedPoint fp = 1.0f;

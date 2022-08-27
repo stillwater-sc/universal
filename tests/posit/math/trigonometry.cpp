@@ -4,12 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_SQRT
-
-// use default number system library configuration
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
@@ -164,7 +161,7 @@ double haversine(double lat1, double lon1, double lat2, double lon2, double radi
 	return radius * c;
 }
 
-// generate specific test case that you can trace with the trace conditions in posit.h
+// generate specific test case that you can trace with the trace conditions in posit.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
