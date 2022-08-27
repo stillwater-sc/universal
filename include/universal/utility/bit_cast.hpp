@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
+// BIT_CAST_SUPPORT is compiler env dependent and drives the algorithm selection of ieee-754 decode
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
