@@ -46,7 +46,7 @@ You need the exception types defined, but you have the option to throw them
 namespace sw { namespace universal {
 
 constexpr bool Modulo    = true;
-constexpr bool Saturating = !Modulo;
+constexpr bool Saturate = !Modulo;
 
 // forward references
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt> class fixpnt;
@@ -542,7 +542,7 @@ public:
 			_block = (positive ? quotient : quotient.twosComplement());
 		}
 		else {
-			std::cerr << "TBD: saturating divide not implemented yet\n";
+			std::cerr << "TBD: Saturate divide not implemented yet\n";
 		}
 		return *this;
 	}
@@ -633,6 +633,8 @@ public:
 	constexpr bool   iszero()              const noexcept { return _block.iszero(); }
 	constexpr bool   ispos()               const noexcept { return _block.ispos(); }
 	constexpr bool   isneg()               const noexcept { return _block.isneg(); }
+	constexpr bool   isnan()               const noexcept { return false; }
+	constexpr bool   isinf()               const noexcept { return false; }
 	constexpr bool   at(size_t bitIndex)   const noexcept { return _block.at(bitIndex); }
 	constexpr bool   test(size_t bitIndex) const noexcept { return _block.test(bitIndex); }
 
@@ -649,7 +651,7 @@ protected:
 		f.clear();
 		if constexpr (std::is_integral_v<Arith> && std::is_signed_v<Arith>) {
 			if (0 == v) return f;
-			if constexpr (arithmetic == Saturating) {
+			if constexpr (arithmetic == Saturate) {
 				constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 				// check if we are in the representable range
 				if (v >= static_cast<Arith>(maxpos)) { return maxpos; }
@@ -675,7 +677,7 @@ protected:
 		}
 		else if constexpr (std::is_unsigned_v<Arith>) {
 			if (0 == v) return f;
-			if constexpr (arithmetic == Saturating) {
+			if constexpr (arithmetic == Saturate) {
 				constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 				// check if we are in the representable range
 				if (v >= static_cast<Arith>(maxpos)) { return maxpos; }
@@ -690,7 +692,7 @@ protected:
 		}
 		else if constexpr (std::is_floating_point_v<Arith>) {
 			if (v == 0.0) return f;
-			if constexpr (arithmetic == Saturating) {	// check if the value is in the representable range
+			if constexpr (arithmetic == Saturate) {	// check if the value is in the representable range
 				fixpnt<nbits, rbits, arithmetic, bt> a;
 				a.maxpos();
 				if (v >= float(a)) { return a; } // set to max pos value

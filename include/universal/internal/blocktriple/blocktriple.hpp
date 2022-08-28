@@ -93,7 +93,7 @@ blocktriple<fbits, op, bt>& convert(unsigned long long uint, blocktriple<fbits, 
 
 // Generate a type tag for this type: blocktriple<fbits, operator, unsigned int>
 template<size_t fbits, BlockTripleOperator op, typename bt>
-std::string type_tag(const blocktriple<fbits, op, bt>& v) {
+std::string type_tag(const blocktriple<fbits, op, bt>& = {}) {
 	std::stringstream s;
 	s << "blocktriple<"
 		<< fbits << ", ";
@@ -117,7 +117,6 @@ std::string type_tag(const blocktriple<fbits, op, bt>& v) {
 		s << "unknown operator, ";
 	}
 	s << typeid(bt).name() << '>';
-	if (v.iszero()) s << ' ';
 	return s.str();
 }
 
@@ -746,6 +745,7 @@ private:
 
 	template<typename Ty>
 	constexpr inline blocktriple& convert_unsigned_integer(const Ty& rhs) noexcept {
+		clear();
 		_nan = false;
 		_inf = false;
 		_zero = true;
@@ -780,6 +780,7 @@ private:
 	}
 	template<typename Ty>
 	constexpr inline blocktriple& convert_signed_integer(const Ty& rhs) noexcept {
+		clear();
 		_nan = false;
 		_inf = false;
 		_zero = true;
@@ -815,6 +816,7 @@ private:
 
 	template<typename Real>
 	inline CONSTEXPRESSION blocktriple& convert_ieee754(Real rhs) noexcept {   // TODO: deal with subnormals and inf
+		clear();
 
 		// extract raw IEEE-754 bits
 		bool s{ false };
@@ -835,6 +837,7 @@ private:
 				_nan = true;
 				_inf = false; 
 				_sign = true; // this is the encoding of a signalling NaN
+				_scale = 0;
 				return *this;
 			}
 			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
@@ -844,6 +847,7 @@ private:
 				_nan = true;
 				_inf = false; 
 				_sign = false; // this is the encoding of a quiet NaN
+				_scale = 0;
 				return *this;
 			}
 			if (rawFraction == 0ull) {
@@ -852,6 +856,7 @@ private:
 				_nan = false;
 				_inf = true;
 				_sign = s;  // + or - infinity
+				_scale = 10000;
 				return *this;
 			}
 		}
@@ -860,6 +865,7 @@ private:
 			_inf = false;
 			_zero = true;
 			_sign = s;
+			_scale = 0;
 			return *this;
 		}
 		if (rawExponent == 0ull) {

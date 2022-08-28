@@ -82,19 +82,19 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor< fixpnt<8, 2, Saturating, uint8_t> >(reportTestCases), "floor", "fixpnt<8,2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCeil < fixpnt<8, 2, Saturating, uint8_t> >(reportTestCases), "ceil", "fixpnt<8,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< fixpnt<8, 2, Saturate, uint8_t> >(reportTestCases), "floor", "fixpnt<8,2,Saturate,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < fixpnt<8, 2, Saturate, uint8_t> >(reportTestCases), "ceil", "fixpnt<8,2,Saturate,uint8_t>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor< fixpnt<8, 2, Saturating, uint8_t> >(reportTestCases), "floor", "fixpnt<8,2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCeil < fixpnt<8, 2, Saturating, uint8_t> >(reportTestCases), "ceil", "fixpnt<8,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< fixpnt<8, 2, Saturate, uint8_t> >(reportTestCases), "floor", "fixpnt<8,2,Saturate,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < fixpnt<8, 2, Saturate, uint8_t> >(reportTestCases), "ceil", "fixpnt<8,2,Saturate,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor< fixpnt<16, 8, Saturating, uint8_t> >(reportTestCases), "floor", "fixpnt<16,8,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyCeil < fixpnt<16, 8, Saturating, uint8_t> >(reportTestCases), "ceil", "fixpnt<16,8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< fixpnt<16, 8, Saturate, uint8_t> >(reportTestCases), "floor", "fixpnt<16,8,Saturate,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < fixpnt<16, 8, Saturate, uint8_t> >(reportTestCases), "ceil", "fixpnt<16,8,Saturate,uint8_t>");
 
 #endif
 

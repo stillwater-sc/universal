@@ -13,29 +13,31 @@
 namespace sw { namespace universal {
 
 	// TODO: needs a type trait to only match on lns<> type
-template<typename LnsType>
-int ValidateAssignment(bool reportTestCases) {
-	constexpr size_t nbits = LnsType::nbits;
-	constexpr size_t NR_ENCODINGS = (1ull << nbits);
-	int nrOfFailedTestCases = 0;
+	template<typename LnsType>
+	int ValidateAssignment(bool reportTestCases) {
+		constexpr size_t nbits = LnsType::nbits;
+		constexpr size_t NR_ENCODINGS = (1ull << nbits);
+		int nrOfFailedTestCases = 0;
 
-	LnsType a, b;
-	for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-		a.setbits(i);
-		double da = double(a);
-		b = da;
-//		std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
-		if (a != b) {
-			++nrOfFailedTestCases;
-			if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
+		LnsType a, b;
+		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
+			a.setbits(i);
+			double da = double(a);
+			b = da;
+	//		std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
+			if (a != b) {
+				++nrOfFailedTestCases;
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
+			}
+			else {
+				// if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
+			}
 		}
-		else {
-			// if (reportTestCases) ReportAssignmentSuccess("PASS", "=", da, b, a);
-		}
+
+		// test clipping or saturation
+
+		return nrOfFailedTestCases;
 	}
-
-	return nrOfFailedTestCases;
-}
 
 } }
 
@@ -52,8 +54,22 @@ void GenerateBitWeightTable() {
 	}
 }
 
+template<typename Real>
+void SampleTest(Real v) {
+	using namespace sw::universal;
+	std::cout << to_binary(lns<8, 0>(v)) << " : " << lns<8, 0>(v) << '\n';
+	std::cout << to_binary(lns<8, 1>(v)) << " : " << lns<8, 1>(v) << '\n';
+	std::cout << to_binary(lns<8, 2>(v)) << " : " << lns<8, 2>(v) << '\n';
+	std::cout << to_binary(lns<8, 3>(v)) << " : " << lns<8, 3>(v) << '\n';
+	std::cout << to_binary(lns<8, 4>(v)) << " : " << lns<8, 4>(v) << '\n';
+	std::cout << to_binary(lns<8, 5>(v)) << " : " << lns<8, 5>(v) << '\n';
+	std::cout << to_binary(lns<8, 6>(v)) << " : " << lns<8, 6>(v) << '\n';
+	std::cout << to_binary(lns<8, 7>(v)) << " : " << lns<8, 7>(v) << '\n';
+	// std::cout << to_binary(lns<8, 8>(v)) << " : " << lns<8, 8>(v) << '\n';
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -81,22 +97,16 @@ try {
 
 #if MANUAL_TESTING
 
-	using LNS16_5 = lns<16, 5, std::uint16_t>;
-	using LNS11_5 = lns<11, 5, std::uint8_t>;
-	using LNS8_2 = lns<8, 2, std::uint8_t>;
+//	using LNS16_5 = lns<16, 5, std::uint16_t>;
+//	using LNS11_5 = lns<11, 5, std::uint8_t>;
+//	using LNS8_2 = lns<8, 2, std::uint8_t>;
 	using LNS5_2 = lns<5, 2, std::uint8_t>;
-	using LNS4_1 = lns<4, 1, std::uint8_t>;
+//	using LNS4_1 = lns<4, 1, std::uint8_t>;
 
 	// GenerateBitWeightTable<double>();
+	SampleTest(1024.0f);
+	return 0;
 
-	// generate individual testcases to hand trace/debug
-	{
-		LNS5_2 a, b;
-		a.setnan();
-		float fa = float(a);
-		b = fa;
-		std::cout << fa << " vs " << b << '\n';
-	}
 
 	// manual exhaustive test
 //	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<LNS4_1>(reportTestCases), type_tag(LNS4_1()), test_tag);
@@ -135,6 +145,14 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

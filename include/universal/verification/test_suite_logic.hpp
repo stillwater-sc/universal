@@ -29,7 +29,7 @@ namespace sw { namespace universal {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 	template<typename TestType>
-	int VerifyLogicEqual() {
+	int VerifyLogicEqual(bool reportTestCases = false) {
 		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
 		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
@@ -44,8 +44,9 @@ namespace sw { namespace universal {
 				// generate the number system's answer
 				bool result = (a == b);
 				if (ref != result) {
+					if (a.isnan() || b.isnan()) continue; // NaN negative equivalence
 					nrOfFailedTestCases++;
-					std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
+					if (reportTestCases) std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
 				}
 			}
 		}
@@ -53,7 +54,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	int VerifyLogicNotEqual() {
+	int VerifyLogicNotEqual(bool reportTestCases = false) {
 		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
 		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
@@ -68,8 +69,9 @@ namespace sw { namespace universal {
 				// generate the number system's answer
 				bool result = (a != b);
 				if (ref != result) {
+					if (a.isnan() && b.isnan()) continue; // NaN negative equivalence
 					nrOfFailedTestCases++;
-					std::cout << a << " != " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
+					if (reportTestCases) std::cout << a << " != " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
 				}
 			}
 		}
@@ -77,7 +79,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	int VerifyLogicLessThan() {
+	int VerifyLogicLessThan(bool reportTestCases = false) {
 		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
 		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
@@ -93,7 +95,7 @@ namespace sw { namespace universal {
 				bool result = (a < b);
 				if (ref != result) {
 					nrOfFailedTestCases++;
-					std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
+					if (reportTestCases) std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
 				}
 			}
 		}
@@ -101,7 +103,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	int VerifyLogicGreaterThan() {
+	int VerifyLogicGreaterThan(bool reportTestCases = false) {
 		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
 		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
@@ -117,7 +119,7 @@ namespace sw { namespace universal {
 				bool presult = (a > b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " > " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " > " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}
@@ -125,7 +127,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	int VerifyLogicLessOrEqualThan() {
+	int VerifyLogicLessOrEqualThan(bool reportTestCases = false) {
 		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
 		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
@@ -141,7 +143,7 @@ namespace sw { namespace universal {
 				bool presult = (a <= b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " <= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " <= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}
@@ -149,7 +151,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	int VerifyLogicGreaterOrEqualThan() {
+	int VerifyLogicGreaterOrEqualThan(bool reportTestCases = false) {
 		constexpr size_t nbits = TestType::nbits;  // standard interface to Universal number system classes
 		size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTestCases = 0;
@@ -165,7 +167,7 @@ namespace sw { namespace universal {
 				bool presult = (a >= b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " >= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " >= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}

@@ -9,17 +9,8 @@
 #include <universal/number/cfloat/cfloat.hpp>  // bit field comparisons
 #include <universal/verification/test_suite.hpp>
 
-template<size_t nbits> 
-int VerifyAddition(bool reportTestCases) {
-	int nrOfFailedTestCases = 0;
-
-	if (reportTestCases) std::cout << '\n';
-
-	return nrOfFailedTestCases;
-}
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -46,31 +37,89 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// important behavioral traits
+	ReportTrivialityOfType<lns<8, 2>>();
+
+	// default behavior
+	std::cout << "+---------    default lns bahavior   --------+\n";
 	{
-		using Real = lns<8, 2>;
-		bool isTrivial = bool(std::is_trivial<Real>());
-		static_assert(std::is_trivial<Real>(), "lns should be trivial but failed the assertion");
-		std::cout << (isTrivial ? "lns is trivial" : "lns failed trivial: FAIL") << '\n';
-
-		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Real>());
-		static_assert(std::is_trivially_constructible<Real>(), "lns should be trivially constructible but failed the assertion");
-		std::cout << (isTriviallyConstructible ? "lns is trivial constructible" : "lns failed trivial constructible: FAIL") << '\n';
-
-		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Real>());
-		static_assert(std::is_trivially_copyable<Real>(), "lns should be trivially copyable but failed the assertion");
-		std::cout << (isTriviallyCopyable ? "lns is trivially copyable" : "lns failed trivially copyable: FAIL") << '\n';
-
-		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<Real>());
-		static_assert(std::is_trivially_copy_assignable<Real>(), "lns should be trivially copy-assignable but failed the assertion");
-		std::cout << (isTriviallyCopyAssignable ? "lns is trivially copy-assignable" : "lns failed trivially copy-assignable: FAIL") << '\n';
+		using Real = lns<8, 3>;
+		Real a(1.0f), b(1.0f), c;
+		ArithmeticOperators<Real>(a, b);
+		a = 1;  // integer assignment
+		b = 1;
+		c = a + b;
+		ReportBinaryOperation(a, "+", b, c);
 	}
 
-#if MANUAL_TESTING
+	// configuration
+	std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
+	{
+		using Real = lns<16, 5, std::uint16_t>;
+		ArithmeticOperators<Real>(1.0f, 1.0f);
+	}
+	{
+		using Real = lns<24, 5, std::uint32_t>;
+		ArithmeticOperators<Real>(1.0f, 1.0f);
+	}
 
-	// generate individual testcases to hand trace/debug
-	//TestCase< lns<16, 5, uint8_t>, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
-	//TestCase< lns<8, 2, uint8_t>, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	std::cout << "+---------    Dynamic ranges of lns<> configurations   --------+\n";
+	{
+		std::cout << dynamic_range(lns< 4, 2>()) << '\n';
+		std::cout << dynamic_range(lns< 8, 3>()) << '\n';
+		std::cout << dynamic_range(lns<12, 4>()) << '\n';
+		std::cout << dynamic_range(lns<16, 5>()) << '\n';
+		std::cout << dynamic_range(lns<20, 6>()) << '\n';
+	}
 
+	std::cout << "+---------    constexpr and specific values   --------+\n";
+	{
+		constexpr size_t nbits = 10;
+		constexpr size_t rbits = 3;
+		using Real = lns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
+
+		CONSTEXPRESSION Real a{}; // zero constexpr
+		std::cout << type_tag(a) << '\n';
+
+		// TODO: needs a constexpr version of log2() function
+//		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
+//		std::cout << to_binary(b) << " : " << b << '\n';
+
+		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
+		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
+
+		CONSTEXPRESSION Real d(SpecificValue::maxpos);  // constexpr of a special value in the encoding
+		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
+	}
+
+	std::cout << "+---------    extreme values   --------+\n";
+	{
+		constexpr size_t nbits = 10;
+		constexpr size_t rbits = 3;
+		using Real = lns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
+
+		Real a, b, c;
+
+		a = INFINITY;
+		b = 2;
+		c = a / b;
+		std::cout << "scale(" << a << ") = " << a.scale() << '\n';
+		std::cout << "scale(" << b << ") = " << b.scale() << '\n';
+		ReportBinaryOperation(a, "/", b, c);
+	}
+
+	std::cout << "+---------    Dynamic ranges of 8-bit lns<> configurations   --------+\n";
+	{
+		std::cout << dynamic_range(lns<8, 0>()) << '\n';
+		std::cout << dynamic_range(lns<8, 1>()) << '\n';
+		std::cout << dynamic_range(lns<8, 2>()) << '\n';
+		std::cout << dynamic_range(lns<8, 3>()) << '\n';
+		std::cout << dynamic_range(lns<8, 4>()) << '\n';
+		std::cout << dynamic_range(lns<8, 5>()) << '\n';
+		std::cout << dynamic_range(lns<8, 6>()) << '\n';
+		std::cout << dynamic_range(lns<8, 7>()) << '\n';
+	}
+
+	std::cout << "+---------    comparison to classic floats   --------+\n";
 	{
 		using LNS = lns<16, 8, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
@@ -83,27 +132,8 @@ try {
 		std::cout << std::setw(80) << type_tag(b) << " : " << to_binary(b, true) << " : " << color_print(b, true) << " : " << float(b) << '\n';
 	}
 	
-	//nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>(reportTestCases), "lns<8>", test_tag);
-
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
-#else
-#if REGRESSION_LEVEL_1
-
-#endif
-
-#if REGRESSION_LEVEL_2
-#endif
-
-#if REGRESSION_LEVEL_3
-#endif
-
-#if REGRESSION_LEVEL_4
-#endif
-
-	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

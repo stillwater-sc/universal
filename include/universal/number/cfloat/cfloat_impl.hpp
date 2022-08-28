@@ -358,10 +358,8 @@ public:
 	constexpr cfloat(const std::string& stringRep) {
 		assign(stringRep);
 	}
-	/// <summary>
-	/// construct a cfloat from another, block type bt must be the same
-	/// </summary>
-	/// <param name="rhs"></param>
+
+	// construct a cfloat from another, block type bt must be the same
 	template<size_t nnbits, size_t ees>
 	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
 		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
@@ -1212,7 +1210,7 @@ public:
 	/// 1's complement of the encoding
 	/// </summary>
 	/// <returns>reference to this cfloat object</returns>
-	inline constexpr cfloat& flip() noexcept { // in-place one's complement
+	constexpr cfloat& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}

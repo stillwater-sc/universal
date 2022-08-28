@@ -186,7 +186,7 @@ try {
 	int scaleTestFailures = 0;
 	for (int i = 1; i < 1025; i *= 2) {
 		float f = float(i);
-		blocktriple<9, BlockTripleOperator::ADD, uint8_t> nut = f;
+		blocktriple<9, BlockTripleOperator::ADD, uint8_t> nut(f);
 		// std::cout << std::setw(4) << i << " : " << to_binary(nut) << '\n';
 		if (f != float(nut)) {
 			++scaleTestFailures;

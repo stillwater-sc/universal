@@ -1,16 +1,20 @@
 #pragma once
 // lerp.hpp: definition of a linear interpolation function
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <type_traits>
 #include <universal/traits/posit_traits.hpp>
 
-namespace sw { namespace universal {
+#if (__cpp_lib_interpolate)
 
-#if (__cplusplus < 202002L)
+using std::lerp;
+
+#endif
+
+namespace sw { namespace universal {
 
 	template<typename Real>
 	Real lerp(Real a, Real b, Real interval) noexcept {
@@ -21,10 +25,6 @@ namespace sw { namespace universal {
 	Real lerp(Real a, Real b) noexcept {
 		return (a + b) * Real(0.5f);
 	}
-
-#else
-using std::lerp;
-#endif
 
 }} // namespace sw::universal
 

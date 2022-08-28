@@ -37,7 +37,7 @@
 
 // forward references
 using Integer = sw::universal::integer<8, uint8_t, sw::universal::IntegerNumberType::IntegerNumber>;
-using Fixpnt  = sw::universal::fixpnt<8, 4, sw::universal::Saturating, uint8_t>;
+using Fixpnt  = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
 using Cfloat  = sw::universal::half;
 using Posit   = sw::universal::posit<8,2>;
 

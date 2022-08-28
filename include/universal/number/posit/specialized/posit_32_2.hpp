@@ -589,7 +589,7 @@ private:
 	}
 	long double to_long_double() const {
 		if (iszero())  return 0.0;
-		if (isnar())   return NAN;
+		if (isnar())   return static_cast<long double>(NAN);
 		bool		     	 _sign;
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;

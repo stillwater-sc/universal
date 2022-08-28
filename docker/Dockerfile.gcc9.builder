@@ -3,7 +3,7 @@
 # docker build --target gcc10builder -t stillwater/universal:gcc10builder 
 
 # BUILDER stage
-FROM gcc:9.4 as gcc9builder
+FROM gcc:9.5 as gcc9builder
 LABEL Theodore Omtzigt
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
@@ -37,5 +37,5 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID "Universal Numbers Library Builder V3 GCC 9.4"
+ENV CONTAINER_ID "Universal Numbers Library Builder V3 GCC 9.5"
 CMD ["/usr/bin/env", "bash"]

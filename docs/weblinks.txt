@@ -1,0 +1,7 @@
+Wilkinson's polynomial
+https://en.wikipedia.org/wiki/Wilkinson's_polynomial
+
+In numerical analysis, Wilkinson's polynomial is a specific polynomial 
+which was used by James H. Wilkinson in 1963 to illustrate a difficulty 
+when finding the root of a polynomial: the location of the roots can be 
+very sensitive to perturbations in the coefficients of the polynomial.

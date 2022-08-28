@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 
-using fp8_4s = sw::universal::fixpnt<8, 4, sw::universal::Saturating, uint8_t>;
+using fp8_4s = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
 
 fp8_4s fixpntPolynomial(const std::vector<int>& coef, const fp8_4s& x) {
 	using namespace sw::universal;

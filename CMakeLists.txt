@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 57)
+  set(UNIVERSAL_VERSION_MINOR 59)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -120,6 +120,7 @@ option(BUILD_NUMBER_POSITS               "Set to ON to build unum Type 3 posit t
 option(BUILD_NUMBER_VALIDS               "Set to ON to build unum Type 3 valid tests"          OFF)
 option(BUILD_NUMBER_REALS                "Set to ON to build real tests"                       OFF)
 option(BUILD_NUMBER_LNS                  "Set to ON to build LNS tests"                        OFF)
+option(BUILD_NUMBER_SORNS                "Set to ON to build SORN tests"                       OFF)
 # conversion test suites
 option(BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -133,12 +134,12 @@ option(BUILD_BENCHMARK_ENERGY            "Set to ON to build mixed-prec energy b
 option(BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
 
 # mixed-precision algorithm design and optimization
-option(BUILD_MIXEDPRECISION_ROOTS        "Set to ON to build mixed-precision root finders"     OFF)
-option(BUILD_MIXEDPRECISION_APPROXIMATE  "Set to ON to build mixed-precision approximation"    OFF)
-option(BUILD_MIXEDPRECISION_INTEGRATE    "Set to ON to build mixed-precision integration"      OFF)
-option(BUILD_MIXEDPRECISION_INTERPOLATE  "Set to ON to build mixed-precision interpolation"    OFF)
-option(BUILD_MIXEDPRECISION_OPTIMIZE     "Set to ON to build mixed-precision optimization"     OFF)
-option(BUILD_MIXEDPRECISION_CONJUGATE    "Set to ON to build mixed-precision CG"               OFF)
+option(BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
+option(BUILD_MIXEDPRECISION_APPROXIMATE   "Set to ON to build mixed-precision approximation"   OFF)
+option(BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-precision integration"     OFF)
+option(BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
+option(BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
+option(BUILD_MIXEDPRECISION_LINEARALGEBRA "Set to ON to build mixed-precision linear algebra"  OFF)
 
 # validation
 option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -314,6 +315,7 @@ elseif(MSVC)
 	# Zc:__cplusplus not specified		Any value					199711L
 	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
+      set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus")
 	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
 	# for the moment turn off since we are getting: cl : Command line warning D9002: ignoring unknown option '/Zc:__cplusplus`
 	#set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} /std:c++17")
@@ -614,6 +616,7 @@ if(BUILD_NUMBER_SYSTEMS)
 	set(BUILD_NUMBER_POSITS ON)
 	set(BUILD_NUMBER_VALIDS ON)
 	set(BUILD_NUMBER_LNS ON)
+	set(BUILD_NUMBER_SORNS ON)
 	
 	# build the conversion test suites
 	set(BUILD_NUMBER_CONVERSIONS ON)
@@ -625,7 +628,7 @@ if(BUILD_MIXEDPRECISION_SDK)
 	set(BUILD_MIXEDPRECISION_INTEGRATE ON)
 	set(BUILD_MIXEDPRECISION_INTERPOLATE ON)
 	set(BUILD_MIXEDPRECISION_OPTIMIZE ON)
-	set(BUILD_MIXEDPRECISION_CONJUGATE ON)
+	set(BUILD_MIXEDPRECISION_LINEARALGEBRA ON)
 endif(BUILD_MIXEDPRECISION_SDK)
 
 if(BUILD_APP_ENVIRONMENT)
@@ -672,6 +675,10 @@ endif(BUILD_NUMBER_REALS)
 if(BUILD_NUMBER_LNS)
 add_subdirectory("tests/lns")
 endif(BUILD_NUMBER_LNS)
+
+if(BUILD_NUMBER_SORNS)
+add_subdirectory("tests/sorn")
+endif(BUILD_NUMBER_SORNS)
 
 if(BUILD_NUMBER_UNUM_TYPE_1)
 add_subdirectory("tests/unum")
@@ -727,9 +734,9 @@ if(BUILD_MIXEDPRECISION_OPTIMIZE)
 add_subdirectory("mixedprecision/optimization")
 endif(BUILD_MIXEDPRECISION_OPTIMIZE)
 
-if(BUILD_MIXEDPRECISION_CONJUGATE)
-add_subdirectory("mixedprecision/linearalgebra/cg")
-endif(BUILD_MIXEDPRECISION_CONJUGATE)
+if(BUILD_MIXEDPRECISION_LINEARALGEBRA)
+add_subdirectory("mixedprecision/linearalgebra")
+endif(BUILD_MIXEDPRECISION_LINEARALGEBRA)
 
 # performance benchmarks
 if(BUILD_BENCHMARK_PERFORMANCE)

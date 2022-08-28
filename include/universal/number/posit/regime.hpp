@@ -82,7 +82,7 @@ public:
 	size_t assign(int scale) {
 		bool r = scale > 0;
 		_k = calculate_k<nbits,es>(scale);
-		_run = (r ? 1 + (scale >> es) : -scale >> es);
+		_run = static_cast<unsigned>(r ? 1 + (scale >> es) : -scale >> es);
 		r ? _Bits.set() : _Bits.reset();
 		_Bits.set(nbits - 1 - _run - 1, 1 ^ r); // termination bit		
 		_RegimeBits = _run + 1;

@@ -8,11 +8,8 @@
 namespace sw { namespace universal {
 
 // Generate a type tag for rational type
-std::string type_tag(rational& v) {
-	std::stringstream str;
-	if (v.iszero()) str << ' '; // remove 'unreferenced formal parameter warning from compilation log
-	str << "rational";
-	return str.str();
+std::string type_tag(const rational& = {}) {
+	return "rational";
 }
 
 }} // namespace sw::universal

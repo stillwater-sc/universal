@@ -45,18 +45,19 @@ try {
 	std::streamsize precision = std::cout.precision();
 	
 	{
-		using lns = lns<16, 10, std::uint16_t>;
+		using LNS = lns<16, 10, std::uint16_t>;
 
-		lns a, b, c;
+		LNS a{}, b{}, c{};
 		a = 0.5;
 		b = 2.0;
 		c = a * b;
-		ReportValues(a, "*", b, c);
+		ReportBinaryOperation(a, "*", b, c);
 	}
 
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;
 	
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
