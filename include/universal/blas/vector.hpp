@@ -167,6 +167,13 @@ public:
 		return sqrt(twoNorm);
 	}
 
+	// Print elements as a column
+	void disp(){
+		for (auto v : data) {
+			std::cout << v << '\n';
+		}
+	}
+
 // modifiers
 	vector& assign(const Scalar& val) {
 		for (auto& v : data) v = val;

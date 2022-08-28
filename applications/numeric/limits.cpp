@@ -33,7 +33,7 @@ try {
 	// report on precision and dynamic range of the number system
 
 	std::streamsize precision = std::cout.precision();
-
+	
 	constexpr size_t columnWidth = 30;
 	numberTraits<int32, columnWidth>(std::cout);
 	numberTraits<fixpnt32, columnWidth>(std::cout);
