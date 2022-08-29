@@ -2,10 +2,10 @@
 #include <universal/blas/blas.hpp>
 
 // Size = 4 x 4 
-// Rank 4; Matrix Norm = ; Cond. =  
+// Rank 4; Matrix 1-Norm = 27 ; Cond. = 4.19 
 // symmetric = NO
-/// pos.def =   
-// Matrix ID = ---
+// pos.def = NO   
+// Matrix ID = none
 // NNZ = 12
 
 sw::universal::blas::matrix<double>  s4 = {

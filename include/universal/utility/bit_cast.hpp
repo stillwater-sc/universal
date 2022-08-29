@@ -96,8 +96,8 @@ inline constexpr bool is_bit_cast_constexpr_v = BIT_CAST_IS_CONSTEXPR;
 
 #undef BIT_CAST
 
-
 // BIT_CAST_SUPPORT is compiler env dependent and drives the algorith selection of ieee-754 decode
+
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
