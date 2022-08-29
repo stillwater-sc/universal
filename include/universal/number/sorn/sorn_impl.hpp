@@ -454,7 +454,7 @@ public:
 	//////////////////////////////////////////
 
 	// absolute value
-	sorn& abs() {
+	sorn abs() {
 		sorn absVal;
 		if (this->sornIntVal.upperBound <= 0) {
 			absVal = -*this;
