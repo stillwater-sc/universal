@@ -1,6 +1,6 @@
 // posit.cpp: components of a posit: cli to show the sign/scale/regime/exponent/fraction components of standard posit configurations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -61,7 +61,10 @@ try {
 	posit<64, 2> p64_2(ld);
 	posit<64, 3> p64_3(ld);
 	posit<64, 4> p64_4(ld);
-
+	posit<80, 1> p80_1(ld);
+	posit<80, 2> p80_2(ld);
+	posit<80, 3> p80_3(ld);
+	posit<80, 4> p80_4(ld);
 
 //	typedef std::numeric_limits<long double > Real;
 //	int precision = Real::max_digits10;
@@ -97,6 +100,12 @@ try {
 	std::cout << " posit<64,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_3) << " : " << p64_3 << '\n';
 	std::cout << " posit<64,4>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p64_4) << " : " << p64_4 << '\n';
 
+	std::cout << std::setprecision(18);
+	std::cout << " posit<80,1>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p80_1) << " : " << p80_1 << '\n';
+	std::cout << " posit<80,2>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p80_2) << " : " << p80_2 << '\n';
+	std::cout << " posit<80,3>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p80_3) << " : " << p80_3 << '\n';
+	std::cout << " posit<80,4>  = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p80_4) << " : " << p80_4 << '\n';
+
 #ifdef WIDE_CONSOLE
 	posit<128, 2> p128_2(d);
 	posit<128, 3> p128_3(d);
@@ -116,6 +125,14 @@ try {
 	std::cout << "posit<256,4> = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p256_4) << " : " << p256_4 << '\n';
 	std::cout << "posit<256,5> = " << std::setw(BIT_COLUMN_WIDTH) << color_print(p256_5) << " : " << p256_5 << '\n';
 #endif
+
+	std::cout << "\n\nDifferent printing formats\n";
+	std::cout << "floating-point : " << std::setprecision(std::numeric_limits< posit<64,2> >::max_digits10) << p64_2 << '\n';
+	std::cout << "triple form    : " << to_triple(p64_2) << '\n';
+	std::cout << "binary form    : " << to_binary(p64_2, true) << '\n';
+	std::cout << "pretty print   : " << pretty_print(p64_2) << '\n';
+	std::cout << "color coded    : " << color_print(p64_2) << '\n';
+	std::cout << "hex print      : " << hex_print(p64_2) << '\n';
 
 	return EXIT_SUCCESS;
 }
