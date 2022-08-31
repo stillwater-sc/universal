@@ -71,6 +71,8 @@ public:
 	static constexpr bool     SPECIAL_BITS_TOGETHER = (nbits > ((nrBlocks - 1) * bitsInBlock + 1));
 	static constexpr bt       MSU_ZERO = MSB_BIT_MASK;
 	static constexpr bt       MSU_NAN = SIGN_BIT_MASK | MSU_ZERO;  // only valid when special bits together is true
+	static constexpr int      min_exponent = -(1 << (nbits - 1 - rbits - 1));
+	static constexpr int      max_exponent = (1 << (nbits - 1 - rbits - 1)) - 1;
 
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + lns exponent
 	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the lns exponent
@@ -411,7 +413,11 @@ public:
 		exp >>= rbits;
 		return long(exp);
 	}
-
+	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
+		blockbinary<nbits + 2, std::uint32_t, BinaryNumberType::Unsigned> bb{ 0 };
+		// TODO: how? and what is the size of the blockbinary? it is much bigger than nbits+2
+		return bb;
+	}
 	constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		bt word = _block[bitIndex / bitsInBlock];
@@ -836,6 +842,16 @@ std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleM
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 		}
 	}
+	return s.str();
+}
+
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << "0b";
+	s << (v.sign() ? "(-, " : "(+, ");
+	s << v.scale() << ", ";
+	s << v.fraction() << ')';
 	return s.str();
 }
 
