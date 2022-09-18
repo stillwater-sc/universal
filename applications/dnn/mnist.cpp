@@ -19,13 +19,19 @@ try {
 	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating = false;
 	using WeightType = cfloat<8, 2, std::uint8_t, hasSubnormals, hasSupernormals, isSaturating>;
-	using ActivationType = float;
-	dnn::dnn<float> dnn;
+	using ActivationType = lns<5, 2, std::uint8_t>;
+	dnn::dnn<float> dnn("LeNet-5", 0.1f);
 
-	auto denseLayer = dnn::CreateDenseLayer<WeightType, ActivationType>(10ul, dnn::Activation::ReLU);
-	std::cout << "First Dense Layer : " << denseLayer << '\n';
+	unsigned N(1), C(3), H(224), W(224);
+	auto convLayer1 = dnn::CreateConvolutionLayer<WeightType, ActivationType>(N, C, H, W, dnn::Activation::Tanh);
+	std::cout << convLayer1 << '\n';
+	dnn.addLayer(convLayer1);
 
-	dnn.addLayer(denseLayer);
+	auto fcLayer = dnn::CreateFullyConnectedLayer<WeightType, ActivationType>(10ul, dnn::Activation::ReLU);
+	std::cout << fcLayer << '\n';
+	dnn.addLayer(fcLayer);
+
+	std::cout << dnn << '\n';
 
 	return EXIT_SUCCESS;
 }
