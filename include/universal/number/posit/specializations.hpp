@@ -21,6 +21,7 @@
 #define POSIT_FAST_POSIT_16_1  1
 #define POSIT_FAST_POSIT_32_2  1
 #define POSIT_FAST_POSIT_48_2  0
+#define POSIT_FAST_POSIT_64_2  0
 #define POSIT_FAST_POSIT_64_3  0
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
@@ -64,11 +65,29 @@
 #if POSIT_FAST_POSIT_8_0
 #include <universal/number/posit/specialized/posit_8_0.hpp>
 #endif
+#ifndef POSIT_FAST_POSIT_8_1
+#define POSIT_FAST_POSIT_8_1 0
+#endif
+#if POSIT_FAST_POSIT_8_1
+#include <universal/number/posit/specialized/posit_8_1.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_8_2
+#define POSIT_FAST_POSIT_8_2 0
+#endif
+#if POSIT_FAST_POSIT_8_2
+#include <universal/number/posit/specialized/posit_8_2.hpp>
+#endif
 #ifndef POSIT_FAST_POSIT_16_1
 #define POSIT_FAST_POSIT_16_1 0
 #endif
 #if POSIT_FAST_POSIT_16_1
 #include <universal/number/posit/specialized/posit_16_1.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_16_2
+#define POSIT_FAST_POSIT_16_2 0
+#endif
+#if POSIT_FAST_POSIT_16_2
+#include <universal/number/posit/specialized/posit_16_2.hpp>
 #endif
 #ifndef POSIT_FAST_POSIT_32_2
 #define POSIT_FAST_POSIT_32_2 0
@@ -82,17 +101,35 @@
 #if POSIT_FAST_POSIT_48_2
 #include <universal/number/posit/specialized/posit_48_2.hpp>
 #endif
+#ifndef POSIT_FAST_POSIT_64_2
+#define POSIT_FAST_POSIT_64_2 0
+#endif
+#if POSIT_FAST_POSIT_64_2
+#include <universal/number/posit/specialized/posit_64_2.hpp>
+#endif
 #ifndef POSIT_FAST_POSIT_64_3
 #define POSIT_FAST_POSIT_64_3 0
 #endif
 #if POSIT_FAST_POSIT_64_3
 #include <universal/number/posit/specialized/posit_64_3.hpp>
 #endif
+#ifndef POSIT_FAST_POSIT_128_2
+#define POSIT_FAST_POSIT_128_2 0
+#endif
+#if POSIT_FAST_POSIT_128_2
+#include <universal/number/posit/specialized/posit_128_2.hpp>
+#endif
 #ifndef POSIT_FAST_POSIT_128_4
 #define POSIT_FAST_POSIT_128_4 0
 #endif
 #if POSIT_FAST_POSIT_128_4
 #include <universal/number/posit/specialized/posit_128_4.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_256_2
+#define POSIT_FAST_POSIT_256_2 0
+#endif
+#if POSIT_FAST_POSIT_256_2
+#include <universal/number/posit/specialized/posit_256_2.hpp>
 #endif
 #ifndef POSIT_FAST_POSIT_256_5
 #define POSIT_FAST_POSIT_256_5 0

@@ -1,0 +1,29 @@
+Fixed-points with only integer bits
+fixpnt<  4,   0,     Modulo, unsigned short> : [ -8  ... -1  0 1  ... 7  ]
+fixpnt<  8,   0,     Modulo, unsigned short> : [ -128  ... -1  0 1  ... 127  ]
+fixpnt< 12,   0,     Modulo, unsigned short> : [ -2048  ... -1  0 1  ... 2047  ]
+fixpnt< 16,   0,     Modulo, unsigned short> : [ -32768  ... -1  0 1  ... 32767  ]
+fixpnt< 20,   0,     Modulo, unsigned short> : [ -524288  ... -1  0 1  ... 524287  ]
+fixpnt< 24,   0,     Modulo, unsigned short> : [ -8388608  ... -1  0 1  ... 8388607  ]
+fixpnt< 28,   0,     Modulo, unsigned short> : [ -134217728  ... -1  0 1  ... 134217727  ]
+fixpnt< 32,   0,     Modulo, unsigned short> : [ -2147483648  ... -1  0 1  ... 2147483647  ]
+
+Fixed-points that evenly divide bits between integer and fraction bits
+fixpnt<  4,   2,     Modulo, unsigned short> : [ -2.00  ... -0.25  0 0.25  ... 1.75  ]
+fixpnt<  8,   4,     Modulo, unsigned short> : [ -8.0000  ... -0.0625  0 0.0625  ... 7.9375  ]
+fixpnt< 12,   6,     Modulo, unsigned short> : [ -32.000000  ... -0.015625  0 0.015625  ... 31.984375  ]
+fixpnt< 16,   8,     Modulo, unsigned short> : [ -128.00000000  ... -0.00390625  0 0.00390625  ... 127.99609375  ]
+fixpnt< 20,  10,     Modulo, unsigned short> : [ -512.0000000000  ... -0.0009765625  0 0.0009765625  ... 511.9990234375  ]
+fixpnt< 24,  12,     Modulo, unsigned short> : [ -2048.000000000000  ... -0.000244140625  0 0.000244140625  ... 2047.999755859375  ]
+fixpnt< 28,  14,     Modulo, unsigned short> : [ -8192.00000000000000  ... -0.00006103515625  0 0.00006103515625  ... 8191.99993896484375  ]
+fixpnt< 32,  16,     Modulo, unsigned short> : [ -32768.0000000000000000  ... -0.0000152587890625  0 0.0000152587890625  ... 32767.9999847412109375  ]
+
+Fixed-points with only fraction bits
+fixpnt<  4,   4,     Modulo, unsigned short> : [ -0.5000  ... -0.0625  0 0.0625  ... 0.4375  ]
+fixpnt<  8,   8,     Modulo, unsigned short> : [ -0.50000000  ... -0.00390625  0 0.00390625  ... 0.49609375  ]
+fixpnt< 12,  12,     Modulo, unsigned short> : [ -0.500000000000  ... -0.000244140625  0 0.000244140625  ... 0.499755859375  ]
+fixpnt< 16,  16,     Modulo, unsigned short> : [ -0.5000000000000000  ... -0.0000152587890625  0 0.0000152587890625  ... 0.4999847412109375  ]
+fixpnt< 20,  20,     Modulo, unsigned short> : [ -0.50000000000000000000  ... -0.00000095367431640625  0 0.00000095367431640625  ... 0.49999904632568359375  ]
+fixpnt< 24,  24,     Modulo, unsigned short> : [ -0.500000000000000000000000  ... -0.000000059604644775390625  0 0.000000059604644775390625  ... 0.499999940395355224609375  ]
+fixpnt< 28,  28,     Modulo, unsigned short> : [ -0.5000000000000000000000000000  ... -0.0000000037252902984619140625  0 0.0000000037252902984619140625  ... 0.4999999962747097015380859375  ]
+fixpnt< 32,  32,     Modulo, unsigned short> : [ -0.50000000000000000000000000000000  ... -0.00000000023283064365386962890625  0 0.00000000023283064365386962890625  ... 0.49999999976716935634613037109375  ]

@@ -1746,6 +1746,26 @@ inline std::string to_binary(const posit<nbits, es>& number, bool nibbleMarker =
 	return ss.str();
 }
 
+template<size_t nbits, size_t es>
+inline std::string to_triple(const posit<nbits, es>& number, bool nibbleMarker = false) {
+	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	bool s{ false };
+	regime<nbits, es> r;
+	exponent<nbits, es> e;
+	fraction<fbits> f;
+	bitblock<nbits> raw = number.get();
+	std::stringstream ss;
+	extract_fields(raw, s, r, e, f);
+
+	ss << (s ? "(-, " : "(+, ");
+	ss << scale(number) 
+	   << ", "
+	   << to_string(f, false, nibbleMarker)
+	   << ')';
+
+	return ss.str();
+}
+
 // numerical helpers
 
 template<size_t nbits, size_t es>

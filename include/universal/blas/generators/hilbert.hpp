@@ -35,8 +35,12 @@ size_t GenerateHilbertMatrix(matrix<Scalar>& M, bool bScale = true) {
 	return lcm;
 }
 
-template<typename Scalar>
+/* old invocation:
 void GenerateHilbertMatrixInverse(matrix<Scalar>& M, Scalar scale = Scalar(1.0)) {
+*/
+
+template<typename Scalar>
+void GenerateHilbertMatrixInverse(matrix<Scalar>&M) {
 	assert(num_rows(M) == num_cols(M)); // needs to be square
 	size_t N = num_rows(M);
 	for (size_t i = 0; i < N; ++i) {

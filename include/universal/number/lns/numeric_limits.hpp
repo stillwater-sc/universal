@@ -13,16 +13,13 @@ public:
 	using LNS = sw::universal::lns<nbits, rbits, bt, xtra...>;
 	static constexpr bool is_specialized = true;
 	static constexpr LNS  min() { // return minimum value
-		LNS lminpos(0);
-		return lminpos;
+		return LNS(sw::universal::SpecificValue::minpos);
 	} 
 	static constexpr LNS  max() { // return maximum value
-		LNS lmaxpos(0);
-		return lmaxpos;
+		return LNS(sw::universal::SpecificValue::maxpos);
 	} 
 	static constexpr LNS  lowest() { // return most negative value
-		LNS lmaxneg(0);
-		return lmaxneg;
+		return LNS(sw::universal::SpecificValue::maxneg);
 	} 
 	static constexpr LNS  epsilon() { // return smallest effective increment from 1.0
 		LNS one{ 1.0f }, incr{ 1.0f };
@@ -33,7 +30,7 @@ public:
 		return LNS(0.5);
 	}
 	static constexpr LNS  denorm_min() {  // return minimum denormalized value
-		return LNS(1.0); 
+		return LNS(sw::universal::SpecificValue::minpos);
 	}
 	static constexpr LNS  infinity() { // return positive infinity
 		return LNS(INFINITY); 
@@ -45,18 +42,18 @@ public:
 		return LNS(NAN);
 	}
 
-	static constexpr int digits       = 3333333;
-	static constexpr int digits10     = 1000000;
-	static constexpr int max_digits10 = 1000000;
+	static constexpr int digits       = -LNS::min_exponent + rbits;
+	static constexpr int digits10     = digits / 3.3;
+	static constexpr int max_digits10 = digits10;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent = 0;
-	static constexpr int min_exponent10 = 0;
-	static constexpr int max_exponent = 0;
-	static constexpr int max_exponent10 = 0;
+	static constexpr int min_exponent = LNS::min_exponent;
+	static constexpr int min_exponent10 = min_exponent / 3.3;
+	static constexpr int max_exponent = LNS::max_exponent;
+	static constexpr int max_exponent10 = max_exponent / 3.3;
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;
