@@ -28,13 +28,8 @@
 // - define to non-zero if you want to throw exceptions on arithmetic errors
 // #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-// Posits encode error conditions as NaR (Not a Real)
-// propagating the error through arithmetic operations is preferred
-#include <universal/number/posit2/exceptions.hpp>
-#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
-
 #include <universal/native/bit_functions.hpp>
+#include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 // posit environment
@@ -106,7 +101,7 @@ bool check_inward_projection_range(int scale) {
 // regime = useed ^ k = (2 ^ (2 ^ es)) ^ k = 2 ^ (k*(2 ^ es))
 // scale  = useed ^ k * 2^e = k*(2 ^ es) + e 
 template<size_t nbits>
-int decode_regime(const internal::blockbinary<nbits>& raw_bits) {
+int decode_regime(const blockbinary<nbits>& raw_bits) {
 	// let m be the number of identical bits in the regime
 	int m = 0;   // regime runlength counter
 	int k = 0;   // converted regime scale
@@ -140,10 +135,10 @@ int decode_regime(const internal::blockbinary<nbits>& raw_bits) {
 }
 
 // extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
-template<size_t nbits, size_t es, size_t fbits>
-void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
+template<size_t nbits, size_t es, typename bt, size_t fbits>
+void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
 	// check special case
-	bitblock<nbits> zero;
+	blockbinary<nbits, bt> zero;
 	if (raw_bits == zero) {
 		_sign = false;
 		_regime.setzero();
@@ -151,7 +146,7 @@ void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbit
 		_fraction.setzero();
 		return;
 	}
-	bitblock<nbits> tmp(raw_bits);
+	blockbinary<nbits, bt> tmp(raw_bits);
 	_sign = raw_bits[nbits - 1];
 	if (_sign) tmp = twos_complement(tmp);
 	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
@@ -161,7 +156,7 @@ void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbit
 	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
 	size_t nrExponentBits = 0;
 	if (es > 0) {
-		bitblock<es> _exp;
+		blockbinary<es, bt> _exp;
 		if (msb >= 0 && es > 0) {
 			nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<size_t>(msb + 1ll);
 			for (size_t i = 0; i < nrExponentBits; ++i) {
@@ -177,7 +172,7 @@ void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbit
 	// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
 	// If the fraction is empty, we have a fraction of nbits-3 0 bits
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-	bitblock<fbits> _frac;
+	blockbinary<fbits, bt> _frac;
 	msb = msb - int(nrExponentBits);
 	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb) + 1ull);
 	if (msb >= 0) {
@@ -191,13 +186,13 @@ void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbit
 // decode takes the raw bits representing a posit coming from memory
 // and decodes the sign, regime, the exponent, and the fraction.
 // This function has the functionality of the posit register-file load.
-template<size_t nbits, size_t es, size_t fbits>
-void decode(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
-	//_raw_bits = raw_bits;	// store the raw bits for reference
+template<size_t nbits, size_t es, typename bt, size_t fbits>
+void decode(const blockbinary<nbits, bt>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
+	//_block = raw_bits;	// store the raw bits for reference
 	// check special cases
 	_sign = raw_bits.test(nbits - 1);
 	if (_sign) {
-		bitblock<nbits> tmp(raw_bits);
+		blockbinary<nbits, bt> tmp(raw_bits);
 		tmp.reset(nbits - 1);
 		if (tmp.none()) {
 			// setnar();   special case = NaR (Not a Real)
@@ -229,8 +224,8 @@ void decode(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbits, es>& 
 }
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
-template<size_t nbits, size_t es, size_t fbits>
-inline blockbinary<nbits>& convert_to_bb(bool _sign, int _scale, const blockbinary<fbits>& fraction_in, blockbinary<nbits>& ptt) {
+template<size_t nbits, size_t es, typename bt, size_t fbits>
+inline blockbinary<nbits>& convert_to_bb(bool _sign, int _scale, const blockbinary<fbits, bt>& fraction_in, blockbinary<nbits, bt>& ptt) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
@@ -247,11 +242,11 @@ inline blockbinary<nbits>& convert_to_bb(bool _sign, int _scale, const blockbina
 	}
 	else {
 		const size_t pt_len = nbits + 3 + es;
-		bitblock<pt_len> pt_bits;
-		bitblock<pt_len> regime;
-		bitblock<pt_len> exponent;
-		bitblock<pt_len> fraction;
-		bitblock<pt_len> sticky_bit;
+		blockbinary<pt_len, bt> pt_bits;
+		blockbinary<pt_len, bt> regime;
+		blockbinary<pt_len, bt> exponent;
+		blockbinary<pt_len, bt> fraction;
+		blockbinary<pt_len, bt> sticky_bit;
 
 		bool s = _sign;
 		int e = _scale;
@@ -300,8 +295,8 @@ inline blockbinary<nbits>& convert_to_bb(bool _sign, int _scale, const blockbina
 }
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
-template<size_t nbits, size_t es, size_t fbits>
-inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>& fraction_in, posit<nbits, es>& p) {
+template<size_t nbits, size_t es, typename bt, size_t fbits>
+inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blockbinary<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
@@ -318,11 +313,11 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 	}
 	else {
 		constexpr size_t pt_len = nbits + 3 + es;
-		bitblock<pt_len> pt_bits;
-		bitblock<pt_len> regime;
-		bitblock<pt_len> exponent;
-		bitblock<pt_len> fraction;
-		bitblock<pt_len> sticky_bit;
+		blockbinary<pt_len, bt> pt_bits;
+		blockbinary<pt_len, bt> regime;
+		blockbinary<pt_len, bt> exponent;
+		blockbinary<pt_len, bt> fraction;
+		blockbinary<pt_len, bt> sticky_bit;
 
 		bool s = _sign;
 		int e  = _scale;
@@ -365,7 +360,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
 
-		bitblock<nbits> ptt;
+		blockbinary<nbits, bt> ptt;
 		pt_bits <<= pt_len - len;
 		truncate(pt_bits, ptt);
 		if (rb) increment_bitset(ptt);
@@ -376,8 +371,8 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 }
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t es, size_t fbits>
-inline posit<nbits, es>& convert(const internal::value<fbits>& v, posit<nbits, es>& p) {
+template<size_t nbits, size_t es, typename bt, size_t fbits>
+inline posit<nbits, es, bt>& convert(const blocksignificant<fbits, bt>& v, posit<nbits, es, bt>& p) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
 
@@ -393,9 +388,9 @@ inline posit<nbits, es>& convert(const internal::value<fbits>& v, posit<nbits, e
 }
 	
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
-template<size_t nbits, size_t es>
-std::string quadrant(const posit<nbits,es>& p) {
-	posit<nbits, es> pOne(1), pMinusOne(-1);
+template<size_t nbits, size_t es, typename bt>
+std::string quadrant(const posit<nbits, es, bt>& p) {
+	posit<nbits, es, bt> pOne(1), pMinusOne(-1);
 	if (sign(p)) {
 		// west
 		if (p > pMinusOne) {
@@ -416,41 +411,13 @@ std::string quadrant(const posit<nbits,es>& p) {
 	}
 }
 
-// collect the posit components into a bitset: TODO: do we enforce fbits to be the same size as the posit::fbits?
-template<size_t nbits, size_t es, size_t fbits>
-bitblock<nbits> collect(bool _sign, const regime<nbits, es>& _regime, const exponent<nbits, es>& _exponent, const fraction<fbits>& _fraction) {
-	bitblock<nbits-1> r = _regime.get();
-	size_t nrRegimeBits = _regime.nrBits();
-	bitblock<es> e = _exponent.get();
-	size_t nrExponentBits = _exponent.nrBits();
-	bitblock<fbits> f = _fraction.get();
-	size_t nrFractionBits = _fraction.nrBits();
-	bitblock<nbits> raw_bits;
-	raw_bits.set(nbits - 1, _sign);
-	int msb = int(nbits) - 2;
-	for (size_t i = 0; i < nrRegimeBits; i++) {
-		raw_bits.set(msb--, r[nbits - 2 - i]);
-	}
-	if (msb >= 0) {
-		for (size_t i = 0; i < nrExponentBits; i++) {
-			raw_bits.set(msb--, e[es - 1 - i]);
-		}
-	}
-	if (msb >= 0) {
-		for (size_t i = 0; i < nrFractionBits; i++) {
-			raw_bits.set(msb--, f[fbits - 1 - i]);
-		}
-	}
-	return raw_bits;
-}
-
 // Construct posit from its components
-template<size_t nbits, size_t es, size_t fbits>
-posit<nbits, es>& construct(bool s, const regime<nbits, es>& r, const exponent<nbits, es>& e, const fraction<fbits>& f, posit<nbits,es>& p) {
+template<size_t nbits, size_t es, typename bt, size_t fbits>
+posit<nbits, es, bt>& construct(bool s, const regime<nbits, es, bt>& r, const exponent<nbits, es, bt>& e, const fraction<fbits, bt>& f, posit<nbits,es, bt>& p) {
 	// generate raw bit representation
-	bitblock<nbits> _raw_bits = s ? twos_complement(collect(s, r, e, f)) : collect(s, r, e, f);
-	_raw_bits.set(nbits - 1, s);
-	p.set(_raw_bits);
+	blockbinary<nbits, bt> _block = s ? twos_complement(collect(s, r, e, f)) : collect(s, r, e, f);
+	_block.set(nbits - 1, s);
+	p.set(_block);
 	return p;
 }
 
@@ -463,6 +430,7 @@ class posit {
 //	static_assert((sizeof(long double) == 16) && (std::numeric_limits<long double>::digits < 113), "C++ math library for long double does not support 128-bit quad precision floats.");
   
 public:
+	using bt = BlockType;
 	static constexpr size_t nbits   = _nbits;
 	static constexpr size_t es      = _es;
 	static constexpr size_t sbits   = 1;                          // number of sign bits:     specified
@@ -536,43 +504,43 @@ public:
 
 	// assignment operators for native types
 	posit& operator=(signed char rhs) {
-		internal::blocksignificant<8*sizeof(signed char)-1> v(rhs);
+		blocksignificant<8*sizeof(signed char)-1, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(short rhs) {
-		internal::blocksignificant<8*sizeof(short)-1> v(rhs);
+		blocksignificant<8*sizeof(short)-1, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(int rhs) {
-		internal::blocksignificant<8*sizeof(int)-1> v(rhs);
+		blocksignificant<8*sizeof(int)-1, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(long rhs) {
-		internal::blocksignificant<8*sizeof(long)> v(rhs);
+		blocksignificant<8*sizeof(long), bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(long long rhs) {
-		internal::blocksignificant<8*sizeof(long long)-1> v(rhs);
+		blocksignificant<8*sizeof(long long)-1, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(char rhs) {
-		internal::blocksignificant<8*sizeof(char)> v(rhs);
+		blocksignificant<8*sizeof(char), bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(unsigned short rhs) {
-		internal::blocksignificant<8*sizeof(unsigned short)> v(rhs);
+		blocksignificant<8*sizeof(unsigned short), bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(unsigned int rhs) {
-		internal::blocksignificant<8*sizeof(unsigned int)> v(rhs);
+		blocksignificant<8*sizeof(unsigned int), bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(unsigned long rhs) {
-		internal::blocksignificant<8*sizeof(unsigned long)> v(rhs);
+		blocksignificant<8*sizeof(unsigned long), bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(unsigned long long rhs) {
-		internal::blocksignificant<8*sizeof(unsigned long long)> v(rhs);
+		blocksignificant<8*sizeof(unsigned long long), bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(float rhs) {
@@ -597,7 +565,7 @@ public:
 
 	// assignment for value type
 	template<size_t vbits>
-	posit& operator=(const internal::blocksignificant<vbits>& rhs) {
+	posit& operator=(const blocksignificant<vbits, bt>& rhs) {
 		clear();
 		convert(rhs, *this);
 		return *this;
@@ -611,9 +579,9 @@ public:
 		if (isnar()) {
 			return *this;
 		}
-		posit<nbits, es> negated(0);  // TODO: artificial initialization to pass -Wmaybe-uninitialized
-		blockbinary<nbits> raw_bits = twos_complement(_raw_bits);
-		negated.setBitblock(raw_bits);
+		posit<nbits, es, bt> negated;  // TODO: artificial initialization to pass -Wmaybe-uninitialized
+		blockbinary<nbits, bt> raw_bits = twos_complement(_block);
+		negated.setbits(raw_bits);
 		return negated;
 	}
 	// prefix/postfix operators
@@ -810,7 +778,7 @@ public:
 			throw posit_division_result_is_infinite{};
 		}
 		else {
-			convert<nbits, es, divbits>(ratio, *this);
+			convert<nbits, es, bt, divbits>(ratio, *this);
 		}
 #else
 		if (ratio.iszero()) {
@@ -820,19 +788,19 @@ public:
 			setnar();  // this shouldn't happen as we should project back onto maxpos
 		}
 		else {
-			convert<nbits, es, divbits>(ratio, *this);
+			convert<nbits, es, bt, divbits>(ratio, *this);
 		}
 #endif
 
 		return *this;
 	}
 	posit& operator/=(double rhs) {
-		return *this /= posit<nbits, es>(rhs);
+		return *this /= posit<nbits, es, bt>(rhs);
 	}
 	
-	posit reciprocate() const {
+	posit reciprocate() const noexcept {
 		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
-		posit<nbits, es> p;
+		posit<nbits, es, bt> p;
 		// special case of NaR (Not a Real)
 		if (isnar()) {
 			p.setnar();
@@ -843,28 +811,28 @@ public:
 			return p;
 		}
 		// compute the reciprocal
-		bool old_sign = _raw_bits[nbits-1];
-		internal::bitblock<nbits> raw_bits;
+		bool old_sign = _block[nbits-1];
+		blockbinary<nbits, bt> raw_bits;
 		if (ispowerof2()) {
-			raw_bits = twos_complement(_raw_bits);
+			raw_bits = twos_complement(_block);
 			raw_bits.set(nbits-1, old_sign);
 			p.setBitblock(raw_bits);
 		}
 		else {
 			bool s{ false };
-			regime<nbits, es> r;
-			exponent<nbits, es> e;
-			fraction<fbits> f;
-			decode(_raw_bits, s, r, e, f);
+			regime<nbits, es, bt> r;
+			exponent<nbits, es, bt> e;
+			fraction<fbits, bt> f;
+			decode(_block, s, r, e, f);
 
 			constexpr size_t operand_size = fhbits;
-			internal::bitblock<operand_size> one;
+			blockbinary<operand_size, bt> one;
 			one.set(operand_size - 1, true);
-			internal::bitblock<operand_size> frac;
-			copy_into(f.get(), 0, frac);
+			blockbinary<operand_size, bt> frac;
+			copy_into(f.bits(), 0, frac);
 			frac.set(operand_size - 1, true);
 			constexpr size_t reciprocal_size = 3 * fbits + 4;
-			internal::bitblock<reciprocal_size> reciprocal;
+			blockbinary<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
 			if (_trace_reciprocate) {
 				std::cout << "one    " << one << std::endl;
@@ -891,77 +859,77 @@ public:
 			// value<reciprocal_size> v(old_sign, new_scale, reciprocal);
 			// convert(v, p);
 			// instead the following works
-			convert_<nbits,es, reciprocal_size>(old_sign, new_scale, reciprocal, p);
+			convert_<nbits, es, bt, reciprocal_size>(old_sign, new_scale, reciprocal, p);
 		}
 		return p;
 	}
 	// absolute value is simply the 2's complement when negative
-	posit abs() const {
+	posit abs() const noexcept {
 		posit p;
 		if (isneg()) {
-			p.setBitblock(twos_complement(_raw_bits));
+			p.setBitblock(twos_complement(_block));
 		}
 		else {
-			p.setBitblock(_raw_bits);
+			p.setBitblock(_block);
 		}
 		return p;
 	}
 
 	// conversion operators
 	// Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator unsigned short() const { return to_ushort(); }
-	explicit operator unsigned int() const { return to_uint(); }
-	explicit operator unsigned long() const { return to_ulong(); }
-	explicit operator unsigned long long() const { return to_ulong_long(); }
-	explicit operator short() const { return to_short(); }
-	explicit operator int() const { return to_int(); }
-	explicit operator long() const { return to_long(); }
-	explicit operator long long() const { return to_long_long(); }
-	explicit operator float() const { return to_float(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator long double() const { return to_long_double(); }
+	explicit operator unsigned short() const noexcept     { return to_ushort(); }
+	explicit operator unsigned int() const noexcept       { return to_uint(); }
+	explicit operator unsigned long() const noexcept      { return to_ulong(); }
+	explicit operator unsigned long long() const noexcept { return to_ulong_long(); }
+	explicit operator short() const noexcept              { return to_short(); }
+	explicit operator int() const noexcept                { return to_int(); }
+	explicit operator long() const noexcept               { return to_long(); }
+	explicit operator long long() const noexcept          { return to_long_long(); }
+	explicit operator float() const noexcept              { return to_float(); }
+	explicit operator double() const noexcept             { return to_double(); }
+	explicit operator long double() const noexcept        { return to_long_double(); }
 
 	// Selectors
-	inline bool sign() const { return _raw_bits[nbits - 1]; }
-	inline bool isnar() const {
-		if (_raw_bits[nbits - 1] == false) return false;
-		bitblock<nbits> tmp(_raw_bits);			
+	bool sign() const noexcept { return _block[nbits - 1]; }
+	bool isnar() const noexcept {
+		if (_block[nbits - 1] == false) return false;
+		blockbinary<nbits, bt> tmp(_block);			
 		tmp.reset(nbits - 1);
 		return tmp.none() ? true : false;
 	}
-	inline bool iszero() const { return _raw_bits.none() ? true : false; }
-	inline bool isone() const { // pattern 010000....
-		bitblock<nbits> tmp(_raw_bits);
+	bool iszero() const noexcept { return _block.none() ? true : false; }
+	bool isone() const noexcept { // pattern 010000....
+		blockbinary<nbits, bt> tmp(_block);
 		tmp.set(nbits - 2, false);
-		return _raw_bits[nbits - 2] & tmp.none();
+		return _block[nbits - 2] & tmp.none();
 	}
-	inline bool isminusone() const { // pattern 110000...
-		bitblock<nbits> tmp(_raw_bits);
+	bool isminusone() const noexcept { // pattern 110000...
+		blockbinary<nbits, bt> tmp(_block);
 		tmp.set(nbits - 1, false);
 		tmp.set(nbits - 2, false);
-		return _raw_bits[nbits - 1] & _raw_bits[nbits - 2] & tmp.none();
+		return _block[nbits - 1] & _block[nbits - 2] & tmp.none();
 	}
-	inline bool isneg() const { return _raw_bits[nbits - 1]; }
-	inline bool ispos() const { return !_raw_bits[nbits - 1]; }
-	inline bool ispowerof2() const {
+	bool isneg() const noexcept { return _block[nbits - 1]; }
+	bool ispos() const noexcept { return !_block[nbits - 1]; }
+	bool ispowerof2() const noexcept {
 		bool s{ false };
-		regime<nbits, es> r;
-		exponent<nbits, es> e;
-		fraction<fbits> f;
-		decode(_raw_bits, s, r, e, f);
+		regime<nbits, es, bt> r;
+		exponent<nbits, es, bt> e;
+		fraction<fbits, bt> f;
+		decode(_block, s, r, e, f);
 		return f.none();
 	}
-	inline bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
+	bool isinteger() const { return true; } // TODO: return (floor(*this) == *this) ? true : false; }
 
-	bitblock<nbits>    get() const { return _raw_bits; }
-	unsigned long long encoding() const { return _raw_bits.to_ullong(); }
+	blockbinary<nbits, bt> bits() const noexcept { return _block; }
+	unsigned long long encoding() const noexcept { return _block.to_ullong(); }
 
 	// Modifiers
-	inline constexpr void clear() { _raw_bits.reset(); }
+	inline constexpr void clear() { _block.reset(); }
 	inline constexpr void setzero() { clear(); }
 	inline constexpr void setnar() {
-		_raw_bits.reset();
-		_raw_bits.set(nbits - 1, true);
+		_block.reset();
+		_block.set(nbits - 1, true);
 	}
 	// set minpos value
 	inline posit& minpos() {
@@ -990,7 +958,7 @@ public:
 	}
 
 	// set the posit bits explicitely
-	constexpr posit<nbits, es, bt>& setBitblock(const blockbinary<nbits, bt>& block) {
+	constexpr posit<nbits, es, bt>& setbits(const blockbinary<nbits, bt>& block) {
 		_block = block;
 		return *this;
 	}
@@ -1003,39 +971,39 @@ public:
 			raw_bits.set(i,(value & mask));
 			mask <<= 1;
 		}
-		_raw_bits = raw_bits;
+		_block = raw_bits;
 		return *this;
 	}
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
-	internal::blocksignificant<fbits, bt> to_value() const {
+	blocksignificant<fbits, bt> to_value() const noexcept {
 		using namespace sw::universal::internal;
-		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-		return internal::blocksignificant<fbits, bt>(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
+		bool		     		_sign{ false };
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
+		decode(_block, _sign, _regime, _exponent, _fraction);
+		return blocksignificant<fbits, bt>(_sign, _regime.scale() + _exponent.scale(), _fraction.bits(), iszero(), isnar());
 	}
-	void normalize(internal::blocksignificant<fbits, bt>& v) const {
+	void normalize(blocksignificant<fbits, bt>& v) const noexcept {
 		using namespace sw::universal::internal;
-		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+		bool		     		_sign{ false };
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
+		decode(_block, _sign, _regime, _exponent, _fraction);
 		v.set(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
 	}
 	template<size_t tgt_fbits>
-	void normalize_to(internal::blocksignificant<tgt_fbits, bt>& v) const {
+	void normalize_to(blocksignificant<tgt_fbits, bt>& v) const noexcept {
 		using namespace sw::universal::internal;
-		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-		bitblock<tgt_fbits> _fr;
-		bitblock<fbits> _src = _fraction.get();
+		bool		     		_sign{ false };
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
+		decode(_block, _sign, _regime, _exponent, _fraction);
+		blockbinary<tgt_fbits, bt> _fr;
+		blockbinary<fbits, bt> _src = _fraction.bits();
 		int tgt, src;
 		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = _src[src];
 		v.set(_sign, _regime.scale() + _exponent.scale(), _fr, iszero(), isnar());
@@ -1043,11 +1011,11 @@ public:
 	
 	// step up to the next posit in a lexicographical order
 	void increment_posit() {
-		increment_bitset(_raw_bits);
+		increment_bitset(_block);
 	}
 	// step down to the previous posit in a lexicographical order
 	void decrement_posit() {
-		decrement_bitset(_raw_bits);
+		decrement_bitset(_block);
 	}
 	
 	// return human readable type configuration for this posit
@@ -1058,7 +1026,7 @@ public:
 	}
 
 private:
-	internal::bitblock<nbits>      _raw_bits;	// raw bit representation
+	blockbinary<nbits, bt> _block;
 
 	// HELPER methods
 
@@ -1120,11 +1088,11 @@ private:
 	double to_double() const {
 		if (iszero())	return 0.0;
 		if (isnar())	return std::numeric_limits<double>::quiet_NaN();
-		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+		bool		     		_sign{ false };
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
+		decode(_block, _sign, _regime, _exponent, _fraction);
 		double s = (_sign ? -1.0 : 1.0);
 		double r = double(_regime.value());
 		double e = double(_exponent.value());
@@ -1134,11 +1102,11 @@ private:
 	long double to_long_double() const {
 		if (iszero())  return 0.0l;
 		if (isnar())   return std::numeric_limits<double>::quiet_NaN();;
-		bool		     	 _sign{ false };
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+		bool		     		_sign{ false };
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
+		decode(_block, _sign, _regime, _exponent, _fraction);
 		long double s = (_sign ? -1.0l : 1.0l);
 		long double r = _regime.value();
 		long double e = _exponent.value();
@@ -1148,7 +1116,7 @@ private:
 	template <typename T>
 	constexpr posit<nbits, es, bt>& float_assign(const T& rhs) {
 		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
-		internal::blocksignificant<dfbits, bt> v(static_cast<T>(rhs));
+		blocksignificant<dfbits, bt> v(static_cast<T>(rhs));
 
 		// special case processing
 		if (v.iszero()) {
@@ -1535,7 +1503,7 @@ private:
 	friend bool operator< (double lhs, const posit<nnbits, ees, bbt>& rhs);
 	template<size_t nnbits, size_t ees, typename bbt>
 	friend bool operator> (double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ee, typename bbts>
+	template<size_t nnbits, size_t ees, typename bbt>
 	friend bool operator<=(double lhs, const posit<nnbits, ees, bbt>& rhs);
 	template<size_t nnbits, size_t ees, typename bbt>
 	friend bool operator>=(double lhs, const posit<nnbits, ees, bbt>& rhs);
@@ -1659,10 +1627,10 @@ template<size_t nbits, size_t es, typename bt>
 inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
-	bitblock<nbits> raw = number.get();
+	regime<nbits, es, bt> r;
+	exponent<nbits, es, bt> e;
+	fraction<fbits, bt> f;
+	blockbinary<nbits, bt> raw = number.bits();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
 
@@ -1678,10 +1646,10 @@ template<size_t nbits, size_t es, typename bt>
 inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
-	bitblock<nbits> raw = number.get();
+	regime<nbits, es, bt> r;
+	exponent<nbits, es, bt> e;
+	fraction<fbits, bt> f;
+	blockbinary<nbits, bt> raw = number.bits();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
 
@@ -1697,8 +1665,8 @@ inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMark
 // numerical helpers
 
 template<size_t nbits, size_t es, typename bt>
-inline posit<nbits, es> ulp(const posit<nbits, es, bt>& a) {
-	posit<nbits, es> b(a);
+inline posit<nbits, es, bt> ulp(const posit<nbits, es, bt>& a) {
+	posit<nbits, es, bt> b(a);
 	return ++b - a;
 }
 
@@ -1708,10 +1676,10 @@ inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
 	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
 	scale(number);
-	regime<nbits, es> r;
-	exponent<nbits, es> e;
-	fraction<fbits> f;
-	bitblock<nbits> raw = number.get();
+	regime<nbits, es, bt> r;
+	exponent<nbits, es, bt> e;
+	fraction<fbits, bt> f;
+	blockbinary<nbits, bt> raw = number.bits();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
 	ss << (s ? "-" : "+") << "1." << to_string(f, true) << "e2^" << std::showpos << r.scale() + e.scale();
@@ -1723,7 +1691,7 @@ inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
 
 template<size_t nbits, size_t es, typename bt>
 inline bool operator==(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
-	return lhs._raw_bits == rhs._raw_bits;
+	return lhs._block == rhs._block;
 }
 template<size_t nbits, size_t es, typename bt>
 inline bool operator!=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
@@ -1731,7 +1699,7 @@ inline bool operator!=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, b
 }
 template<size_t nbits, size_t es, typename bt>
 inline bool operator< (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
-	return twosComplementLessThan(lhs._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(lhs._block, rhs._block);
 }
 template<size_t nbits, size_t es, typename bt>
 inline bool operator> (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
@@ -1749,209 +1717,209 @@ inline bool operator>=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, b
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits, size_t es, typename bt>
-inline posit<nbits, es> operator+(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
-	posit<nbits, es> sum = lhs;
+inline posit<nbits, es, bt> operator+(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> sum = lhs;
 	return sum += rhs;
 }
 // BINARY SUBTRACTION
 template<size_t nbits, size_t es, typename bt>
-inline posit<nbits, es> operator-(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
-	posit<nbits, es> diff = lhs;
+inline posit<nbits, es, bt> operator-(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> diff = lhs;
 	return diff -= rhs;
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, size_t es, typename bt>
-inline posit<nbits, es> operator*(const posit<nbits, es, bt>& lhs, const posit<nbits, es. bt>& rhs) {
-	posit<nbits, es> mul = lhs;
+inline posit<nbits, es, bt> operator*(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> mul = lhs;
 	return mul *= rhs;
 }
 // BINARY DIVISION
 template<size_t nbits, size_t es, typename bt>
-inline posit<nbits, es> operator/(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
-	posit<nbits, es> ratio(lhs);
+inline posit<nbits, es, bt> operator/(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
+	posit<nbits, es, bt> ratio(lhs);
 	return ratio /= rhs;
 }
 
 #if POSIT_ENABLE_LITERALS
 
 // posit - signed char logic operators
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator==(const posit<nbits, es>& lhs, signed char rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator!=(const posit<nbits, es>& lhs, signed char rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, signed char rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, signed char rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator<=(const posit<nbits, es>& lhs, signed char rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator>=(const posit<nbits, es>& lhs, signed char rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // signed char - posit logic operators
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator==(signed char lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator!=(signed char lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator< (signed char lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator> (signed char lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator<=(signed char lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator>=(signed char lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - char logic operators
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator==(const posit<nbits, es>& lhs, char rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator!=(const posit<nbits, es>& lhs, char rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, char rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, char rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator<=(const posit<nbits, es>& lhs, char rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator>=(const posit<nbits, es>& lhs, char rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // char - posit logic operators
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator==(char lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator!=(char lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator< (char lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator> (char lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator<=(char lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator>=(char lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - short logic operators
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator==(const posit<nbits, es>& lhs, short rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator!=(const posit<nbits, es>& lhs, short rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, short rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, short rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator<=(const posit<nbits, es>& lhs, short rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator>=(const posit<nbits, es>& lhs, short rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // short - posit logic operators
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator==(short lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator!=(short lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator< (short lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator> (short lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator<=(short lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator>=(short lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - unsigned short logic operators
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator==(const posit<nbits, es>& lhs, unsigned short rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator!=(const posit<nbits, es>& lhs, unsigned short rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned short rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned short rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator<=(const posit<nbits, es>& lhs, unsigned short rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<size_t nbits, size_t es, typename bt>
 inline bool operator>=(const posit<nbits, es>& lhs, unsigned short rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
@@ -1967,7 +1935,7 @@ inline bool operator!=(unsigned short lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (unsigned short lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (unsigned short lhs, const posit<nbits, es>& rhs) {
@@ -1993,7 +1961,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, int rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, int rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, int rhs) {
@@ -2019,7 +1987,7 @@ inline bool operator!=(int lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (int lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (int lhs, const posit<nbits, es>& rhs) {
@@ -2045,7 +2013,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, unsigned int rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned int rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned int rhs) {
@@ -2071,7 +2039,7 @@ inline bool operator!=(unsigned int lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (unsigned int lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (unsigned int lhs, const posit<nbits, es>& rhs) {
@@ -2097,7 +2065,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, long rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, long rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, long rhs) {
@@ -2123,7 +2091,7 @@ inline bool operator!=(long lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (long lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (long lhs, const posit<nbits, es>& rhs) {
@@ -2149,7 +2117,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, unsigned long rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned long rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned long rhs) {
@@ -2175,7 +2143,7 @@ inline bool operator!=(unsigned long lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (unsigned long lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (unsigned long lhs, const posit<nbits, es>& rhs) {
@@ -2201,7 +2169,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, unsigned long long rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned long long rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned long long rhs) {
@@ -2227,7 +2195,7 @@ inline bool operator!=(unsigned long long lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (unsigned long long lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (unsigned long long lhs, const posit<nbits, es>& rhs) {
@@ -2253,7 +2221,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, long long rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, long long rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, long long rhs) {
@@ -2279,7 +2247,7 @@ inline bool operator!=(long long lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (long long lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (long long lhs, const posit<nbits, es>& rhs) {
@@ -2305,7 +2273,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, float rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, float rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, float rhs) {
@@ -2331,7 +2299,7 @@ inline bool operator!=(float lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (float lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (float lhs, const posit<nbits, es>& rhs) {
@@ -2357,7 +2325,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, double rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, double rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, double rhs) {
@@ -2383,7 +2351,7 @@ inline bool operator!=(double lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (double lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (double lhs, const posit<nbits, es>& rhs) {
@@ -2409,7 +2377,7 @@ inline bool operator!=(const posit<nbits, es>& lhs, long double rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, long double rhs) {
-	return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, long double rhs) {
@@ -2435,7 +2403,7 @@ inline bool operator!=(long double lhs, const posit<nbits, es>& rhs) {
 }
 template<size_t nbits, size_t es>
 inline bool operator< (long double lhs, const posit<nbits, es>& rhs) {
-	return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
 template<size_t nbits, size_t es>
 inline bool operator> (long double lhs, const posit<nbits, es>& rhs) {

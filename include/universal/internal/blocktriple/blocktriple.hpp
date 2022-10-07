@@ -1,7 +1,7 @@
 #pragma once
-// blocktriple.hpp: definition of a (sign, scale, significant) representation of a generic floating-point value
+// blocktriple.hpp: definition of a (sign, scale, significant) representation of a generic floating-point value that goes into an arithmetic operation
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>

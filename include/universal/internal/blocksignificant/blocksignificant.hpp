@@ -102,10 +102,11 @@ What is the required API of blocksignificant to support that semantic?
 /// simplifies the copying of exponent and fraction bits from and to the client.
 /// </summary>
 /// <typeparam name="bt"></typeparam>
-template<size_t _nbits, typename bt>
+template<size_t _nbits, typename BlockType>
 class blocksignificant {
 public:
-	typedef bt BlockType;
+	//typedef BlockType bt;
+	using bt = BlockType;
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
@@ -122,8 +123,14 @@ public:
 	static constexpr bt OVERFLOW_BIT = ~(MSU_MASK >> 1) & MSU_MASK;
 
 	// constructors
-	constexpr blocksignificant() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block { 0 } {}
+	constexpr blocksignificant() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block{ 0 } {}
 
+	// value constructors
+	constexpr blocksignificant(signed char rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{ 0 } {
+	}
+	constexpr blocksignificant(int rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{ 0 } {
+	}
+	// raw bit constructors
 	template <size_t... I>
 	constexpr blocksignificant(const uint64_t raw, int radixPoint, std::index_sequence<I...>) noexcept
 	          : radixPoint{ radixPoint }, encoding{ BitEncoding::Flex }
@@ -184,8 +191,7 @@ public:
 #endif
 
 	/// prefix operators
-	//
-	// 
+
 	// one's complement
 	constexpr blocksignificant operator~() const noexcept {
 		blocksignificant complement(*this);
@@ -197,8 +203,11 @@ public:
 	// none
 
 	/// arithmetic operators
-	// none
 
+	/// <summary>
+	/// increment the value by one
+	/// </summary>
+	/// <returns></returns>
 	constexpr void increment() noexcept {
 		bool carry = true;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
@@ -211,6 +220,7 @@ public:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
 	}
+
 	/// <summary>
 	/// add two fractions of the form 00h.fffff, that is, radix point at nbits-3
 	/// In this encoding, all valid values are encapsulated
