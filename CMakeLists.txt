@@ -694,6 +694,7 @@ if(BUILD_NUMBER_POSITS)
 add_subdirectory("tests/posit")
 add_subdirectory("tests/posit/specialized")
 add_subdirectory("tests/adaptiveposit")
+add_subdirectory("tests/posit2")
 endif(BUILD_NUMBER_POSITS)
 
 if(BUILD_NUMBER_VALIDS)
