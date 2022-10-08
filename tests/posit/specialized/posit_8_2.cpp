@@ -1,4 +1,4 @@
-// posit_8_1.cpp: test suite runner for fast specialized posit<8,1>
+// posit_8_2.cpp: test suite runner for fast specialized posit<8,2>
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -6,8 +6,8 @@
 #include <universal/utility/directives.hpp>
 //
 // Configure the posit template environment
-// first: enable fast specialized posit<8,1>
-#define POSIT_FAST_POSIT_8_1 1
+// first: enable fast specialized posit<8,2>
+#define POSIT_FAST_POSIT_8_2 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
@@ -15,7 +15,7 @@
 #include <universal/verification/posit_math_test_suite.hpp>
 
 /*
-specialized small 8-bit posit with es = 1 to increase dynamic range over standard posit<8,0>.
+specialized small standard 8-bit posit with es = 2 
 */
 
 void GenerateValues() {
@@ -36,16 +36,16 @@ try {
 	// no randoms, 8-bit posits can be done exhaustively
 
 	constexpr size_t nbits = 8;
-	constexpr size_t es = 1;
+	constexpr size_t es    = 2;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<8,1>";
+	std::string tag = " posit<8,2>";
 
 #if POSIT_FAST_POSIT_8_1
-	std::cout << "Fast specialization posit<8,1> configuration tests\n";
+	std::cout << "Fast specialization posit<8,2> configuration tests\n";
 #else
-	std::cout << "Standard posit<8,1> configuration tests\n";
+	std::cout << "Standard posit<8,2> configuration tests\n";
 #endif
 
 	posit<nbits, es> p;

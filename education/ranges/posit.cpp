@@ -1,6 +1,6 @@
-// scales.cpp : report dynamic range of posit configurations and posit numbers
+// posit.cpp : report dynamic range of posit configurations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

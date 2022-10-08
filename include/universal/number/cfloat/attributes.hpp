@@ -1,7 +1,7 @@
 #pragma once
 // attributes.hpp: information functions for classic floating-point type and value attributes
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath> // for std:pow()
@@ -30,21 +30,24 @@ int scale_minpos_cfloat() {
 // generate the maxneg through maxpos value range of a cfloat configuration
 // TODO: needs SFINAE
 template<typename CfloatConfiguration>
-void report_range(std::ostream& ostr) {
+std::string cfloat_range() {
 	constexpr size_t nbits = CfloatConfiguration::nbits;
 	constexpr size_t es = CfloatConfiguration::es;
 	using BlockType = typename CfloatConfiguration::BlockType;
 	constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
 	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;
 	constexpr bool isSaturating = CfloatConfiguration::isSaturating;
+
 	using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
-	Cfloat c{};
-	ostr << std::setw(40) << type_tag(c) << " : [ "
-		<< c.maxneg() << " ... "
-		<< c.minneg() << " "
+	Cfloat v;
+	std::stringstream s;
+	s << std::setw(40) << type_tag(v) << " : [ "
+		<< v.maxneg() << " ... "
+		<< v.minneg() << " "
 		<< "0 "
-		<< c.minpos() << " ... "
-		<< c.maxpos() << " ]\n";
+		<< v.minpos() << " ... "
+		<< v.maxpos() << " ]";
+	return s.str();
 }
 
 }} // namespace sw::universal

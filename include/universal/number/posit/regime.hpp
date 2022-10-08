@@ -189,11 +189,11 @@ inline std::string to_string(const regime<nbits, es>& r, bool dashExtent = true,
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (r.nrBits() > nrOfRegimeBitsProcessed++) {
 			sstr << (bb[size_t(i)] ? '1' : '0');
+			if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
 		}
 		else {
 			sstr << (dashExtent ? "-" : "");
-		}
-		if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
+		}	
 	}
 	return sstr.str();
 }

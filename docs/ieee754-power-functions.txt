@@ -1,0 +1,117 @@
+From: https://grouper.ieee.org/groups/msc/ANSI_IEEE-Std-754-2019/background/power.txt
+
+	Too much power - pow vs powr, powd, pown, rootn, compound
+
+Why do 754-2008 and 754-2019 have so many similar power functions?
+Part of the answer lies in the different ways that power functions can
+be defined in exact mathematics.
+
+Use x^n to represent the exact mathematics power function.
+For non-negative integers, it's easy to define by induction:
+
+x^0 := 1; x^n := x X x^(n-1).
+
+By backward induction 
+
+	x^(n-1) :=  (x^n)/x
+
+we can see that x^(-n) = 1/x^n.
+And we soon learn that 
+ x^n X x^m = x^(n+m) and 
+ (x^n)^m = x^(nXm) 
+ (x^(1/n))^n = x
+ (x^(p/q)) = (x^p)^(1/q) = (x^(1/q))^p
+
+So now we have a power function defined for any real base x and any rational
+power p/q - as long as we avoid x = 0.
+
+
+Interestingly enough, the power function can also be defined as
+
+ x^n := exp(n X log(x))
+
+for any complex x - or n - as long as we avoid x = 0 again - and we also
+have trouble with x < 0 because log(x) is imaginary and, whoops, now we 
+remember that log(z) is actually multiple-valued for all z because
+exp(z + m * 2 X pi X i) is the same as exp (z) for any integer m.
+It's hidden though for exp(n X log(x)) as long as n is an integer and
+x is real and positive.     So where it matters most, this power function
+agrees with the previous one.     But not elsewhere.
+
+Fortran first recognized this: x**n was expected to differ from x**y:
+x**n was allowed for negative x,
+but x**y was not, according to the Fortran IV manual, even if the
+value of y were exactly integral.
+
+Fortran also had sqrt(x) from the beginning - but nothing was specified
+about whether it aligned with x**0.5.
+
+Later languages simply defined one pow(x,y) for all x and y.     There was
+no guarantee that the power you wanted was the one you got, or even which
+power was the one you got.
+
+754-2008 set out to rectify this by dividing the power functions into 
+those with a floating-point power (pow and powr - and in 2019 - powd), 
+those with an integer power (pown and compound),
+and those whose power was a reciprocal of an integer (rootn).
+
+The pow function is defined to be as close as possible to
+C pow(x,y).    Whether x can be negative or zero depends on y, which
+is supposed to be exact if it is an integral value.
+There's a lot of special case testing required,
+such as determining if n is integral when x is negative.
+And it's not clear that this is doing any user a favor.
+
+So powr(x,y) was defined to work the way you'd expect a continuous power 
+function to work.   Negative bases are invalid, as are pow(+inf,0)
+and pow(1,inf) and pow(0,0) - all of which look like exp ( 0 X inf)
+or exp(inf X 0).   
+This is closer to the way Fortran x**y is defined.
+Fewer special cases might mean a faster function.
+But aside from sNaN, if y = 0, then pow always returns 1, while for
+powr, it depends on x.
+
+powd(x,y) is suggested in a 2019 NOTE as a special use function for languages
+with decimal types.    It tries to compute as many cases as possible
+by considering y as a fraction p/q in simplest terms.    
+It might have been simpler to define powq(x,p,q) to require the rational
+power to be stated explicitly.
+
+So one uses pow, powr, or powd when the power is not necessarily integral.
+To get as many numerical cases as possible, use powd if available, 
+otherwise pow.     For best performance and simplest properties, powr
+might be better.
+
+What if the power is exactly integral or reciprocal of integral?
+Then the function definition is a lot simpler.    pown is the usual choice,
+but for financial or other computation where the base is expressed as
+1 + growthrate, use compound ; it's more accurate since 1 + growthrate
+is not computed explicitly and rounded, which is especially important when
+growthrate is small enough that many significant figures would be lost in the
+addition.    Since growth rates can't be less than -1, such rates signal
+invalid exceptions.
+
+squareRoot, and rSqrt directly cover the common cases where the power is known
+to be 0.5 or -0.5, although their handling of -0 should be checked for
+suitability.    Other root extractions are encompassed by rootn(x,n)
+which is certainly more accurate than pow(x,1.0/n) when 1.0/n is not exact.
+
+So in summary: what do you know about the power and the base?
+Assuming in each case that its exception definition works for your application,
+
+ power 0.5: use squareRoot
+ power -0.5: use rSqrt
+ power reciprocal integral: use rootn
+ power integral, base 1+growthrate: use compound
+ power integral: use pown
+ power p/q for small integers p and q: 
+	consider rootn(pown(x,p),q) or pown(rootn(x,q),p), 
+	with some thought to the desired semantics if x might be negative,
+ 	or if pown(x,p) might overflow.    If p/q can be expressed as
+	m + 1/n for small integers m and n, then 
+	pown(x,m) X rootn(x,n) might be best
+ power not integral, x non-negative: use powr
+ otherwise: use powd if available, otherwise pow
+
+
+

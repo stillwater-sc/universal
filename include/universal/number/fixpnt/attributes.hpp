@@ -1,11 +1,10 @@
 #pragma once
 // attributes.hpp: information functions for fixed-point type and value attributes
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath> // for std:pow()
-//#include <universal/internal/bitblock/bitblock.hpp>
 
 namespace sw { namespace universal {
 
@@ -33,22 +32,26 @@ int scale_minpos_fixpnt() {
 // generate the maxneg through maxpos value range of a fixed-point configuration
 // the type of arithmetic, Modulo or Saturating, does not affect the range
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-void ReportFixedPointRanges(std::ostream& ostr, const fixpnt<nbits, rbits, arithmetic, bt>& v) {
+std::string fixpnt_range(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, bt>;
+	std::stringstream s;
 	FixedPoint fp;
-	ostr << std::setw(40) << type_tag(v) << " : [ "
+	s << std::setw(40) << type_tag(v) << " : [ "
 		<< fp.maxneg() << " ... "
 		<< fp.minneg() << " "
 		<< "0 "
 		<< fp.minpos() << " ... "
-		<< fp.maxpos() << " ]\n";
+		<< fp.maxpos() << " ]";
+	return s.str();
 }
 
+// free function to get the sign of a fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline int sign_value(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-	return (v < 0) ? -1 : 1;
+inline bool sign(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
+	return v.sign();
 }
 
+// free function to get the fraction of a fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline long double fraction_value(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	fixpnt<nbits, rbits, arithmetic, bt> fp(v);
@@ -59,23 +62,7 @@ inline long double fraction_value(const fixpnt<nbits, rbits, arithmetic, bt>& v)
 	return (long double)(fp);
 }
 
-// get the sign of the fixed-point
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline bool sign(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
-	return v.sign();
-}
 
-#ifdef NEVER
-// get the fraction bits of a fixed-point
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline internal::bitblock<rbits> extract_fraction(const fixpnt<nbits, rbits, arithmetic>& p) {
-	internal::bitblock<rbits> fraction;
-	for (int i = 0; i < rbits; ++i) {
-		fraction[i] = p[i];
-	}
-	return fraction;
-}
-#endif // NEVER
 
 // clang <complex> implementation is calling these functions so we need implementations for fixpnt
 
