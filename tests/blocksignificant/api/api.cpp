@@ -1,6 +1,6 @@
 //  api.cpp : test suite runner for blocksignificant application programming interface tests
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -9,6 +9,7 @@
 
 #include <universal/native/integers.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
+#include <universal/verification/test_suite.hpp>
 
 /*
 A blocksignificant is a 2's complement binary encoding with a radix point that is aligned
@@ -204,10 +205,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "blocksignificant API examples";
-//	std::string test_tag = "blocksignificant API";
-//	bool reportTestCases = false;
-//	int nrOfFailedTestCases = 0;
+	std::string test_suite  = "blocksignificant API examples";
+	std::string test_tag    = "API";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	std::cout << test_suite << '\n';
 

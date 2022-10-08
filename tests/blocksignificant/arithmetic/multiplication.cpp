@@ -1,6 +1,6 @@
 // multiplication.cpp: functional tests for blocksignificant multiplication
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,8 +12,7 @@
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp>
-#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/test_suite.hpp>
 
 // enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
 template<typename blocksignificantConfiguration>
@@ -84,11 +83,11 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "blocksignificant multiplication validation";
-	std::string test_tag    = "blocksignificant multiplication";
+	std::string test_tag    = "multiplication";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 

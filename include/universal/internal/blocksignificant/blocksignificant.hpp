@@ -1,13 +1,15 @@
 #pragma once
 // blocksignificant.hpp: parameterized blocked binary number system representing the bits of the floating-point significant scaled for the different arithmetic operations {+,-,*,/}
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
+
+#include <universal/internal/blocksignificant/blocksignificant_fwd.hpp>
 
 // should be defined by calling environment, just catching it here just in case it is not
 #ifndef LONG_DOUBLE_SUPPORT
@@ -46,16 +48,10 @@ enum class BitEncoding {
 	Twos         // 2's complement encoding
 };
 
-// forward references
-template<size_t nbits, typename bt> class blocksignificant;
-template<size_t nbits, typename bt> constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>&) noexcept;
-template<size_t nbits, typename bt> struct bfquorem;
-template<size_t nbits, typename bt> bfquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>&, const blocksignificant<nbits, bt>&);
-
-// idiv_t for blocksignificant<nbits> to capture quotient and remainder during long division
+// structure for blocksignificant<nbits> to capture quotient and remainder during long division
 template<size_t nbits, typename bt>
-struct bfquorem {
-	constexpr bfquorem() noexcept : exceptionId{} {} // default constructors
+struct bsquorem {
+	constexpr bsquorem() noexcept : exceptionId{} {} // default constructors
 	int exceptionId;
 	blocksignificant<nbits, bt> quo; // quotient
 	blocksignificant<nbits, bt> rem; // remainder
@@ -102,11 +98,9 @@ What is the required API of blocksignificant to support that semantic?
 /// simplifies the copying of exponent and fraction bits from and to the client.
 /// </summary>
 /// <typeparam name="bt"></typeparam>
-template<size_t _nbits, typename BlockType>
+template<size_t _nbits, typename bt>
 class blocksignificant {
 public:
-	//typedef BlockType bt;
-	using bt = BlockType;
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
@@ -121,6 +115,7 @@ public:
 	static constexpr bt ALL_ONES = bt(~0);
 	static constexpr bt MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr bt OVERFLOW_BIT = ~(MSU_MASK >> 1) & MSU_MASK;
+	typedef bt BlockType;
 
 	// constructors
 	constexpr blocksignificant() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block{ 0 } {}
@@ -277,7 +272,7 @@ public:
 #ifdef FRACTION_REMAINDER
 	// remainder operator
 	blocksignificant& operator%=(const blocksignificant& rhs) noexcept {
-		bfquorem<nbits, bt> result = longdivision(*this, rhs);
+		bsquorem<nbits, bt> result = longdivision(*this, rhs);
 		*this = result.rem;
 		return *this;
 	}
@@ -713,8 +708,8 @@ std::string to_hex(const blocksignificant<nbits, bt>& number, bool wordMarker = 
 
 // divide a by b and return both quotient and remainder
 template<size_t nbits, typename bt>
-bfquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const blocksignificant<nbits, bt>& _b)  {
-	bfquorem<nbits, bt> result;
+bsquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>& _a, const blocksignificant<nbits, bt>& _b)  {
+	bsquorem<nbits, bt> result;
 	if (_b.iszero()) {
 		result.exceptionId = 1; // division by zero
 		return result;

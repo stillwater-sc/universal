@@ -12,8 +12,7 @@
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
+#include <universal/verification/test_suite.hpp>
 
 // enumerate all division cases for an blocksignificant<nbits,BlockType> configuration
 // TODO: fix test failures in VerifyBlockSignificantDivision<blocksignificantConfiguration>
@@ -99,11 +98,11 @@ try {
 	using namespace sw::universal;
 	
 	std::string test_suite  = "blocksignificant division validation";
-	std::string test_tag    = "blocksignificant division";
+	std::string test_tag    = "division";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
