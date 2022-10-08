@@ -7,7 +7,6 @@
 /// pos.def = NO 
 // Matrix ID = ---
 // NNZ = 9
-
 sw::universal::blas::matrix<double>  q3 = {
 {1.0, 2.0, 0.3333333},
 {1.000001, 2.0, 0.3333},

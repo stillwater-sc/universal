@@ -37,6 +37,7 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
     L = 1;
     U = A;
 
+     
     // Elimination Process
     for (size_t i = 0; i < n-1; ++i){ // i-th row
         Scalar absmax = abs(U(i,i)); 
@@ -65,9 +66,15 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
         }
         // Continue with row reduction
         for (size_t k = i + 1; k < n; ++k){  // objective row
+            // if(U(i,i) == 0.0){U(i,i)= mp;}
+            // std::cout << mp << std::endl;
+
+            // Is there a minpos for Scalar?  including double etc.
             L(k,i) = U(k,i) / U(i,i);
+            //std::cout << "L(k,i) = " << L(k,i) << '\n';
             for (size_t j = i; j < n; ++j){
                 U(k,j) = U(k,j) - L(k,i)*U(i,j);
+                //std::cout << "U(k,i) = " << (U(i,j)/U(i,i))*L(k,j) << '\n';
             }
         }
     }
