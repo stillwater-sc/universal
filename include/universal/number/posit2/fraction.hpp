@@ -47,7 +47,7 @@ public:
 	// modifiers
 	void reset() {
 		_NrOfBits = 0;
-		_Bits.reset();
+		_Bits.clear();
 	}
 	void setzero() { reset(); }
 

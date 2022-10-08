@@ -319,6 +319,7 @@ public:
 	static constexpr size_t   fhbits = nbits - es;           // number of fraction bits including the hidden bit
 
 	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr bt       BLOCK_MASK = bt(~0);
 	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
 	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
 	static constexpr uint64_t topfbits = fbits % 64;
@@ -344,7 +345,6 @@ public:
 	static constexpr int      MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
 	static constexpr int      MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int      MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
-	static constexpr bt       BLOCK_MASK = bt(~0);
 
 	static constexpr bool     hasSubnormals   = _hasSubnormals;
 	static constexpr bool     hasSupernormals = _hasSupernormals;
@@ -1517,7 +1517,7 @@ public:
 		exponent(e);
 //		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
 		// isnormal returns true if exponent bits are not all zero or one, false otherwise
-		return !e.iszero() && !e.isallones();
+		return !e.iszero() && !e.all();
 	}
 	constexpr bool isdenormal() const noexcept {
 		blockbinary<es, bt> e;
@@ -1527,7 +1527,7 @@ public:
 	constexpr bool issupernormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
-		return e.isallones();// issupernormal returns true if exponent bits are all one, false otherwise
+		return e.all();// issupernormal returns true if exponent bits are all one, false otherwise
 	}
 	
 	template<typename NativeReal>
@@ -1754,7 +1754,7 @@ public:
 				}
 			}
 			else {
-				if (ebits.isallones()) {
+				if (ebits.all()) {
 					// supernormals are mapped to quiet NaNs
 					v = std::numeric_limits<TargetFloat>::quiet_NaN();
 					return v;
@@ -2082,8 +2082,8 @@ public:
 		std::cout << "ALL_ONE_MASK_FR   : " << to_binary(ALL_ONES_FR) << '\n';
 	}
 	void showLimbs() const {
-		for (size_t b = 0; b < fBlocks; ++b) {
-			std::cout << to_binary(_block[fBlocks - b - 1], sizeof(bt) * 8) << ' ';
+		for (size_t b = 0; b < nrBlocks; ++b) {
+			std::cout << to_binary(_block[nrBlocks - b - 1], sizeof(bt) * 8) << ' ';
 		}
 		std::cout << '\n';
 	}

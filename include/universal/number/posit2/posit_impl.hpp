@@ -148,7 +148,7 @@ void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbit
 	}
 	blockbinary<nbits, bt> tmp(raw_bits);
 	_sign = raw_bits[nbits - 1];
-	if (_sign) tmp = twos_complement(tmp);
+	if (_sign) tmp = twosComplement(tmp);
 	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
 	// get the exponent bits
@@ -423,25 +423,42 @@ posit<nbits, es, bt>& construct(bool s, const regime<nbits, es, bt>& r, const ex
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // class posit represents posit numbers of arbitrary configuration and their basic arithmetic operations (add/sub, mul/div)
-template<size_t _nbits, size_t _es, typename BlockType = std::uint8_t>
+template<size_t _nbits, size_t _es, typename bt = std::uint8_t>
 class posit {
 
-//	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
-//	static_assert((sizeof(long double) == 16) && (std::numeric_limits<long double>::digits < 113), "C++ math library for long double does not support 128-bit quad precision floats.");
-  
-public:
-	using bt = BlockType;
-	static constexpr size_t nbits   = _nbits;
-	static constexpr size_t es      = _es;
-	static constexpr size_t sbits   = 1;                          // number of sign bits:     specified
-	static constexpr size_t rbits   = nbits - sbits;              // maximum number of regime bits:   derived
-	static constexpr size_t ebits   = es;                         // maximum number of exponent bits: specified
-	static constexpr size_t fbits   = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
-	static constexpr size_t fhbits  = fbits + 1;                  // maximum number of fraction + one hidden bit
+	static_assert(_es < 10ull, "my God that is a big number, are you trying to break the Interweb?");
 
-	static constexpr size_t abits   = fhbits + 3;                 // size of the addend
-	static constexpr size_t mbits   = 2 * fhbits;                 // size of the multiplier output
-	static constexpr size_t divbits = 3 * fhbits + 4;             // size of the divider output
+public:
+	static constexpr size_t   nbits   = _nbits;
+	static constexpr size_t   es      = _es;
+	static constexpr size_t   sbits   = 1;                          // number of sign bits:     specified
+	static constexpr size_t   rbits   = nbits - sbits;              // maximum number of regime bits:   derived
+	static constexpr size_t   ebits   = es;                         // maximum number of exponent bits: specified
+	static constexpr size_t   fbits   = (es + 2 >= nbits ? 0 : nbits - 3 - es); // maximum number of fraction bits: derived
+	static constexpr size_t   fhbits  = fbits + 1;                  // maximum number of fraction + one hidden bit
+
+	static constexpr size_t   abits   = fhbits + 3;                 // size of the addend
+	static constexpr size_t   mbits   = 2 * fhbits;                 // size of the multiplier output
+	static constexpr size_t   divbits = 3 * fhbits + 4;             // size of the divider output
+
+	static constexpr size_t   bitsInByte = 8ull;
+	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
+	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
+
+	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr bt       BLOCK_MASK = bt(~0);
+	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
+	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
+
+	static constexpr size_t   nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr size_t   MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+	static constexpr bt       MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr size_t   bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
+
+	static constexpr bt       SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
+	static constexpr bt       LSB_BIT_MASK = bt(1ull);
+
+	typedef bt BlockType;
 
 	// constexpr posit() { setzero();  }
 	constexpr posit() : _block{} {}
@@ -1018,11 +1035,26 @@ public:
 		decrement_bitset(_block);
 	}
 	
-	// return human readable type configuration for this posit
-	inline std::string cfg() {
-		std::stringstream ss;
-		ss << "posit<" << nbits << ", " << es << ">";
-		return ss.str();
+	// helper debug function
+	void constexprClassParameters() const noexcept {
+		std::cout << "-------------------------------------------------------------\n";
+		std::cout << "type              : " << typeid(*this).name() << '\n';
+		std::cout << "nbits             : " << nbits << '\n';
+		std::cout << "es                : " << es << std::endl;
+		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
+		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, 0, true) << '\n';
+		std::cout << "nrBlocks          : " << nrBlocks << '\n';
+		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
+		std::cout << "MSU               : " << MSU << '\n';
+		std::cout << "MSU MASK          : " << to_binary(MSU_MASK, 0, true) << '\n';
+		std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, 0, true) << '\n';
+		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, 0, true) << '\n';
+	}
+	void showLimbs() const {
+		for (size_t b = 0; b < nrBlocks; ++b) {
+			std::cout << to_binary(_block[nrBlocks - b - 1], sizeof(bt) * 8) << ' ';
+		}
+		std::cout << '\n';
 	}
 
 private:

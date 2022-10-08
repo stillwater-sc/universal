@@ -79,11 +79,11 @@ logic though.
 */
 
 // a block-based binary number configurable to be signed or unsigned. When signed it uses 2's complement encoding
-template<size_t _nbits, typename BlockType = uint8_t, BinaryNumberType _NumberType = BinaryNumberType::Signed>
+template<size_t _nbits, typename bt = uint8_t, BinaryNumberType _NumberType = BinaryNumberType::Signed>
 class blockbinary {
 public:
 	static constexpr size_t nbits = _nbits;
-	typedef BlockType bt;
+	typedef bt BlockType;
 	static constexpr BinaryNumberType NumberType = _NumberType;
 
 	static constexpr size_t   bitsInByte = 8;
@@ -486,6 +486,12 @@ public:
 		}
 	}
 	constexpr void setzero() noexcept { clear(); }
+	constexpr void set() noexcept { // set all bits to 1
+		for (size_t i = 0; i < nrBlocks-1; ++i) {
+			_block[i] = ALL_ONES;
+		}
+		_block[MSU] = ALL_ONES & MSU_MASK;
+	}
 	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
@@ -587,13 +593,31 @@ public:
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
 	}
-	constexpr bool isallones() const noexcept {
-		if constexpr (nrBlocks > 1) for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != ALL_ONES) return false;
+	constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
+	constexpr bool iseven() const noexcept { return !isodd(); }
+
+	constexpr bool all() const noexcept {
+		if constexpr (nrBlocks > 1) for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != ALL_ONES) return false;
 		if (_block[MSU] != MSU_MASK) return false;
 		return true;
 	}
-	constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
-	constexpr bool iseven() const noexcept { return !isodd(); }
+	constexpr bool any() const noexcept {
+		if constexpr (nrBlocks > 1) for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] || ALL_ONES) return true;
+		if (_block[MSU] || MSU_MASK) return true;
+		return false;
+	}
+	constexpr bool none() const noexcept {
+		if constexpr (nrBlocks > 1) for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != 0) return false;
+		if (_block[MSU] & MSU_MASK) return false;
+		return true;
+	}
+	constexpr size_t count() const noexcept { // TODO: optimize for limbs
+		size_t nrOnes = 0;
+		for (size_t i = 0; i < nbits; ++i) {
+			if (test(i)) ++nrOnes;
+		}
+		return nrOnes;
+	}
 	constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
 	constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op

@@ -27,7 +27,7 @@ public:
 	inline void reset() {
 		_k = 0;
 		_RegimeBits = 0;
-		_Bits.reset();
+		_Bits.clear();
 	}
 	inline size_t nrBits() const { return _RegimeBits;	}
 	int scale() const {
@@ -59,18 +59,18 @@ public:
 		return scale;
 	}
 	inline bool iszero() const { return _Bits.none(); }
-	inline blockbinary<nbits - 1, bt> bits() const { return _Bits;	}
+	inline blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bits() const { return _Bits; }
 	void set(const blockbinary<nbits - 1, bt>& raw, size_t nrOfRegimeBits) {
 		_Bits = raw;
 		_RegimeBits = nrOfRegimeBits;
 	}
 	void setzero() {
-		_Bits.reset();
+		_Bits.clear();
 		_RegimeBits = nbits - 1;
 		_k = 1 - static_cast<int>(nbits);   // by design: this simplifies increment/decrement
 	}
 	void setinf() {
-		_Bits.reset();
+		_Bits.clear();
 		_RegimeBits = nbits - 1;
 		_k = static_cast<int>(nbits) - 1;   // by design: this simplifies increment/decrement
 	}
@@ -83,7 +83,7 @@ public:
 		bool r = scale > 0;
 		_k = calculate_k<nbits,es,bt>(scale);
 		_run = static_cast<unsigned>(r ? 1 + (scale >> es) : -scale >> es);
-		r ? _Bits.set() : _Bits.reset();
+		r ? _Bits.set() : _Bits.clear();
 		_Bits.set(nbits - 1 - _run - 1, 1 ^ r); // termination bit		
 		_RegimeBits = _run + 1;
 		return _RegimeBits;
@@ -97,10 +97,10 @@ public:
 		if (k < 0) { // south-east quadrant: patterns 00001---
 			_k = int(-k < (static_cast<int>(nbits) - 2) ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
 			k = -_k - 1;
-			_Bits.reset();
+			_Bits.clear();
 			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 				_RegimeBits = size_t(k) + 2;
-				_Bits.set(static_cast<int>(nbits) - 1 - _RegimeBits, true);   // set the run-length termination bit
+				_Bits.setbit(static_cast<int>(nbits) - 1 - _RegimeBits, true);   // set the run-length termination bit
 			}
 			else {
 				_RegimeBits = static_cast<int>(nbits) - 1;
@@ -112,7 +112,7 @@ public:
 			_Bits.set();
 			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (std::size_t(k) < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 				_RegimeBits = size_t(k) + 2;   
-				_Bits.set(nbits - 1 - _RegimeBits, false);   // set the run-length termination bit
+				_Bits.setbit(nbits - 1 - _RegimeBits, false);   // set the run-length termination bit
 			}
 			else {
 				_RegimeBits = nbits - 1;
@@ -132,7 +132,7 @@ public:
 		return carry;
 	}
 private:
-	blockbinary<nbits - 1, bt>  	_Bits;
+	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned>  	_Bits;
 	int						_k;
 	unsigned				_run;
 	size_t					_RegimeBits;
@@ -184,7 +184,7 @@ inline std::istream& operator>> (std::istream& istr, const regime<nbits, es, bt>
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_string(const regime<nbits, es, bt>& r, bool dashExtent = true, bool nibbleMarker = false) {
 	std::stringstream sstr;
-	blockbinary<nbits - 1, bt> bb = r.bits();
+	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
 	size_t nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (r.nrBits() > nrOfRegimeBitsProcessed++) {

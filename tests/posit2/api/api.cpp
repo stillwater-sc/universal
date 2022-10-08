@@ -32,6 +32,13 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
 
+	{
+		int start = nrOfFailedTestCases;
+		posit<8, 2> a, b, c;
+		if (nrOfFailedTestCases - start > 0) {
+			std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << '\n';
+		}
+	}
 	/*
 	{
 		int start = nrOfFailedTestCases;
@@ -48,6 +55,7 @@ try {
 			std::cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << '\n';
 		}
 	}
+
 
 	// type tag to identify the type without having to depend on demangle
 	{
