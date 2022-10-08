@@ -10,4 +10,4 @@ if(C_API_LIB_PIC)
 endif()
 
 install(TARGETS posit_c_api_pure DESTINATION lib)
-install(FILES posit_c_api.h      DESTINATION include)
+#install(FILES posit_c_api.h      DESTINATION include)

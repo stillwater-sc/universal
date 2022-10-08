@@ -1,6 +1,6 @@
 // hilbert.cpp: Hilbert matrix
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -43,7 +43,8 @@ void HilbertMatrixTest(size_t N = 5) {
 	std::cout << "Validation: Hinv * H => I\n" << Hinv * H << '\n';
 
 	Scalar lcm = (Scalar)GenerateHilbertMatrix<Scalar>(Hscale, true); // scale the Hilbert matrix entries to be binary representable
-	GenerateHilbertMatrixInverse(Hscaleinv, lcm); // <-- scale the inverse
+	//GenerateHilbertMatrixInverse(Hscaleinv, lcm); // <-- scale the inverse
+	GenerateHilbertMatrixInverse(Hscaleinv);
 	std::cout << "Scaled Hilbert matrix: lcm = " << lcm << "\n" << Hscale << '\n';
 	std::cout << "Scaled Hilbert inverse\n" << Hscaleinv << '\n';
 	std::cout << "Validation: Hinv * H => I\n" << Hscaleinv * Hscale << '\n';

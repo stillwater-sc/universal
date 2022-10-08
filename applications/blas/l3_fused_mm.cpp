@@ -1,16 +1,9 @@
 // l3_fused_mm.cpp: example program showing a fused matrix-matrix product
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifdef _MSC_VER
-#pragma warning(disable : 4100) // argc/argv unreferenced formal parameter
-#pragma warning(disable : 4514 4571)
-#pragma warning(disable : 4625 4626) // 4625: copy constructor was implicitly defined as deleted, 4626: assignment operator was implicitely defined as deleted
-#pragma warning(disable : 5025 5026 5027 5045)
-#pragma warning(disable : 4710 4774)
-#pragma warning(disable : 4820)
-#endif
+#include <universal/utility/directives.hpp>
 // enable the following define to show the intermediate steps in the fused-dot product
 // #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_MUL
@@ -101,7 +94,7 @@ void catastrophicCancellationTest() {
 	}
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal::blas;
 
@@ -132,17 +125,41 @@ try {
 		std::cout << "fdp = " << sw::universal::fdp(a, b) << '\n';
 	}
 
-	try {
-		sw::universal::blas::matrix<float> A(2, 3), B(2, 3);
-		auto C = A * B;
+	{
+		// nbits < 22 will yield catastrophic cancellation despite FDP
+		// es < 3 will yield catastrophic cancellation despite FDP
+		// posit<22, 3> is just perfect for Hilbert matrix of order 5
+		using Real = sw::universal::posit<22, 3>;
+		using Matrix = sw::universal::blas::matrix<Real>;
+		Matrix A(5, 5), B(5, 5);
+		GenerateHilbertMatrix(A, false);
+		std::cout << '\n';
+		std::cout << "Standard Hilbert matrix\n" << A << '\n';
+		Real scaleFactor = GenerateHilbertMatrix(A, true);
+		std::cout << "scale factor = " << scaleFactor << "\n\n";
+		GenerateHilbertMatrixInverse(B);
+		auto C = fmm(A, B);
+		std::cout << "Scaled Hilbert matrix\n" << A << '\n';
+		std::cout << "Hilbert inverse\n" << B << '\n';
+		std::cout << "H * Hinv\n" << C << '\n';
+		C /= scaleFactor;
+		std::cout << "Normalized H * Hinv\n"<< C << '\n';
 	}
-	catch (const sw::universal::blas::matmul_incompatible_matrices& err) {
-		std::cerr << "Correctly caught incompatible matrix exeption:\n" << err.what() << std::endl;
+
+	{
+		try {
+			sw::universal::blas::matrix<float> A(2, 3), B(2, 3);
+			auto C = A * B;
+		}
+		catch (const sw::universal::blas::matmul_incompatible_matrices& err) {
+			std::cerr << "Correctly caught incompatible matrix exeption:\n" << err.what() << std::endl;
+		}
+		catch (const std::runtime_error& err) {
+			std::cerr << "Unexcpected runtime exception: " << err.what() << std::endl;
+			return EXIT_FAILURE;
+		}
 	}
-	catch (const std::runtime_error& err) {
-		std::cerr << "Unexcpected runtime exception: " << err.what() << std::endl;
-		return EXIT_FAILURE;
-	}
+
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

@@ -4,30 +4,21 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/lns/lns.hpp>
+#include <universal/common/numeric_limits_utility.hpp>
 
-namespace sw {
-	namespace universal {
+template<typename LNS>
+void PrintLnsEncodings(float f) {
+	using namespace sw::universal;
+	LNS v{f};
 
-		// return in triple form (sign, scale, fraction)
-		template<size_t nbits, size_t rbits, typename bt, auto... x>
-		inline std::string to_triple(const lns<nbits, rbits, bt, x...>& number) {
-			std::stringstream ss;
+	constexpr size_t columnWidth = 50;
+	std::cout << std::setw(columnWidth) << std::left << type_tag(LNS()) << ": " << std::setprecision(std::numeric_limits<LNS>::max_digits10) << std::right << v << '\n';
 
-			// print sign bit
-			ss << '(' << "tbd" << ',';
-
-			// scale
-			ss << "tbd" << ',';
-
-			// print fraction bits
-			ss << "tbd";
-
-			ss << ')';
-			return ss.str();
-		}
-	}
-}  // namespace sw::universal
-
+	//std::cout << "triple form  : " << to_triple(v) << '\n';   // this is the 'right' way this needs to work
+	std::cout << "triple form  : " << to_triple(double(v)) << '\n';   // this is a short cut marshalling through a double
+	std::cout << "binary form  : " << to_binary(v, true) << '\n';
+	std::cout << "color coded  : " << color_print(v) << '\n';
+}
 
 // receive a float and print its components
 int main(int argc, char** argv)
@@ -43,13 +34,55 @@ try {
 		std::cerr << "Usage: lns float_value\n";
 		std::cerr << "Example: lns 0.03124999\n";
 		std::cerr << "TBD" << '\n';
+
+		std::cout << std::numeric_limits<lns<4, 1>>::min_exponent << '\n';
+
+		std::cout << "Number Traits of logarithmic number systems\n";
+		numberTraits< lns< 4, 1> >(std::cout);
+		std::cout << '\n';
+		numberTraits< lns< 8, 4> >(std::cout);
+		std::cout << '\n';
+		numberTraits< lns<12, 6> >(std::cout);
+		std::cout << '\n';
+		numberTraits< lns<16, 8> >(std::cout);
+		std::cout << '\n';
+		numberTraits< lns<20,10> >(std::cout);
+		std::cout << '\n';
+		numberTraits< lns<24,12> >(std::cout);
+		std::cout << '\n';
+		numberTraits< lns<32, 23> >(std::cout);
+		std::cout << '\n';
+
+		std::cout << "float reference\n";
+		numberTraits< float >(std::cout);
+
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
-	std::string arg = argv[1];
-	lns<32, 8, std::uint32_t> v{};
 
-	constexpr size_t columnWidth = 50;
-	std::cout << std::setw(columnWidth) << std::left << typeid(v).name() << ": " << std::setprecision(max_digits10) << std::right << v << " " << to_triple(v) << '\n';
+	float f = float(atof(argv[1]));
+	std::cout << "float value  : " << std::setprecision(max_digits10) << f << '\n';
+
+	PrintLnsEncodings< lns<6, 2, std::uint32_t> >(f);
+	PrintLnsEncodings< lns<6, 3, std::uint32_t> >(f);
+	PrintLnsEncodings< lns<6, 4, std::uint32_t> >(f);
+
+	std::cout << '\n';
+
+	PrintLnsEncodings< lns<8, 2, std::uint32_t> >(f);
+	PrintLnsEncodings< lns<8, 4, std::uint32_t> >(f);
+	PrintLnsEncodings< lns<8, 6, std::uint32_t> >(f);
+
+	std::cout << '\n';
+
+	PrintLnsEncodings< lns<10, 3, std::uint32_t> >(f);
+	PrintLnsEncodings< lns<10, 5, std::uint32_t> >(f);
+	PrintLnsEncodings< lns<10, 8, std::uint32_t> >(f);
+
+	std::cout << '\n';
+
+	PrintLnsEncodings< lns<12, 4, std::uint32_t> >(f);
+	PrintLnsEncodings< lns<12, 6, std::uint32_t> >(f);
+	PrintLnsEncodings< lns<12, 9, std::uint32_t> >(f);
 
 	return EXIT_SUCCESS;
 }

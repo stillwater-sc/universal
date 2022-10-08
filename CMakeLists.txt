@@ -19,7 +19,7 @@ print_header()
 # Ubuntu 18.04 LTS runs cmake 3.10.2
 # container runs cmake 3.7.1
 # gcc5 container runs cmake 3.0.2
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.22)
 
 ####
 ## Enable project() command to manage VERSION variables
@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 59)
+  set(UNIVERSAL_VERSION_MINOR 60)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -761,8 +761,9 @@ endif(BUILD_CMD_LINE_TOOLS)
 
 # educational examples
 if(BUILD_EDUCATION)
-add_subdirectory("education/tables")
 add_subdirectory("education/number")
+add_subdirectory("education/tables")
+add_subdirectory("education/ranges")
 add_subdirectory("education/quire")
 endif(BUILD_EDUCATION)
 
@@ -776,6 +777,7 @@ add_subdirectory("applications/chebyshev")
 add_subdirectory("applications/complex")
 add_subdirectory("applications/constants")
 add_subdirectory("applications/cryptography")
+add_subdirectory("applications/dnn")
 add_subdirectory("applications/dsp")
 add_subdirectory("applications/engineering")
 add_subdirectory("applications/floating-point")
