@@ -72,6 +72,13 @@ public:
 	vector(size_t N) : data(N) {}
 	vector(size_t N, const Scalar& val) : data(N, val) {}
 	vector(std::initializer_list<Scalar> iList) : data(iList) {}
+	// Converting Constructor (SourceType A --> Scalar B)
+	template<typename SourceType>
+	vector(const vector<SourceType>& v) : data(v.size()) {
+		for (size_t i = 0; i < size(); ++i){
+			data[i] = Scalar(v(i));
+		}
+	}
 	vector(const vector& v) = default;
 	vector(vector&& v) = default;
 
@@ -167,7 +174,7 @@ public:
 		return sqrt(twoNorm);
 	}
 
-	// Print elements as a column
+	// Print elements as a column (jquinlan)
 	void disp(){
 		for (auto v : data) {
 			std::cout << v << '\n';

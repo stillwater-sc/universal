@@ -988,7 +988,6 @@ internal::value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, con
 	// transform the inputs into (sign,scale,fraction) triples
 	a.set(sign(lhs), scale(lhs), extract_fraction<nbits, es, fbits>(lhs), lhs.iszero(), lhs.isnar());
 	b.set(sign(rhs), scale(rhs), extract_fraction<nbits, es, fbits>(rhs), rhs.iszero(), rhs.isnar());
-
 	module_multiply(a, b, product);    // multiply the two inputs
 
 	return product;
