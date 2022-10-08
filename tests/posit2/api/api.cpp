@@ -35,6 +35,10 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		posit<8, 2> a, b, c;
+		a = 0;
+		b = 0;
+		c = a + b;
+		std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << '\n';
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << '\n';
 		}

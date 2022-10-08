@@ -1689,7 +1689,7 @@ public:
 		return shift;
 	}
 	template<size_t targetbits>
-	constexpr void getbits(blockbinary<targetbits, bt>& b) const {
+	constexpr void bits(blockbinary<targetbits, bt>& b) const {
 		size_t upperbound = (nbits > targetbits ? targetbits : nbits);
 		b.clear();
 		for (size_t i = 0; i < upperbound; ++i) { b.setbit(i, at(i)); }

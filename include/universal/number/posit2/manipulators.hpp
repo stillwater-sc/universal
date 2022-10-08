@@ -237,7 +237,7 @@ namespace sw { namespace universal {
 		str << def;
 		return str.str();
 	}
-#endif LATER
+#endif // LATER
 
 }} // namespace sw::universal
 

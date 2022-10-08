@@ -487,8 +487,10 @@ public:
 	}
 	constexpr void setzero() noexcept { clear(); }
 	constexpr void set() noexcept { // set all bits to 1
-		for (size_t i = 0; i < nrBlocks-1; ++i) {
-			_block[i] = ALL_ONES;
+		if constexpr (nrBlocks > 1) {
+			for (size_t i = 0; i < nrBlocks - 1; ++i) {
+				_block[i] = ALL_ONES;
+			}
 		}
 		_block[MSU] = ALL_ONES & MSU_MASK;
 	}

@@ -296,7 +296,7 @@ inline blockbinary<nbits>& convert_to_bb(bool _sign, int _scale, const blockbina
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<size_t nbits, size_t es, typename bt, size_t fbits>
-inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blockbinary<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
+inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blockbinary<fbits, bt, BinaryNumberType::Unsigned>& fraction_in, posit<nbits, es, bt>& p) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
@@ -371,8 +371,8 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blockbinary<
 }
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t es, typename bt, size_t fbits>
-inline posit<nbits, es, bt>& convert(const blocksignificant<fbits, bt>& v, posit<nbits, es, bt>& p) {
+template<size_t nbits, size_t es, typename bt, size_t fbits, BlockTripleOperator op = BlockTripleOperator::REPRESENTATION>
+inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<nbits, es, bt>& p) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
 
@@ -521,43 +521,53 @@ public:
 
 	// assignment operators for native types
 	posit& operator=(signed char rhs) {
-		blocksignificant<8*sizeof(signed char)-1, bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(signed char) - 1;
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(short rhs) {
-		blocksignificant<8*sizeof(short)-1, bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(short) - 1;
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(int rhs) {
-		blocksignificant<8*sizeof(int)-1, bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(int) - 1;
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(long rhs) {
-		blocksignificant<8*sizeof(long), bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(long);
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(long long rhs) {
-		blocksignificant<8*sizeof(long long)-1, bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(long long) - 1;
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(char rhs) {
-		blocksignificant<8*sizeof(char), bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(char);
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(unsigned short rhs) {
-		blocksignificant<8*sizeof(unsigned short), bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(unsigned short);
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(unsigned int rhs) {
-		blocksignificant<8*sizeof(unsigned int), bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(unsigned int);
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(unsigned long rhs) {
-		blocksignificant<8*sizeof(unsigned long), bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(unsigned long);
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(unsigned long long rhs) {
-		blocksignificant<8*sizeof(unsigned long long), bt> v(rhs);
+		constexpr size_t nrfbits = 8 * sizeof(unsigned long long);
+		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
 	posit& operator=(float rhs) {

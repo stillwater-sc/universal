@@ -1,7 +1,7 @@
 #pragma once
-// table.hpp: generate a table for an bfloat<> configuration
+// table.hpp: generate a table for an classic floating-point configuration
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -34,9 +34,9 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			v.setbits(i);
 			blockbinary<nbits, bt> signedValue;
-			v.getbits(signedValue);  // blockbinary is a 2's complement integer
+			v.bits(signedValue);  // blockbinary is a 2's complement integer
 			blockbinary<nbits + 1, bt > unsignedValue; // keep MSB 0 to reflect an unsigned value
-			v.getbits(unsignedValue);
+			v.bits(unsignedValue);
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;
@@ -83,13 +83,13 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			v.setbits(i);
 			blockbinary<nbits, bt> signedValue, positiveProjection;
-			v.getbits(signedValue);  // blockbinary is a 2's complement integer
+			v.bits(signedValue);  // blockbinary is a 2's complement integer
 			positiveProjection = signedValue;
 			if (signedValue.isneg()) {
 				positiveProjection.twosComplement();
 			}
 			blockbinary<nbits + 1, bt > unsignedValue; // keep MSB 0 to reflect an unsigned value
-			v.getbits(unsignedValue);
+			v.bits(unsignedValue);
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;

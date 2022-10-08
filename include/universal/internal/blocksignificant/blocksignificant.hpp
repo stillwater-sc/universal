@@ -480,6 +480,7 @@ public:
 			         raw |= _block[MSU - 1 - I]), ...);
 		}
 	}
+
 #ifdef DEPRECATED
 	// copy a value over from one blocksignificant to this blocksignificant
 	// blocksignificant is a 2's complement encoding, so we sign-extend by default

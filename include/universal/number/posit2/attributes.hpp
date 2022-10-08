@@ -109,7 +109,7 @@ constexpr inline int sign_value(const posit<nbits, es, bt>& p) {
 
 template<size_t nbits, size_t es, typename bt>
 inline long double regime_value(const posit<nbits, es, bt>& p) {
-	regime<nbits, es>    _regime;
+	regime<nbits, es, bt>    _regime;
 	blockbinary<nbits, bt> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
@@ -118,8 +118,8 @@ inline long double regime_value(const posit<nbits, es, bt>& p) {
 
 template<size_t nbits, size_t es, typename bt>
 inline long double exponent_value(const posit<nbits, es, bt>& p) {
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
+	regime<nbits, es, bt>    _regime;
+	exponent<nbits, es, bt>  _exponent;
 	blockbinary<nbits, bt> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
 	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp)); // get the regime bits
