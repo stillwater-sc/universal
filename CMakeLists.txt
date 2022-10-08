@@ -77,6 +77,7 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 # control which projects get enabled
 # Continuous Integration override to build all
 option(BUILD_ALL                         "Set to ON to build all components"                   OFF)
+option(BUILD_CI                          "Set to ON to build ci components"                    OFF)
 # or subsets of the components
 option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
 option(BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
@@ -579,6 +580,15 @@ if(BUILD_ALL)
 	# build the HW validation environment
 	set(BUILD_VALIDATION_HW ON)
 endif(BUILD_ALL)
+
+if(BUILD_CI)
+	# set the grouped components to build (will trigger builds when tested)
+	# set(BUILD_DEMONSTRATION ON)
+	set(BUILD_NUMERICS ON)
+	set(BUILD_NUMBER_SYSTEMS ON)
+	set(BUILD_MIXEDPRECISION_SDK ON)
+	set(BUILD_APP_ENVIRONMENT ON)
+endif(BUILD_CI)
 
 if(BUILD_DEMONSTRATION)
 	# core demonstration example applications that use the library
