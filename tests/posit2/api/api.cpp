@@ -33,10 +33,22 @@ try {
 	//// posit construction, initialization, assignment and comparisions
 
 	{
+		constexpr size_t nbits = 15;
+		constexpr size_t es = 2;
+		posit<nbits, es, std::uint16_t> a;
+		std::cout << "minpos positive  : " << to_binary(minpos_pattern<nbits, es>(false)) << '\n';
+		std::cout << "minpos negative  : " << to_binary(minpos_pattern<nbits, es>(true)) << '\n';
+		std::cout << "maxpos positive  : " << to_binary(maxpos_pattern<nbits, es>(false)) << '\n';
+		std::cout << "maxpos negative  : " << to_binary(maxpos_pattern<nbits, es>(true)) << '\n';
+	}
+	{
 		int start = nrOfFailedTestCases;
 		posit<8, 2> a, b, c;
-		a = 0;
-		b = 0;
+		a = 1;
+		std::cout << "regime   value : " << regime_value(a) << '\n';
+		std::cout << "exponent value : " << exponent_value(a) << '\n';
+		std::cout << "fraction value : " << fraction_value(a) << '\n';
+		b = 1;
 		c = a + b;
 		std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << '\n';
 		if (nrOfFailedTestCases - start > 0) {

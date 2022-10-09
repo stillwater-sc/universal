@@ -296,7 +296,7 @@ inline blockbinary<nbits>& convert_to_bb(bool _sign, int _scale, const blockbina
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<size_t nbits, size_t es, typename bt, size_t fbits>
-inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blockbinary<fbits, bt, BinaryNumberType::Unsigned>& fraction_in, posit<nbits, es, bt>& p) {
+inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificant<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
@@ -328,7 +328,8 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blockbinary<
 		for (size_t i = 1; i <= run; i++) regime.set(i, r);
 
 		size_t esval = e % (uint32_t(1) << es);
-		exponent = convert_to_bitblock<pt_len>(esval);
+		//exponent = convert_to_bitblock<pt_len>(esval);
+		exponent = esval;
 		int nbits_plus_one = static_cast<int>(nbits) + 1;
 		int sign_regime_es = 2 + int(run) + static_cast<int>(es);
 		size_t nf = (size_t)std::max<int>(0, (nbits_plus_one - sign_regime_es));
@@ -371,7 +372,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blockbinary<
 }
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t es, typename bt, size_t fbits, BlockTripleOperator op = BlockTripleOperator::REPRESENTATION>
+template<size_t nbits, size_t es, typename bt, size_t fbits, BlockTripleOperator op>
 inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<nbits, es, bt>& p) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
@@ -384,7 +385,7 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 		p.setnar();
 		return p;
 	}
-	return convert_<nbits, es, fbits>(v.sign(), v.scale(), v.fraction(), p);
+	return convert_<nbits, es, bt, fbits+2>(v.sign(), v.scale(), v.fraction(), p);
 }
 	
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
@@ -652,12 +653,13 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		internal::value<abits + 1> sum;
-		internal::value<fbits> a, b;
+		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, sum;
+
 		// transform the inputs into (sign,scale,fraction) triples
-		normalize(a);
-		rhs.normalize(b);
-		module_add<fbits,abits>(a, b, sum);		// add the two inputs
+		normalizeAddition(a);
+		rhs.normalizeAddition(b);
+		//module_add<fbits,abits>(a, b, sum);		// add the two inputs
+		sum.add(a, b);
 
 		// special case handling of the result
 		if (sum.iszero()) {
@@ -918,22 +920,32 @@ public:
 
 	// Selectors
 	bool sign() const noexcept { return _block[nbits - 1]; }
+	int scale() const noexcept { 
+		blockbinary<nbits, bt> tmp(bits());
+		tmp = sign() ? twosComplement(tmp) : tmp;
+		regime<nbits, es, bt> r;
+		int k = decode_regime(tmp);
+		size_t nrRegimeBits = r.assign_regime_pattern(k);
+		exponent<nbits, es, bt> e;
+		e.extract_exponent_bits(tmp, nrRegimeBits);
+		return r.scale() + e.scale();
+	}
 	bool isnar() const noexcept {
 		if (_block[nbits - 1] == false) return false;
 		blockbinary<nbits, bt> tmp(_block);			
-		tmp.reset(nbits - 1);
+		tmp.setbit(nbits - 1, false);
 		return tmp.none() ? true : false;
 	}
 	bool iszero() const noexcept { return _block.none() ? true : false; }
 	bool isone() const noexcept { // pattern 010000....
 		blockbinary<nbits, bt> tmp(_block);
-		tmp.set(nbits - 2, false);
+		tmp.setbit(nbits - 2, false);
 		return _block[nbits - 2] & tmp.none();
 	}
 	bool isminusone() const noexcept { // pattern 110000...
 		blockbinary<nbits, bt> tmp(_block);
-		tmp.set(nbits - 1, false);
-		tmp.set(nbits - 2, false);
+		tmp.setbit(nbits - 1, false);
+		tmp.setbit(nbits - 2, false);
 		return _block[nbits - 1] & _block[nbits - 2] & tmp.none();
 	}
 	bool isneg() const noexcept { return _block[nbits - 1]; }
@@ -952,11 +964,11 @@ public:
 	unsigned long long encoding() const noexcept { return _block.to_ullong(); }
 
 	// Modifiers
-	inline constexpr void clear() { _block.reset(); }
+	inline constexpr void clear() { _block.clear(); }
 	inline constexpr void setzero() { clear(); }
 	inline constexpr void setnar() {
-		_block.reset();
-		_block.set(nbits - 1, true);
+		_block.clear();
+		_block.setbit(nbits - 1, true);
 	}
 	// set minpos value
 	inline posit& minpos() {
@@ -1012,6 +1024,8 @@ public:
 		decode(_block, _sign, _regime, _exponent, _fraction);
 		return blocksignificant<fbits, bt>(_sign, _regime.scale() + _exponent.scale(), _fraction.bits(), iszero(), isnar());
 	}
+
+/*  old normalize
 	void normalize(blocksignificant<fbits, bt>& v) const noexcept {
 		using namespace sw::universal::internal;
 		bool		     		_sign{ false };
@@ -1035,7 +1049,55 @@ public:
 		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = _src[src];
 		v.set(_sign, _regime.scale() + _exponent.scale(), _fr, iszero(), isnar());
 	}
-	
+*/
+
+	constexpr void normalizeAddition(blocktriple<fbits, BlockTripleOperator::ADD, bt>& tgt) const {
+		using BlockTripleConfiguration = blocktriple<fbits, BlockTripleOperator::ADD, bt>;
+		// test special cases
+		if (isnar()) {
+			tgt.setnan();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal(); // a blocktriple is always normalized
+			int scale = this->scale();
+			tgt.setsign(sign());
+			tgt.setscale(scale);
+			// set significant
+			// we are going to unify to the format 001.ffffeeee
+			// where 'f' is a fraction bit, and 'e' is an extension bit
+			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
+/*
+			if constexpr (fbits < 64 && BlockTripleConfiguration::rbits < (64 - fbits)) {
+				uint64_t raw = fraction_ull();
+				raw |= (1ull << fbits); // add the hidden bit
+				//std::cout << "normalize      : " << *this << '\n';
+				//std::cout << "significant    : " << to_binary(raw, fbits + 2) << '\n';
+				raw <<= BlockTripleConfiguration::rbits;  // rounding bits required for correct rounding
+				//std::cout << "rounding shift : " << to_binary(raw, fbits + 2 + BlockTripleConfiguration::rbits) << '\n';
+				tgt.setbits(raw);
+			}
+			else {
+				blockcopy(tgt);
+				tgt.setradix();
+				tgt.setbit(fbits); // add the hidden bit
+				tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
+			}
+*/
+			size_t FSU = MSU;
+			size_t FSU_MASK = 0x07FFu; // s rr ee fff ... fff  nbits is 16 es = 2, bt is uint16
+			for (size_t i = 0; i < FSU; ++i) {
+				tgt.setblock(i, _block[i]);
+			}
+			tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
+			tgt.setradix();
+			tgt.setbit(fbits); // add the hidden bit
+			tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
+		}
+		// tgt.setradix(radix);
+	}
 	// step up to the next posit in a lexicographical order
 	void increment_posit() {
 		increment_bitset(_block);

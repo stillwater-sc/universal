@@ -494,6 +494,9 @@ public:
 		}
 		_block[MSU] = ALL_ONES & MSU_MASK;
 	}
+	constexpr void reset() noexcept { clear(); } // set all bits to 0
+	constexpr void set(size_t i) noexcept {	setbit(i, true); }
+	constexpr void reset(size_t i) noexcept { setbit(i, false); }
 	constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];

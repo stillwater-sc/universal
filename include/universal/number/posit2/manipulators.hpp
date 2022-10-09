@@ -81,11 +81,11 @@ namespace sw { namespace universal {
 	std::string components(const posit<nbits, es, bt>& p) {
 		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
-		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(p.get(), _sign, _regime, _exponent, _fraction);
+		bool		     		_sign;
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
+		decode(p.bits(), _sign, _regime, _exponent, _fraction);
 
 		// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
 		str << std::setw(14) << p.get() << " " << std::setw(14) << decoded(p)
@@ -103,15 +103,15 @@ namespace sw { namespace universal {
 		std::stringstream str;
 		// TODO: hardcoded field sizes
 		if (p.iszero()) {
-			str << " zero    " << std::setw(103) << "b" << p.get();
+			str << " zero    " << std::setw(103) << "b" << p.bits();
 			return str.str();
 		}
 		else if (p.isinf()) {
-			str << " infinite" << std::setw(103) << "b" << p.get();
+			str << " infinite" << std::setw(103) << "b" << p.bits();
 			return str.str();
 		}
 
-		str << std::setw(14) << to_binary(p.get())
+		str << std::setw(14) << to_binary(p.bits())
 			<< " Sign : " << std::setw(2) << p.sign()
 			<< " Regime : " << p.regime_int()
 			<< " Exponent : " << p.exponent_int()
@@ -126,13 +126,13 @@ namespace sw { namespace universal {
 	std::string pretty_print(const posit<nbits, es, pt>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
 		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
-		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
+		bool		     		_sign;
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
 		decode(p.get(), _sign, _regime, _exponent, _fraction);
 		str << ( _sign ? "s1 r" : "s0 r" );
-		bitblock<nbits-1> r = _regime.get();
+		blockbinary<nbits-1, bt> r = _regime.bits();
 		int regimeBits = (int)_regime.nrBits();
 		int nrOfRegimeBitsProcessed = 0;
 		for (int i = nbits - 2; i >= 0; --i) {
@@ -141,7 +141,7 @@ namespace sw { namespace universal {
 			}
 		}
 		str << " e";
-		bitblock<es> e = _exponent.get();
+		blockbinary<es, bt> e = _exponent.bits();
 		int exponentBits = (int)_exponent.nrBits();
 		int nrOfExponentBitsProcessed = 0;
 		for (int i = int(es) - 1; i >= 0; --i) {
@@ -150,7 +150,7 @@ namespace sw { namespace universal {
 			}
 		}
 		str << " f";
-		bitblock<fbits> f = _fraction.get();
+		blockbinary<fbits> f = _fraction.bits();
 		int fractionBits = (int)_fraction.nrBits();
 		int nrOfFractionBitsProcessed = 0;
 		//for (int i = int(p.fbits) - 1; i >= 0; --i) {  // this does not look correct
@@ -170,13 +170,13 @@ namespace sw { namespace universal {
 	std::string info_print(const posit<nbits, es, bt>& p, int printPrecision = 17) {
 		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
-		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(p.get(), _sign, _regime, _exponent, _fraction);
+		bool		     		_sign;
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
+		decode(p.bits(), _sign, _regime, _exponent, _fraction);
 
-		str << "raw: " << p.get() << " decoded: " << decoded(p) << " "
+		str << "raw: " << p.bits() << " decoded: " << decoded(p) << " "
 			<< quadrant(p) << " "
 			<< (_sign ? "negative r" : "positive r")
 			<< _regime << " e"
@@ -191,11 +191,11 @@ namespace sw { namespace universal {
 	std::string color_print(const posit<nbits, es, bt>& p) {
 		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
-		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(p.get(), _sign, _regime, _exponent, _fraction);
+		bool		     		_sign;
+		regime<nbits, es, bt>   _regime;
+		exponent<nbits, es, bt> _exponent;
+		fraction<fbits, bt>     _fraction;
+		decode(p.bits(), _sign, _regime, _exponent, _fraction);
 
 		Color red(ColorCode::FG_RED);
 		Color yellow(ColorCode::FG_YELLOW);
@@ -206,7 +206,7 @@ namespace sw { namespace universal {
 		Color def(ColorCode::FG_DEFAULT);
 		str << red << (p.isneg() ? "1" : "0");
 
-		bitblock<nbits - 1> r = _regime.get();
+		blockbinary<nbits - 1, bt> r = _regime.bits();
 		int regimeBits = (int)_regime.nrBits();
 		int nrOfRegimeBitsProcessed = 0;
 		for (int i = nbits - 2; i >= 0; --i) {
@@ -215,7 +215,7 @@ namespace sw { namespace universal {
 			}
 		}
 
-		bitblock<es> e = _exponent.get();
+		blockbinary<es, bt> e = _exponent.bits();
 		int exponentBits = (int)_exponent.nrBits();
 		int nrOfExponentBitsProcessed = 0;
 		for (int i = int(es) - 1; i >= 0; --i) {
@@ -224,7 +224,7 @@ namespace sw { namespace universal {
 			}
 		}
 
-		bitblock<posit<nbits, es>::fbits> f = _fraction.get();
+		blockbinary<posit<nbits, es>::fbits, bt> f = _fraction.bits();
 		f = (_sign ? twos_complement(f) : f);
 		int fractionBits = (int)_fraction.nrBits();
 		int nrOfFractionBitsProcessed = 0;

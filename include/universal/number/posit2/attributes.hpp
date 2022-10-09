@@ -83,22 +83,22 @@ constexpr double useed_value() {
 }
 
 // generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
-template<size_t nbits, size_t es, typename bt>
+template<size_t nbits, size_t es, typename bt = std::uint32_t>
 constexpr blockbinary<nbits, bt> minpos_pattern(bool sign = false) {
 	blockbinary<nbits, bt> _bits;
-	_bits.reset();
-	_bits.set(0, true);
-	return (sign ? twos_complement(_bits) : _bits);
+	_bits.clear();
+	_bits.setbit(0, true);
+	return (sign ? twosComplement(_bits) : _bits);
 }
 
 // generate the maxpos bit pattern for the sign requested (true is negative half, false is positive half)
-template<size_t nbits, size_t es, typename bt>
+template<size_t nbits, size_t es, typename bt = std::uint32_t>
 constexpr blockbinary<nbits, bt> maxpos_pattern(bool sign = false) {
 	blockbinary<nbits, bt> _bits;
-	_bits.reset();
+	_bits.clear();
 	_bits.flip();
-	_bits.set(nbits - 1, false);
-	return (sign ? twos_complement(_bits) : _bits);
+	_bits.setbit(nbits - 1, false);
+	return (sign ? twosComplement(_bits) : _bits);
 }
 
 template<size_t nbits, size_t es, typename bt>
@@ -110,8 +110,8 @@ constexpr inline int sign_value(const posit<nbits, es, bt>& p) {
 template<size_t nbits, size_t es, typename bt>
 inline long double regime_value(const posit<nbits, es, bt>& p) {
 	regime<nbits, es, bt>    _regime;
-	blockbinary<nbits, bt> tmp(p.get());
-	tmp = sign(p) ? twos_complement(tmp) : tmp;
+	blockbinary<nbits, bt> tmp(p.bits());
+	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
 	return _regime.value();
 }
@@ -120,8 +120,8 @@ template<size_t nbits, size_t es, typename bt>
 inline long double exponent_value(const posit<nbits, es, bt>& p) {
 	regime<nbits, es, bt>    _regime;
 	exponent<nbits, es, bt>  _exponent;
-	blockbinary<nbits, bt> tmp(p.get());
-	tmp = sign(p) ? twos_complement(tmp) : tmp;
+	blockbinary<nbits, bt> tmp(p.bits());
+	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp)); // get the regime bits
 	_exponent.extract_exponent_bits(tmp, nrRegimeBits);			 // get the exponent bits
 	return _exponent.value();
@@ -134,7 +134,7 @@ inline long double fraction_value(const posit<nbits, es, bt>& p) {
 	regime<nbits, es, bt>   _regime;
 	exponent<nbits, es, bt> _exponent;
 	fraction<fbits, bt>     _fraction;
-	decode(p.get(), _sign, _regime, _exponent, _fraction);
+	decode(p.bits(), _sign, _regime, _exponent, _fraction);
 	return _fraction.value();
 }
 
@@ -258,7 +258,7 @@ posit<nbits, es, bt> ipow(const posit<nbits, es, bt>& a, const posit<nbits, es, 
 		if (exp == 0) break;
 		base *= base;
 	}
-	return posit<nbits,es>(result);
+	return posit<nbits,es,bt>(result);
 }
 
 // clang <complex> implementation is calling these functions so we need implementations for posit

@@ -503,7 +503,6 @@ public:
 		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, sum;
 
 		// transform the inputs into (sign,scale,significant) 
-		// triples of the correct width
 		normalizeAddition(a); 
 		rhs.normalizeAddition(b);
 		sum.add(a, b);

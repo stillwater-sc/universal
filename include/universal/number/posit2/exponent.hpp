@@ -35,7 +35,7 @@ public:
 		return _NrOfBits;
 	}
 	int scale() const noexcept {
-		return int(_Bits.to_ulong());
+		return int(_Bits);
 	}
 	long double value() const noexcept {
 		return (long double)(uint64_t(1) << scale());
@@ -50,7 +50,7 @@ public:
 	
 	// extract the exponent bits given a pattern and the location of the starting point
 	void extract_exponent_bits(const blockbinary<nbits, bt>& _raw_bits, size_t nrRegimeBits) {
-		_Bits.reset();
+		_Bits.clear();
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int msb = int(static_cast<int>(nbits) - 1ull - (1ull + nrRegimeBits));
 		if (es > 0) {
@@ -69,7 +69,7 @@ public:
 	// calculate the exponent given a number's scale: esval = Mod[scale, 2^es];
 	// DEPRECATED
 	void _assign(int scale) {
-		_Bits.reset();
+		_Bits.clear();
 		unsigned int my_exponent = (scale < 0) ? (-scale >> es) : (scale >> es);
 		// convert value into bitset
 		uint32_t mask = uint32_t(1);  // es will be small, so pick a single word sized mask for efficiency
@@ -83,7 +83,7 @@ public:
 	// DEPRECATED
 	int assign_exponent_bits(int scale, int k, size_t nrRegimeBits) {
 		int rounding_mode = NO_ADDITIONAL_ROUNDING;
-		_Bits.reset();
+		_Bits.clear();
 		// we need to get to an adjusted scale that encodes regime and exponent
 		// value scale = useed ^ k * 2 ^ exponent = 2^(k*2^es) * 2^e -> k*2^es + e
 		// e = scale - k*2^es
@@ -139,7 +139,7 @@ public:
 		return carry;
 	}
 private:
-	blockbinary<es, bt>    _Bits;
+	blockbinary<es, bt, BinaryNumberType::Signed>    _Bits;
 	size_t			_NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
