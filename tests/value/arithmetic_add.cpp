@@ -1,15 +1,16 @@
-// arithmetic_add.cpp: functional tests for arithmetic add of values
+// arithmetic_add.cpp: functional tests for arithmetic addition of floating-point values
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>  // TODO: remove: should not have an internal type in the public interface
 #include <universal/internal/value/value.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
 // (sign, scale, fraction) representation using sbits for scale and fbits for fraction assuming a hidden bit
 template<size_t sbits, size_t fbits>
-int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyValueAdd(const std::string& tag, bool reportTestCases) {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 	//constexpr size_t NR_OF_VALUES = (size_t(1) << (1 + scale + fbits));
@@ -41,7 +42,7 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 							ref = dsum;
 							if (sum != ref) {
 								++nrOfFailedTestCases;
-								if (bReportIndividualTestCases)	std::cout << to_triple(sum) << " != " << to_triple(ref) << std::endl;
+								if (reportTestCases)	std::cout << to_triple(sum) << " != " << to_triple(ref) << std::endl;
 								if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
 								std::cout << a << " + " << b << " = " << sum << " vs " << ref << std::endl;
 							}
@@ -53,7 +54,7 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 							ref = dsum;
 							if (sum != ref) {
 								++nrOfFailedTestCases;
-								if (bReportIndividualTestCases)	std::cout << to_triple(sum) << " != " << to_triple(ref) << std::endl;
+								if (reportTestCases)	std::cout << to_triple(sum) << " != " << to_triple(ref) << std::endl;
 								if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
 								std::cout << a << " + " << b << " = " << sum << " vs " << ref << std::endl;
 							}
@@ -85,12 +86,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = true;
+	bool reportTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	// Arithmetic tests for value class
 	std::cout << "\nvalue addition arithmetic tests\n";
-	std::cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases\n";
+	std::cout << (reportTestCases ? " " : "not ") << "reporting individual testcases\n";
 
 #if MANUAL_TESTING
 
@@ -112,19 +113,19 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 3>("FAIL", bReportIndividualTestCases), "value<3> scale 2^5", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 3>("FAIL", reportTestCases), "value<3> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 4>("FAIL", bReportIndividualTestCases), "value<4> scale 2^5", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 4>("FAIL", reportTestCases), "value<4> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 5>("FAIL", bReportIndividualTestCases), "value<5> scale 2^5", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 5>("FAIL", reportTestCases), "value<5> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8> scale 2^3", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", reportTestCases), "value<8> scale 2^3", "addition");
 #endif
 
 #endif // MANUAL_TESTING

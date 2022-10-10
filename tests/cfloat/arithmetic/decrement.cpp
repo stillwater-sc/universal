@@ -56,7 +56,6 @@ try {
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
-
 #else
 
 #if REGRESSION_LEVEL_1

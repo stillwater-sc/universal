@@ -12,6 +12,7 @@
 // second: enable/disable cfloat arithmetic exceptions
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/verification/test_suite.hpp>
 
 #if BIT_CAST_SUPPORT
 // stylistic constexpr of pi that we'll assign constexpr to an cfloat
@@ -101,16 +102,17 @@ void TestConstexprSpecificValues() {
 	}
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
-
+	std::string test_suite  = "cfloat constexpr demonstration";
+	std::string test_tag    = "constexpr";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "cfloat constexpr tests\n";
-	
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
 	using Real = cfloat<12, 2>;
 	Real a(0);
 	a.constexprClassParameters();
@@ -119,12 +121,7 @@ try {
 	TestConstexprAssignment<Real>();
 	TestConstexprSpecificValues<Real>();
 
-	if (nrOfFailedTestCases > 0) {
-		std::cout << "FAIL\n";
-	}
-	else {
-		std::cout << "PASS\n";
-	}
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

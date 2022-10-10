@@ -173,7 +173,7 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
 	// If the fraction is empty, we have a fraction of nbits-3 0 bits
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-	blockbinary<fbits, bt, BinaryNumberType::Unsigned> _frac;
+	blockbinary<fbits, bt, BinaryNumberType::Unsigned> _frac{ 0 };
 	msb = msb - int(nrExponentBits);
 	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb) + 1ull);
 	if (msb >= 0) {
@@ -926,7 +926,7 @@ public:
 
 
 	// Selectors
-	bool sign() const noexcept { return _block[nbits - 1]; }
+	constexpr bool sign() const noexcept { return _block.test(nbits - 1); }
 	int scale() const noexcept { 
 		blockbinary<nbits, bt> tmp(bits());
 		tmp = sign() ? twosComplement(tmp) : tmp;
@@ -937,27 +937,27 @@ public:
 		e.extract_exponent_bits(tmp, nrRegimeBits);
 		return r.scale() + e.scale();
 	}
-	bool isnar() const noexcept {
-		if (_block[nbits - 1] == false) return false;
+	constexpr bool isnar() const noexcept {
+		if (!_block.test(nbits - 1)) return false;
 		blockbinary<nbits, bt> tmp(_block);			
 		tmp.setbit(nbits - 1, false);
-		return tmp.none() ? true : false;
+		return tmp.none();
 	}
-	bool iszero() const noexcept { return _block.none() ? true : false; }
-	bool isone() const noexcept { // pattern 010000....
+	constexpr bool iszero() const noexcept { return _block.none() ? true : false; }
+	constexpr bool isone() const noexcept { // pattern 010000....
 		blockbinary<nbits, bt> tmp(_block);
 		tmp.setbit(nbits - 2, false);
-		return _block[nbits - 2] & tmp.none();
+		return _block.test(nbits - 2) && tmp.none();
 	}
-	bool isminusone() const noexcept { // pattern 110000...
+	constexpr bool isminusone() const noexcept { // pattern 110000...
 		blockbinary<nbits, bt> tmp(_block);
 		tmp.setbit(nbits - 1, false);
 		tmp.setbit(nbits - 2, false);
-		return _block[nbits - 1] & _block[nbits - 2] & tmp.none();
+		return _block.test(nbits - 1) && _block.test(nbits - 2) && tmp.none();
 	}
-	bool isneg() const noexcept { return _block[nbits - 1]; }
-	bool ispos() const noexcept { return !_block[nbits - 1]; }
-	bool ispowerof2() const noexcept {
+	constexpr bool isneg() const noexcept { return _block.test(nbits - 1); }
+	constexpr bool ispos() const noexcept { return !_block.test(nbits - 1); }
+	constexpr bool ispowerof2() const noexcept {
 		bool s{ false };
 		regime<nbits, es, bt> r;
 		exponent<nbits, es, bt> e;
@@ -965,7 +965,7 @@ public:
 		decode(_block, s, r, e, f);
 		return f.none();
 	}
-	bool isinteger() const { return true; } // TODO: return (floor(*this) == *this) ? true : false; }
+	constexpr bool isinteger() const noexcept { return true; } // TODO: return (floor(*this) == *this) ? true : false; }
 
 	blockbinary<nbits, bt, BinaryNumberType::Signed> bits() const noexcept { return _block; }
 	unsigned long long encoding() const noexcept { return _block.to_ullong(); }

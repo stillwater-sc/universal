@@ -91,6 +91,9 @@ try {
 		exponent<nbits, es, BlockType> e;
 		fraction<nbits - 1ull - es, BlockType> f;
 		decode(p.bits(), s, r, e, f);
+		std::cout << e << '\n';
+		long double ld = exponent_value(p);
+
 		std::cout << "raw bits  : " << to_binary(p.bits(), true) << '\n';
 		std::cout << "components: " << to_binary(p) << '\n';
 		std::cout << "sign      : " << (s ? "set" : "not set") << " : " << sign_value(p) << '\n';

@@ -103,7 +103,7 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 
 		TestCase< Cfloat, float>(TestCaseOperator::MUL, fa, fb);
 	}
-	return 0;
+
 	{ // special cases of snan/qnan
 		constexpr float fa = std::numeric_limits<float>::quiet_NaN();
 		constexpr float fb = std::numeric_limits<float>::signaling_NaN();
@@ -124,7 +124,6 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 		std::cout << 0.0f << " * " << fa << " = " << (0.0f * fa) << '\n';
 		std::cout << to_binary(fa - fb) << '\n';
 	}
-//	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatMultiplication< 

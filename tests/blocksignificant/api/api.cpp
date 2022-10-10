@@ -219,6 +219,8 @@ try {
 	MultiplicationSetup();
 	DivisionSetup();
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';
