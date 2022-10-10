@@ -163,13 +163,14 @@ inline int scale(const regime<nbits, es, bt>& r) { return r.scale();  }
 /////////////////  REGIME operators
 template<size_t nbits, size_t es, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits, es, bt>& r) {
+	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
 	size_t nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (r._RegimeBits > nrOfRegimeBitsProcessed++) {
-			ostr << (r._Bits[size_t(i)] ? "1" : "0");
+			ostr << (bb.test(size_t(i)) ? '1' : '0');
 		}
 		else {
-			ostr << "-";
+			ostr << '-';
 		}
 	}
 	return ostr;
@@ -183,19 +184,19 @@ inline std::istream& operator>> (std::istream& istr, const regime<nbits, es, bt>
 
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_string(const regime<nbits, es, bt>& r, bool dashExtent = true, bool nibbleMarker = false) {
-	std::stringstream sstr;
+	std::stringstream s;
 	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
 	size_t nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (r.nrBits() > nrOfRegimeBitsProcessed++) {
-			sstr << (bb[size_t(i)] ? '1' : '0');
-			if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
+			s << (bb.test(size_t(i)) ? '1' : '0');
+			if (nibbleMarker && ((i % 4) == 0) && i != 0) s << '\'';
 		}
 		else {
-			sstr << (dashExtent ? "-" : "");
+			s << (dashExtent ? "-" : "");
 		}	
 	}
-	return sstr.str();
+	return s.str();
 }
 
 template<size_t nbits, size_t es, typename bt>

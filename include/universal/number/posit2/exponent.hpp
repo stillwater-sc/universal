@@ -17,8 +17,9 @@ static constexpr int ARITHMETIC_ROUNDING    =  5;
 // exponent
 template<size_t nbits, size_t es, typename bt>
 class exponent {
+	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
 public:
-	exponent() : _NrOfBits{ 0 }, _Bits{ 0 } {}
+	exponent() : _Bits{ 0 }, _NrOfBits{ es } {}
 	
 	exponent(const exponent& r) = default;
 	exponent(exponent&& r) = default;
@@ -40,16 +41,16 @@ public:
 	long double value() const noexcept {
 		return (long double)(uint64_t(1) << scale());
 	}
-	blockbinary<es, bt> bits() const noexcept {
+	blockbinary<es, bt, BinaryNumberType::Unsigned> bits() const noexcept {
 		return _Bits;
 	}
-	void set(const blockbinary<es, bt>& raw, size_t nrExponentBits) {
+	void set(const UnsignedExponent& raw, size_t nrExponentBits) {
 		_Bits = raw;
 		_NrOfBits = nrExponentBits;
 	}
 	
 	// extract the exponent bits given a pattern and the location of the starting point
-	void extract_exponent_bits(const blockbinary<nbits, bt>& _raw_bits, size_t nrRegimeBits) {
+	void extract_exponent_bits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& rawPositBits, size_t nrRegimeBits) {
 		_Bits.clear();
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int msb = int(static_cast<int>(nbits) - 1ull - (1ull + nrRegimeBits));
@@ -59,7 +60,7 @@ public:
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (static_cast<size_t>(msb) >= es - 1ull ? es : static_cast<size_t>(msb) + 1ull);
 				for (size_t i = 0; i < nrExponentBits; i++) {
-					_exp[es - 1 - i] = _raw_bits[msb - i];
+					_exp[es - 1 - i] = rawPositBits[msb - i];
 				}
 			}
 			set(_exp, nrExponentBits);
@@ -139,7 +140,7 @@ public:
 		return carry;
 	}
 private:
-	blockbinary<es, bt, BinaryNumberType::Signed>    _Bits;
+	blockbinary<es, bt, BinaryNumberType::Unsigned>    _Bits;
 	size_t			_NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
@@ -193,13 +194,15 @@ inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es, b
 
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_string(const exponent<nbits, es, bt>& e, bool dashExtent = true, bool nibbleMarker = false) {
+	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
 	std::stringstream s;
 	size_t nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
-		for (int i = int(es) - 1; i >= 0; --i) {
+		for (size_t bitIndex = 0; bitIndex < es; ++bitIndex) {
+			size_t i = es - bitIndex;
 			if (e.nrBits() > nrOfExponentBitsProcessed++) {
-				blockbinary<es, bt> bb = e.bits();
-				s << (bb[size_t(i)] ? '1' : '0');
+				UnsignedExponent exponentBits = e.bits();
+				s << (exponentBits[i] ? '1' : '0');
 			}
 			else {
 				s << (dashExtent ? "-" : "");

@@ -15,6 +15,8 @@ using namespace sw::universal::internal;
 // However, the size of the fraction segment is nbits-3, but we maintain an extra guard bit, so the size of the actual fraction we manage is nbits-2
 template<size_t fbits, typename bt>
 class fraction {
+	using UnsignedFraction = blockbinary<fbits, bt, BinaryNumberType::Unsigned>;
+	using UnsignedSignificant = blockbinary<fbits+1, bt, BinaryNumberType::Unsigned>;
 public:
 	fraction() : _Bits(), _NrOfBits(0) {}
 
@@ -26,7 +28,7 @@ public:
 	
 	// selectors
 	bool none() const {	return _Bits.none(); }
-	blockbinary<fbits, bt> bits() const noexcept { return _Bits; }
+	UnsignedFraction bits() const noexcept { return _Bits; }
 	size_t nrBits() const noexcept { return _NrOfBits;	}
 	// fractions are assumed to have a hidden bit, the case where they do not must be managed by the container of the fraction
 	// calculate the value of the fraction ignoring the hidden bit. So a fraction of 1010 has the value 0.5+0.125=5/8
@@ -53,19 +55,20 @@ public:
 
 
 
-	void set(const blockbinary<fbits, bt>& raw, std::size_t nrOfFractionBits = fbits) {
+	void set(const UnsignedFraction& raw, std::size_t nrOfFractionBits = fbits) {
 		_Bits = raw;
 		_NrOfBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
 	// get a fixed point number by making the hidden bit explicit: useful for multiply units
-	blockbinary<fbits + 1, bt> get_fixed_point() const {
-		blockbinary<fbits + 1, bt> fixed_point_number;
+	UnsignedSignificant get_fixed_point() const {
+		UnsignedSignificant fixed_point_number;
 		fixed_point_number.set(fbits, true); // make hidden bit explicit
 		for (unsigned int i = 0; i < fbits; i++) {
 			fixed_point_number[i] = _Bits[i];
 		}
 		return fixed_point_number;
 	}
+/*
 	// Copy the bits into the fraction. Rounds away from zero.	
 	template <size_t FBits>
 	bool assign(unsigned int remaining_bits, blockbinary<FBits, bt>& _fraction, std::size_t hpos = FBits)
@@ -168,12 +171,18 @@ public:
 			number.set(i, _Bits[i]);
 		}
 	}
+
+	void increment() {
+		++_Bits;
+	}
+*/
+
 	/*   h is hidden bit
-	*   h.bbbb_bbbb_bbbb_b...      fraction
-	*   0.000h_bbbb_bbbb_bbbb_b... number
-	*  >-.----<                    shift of 4
-	*/
-	void denormalize(int shift, blockbinary<fbits+3, bt>& number) const {
+	 *   h.bbbb_bbbb_bbbb_b...      fraction
+	 *   0.000h_bbbb_bbbb_bbbb_b... number
+	 *  >-.----<                    shift of 4
+	 */
+	void denormalize(int shift, blockbinary<fbits+3, bt, BinaryNumberType::Unsigned>& number) const {
 		number.reset();
 		if (fbits == 0) return;
 		if (shift < 0) shift = -shift;
@@ -184,14 +193,12 @@ public:
 			}
 		}
 	}
-	bool increment() {
-		return increment_unsigned(_Bits, _NrOfBits);
-	}
+
 
 private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
 	// but we maintain 1 guard bit for rounding decisions
-	blockbinary<fbits, bt>    _Bits;
+	UnsignedFraction   _Bits;
 	size_t             _NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
@@ -245,7 +252,7 @@ inline std::string to_string(const fraction<nfbits, bbt>& f, bool dashExtent = t
 	unsigned int nrOfFractionBitsProcessed = 0;
 	std::stringstream s;
 	if (nfbits > 0) {
-		blockbinary<nfbits, bbt> bb = f.bits();
+		blockbinary<nfbits, bbt, BinaryNumberType::Unsigned> bb = f.bits();
 		int upperbound = nfbits;
 		upperbound--;
 		for (int i = upperbound; i >= 0; --i) {

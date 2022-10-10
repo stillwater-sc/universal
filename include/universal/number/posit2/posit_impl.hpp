@@ -100,16 +100,16 @@ bool check_inward_projection_range(int scale) {
 // how many shifts represent the regime?
 // regime = useed ^ k = (2 ^ (2 ^ es)) ^ k = 2 ^ (k*(2 ^ es))
 // scale  = useed ^ k * 2^e = k*(2 ^ es) + e 
-template<size_t nbits>
-int decode_regime(const blockbinary<nbits>& raw_bits) {
+template<size_t nbits, typename bt>
+int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits) {
 	// let m be the number of identical bits in the regime
 	int m = 0;   // regime runlength counter
 	int k = 0;   // converted regime scale
-	if (raw_bits[nbits - 2] == 1) {   // run length of 1's
+	if (raw_bits.test(nbits - 2)) {   // run length of 1's
 		m = 1;   // if a run of 1's k = m - 1
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
 		for (int i = start; i >= 0; --i) {
-			if (raw_bits[size_t(i)] == 1) {
+			if (raw_bits.test(size_t(i))) {
 				m++;
 			}
 			else {
@@ -122,11 +122,11 @@ int decode_regime(const blockbinary<nbits>& raw_bits) {
 		m = 1;  // if a run of 0's k = -m
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
 		for (int i = start; i >= 0; --i) {
-			if (raw_bits[size_t(i)] == 0) {
-				m++;
+			if (raw_bits.test(size_t(i))) {
+				break;
 			}
 			else {
-				break;
+				m++;
 			}
 		}
 		k = -m;
@@ -136,18 +136,19 @@ int decode_regime(const blockbinary<nbits>& raw_bits) {
 
 // extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
 template<size_t nbits, size_t es, typename bt, size_t fbits>
-void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
+void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
+	using TwosComplementNumber = blockbinary<nbits, bt, BinaryNumberType::Signed>;
+	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
 	// check special case
-	blockbinary<nbits, bt> zero;
-	if (raw_bits == zero) {
+	if (raw_bits.iszero()) {
 		_sign = false;
 		_regime.setzero();
 		_exponent.setzero();
 		_fraction.setzero();
 		return;
 	}
-	blockbinary<nbits, bt> tmp(raw_bits);
-	_sign = raw_bits[nbits - 1];
+	TwosComplementNumber tmp(raw_bits);
+	_sign = raw_bits.test(nbits - 1);
 	if (_sign) tmp = twosComplement(tmp);
 	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
@@ -156,11 +157,11 @@ void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbit
 	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
 	size_t nrExponentBits = 0;
 	if (es > 0) {
-		blockbinary<es, bt> _exp;
+		UnsignedExponent _exp;
 		if (msb >= 0 && es > 0) {
 			nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<size_t>(msb + 1ll);
 			for (size_t i = 0; i < nrExponentBits; ++i) {
-				_exp[es - size_t{1} - i] = tmp[static_cast<size_t>(msb) - i];
+				_exp.setbit(es - size_t{1} - i, tmp.at(static_cast<size_t>(msb) - i));
 			}
 		}
 		_exponent.set(_exp, nrExponentBits);
@@ -172,13 +173,18 @@ void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbit
 	// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
 	// If the fraction is empty, we have a fraction of nbits-3 0 bits
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-	blockbinary<fbits, bt> _frac;
+	blockbinary<fbits, bt, BinaryNumberType::Unsigned> _frac;
 	msb = msb - int(nrExponentBits);
 	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb) + 1ull);
 	if (msb >= 0) {
-		for (int i = msb; i >= 0; --i) {
-			_frac[fbits - 1ull - (static_cast<size_t>(msb) - static_cast<size_t>(i))] = tmp[static_cast<size_t>(i)];
+		std::cout <<  "  : " << to_binary(_frac) << '\n';
+		size_t msfbit = static_cast<size_t>(msb);
+		for (size_t i = 0; i <= msfbit; ++i) {
+			_frac.setbit(fbits - 1ull - (msfbit - i), tmp.at(i));
 		}
+//		for (int i = msb; i >= 0; --i) {
+//			_frac[fbits - 1ull - (static_cast<size_t>(msb) - static_cast<size_t>(i))] = tmp[static_cast<size_t>(i)];
+//		}
 	}
 	_fraction.set(_frac, nrFractionBits);
 }
@@ -187,7 +193,7 @@ void extract_fields(const blockbinary<nbits>& raw_bits, bool& _sign, regime<nbit
 // and decodes the sign, regime, the exponent, and the fraction.
 // This function has the functionality of the posit register-file load.
 template<size_t nbits, size_t es, typename bt, size_t fbits>
-void decode(const blockbinary<nbits, bt>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
+void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
 	//_block = raw_bits;	// store the raw bits for reference
 	// check special cases
 	_sign = raw_bits.test(nbits - 1);
@@ -225,7 +231,7 @@ void decode(const blockbinary<nbits, bt>& raw_bits, bool& _sign, regime<nbits, e
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<size_t nbits, size_t es, typename bt, size_t fbits>
-inline blockbinary<nbits>& convert_to_bb(bool _sign, int _scale, const blockbinary<fbits, bt>& fraction_in, blockbinary<nbits, bt>& ptt) {
+inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sign, int _scale, const blockbinary<fbits, bt>& fraction_in, blockbinary<nbits, bt, BinaryNumberType::Signed>& ptt) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
@@ -444,7 +450,7 @@ public:
 
 	static constexpr size_t   bitsInByte = 8ull;
 	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
-	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
+//	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code, but allow single block uint64_t
 
 	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 	static constexpr bt       BLOCK_MASK = bt(~0);
@@ -461,7 +467,7 @@ public:
 
 	typedef bt BlockType;
 
-	// constexpr posit() { setzero();  }
+	// trivial
 	constexpr posit() : _block{} {}
 	
 	constexpr posit(const posit&) = default;
@@ -612,20 +618,23 @@ public:
 		negated.setbits(raw_bits);
 		return negated;
 	}
-	// prefix/postfix operators
+	// prefix increment operator
 	posit& operator++() {
-		increment_posit();
+		++_block;
 		return *this;
 	}
+	// postfix increment operator
 	posit operator++(int) {
 		posit tmp(*this);
 		operator++();
 		return tmp;
 	}
+	// prefix decrement operator
 	posit& operator--() {
-		decrement_posit();
+		--_block;
 		return *this;
 	}
+	// postfix decrement operator
 	posit operator--(int) {
 		posit tmp(*this);
 		operator--();
@@ -960,40 +969,43 @@ public:
 	}
 	bool isinteger() const { return true; } // TODO: return (floor(*this) == *this) ? true : false; }
 
-	blockbinary<nbits, bt> bits() const noexcept { return _block; }
+	blockbinary<nbits, bt, BinaryNumberType::Signed> bits() const noexcept { return _block; }
 	unsigned long long encoding() const noexcept { return _block.to_ullong(); }
 
 	// Modifiers
-	inline constexpr void clear() { _block.clear(); }
-	inline constexpr void setzero() { clear(); }
-	inline constexpr void setnar() {
+	constexpr void clear() noexcept { _block.clear(); }
+	constexpr void flip() noexcept { _block.flip(); }
+	constexpr void setzero() noexcept { _block.clear(); }
+	constexpr void setnar() noexcept {
 		_block.clear();
-		_block.setbit(nbits - 1, true);
+		_block.setbit(nbits - 1);
 	}
-	// set minpos value
-	inline posit& minpos() {
-		clear();
-		return ++(*this);
-	}
-	// set maxpos value
-	inline posit& maxpos() {
-		setnar();
-		return --(*this);
-	}
-	// set zero value
-	inline posit& zero() {
-		clear();
+	constexpr posit& maxpos() noexcept {
+		_block.clear();
+		_block.setbit(nbits - 1);
+		_block.flip();
 		return *this;
 	}
-	// set minneg value
-	inline posit& minneg() {
-		clear();
-		return --(*this);
+	constexpr posit& minpos() noexcept {
+		_block.clear();
+		_block.setbit(0);
+		return *this;
+	}
+	constexpr posit& zero() noexcept {
+		_block.clear();
+		return *this;
+	}
+	constexpr posit& minneg() noexcept {
+		_block.clear();
+		_block.flip();
+		return *this;
 	}
 	// set maxneg value
-	inline posit& maxneg() {
-		setnar();
-		return ++(*this);
+	inline constexpr posit& maxneg() {
+		_block.clear();
+		_block.setbit(nbits - 1);
+		_block.setbit(0);
+		return *this;
 	}
 
 	// set the posit bits explicitely
@@ -1098,19 +1110,11 @@ public:
 		}
 		// tgt.setradix(radix);
 	}
-	// step up to the next posit in a lexicographical order
-	void increment_posit() {
-		increment_bitset(_block);
-	}
-	// step down to the previous posit in a lexicographical order
-	void decrement_posit() {
-		decrement_bitset(_block);
-	}
 	
 	// helper debug function
 	void constexprClassParameters() const noexcept {
 		std::cout << "-------------------------------------------------------------\n";
-		std::cout << "type              : " << typeid(*this).name() << '\n';
+		std::cout << "type              : " << type_tag(*this) << '\n';
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
@@ -1130,7 +1134,7 @@ public:
 	}
 
 private:
-	blockbinary<nbits, bt> _block;
+	blockbinary<nbits, bt, BinaryNumberType::Signed> _block;
 
 	// HELPER methods
 
@@ -1734,7 +1738,7 @@ inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMark
 	regime<nbits, es, bt> r;
 	exponent<nbits, es, bt> e;
 	fraction<fbits, bt> f;
-	blockbinary<nbits, bt> raw = number.bits();
+	auto raw = number.bits();
 	std::stringstream ss;
 	extract_fields(raw, s, r, e, f);
 

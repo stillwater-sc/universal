@@ -22,7 +22,7 @@ template<typename Real>
 void TestConstexprConstruction() {
 	// decorated constructors
 	{
-		Real a(1l);  // signed long
+		constexpr Real a(1l);  // signed long
 		std::cout << a << '\n';
 	}
 	{
@@ -101,10 +101,6 @@ void TestConstexprSpecificValues() {
 	}
 }
 
-// conditional compile flags
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
-
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -116,7 +112,7 @@ try {
 	std::cout << "cfloat constexpr tests\n";
 	
 	using Real = cfloat<12, 2>;
-	Real a;
+	Real a(0);
 	a.constexprClassParameters();
 
 	TestConstexprConstruction<Real>();

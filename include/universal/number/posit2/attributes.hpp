@@ -11,14 +11,15 @@ namespace sw { namespace universal {
 
 using namespace sw::universal::internal;
 
-// forward references
-template<size_t nbits, size_t es, typename bt> class posit;
-template<size_t nbits, typename bt> int decode_regime(const blockbinary<nbits, bt>&);
-
 // calculate exponential scale of useed
-template<size_t nbits, size_t es>
-constexpr int useed_scale() {
-	return (uint32_t(1) << es);
+template<size_t es>
+constexpr size_t useed_scale() {
+	return (size_t(1) << es);
+}
+
+template<size_t es>
+constexpr size_t useed() {
+	return size_t(1) << (size_t(1) << es);
 }
 
 // calculate exponential scale of maxpos
@@ -70,18 +71,7 @@ constexpr int calculate_unconstrained_k(int scale) {
 	return k;
 }
 
-// double value representation of the useed value of a posit<nbits, es>
-template<size_t nbits, size_t es, typename bt>
-constexpr double useed() {
-	return std::pow(2.0, std::pow(2.0, es));
-}
-
-// calculate the value of useed
-template<size_t nbits, size_t es, typename bt>
-constexpr double useed_value() {
-	return double(uint64_t(1) << useed_scale<nbits, es>());
-}
-
+#ifdef DEPRECATED
 // generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
 template<size_t nbits, size_t es, typename bt = std::uint32_t>
 constexpr blockbinary<nbits, bt> minpos_pattern(bool sign = false) {
@@ -100,6 +90,7 @@ constexpr blockbinary<nbits, bt> maxpos_pattern(bool sign = false) {
 	_bits.setbit(nbits - 1, false);
 	return (sign ? twosComplement(_bits) : _bits);
 }
+#endif // DEPRECATED
 
 template<size_t nbits, size_t es, typename bt>
 constexpr inline int sign_value(const posit<nbits, es, bt>& p) {

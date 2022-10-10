@@ -2098,7 +2098,7 @@ protected:
 		if (0 == rhs) return *this;
 
 		uint64_t raw = static_cast<uint64_t>(rhs);
-		int msb = findMostSignificantBit(raw) - 1; // msb > 0 due to zero test above 
+		int msb = static_cast<int>(findMostSignificantBit(raw)) - 1; // msb > 0 due to zero test above 
 		int exponent = msb;
 		// remove the MSB as it represents the hidden bit in the cfloat representation
 		uint64_t hmask = ~(1ull << msb);
