@@ -522,8 +522,8 @@ public:
 	constexpr posit(unsigned int initial_value)       noexcept : _block{ 0 } { *this = initial_value; }
 	constexpr posit(unsigned long initial_value)      noexcept : _block{ 0 } { *this = initial_value; }
 	constexpr posit(unsigned long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
-	CONSTEXPRESSION posit(float initial_value)              noexcept : _block{ 0 } { *this = initial_value; }
-	CONSTEXPRESSION posit(double initial_value)             noexcept : _block{ 0 } { *this = initial_value; }
+	CONSTEXPRESSION posit(float initial_value)        noexcept : _block{ 0 } { *this = initial_value; }
+	CONSTEXPRESSION posit(double initial_value)       noexcept : _block{ 0 } { *this = initial_value; }
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs) noexcept {
@@ -582,7 +582,7 @@ public:
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION posit(long double initial_value)  noexcept : _block{ 0 } { *this = initial_value; }
-	CONSTEXPRESSION posit& operator=(long double rhs) noexcept : _block{ 0 } { return convert_ieee754(rhs); }
+	CONSTEXPRESSION posit& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
 	explicit operator long double() const noexcept { return to_long_double(); }
 #endif
 
