@@ -94,14 +94,14 @@ constexpr blockbinary<nbits, bt> maxpos_pattern(bool sign = false) {
 
 template<size_t nbits, size_t es, typename bt>
 constexpr inline int sign_value(const posit<nbits, es, bt>& p) {
-	blockbinary<nbits, bt> _bits = p.get();
+	blockbinary<nbits, bt, BinaryNumberType::Signed> _bits = p.bits();
 	return (_bits[nbits - 1] ? -1 : 1);
 }
 
 template<size_t nbits, size_t es, typename bt>
 inline long double regime_value(const posit<nbits, es, bt>& p) {
 	regime<nbits, es, bt>    _regime;
-	blockbinary<nbits, bt> tmp(p.bits());
+	blockbinary<nbits, bt, BinaryNumberType::Signed> tmp(p.bits());
 	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	_regime.assign_regime_pattern(decode_regime(tmp));
 	return _regime.value();
@@ -111,7 +111,7 @@ template<size_t nbits, size_t es, typename bt>
 inline long double exponent_value(const posit<nbits, es, bt>& p) {
 	regime<nbits, es, bt>    _regime;
 	exponent<nbits, es, bt>  _exponent;
-	blockbinary<nbits, bt> tmp(p.bits());
+	blockbinary<nbits, bt, BinaryNumberType::Signed> tmp(p.bits());
 	tmp = sign(p) ? twosComplement(tmp) : tmp;
 	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp)); // get the regime bits
 	_exponent.extract_exponent_bits(tmp, nrRegimeBits);			 // get the exponent bits

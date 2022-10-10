@@ -66,6 +66,40 @@ try {
 		std::cout << '\n';
 	}
 
+	{
+		constexpr size_t nbits = 16;
+		constexpr size_t es = 2;
+		using BlockType = std::uint16_t;
+		// posit<nbits, es, BlockType> p(1.0f);
+
+		blocktriple<nbits - 1ull - es, BlockTripleOperator::REPRESENTATION, BlockType> v(1.0f);
+		for (int i = 0; i < 10; ++i) {
+			v.setscale(i);
+			std::cout << "blocktriple : " << to_triple(v) << " : " << v << '\n';
+		}
+		std::cout << '\n';
+	}
+
+	{
+		std::cout << "posit component values of a fully articulated standard posit\n";
+		constexpr size_t nbits = 16;
+		constexpr size_t es = 2;
+		using BlockType = std::uint16_t;
+		posit<nbits, es, BlockType> p(SpecificValue::minpos);
+		bool s{false};
+		regime<nbits, es, BlockType> r;
+		exponent<nbits, es, BlockType> e;
+		fraction<nbits - 1ull - es, BlockType> f;
+		decode(p.bits(), s, r, e, f);
+		std::cout << "raw bits  : " << to_binary(p.bits(), true) << '\n';
+		std::cout << "components: " << to_binary(p) << '\n';
+		std::cout << "sign      : " << (s ? "set" : "not set") << " : " << sign_value(p) << '\n';
+		std::cout << "regime    : " << r << " : " << regime_value(p) << '\n';
+		std::cout << "exponent  : " << e << " : " << exponent_value(p) << '\n';
+		std::cout << "fraction  : " << f << " : " << fraction_value(p) << '\n';
+		std::cout << '\n';
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

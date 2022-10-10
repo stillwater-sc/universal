@@ -51,7 +51,7 @@ template<typename Real>
 void TestConstexprAssignment() {
 	// decorated constructors
 	{
-		Real a = 1l;  // signed long
+		constexpr Real a = 1l;  // signed long
 		std::cout << a << '\n';
 	}
 	{

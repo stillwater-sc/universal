@@ -311,9 +311,9 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 	// interpolation rule checks
 	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
-		// we are projecting to minpos/maxpos
-		int k = calculate_unconstrained_k<nbits, es>(_scale);
-		k < 0 ? p.setBitblock(minpos_pattern<nbits, es>(_sign)) : p.setBitblock(maxpos_pattern<nbits, es>(_sign));
+		// we are projecting to minpos/maxpos or minneg/maxneg
+		int k = calculate_unconstrained_k<nbits, es, bt>(_scale);
+		k < 0 ? (_sign ? p.minneg() : p.minpos()) : (_sign ? p.maxneg() : p.maxpos());
 		// we are done
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
@@ -330,7 +330,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		bool r = (e >= 0);
 
 		size_t run = size_t(r ? 1 + (e >> es) : -(e >> es));
-		regime.set(0, 1 ^ r);
+		regime.setbit(0, 1 ^ r);
 		for (size_t i = 1; i <= run; i++) regime.set(i, r);
 
 		size_t esval = e % (uint32_t(1) << es);
@@ -512,81 +512,79 @@ public:
 	}
 
 	// initializers for native types, allow for implicit conversion (Peter)
-	constexpr posit(signed char initial_value)        { *this = initial_value; }
-	constexpr posit(short initial_value)              { *this = initial_value; }
-	constexpr posit(int initial_value)                { *this = initial_value; }
-	constexpr posit(long initial_value)               { *this = initial_value; }
-	constexpr posit(long long initial_value)          { *this = initial_value; }
-	constexpr posit(char initial_value)               { *this = initial_value; }
-	constexpr posit(unsigned short initial_value)     { *this = initial_value; }
-	constexpr posit(unsigned int initial_value)       { *this = initial_value; }
-	constexpr posit(unsigned long initial_value)      { *this = initial_value; }
-	constexpr posit(unsigned long long initial_value) { *this = initial_value; }
-	constexpr posit(float initial_value)              { *this = initial_value; }
-	constexpr posit(double initial_value)             { *this = initial_value; }
-	constexpr posit(long double initial_value)        { *this = initial_value; }
+	constexpr posit(signed char initial_value)        noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(short initial_value)              noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(int initial_value)                noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(long initial_value)               noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(long long initial_value)          noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(char initial_value)               noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(unsigned short initial_value)     noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(unsigned int initial_value)       noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(unsigned long initial_value)      noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr posit(unsigned long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
+	CONSTEXPRESSION posit(float initial_value)              noexcept : _block{ 0 } { *this = initial_value; }
+	CONSTEXPRESSION posit(double initial_value)             noexcept : _block{ 0 } { *this = initial_value; }
 
 	// assignment operators for native types
-	posit& operator=(signed char rhs) {
+	constexpr posit& operator=(signed char rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(signed char) - 1;
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(short rhs) {
+	constexpr posit& operator=(short rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(short) - 1;
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(int rhs) {
+	constexpr posit& operator=(int rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(int) - 1;
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(long rhs) {
+	constexpr posit& operator=(long rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(long);
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(long long rhs) {
+	constexpr posit& operator=(long long rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(long long) - 1;
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(char rhs) {
+	constexpr posit& operator=(char rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(char);
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(unsigned short rhs) {
+	constexpr posit& operator=(unsigned short rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(unsigned short);
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(unsigned int rhs) {
+	constexpr posit& operator=(unsigned int rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(unsigned int);
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(unsigned long rhs) {
+	constexpr posit& operator=(unsigned long rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(unsigned long);
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(unsigned long long rhs) {
+	constexpr posit& operator=(unsigned long long rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(unsigned long long);
 		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 		return convert(v, *this);
 	}
-	posit& operator=(float rhs) {
-		return float_assign(rhs);
-	}
-	constexpr posit& operator=(double rhs) & {
-            float_assign(rhs);
-            return *this; 
-	}
-	posit& operator=(long double rhs) {
-       	return float_assign(rhs);
-	}
+	CONSTEXPRESSION posit& operator=(float rhs) noexcept { return convert_ieee754(rhs); }
+	CONSTEXPRESSION posit& operator=(double rhs) noexcept { return convert_ieee754(rhs); }
+
+	// guard long double support to enable ARM and RISC-V embedded environments
+#if LONG_DOUBLE_SUPPORT
+	CONSTEXPRESSION posit(long double initial_value)  noexcept : _block{ 0 } { *this = initial_value; }
+	CONSTEXPRESSION posit& operator=(long double rhs) noexcept : _block{ 0 } { return convert_ieee754(rhs); }
+	explicit operator long double() const noexcept { return to_long_double(); }
+#endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
 	// convenience assignment operator
@@ -925,7 +923,7 @@ public:
 	explicit operator long long() const noexcept          { return to_long_long(); }
 	explicit operator float() const noexcept              { return to_float(); }
 	explicit operator double() const noexcept             { return to_double(); }
-	explicit operator long double() const noexcept        { return to_long_double(); }
+
 
 	// Selectors
 	bool sign() const noexcept { return _block[nbits - 1]; }
@@ -1221,10 +1219,11 @@ private:
 		long double f = (1.0l + _fraction.value());
 		return s * r * e * f;
 	}
-	template <typename T>
-	constexpr posit<nbits, es, bt>& float_assign(const T& rhs) {
-		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
-		blocksignificant<dfbits, bt> v(static_cast<T>(rhs));
+	
+	template <typename Real>
+	CONSTEXPRESSION posit<nbits, es, bt>& convert_ieee754(const Real& rhs) noexcept {
+		constexpr int dfbits = std::numeric_limits<Real>::digits - 1;
+		blocktriple<dfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
 
 		// special case processing
 		if (v.iszero()) {

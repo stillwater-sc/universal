@@ -362,7 +362,7 @@ public:
 	// construct a cfloat from another, block type bt must be the same
 	template<size_t nnbits, size_t ees>
 	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
-		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
+//		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
 		*this = double(rhs);
 	}
 

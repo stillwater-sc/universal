@@ -56,11 +56,11 @@ public:
 		int msb = int(static_cast<int>(nbits) - 1ull - (1ull + nrRegimeBits));
 		if (es > 0) {
 			size_t nrExponentBits = 0;
-			blockbinary<es, bt> _exp;
+			blockbinary<es, bt, BinaryNumberType::Unsigned> _exp;
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (static_cast<size_t>(msb) >= es - 1ull ? es : static_cast<size_t>(msb) + 1ull);
 				for (size_t i = 0; i < nrExponentBits; i++) {
-					_exp[es - 1 - i] = rawPositBits[msb - i];
+					_exp.setbit(es - 1 - i, rawPositBits.at(msb - i));
 				}
 			}
 			set(_exp, nrExponentBits);
