@@ -90,8 +90,28 @@ try {
 		exponent<nbits, es, BlockType> e;
 		fraction<nbits - 1ull - es, BlockType> f;
 		decode(p.bits(), s, r, e, f);
-		std::cout << e << '\n';
+	
+		std::cout << "raw bits  : " << to_binary(p.bits(), true) << '\n';
+		std::cout << "components: " << to_binary(p) << '\n';
+		std::cout << "sign      : " << (s ? "set" : "not set") << " : " << sign_value(p) << '\n';
+		std::cout << "regime    : " << r << " : " << regime_value(p) << '\n';
+		std::cout << "exponent  : " << e << " : " << exponent_value(p) << '\n';
+		std::cout << "fraction  : " << f << " : " << fraction_value(p) << '\n';
+		std::cout << '\n';
+	}
 
+	{
+		std::cout << "posit component values of a fully articulated standard posit\n";
+		constexpr size_t nbits = 16;
+		constexpr size_t es = 2;
+		using BlockType = std::uint16_t;
+		posit<nbits, es, BlockType> p(SpecificValue::maxneg);
+		bool s{false};
+		regime<nbits, es, BlockType> r;
+		exponent<nbits, es, BlockType> e;
+		fraction<nbits - 1ull - es, BlockType> f;
+		decode(p.bits(), s, r, e, f);
+	
 		std::cout << "raw bits  : " << to_binary(p.bits(), true) << '\n';
 		std::cout << "components: " << to_binary(p) << '\n';
 		std::cout << "sign      : " << (s ? "set" : "not set") << " : " << sign_value(p) << '\n';

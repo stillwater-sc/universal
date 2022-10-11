@@ -224,9 +224,6 @@ void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bo
 	}
 	//if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 	if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << std::endl;
-
-	// we are storing both the raw bit representation and the decoded form
-	// so no need to transform back via 2's complement of regime/exponent/fraction
 }
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
@@ -583,7 +580,7 @@ public:
 #if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION posit(long double initial_value)  noexcept : _block{ 0 } { *this = initial_value; }
 	CONSTEXPRESSION posit& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
-	explicit operator long double() const noexcept { return to_long_double(); }
+	explicit operator long double() const noexcept { return to_native<long double>(); }
 #endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
@@ -911,19 +908,12 @@ public:
 		return p;
 	}
 
-	// conversion operators
-	// Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator unsigned short() const noexcept     { return to_ushort(); }
-	explicit operator unsigned int() const noexcept       { return to_uint(); }
-	explicit operator unsigned long() const noexcept      { return to_ulong(); }
-	explicit operator unsigned long long() const noexcept { return to_ulong_long(); }
-	explicit operator short() const noexcept              { return to_short(); }
-	explicit operator int() const noexcept                { return to_int(); }
-	explicit operator long() const noexcept               { return to_long(); }
-	explicit operator long long() const noexcept          { return to_long_long(); }
-	explicit operator float() const noexcept              { return to_float(); }
-	explicit operator double() const noexcept             { return to_double(); }
-
+	// make conversions to native types explicit
+	explicit operator int()       const noexcept { return to_native<float>()(); }
+	explicit operator long()      const noexcept { return to_native<double>(); }
+	explicit operator long long() const noexcept { return to_native<long double>(); }
+	explicit operator float()     const noexcept { return to_native<float>(); }
+	explicit operator double()    const noexcept { return to_native<double>(); }
 
 	// Selectors
 	constexpr bool sign() const noexcept { return _block.test(nbits - 1); }
@@ -1025,14 +1015,15 @@ public:
 	}
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
-	blocksignificant<fbits, bt> to_value() const noexcept {
+	template<BlockTripleOperator op = BlockTripleOperator::REPRESENTATION>
+	blocktriple<fbits, op, bt> to_value() const noexcept {
 		using namespace sw::universal::internal;
 		bool		     		_sign{ false };
 		regime<nbits, es, bt>   _regime;
 		exponent<nbits, es, bt> _exponent;
 		fraction<fbits, bt>     _fraction;
 		decode(_block, _sign, _regime, _exponent, _fraction);
-		return blocksignificant<fbits, bt>(_sign, _regime.scale() + _exponent.scale(), _fraction.bits(), iszero(), isnar());
+		return blocktriple<fbits, op, bt>(_sign, _regime.scale() + _exponent.scale(), _fraction.bits(), iszero(), isnar());
 	}
 
 /*  old normalize
@@ -1136,87 +1127,19 @@ private:
 
 	// HELPER methods
 
-	// Conversion functions
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-	short to_short() const {
-		if (iszero()) return 0;
-		if (isnar()) throw posit_nar{};
-		return short(to_float());
-	}
-	int to_int() const {
-		if (iszero()) return 0;
-		if (isnar()) throw posit_nar{};
-		return int(to_double());
-	}
-	long to_long() const {
-		if (iszero()) return 0;
-		if (isnar()) throw posit_nar{};
-		return long(to_long_double());
-	}
-	long long to_long_long() const {
-		if (iszero()) return 0;
-		if (isnar()) throw posit_nar{};
-		return (long long)(to_long_double());
-	}
-	unsigned short to_ushort() const {
-		if (iszero()) return 0;
-		if (isnar()) throw posit_nar{};
-		return (unsigned short)(to_float());
-	}
-	unsigned int to_uint() const {
-		if (iszero()) return 0;
-		if (isnar()) throw posit_nar{};
-		return (unsigned int)(to_double());
-	}
-	unsigned long to_ulong() const {
-		if (iszero()) return 0;
-		if (isnar()) throw posit_nar{};
-		return (unsigned long)(to_long_double());
-	}
-	unsigned long long to_ulong_long() const {
-		if (iszero()) return 0;
-		if (isnar()) throw posit_nar{};
-		return (unsigned long long)(to_long_double());
-	}
-#else
-	short to_short() const                   { return short(to_float()); }
-	int to_int() const                       { return int(to_double()); }
-	long to_long() const                     { return long(to_long_double()); }
-	long long to_long_long() const           { return (long long)(to_long_double()); }
-	unsigned short to_ushort() const         { return (unsigned short)(to_float()); }
-	unsigned int to_uint() const             { return (unsigned int)(to_double()); }
-	unsigned long to_ulong() const           { return (unsigned long)(to_long_double()); }
-	unsigned long long to_ulong_long() const { return (unsigned long long)(to_long_double()); }
-#endif
-	float to_float() const {
-		return (float)to_double();
-	}
-	double to_double() const {
-		if (iszero())	return 0.0;
-		if (isnar())	return std::numeric_limits<double>::quiet_NaN();
-		bool		     		_sign{ false };
-		regime<nbits, es, bt>   _regime;
-		exponent<nbits, es, bt> _exponent;
-		fraction<fbits, bt>     _fraction;
-		decode(_block, _sign, _regime, _exponent, _fraction);
-		double s = (_sign ? -1.0 : 1.0);
-		double r = double(_regime.value());
-		double e = double(_exponent.value());
-		double f = (1.0 + double(_fraction.value()));
-		return s * r * e * f;
-	}
-	long double to_long_double() const {
+	template<typename Real>
+	Real to_native() const {
 		if (iszero())  return 0.0l;
-		if (isnar())   return std::numeric_limits<double>::quiet_NaN();;
+		if (isnar())   return std::numeric_limits<Real>::quiet_NaN();;
 		bool		     		_sign{ false };
 		regime<nbits, es, bt>   _regime;
 		exponent<nbits, es, bt> _exponent;
 		fraction<fbits, bt>     _fraction;
 		decode(_block, _sign, _regime, _exponent, _fraction);
-		long double s = (_sign ? -1.0l : 1.0l);
-		long double r = _regime.value();
-		long double e = _exponent.value();
-		long double f = (1.0l + _fraction.value());
+		Real s = (_sign ? -1.0l : 1.0l);
+		Real r = _regime.value();
+		Real e = _exponent.value();
+		Real f = (1.0l + _fraction.value());
 		return s * r * e * f;
 	}
 	
