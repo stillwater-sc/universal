@@ -56,7 +56,7 @@ public:
 		int msb = int(static_cast<int>(nbits) - 1ull - (1ull + nrRegimeBits));
 		if (es > 0) {
 			size_t nrExponentBits = 0;
-			blockbinary<es, bt, BinaryNumberType::Unsigned> _exp;
+			blockbinary<es, bt, BinaryNumberType::Unsigned> _exp{0};
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (static_cast<size_t>(msb) >= es - 1ull ? es : static_cast<size_t>(msb) + 1ull);
 				for (size_t i = 0; i < nrExponentBits; i++) {
@@ -198,16 +198,16 @@ inline std::string to_string(const exponent<nbits, es, bt>& e, bool dashExtent =
 	std::stringstream s;
 	size_t nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
-		for (size_t bitIndex = 0; bitIndex < es; ++bitIndex) {
-			size_t i = es - bitIndex;
+		for (size_t i = 0; i < es; ++i) {
+			size_t bitIndex = es - 1ull - i;
 			if (e.nrBits() > nrOfExponentBitsProcessed++) {
 				UnsignedExponent exponentBits = e.bits();
-				s << (exponentBits[i] ? '1' : '0');
+				s << (exponentBits.test(bitIndex) ? '1' : '0');
 			}
 			else {
 				s << (dashExtent ? "-" : "");
 			}
-			if (nibbleMarker && ((i % 4) == 0) && i != 0) s << '\'';
+			if (nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
 		}
 	}
 	else {

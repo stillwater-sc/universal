@@ -187,10 +187,11 @@ inline std::string to_string(const regime<nbits, es, bt>& r, bool dashExtent = t
 	std::stringstream s;
 	blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> bb = r.bits();
 	size_t nrOfRegimeBitsProcessed = 0;
-	for (int i = nbits - 2; i >= 0; --i) {
+	for (size_t i = 0; i < nbits - 1; ++i) {
+		size_t bitIndex = nbits - 2ull - i;
 		if (r.nrBits() > nrOfRegimeBitsProcessed++) {
-			s << (bb.test(size_t(i)) ? '1' : '0');
-			if (nibbleMarker && ((i % 4) == 0) && i != 0) s << '\'';
+			s << (bb.test(bitIndex) ? '1' : '0');
+			if (nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
 		}
 		else {
 			s << (dashExtent ? "-" : "");

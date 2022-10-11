@@ -253,17 +253,15 @@ inline std::string to_string(const fraction<nfbits, bbt>& f, bool dashExtent = t
 	std::stringstream s;
 	if (nfbits > 0) {
 		blockbinary<nfbits, bbt, BinaryNumberType::Unsigned> bb = f.bits();
-		int upperbound = nfbits;
-		upperbound--;
-		for (int i = upperbound; i >= 0; --i) {
+		for (size_t i = 0; i < nfbits; ++i) {
+			size_t bitIndex = nfbits - 1ull - i;
 			if (f.nrBits() > nrOfFractionBitsProcessed++) {
-				s << (bb[static_cast<size_t>(i)] ? '1' : '0');
-
+				s << (bb.test(bitIndex) ? '1' : '0');
 			}
 			else {
 				s << (dashExtent ? "-" : "");
 			}
-			if (nibbleMarker && ((i % 4) == 0) && i != 0) s << '\'';
+			if (nibbleMarker && ((bitIndex % 4) == 0) && bitIndex != 0) s << '\'';
 		}
 	}
 	if (nrOfFractionBitsProcessed == 0) s << '~'; // for proper alignment in tables

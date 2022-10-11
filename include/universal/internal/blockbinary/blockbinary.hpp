@@ -169,7 +169,7 @@ public:
 	explicit operator long double() const        { return (long double)to_long_long(); }
 #endif
 
-	// access operators
+	// limb access operators
 	constexpr BlockType& operator[](size_t index) { return _block[index]; }
 	constexpr BlockType operator[](size_t index) const { return _block[index]; }
 
@@ -625,10 +625,10 @@ public:
 	}
 	constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
 	constexpr bool at(size_t bitIndex) const noexcept {
-		if (bitIndex >= nbits) return false; // fail silently as no-op
-		bt word = _block[bitIndex / bitsInBlock];
+		if (bitIndex > nbits) return false; // fail silently as no-op
+		bt limb = _block[bitIndex / bitsInBlock];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
-		return (word & mask);
+		return (limb & mask);
 	}
 	constexpr uint8_t nibble(size_t n) const noexcept {
 		uint8_t retval{ 0 };
@@ -1086,9 +1086,10 @@ template<size_t nbits, typename BlockType, BinaryNumberType NumberType>
 std::string to_binary(const blockbinary<nbits, BlockType, NumberType>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
-	for (int i = int(nbits - 1); i >= 0; --i) {
-		s << (number.at(size_t(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	for (size_t i = 0; i < nbits; ++i) {
+		size_t bitIndex = nbits - 1ull - i;
+		s << (number.at(bitIndex) ? '1' : '0');
+		if (bitIndex > 0 && (bitIndex % 4) == 0 && nibbleMarker) s << '\'';
 	}
 	return s.str();
 }

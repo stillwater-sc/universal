@@ -157,7 +157,7 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
 	size_t nrExponentBits = 0;
 	if (es > 0) {
-		UnsignedExponent _exp;
+		UnsignedExponent _exp{ 0 };
 		if (msb >= 0 && es > 0) {
 			nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<size_t>(msb + 1ll);
 			for (size_t i = 0; i < nrExponentBits; ++i) {
@@ -468,7 +468,7 @@ public:
 	typedef bt BlockType;
 
 	// trivial
-	constexpr posit() : _block{} {}
+	constexpr posit() : _block{0} {}
 	
 	constexpr posit(const posit&) = default;
 	constexpr posit(posit&&) = default;
@@ -1732,21 +1732,22 @@ inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize prec
 // binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
+	
 	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
-	bool s{ false };
+	bool negative{ false };
 	regime<nbits, es, bt> r;
 	exponent<nbits, es, bt> e;
 	fraction<fbits, bt> f;
 	auto raw = number.bits();
-	std::stringstream ss;
-	extract_fields(raw, s, r, e, f);
+	extract_fields(raw, negative, r, e, f);
 
-	ss << (s ? "0b1." : "0b0.");
-	ss << to_string(r, false, nibbleMarker) << "."
-		<< to_string(e, false, nibbleMarker) << "."
-		<< to_string(f, false, nibbleMarker);
+	std::stringstream s;
+	s << (negative ? "0b1." : "0b0.");
+	s << to_string(r, false, nibbleMarker) << "."
+	  << to_string(e, false, nibbleMarker) << "."
+	  << to_string(f, false, nibbleMarker);
 
-	return ss.str();
+	return s.str();
 }
 
 template<size_t nbits, size_t es, typename bt>

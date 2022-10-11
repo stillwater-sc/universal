@@ -95,7 +95,7 @@ constexpr blockbinary<nbits, bt> maxpos_pattern(bool sign = false) {
 template<size_t nbits, size_t es, typename bt>
 constexpr inline int sign_value(const posit<nbits, es, bt>& p) {
 	blockbinary<nbits, bt, BinaryNumberType::Signed> _bits = p.bits();
-	return (_bits[nbits - 1] ? -1 : 1);
+	return (_bits.test(nbits - 1) ? -1 : 1);
 }
 
 template<size_t nbits, size_t es, typename bt>
@@ -151,7 +151,7 @@ inline int scale(const posit<nbits, es, bt>& p) {
 
 // calculate the significant of a posit
 template<size_t nbits, size_t es, typename bt, size_t fbits>
-inline blockbinary<fbits+1, bt> significant(const posit<nbits, es, bt>& p) {
+inline blockbinary<fbits+1, bt, BinaryNumberType::Unsigned> significant(const posit<nbits, es, bt>& p) {
 	//constexpr size_t fbits = nbits - 3 - es;
 	bool		     	 _sign;
 	regime<nbits, es, bt>    _regime;
