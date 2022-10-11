@@ -22,10 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest] 
-        include:
-        - runs-on: ubuntu-latest
-          compiler: gcc-10
+        os: [windows-latest, macos-latest, ubuntu-22.04] 
 
     steps:
     - uses: actions/checkout@v2
