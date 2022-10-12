@@ -527,14 +527,14 @@ public:
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setbit(i);
+						setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setbit(i, false);
+						setbit(i, false);
 					}
 				}
 				return *this;
@@ -557,14 +557,14 @@ public:
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setbit(i);
+				setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setbit(i, false);
+				setbit(i, false);
 			}
 		}
 
@@ -583,7 +583,7 @@ public:
 		}
 		integer<nbits, BlockType, NumberType> target;
 		for (int i = nbits - 1; i >= shift; --i) {  // TODO: inefficient as it works at the bit level
-			target.setbit(static_cast<size_t>(i) - static_cast<size_t>(shift), at(static_cast<size_t>(i)));
+			target.setbit(static_cast<size_t>(i - shift), at(static_cast<size_t>(i)));
 		}
 		*this = target;
 		return *this;
@@ -667,21 +667,22 @@ public:
 		return *this;
 	}
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
-		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
+		size_t blockIndex = i / bitsInBlock;
+		if (blockIndex < nrBlocks) {
+			bt block = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt((block & null) | mask);
-			return;
+			_block[blockIndex] = bt((block & null) | mask);
 		}
+		// nop if out of bounds
 	}
 	constexpr void setbyte(unsigned byteIndex, uint8_t data) {
 		uint8_t mask = 0x1u;
 		unsigned start = byteIndex * 8;
 		unsigned end = start + 8;
 		for (unsigned i = start; i < end; ++i) {
-			setbit(i, (mask & data));
+			setbit(i, static_cast<bool>(mask & data));
 			mask <<= 1;
 		}
 	}

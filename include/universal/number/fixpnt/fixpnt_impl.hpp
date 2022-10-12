@@ -652,7 +652,7 @@ protected:
 		if constexpr (std::is_integral_v<Arith> && std::is_signed_v<Arith>) {
 			if (0 == v) return f;
 			if constexpr (arithmetic == Saturate) {
-				constexpr fixpnt<nbits, rbits, arithmetic, bt> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+				constexpr fixpnt maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 				// check if we are in the representable range
 				if (v >= static_cast<Arith>(maxpos)) { return maxpos; }
 				if (v <= static_cast<Arith>(maxneg)) { return maxneg; }
@@ -693,7 +693,7 @@ protected:
 		else if constexpr (std::is_floating_point_v<Arith>) {
 			if (v == 0.0) return f;
 			if constexpr (arithmetic == Saturate) {	// check if the value is in the representable range
-				fixpnt<nbits, rbits, arithmetic, bt> a;
+				fixpnt a;
 				a.maxpos();
 				if (v >= float(a)) { return a; } // set to max pos value
 				a.maxneg();
@@ -831,7 +831,7 @@ protected:
 	}
 
 private:
-	blockbinary<nbits, bt> _block;
+	blockbinary<nbits, bt, BinaryNumberType::Signed> _block;
 
 	// convert
 	template<size_t nnbits, size_t rrbits, bool aarithmetic, typename Bbt>

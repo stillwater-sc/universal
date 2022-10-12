@@ -284,8 +284,8 @@ public:
 				_block[0] = static_cast<bt>(_block[0] * rhs.block(0));
 			}
 			else {
-				blockbinary<nbits, BlockType, NumberType> base(*this);
-				blockbinary<nbits, BlockType, NumberType> multiplicant(rhs);
+				blockbinary base(*this);
+				blockbinary multiplicant(rhs);
 				clear();
 				for (unsigned i = 0; i < static_cast<unsigned>(nrBlocks); ++i) {
 					std::uint64_t segment(0);
@@ -498,14 +498,15 @@ public:
 	constexpr void set(size_t i) noexcept {	setbit(i, true); }
 	constexpr void reset(size_t i) noexcept { setbit(i, false); }
 	constexpr void setbit(size_t i, bool v = true) noexcept {
-		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
+		size_t blockIndex = i / bitsInBlock;
+		if (blockIndex < nrBlocks) {
+			bt block = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt((block & null) | mask);
+			_block[blockIndex] = bt((block & null) | mask);
 		}
-		// nop if i is out of range
+		// nop if blockIndex is out of range
 	}
 	constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
@@ -530,8 +531,13 @@ public:
 		return *this;
 	}
 	constexpr blockbinary& twosComplement() noexcept { // in-place 2's complement
-		blockbinary<nbits, bt> plusOne(1);
-		flip();
+		blockbinary plusOne(1);
+		if constexpr (NumberType == BinaryNumberType::Signed) {
+			flip();
+		}
+		else {
+			static_assert(NumberType == BinaryNumberType::Signed, "calling in-place 2's complement on an unsigned blockbinary"); // should this be allowed?
+		}
 		return *this += plusOne;
 	}
 
@@ -805,9 +811,9 @@ inline bool operator<(const blockbinary<N, B, T>& lhs, const blockbinary<N, B, T
 	if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
 	if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
 	if (lhs == rhs) return false; // so the maxneg logic works
-	blockbinary<N, B> mneg; maxneg<N, B>(mneg);
+	blockbinary<N, B, T> mneg; maxneg<N, B>(mneg);
 	if (rhs == mneg) return false; // special case: nothing is smaller than maximum negative
-	blockbinary<N, B> diff = lhs - rhs;
+	blockbinary<N, B, T> diff = lhs - rhs;
 	return diff.isneg();
 }
 template<size_t N, typename B, BinaryNumberType T>

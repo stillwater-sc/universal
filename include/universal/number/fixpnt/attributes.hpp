@@ -35,7 +35,7 @@ template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 std::string fixpnt_range(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, bt>;
 	std::stringstream s;
-	FixedPoint fp;
+	FixedPoint fp(v);
 	s << std::setw(40) << type_tag(v) << " : [ "
 		<< fp.maxneg() << " ... "
 		<< fp.minneg() << " "

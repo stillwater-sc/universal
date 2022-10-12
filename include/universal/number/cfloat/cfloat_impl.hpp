@@ -1059,13 +1059,13 @@ public:
 		}
 	}
 	constexpr void setbit(size_t i, bool v = true) noexcept {
-		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
+		size_t blockIndex = i / bitsInBlock;
+		if (blockIndex < nrBlocks) {
+			bt block = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt((block & null) | mask);
-			return;
+			_block[blockIndex] = bt((block & null) | mask);
 		}
 	}
 	constexpr cfloat& setbits(uint64_t raw_bits) noexcept {

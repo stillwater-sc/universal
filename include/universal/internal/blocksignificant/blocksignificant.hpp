@@ -367,12 +367,13 @@ public:
 	constexpr void setzero() noexcept { clear(); }
 	constexpr void setradix(int radix) noexcept { radixPoint = radix; }
 	constexpr void setbit(size_t i, bool v = true) noexcept {
-		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
+		size_t blockIndex = i / bitsInBlock;
+		if (blockIndex < nrBlocks) {
+			bt block = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt((block & null) | mask);
+			_block[blockIndex] = bt((block & null) | mask);
 		}
 		// when i is out of bounds, fail silently as no-op
 	}
