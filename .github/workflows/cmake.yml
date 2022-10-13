@@ -25,29 +25,29 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-20.04] 
         compiler: [ latest, gcc-9, gcc-10, g++-11, clang, clang-11, clang++-12 ]
         exclude:
-          - os-version: windows-latest
+          - os: windows-latest
             compiler: gcc-9
-          - os-version: windows-latest
+          - os: windows-latest
             compiler: gcc-10
-          - os-version: windows-latest
+          - os: windows-latest
             compiler: g++-11
-          - os-version: windows-latest
+          - os: windows-latest
             compiler: clang
-          - os-version: windows-latest
+          - os: windows-latest
             compiler: clang-11
-          - os-version: windows-latest
+          - os: windows-latest
             compiler: clang++-12
-          - os-version: macos-latest
+          - os: macos-latest
             compiler: gcc-9
-          - os-version: macos-latest
+          - os: macos-latest
             compiler: gcc-10
-          - os-version: macos-latest
+          - os: macos-latest
             compiler: g++-11
-          - os-version: ubuntu-20.04
+          - os: ubuntu-20.04
             compiler: clang
-          - os-version: ubuntu-20.04
+          - os: ubuntu-20.04
             compiler: clang-11
-          - os-version: ubuntu-20.04
+          - os: ubuntu-20.04
             compiler: clang++-12
 
     steps:
