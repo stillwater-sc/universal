@@ -19,7 +19,7 @@ template<size_t nbits, size_t es, typename bt>
 class exponent {
 	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
 public:
-	exponent() : _Bits{ 0 }, _NrOfBits{ es } {}
+	exponent() : _Bits{}, _NrOfBits{ es } {}
 	
 	exponent(const exponent& r) = default;
 	exponent(exponent&& r) = default;

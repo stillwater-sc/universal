@@ -29,43 +29,6 @@ namespace sw { namespace universal {
 		return str.str();
 	}
 
-	// report dynamic range of a type, specialized for a posit
-	template<size_t nbits, size_t es, typename bt>
-	std::string dynamic_range() {
-		std::stringstream str;
-		posit<nbits, es, bt> p;
-		str << type_tag(p) << '\n';
-		str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
-		str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-		str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
-		return str.str();
-	}
-
-	// report the dynamic range of the type associated with a value
-	template<size_t nbits, size_t es, typename bt>
-	std::string dynamic_range(const posit<nbits, es, bt>& p) {
-		std::stringstream str;
-		str << type_tag(p) << '\n';
-		str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
-		str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-		str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "  :  " << p;
-		return str.str();
-	}
-
-	// report the dynamic range of a posit
-	template<size_t nbits, size_t es, typename bt>
-	std::string posit_range() {
-		std::stringstream str;
-		posit<nbits, es, bt> p;
-		str << type_tag(p) << '\n';
-		str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
-		str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-		str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
-		str << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::min() << "     ";
-		str << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::max() ;
-		return str.str();
-	}
-
 	// generate a posit format ASCII format nbits.esxNN...NNp
 	template<size_t nbits, size_t es, typename bt>
 	inline std::string hex_print(const posit<nbits, es, bt>& p) {

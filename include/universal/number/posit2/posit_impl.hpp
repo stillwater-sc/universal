@@ -452,7 +452,7 @@ public:
 	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 	static constexpr bt       BLOCK_MASK = bt(~0);
 	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
-	static constexpr uint32_t ALL_ONES_ES = (0xFFFF'FFFFul >> (32 - es));
+	static constexpr uint32_t ALL_ONES_ES = (0xFFFFul >> (16 - es));
 
 	static constexpr size_t   nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
 	static constexpr size_t   MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken

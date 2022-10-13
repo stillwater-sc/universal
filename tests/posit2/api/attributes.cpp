@@ -18,6 +18,25 @@
 #include <universal/number/posit2/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
 
+template<size_t nbits, size_t es, typename BlockType = uint32_t>
+void PositComponents(const sw::universal::posit<nbits, es, BlockType>& p) {
+	std::cout << "posit component values of a fully articulated standard posit\n";
+	bool s{ false };
+	sw::universal::regime<nbits, es, BlockType> r;
+	sw::universal::exponent<nbits, es, BlockType> e;
+	sw::universal::fraction<nbits - 1ull - es, BlockType> f;
+	sw::universal::decode(p.bits(), s, r, e, f);
+
+	std::cout << "raw bits  : " << sw::universal::to_binary(p.bits(), true) << '\n';
+	std::cout << "components: " << sw::universal::to_binary(p) << '\n';
+	// posit component attribute functions and their equivalence to component value() functions
+	std::cout << "sign      : " << (s ? "set" : "not set") << " : " << sw::universal::sign_value(p) << '\n';
+	std::cout << "regime    : " << r << " : " << r.value() << " : " << sw::universal::regime_value(p) << '\n';
+	std::cout << "exponent  : " << e << " : " << e.value() << " : " << sw::universal::exponent_value(p) << '\n';
+	std::cout << "fraction  : " << f << " : " << f.value() << " : " << sw::universal::fraction_value(p) << '\n';
+	std::cout << '\n';
+}
+
 int main()
 try {
 	using namespace sw::universal;
@@ -80,46 +99,25 @@ try {
 	}
 
 	{
-		std::cout << "posit component values of a fully articulated standard posit\n";
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 2;
 		using BlockType = std::uint16_t;
-		posit<nbits, es, BlockType> p(SpecificValue::minpos);
-		bool s{false};
-		regime<nbits, es, BlockType> r;
-		exponent<nbits, es, BlockType> e;
-		fraction<nbits - 1ull - es, BlockType> f;
-		decode(p.bits(), s, r, e, f);
-	
-		std::cout << "raw bits  : " << to_binary(p.bits(), true) << '\n';
-		std::cout << "components: " << to_binary(p) << '\n';
-		std::cout << "sign      : " << (s ? "set" : "not set") << " : " << sign_value(p) << '\n';
-		std::cout << "regime    : " << r << " : " << regime_value(p) << '\n';
-		std::cout << "exponent  : " << e << " : " << exponent_value(p) << '\n';
-		std::cout << "fraction  : " << f << " : " << fraction_value(p) << '\n';
-		std::cout << '\n';
+
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::maxpos));
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::minpos));
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::zero));
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::minneg));
+		PositComponents(posit<nbits, es, BlockType>(SpecificValue::maxneg));
 	}
 
 	{
-		std::cout << "posit component values of a fully articulated standard posit\n";
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 2;
-		using BlockType = std::uint16_t;
-		posit<nbits, es, BlockType> p(SpecificValue::maxneg);
-		bool s{false};
-		regime<nbits, es, BlockType> r;
-		exponent<nbits, es, BlockType> e;
-		fraction<nbits - 1ull - es, BlockType> f;
-		decode(p.bits(), s, r, e, f);
-	
-		std::cout << "raw bits  : " << to_binary(p.bits(), true) << '\n';
-		std::cout << "components: " << to_binary(p) << '\n';
-		std::cout << "sign      : " << (s ? "set" : "not set") << " : " << sign_value(p) << '\n';
-		std::cout << "regime    : " << r << " : " << regime_value(p) << '\n';
-		std::cout << "exponent  : " << e << " : " << exponent_value(p) << '\n';
-		std::cout << "fraction  : " << f << " : " << fraction_value(p) << '\n';
-		std::cout << '\n';
+	//	std::cout << dynamic_range<8, 0>() << '\n';   TODO: how do you deal with es == 0 in the exponent class?
+		std::cout << dynamic_range<8, 1>() << '\n';
+		std::cout << dynamic_range<8, 2>() << '\n'; 
+		std::cout << dynamic_range<8, 3>() << '\n';
+		std::cout << dynamic_range<8, 4>() << '\n';
 	}
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

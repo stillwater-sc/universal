@@ -71,27 +71,6 @@ constexpr int calculate_unconstrained_k(int scale) {
 	return k;
 }
 
-#ifdef DEPRECATED
-// generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
-template<size_t nbits, size_t es, typename bt = std::uint32_t>
-constexpr blockbinary<nbits, bt> minpos_pattern(bool sign = false) {
-	blockbinary<nbits, bt> _bits;
-	_bits.clear();
-	_bits.setbit(0, true);
-	return (sign ? twosComplement(_bits) : _bits);
-}
-
-// generate the maxpos bit pattern for the sign requested (true is negative half, false is positive half)
-template<size_t nbits, size_t es, typename bt = std::uint32_t>
-constexpr blockbinary<nbits, bt> maxpos_pattern(bool sign = false) {
-	blockbinary<nbits, bt> _bits;
-	_bits.clear();
-	_bits.flip();
-	_bits.setbit(nbits - 1, false);
-	return (sign ? twosComplement(_bits) : _bits);
-}
-#endif // DEPRECATED
-
 template<size_t nbits, size_t es, typename bt>
 constexpr inline int sign_value(const posit<nbits, es, bt>& p) {
 	blockbinary<nbits, bt, BinaryNumberType::Signed> _bits = p.bits();
@@ -195,78 +174,40 @@ inline int exponent_scale(const posit<nbits, es, bt>& p) {
 	return _exponent.scale();
 }
 
-// obtain the decoded posit bits
-template<size_t nbits, size_t es, typename bt>
-inline blockbinary<nbits, bt> decoded(const posit<nbits, es, bt>& p) {
-	constexpr size_t rbits = nbits - 1;
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
-	bool		     	 _sign;
-	regime<nbits, es, bt>    _regime;
-	exponent<nbits, es, bt>  _exponent;
-	fraction<fbits, bt>      _fraction;
-	decode(p.get(), _sign, _regime, _exponent, _fraction);
-
-	blockbinary<rbits, bt> r				= _regime.get();
-	size_t			nrRegimeBits	= _regime.nrBits();
-	blockbinary<es, bt>	e				= _exponent.get();
-	size_t			nrExponentBits	= _exponent.nrBits();
-	blockbinary<fbits, bt> f				= _fraction.get();
-	size_t			nrFractionBits	= _fraction.nrBits();
-
-	blockbinary<nbits, bt> _Bits;
-	_Bits.set(nbits - 1, _sign);
-	int msb = nbits - 2;
-	for (size_t i = 0; i < nrRegimeBits; i++) {
-		_Bits.set(std::size_t(msb--), r[nbits - 2 - i]);
-	}
-	if (msb < 0) 
-				return _Bits;
-	for (size_t i = 0; i < nrExponentBits && msb >= 0; i++) {
-		_Bits.set(std::size_t(msb--), e[es - 1 - i]);
-	}
-	if (msb < 0) return _Bits;
-	for (size_t i = 0; i < nrFractionBits && msb >= 0; i++) {
-		_Bits.set(std::size_t(msb--), f[fbits - 1 - i]);
-	}
-	return _Bits;
-}
 
 //////////////////////////////////////////////////////////////////////////
 
-// calculate the integer power a ^ b
-// exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-template<size_t nbits, size_t es, typename bt>
-posit<nbits, es, bt> ipow(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b) {
-	// precondition
-	if (!a.isinteger() || !b.isinteger()) return posit<nbits, es, bt>(0);
-
-	uint64_t result(1);
-	uint64_t base = uint64_t(a); 
-	uint64_t exp = uint64_t(b);
-	for (;;) {
-		if (exp & 0x1) result *= base;
-		exp >>= 1;
-		if (exp == 0) break;
-		base *= base;
-	}
-	return posit<nbits,es,bt>(result);
+// report dynamic range of a type, specialized for a posit
+template<size_t nbits, size_t es>
+std::string dynamic_range() {
+	posit<nbits, es, std::uint32_t> p;
+	return dynamic_range(p);
 }
 
-// clang <complex> implementation is calling these functions so we need implementations for posit
-
-// already defined in math/classify.hpp
-//template<size_t nbits, size_t es>
-//inline bool isnan(const posit<nbits, es>& p) { return p.isnar(); }
-//
-//template<size_t nbits, size_t es>
-//inline bool isinf(const posit<nbits, es>& p) { return p.isnar(); }
-
-// copysign returns a value with the magnitude of a, and the sign of b
+// report the dynamic range of the type associated with a value
 template<size_t nbits, size_t es, typename bt>
-inline posit<nbits, es, bt> copysign(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b) {
-    posit<nbits, es, bt> c(a);
-    if (a.sign() == b.sign()) return c;
-    return -c;
+std::string dynamic_range(const posit<nbits, es, bt>& p) {
+	std::stringstream str;
+	posit<nbits, es, bt> v(p);
+	str << type_tag(v) << '\n';
+	str << "useed scale  " << std::setw(4) << useed_scale<es>() << "     ";
+	str << "minpos scale " << std::setw(10) << v.minpos().scale() << "     ";
+	str << "maxpos scale " << std::setw(10) << v.maxpos().scale();
+	return str.str();
+}
+
+// report the dynamic range of a posit
+template<size_t nbits, size_t es, typename bt>
+std::string posit_range() {
+	std::stringstream str;
+	posit<nbits, es, bt> p;
+	str << type_tag(p) << '\n';
+	str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
+	str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
+	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
+	str << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::min() << "     ";
+	str << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::max();
+	return str.str();
 }
 
 }} // namespace sw::universal
