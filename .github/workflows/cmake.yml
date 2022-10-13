@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-20.04] 
+        os: [ windows-latest, macos-latest, ubuntu-latest ] 
         compiler: [ latest, gcc-9, gcc-10, g++-11, clang, clang-11, clang++-12 ]
         exclude:
           - os: windows-latest
@@ -38,16 +38,20 @@ jobs:
           - os: windows-latest
             compiler: clang++-12
           - os: macos-latest
+            compiler: latest
+          - os: macos-latest
             compiler: gcc-9
           - os: macos-latest
             compiler: gcc-10
           - os: macos-latest
             compiler: g++-11
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
+            compiler: latest
+          - os: ubuntu-latest
             compiler: clang
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             compiler: clang-11
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             compiler: clang++-12
 
     steps:
@@ -56,7 +60,7 @@ jobs:
       
       - name: Install compiler
         id: install_cc
-        uses: rlalik/setup-cpp-compiler@v1.0
+        uses: rlalik/setup-cpp-compiler@v1.1
         with:
           compiler: ${{ matrix.compiler }}
       
