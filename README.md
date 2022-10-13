@@ -12,7 +12,11 @@
 
 [![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
 
+![Regression Status](https://github.com/github/docs/actions/workflows/cmake.yml/badge.svg?event=push)
+
 The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point that are more efficient and mathematically robust.
+By tailoring the arithmetic types to the precision and dynamic range requirements of the application enables a new level of mixed-precision algorithm
+development and optimization particularly valuable for embedded applications that require high computational density and efficiency.
 
 The motivation to find improvements to IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound and computational scientists were looking for alternatives that provided more granularity in precision and dynamic range. Even though the inefficiency of IEEE floating-point had been measured and agreed upon in the HPC community, it was the commercial demands of Deep Learning that provided the incentive to replace IEEE-754 with alternatives, such as half-floats, and bfloats. These alternatives are tailored to the application and yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
 
