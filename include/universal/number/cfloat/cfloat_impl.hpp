@@ -6,6 +6,7 @@
 // NVIDIA TensorFloat 
 // AMD FP16 and FP32
 // Microsoft FP8 and FP9
+// Tesla CFP8, CFP16
 // 
 // cfloat<> can also emulate more precise configurations, such as
 // 80bit IEEE-754 extended precision floats
@@ -368,7 +369,7 @@ public:
 
 	// specific value constructor
 	constexpr cfloat(const SpecificValue code) noexcept
-		: _block{ 0 } {
+		: _block{} {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();
@@ -406,18 +407,18 @@ public:
 	/// construct an cfloat from a native type, specialized for size
 	/// </summary>
 	/// <param name="iv">initial value to construct</param>
-	constexpr cfloat(signed char iv)                    noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(short iv)                          noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(int iv)                            noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(long iv)                           noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(long long iv)                      noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(char iv)                           noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned short iv)                 noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned int iv)                   noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned long iv)                  noexcept : _block{ 0 } { *this = iv; }
-	constexpr cfloat(unsigned long long iv)             noexcept : _block{ 0 } { *this = iv; }
-	CONSTEXPRESSION cfloat(float iv)                    noexcept : _block{ 0 } { *this = iv; }
-	CONSTEXPRESSION cfloat(double iv)                   noexcept : _block{ 0 } { *this = iv; }
+	constexpr cfloat(signed char iv)                    noexcept : _block{} { *this = iv; }
+	constexpr cfloat(short iv)                          noexcept : _block{} { *this = iv; }
+	constexpr cfloat(int iv)                            noexcept : _block{} { *this = iv; }
+	constexpr cfloat(long iv)                           noexcept : _block{} { *this = iv; }
+	constexpr cfloat(long long iv)                      noexcept : _block{} { *this = iv; }
+	constexpr cfloat(char iv)                           noexcept : _block{} { *this = iv; }
+	constexpr cfloat(unsigned short iv)                 noexcept : _block{} { *this = iv; }
+	constexpr cfloat(unsigned int iv)                   noexcept : _block{} { *this = iv; }
+	constexpr cfloat(unsigned long iv)                  noexcept : _block{} { *this = iv; }
+	constexpr cfloat(unsigned long long iv)             noexcept : _block{} { *this = iv; }
+	CONSTEXPRESSION cfloat(float iv)                    noexcept : _block{} { *this = iv; }
+	CONSTEXPRESSION cfloat(double iv)                   noexcept : _block{} { *this = iv; }
 
 	// assignment operators
 	constexpr cfloat& operator=(signed char rhs)        noexcept { return convert_signed_integer(rhs); }
@@ -437,7 +438,7 @@ public:
 
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{ 0 } { *this = iv; }
+	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{} { *this = iv; }
 	CONSTEXPRESSION cfloat& operator=(long double rhs)  noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()               const noexcept { return to_native<long double>(); }
 #endif

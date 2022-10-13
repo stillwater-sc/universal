@@ -465,7 +465,7 @@ public:
 	typedef bt BlockType;
 
 	// trivial
-	constexpr posit() : _block{0} {}
+	constexpr posit() : _block{} {}
 	
 	constexpr posit(const posit&) = default;
 	constexpr posit(posit&&) = default;
@@ -480,7 +480,8 @@ public:
 	}
 
 	// specific value constructor
-	constexpr posit(const SpecificValue code) {
+	constexpr posit(const SpecificValue code) noexcept
+		: _block{}  {
 		switch (code) {
 		case SpecificValue::infpos:
 		case SpecificValue::maxpos:

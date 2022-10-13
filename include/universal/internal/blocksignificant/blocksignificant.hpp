@@ -118,13 +118,12 @@ public:
 	typedef bt BlockType;
 
 	// constructors
-	constexpr blocksignificant() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block{ 0 } {}
+	constexpr blocksignificant() noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Flex }, _block{} {}
 
 	// value constructors
-	constexpr blocksignificant(signed char rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{ 0 } {
-	}
-	constexpr blocksignificant(int rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{ 0 } {
-	}
+	constexpr blocksignificant(signed char rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{} {}
+	constexpr blocksignificant(int rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{} {}
+	
 	// raw bit constructors
 	template <size_t... I>
 	constexpr blocksignificant(const uint64_t raw, int radixPoint, std::index_sequence<I...>) noexcept

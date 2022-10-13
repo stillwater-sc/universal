@@ -200,15 +200,9 @@ endif()
 
 ####
 # Configure the compiler options
-if(MSVC)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++20 has been enabled by default")
-else()
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++20 has been enabled by default: but bit_cast<> requires gcc 11")
-endif()
 
 # enable the regression testing level of the build
 if(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
@@ -583,10 +577,10 @@ endif(BUILD_ALL)
 
 if(BUILD_CI)
 	# set the grouped components to build (will trigger builds when tested)
-	# set(BUILD_DEMONSTRATION ON)
-	set(BUILD_NUMERICS ON)
+	set(BUILD_DEMONSTRATION OFF)
+	set(BUILD_NUMERICS OFF)
 	set(BUILD_NUMBER_SYSTEMS ON)
-	set(BUILD_MIXEDPRECISION_SDK ON)
+	set(BUILD_MIXEDPRECISION_SDK OFF)
 	set(BUILD_APP_ENVIRONMENT ON)
 endif(BUILD_CI)
 
