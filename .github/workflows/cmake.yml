@@ -26,11 +26,29 @@ jobs:
         compiler: [ latest, gcc-9, gcc-10, g++-11, clang, clang-11, clang++-12 ]
         exclude:
           - os-version: windows-latest
-            compiler: [ gcc-9, gcc-10, g++-11, clang, clang-11, clang++-12 ]
+            compiler: gcc-9
+          - os-version: windows-latest
+            compiler: gcc-10
+          - os-version: windows-latest
+            compiler: g++-11
+          - os-version: windows-latest
+            compiler: clang
+          - os-version: windows-latest
+            compiler: clang-11
+          - os-version: windows-latest
+            compiler: clang++-12
           - os-version: macos-latest
-            compiler: [ gcc-9, gcc-10, g++-11 ]
+            compiler: gcc-9
+          - os-version: macos-latest
+            compiler: gcc-10
+          - os-version: macos-latest
+            compiler: g++-11
           - os-version: ubuntu-20.04
-            compiler: [ clang, clang-11, clang++-12 ]
+            compiler: clang
+          - os-version: ubuntu-20.04
+            compiler: clang-11
+          - os-version: ubuntu-20.04
+            compiler: clang++-12
 
     steps:
       - name: Checkout
@@ -49,18 +67,18 @@ jobs:
           CXX: ${{ steps.install_cc.outputs.cxx }}
 
       - name: Configure CMake
-       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CI=ON
-       #run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_NUMBER_LNS=ON 
+        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CI=ON
+        #run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_NUMBER_LNS=ON 
 
       - name: Build
-       # Build your program with the given configuration
-       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+        # Build your program with the given configuration
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
       - name: Test
-       working-directory: ${{github.workspace}}/build
-       # Execute tests defined by the CMake configuration.  
-       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-       run: ctest -V -C ${{env.BUILD_TYPE}}
+        working-directory: ${{github.workspace}}/build
+        # Execute tests defined by the CMake configuration.  
+        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        run: ctest -V -C ${{env.BUILD_TYPE}}
       
