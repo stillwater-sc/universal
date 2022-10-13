@@ -12,6 +12,7 @@
 
 [![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
 
+![Development Branch Status](https://github.com/stillwater-sc/universal/actions/workflows/cmake.yml/badge.svg?branch=v3.61)
 ![Regression Status](https://github.com/stillwater-sc/universal/actions/workflows/cmake.yml/badge.svg?event=push)
 
 The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point that are more efficient and mathematically robust.
