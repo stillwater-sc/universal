@@ -72,7 +72,7 @@ public:
 	void extract_exponent_bits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& rawPositBits, size_t nrRegimeBits) {
 		reset();
 		// start of exponent is nbits - (sign_bit + regime_bits)
-		int msb = static_cast<int>(nbits - 1ull - (1ull + nrRegimeBits));
+		long long msb = static_cast<int>(nbits - 1ull - (1ull + nrRegimeBits));
 		if (es > 0) {
 			size_t nrExponentBits = 0;
 			if (msb >= 0 && es > 0) {

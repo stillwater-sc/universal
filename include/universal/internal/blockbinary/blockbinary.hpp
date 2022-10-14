@@ -677,7 +677,8 @@ public:
 	constexpr bool test(size_t bitIndex) const noexcept { return at(bitIndex); }
 	constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex > nbits) return false; // fail silently as no-op
-		bt limb = _block[bitIndex / bitsInBlock];
+		size_t blockIndex = bitIndex / bitsInBlock;
+		bt limb = _block[blockIndex];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (limb & mask);
 	}

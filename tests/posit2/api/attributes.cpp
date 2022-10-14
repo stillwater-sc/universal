@@ -16,7 +16,6 @@
 #define POSIT_ERROR_FREE_IO_FORMAT 0
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/posit2/posit.hpp>
-#include <universal/common/arithmetic_traits.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 template<size_t nbits, size_t es, typename BlockType = uint32_t>
@@ -112,11 +111,32 @@ try {
 	}
 
 	{
+		std::cout << "Dynamic ranges of different specializations of an 8-bit generalized posit\n";
 		std::cout << dynamic_range< posit<8, 0> >() << '\n';
 		std::cout << dynamic_range< posit<8, 1> >() << '\n';
 		std::cout << dynamic_range< posit<8, 2> >() << '\n';
 		std::cout << dynamic_range< posit<8, 3> >() << '\n';
 		std::cout << dynamic_range< posit<8, 4> >() << '\n';
+	}
+
+	{
+		std::cout << "Dynamic ranges of the standard posit configurations\n";
+		std::cout << minmax_range< posit<  8, 2> >() << '\n';
+		std::cout << minmax_range< posit< 16, 2> >() << '\n';
+		std::cout << minmax_range< posit< 32, 2> >() << '\n';
+		std::cout << minmax_range< posit< 64, 2> >() << '\n';
+		std::cout << minmax_range< posit<128, 2> >() << '\n';
+		std::cout << minmax_range< posit<256, 2> >() << '\n';
+	}
+
+	{
+		std::cout << "Dynamic ranges of the standard posit configurations\n";
+		std::cout << symmetry< posit<  8, 2> >() << '\n';
+		std::cout << symmetry< posit< 16, 2> >() << '\n';
+		std::cout << symmetry< posit< 32, 2> >() << '\n';
+		std::cout << symmetry< posit< 64, 2> >() << '\n';
+		std::cout << symmetry< posit<128, 2> >() << '\n';
+		std::cout << symmetry< posit<256, 2> >() << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -142,3 +162,29 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+
+
+/*
+Dynamic ranges of different specializations of an 8-bit generalized posit
+sw::universal::posit<  8, 0, unsigned char> : minexp scale         -6     maxexp scale          6     minimum     0.015625     maximum           64
+sw::universal::posit<  8, 1, unsigned char> : minexp scale        -12     maxexp scale         12     minimum  0.000244141     maximum         4096
+sw::universal::posit<  8, 2, unsigned char> : minexp scale        -24     maxexp scale         24     minimum  5.96046e-08     maximum  1.67772e+07
+sw::universal::posit<  8, 3, unsigned char> : minexp scale        -48     maxexp scale         48     minimum  3.55271e-15     maximum  2.81475e+14
+sw::universal::posit<  8, 4, unsigned char> : minexp scale        -96     maxexp scale         96     minimum  1.26218e-29     maximum  7.92282e+28
+
+Dynamic ranges of the standard posit configurations
+sw::universal::posit<  8, 2, unsigned char> : min   5.96046e-08     max   1.67772e+07
+sw::universal::posit< 16, 2, unsigned char> : min   1.38778e-17     max   7.20576e+16
+sw::universal::posit< 32, 2, unsigned char> : min   7.52316e-37     max   1.32923e+36
+sw::universal::posit< 64, 2, unsigned char> : min   2.21086e-75     max   4.52313e+74
+sw::universal::posit<128, 2, unsigned char> : min  1.90934e-152     max  5.23742e+151
+sw::universal::posit<256, 2, unsigned char> : min  1.42405e-306     max  7.02224e+305
+
+Dynamic ranges of the standard posit configurations
+sw::universal::posit<  8, 2, unsigned char> : [         -1.67772e+07,         -5.96046e-08       0           5.96046e-08,          1.67772e+07]
+sw::universal::posit< 16, 2, unsigned char> : [         -7.20576e+16,         -1.38778e-17       0           1.38778e-17,          7.20576e+16]
+sw::universal::posit< 32, 2, unsigned char> : [         -1.32923e+36,         -7.52316e-37       0           7.52316e-37,          1.32923e+36]
+sw::universal::posit< 64, 2, unsigned char> : [         -4.52313e+74,         -2.21086e-75       0           2.21086e-75,          4.52313e+74]
+sw::universal::posit<128, 2, unsigned char> : [        -5.23742e+151,        -1.90934e-152       0          1.90934e-152,         5.23742e+151]
+sw::universal::posit<256, 2, unsigned char> : [        -7.02224e+305,        -1.42405e-306       0          1.42405e-306,         7.02224e+305]
+ */

@@ -610,8 +610,7 @@ public:
 			return *this;
 		}
 		posit<nbits, es, bt> negated;  // TODO: artificial initialization to pass -Wmaybe-uninitialized
-		blockbinary<nbits, bt> raw_bits = twos_complement(_block);
-		negated.setbits(raw_bits);
+		negated.setbits(twosComplement(_block));
 		return negated;
 	}
 	// prefix increment operator

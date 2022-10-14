@@ -39,7 +39,7 @@ std::string fixpnt_range(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 	s << std::setw(40) << type_tag(v) << " : [ "
 		<< fp.maxneg() << " ... "
 		<< fp.minneg() << " "
-		<< "0 "
+		<< "       0  "
 		<< fp.minpos() << " ... "
 		<< fp.maxpos() << " ]";
 	return s.str();

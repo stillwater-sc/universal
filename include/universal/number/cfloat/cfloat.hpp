@@ -50,6 +50,8 @@
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/traits/cfloat_traits.hpp>
 #include <universal/number/cfloat/numeric_limits.hpp>
+#include <universal/common/number_traits.hpp>
+#include <universal/common/arithmetic_traits.hpp>
 
 // useful functions to work with cfloats
 #include <universal/number/cfloat/attributes.hpp>

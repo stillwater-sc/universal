@@ -690,8 +690,10 @@ private:
 			//                                           lg'rs
 			//                             0b0000'0000'0001'0000'0000'0000; guard mask == 1 << srcbits - fbits - 2: 24 - 10 - 2 = 12
 			constexpr uint32_t upper = ieee754_parameter<Real>::nbits + 2;
-			constexpr uint32_t shift = srcbits - fbits - 2ull;  // srcbits includes the hidden bit, fbits does not
-			uint64_t mask = (1ull << shift);
+			constexpr int offset = fbits + 2;
+			constexpr int fullShift = srcbits - offset;  // srcbits includes the hidden bit, fbits does not
+			constexpr unsigned shift = (fullShift < 0 ? 0 : fullShift);
+			uint64_t mask = (srcbits < offset ? 0 : (1ull << shift));
 //			std::cout << "raw   : " << to_binary(raw, sizeof(StorageType)*8, true) << '\n';
 //			std::cout << "guard : " << to_binary(mask, sizeof(StorageType) * 8, true) << '\n';
 			bool guard = (mask & raw);
