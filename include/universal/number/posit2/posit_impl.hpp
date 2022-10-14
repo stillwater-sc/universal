@@ -138,7 +138,6 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 template<size_t nbits, size_t es, typename bt, size_t fbits>
 void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
 	using TwosComplementNumber = blockbinary<nbits, bt, BinaryNumberType::Signed>;
-	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
 	// check special case
 	if (raw_bits.iszero()) {
 		_sign = false;
@@ -155,16 +154,15 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	// get the exponent bits
 	// start of exponent is nbits-1 - (sign_bit + regime_bits)
 	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
-	size_t nrExponentBits = 0;
+	size_t nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<size_t>(msb + 1ll);
 	if (es > 0) {
-		UnsignedExponent _exp{ 0 };
+		_exponent.reset();
 		if (msb >= 0 && es > 0) {
-			nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<size_t>(msb + 1ll);
 			for (size_t i = 0; i < nrExponentBits; ++i) {
-				_exp.setbit(es - size_t{1} - i, tmp.at(static_cast<size_t>(msb) - i));
+				_exponent.setbit(es - size_t{1} - i, tmp.at(static_cast<size_t>(msb) - i));
 			}
 		}
-		_exponent.set(_exp, nrExponentBits);
+		_exponent.setNrBits(nrExponentBits);
 	}
 
 	// finally, set the fraction bits
@@ -316,11 +314,12 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 	}
 	else {
 		constexpr size_t pt_len = nbits + 3 + es;
-		blockbinary<pt_len, bt> pt_bits;
-		blockbinary<pt_len, bt> regime;
-		blockbinary<pt_len, bt> exponent;
-		blockbinary<pt_len, bt> fraction;
-		blockbinary<pt_len, bt> sticky_bit;
+		using BlockBinary = blockbinary<pt_len, bt, BinaryNumberType::Signed>;
+		BlockBinary pt_bits;
+		BlockBinary regime;
+		BlockBinary exponent;
+		BlockBinary fraction;
+		BlockBinary sticky_bit;
 
 		bool s = _sign;
 		int e  = _scale;
@@ -328,7 +327,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 
 		size_t run = size_t(r ? 1 + (e >> es) : -(e >> es));
 		regime.setbit(0, 1 ^ r);
-		for (size_t i = 1; i <= run; i++) regime.set(i, r);
+		for (size_t i = 1; i <= run; i++) regime.setbit(i, r);
 
 		size_t esval = e % (uint32_t(1) << es);
 		//exponent = convert_to_bitblock<pt_len>(esval);
@@ -341,35 +340,35 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
 		size_t lsb = nf <= fbits ? 0 : nf - fbits;
-		for (size_t i = lsb; i < nf; ++i) fraction[i] = fraction_in[fbits - nf + i];
+		for (size_t i = lsb; i < nf; ++i) fraction.setbit(i, fraction_in.test(fbits - nf + i));
 
-		bool sb = anyAfter(fraction_in, static_cast<int>(fbits) - 1 - int(nf));
+		bool sb = fraction_in.anyAfter(fbits - 1ull - nf);
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
 		regime <<= es + nf + 1;
 		exponent <<= nf + 1;
 		fraction <<= 1;
-		sticky_bit.set(0, sb);
+		sticky_bit.setbit(0, sb);
 
 		pt_bits |= regime;
 		pt_bits |= exponent;
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		size_t len = 1 + std::max<size_t>((nbits + 1), (2 + run + es));
+		size_t len = 1 + std::max<size_t>((nbits + 1ull), (2 + run + es));
 		bool blast = pt_bits.test(len - nbits);
-		bool bafter = pt_bits.test(len - nbits - 1);
-		bool bsticky = anyAfter(pt_bits, int(len) - static_cast<int>(nbits) - 1 - 1);
+		bool bafter = pt_bits.test(len - nbits - 1ull);
+		bool bsticky = pt_bits.anyAfter(len - nbits - 1ull - 1ull);
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
 
 		blockbinary<nbits, bt> ptt;
 		pt_bits <<= pt_len - len;
 		truncate(pt_bits, ptt);
-		if (rb) increment_bitset(ptt);
-		if (s) ptt = twos_complement(ptt);
-		p.setBitblock(ptt);
+		if (rb) ++ptt;
+		if (s) ptt = ptt.twosComplement();
+		p.setbits(ptt);
 	}
 	return p;
 }
@@ -388,9 +387,9 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 		p.setnar();
 		return p;
 	}
-	return convert_<nbits, es, bt, fbits+2>(v.sign(), v.scale(), v.fraction(), p);
+	return convert_<nbits, es, bt, fbits + 2>(v.sign(), v.scale(), v.fraction(), p);
 }
-	
+
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
 template<size_t nbits, size_t es, typename bt>
 std::string quadrant(const posit<nbits, es, bt>& p) {
@@ -417,7 +416,7 @@ std::string quadrant(const posit<nbits, es, bt>& p) {
 
 // Construct posit from its components
 template<size_t nbits, size_t es, typename bt, size_t fbits>
-posit<nbits, es, bt>& construct(bool s, const regime<nbits, es, bt>& r, const exponent<nbits, es, bt>& e, const fraction<fbits, bt>& f, posit<nbits,es, bt>& p) {
+posit<nbits, es, bt>& construct(bool s, const regime<nbits, es, bt>& r, const exponent<nbits, es, bt>& e, const fraction<fbits, bt>& f, posit<nbits, es, bt>& p) {
 	// generate raw bit representation
 	blockbinary<nbits, bt> _block = s ? twos_complement(collect(s, r, e, f)) : collect(s, r, e, f);
 	_block.set(nbits - 1, s);
@@ -581,7 +580,8 @@ public:
 #if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION posit(long double initial_value)  noexcept : _block{ 0 } { *this = initial_value; }
 	CONSTEXPRESSION posit& operator=(long double rhs) noexcept { return convert_ieee754(rhs); }
-	explicit operator long double() const noexcept { return to_native<long double>(); }
+	// TODO: we need this regardless as the design marshalls values through long double
+	// explicit operator long double() const noexcept { return to_native<long double>(); }
 #endif
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
@@ -910,11 +910,12 @@ public:
 	}
 
 	// make conversions to native types explicit
-	explicit operator int()       const noexcept { return to_native<float>()(); }
-	explicit operator long()      const noexcept { return to_native<double>(); }
-	explicit operator long long() const noexcept { return to_native<long double>(); }
-	explicit operator float()     const noexcept { return to_native<float>(); }
-	explicit operator double()    const noexcept { return to_native<double>(); }
+	explicit operator int()         const noexcept { return to_native<float>()(); }
+	explicit operator long()        const noexcept { return to_native<double>(); }
+	explicit operator long long()   const noexcept { return to_native<long double>(); }
+	explicit operator float()       const noexcept { return to_native<float>(); }
+	explicit operator double()      const noexcept { return to_native<double>(); }
+	explicit operator long double() const noexcept { return to_native<long double>(); }
 
 	// Selectors
 	constexpr bool sign() const noexcept { return _block.test(nbits - 1); }
@@ -989,8 +990,7 @@ public:
 		_block.flip();
 		return *this;
 	}
-	// set maxneg value
-	inline constexpr posit& maxneg() {
+	constexpr posit& maxneg() noexcept {
 		_block.clear();
 		_block.setbit(nbits - 1);
 		_block.setbit(0);
@@ -998,7 +998,7 @@ public:
 	}
 
 	// set the posit bits explicitely
-	constexpr posit<nbits, es, bt>& setbits(const blockbinary<nbits, bt>& block) {
+	constexpr posit<nbits, es, bt>& setbits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& block) {
 		_block = block;
 		return *this;
 	}

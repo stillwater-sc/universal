@@ -194,7 +194,12 @@ public:
 	}
 
 	/// logic operators
-	// none
+	constexpr bool anyAfter(size_t bitIndex) const noexcept {  // TODO: optimize for limbs
+		if (bitIndex < nbits) {
+			for (size_t i = 0; i < bitIndex; ++i) if (test(i)) return true;
+		}
+		return false;
+	}
 
 	/// arithmetic operators
 

@@ -9,8 +9,8 @@
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
 #endif
-#include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
-#include <universal/common/numeric_limits_utility.hpp>
+#include <universal/common/arithmetic_traits.hpp>
+#include <universal/common/number_traits.hpp>
 #include <universal/verification/performance_runner.hpp>
 #include <universal/verification/test_suite.hpp>
 

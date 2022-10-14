@@ -1,10 +1,10 @@
-// numeric_limits.cpp: test suite runner of the numeric_limits specialization for posits
+// numeric_traits.cpp: test suite runner of the numeric_limits specialization for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
+#include <universal/common/arithmetic_traits.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 

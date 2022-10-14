@@ -16,6 +16,7 @@
 #define POSIT_ERROR_FREE_IO_FORMAT 0
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/posit2/posit.hpp>
+#include <universal/common/arithmetic_traits.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 template<size_t nbits, size_t es, typename BlockType = uint32_t>
@@ -111,13 +112,16 @@ try {
 	}
 
 	{
-	//	std::cout << dynamic_range<8, 0>() << '\n';   TODO: how do you deal with es == 0 in the exponent class?
-		std::cout << dynamic_range<8, 1>() << '\n';
-		std::cout << dynamic_range<8, 2>() << '\n'; 
-		std::cout << dynamic_range<8, 3>() << '\n';
-		std::cout << dynamic_range<8, 4>() << '\n';
+		std::cout << dynamic_range< posit<8, 0> >() << '\n';
+		std::cout << dynamic_range< posit<8, 1> >() << '\n';
+		std::cout << dynamic_range< posit<8, 2> >() << '\n';
+		std::cout << dynamic_range< posit<8, 3> >() << '\n';
+		std::cout << dynamic_range< posit<8, 4> >() << '\n';
 	}
 
+	{
+
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

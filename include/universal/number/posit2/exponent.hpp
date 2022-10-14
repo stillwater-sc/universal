@@ -17,9 +17,9 @@ static constexpr int ARITHMETIC_ROUNDING    =  5;
 // exponent
 template<size_t nbits, size_t es, typename bt>
 class exponent {
-	using UnsignedExponent = blockbinary<es, bt, BinaryNumberType::Unsigned>;
+	constexpr static std::uint32_t MASK = (0xFFFF'FFFFul >> (31ul - es)) >> 1ul;
 public:
-	exponent() : _Bits{}, _NrOfBits{ es } {}
+	exponent() : _expBits{ 0 }, _nrExpBits{ es } {}
 	
 	exponent(const exponent& r) = default;
 	exponent(exponent&& r) = default;
@@ -28,120 +28,75 @@ public:
 	exponent& operator=(exponent&& r) = default;
 	
 	void reset() {
-		_NrOfBits = 0;
-		_Bits.clear();
+		_nrExpBits = 0;
+		_expBits = 0;
 	}
 	void setzero() { reset(); }
 	size_t nrBits() const noexcept {
-		return _NrOfBits;
+		return _nrExpBits;
 	}
 	int scale() const noexcept {
-		return int(_Bits);
+		return int(_expBits);
 	}
 	long double value() const noexcept {
-		return (long double)(uint64_t(1) << scale());
+		return (long double)(uint64_t(1) << _expBits);
 	}
-	blockbinary<es, bt, BinaryNumberType::Unsigned> bits() const noexcept {
-		return _Bits;
+	std::uint32_t bits() const noexcept {
+		return _expBits;
 	}
-	void set(const UnsignedExponent& raw, size_t nrExponentBits) {
-		_Bits = raw;
-		_NrOfBits = nrExponentBits;
+	void set(const std::uint32_t& raw, size_t nrExponentBits) {
+		_expBits = raw & MASK;
+		_nrExpBits = nrExponentBits;
 	}
-	
+	void setNrBits(std::uint32_t nrExpBits) noexcept {
+		_nrExpBits = nrExpBits;
+	}
+	constexpr void setbit(size_t i, bool v = true) noexcept {
+		if (i < es) {
+			std::uint32_t block = _expBits;
+			std::uint32_t null = ~(1ull << i);
+			std::uint32_t bit = std::uint32_t(v ? 1u : 0u);
+			std::uint32_t mask = std::uint32_t(bit << i);
+			_expBits = std::uint32_t((block & null) | mask);
+		}
+		// nop if out of range
+	}
+	constexpr bool test(size_t i) const noexcept {
+		if (i < es) {
+			std::uint32_t mask = std::uint32_t(1ul << i);
+			return bool(_expBits & mask);
+		}
+		return false; // nop if out of range
+	}
 	// extract the exponent bits given a pattern and the location of the starting point
 	void extract_exponent_bits(const blockbinary<nbits, bt, BinaryNumberType::Signed>& rawPositBits, size_t nrRegimeBits) {
-		_Bits.clear();
+		reset();
 		// start of exponent is nbits - (sign_bit + regime_bits)
-		int msb = int(static_cast<int>(nbits) - 1ull - (1ull + nrRegimeBits));
+		int msb = static_cast<int>(nbits - 1ull - (1ull + nrRegimeBits));
 		if (es > 0) {
 			size_t nrExponentBits = 0;
-			blockbinary<es, bt, BinaryNumberType::Unsigned> _exp{0};
 			if (msb >= 0 && es > 0) {
-				nrExponentBits = (static_cast<size_t>(msb) >= es - 1ull ? es : static_cast<size_t>(msb) + 1ull);
+				nrExponentBits = (static_cast<size_t>(msb) >= es - 1ull ? es : static_cast<size_t>(msb + 1));
 				for (size_t i = 0; i < nrExponentBits; i++) {
-					_exp.setbit(es - 1 - i, rawPositBits.at(msb - i));
+					setbit(es - 1 - i, rawPositBits.at(msb - i));
 				}
 			}
-			set(_exp, nrExponentBits);
+			setNrBits(nrExponentBits);
 		}
 	}
 
-	// calculate the exponent given a number's scale: esval = Mod[scale, 2^es];
-	// DEPRECATED
-	void _assign(int scale) {
-		_Bits.clear();
-		unsigned int my_exponent = (scale < 0) ? (-scale >> es) : (scale >> es);
-		// convert value into bitset
-		uint32_t mask = uint32_t(1);  // es will be small, so pick a single word sized mask for efficiency
-		for (unsigned i = 0; i < es; i++) {
-			_Bits[i] = my_exponent & mask;
-			mask <<= 1;
-		}
-	}
-	// calculate the exponent given a number's scale and the number of regime bits, 
-	// returning an indicator which type of rounding is required to complete the posit
-	// DEPRECATED
-	int assign_exponent_bits(int scale, int k, size_t nrRegimeBits) {
-		int rounding_mode = NO_ADDITIONAL_ROUNDING;
-		_Bits.clear();
-		// we need to get to an adjusted scale that encodes regime and exponent
-		// value scale = useed ^ k * 2 ^ exponent = 2^(k*2^es) * 2^e -> k*2^es + e
-		// e = scale - k*2^es
-		int raw = scale - k*(1 << es);
-		size_t my_exponent = raw < 0 ? -raw : raw;
-		// convert value into bitset
-		size_t mask = 0x1;
-		for (unsigned i = 0; i < es; i++) {
-			_Bits[i] = my_exponent & mask;
-			mask <<= 1;
-		}
-		_NrOfBits = (nbits - 1 - nrRegimeBits > es ? es : nbits - 1 - nrRegimeBits);
-		if (_NrOfBits > 0) {
-			if (_NrOfBits < es) {
-				rounding_mode = _Bits[es - 1 - _NrOfBits] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
-				if (_trace_rounding) std::cout << "truncated exp" << (rounding_mode == GEOMETRIC_ROUND_UP ? " geo-up " : " geo-dw ");
-			}
-			else {
-				if (nbits - 1 - nrRegimeBits - es > 0) {
-					// use the fraction to determine rounding as this posit has fraction bits
-					rounding_mode = ARITHMETIC_ROUNDING;
-					if (_trace_rounding) std::cout << "arithmetic  rounding ";
-
-				}
-				else {
-					// this posit is in the geometric regime and has consumed all the bits
-					rounding_mode = ARITHMETIC_ROUNDING; //  NO_ADDITIONAL_ROUNDING;
-					if (_trace_rounding) std::cout << "no rounding alltaken ";
-				}
-			}
-		}
-		else {
-			// we ran out of bits
-			if (es > 0) {
-				rounding_mode = _Bits[es-1] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
-				if (_trace_rounding) std::cout << "no exp left: " << (rounding_mode == GEOMETRIC_ROUND_UP ? " geo-up " : " geo-dw ");
-			}
-			else {
-				// this posit doesn't have an exponent field, 
-				// so we need to look at the fraction to see if we need to round up or down
-				rounding_mode = ARITHMETIC_ROUNDING;
-				if (_trace_rounding) std::cout << "ar rounding no e field ";
-			}
-		}
-		return rounding_mode;
-	}
-
-	bool increment() {
+	bool increment() noexcept {
 		bool carry = false;
-		if (es > 0) {
-			carry = increment_unsigned(_Bits, es);
+		if constexpr (es > 0) {
+			++_expBits;
+			if (_expBits & (1ul << es)) carry = true;
 		}
 		return carry;
 	}
+
 private:
-	blockbinary<es, bt, BinaryNumberType::Unsigned>    _Bits;
-	size_t			_NrOfBits;
+	std::uint32_t _expBits;
+	std::uint32_t _nrExpBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees, typename bbt>
@@ -171,9 +126,10 @@ template<size_t nbits, size_t es, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es, bt>& e) {
 	size_t nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
-		for (int i = int(es) - 1; i >= 0; --i) {
-			if (e._NrOfBits > nrOfExponentBitsProcessed++) {
-				ostr << (e._Bits[size_t(i)] ? "1" : "0");
+		for (size_t i = 0; i < es; ++i) {
+			size_t bitIndex = es - 1ull - i;
+			if (e._nrExpBits > nrOfExponentBitsProcessed++) {
+				ostr << (e.test(bitIndex) ? "1" : "0");
 			}
 			else {
 				ostr << "-";

@@ -1,6 +1,6 @@
 // priest.cpp: experiments with Douglas Priest arbitrary precision floating-point arithmetic
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -9,8 +9,8 @@
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
 #endif
-#include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
-#include <universal/common/numeric_limits_utility.hpp>
+#include <universal/common/arithmetic_traits.hpp>
+#include <universal/common/number_traits.hpp>
 #include <universal/verification/performance_runner.hpp>
 
 // select the number systems we would like to compare

@@ -792,7 +792,7 @@ private:
 		constexpr size_t sizeInBits = 8 * sizeof(Ty);
 		uint64_t shift = sizeInBits - int64_t(_scale) - 1;
 		raw <<= shift;
-		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);
+		uint64_t rounded_bits = round<sizeInBits, uint64_t>(raw);  // TODO: there is something wrong here: that second template param only supports float types
 		switch (op) {
 		case BlockTripleOperator::ADD:
 			_significant.setradix(fbits);

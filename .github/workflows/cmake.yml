@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows-latest, macos-latest, ubuntu-latest ] 
-        compiler: [ latest, gcc-9, gcc-10, g++-11, clang, clang-11, clang++-12 ]
+        compiler: [ latest, gcc-9, gcc-10, g++-11, clang-9, clang-11, clang++-12 ]
         exclude:
           - os: windows-latest
             compiler: gcc-9
@@ -32,19 +32,23 @@ jobs:
           - os: windows-latest
             compiler: g++-11
           - os: windows-latest
-            compiler: clang
+            compiler: clang-9
           - os: windows-latest
             compiler: clang-11
           - os: windows-latest
             compiler: clang++-12
-          - os: macos-latest
-            compiler: latest
           - os: macos-latest
             compiler: gcc-9
           - os: macos-latest
             compiler: gcc-10
           - os: macos-latest
             compiler: g++-11
+          - os: macos-latest
+            compiler: clang-9
+          - os: macos-latest
+            compiler: clang-11
+          - os: macos-latest
+            compiler: clang++-12
           - os: ubuntu-latest
             compiler: latest
           - os: ubuntu-latest

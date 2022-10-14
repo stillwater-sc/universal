@@ -67,6 +67,16 @@ blockbinary<nbits, BlockType, NumberType> twosComplement(const blockbinary<nbits
 	return twosC;
 }
 
+// Truncate a bigger posit to fit in a smaller
+template<size_t srcbits, size_t tgtbits, typename bt, BinaryNumberType nt>
+void truncate(const blockbinary<srcbits, bt, nt>& src, blockbinary<tgtbits, bt, nt>& tgt) {
+	static_assert(tgtbits < srcbits, "truncate requires source posit to be bigger than target posit");
+	constexpr size_t diff = srcbits - tgtbits;
+	for (size_t i = 0; i < tgtbits; ++i) { // TODO: optimize for limbs
+		tgt.setbit(i, src.test(i + diff));
+	}
+}
+
 /*
 NOTES
 
@@ -108,7 +118,7 @@ public:
 	blockbinary(const blockbinary<nnbits, BlockType, NumberType>& rhs) { this->assign(rhs); }
 
 	// specific value constructor
-	constexpr blockbinary(const SpecificValue code) : _block{ 0 } {
+	constexpr blockbinary(const SpecificValue code) : _block{} {
 		switch (code) {
 		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
@@ -373,6 +383,32 @@ public:
 		}
 		return *this;
 	}
+	
+	///////////////////////////////////////////////////////////////////
+	///              logic operators
+
+	blockbinary& operator|=(const blockbinary& rhs) noexcept {
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] |= bt(~_block[i]);
+		}
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+	blockbinary& operator&=(const blockbinary& rhs) noexcept {
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] &= bt(~_block[i]);
+		}
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+	blockbinary& operator^=(const blockbinary& rhs) noexcept {
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] ^= bt(~_block[i]);
+		}
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+
 	// shift left operator
 	blockbinary& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
@@ -478,8 +514,10 @@ public:
 		return *this;
 	}
 
-	// modifiers
-	 // clear a block binary number
+
+	///////////////////////////////////////////////////////////////////
+	///                  modifiers
+
 	constexpr void clear() noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(0ull);
@@ -617,6 +655,13 @@ public:
 		if (_block[MSU] || MSU_MASK) return true;
 		return false;
 	}
+	constexpr bool anyAfter(size_t bitIndex) const noexcept {  // TODO: optimize for limbs
+		if (bitIndex < nbits) {
+			for (size_t i = 0; i < bitIndex; ++i) if (test(i)) return true;
+		}
+		return false;
+	}
+
 	constexpr bool none() const noexcept {
 		if constexpr (nrBlocks > 1) for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != 0) return false;
 		if (_block[MSU] & MSU_MASK) return false;
