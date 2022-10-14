@@ -11,15 +11,15 @@ namespace sw { namespace universal {
 
 using namespace sw::universal::internal;
 
-// calculate exponential scale of useed
-template<size_t es>
-constexpr size_t useed_scale() {
-	return (size_t(1) << es);
-}
 
 template<size_t es>
 constexpr size_t useed() {
 	return size_t(1) << (size_t(1) << es);
+}
+
+template<size_t es>
+constexpr size_t useed_scale() {
+	return (size_t(1) << es);
 }
 
 // calculate exponential scale of maxpos
@@ -176,38 +176,5 @@ inline int exponent_scale(const posit<nbits, es, bt>& p) {
 
 
 //////////////////////////////////////////////////////////////////////////
-
-// report dynamic range of a type, specialized for a posit
-template<size_t nbits, size_t es>
-std::string dynamic_range() {
-	posit<nbits, es, std::uint32_t> p;
-	return dynamic_range(p);
-}
-
-// report the dynamic range of the type associated with a value
-template<size_t nbits, size_t es, typename bt>
-std::string dynamic_range(const posit<nbits, es, bt>& p) {
-	std::stringstream str;
-	posit<nbits, es, bt> v(p);
-	str << type_tag(v) << '\n';
-	str << "useed scale  " << std::setw(4) << useed_scale<es>() << "     ";
-	str << "minpos scale " << std::setw(10) << v.minpos().scale() << "     ";
-	str << "maxpos scale " << std::setw(10) << v.maxpos().scale();
-	return str.str();
-}
-
-// report the dynamic range of a posit
-template<size_t nbits, size_t es, typename bt>
-std::string posit_range() {
-	std::stringstream str;
-	posit<nbits, es, bt> p;
-	str << type_tag(p) << '\n';
-	str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
-	str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
-	str << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::min() << "     ";
-	str << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::max();
-	return str.str();
-}
 
 }} // namespace sw::universal

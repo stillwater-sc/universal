@@ -119,10 +119,6 @@ try {
 		std::cout << dynamic_range< posit<8, 4> >() << '\n';
 	}
 
-	{
-
-	}
-
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
