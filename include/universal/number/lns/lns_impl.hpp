@@ -48,8 +48,10 @@ lns<nbits, rbits, bt, xtra...>& maxneg(lns<nbits, rbits, bt, xtra...>& lmaxneg) 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
 template<size_t _nbits, size_t _rbits, typename bt = uint8_t, auto... xtra>
 class lns {
-	static_assert(_nbits > _rbits, "rbits parameter is larger than available fraction bits");
+	static_assert(_nbits > _rbits, "configuration not supported: not enough integer bits");
 	static_assert( sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported" );
+	static_assert(_nbits - _rbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
+	static_assert(_rbits < 64, "configuration not supported: scaling factor is > 2^64");
 public:
 	using BlockType = bt;
 
@@ -71,10 +73,10 @@ public:
 	static constexpr bool     SPECIAL_BITS_TOGETHER = (nbits > ((nrBlocks - 1) * bitsInBlock + 1));
 	static constexpr bt       MSU_ZERO = MSB_BIT_MASK;
 	static constexpr bt       MSU_NAN = SIGN_BIT_MASK | MSU_ZERO;  // only valid when special bits together is true
-	static constexpr int      maxShift = int(nbits) - int(rbits) - 2;
+	static constexpr int64_t  maxShift = int(nbits) - int(rbits) - 2;
 	static constexpr size_t   leftShift = (maxShift < 0) ? 0 : maxShift;
-	static constexpr int      min_exponent = (maxShift > 0) ? (-(1 << leftShift)) : 0;
-	static constexpr int      max_exponent = (maxShift > 0) ? (1 << leftShift) - 1 : 0;
+	static constexpr int64_t  min_exponent = (maxShift > 0) ? (-(1ll << leftShift)) : 0;
+	static constexpr int64_t  max_exponent = (maxShift > 0) ? (1ll << leftShift) - 1 : 0;
 
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + lns exponent
 	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the lns exponent

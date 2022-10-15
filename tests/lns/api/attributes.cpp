@@ -16,6 +16,10 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/test_reporters.hpp>
 
+// bring in the trait functions
+#include <universal/common/arithmetic_traits.hpp>
+#include <universal/common/number_traits.hpp>
+
 int main()
 try {
 	using namespace sw::universal;
@@ -52,6 +56,18 @@ try {
 		std::cout << symmetry< lns<16, 8> >() << '\n';
 		std::cout << symmetry< lns<24,12> >() << '\n';
 		std::cout << symmetry< lns<32,16> >() << '\n';
+	}
+
+	{
+		std::cout << "Number traits\n";
+		numberTraits< lns<32, 16> >(std::cout);
+		std::cout << '\n';
+	}
+
+	{
+		std::cout << "Comparitive Number traits\n";
+		compareNumberTraits< lns<24, 12>, lns<32, 16> >(std::cout);
+		std::cout << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -19,7 +19,8 @@ try {
 
 	std::streamsize precision = std::cout.precision();
 
-	numberTraits<int16_t>(std::cout);
+	numberTraits<short>(std::cout);
+	numberTraits<unsigned>(std::cout);
 	numberTraits<float>(std::cout);
 	numberTraits<posit<32, 2>>(std::cout);
 

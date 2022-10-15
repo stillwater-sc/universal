@@ -26,6 +26,7 @@ void numberTraits(std::ostream& ostr) {
 	ostr << "infinity           " << setw(ColumnWidth) << numeric_limits<Scalar>::infinity() << '\n';
 	ostr << "quiet_NAN          " << setw(ColumnWidth) << numeric_limits<Scalar>::quiet_NaN() << '\n';
 	ostr << "signaling_NAN      " << setw(ColumnWidth) << numeric_limits<Scalar>::signaling_NaN() << '\n';
+	ostr << '\n';
 }
 
 // compare numeric_limits of two Real types
@@ -48,6 +49,7 @@ void compareNumberTraits(std::ostream& ostr) {
 	ostr << "infinity        " << setw(ColumnWidth) << numeric_limits< Type1 >::infinity() << " vs " << setw(ColumnWidth) << numeric_limits< Type2 >::infinity() << '\n';
 	ostr << "quiet_NAN       " << setw(ColumnWidth) << numeric_limits< Type1 >::quiet_NaN() << " vs " << setw(ColumnWidth) << numeric_limits< Type2 >::quiet_NaN() << '\n';
 	ostr << "signaling_NAN   " << setw(ColumnWidth) << numeric_limits< Type1 >::signaling_NaN() << " vs " << setw(ColumnWidth) << numeric_limits< Type2 >::signaling_NaN() << '\n';
+	ostr << '\n';
 }
 
 

@@ -44,8 +44,6 @@
 #include <universal/number/lns/lns_impl.hpp>
 #include <universal/number/lns/lns_traits.hpp>
 #include <universal/number/lns/numeric_limits.hpp>
-#include <universal/common/number_traits.hpp>
-#include <universal/common/arithmetic_traits.hpp>
 
 // useful functions to work with logarithmic numbers
 #include <universal/number/lns/manipulators.hpp>

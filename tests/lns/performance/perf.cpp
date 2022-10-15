@@ -180,21 +180,28 @@ namespace sw::universal::internal {
 		PerformanceRunner("lns< 16, 5, uint16_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 16,  5, uint16_t> >, NR_OPS);
 		PerformanceRunner("lns< 32, 8, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 32,  8, uint32_t> >, NR_OPS);
 		PerformanceRunner("lns< 64,11, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns<128, 15, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("lns< 96,32, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 96, 32, uint32_t> >, NR_OPS);
+
+		// an lns<128,rbits> is always going to be too big to represent exponents in 64bit native
+		//PerformanceRunner("lns<128,15, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns<128, 15, uint32_t> >, NR_OPS / 2);
 
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("lns<  8, 2, uint8_t >  multiplication", MultiplicationWorkload< lns<  8,  2, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns< 16, 5, uint16_t>  multiplication", MultiplicationWorkload< lns< 16,  5, uint16_t> >, NR_OPS);
 		PerformanceRunner("lns< 32, 8, uint32_t>  multiplication", MultiplicationWorkload< lns< 32,  8, uint32_t> >, NR_OPS);
 		PerformanceRunner("lns< 64,11, uint32_t>  multiplication", MultiplicationWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  multiplication", MultiplicationWorkload< lns<128, 15, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 96,32, uint32_t>  add/subtract  ", MultiplicationWorkload< lns< 96, 32, uint32_t> >, NR_OPS);
+		// configuration too big
+		//PerformanceRunner("lns<128,15, uint32_t>  multiplication", MultiplicationWorkload< lns<128, 15, uint32_t> >, NR_OPS);
 
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("lns<  8, 2, uint8_t >  division      ", DivisionWorkload< lns<  8,  2, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns< 16, 5, uint16_t>  division      ", DivisionWorkload< lns< 16,  5, uint16_t> >, NR_OPS);
 		PerformanceRunner("lns< 32, 8, uint32_t>  division      ", DivisionWorkload< lns< 32,  8, uint32_t> >, NR_OPS);
 		PerformanceRunner("lns< 64,11, uint32_t>  division      ", DivisionWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  division      ", DivisionWorkload< lns<128, 15, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 96,32, uint32_t>  add/subtract  ", DivisionWorkload< lns< 96, 32, uint32_t> >, NR_OPS);
+		// configuration too big
+		//PerformanceRunner("lns<128,15, uint32_t>  division      ", DivisionWorkload< lns<128, 15, uint32_t> >, NR_OPS);
 	}
 
 	/*

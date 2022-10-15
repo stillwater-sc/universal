@@ -4,7 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
-#include <universal/common/arithmetic_traits.hpp>
 
 // select the number systems we would like to compare
 #include <universal/number/integer/integer.hpp>
@@ -14,6 +13,11 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/valid/valid.hpp>
+
+// bring in the trait functions
+#include <universal/common/arithmetic_traits.hpp>
+#include <universal/common/number_traits.hpp>
+
 
 //constexpr long double pi     = 3.14159265358979323846;
 //constexpr long double e      = 2.71828182845904523536;

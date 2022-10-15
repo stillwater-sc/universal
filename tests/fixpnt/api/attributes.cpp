@@ -16,6 +16,10 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_reporters.hpp>
 
+// bring in the trait functions
+#include <universal/common/arithmetic_traits.hpp>
+#include <universal/common/number_traits.hpp>
+
 int main()
 try {
 	using namespace sw::universal;
@@ -58,6 +62,18 @@ try {
 		std::cout << symmetry< fixpnt< 64, 32> >() << '\n';
 		std::cout << symmetry< fixpnt<128, 64> >() << '\n';
 		std::cout << symmetry< fixpnt<256,128> >() << '\n';
+	}
+
+	{
+		std::cout << "Number traits\n";
+		numberTraits< fixpnt<32, 16> >(std::cout);
+		std::cout << '\n';
+	}
+
+	{
+		std::cout << "Comparitive Number traits\n";
+		compareNumberTraits< fixpnt<24, 12>, fixpnt<24, 16> >(std::cout);
+		std::cout << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

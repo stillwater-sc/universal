@@ -340,12 +340,9 @@ void ReportPositScales() {
 	std::cout << std::endl;
 
 	std::cout << "IEEE float configurations from numeric_limits<Ty>" << std::endl;
-	float f(0.0f);
-	std::cout << dynamic_range(f) << std::endl;
-	double d(0.0);
-	std::cout << dynamic_range(d) << std::endl;
-	long double ld(0.0l);
-	std::cout << dynamic_range(ld) << std::endl;
+	std::cout << dynamic_range<float>() << std::endl;
+	std::cout << dynamic_range<double>() << std::endl;
+	std::cout << dynamic_range<long double>() << std::endl;
 }
 
 // enumerate and validate scales

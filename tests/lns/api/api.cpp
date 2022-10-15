@@ -116,7 +116,6 @@ try {
 		std::cout << dynamic_range(lns<8, 4>()) << '\n';
 		std::cout << dynamic_range(lns<8, 5>()) << '\n';
 		std::cout << dynamic_range(lns<8, 6>()) << '\n';
-		std::cout << dynamic_range(lns<8, 7>()) << '\n';
 	}
 
 	std::cout << "+---------    comparison to classic floats   --------+\n";

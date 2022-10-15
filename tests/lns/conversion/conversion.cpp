@@ -333,14 +333,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 0, std::uint8_t>(reportTestCases), "lns<4,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 1, std::uint8_t>(reportTestCases), "lns<4,1>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 2, std::uint8_t>(reportTestCases), "lns<4,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 3, std::uint8_t>(reportTestCases), "lns<4,3>", test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 0, std::uint8_t>(reportTestCases), "lns<6,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 1, std::uint8_t>(reportTestCases), "lns<6,1>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 2, std::uint8_t>(reportTestCases), "lns<6,2>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 3, std::uint8_t>(reportTestCases), "lns<6,3>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 4, std::uint8_t>(reportTestCases), "lns<6,4>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 5, std::uint8_t>(reportTestCases), "lns<6,5>", test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 0, std::uint8_t>(reportTestCases), "lns<8,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 1, std::uint8_t>(reportTestCases), "lns<8,1>", test_tag);
@@ -349,8 +347,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 4, std::uint8_t>(reportTestCases), "lns<8,4>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 5, std::uint8_t>(reportTestCases), "lns<8,5>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 6, std::uint8_t>(reportTestCases), "lns<8,6>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 7, std::uint8_t>(reportTestCases), "lns<8,7>", test_tag);
-
 
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 0, std::uint8_t>(reportTestCases), "lns<9,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 1, std::uint8_t>(reportTestCases), "lns<9,1>", test_tag);
@@ -360,7 +356,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 5, std::uint8_t>(reportTestCases), "lns<9,5>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 6, std::uint8_t>(reportTestCases), "lns<9,6>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 7, std::uint8_t>(reportTestCases), "lns<9,7>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 8, std::uint8_t>(reportTestCases), "lns<9,8>", test_tag);
 
 
 #endif

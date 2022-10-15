@@ -16,6 +16,10 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 
+// bring in the trait functions
+#include <universal/common/arithmetic_traits.hpp>
+#include <universal/common/number_traits.hpp>
+
 int main()
 try {
 	using namespace sw::universal;
@@ -73,6 +77,19 @@ try {
 		std::cout << symmetry< cfloat<32, 8, std::uint32_t, true, false, false> >() << '\n';
 		std::cout << symmetry< cfloat<32, 8, std::uint32_t, false, true, false> >() << '\n';
 		std::cout << symmetry< cfloat<32, 8, std::uint32_t, true, true, false> >() << '\n';
+	}
+
+	{
+		std::cout << "Number traits\n";
+		numberTraits< cfloat<32, 8, std::uint32_t, false, false, false> >(std::cout);  // FP32
+		numberTraits< cfloat<32, 8, std::uint32_t, true, false, false> >(std::cout);   // IEEE-754
+		std::cout << '\n';
+	}
+
+	{
+		std::cout << "Comparitive Number traits\n";
+		compareNumberTraits< cfloat<8, 2>, cfloat<8, 4> >(std::cout);
+		std::cout << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

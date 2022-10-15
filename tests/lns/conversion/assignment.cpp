@@ -64,8 +64,6 @@ void SampleTest(Real v) {
 	std::cout << to_binary(lns<8, 4>(v)) << " : " << lns<8, 4>(v) << '\n';
 	std::cout << to_binary(lns<8, 5>(v)) << " : " << lns<8, 5>(v) << '\n';
 	std::cout << to_binary(lns<8, 6>(v)) << " : " << lns<8, 6>(v) << '\n';
-	std::cout << to_binary(lns<8, 7>(v)) << " : " << lns<8, 7>(v) << '\n';
-	// std::cout << to_binary(lns<8, 8>(v)) << " : " << lns<8, 8>(v) << '\n';
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override

@@ -43,8 +43,6 @@
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 #include <universal/number/fixpnt/numeric_limits.hpp>
-#include <universal/common/number_traits.hpp>
-#include <universal/common/arithmetic_traits.hpp>
 
 // useful functions to work with fixpnts
 #include <universal/number/fixpnt/attributes.hpp>

@@ -29,7 +29,6 @@ namespace sw { namespace universal {
 	template<typename Ty>
 	std::string symmetry() {
 		std::stringstream str;
-		Ty v(0);
 		constexpr unsigned WIDTH = 20;
 		str << std::setw(30) << type_tag(Ty());
 		str << " : ";
@@ -47,15 +46,8 @@ namespace sw { namespace universal {
 	// report the dynamic range of a number system type
 	template<typename Ty>
 	std::string dynamic_range() {
-		Ty v(0);
-		return dynamic_range(v);
-	}
-
-	// report the dynamic range of the type astrociated with a value
-	template<typename Ty>
-	std::string dynamic_range(Ty& v) {
 		std::stringstream str;
-		str << std::setw(30) << type_tag(v);
+		str << std::setw(30) << type_tag(Ty());
 		str << " : ";
 		str << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
 		str << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
