@@ -148,6 +148,9 @@ public:
 		return *this;
 	}
 
+	
+
+
 	// modifiers
 	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
 	inline void resize(size_t m, size_t n) { _m = m; _n = n; data.resize(m * n); }
@@ -393,4 +396,30 @@ matrix<Scalar> operator>(const matrix<Scalar>& A, const Scalar& x) {
 	return B;
 }
  
+
+// maxelement (jq 2022-10-15)
+template<typename Scalar>
+void maxelement(const matrix<Scalar>&A) {
+	auto x = abs(A(0,0));
+	for (size_t i = 0; i < num_rows(A); ++i) {
+		for (size_t j = 0; j < num_cols(A); ++j) {
+			x = (abs(A(i, j)) > x) ? abs(A(i, j)) : x;
+		}
+	}
+	std::cout << "Max. Element = " << x << std::endl;
+}
+
+// minelement (jq 2022-10-15)
+template<typename Scalar>
+void minelement(const matrix<Scalar>&A) {
+	auto x = abs(A(0,0));
+	for (size_t i = 0; i < num_rows(A); ++i) {
+		for (size_t j = 0; j < num_cols(A); ++j) {
+			x = (abs(A(i, j)) < x && A(i,j)!=0) ? abs(A(i, j)) : x;
+		}
+	}
+	std::cout << "Min. Element = " << x << std::endl;
+}
+
+
 }}} // namespace sw::universal::blas

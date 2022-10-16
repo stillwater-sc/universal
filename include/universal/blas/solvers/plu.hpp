@@ -71,11 +71,12 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
 
             // Is there a minpos for Scalar?  including double etc.
             L(k,i) = U(k,i) / U(i,i);
-            //std::cout << "L(k,i) = " << L(k,i) << '\n';
+            // std::cout << "L("<<k<<","<<i<<") = " << L(k,i) << '\n';
             for (size_t j = i; j < n; ++j){
                 U(k,j) = U(k,j) - L(k,i)*U(i,j);
-                //std::cout << "U(k,i) = " << (U(i,j)/U(i,i))*L(k,j) << '\n';
+                //std::cout << "U("<<k<<","<<i<<") = " << (U(i,j)/U(i,i))*L(k,j) << '\n';
             }
+            // std::cout << "U = " << U << '\n';
         }
     }
     U = triu(U);

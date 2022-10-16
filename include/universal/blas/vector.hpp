@@ -174,6 +174,13 @@ public:
 		return sqrt(twoNorm);
 	}
 
+	// inf-norm of a vector
+	Scalar infnorm() const {  // default is 2-norm
+		Scalar infNorm = 0;
+		for (auto v : data) infNorm = (abs(v)>infNorm) ? abs(v) : infNorm;
+		return infNorm;
+	}
+
 	// Print elements as a column (jquinlan)
 	void disp(){
 		for (auto v : data) {
