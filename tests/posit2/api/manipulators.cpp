@@ -32,6 +32,13 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit manipulators
 
+	{
+		// report the type
+		posit<8, 2, std::uint8_t> p8;
+		std::cout << type_tag(p8) << '\n';
+	}
+
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

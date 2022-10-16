@@ -12,7 +12,7 @@
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -33,7 +33,7 @@ try {
 
 	std::string test_suite  = "lns arithmetic exceptions ";
 	std::string test_tag    = "exceptions";
-//	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
@@ -41,18 +41,23 @@ try {
 #if MANUAL_TESTING
 
 	// TODO: implement arithmetic operators for lns
-/*
-	using Number = sw::universal::lns<16, uint16_t>;
 
-	nrOfFailedTestCases += TestDivisionByZero<Number>(reportTestCases);
+	using lns16 = sw::universal::lns<16, 8, std::uint16_t>;
 
-	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(reportTestCases);
-*/
+	nrOfFailedTestCases += TestDivisionByZero<lns16>(reportTestCases);
+
+	nrOfFailedTestCases += TestNegativeSqrtArgument<lns16>(reportTestCases);
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else // !MANUAL_TESTING
 
+	using lns16 = sw::universal::lns<16, 8, std::uint16_t>;
+
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += TestDivisionByZero<lns16>(reportTestCases);
+
+	nrOfFailedTestCases += TestNegativeSqrtArgument<lns16>(reportTestCases);
 #endif
 
 #if REGRESSION_LEVEL_2

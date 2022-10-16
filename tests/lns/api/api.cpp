@@ -40,8 +40,9 @@ try {
 	ReportTrivialityOfType<lns<8, 2>>();
 
 	// default behavior
-	std::cout << "+---------    default lns bahavior   --------+\n";
+
 	{
+		std::cout << "+---------    default lns bahavior   --------+\n";
 		using Real = lns<8, 3>;
 		Real a(1.0f), b(1.0f), c;
 		ArithmeticOperators<Real>(a, b);
@@ -52,18 +53,18 @@ try {
 	}
 
 	// configuration
-	std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
+	
 	{
-		using Real = lns<16, 5, std::uint16_t>;
-		ArithmeticOperators<Real>(1.0f, 1.0f);
-	}
-	{
-		using Real = lns<24, 5, std::uint32_t>;
-		ArithmeticOperators<Real>(1.0f, 1.0f);
+		std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
+		using lns16 = lns<16, 5, std::uint16_t>;
+		ArithmeticOperators<lns16>(1.0f, 1.0f);
+
+		using lns24 = lns<24, 5, std::uint32_t>;
+		ArithmeticOperators<lns24>(1.0f, 1.0f);
 	}
 
-	std::cout << "+---------    Dynamic ranges of lns<> configurations   --------+\n";
 	{
+		std::cout << "+---------    Dynamic ranges of lns<> configurations   --------+\n";
 		std::cout << dynamic_range(lns< 4, 2>()) << '\n';
 		std::cout << dynamic_range(lns< 8, 3>()) << '\n';
 		std::cout << dynamic_range(lns<12, 4>()) << '\n';
@@ -71,8 +72,8 @@ try {
 		std::cout << dynamic_range(lns<20, 6>()) << '\n';
 	}
 
-	std::cout << "+---------    constexpr and specific values   --------+\n";
 	{
+		std::cout << "+---------    constexpr and specific values   --------+\n";
 		constexpr size_t nbits = 10;
 		constexpr size_t rbits = 3;
 		using Real = lns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
@@ -91,8 +92,8 @@ try {
 		std::cout << to_binary(d) << " : " << d << " == maxpos" << '\n';
 	}
 
-	std::cout << "+---------    extreme values   --------+\n";
 	{
+		std::cout << "+---------    extreme values   --------+\n";
 		constexpr size_t nbits = 10;
 		constexpr size_t rbits = 3;
 		using Real = lns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
@@ -107,8 +108,8 @@ try {
 		ReportBinaryOperation(a, "/", b, c);
 	}
 
-	std::cout << "+---------    Dynamic ranges of 8-bit lns<> configurations   --------+\n";
 	{
+		std::cout << "+---------    Dynamic ranges of 8-bit lns<> configurations   --------+\n";
 		std::cout << dynamic_range(lns<8, 0>()) << '\n';
 		std::cout << dynamic_range(lns<8, 1>()) << '\n';
 		std::cout << dynamic_range(lns<8, 2>()) << '\n';
@@ -118,8 +119,8 @@ try {
 		std::cout << dynamic_range(lns<8, 6>()) << '\n';
 	}
 
-	std::cout << "+---------    comparison to classic floats   --------+\n";
 	{
+		std::cout << "+---------    comparison to classic floats   --------+\n";
 		using LNS = lns<16, 8, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
 		LNS a;

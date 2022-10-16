@@ -200,6 +200,7 @@ try {
 	using LNS8_6_sat = lns<8, 6, std::uint8_t>;
 	using LNS9_0_sat = lns<9, 0, std::uint8_t>;
 	using LNS9_4_sat = lns<9, 4, std::uint8_t>;
+	using LNS9_8_sat = lns<9, 7, std::uint8_t>;
 	using LNS9_8_sat = lns<9, 8, std::uint8_t>;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_0_sat>(reportTestCases), "lns<4,0, uint8_t>", test_tag);
@@ -212,6 +213,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_6_sat>(reportTestCases), "lns<8,6, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_0_sat>(reportTestCases), "lns<9,0, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_4_sat>(reportTestCases), "lns<9,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_7_sat>(reportTestCases), "lns<9,7, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_8_sat>(reportTestCases), "lns<9,8, uint8_t>", test_tag);
 
 #endif
