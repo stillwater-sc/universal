@@ -1,4 +1,4 @@
-// attributes.cpp: attribute tests for arbitrary configuration posit types
+// traits.cpp: tests for type and number traits for arbitrary configuration posit types
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -21,32 +21,14 @@
 // bring in the trait functions
 #include <universal/common/number_traits.hpp>
 #include <universal/common/arithmetic_traits.hpp>
-
-template<size_t nbits, size_t es, typename BlockType = uint32_t>
-void PositComponents(const sw::universal::posit<nbits, es, BlockType>& p) {
-	std::cout << "posit component values of a fully articulated standard posit\n";
-	bool s{ false };
-	sw::universal::regime<nbits, es, BlockType> r;
-	sw::universal::exponent<nbits, es, BlockType> e;
-	sw::universal::fraction<nbits - 1ull - es, BlockType> f;
-	sw::universal::decode(p.bits(), s, r, e, f);
-
-	std::cout << "raw bits  : " << sw::universal::to_binary(p.bits(), true) << '\n';
-	std::cout << "components: " << sw::universal::to_binary(p) << '\n';
-	// posit component attribute functions and their equivalence to component value() functions
-	std::cout << "sign      : " << (s ? "set" : "not set") << " : " << sw::universal::sign_value(p) << '\n';
-	std::cout << "regime    : " << r << " : " << r.value() << " : " << sw::universal::regime_value(p) << '\n';
-	std::cout << "exponent  : " << e << " : " << e.value() << " : " << sw::universal::exponent_value(p) << '\n';
-	std::cout << "fraction  : " << f << " : " << f.value() << " : " << sw::universal::fraction_value(p) << '\n';
-	std::cout << '\n';
-}
+#include <universal/common/number_traits.hpp>
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "generalized posit attribute functions";
-	std::string test_tag    = "attributes";
+	std::string test_suite  = "generalized posit traits";
+	std::string test_tag    = "traits";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
@@ -55,64 +37,63 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit attribute functions
 
-	// useed, minpos and maxpos scale
-	// what is special with these functions is that they are independent of a posit
-	// but associate through their template parameterizations
 	{
-		std::cout << "useed values for full articulated standard posits\n";
-		std::cout << "es\tuseed scale\tuseed value\n";
-		std::cout << ES_IS_0 << '\t' << std::setw(5) << useed_scale<ES_IS_0>() << '\t' << std::setw(15) << useed<ES_IS_0>() << '\n';
-		std::cout << ES_IS_1 << '\t' << std::setw(5) << useed_scale<ES_IS_1>() << '\t' << std::setw(15) << useed<ES_IS_1>() << '\n';
-		std::cout << ES_IS_2 << '\t' << std::setw(5) << useed_scale<ES_IS_2>() << '\t' << std::setw(15) << useed<ES_IS_2>() << '\n';
-		std::cout << ES_IS_3 << '\t' << std::setw(5) << useed_scale<ES_IS_3>() << '\t' << std::setw(15) << useed<ES_IS_3>() << '\n';
-		std::cout << ES_IS_4 << '\t' << std::setw(5) << useed_scale<ES_IS_4>() << '\t' << std::setw(15) << useed<ES_IS_4>() << '\n';
-		std::cout << ES_IS_5 << '\t' << std::setw(5) << useed_scale<ES_IS_5>() << '\t' << std::setw(15) << useed<ES_IS_5>() << '\n';
-		std::cout << '\n';
+		using Real = posit<8, 2, std::uint8_t>;
+		bool isTrivial = bool(std::is_trivial<Real>());
+//		static_assert(std::is_trivial<Real>(), "posit should be trivial but failed the assertion");
+		std::cout << (isTrivial ? "posit is trivial: PASS" : "posit failed trivial: FAIL") << '\n';
+
+		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Real>());
+//		static_assert(std::is_trivially_constructible<Real>(), "posit should be trivially constructible but failed the assertion");
+		std::cout << (isTriviallyConstructible ? "posit is trivial constructible: PASS" : "posit failed trivial constructible: FAIL") << '\n';
+
+		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Real>());
+		static_assert(std::is_trivially_copyable<Real>(), "posit should be trivially copyable but failed the assertion");
+		std::cout << (isTriviallyCopyable ? "posit is trivially copyable: PASS" : "posit failed trivially copyable: FAIL") << '\n';
+
+		bool isTriviallyCopyAssignable = bool(std::is_trivially_copy_assignable<Real>());
+		static_assert(std::is_trivially_copy_assignable<Real>(), "posit should be trivially copy-assignable but failed the assertion");
+		std::cout << (isTriviallyCopyAssignable ? "posit is trivially copy-assignable: PASS" : "posit failed trivially copy-assignable: FAIL") << '\n';
 	}
 
 	{
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 2;
-		using bt = std::uint16_t;
-		constexpr posit<nbits, es, bt> maxpos(SpecificValue::maxpos);
-		constexpr posit<nbits, es, bt> minpos(SpecificValue::minpos);
-		constexpr posit<nbits, es, bt> zero(SpecificValue::zero);
-		constexpr posit<nbits, es, bt> minneg(SpecificValue::minneg);
-		constexpr posit<nbits, es, bt> maxneg(SpecificValue::maxneg);
-		std::cout << "minpos patterns for full articulated standard posits\n";
-		std::cout << "minpos : " << to_binary(minpos) << '\t' << minpos_scale<nbits, es>() << '\n';
-		std::cout << "minneg : " << to_binary(minneg) << '\n';
-
-		std::cout << "maxpos patterns for full articulated standard posits\n";
-		std::cout << "maxpos : " << to_binary(maxpos) << '\t' << maxpos_scale<nbits, es>() << '\n';
-		std::cout << "maxneg : " << to_binary(maxneg) << '\n';
-		std::cout << '\n';
+		std::cout << "Dynamic ranges of different specializations of an 8-bit generalized posit\n";
+		std::cout << dynamic_range< posit<8, 0> >() << '\n';
+		std::cout << dynamic_range< posit<8, 1> >() << '\n';
+		std::cout << dynamic_range< posit<8, 2> >() << '\n';
+		std::cout << dynamic_range< posit<8, 3> >() << '\n';
+		std::cout << dynamic_range< posit<8, 4> >() << '\n';
 	}
 
 	{
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 2;
-		using BlockType = std::uint16_t;
-
-		blocktriple<nbits - 1ull - es, BlockTripleOperator::REPRESENTATION, BlockType> v(1.0f);
-		for (int i = 0; i < 10; ++i) {
-			v.setscale(i);
-			std::cout << "blocktriple : " << to_triple(v) << " : " << v << '\n';
-		}
-		std::cout << '\n';
+		std::cout << "Dynamic ranges of the standard posit configurations\n";
+		std::cout << minmax_range< posit<  8, 2> >() << '\n';
+		std::cout << minmax_range< posit< 16, 2> >() << '\n';
+		std::cout << minmax_range< posit< 32, 2> >() << '\n';
+		std::cout << minmax_range< posit< 64, 2> >() << '\n';
+		std::cout << minmax_range< posit<128, 2> >() << '\n';
+		std::cout << minmax_range< posit<256, 2> >() << '\n';
 	}
 
 	{
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 2;
-		using BlockType = std::uint16_t;
-
-		PositComponents(posit<nbits, es, BlockType>(SpecificValue::maxpos));
-		PositComponents(posit<nbits, es, BlockType>(SpecificValue::minpos));
-		PositComponents(posit<nbits, es, BlockType>(SpecificValue::zero));
-		PositComponents(posit<nbits, es, BlockType>(SpecificValue::minneg));
-		PositComponents(posit<nbits, es, BlockType>(SpecificValue::maxneg));
+		std::cout << "Dynamic ranges of the standard posit configurations\n";
+		std::cout << symmetry< posit<  8, 2> >() << '\n';
+		std::cout << symmetry< posit< 16, 2> >() << '\n';
+		std::cout << symmetry< posit< 32, 2> >() << '\n';
+		std::cout << symmetry< posit< 64, 2> >() << '\n';
+		std::cout << symmetry< posit<128, 2> >() << '\n';
+		std::cout << symmetry< posit<256, 2> >() << '\n';
 	}
+
+#ifdef LATER
+	{
+		std::cout << "Number traits of the standard posit configurations\n";
+		numberTraits< posit< 8, 2, std::uint8_t> >(std::cout);
+		numberTraits< posit<16, 2, std::uint16_t> >(std::cout);
+		numberTraits< posit<32, 2, std::uint32_t> >(std::cout);
+		numberTraits< posit<64, 2, std::uint64_t> >(std::cout);
+	}
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
