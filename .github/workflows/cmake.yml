@@ -46,13 +46,11 @@ jobs:
           - os: macos-latest
             compiler: clang-9
           - os: macos-latest
-            compiler: clang-11
-          - os: macos-latest
             compiler: clang++-12
           - os: ubuntu-latest
             compiler: latest
           - os: ubuntu-latest
-            compiler: clang
+            compiler: clang-9
           - os: ubuntu-latest
             compiler: clang-11
           - os: ubuntu-latest
