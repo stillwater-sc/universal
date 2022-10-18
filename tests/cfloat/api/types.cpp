@@ -6,13 +6,6 @@
 #include <universal/utility/directives.hpp>
 
 // minimum set of include files to reflect source code dependencies
-// Configure the cfloat template environment
-// first: enable general or specialized configurations
-#define CFLOAT_FAST_SPECIALIZATION
-// second: enable/disable arithmetic exceptions
-#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
-// third: enable trace conversion
-#define TRACE_CONVERSION 0
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/table.hpp>
 
