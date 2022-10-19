@@ -109,7 +109,18 @@ try {
 	}
 
 	{
-		std::cout << "+---------    Dynamic ranges of 8-bit lns<> configurations   --------+\n";
+		std::cout << "+---------    exceptions   ---------+\n";
+		using lns = sw::universal::lns<16, 8, uint16_t>;
+		lns a = lns(0.0f);
+		lns b = -lns(0.0);
+		// if (a != b) std::cout << "you can't compare indeterminate NaN\n";
+		if (a.isnan() && b.isnan()) std::cout << "PASS: both +lns(0) and -lns(0) are indeterminate\n";
+		std::cout << "+lns(0.0f): " <<  lns(0.0f) << "\n";
+		std::cout << "-lns(0.0f): " << -lns(0.0f) << "\n";
+	}
+
+	{
+		std::cout << "+---------    dynamic ranges of 8-bit lns<> configurations   --------+\n";
 		std::cout << dynamic_range(lns<8, 0>()) << '\n';
 		std::cout << dynamic_range(lns<8, 1>()) << '\n';
 		std::cout << dynamic_range(lns<8, 2>()) << '\n';

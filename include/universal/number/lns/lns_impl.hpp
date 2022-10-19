@@ -145,6 +145,7 @@ public:
 	// arithmetic operators
 	// prefix operator
 	constexpr lns operator-() const noexcept {
+		if (isnan() || iszero()) return *this;
 		lns negate(*this);
 		negate.setbit(nbits - 1, !sign());
 		return negate;
