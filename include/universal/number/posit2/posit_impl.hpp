@@ -700,12 +700,14 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		internal::value<abits + 1> difference;
-		internal::value<fbits> a, b;
+//		internal::value<abits + 1> difference;
+		//		internal::value<fbits> a, b;
+		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, difference;
+
 		// transform the inputs into (sign,scale,fraction) triples
-		normalize(a);
-		rhs.normalize(b);
-		module_subtract<fbits, abits>(a, b, difference);	// add the two inputs
+//		normalize(a);
+//		rhs.normalize(b);
+//		module_subtract<fbits, abits>(a, b, difference);	// add the two inputs
 
 		// special case handling of the result
 		if (difference.iszero()) {
@@ -715,7 +717,7 @@ public:
 			setnar();
 		}
 		else {
-			convert(difference, *this);
+			// convert(difference, *this);
 		}
 		return *this;
 	}
