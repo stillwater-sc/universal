@@ -61,7 +61,7 @@ try {
 
 	{
 		std::cout << "\nNative IEEE-754 single precision float ULPs to reference\n";
-		float eps = std::numeric_limits< float >::epsilon();
+		constexpr float eps = std::numeric_limits< float >::epsilon();
 		std::cout << "float epsilon : " << to_binary(eps) << " : " << eps << '\n';
 		for (float base = 1.0f; base < 1.0e30f; base *= 1.0e3f) {
 			TestNativeULP(base);

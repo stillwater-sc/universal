@@ -829,6 +829,13 @@ private:
 	}
 };
 
+// return the Unit in the Last Position
+template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+inline lns<nbits, rbits, bt, xtra...> ulp(const lns<nbits, rbits, bt, xtra...>& a) {
+	lns<nbits, rbits, bt, xtra...> b(a);
+	return ++b - a;
+}
+
 template<size_t nbits, size_t rbits, typename bt, auto... xtra>
 std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleMarker = false) {
 	std::stringstream s;
