@@ -15,19 +15,19 @@
 #include <universal/verification/test_suite.hpp>
 
 template<size_t nbits, size_t es, typename bt>
-void TestULP() 
-{
+void TestULP(sw::universal::posit<nbits, es, bt> v = 1.0f) {
 	using namespace sw::universal;
 
-	using Posit = posit<nbits, es, bt>;
-	Posit a(1.0f);
-	std::cout << typeid(a).name() << '\n';
-	double da(1.0);
-	std::cout << "posit  at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << " : value : " << a << '\n';
-	std::cout << "double at 1.0  : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << " : value : " << da << '\n';
+	posit<nbits, es, bt> a(v), ulpAt(ulp(a));
+	std::cout << type_tag(a) << " at " << std::setw(15) << a << " : " << to_binary(a) << " : ULP : " << to_binary(ulpAt) << " : " << ulpAt << '\n';
+}
 
-	a = std::numeric_limits< Posit >::epsilon();
-	std::cout << "posit epsilon : " << to_binary(a) << " : " << a << '\n';
+template<typename Real>
+void TestNativeULP(Real v = 1.0f) {
+	using namespace sw::universal;
+
+	Real a(v), ulpAt(ulp(a));
+	std::cout << type_tag(a) << " at " << std::setw(15) << a << " : " << to_binary(a) << " : ULP : " << to_binary(ulpAt) << " : " << ulpAt << '\n';
 }
 
 int main()
@@ -41,14 +41,32 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	std::cout << "classic floating-point ULP tests\n";
+	{
+		TestULP<8, 2, uint8_t>();     // quarter precision
+		TestULP<16, 2, uint16_t>();   // half precision
+		TestULP<32, 2, uint32_t>();   // single precision
+		TestULP<64, 2, uint32_t>();   // double precision
+		TestULP<128, 2, uint32_t>();  // quad precision
+		TestULP<256, 2, uint32_t>();  // octo precision
+	}
 
-	TestULP<8, 2, uint8_t>();     // quarter precision
-	TestULP<16, 2, uint16_t>();   // half precision
-	TestULP<32, 2, uint32_t>();   // single precision
-	TestULP<64, 2, uint32_t>();   // double precision
-	TestULP<128, 2, uint32_t>();  // quad precision
-	TestULP<256, 2, uint32_t>();  // octo precision
+	{
+		std::cout << "\n32-bit standard posit ULPs as baseline\n";
+		posit<32, 2> eps = std::numeric_limits< posit<32, 2> >::epsilon();
+		std::cout << "posit epsilon : " << to_binary(eps) << " : " << eps << '\n';
+		for (float base = 1.0f; base < 1.0e30f; base *= 1.0e3f) {
+			TestULP<32, 2, std::uint32_t>(base);
+		}
+	}
+
+	{
+		std::cout << "\nNative IEEE-754 single precision float ULPs to reference\n";
+		float eps = std::numeric_limits< float >::epsilon();
+		std::cout << "float epsilon : " << to_binary(eps) << " : " << eps << '\n';
+		for (float base = 1.0f; base < 1.0e30f; base *= 1.0e3f) {
+			TestNativeULP(base);
+		}
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

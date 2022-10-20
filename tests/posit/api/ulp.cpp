@@ -12,68 +12,63 @@
 // third: enable native literals in logic and arithmetic operations
 #define POSIT_ENABLE_LITERALS 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/posit/numeric_limits.hpp>
-#include <universal/number/posit/mathlib.hpp>
+#include <universal/verification/test_suite.hpp>
 
 template<size_t nbits, size_t es>
-void TestULP() 
-{
+void TestULP(sw::universal::posit<nbits, es> v = 1.0f) {
 	using namespace sw::universal;
 
-	posit<nbits, es> a(1.0f);
-	std::cout << type_tag(a) << '\n';
-//	double da(1.0);
-	std::cout << "posit at 1.0  : " << to_binary(a) << " : ULP : " << to_binary(ulp(a)) << '\n';
-//	std::cout << "double at 1.0 : " << to_binary(da) << " : ULP : " << to_binary(ulp(da)) << '\n';
-
-	a = std::numeric_limits< posit<nbits, es> >::epsilon();
-	std::cout << "posit epsilon : " << to_binary(a) << " : " << a << '\n';
+	posit<nbits, es> a(v), ulpAt(ulp(a));
+	std::cout << type_tag(a) << " at " << std::setw(15) << a << " : " << to_binary(a) << " : ULP : " << to_binary(ulpAt) << " : " << ulpAt << '\n';
 }
 
-// conditional compile flags
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+template<typename Real>
+void TestNativeULP(Real v = 1.0f) {
+	using namespace sw::universal;
+
+	Real a(v), ulpAt(ulp(a));
+	std::cout << type_tag(a) << " at " << std::setw(15) << a << " : " << to_binary(a) << " : ULP : " << to_binary(ulpAt) << " : " << ulpAt << '\n';
+}
 
 int main()
 try {
 	using namespace sw::universal;
 
+	std::string test_suite  = "posit ULP tests";
+	std::string test_tag    = "ulp";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "posit ULP tests\n";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
-	TestULP<  8, 0>();
-	TestULP< 16, 1>();
-	TestULP< 32, 2>();
-	TestULP< 64, 3>();
-	TestULP<128, 4>();
+	{
+		TestULP<8, 2>();    // quarter precision
+		TestULP<16, 2>();   // half precision
+		TestULP<32, 2>();   // single precision
+		TestULP<64, 2>();   // double precision
+		TestULP<128, 2>();  // quad precision
+		TestULP<256, 2>();  // octo precision
+	}
 
-#else 
+	{
+		std::cout << "\n32-bit standard posit ULPs as baseline\n";
+		posit<32, 2> eps = std::numeric_limits< posit<32, 2> >::epsilon();
+		std::cout << "posit epsilon : " << to_binary(eps) << " : " << eps << '\n';
+		for (float base = 1.0f; base < 1.0e30f; base *= 1.0e3f) {
+			TestULP<32, 2>(base);
+		}
+	}
 
-#if REGRESSION_LEVEL_1
-	TestULP< 8, 0>();
-	TestULP< 8, 1>();
-	TestULP< 8, 2>();
-	TestULP<16, 2>();
-	TestULP<32, 2>();
-	TestULP<64, 2>();
-#endif
+	{
+		std::cout << "\nNative IEEE-754 single precision float ULPs to reference\n";
+		float eps = std::numeric_limits< float >::epsilon();
+		std::cout << "float epsilon : " << to_binary(eps) << " : " << eps << '\n';
+		for (float base = 1.0f; base < 1.0e30f; base *= 1.0e3f) {
+			TestNativeULP(base);
+		}
+	}
 
-#if REGRESSION_LEVEL_2
-
-#endif
-
-#if REGRESSION_LEVEL_3
-
-#endif
-
-#if REGRESSION_LEVEL_4
-	TestULP<64, 3>();
-#endif
-
-#endif // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
