@@ -150,6 +150,8 @@ namespace sw { namespace universal {
 		return str.str();
 	}
 
+#endif // LATER
+
 	template<size_t nbits, size_t es, typename bt>
 	std::string color_print(const posit<nbits, es, bt>& p) {
 		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
@@ -169,16 +171,17 @@ namespace sw { namespace universal {
 		Color def(ColorCode::FG_DEFAULT);
 		str << red << (p.isneg() ? "1" : "0");
 
-		blockbinary<nbits - 1, bt> r = _regime.bits();
+		blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> r = _regime.bits();
 		int regimeBits = (int)_regime.nrBits();
 		int nrOfRegimeBitsProcessed = 0;
-		for (int i = nbits - 2; i >= 0; --i) {
+		for (size_t i = 0; i < nbits - 1; ++i) {
+			size_t bitIndex = nbits - 2ull - i;
 			if (regimeBits > nrOfRegimeBitsProcessed++) {
-				str << yellow << (_sign ? (r[static_cast<size_t>(i)] ? '0' : '1') : (r[static_cast<size_t>(i)] ? '1' : '0'));
+				str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
 			}
 		}
 
-		blockbinary<es, bt> e = _exponent.bits();
+		blockbinary<es, bt, BinaryNumberType::Unsigned> e = _exponent.bits();
 		int exponentBits = (int)_exponent.nrBits();
 		int nrOfExponentBitsProcessed = 0;
 		for (int i = int(es) - 1; i >= 0; --i) {
@@ -187,8 +190,8 @@ namespace sw { namespace universal {
 			}
 		}
 
-		blockbinary<posit<nbits, es>::fbits, bt> f = _fraction.bits();
-		f = (_sign ? twos_complement(f) : f);
+		blockbinary<posit<nbits, es>::fbits, bt, BinaryNumberType::Unsigned> f = _fraction.bits();
+		f = (_sign ? twosComplement(f) : f);
 		int fractionBits = (int)_fraction.nrBits();
 		int nrOfFractionBitsProcessed = 0;
 		for (int i = int(p.fbits) - 1; i >= 0; --i) {
@@ -200,7 +203,7 @@ namespace sw { namespace universal {
 		str << def;
 		return str.str();
 	}
-#endif // LATER
+
 
 }} // namespace sw::universal
 

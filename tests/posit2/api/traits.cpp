@@ -40,11 +40,11 @@ try {
 	{
 		using Real = posit<8, 2, std::uint8_t>;
 		bool isTrivial = bool(std::is_trivial<Real>());
-//		static_assert(std::is_trivial<Real>(), "posit should be trivial but failed the assertion");
+		static_assert(std::is_trivial<Real>(), "posit should be trivial but failed the assertion");
 		std::cout << (isTrivial ? "posit is trivial: PASS" : "posit failed trivial: FAIL") << '\n';
 
 		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Real>());
-//		static_assert(std::is_trivially_constructible<Real>(), "posit should be trivially constructible but failed the assertion");
+		static_assert(std::is_trivially_constructible<Real>(), "posit should be trivially constructible but failed the assertion");
 		std::cout << (isTriviallyConstructible ? "posit is trivial constructible: PASS" : "posit failed trivial constructible: FAIL") << '\n';
 
 		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Real>());

@@ -1,5 +1,5 @@
 #pragma once
-// posit_impl.hpp: implementation of arbitrary configuration fixed-size posits
+// posit_impl.hpp: implementation of fixed-size arbitrary configuration generalized posits
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -298,8 +298,8 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<size_t nbits, size_t es, typename bt, size_t fbits>
 inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificant<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
 
 	p.clear();
 	// construct the posit
@@ -323,19 +323,17 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 
 		bool s = _sign;
 		int e  = _scale;
-		bool r = (e >= 0);
+		bool r = (e >= 0);  // positive or negative regime
 
 		size_t run = size_t(r ? 1 + (e >> es) : -(e >> es));
 		regime.setbit(0, 1 ^ r);
-		for (size_t i = 1; i <= run; i++) regime.setbit(i, r);
+		for (size_t i = 1; i <= run; ++i) regime.setbit(i, r);
 
-		size_t esval = e % (uint32_t(1) << es);
-		//exponent = convert_to_bitblock<pt_len>(esval);
-		exponent = esval;
+		exponent = e % (1ull << es);
 		int nbits_plus_one = static_cast<int>(nbits) + 1;
-		int sign_regime_es = 2 + int(run) + static_cast<int>(es);
-		size_t nf = (size_t)std::max<int>(0, (nbits_plus_one - sign_regime_es));
-		//size_t nf = (size_t)std::max<int>(0, (static_cast<int>(nbits + 1) - (2 + run + static_cast<int>(es))));
+		int sign_regime_es = static_cast<int>(2ull + run + es);
+		size_t nf = static_cast<size_t>(std::max<int>(0, (nbits_plus_one - sign_regime_es)));
+
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
@@ -376,8 +374,8 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<size_t nbits, size_t es, typename bt, size_t fbits, BlockTripleOperator op>
 inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<nbits, es, bt>& p) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if constexpr (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
 
 	if (v.iszero()) {
 		p.setzero();
@@ -463,8 +461,8 @@ public:
 
 	typedef bt BlockType;
 
-	// trivial
-	constexpr posit() : _block{} {}
+	/// trivial constructor
+	posit() = default;
 	
 	constexpr posit(const posit&) = default;
 	constexpr posit(posit&&) = default;
@@ -1006,10 +1004,10 @@ public:
 	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
 	constexpr posit<nbits, es, bt>& setbits(uint64_t value) {
 		clear();
-		blockbinary<nbits> raw_bits;
-		uint64_t mask = 1;
-		for ( size_t i = 0; i < nbits; i++ ) {
-			raw_bits.set(i,(value & mask));
+		blockbinary<nbits, bt, BinaryNumberType::Signed> raw_bits;
+		uint64_t mask = 1ull;
+		for ( size_t i = 0; i < nbits; ++i ) {
+			raw_bits.setbit(i,(value & mask));
 			mask <<= 1;
 		}
 		_block = raw_bits;
@@ -1632,7 +1630,7 @@ template<size_t nbits, size_t es, typename bt>
 inline std::string hex_format(const posit<nbits, es, bt>& p) {
 	// we need to transform the posit into a string
 	std::stringstream ss;
-	ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+	ss << nbits << '.' << es << 'x' << to_hex(p.bits()) << 'p';
 	return ss.str();
 }
 

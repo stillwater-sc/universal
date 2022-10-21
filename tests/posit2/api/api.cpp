@@ -14,9 +14,45 @@
 #define POSIT_ENABLE_LITERALS 1
 // fourth: enable/disable error-free serialization I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 0
+// fifth: potentiall trace conversions or arithmetic
+#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_CONVERSION
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/posit2/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
+
+/*
+Generate Posit Lookup table for a POSIT<4,2> in TXT format
+   #           Binary         Decoded       k    sign   scale          regime        exponent        fraction                         value    posit_format
+   0:             0000            0000      -3       0      -8             000              --               ~                             0           4.2x0p
+   1:             0001            0001      -2       0      -8             001              --               ~                    0.00390625           4.2x1p
+   2:             0010            0010      -1       0      -4             01-              0-               ~                        0.0625           4.2x2p
+   3:             0011            0011      -1       0      -2             01-              1-               ~                          0.25           4.2x3p
+   4:             0100            0100       0       0       0             10-              0-               ~                             1           4.2x4p
+   5:             0101            0101       0       0       2             10-              1-               ~                             4           4.2x5p
+   6:             0110            0110       1       0       4             110              --               ~                            16           4.2x6p
+   7:             0111            0111       2       0       8             111              --               ~                           256           4.2x7p
+   8:             1000            1000       3       1      -8             000              --               ~                           nar           4.2x8p
+   9:             1001            1111       2       1       8             111              --               ~                          -256           4.2x9p
+  10:             1010            1110       1       1       4             110              --               ~                           -16           4.2xAp
+  11:             1011            1101       0       1       2             10-              1-               ~                            -4           4.2xBp
+  12:             1100            1100       0       1       0             10-              0-               ~                            -1           4.2xCp
+  13:             1101            1011      -1       1      -2             01-              1-               ~                         -0.25           4.2xDp
+  14:             1110            1010      -1       1      -4             01-              0-               ~                       -0.0625           4.2xEp
+  15:             1111            1001      -2       1      -8             001              --               ~                   -0.00390625 
+*/
+
+template<size_t nbits, size_t es, typename bt>
+void VerifyToBinary() {
+	using namespace sw::universal;
+	constexpr size_t NR_VALUES = (1 << nbits);
+
+	posit<nbits, es, bt> p;
+	for (size_t i = 0; i < NR_VALUES; ++i) {
+		p.setbits(i);
+		std::cout << hex_format(p) << ' ' << color_print(p) << ' ' << to_binary(p) << ' ' << p << std::endl;
+	}
+}
 
 int main()
 try {
@@ -31,8 +67,17 @@ try {
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
-
 	/*
+	{
+		VerifyToBinary<5, 2, std::uint8_t>();
+	}
+	{
+		using Scalar = posit<8, 2, std::uint8_t>;
+		Scalar a;
+		a = 1.0f;
+		std::cout << a << " : " << to_binary(a) << " : " << color_print(a) << '\n';
+	}
+
 	{
 		int start = nrOfFailedTestCases;
 		// maxpos of a posit<8,0> = 64

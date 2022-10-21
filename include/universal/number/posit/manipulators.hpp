@@ -205,18 +205,22 @@ std::string color_print(const posit<nbits, es>& p) {
 	bitblock<nbits - 1> r = _regime.get();
 	int regimeBits = (int)_regime.nrBits();
 	int nrOfRegimeBitsProcessed = 0;
-	for (int i = nbits - 2; i >= 0; --i) {
+	for (unsigned i = 0; i < nbits - 1; ++i) {
+		unsigned bitIndex = nbits - 2u - i;
 		if (regimeBits > nrOfRegimeBitsProcessed++) {
-			str << yellow << (_sign ? (r[static_cast<size_t>(i)] ? '0' : '1') : (r[static_cast<size_t>(i)] ? '1' : '0'));
+			str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
 		}
 	}
 
 	bitblock<es> e = _exponent.get();
 	int exponentBits = (int)_exponent.nrBits();
 	int nrOfExponentBitsProcessed = 0;
-	for (int i = int(es) - 1; i >= 0; --i) {
-		if (exponentBits > nrOfExponentBitsProcessed++) {
-			str << cyan << (_sign ? (e[static_cast<size_t>(i)] ? '0' : '1') : (e[static_cast<size_t>(i)] ? '1' : '0'));
+	if constexpr (es > 0) {
+		for (unsigned i = 0; i < es; ++i) {
+			unsigned bitIndex = es - 1u - i;
+			if (exponentBits > nrOfExponentBitsProcessed++) {
+				str << cyan << (_sign ? (e[bitIndex] ? '0' : '1') : (e[bitIndex] ? '1' : '0'));
+			}
 		}
 	}
 
@@ -224,9 +228,10 @@ std::string color_print(const posit<nbits, es>& p) {
 	f = (_sign ? twos_complement(f) : f);
 	int fractionBits = (int)_fraction.nrBits();
 	int nrOfFractionBitsProcessed = 0;
-	for (int i = int(p.fbits) - 1; i >= 0; --i) {
+	for (unsigned i = 0; i < p.fbits; ++i) {
+		unsigned bitIndex = p.fbits - 1u - i;
 		if (fractionBits > nrOfFractionBitsProcessed++) {
-			str << magenta << (f[static_cast<size_t>(i)] ? "1" : "0");
+			str << magenta << (f[bitIndex] ? "1" : "0");
 		}
 	}
 

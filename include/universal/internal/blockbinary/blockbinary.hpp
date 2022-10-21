@@ -110,7 +110,7 @@ public:
 	static constexpr bool     uniblock64 = (bitsInBlock == 64) && (nrBlocks == 1);
 	static_assert(bitsInBlock < 64 || uniblock64, "storage unit for multi-block arithmetic needs to be one of [uint8_t | uint16_t | uint32_t]");
 
-	// trivial constructor
+	/// trivial constructor
 	blockbinary() = default;
 
 	/// construct a blockbinary from another: bt must be the same
