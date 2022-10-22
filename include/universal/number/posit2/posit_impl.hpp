@@ -315,15 +315,15 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 	else {
 		constexpr size_t pt_len = nbits + 3 + es;
 		using BlockBinary = blockbinary<pt_len, bt, BinaryNumberType::Signed>;
-		BlockBinary pt_bits;
-		BlockBinary regime;
-		BlockBinary exponent;
-		BlockBinary fraction;
-		BlockBinary sticky_bit;
+		BlockBinary pt_bits{ 0 };
+		BlockBinary regime{ 0 };
+		BlockBinary exponent{0};
+		BlockBinary fraction{0};
+		BlockBinary sticky_bit{0};
 
 		bool s = _sign;
 		int e  = _scale;
-		bool r = (e >= 0);  // positive or negative regime
+		bool r = (e >= 0);  // positive or negative regime to create runs such as: 11..110 or 00..001
 
 		size_t run = size_t(r ? 1 + (e >> es) : -(e >> es));
 		regime.setbit(0, 1 ^ r);
@@ -332,20 +332,19 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		exponent = e % (1ull << es);
 		int nbits_plus_one = static_cast<int>(nbits) + 1;
 		int sign_regime_es = static_cast<int>(2ull + run + es);
-		size_t nf = static_cast<size_t>(std::max<int>(0, (nbits_plus_one - sign_regime_es)));
+		size_t nrFbits = static_cast<size_t>(std::max<int>(0, (nbits_plus_one - sign_regime_es)));
 
-		// TODO: what needs to be done if nf > fbits?
-		//assert(nf <= input_fbits);
+		// when nrFbits > fbits then we need to round
 		// copy the most significant nf fraction bits into fraction
-		size_t lsb = nf <= fbits ? 0 : nf - fbits;
-		for (size_t i = lsb; i < nf; ++i) fraction.setbit(i, fraction_in.test(fbits - nf + i));
+		size_t lsb = (nrFbits <= fbits ? 0 : nrFbits - fbits);
+		for (size_t i = lsb; i < nrFbits; ++i) fraction.setbit(i, fraction_in.test(fbits - nrFbits + i));
 
-		bool sb = fraction_in.anyAfter(fbits - 1ull - nf);
+		bool sb = fraction_in.anyAfter(fbits - 1ull - nrFbits);
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-		regime <<= es + nf + 1;
-		exponent <<= nf + 1;
+		regime <<= es + nrFbits + 1;
+		exponent <<= nrFbits + 1;
 		fraction <<= 1;
 		sticky_bit.setbit(0, sb);
 
@@ -354,7 +353,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		size_t len = 1 + std::max<size_t>((nbits + 1ull), (2 + run + es));
+		size_t len = 1 + std::max<size_t>((nbits + 1ull), (2u + run + es));
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1ull);
 		bool bsticky = pt_bits.anyAfter(len - nbits - 1ull - 1ull);
@@ -385,7 +384,7 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 		p.setnar();
 		return p;
 	}
-	return convert_<nbits, es, bt, fbits + 2>(v.sign(), v.scale(), v.fraction(), p);
+	return convert_<nbits, es, bt, fbits + 2ull>(v.sign(), v.scale(), v.fraction(), p);
 }
 
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
@@ -1656,7 +1655,7 @@ inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize prec
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	constexpr size_t fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);             // maximum number of fraction bits: derived
 	bool negative{ false };
 	regime<nbits, es, bt> r;
 	exponent<nbits, es, bt> e;

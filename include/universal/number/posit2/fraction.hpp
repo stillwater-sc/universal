@@ -18,7 +18,7 @@ class fraction {
 	using UnsignedFraction = blockbinary<fbits, bt, BinaryNumberType::Unsigned>;
 	using UnsignedSignificant = blockbinary<fbits+1, bt, BinaryNumberType::Unsigned>;
 public:
-	fraction() : _Bits(), _NrOfBits(0) {}
+	fraction() : _Bits{}, _NrOfBits{} {}
 
 	fraction(const fraction& f) = default;
 	fraction(fraction&& f) = default;

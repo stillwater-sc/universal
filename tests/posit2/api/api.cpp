@@ -69,14 +69,14 @@ try {
 	//// posit construction, initialization, assignment and comparisions
 	/*
 	{
-		VerifyToBinary<5, 2, std::uint8_t>();
-	}
-	{
 		using Scalar = posit<8, 2, std::uint8_t>;
 		Scalar a;
 		a = 1.0f;
 		std::cout << a << " : " << to_binary(a) << " : " << color_print(a) << '\n';
 	}
+	{
+		VerifyToBinary<5, 2, std::uint8_t>();
+	}	
 
 	{
 		int start = nrOfFailedTestCases;

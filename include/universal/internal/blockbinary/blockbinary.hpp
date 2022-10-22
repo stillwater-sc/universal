@@ -98,14 +98,15 @@ public:
 
 	static constexpr size_t   bitsInByte = 8;
 	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
-	static constexpr size_t   nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr size_t   nrBlocks = (0 == nbits ? 1 : (1ull + ((nbits - 1ull) / bitsInBlock)));
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock));
 	static constexpr bt       maxBlockValue = bt(-1);
 
 	static constexpr size_t   MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	static constexpr bt       ALL_ONES = bt(~0);
-	static constexpr bt       MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr bt       SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1ull) % bitsInBlock));
+	static constexpr size_t   maxShift = (0 == nbits ? 0 : (nrBlocks* bitsInBlock - nbits)); // protect the shift that is >= sizeof(bt)
+	static constexpr bt       MSU_MASK = (0 == nbits ? bt(0) : (ALL_ONES >> maxShift));      // the other side of this protection
+	static constexpr bt       SIGN_BIT_MASK = (0 == nbits ? bt(0) : (bt(bt(1) << ((nbits - 1ull) % bitsInBlock))));
 
 	static constexpr bool     uniblock64 = (bitsInBlock == 64) && (nrBlocks == 1);
 	static_assert(bitsInBlock < 64 || uniblock64, "storage unit for multi-block arithmetic needs to be one of [uint8_t | uint16_t | uint32_t]");
@@ -145,7 +146,7 @@ public:
 	}
 
 	// initializer for long long
-	constexpr blockbinary(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
+	constexpr blockbinary(long long initial_value) noexcept : _block{} { *this = initial_value; }
 
 	constexpr blockbinary& operator=(long long rhs) noexcept {
 		if constexpr (1 < nrBlocks) {
@@ -389,21 +390,21 @@ public:
 
 	blockbinary& operator|=(const blockbinary& rhs) noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] |= bt(~_block[i]);
+			_block[i] |= rhs._block[i];
 		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	blockbinary& operator&=(const blockbinary& rhs) noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] &= bt(~_block[i]);
+			_block[i] &= rhs._block[i];
 		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	blockbinary& operator^=(const blockbinary& rhs) noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] ^= bt(~_block[i]);
+			_block[i] ^= rhs._block[i];
 		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
