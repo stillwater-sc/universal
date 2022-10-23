@@ -58,9 +58,12 @@ namespace sw { namespace universal {
 	*/
 
  // operator specialization tag for blocktriple
-enum class BlockTripleOperator { ADD, MUL, DIV, SQRT, REPRESENTATION };
+enum class BlockTripleOperator { REP, ADD, MUL, DIV, SQRT };
 inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& op) {
 	switch (op) {
+	case BlockTripleOperator::REP:
+		ostr << "REP";
+		break;
 	case BlockTripleOperator::ADD:
 		ostr << "ADD";
 		break;
@@ -72,9 +75,6 @@ inline std::ostream& operator<<(std::ostream& ostr, const BlockTripleOperator& o
 		break;
 	case BlockTripleOperator::SQRT:
 		ostr << "SQRT";
-		break;
-	case BlockTripleOperator::REPRESENTATION:
-		ostr << "REP";
 		break;
 	default:
 		ostr << "NOP";
@@ -96,27 +96,9 @@ template<size_t fbits, BlockTripleOperator op, typename bt>
 std::string type_tag(const blocktriple<fbits, op, bt>& = {}) {
 	std::stringstream s;
 	s << "blocktriple<"
-		<< fbits << ", ";
-	switch (op) {
-	case BlockTripleOperator::REPRESENTATION:
-		s << "BlockTripleOperator::REPRESENTATION, ";
-		break;
-	case BlockTripleOperator::ADD:
-		s << "BlockTripleOperator::ADD, ";
-		break;
-	case BlockTripleOperator::MUL:
-		s << "BlockTripleOperator::MUL, ";
-		break;
-	case BlockTripleOperator::DIV:
-		s << "BlockTripleOperator::DIV, ";
-		break;
-	case BlockTripleOperator::SQRT:
-		s << "BlockTripleOperator::SQRT, ";
-		break;
-	default:
-		s << "unknown operator, ";
-	}
-	s << typeid(bt).name() << '>';
+	  << std::setw(3) << fbits << ", "
+      << op << ", "
+	  << typeid(bt).name() << '>';
 	return s.str();
 }
 
@@ -773,7 +755,7 @@ private:
 		case BlockTripleOperator::SQRT:
 			_significant.setradix(2 * fbits);
 			break;
-		case BlockTripleOperator::REPRESENTATION:
+		case BlockTripleOperator::REP:
 			_significant.setradix(fbits);
 			break;
 		}
@@ -808,7 +790,7 @@ private:
 		case BlockTripleOperator::SQRT:
 			_significant.setradix(2 * fbits);
 			break;
-		case BlockTripleOperator::REPRESENTATION:
+		case BlockTripleOperator::REP:
 			_significant.setradix(fbits);
 			break;
 		}
@@ -889,7 +871,7 @@ private:
 			uint64_t rounded_bits = round<ieee754_parameter<Real>::fbits+1, Real>(rawFraction);
 			_significant.setbits(rounded_bits);
 			switch(op) {
-			case BlockTripleOperator::REPRESENTATION:
+			case BlockTripleOperator::REP:
 				_significant.setradix(fbits);
 //				std::cout << "rhs = " << rhs << " : significant = " << _significant << '\n';
 				break;

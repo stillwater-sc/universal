@@ -14,8 +14,8 @@
 // fourth: enable/disable error-free serialization I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 0
 // fifth: potentiall trace conversions or arithmetic
-//#define POSIT_VERBOSE_OUTPUT
-//#define POSIT_TRACE_CONVERSION
+#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_CONVERSION
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -53,10 +53,10 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	Convert<8, 2>(1.0f);
-	Convert<8, 2>(2.0f);
-	Convert<8, 2>(7.0f);
+//	Convert<8, 2>(2.0f);
+//	Convert<8, 2>(7.0f);
 
-	VerifyToBinary<4, 0>();
+//	VerifyToBinary<4, 0>();
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

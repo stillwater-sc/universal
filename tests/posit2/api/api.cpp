@@ -54,6 +54,20 @@ void VerifyToBinary() {
 	}
 }
 
+template<size_t nbits, size_t es, typename bt = std::uint8_t>
+void Convert(float f) {
+	sw::universal::posit<nbits, es, bt> a{ f };
+	std::cout << a << " : " << to_binary(a) << " : " << color_print(a) << '\n';
+}
+
+template<size_t fbits, typename bt = std::uint8_t>
+void RealToBlockTriple(float f) {
+	std::cout << "real -> blocktriple\n";
+	sw::universal::blocktriple<23, sw::universal::BlockTripleOperator::REP, std::uint8_t> triple(f);
+	std::cout << to_triple(triple) << " : " << triple << '\n';
+	std::cout << triple.fraction() << '\n';
+}
+
 int main()
 try {
 	using namespace sw::universal;
@@ -67,13 +81,14 @@ try {
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
-	/*
+
 	{
-		using Scalar = posit<8, 2, std::uint8_t>;
-		Scalar a;
-		a = 1.0f;
-		std::cout << a << " : " << to_binary(a) << " : " << color_print(a) << '\n';
+		RealToBlockTriple<3>(1.0f);
+		RealToBlockTriple<23>(1.0f);
+		RealToBlockTriple<24>(1.0f);
+		Convert<8, 2, std::uint8_t>(1.0f);
 	}
+/*
 	{
 		VerifyToBinary<5, 2, std::uint8_t>();
 	}	

@@ -373,8 +373,8 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<size_t nbits, size_t es, typename bt, size_t fbits, BlockTripleOperator op>
 inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<nbits, es, bt>& p) {
-	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if constexpr (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
+	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << '\n';
+	if constexpr (_trace_conversion) std::cout << to_triple(v) << " : " << v << '\n';
 
 	if (v.iszero()) {
 		p.setzero();
@@ -532,7 +532,7 @@ public:
 	}
 	constexpr posit& operator=(int rhs) noexcept {
 		constexpr size_t nrfbits = 8 * sizeof(int) - 1;
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(long rhs) noexcept {
@@ -1014,7 +1014,7 @@ public:
 	}
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
-	template<BlockTripleOperator op = BlockTripleOperator::REPRESENTATION>
+	template<BlockTripleOperator op = BlockTripleOperator::REP>
 	blocktriple<fbits, op, bt> to_value() const noexcept {
 		using namespace sw::universal::internal;
 		bool		     		_sign{ false };
@@ -1145,7 +1145,10 @@ private:
 	template <typename Real>
 	CONSTEXPRESSION posit<nbits, es, bt>& convert_ieee754(const Real& rhs) noexcept {
 		constexpr int dfbits = std::numeric_limits<Real>::digits - 1;
-		blocktriple<dfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		blocktriple<dfbits, BlockTripleOperator::REP, bt> v(rhs);
+
+		std::cout << "real fbits : " << dfbits << '\n';
+		std::cout << " >>> " << to_triple(v) << " : " << v << " vs " << rhs << '\n';
 
 		// special case processing
 		if (v.iszero()) {

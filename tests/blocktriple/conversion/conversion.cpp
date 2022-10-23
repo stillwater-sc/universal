@@ -23,7 +23,7 @@ namespace sw { namespace universal {
 		using default_bt = uint8_t;
 		std::stringstream s;
 		sw::universal::blocktriple<fbits, op, default_bt> a(f);
-		s << std::setw(30) << sw::universal::to_binary(a) << " : " << a << " " << typeid(a).name();
+		s << std::setw(31) << sw::universal::to_binary(a) << " : " << a << " " << type_tag(a);
 		return s.str();
 	}
 
@@ -74,19 +74,22 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "blocktriple conversion validation";
-	std::string test_tag    = "bt conversion";
+	std::string test_tag    = "conversion";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
-
-	std::string tag = "blocktriple conversion validation: ";
 
 #if MANUAL_TESTING
 
 	float f;
 	f = 511.875f;
 	std::cout << to_binary(f, true) << '\n';
+	std::cout << convert<12, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
+	std::cout << convert<11, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
+	std::cout << convert<10, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
+	std::cout << convert<9, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
+	std::cout << convert<8, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
 	std::cout << convert<12, BlockTripleOperator::ADD, float>(f) << '\n';
 	std::cout << convert<11, BlockTripleOperator::ADD, float>(f) << '\n';
 	std::cout << convert<10, BlockTripleOperator::ADD, float>(f) << '\n';
@@ -174,13 +177,23 @@ try {
 
 #if REGRESSION_LEVEL_1
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<5, BlockTripleOperator::ADD, float>(reportTestCases), "convert blocktriple<5, ADD> to and from float", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<9, BlockTripleOperator::ADD, float>(reportTestCases), "convert blocktriple<9, ADD> to and from float", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<12, BlockTripleOperator::ADD, float>(reportTestCases), "convert blocktriple<12, ADD> to and from float", "=");
+	constexpr BlockTripleOperator rep = BlockTripleOperator::REP;
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<5, rep, float>(reportTestCases), type_tag(blocktriple<5, rep>()), test_tag + std::string(" to and from float"));
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<9, rep, float>(reportTestCases), type_tag(blocktriple<9, rep>()), test_tag + std::string(" to and from float"));
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<12, rep, float>(reportTestCases), type_tag(blocktriple<12, rep>()), test_tag + std::string(" to and from float"));
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<5, BlockTripleOperator::ADD, double>(reportTestCases), "convert blocktriple<5, ADD> to and from double", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<9, BlockTripleOperator::ADD, double>(reportTestCases), "convert blocktriple<9, ADD> to and from double", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<12, BlockTripleOperator::ADD, double>(reportTestCases), "convert blocktriple<12, ADD> to and from double", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<5, rep, double>(reportTestCases), type_tag(blocktriple<5, rep>()), test_tag + std::string(" to and from double"));
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<9, rep, double>(reportTestCases), type_tag(blocktriple<9, rep>()), test_tag + std::string(" to and from double"));
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<12, rep, double>(reportTestCases), type_tag(blocktriple<12, rep>()), test_tag + std::string(" to and from double"));
+
+	constexpr BlockTripleOperator add = BlockTripleOperator::ADD;
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<5, add, float>(reportTestCases), type_tag(blocktriple<5, add>()), test_tag + std::string(" to and from float"));
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<9, add, float>(reportTestCases), type_tag(blocktriple<9, add>()), test_tag + std::string(" to and from float"));
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<12, add, float>(reportTestCases), type_tag(blocktriple<12, add>()), test_tag + std::string(" to and from float"));
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<5, add, double>(reportTestCases), type_tag(blocktriple<5, add>()), test_tag + std::string(" to and from double"));
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<9, add, double>(reportTestCases), type_tag(blocktriple<9, add>()), test_tag + std::string(" to and from double"));
+	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleConversion<12, add, double>(reportTestCases), type_tag(blocktriple<12, add>()), test_tag + std::string(" to and from double"));
 
 	// test scale progression
 	int scaleTestFailures = 0;
@@ -192,7 +205,7 @@ try {
 			++scaleTestFailures;
 		}
 	}
-	nrOfFailedTestCases += ReportTestResult(scaleTestFailures, "bt scale progression", "=");
+	nrOfFailedTestCases += ReportTestResult(scaleTestFailures, "blocktriple scale progression", "=");
 
 #endif
 

@@ -1790,7 +1790,7 @@ public:
 	// most cfloat<->blocktriple cases being efficient as the block types are aligned.
 	// The relationship between the source cfloat and target blocktriple is not
 	// arbitrary, enforce it by setting the blocktriple fbits to the cfloat's (nbits - es - 1)
-	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt>& tgt) const {
+	constexpr void normalize(blocktriple<fbits, BlockTripleOperator::REP, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();

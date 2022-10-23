@@ -94,7 +94,7 @@ try {
 		constexpr size_t es = 2;
 		using BlockType = std::uint16_t;
 
-		blocktriple<nbits - 1ull - es, BlockTripleOperator::REPRESENTATION, BlockType> v(1.0f);
+		blocktriple<nbits - 1ull - es, BlockTripleOperator::REP, BlockType> v(1.0f);
 		for (int i = 0; i < 10; ++i) {
 			v.setscale(i);
 			std::cout << "blocktriple : " << to_triple(v) << " : " << v << '\n';
