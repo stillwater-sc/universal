@@ -1,7 +1,7 @@
 #pragma once
-// mathlib.hpp: definition of fixed-point mathematical functions
+// mathlib.hpp: definition of mathematical functions specialized for fixpnt arithmetic types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

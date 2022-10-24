@@ -1,7 +1,7 @@
 #pragma once
 // next.hpp: nextafter/nexttoward functions for fixed-points
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -23,7 +23,7 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> nextafter(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> target) {
 	if (x == target) return target;
 	if (target.isnan()) {
@@ -45,7 +45,7 @@ fixpnt<nbits, rbits, arithmetic, bt> nextafter(fixpnt<nbits, rbits, arithmetic, 
 	return x;
 }
 		
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> nexttoward(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> target) {
 	if (x == target) return x;
 	if (target.isnar()) {

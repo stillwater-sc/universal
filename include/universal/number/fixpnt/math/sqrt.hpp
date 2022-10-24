@@ -1,7 +1,7 @@
 #pragma once
 // sqrt.hpp: sqrt functions for fixed-points
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
@@ -27,7 +27,7 @@ namespace sw { namespace universal {
 	}
 */
 
-	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
 		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
@@ -47,7 +47,7 @@ namespace sw { namespace universal {
 		return x_n;
 	}
 
-	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod2(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
 		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
@@ -66,7 +66,7 @@ namespace sw { namespace universal {
 		return x;
 	}
 
-	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> BabylonianMethod3(const fixpnt<nbits, rbits, arithmetic, bt>& v) {
 		using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
 		constexpr Fixed eps = std::numeric_limits<Fixed>::epsilon();
@@ -119,7 +119,7 @@ namespace sw { namespace universal {
 
 #if FIXPNT_NATIVE_SQRT
 	// sqrt for arbitrary cfloat
-	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
 		if (a < 0) std::cout << "sqrt arg is negative: " << a << std::endl;
 		if (a < 0) throw fixpnt_arithmetic_exception("argument to sqrt is negative");
@@ -142,7 +142,7 @@ namespace sw { namespace universal {
 		return x;
 	}
 #else
-	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> sqrt(const fixpnt<nbits, rbits, arithmetic, bt>& a) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) {
@@ -156,7 +156,7 @@ namespace sw { namespace universal {
 #endif
 
 	// reciprocal sqrt
-	template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 	inline fixpnt<nbits, rbits, arithmetic, bt> rsqrt(const fixpnt<nbits, rbits, arithmetic, bt>& f) {
 		fixpnt<nbits, rbits, arithmetic, bt> rsqrt = sqrt(f);
 		return rsqrt.reciprocate();
