@@ -22,7 +22,7 @@
 #include <universal/common/number_traits.hpp>
 #include <universal/common/arithmetic_traits.hpp>
 
-template<size_t nbits, size_t es, typename BlockType = uint32_t>
+template<unsigned nbits, unsigned es, typename BlockType>
 void PositComponents(const sw::universal::posit<nbits, es, BlockType>& p) {
 	std::cout << "posit component values of a fully articulated standard posit\n";
 	bool s{ false };
@@ -73,25 +73,25 @@ try {
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 2;
-		using bt = std::uint16_t;
-		constexpr posit<nbits, es, bt> maxpos(SpecificValue::maxpos);
-		constexpr posit<nbits, es, bt> minpos(SpecificValue::minpos);
-		constexpr posit<nbits, es, bt> zero(SpecificValue::zero);
-		constexpr posit<nbits, es, bt> minneg(SpecificValue::minneg);
-		constexpr posit<nbits, es, bt> maxneg(SpecificValue::maxneg);
+		using BlockType = std::uint16_t;
+		constexpr posit<nbits, es, BlockType> maxpos(SpecificValue::maxpos);
+		constexpr posit<nbits, es, BlockType> minpos(SpecificValue::minpos);
+		constexpr posit<nbits, es, BlockType> zero(SpecificValue::zero);
+		constexpr posit<nbits, es, BlockType> minneg(SpecificValue::minneg);
+		constexpr posit<nbits, es, BlockType> maxneg(SpecificValue::maxneg);
 		std::cout << "minpos patterns for full articulated standard posits\n";
-		std::cout << "minpos : " << to_binary(minpos) << '\t' << minpos_scale<nbits, es>() << '\n';
-		std::cout << "minneg : " << to_binary(minneg) << '\n';
+//		std::cout << "minpos : " << to_binary(minpos) << '\t' << minpos_scale<nbits, es>() << '\n';
+//		std::cout << "minneg : " << to_binary(minneg) << '\n';
 
 		std::cout << "maxpos patterns for full articulated standard posits\n";
-		std::cout << "maxpos : " << to_binary(maxpos) << '\t' << maxpos_scale<nbits, es>() << '\n';
-		std::cout << "maxneg : " << to_binary(maxneg) << '\n';
+//		std::cout << "maxpos : " << to_binary(maxpos) << '\t' << maxpos_scale<nbits, es>() << '\n';
+//		std::cout << "maxneg : " << to_binary(maxneg) << '\n';
 		std::cout << '\n';
 	}
 
 	{
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 2;
+		constexpr unsigned nbits = 16;
+		constexpr unsigned es = 2;
 		using BlockType = std::uint16_t;
 
 		blocktriple<nbits - 1ull - es, BlockTripleOperator::REP, BlockType> v(1.0f);
@@ -103,8 +103,8 @@ try {
 	}
 
 	{
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 2;
+		constexpr unsigned nbits = 16;
+		constexpr unsigned es = 2;
 		using BlockType = std::uint16_t;
 
 		PositComponents(posit<nbits, es, BlockType>(SpecificValue::maxpos));

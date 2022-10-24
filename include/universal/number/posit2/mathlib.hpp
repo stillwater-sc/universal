@@ -36,7 +36,7 @@ namespace sw { namespace universal {
 
     // calculate the integer power a ^ b
     // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-    template<size_t nbits, size_t es, typename bt>
+    template<unsigned nbits, unsigned es, typename bt>
     posit<nbits, es, bt> ipow(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b) {
         // precondition
         if (!a.isinteger() || !b.isinteger()) return posit<nbits, es, bt>(0);
@@ -56,14 +56,14 @@ namespace sw { namespace universal {
     // clang <complex> implementation is calling these functions so we need implementations for posit
 
     // already defined in math/classify.hpp
-    //template<size_t nbits, size_t es>
+    //template<unsigned nbits, unsigned es>
     //inline bool isnan(const posit<nbits, es>& p) { return p.isnar(); }
     //
-    //template<size_t nbits, size_t es>
+    //template<unsigned nbits, unsigned es>
     //inline bool isinf(const posit<nbits, es>& p) { return p.isnar(); }
 
     // copysign returns a value with the magnitude of a, and the sign of b
-    template<size_t nbits, size_t es, typename bt>
+    template<unsigned nbits, unsigned es, typename bt>
     inline posit<nbits, es, bt> copysign(const posit<nbits, es, bt>& a, const posit<nbits, es, bt>& b) {
         posit<nbits, es, bt> c(a);
         if (a.sign() == b.sign()) return c;

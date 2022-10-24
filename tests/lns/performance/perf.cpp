@@ -114,7 +114,7 @@ namespace sw::universal::internal {
 	lns<32, 8, uint32_t>   division           1048576 per       0.0016528sec -> 634 Mops/sec
 
 	October 24th, NZXT AMD Ryzen 7 2700X Eight-Core Processor, 3.70 GHz 
-	5-10x slower compred to i7 for some reason
+	5-10x slower compared to i7 for some reason
 	
 	Arithmetic operator performance
 	lns< 4, 1, uint8_t >   add/subtract       1048576 per         2.39943sec -> 437 Kops/sec

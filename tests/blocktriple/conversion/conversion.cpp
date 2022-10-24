@@ -54,7 +54,7 @@ namespace sw { namespace universal {
 }}  // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -82,6 +82,14 @@ try {
 
 #if MANUAL_TESTING
 
+	{
+		std::cout << "\n\n";
+		std::cout << convert<8, BlockTripleOperator::REP, float>(1.0f) << '\n';
+		std::cout << convert<22, BlockTripleOperator::REP, float>(1.0f) << '\n';
+		std::cout << convert<23, BlockTripleOperator::REP, float>(1.0f) << '\n';
+		std::cout << convert<32, BlockTripleOperator::REP, float>(1.0f) << '\n';
+	}
+
 	float f;
 	f = 511.875f;
 	std::cout << to_binary(f, true) << '\n';
@@ -89,7 +97,8 @@ try {
 	std::cout << convert<11, BlockTripleOperator::REP, float>(f) << '\n';
 	std::cout << convert<10, BlockTripleOperator::REP, float>(f) << '\n';
 	std::cout << convert<9, BlockTripleOperator::REP, float>(f) << '\n';
-	std::cout << convert<8, BlockTripleOperator::REP, float>(f) << '\n';
+	std::cout << convert<8, BlockTripleOperator::REP, float>(f) << '\n';		
+
 	std::cout << convert<12, BlockTripleOperator::ADD, float>(f) << '\n';
 	std::cout << convert<11, BlockTripleOperator::ADD, float>(f) << '\n';
 	std::cout << convert<10, BlockTripleOperator::ADD, float>(f) << '\n';

@@ -26,7 +26,7 @@
 
 namespace sw { namespace universal {
 
-template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 int VerifyToIntegerConversion(bool reportTestCases) {
 	using Integer = integer<nbits, BlockType, NumberType>;
 
@@ -34,7 +34,7 @@ int VerifyToIntegerConversion(bool reportTestCases) {
 
 	Integer a;
 	a.setbits(0xAAAA'AAAA'AAAA'AAAA);
-	std::cout << type_tag(a) << '\n';
+	if (reportTestCases) std::cout << type_tag(a) << '\n';
 
 	uint8_t  ua8  = uint8_t(a);
 	uint16_t ua16 = uint16_t(a);

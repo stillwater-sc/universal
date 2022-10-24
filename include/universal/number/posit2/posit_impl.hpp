@@ -46,35 +46,35 @@ namespace sw { namespace universal {
 using namespace sw::universal::internal;
 
 // specialized configuration constants
-constexpr size_t NBITS_IS_2   =   2;
-constexpr size_t NBITS_IS_3   =   3;
-constexpr size_t NBITS_IS_4   =   4;
-constexpr size_t NBITS_IS_5   =   5;
-constexpr size_t NBITS_IS_6   =   6;
-constexpr size_t NBITS_IS_7   =   7;
-constexpr size_t NBITS_IS_8   =   8;
-constexpr size_t NBITS_IS_10  =  10;
-constexpr size_t NBITS_IS_12  =  12;
-constexpr size_t NBITS_IS_14  =  14;
-constexpr size_t NBITS_IS_16  =  16;
-constexpr size_t NBITS_IS_20  =  20;
-constexpr size_t NBITS_IS_24  =  24;
-constexpr size_t NBITS_IS_28  =  28;
-constexpr size_t NBITS_IS_32  =  32;
-constexpr size_t NBITS_IS_40  =  40;
-constexpr size_t NBITS_IS_48  =  48;
-constexpr size_t NBITS_IS_56  =  56;
-constexpr size_t NBITS_IS_64  =  64;
-constexpr size_t NBITS_IS_80  =  80;
-constexpr size_t NBITS_IS_96  =  96;
-constexpr size_t NBITS_IS_128 = 128;
-constexpr size_t NBITS_IS_256 = 256;
-constexpr size_t ES_IS_0 = 0;
-constexpr size_t ES_IS_1 = 1;
-constexpr size_t ES_IS_2 = 2;
-constexpr size_t ES_IS_3 = 3;
-constexpr size_t ES_IS_4 = 4;
-constexpr size_t ES_IS_5 = 5;
+constexpr unsigned NBITS_IS_2   =   2;
+constexpr unsigned NBITS_IS_3   =   3;
+constexpr unsigned NBITS_IS_4   =   4;
+constexpr unsigned NBITS_IS_5   =   5;
+constexpr unsigned NBITS_IS_6   =   6;
+constexpr unsigned NBITS_IS_7   =   7;
+constexpr unsigned NBITS_IS_8   =   8;
+constexpr unsigned NBITS_IS_10  =  10;
+constexpr unsigned NBITS_IS_12  =  12;
+constexpr unsigned NBITS_IS_14  =  14;
+constexpr unsigned NBITS_IS_16  =  16;
+constexpr unsigned NBITS_IS_20  =  20;
+constexpr unsigned NBITS_IS_24  =  24;
+constexpr unsigned NBITS_IS_28  =  28;
+constexpr unsigned NBITS_IS_32  =  32;
+constexpr unsigned NBITS_IS_40  =  40;
+constexpr unsigned NBITS_IS_48  =  48;
+constexpr unsigned NBITS_IS_56  =  56;
+constexpr unsigned NBITS_IS_64  =  64;
+constexpr unsigned NBITS_IS_80  =  80;
+constexpr unsigned NBITS_IS_96  =  96;
+constexpr unsigned NBITS_IS_128 = 128;
+constexpr unsigned NBITS_IS_256 = 256;
+constexpr unsigned ES_IS_0 = 0;
+constexpr unsigned ES_IS_1 = 1;
+constexpr unsigned ES_IS_2 = 2;
+constexpr unsigned ES_IS_3 = 3;
+constexpr unsigned ES_IS_4 = 4;
+constexpr unsigned ES_IS_5 = 5;
 
 // Not A Real is the posit encoding for INFINITY and arithmetic errors that can propagate
 // The symbol NAR can be used to initialize a posit, i.e., posit<nbits,es>(NAR), or posit<nbits,es> p = NAR
@@ -88,7 +88,7 @@ constexpr size_t ES_IS_5 = 5;
 // DO NOT USE the k value for this, as the k value encodes the useed regions
 // and thus is too coarse to make this decision.
 // Using the scale directly is the simplest expression of the inward projection test.
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 bool check_inward_projection_range(int scale) {
 	// calculate the min/max k factor for this posit config
 	int posit_size = nbits;
@@ -100,7 +100,7 @@ bool check_inward_projection_range(int scale) {
 // how many shifts represent the regime?
 // regime = useed ^ k = (2 ^ (2 ^ es)) ^ k = 2 ^ (k*(2 ^ es))
 // scale  = useed ^ k * 2^e = k*(2 ^ es) + e 
-template<size_t nbits, typename bt>
+template<unsigned nbits, typename bt>
 int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits) {
 	// let m be the number of identical bits in the regime
 	int m = 0;   // regime runlength counter
@@ -109,7 +109,7 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 		m = 1;   // if a run of 1's k = m - 1
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
 		for (int i = start; i >= 0; --i) {
-			if (raw_bits.test(size_t(i))) {
+			if (raw_bits.test(unsigned(i))) {
 				m++;
 			}
 			else {
@@ -122,7 +122,7 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 		m = 1;  // if a run of 0's k = -m
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
 		for (int i = start; i >= 0; --i) {
-			if (raw_bits.test(size_t(i))) {
+			if (raw_bits.test(unsigned(i))) {
 				break;
 			}
 			else {
@@ -135,7 +135,7 @@ int decode_regime(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bi
 }
 
 // extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
-template<size_t nbits, size_t es, typename bt, size_t fbits>
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
 	using TwosComplementNumber = blockbinary<nbits, bt, BinaryNumberType::Signed>;
 	// check special case
@@ -149,17 +149,17 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	TwosComplementNumber tmp(raw_bits);
 	_sign = raw_bits.test(nbits - 1);
 	if (_sign) tmp = twosComplement(tmp);
-	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
+	unsigned nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
 	// get the exponent bits
 	// start of exponent is nbits-1 - (sign_bit + regime_bits)
 	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
-	size_t nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<size_t>(msb + 1ll);
+	unsigned nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<unsigned>(msb + 1ll);
 	if (es > 0) {
 		_exponent.reset();
 		if (msb >= 0 && es > 0) {
-			for (size_t i = 0; i < nrExponentBits; ++i) {
-				_exponent.setbit(es - size_t{1} - i, tmp.at(static_cast<size_t>(msb) - i));
+			for (unsigned i = 0; i < nrExponentBits; ++i) {
+				_exponent.setbit(es - 1u - i, tmp.at(static_cast<unsigned>(msb) - i));
 			}
 		}
 		_exponent.setNrBits(nrExponentBits);
@@ -173,15 +173,15 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 	blockbinary<fbits, bt, BinaryNumberType::Unsigned> _frac{ 0 };
 	msb = msb - int(nrExponentBits);
-	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb) + 1ull);
+	unsigned nrFractionBits = (msb < 0 ? 0ull : static_cast<unsigned>(msb) + 1ull);
 	if (msb >= 0) {
 		std::cout <<  "  : " << to_binary(_frac) << '\n';
-		size_t msfbit = static_cast<size_t>(msb);
-		for (size_t i = 0; i <= msfbit; ++i) {
+		unsigned msfbit = static_cast<unsigned>(msb);
+		for (unsigned i = 0; i <= msfbit; ++i) {
 			_frac.setbit(fbits - 1ull - (msfbit - i), tmp.at(i));
 		}
 //		for (int i = msb; i >= 0; --i) {
-//			_frac[fbits - 1ull - (static_cast<size_t>(msb) - static_cast<size_t>(i))] = tmp[static_cast<size_t>(i)];
+//			_frac[fbits - 1ull - (static_cast<unsigned>(msb) - static_cast<unsigned>(i))] = tmp[static_cast<unsigned>(i)];
 //		}
 	}
 	_fraction.set(_frac, nrFractionBits);
@@ -190,7 +190,7 @@ void extract_fields(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_
 // decode takes the raw bits representing a posit coming from memory
 // and decodes the sign, regime, the exponent, and the fraction.
 // This function has the functionality of the posit register-file load.
-template<size_t nbits, size_t es, typename bt, size_t fbits>
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bool& _sign, regime<nbits, es, bt>& _regime, exponent<nbits, es, bt>& _exponent, fraction<fbits, bt>& _fraction) {
 	//_block = raw_bits;	// store the raw bits for reference
 	// check special cases
@@ -225,7 +225,7 @@ void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bo
 }
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
-template<size_t nbits, size_t es, typename bt, size_t fbits>
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sign, int _scale, const blockbinary<fbits, bt>& fraction_in, blockbinary<nbits, bt, BinaryNumberType::Signed>& ptt) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
@@ -242,7 +242,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
-		const size_t pt_len = nbits + 3 + es;
+		const unsigned pt_len = nbits + 3 + es;
 		blockbinary<pt_len, bt> pt_bits;
 		blockbinary<pt_len, bt> regime;
 		blockbinary<pt_len, bt> exponent;
@@ -253,18 +253,18 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		int e = _scale;
 		bool r = (e >= 0);
 
-		size_t run = static_cast<size_t>(r ? 1ll + (e >> es) : -(e >> es));
+		unsigned run = static_cast<unsigned>(r ? 1ll + (e >> es) : -(e >> es));
 		regime.set(0, 1 ^ r);  // TODO: this expression can be improved 1 ^ r is the same as !r as r is a boolean, no need for a bitwise operator
-		for (size_t i = 1; i <= run; i++) regime.set(i, r);
+		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
-		size_t esval = e % (size_t(1) << static_cast<int>(es));
+		unsigned esval = e % (unsigned(1) << static_cast<int>(es));
 		exponent = convert_to_bitblock<pt_len>(esval);
-		size_t nf = size_t(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
+		unsigned nf = unsigned(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
-		size_t lsb = nf <= fbits ? 0 : nf - fbits;
-		for (size_t i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
+		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
+		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
 
 		bool sb = anyAfter(fraction_in, static_cast<int>(fbits) - 1 - int(nf));
 
@@ -280,7 +280,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		size_t len = 1 + std::max<size_t>((nbits + 1), (2 + run + es));
+		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1);
 		bool bsticky = anyAfter(pt_bits, int(len) - static_cast<int>(nbits) - 1 - 1);
@@ -296,7 +296,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 }
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
-template<size_t nbits, size_t es, typename bt, size_t fbits>
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignificant<fbits, bt>& fraction_in, posit<nbits, es, bt>& p) {
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if constexpr (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
@@ -313,7 +313,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
-		constexpr size_t pt_len = nbits + 3 + es;
+		constexpr unsigned pt_len = nbits + 3 + es;
 		using BlockBinary = blockbinary<pt_len, bt, BinaryNumberType::Signed>;
 		BlockBinary pt_bits{ 0 };
 		BlockBinary regime{ 0 };
@@ -325,19 +325,19 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		int e  = _scale;
 		bool r = (e >= 0);  // positive or negative regime to create runs such as: 11..110 or 00..001
 
-		size_t run = size_t(r ? 1 + (e >> es) : -(e >> es));
+		unsigned run = unsigned(r ? 1 + (e >> es) : -(e >> es));
 		regime.setbit(0, 1 ^ r);
-		for (size_t i = 1; i <= run; ++i) regime.setbit(i, r);
+		for (unsigned i = 1; i <= run; ++i) regime.setbit(i, r);
 
 		exponent = e % (1ull << es);
 		int nbits_plus_one = static_cast<int>(nbits) + 1;
 		int sign_regime_es = static_cast<int>(2ull + run + es);
-		size_t nrFbits = static_cast<size_t>(std::max<int>(0, (nbits_plus_one - sign_regime_es)));
+		unsigned nrFbits = static_cast<unsigned>(std::max<int>(0, (nbits_plus_one - sign_regime_es)));
 
 		// when nrFbits > fbits then we need to round
 		// copy the most significant nf fraction bits into fraction
-		size_t lsb = (nrFbits <= fbits ? 0 : nrFbits - fbits);
-		for (size_t i = lsb; i < nrFbits; ++i) fraction.setbit(i, fraction_in.test(fbits - nrFbits + i));
+		unsigned lsb = (nrFbits <= fbits ? 0 : nrFbits - fbits);
+		for (unsigned i = lsb; i < nrFbits; ++i) fraction.setbit(i, fraction_in.test(fbits - nrFbits + i));
 
 		bool sb = fraction_in.anyAfter(fbits - 1ull - nrFbits);
 
@@ -353,7 +353,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		size_t len = 1 + std::max<size_t>((nbits + 1ull), (2u + run + es));
+		unsigned len = 1 + std::max<unsigned>((nbits + 1ull), (2u + run + es));
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1ull);
 		bool bsticky = pt_bits.anyAfter(len - nbits - 1ull - 1ull);
@@ -371,7 +371,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 }
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t es, typename bt, size_t fbits, BlockTripleOperator op>
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits, BlockTripleOperator op>
 inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<nbits, es, bt>& p) {
 	if constexpr (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << '\n';
 	if constexpr (_trace_conversion) std::cout << to_triple(v) << " : " << v << '\n';
@@ -384,11 +384,11 @@ inline posit<nbits, es, bt>& convert(const blocktriple<fbits, op, bt>& v, posit<
 		p.setnar();
 		return p;
 	}
-	return convert_<nbits, es, bt, fbits + 2ull>(v.sign(), v.scale(), v.fraction(), p);
+	return convert_<nbits, es, bt, fbits + 2u>(v.sign(), v.scale(), v.fraction(), p);
 }
 
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 std::string quadrant(const posit<nbits, es, bt>& p) {
 	posit<nbits, es, bt> pOne(1), pMinusOne(-1);
 	if (sign(p)) {
@@ -412,7 +412,7 @@ std::string quadrant(const posit<nbits, es, bt>& p) {
 }
 
 // Construct posit from its components
-template<size_t nbits, size_t es, typename bt, size_t fbits>
+template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 posit<nbits, es, bt>& construct(bool s, const regime<nbits, es, bt>& r, const exponent<nbits, es, bt>& e, const fraction<fbits, bt>& f, posit<nbits, es, bt>& p) {
 	// generate raw bit representation
 	blockbinary<nbits, bt> _block = s ? twos_complement(collect(s, r, e, f)) : collect(s, r, e, f);
@@ -423,37 +423,37 @@ posit<nbits, es, bt>& construct(bool s, const regime<nbits, es, bt>& r, const ex
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // class posit represents posit numbers of arbitrary configuration and their basic arithmetic operations (add/sub, mul/div)
-template<size_t _nbits, size_t _es, typename bt = std::uint8_t>
+template<unsigned _nbits, unsigned _es, typename bt = std::uint8_t>
 class posit {
 
 	static_assert(_es < 10ull, "my God that is a big number, are you trying to break the Interweb?");
 
 public:
-	static constexpr size_t   nbits   = _nbits;
-	static constexpr size_t   es      = _es;
-	static constexpr size_t   sbits   = 1;                          // number of sign bits:     specified
-	static constexpr size_t   rbits   = nbits - sbits;              // maximum number of regime bits:   derived
-	static constexpr size_t   ebits   = es;                         // maximum number of exponent bits: specified
-	static constexpr size_t   fbits   = (es + 2 >= nbits ? 0 : nbits - 3 - es); // maximum number of fraction bits: derived
-	static constexpr size_t   fhbits  = fbits + 1;                  // maximum number of fraction + one hidden bit
+	static constexpr unsigned   nbits   = _nbits;
+	static constexpr unsigned   es      = _es;
+	static constexpr unsigned   sbits   = 1;                          // number of sign bits:     specified
+	static constexpr unsigned   rbits   = nbits - sbits;              // maximum number of regime bits:   derived
+	static constexpr unsigned   ebits   = es;                         // maximum number of exponent bits: specified
+	static constexpr unsigned   fbits   = (es + 2 >= nbits ? 0 : nbits - 3 - es); // maximum number of fraction bits: derived
+	static constexpr unsigned   fhbits  = fbits + 1;                  // maximum number of fraction + one hidden bit
 
-	static constexpr size_t   abits   = fhbits + 3;                 // size of the addend
-	static constexpr size_t   mbits   = 2 * fhbits;                 // size of the multiplier output
-	static constexpr size_t   divbits = 3 * fhbits + 4;             // size of the divider output
+	static constexpr unsigned   abits   = fhbits + 3;                 // size of the addend
+	static constexpr unsigned   mbits   = 2 * fhbits;                 // size of the multiplier output
+	static constexpr unsigned   divbits = 3 * fhbits + 4;             // size of the divider output
 
-	static constexpr size_t   bitsInByte = 8ull;
-	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr unsigned   bitsInByte = 8ull;
+	static constexpr unsigned   bitsInBlock = sizeof(bt) * bitsInByte;
 //	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code, but allow single block uint64_t
 
-	static constexpr size_t   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr unsigned   storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 	static constexpr bt       BLOCK_MASK = bt(~0);
 	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
 	static constexpr uint32_t ALL_ONES_ES = (0xFFFFul >> (16 - es));
 
-	static constexpr size_t   nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr size_t   MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+	static constexpr unsigned   nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr unsigned   MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 	static constexpr bt       MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr size_t   bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
+	static constexpr unsigned   bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
 
 	static constexpr bt       SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt       LSB_BIT_MASK = bt(1ull);
@@ -470,7 +470,7 @@ public:
 	posit& operator=(posit&&) = default;
 
 	/// Construct posit from another posit with the same alignment
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	posit(const posit<nnbits, ees, bbt>& a) {
 		*this = a.to_value();
 	}
@@ -521,53 +521,53 @@ public:
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(signed char) - 1;
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(signed char) - 1;
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(short rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(short) - 1;
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(short) - 1;
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(int rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(int) - 1;
+		constexpr unsigned nrfbits = 8 * sizeof(int) - 1;
 		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(long rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(long);
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(long);
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(long long rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(long long) - 1;
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(long long) - 1;
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(char rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(char);
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(char);
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(unsigned short rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(unsigned short);
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(unsigned short);
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(unsigned int rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(unsigned int);
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(unsigned int);
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(unsigned long rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(unsigned long);
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(unsigned long);
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	constexpr posit& operator=(unsigned long long rhs) noexcept {
-		constexpr size_t nrfbits = 8 * sizeof(unsigned long long);
-		blocktriple<nrfbits, BlockTripleOperator::REPRESENTATION, bt> v(rhs);
+		constexpr unsigned nrfbits = 8 * sizeof(unsigned long long);
+		blocktriple<nrfbits, BlockTripleOperator::REP, bt> v(rhs);
 		return convert(v, *this);
 	}
 	CONSTEXPRESSION posit& operator=(float rhs) noexcept { return convert_ieee754(rhs); }
@@ -583,7 +583,7 @@ public:
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
 	// convenience assignment operator
-	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+	template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 	posit& operator=(const integer<nbits, BlockType, NumberType>& rhs) {
 		convert_i2p(rhs, *this);
 		return *this;
@@ -591,7 +591,7 @@ public:
 #endif
 
 	// assignment for value type
-	template<size_t vbits>
+	template<unsigned vbits>
 	posit& operator=(const blocksignificant<vbits, bt>& rhs) {
 		clear();
 		convert(rhs, *this);
@@ -857,13 +857,13 @@ public:
 			fraction<fbits, bt> f;
 			decode(_block, s, r, e, f);
 
-			constexpr size_t operand_size = fhbits;
+			constexpr unsigned operand_size = fhbits;
 			blockbinary<operand_size, bt> one;
 			one.set(operand_size - 1, true);
 			blockbinary<operand_size, bt> frac;
 			copy_into(f.bits(), 0, frac);
 			frac.set(operand_size - 1, true);
-			constexpr size_t reciprocal_size = 3 * fbits + 4;
+			constexpr unsigned reciprocal_size = 3 * fbits + 4;
 			blockbinary<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
 			if (_trace_reciprocate) {
@@ -878,8 +878,8 @@ public:
 			int new_scale = -scale(*this);
 			int msb = findMostSignificantBit(reciprocal);
 			if (msb > 0) {
-				int shift = static_cast<int>(reciprocal_size - static_cast<size_t>(msb));
-				reciprocal <<= static_cast<size_t>(shift);
+				int shift = static_cast<int>(reciprocal_size - static_cast<unsigned>(msb));
+				reciprocal <<= static_cast<unsigned>(shift);
 				new_scale -= (shift-1);
 				if (_trace_reciprocate) std::cout << "result " << reciprocal << std::endl;
 			}
@@ -922,7 +922,7 @@ public:
 		tmp = sign() ? twosComplement(tmp) : tmp;
 		regime<nbits, es, bt> r;
 		int k = decode_regime(tmp);
-		size_t nrRegimeBits = r.assign_regime_pattern(k);
+		unsigned nrRegimeBits = r.assign_regime_pattern(k);
 		exponent<nbits, es, bt> e;
 		e.extract_exponent_bits(tmp, nrRegimeBits);
 		return r.scale() + e.scale();
@@ -1005,7 +1005,7 @@ public:
 		clear();
 		blockbinary<nbits, bt, BinaryNumberType::Signed> raw_bits;
 		uint64_t mask = 1ull;
-		for ( size_t i = 0; i < nbits; ++i ) {
+		for ( unsigned i = 0; i < nbits; ++i ) {
 			raw_bits.setbit(i,(value & mask));
 			mask <<= 1;
 		}
@@ -1035,7 +1035,7 @@ public:
 		decode(_block, _sign, _regime, _exponent, _fraction);
 		v.set(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
 	}
-	template<size_t tgt_fbits>
+	template<unsigned tgt_fbits>
 	void normalize_to(blocksignificant<tgt_fbits, bt>& v) const noexcept {
 		using namespace sw::universal::internal;
 		bool		     		_sign{ false };
@@ -1086,9 +1086,9 @@ public:
 				tgt.bitShift(BlockTripleConfiguration::rbits);  // rounding bits required for correct rounding
 			}
 */
-			size_t FSU = MSU;
-			size_t FSU_MASK = 0x07FFu; // s rr ee fff ... fff  nbits is 16 es = 2, bt is uint16
-			for (size_t i = 0; i < FSU; ++i) {
+			unsigned FSU = MSU;
+			unsigned FSU_MASK = 0x07FFu; // s rr ee fff ... fff  nbits is 16 es = 2, bt is uint16
+			for (unsigned i = 0; i < FSU; ++i) {
 				tgt.setblock(i, _block[i]);
 			}
 			tgt.setblock(FSU, static_cast<bt>(_block[FSU] & FSU_MASK));
@@ -1115,7 +1115,7 @@ public:
 		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, 0, true) << '\n';
 	}
 	void showLimbs() const {
-		for (size_t b = 0; b < nrBlocks; ++b) {
+		for (unsigned b = 0; b < nrBlocks; ++b) {
 			std::cout << to_binary(_block[nrBlocks - b - 1], sizeof(bt) * 8) << ' ';
 		}
 		std::cout << '\n';
@@ -1166,392 +1166,392 @@ private:
 
 	// friend functions
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend std::ostream& operator<< (std::ostream& ostr, const posit<nnbits, ees, bbt>& p);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend std::istream& operator>> (std::istream& istr, posit<nnbits, ees, bbt>& p);
 
 	// posit - posit logic functions
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, const posit<nnbits, ees, bbt>& rhs);
 
 #if POSIT_ENABLE_LITERALS
 	// posit - literal logic functions
 
 	// posit - signed char
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, signed char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, signed char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, signed char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, signed char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, signed char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, signed char rhs);
 
 	// posit - char
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, char rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, char rhs);
 
 	// posit - short
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, short rhs);
 
 	// posit - unsigned short
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, unsigned short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, unsigned short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, unsigned short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, unsigned short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, unsigned short rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, unsigned short rhs);
 
 	// posit - int
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, int rhs);
 
 	// posit - unsigned int
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, unsigned int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, unsigned int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, unsigned int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, unsigned int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, unsigned int rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, unsigned int rhs);
 
 	// posit - long
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, long rhs);
 
 	// posit - unsigned long long
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, unsigned long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, unsigned long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, unsigned long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, unsigned long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, unsigned long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, unsigned long rhs);
 
 	// posit - long long
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, long long rhs);
 
 	// posit - unsigned long long
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, unsigned long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, unsigned long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, unsigned long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, unsigned long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, unsigned long long rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, unsigned long long rhs);
 
 	// posit - float
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, float rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, float rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, float rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, float rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, float rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, float rhs);
 
 	// posit - double
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, double rhs);
 
 	// posit - long double
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(const posit<nnbits, ees, bbt>& lhs, long double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(const posit<nnbits, ees, bbt>& lhs, long double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (const posit<nnbits, ees, bbt>& lhs, long double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (const posit<nnbits, ees, bbt>& lhs, long double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(const posit<nnbits, ees, bbt>& lhs, long double rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(const posit<nnbits, ees, bbt>& lhs, long double rhs);
 
 	// literal - posit logic functions
 
 	// signed char - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(signed char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(signed char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (signed char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (signed char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(signed char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(signed char lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// char - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(char lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(char lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// short - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(short lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// unsigned short - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(unsigned short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(unsigned short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (unsigned short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (unsigned short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(unsigned short lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(unsigned short lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// int - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(int lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// unsigned int - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(unsigned int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(unsigned int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (unsigned int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (unsigned int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(unsigned int lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(unsigned int lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// long - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(long lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// unsigned long - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(unsigned long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(unsigned long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (unsigned long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (unsigned long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(unsigned long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(unsigned long lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// long long - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(long long lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// unsigned long long - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(unsigned long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(unsigned long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (unsigned long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (unsigned long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(unsigned long long lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(unsigned long long lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// float - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(float lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(float lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (float lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (float lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(float lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(float lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// double - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(double lhs, const posit<nnbits, ees, bbt>& rhs);
 
 	// long double - posit
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator==(long double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator!=(long double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator< (long double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator> (long double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator<=(long double lhs, const posit<nnbits, ees, bbt>& rhs);
-	template<size_t nnbits, size_t ees, typename bbt>
+	template<unsigned nnbits, unsigned ees, typename bbt>
 	friend bool operator>=(long double lhs, const posit<nnbits, ees, bbt>& rhs);
 
 #endif // POSIT_ENABLE_LITERALS
@@ -1560,31 +1560,31 @@ private:
 
 ////////////////// convenience/shim functions
 
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool isnar(const posit<nbits, es, bt>& p) {
 	return p.isnar();
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool iszero(const posit<nbits, es, bt>& p) {
 	return p.iszero();
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool ispos(const posit<nbits, es, bt>& p) {
 	return p.ispos();
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool isneg(const posit<nbits, es, bt>& p) {
 	return p.isneg();
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool isone(const posit<nbits, es, bt>& p) {
 	return p.isone();
 }		
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool isminusone(const posit<nbits, es, bt>& p) {
 	return p.isminusone();
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool ispowerof2(const posit<nbits, es, bt>& p) {
 	return p.ispowerof2();
 }
@@ -1594,7 +1594,7 @@ inline bool ispowerof2(const posit<nbits, es, bt>& p) {
 // stream operators
 
 // generate a posit format ASCII format nbits.esxNN...NNp
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& p) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the posit into a string
@@ -1617,7 +1617,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es, bt>& 
 }
 
 // read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::istream& operator>> (std::istream& istr, posit<nbits, es, bt>& p) {
 	std::string txt;
 	istr >> txt;
@@ -1628,7 +1628,7 @@ inline std::istream& operator>> (std::istream& istr, posit<nbits, es, bt>& p) {
 }
 
 // generate a posit format ASCII format nbits.esxNN...NNp
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string hex_format(const posit<nbits, es, bt>& p) {
 	// we need to transform the posit into a string
 	std::stringstream ss;
@@ -1644,7 +1644,7 @@ inline std::string hex_format(Float f) {
 }
 
 // convert a posit value to a string using "nar" as designation of NaR
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize precision = 17) {
 	if (p.isnar()) {
 		return std::string("nar");
@@ -1655,10 +1655,10 @@ inline std::string to_string(const posit<nbits, es, bt>& p, std::streamsize prec
 }
 
 // binary representation of a posit with delimiters: i.e. 0.10.00.000000 => sign.regime.exp.fraction
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
 	
-	constexpr size_t fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);             // maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2ull >= nbits ? 0ull : nbits - 3ull - es);             // maximum number of fraction bits: derived
 	bool negative{ false };
 	regime<nbits, es, bt> r;
 	exponent<nbits, es, bt> e;
@@ -1675,9 +1675,9 @@ inline std::string to_binary(const posit<nbits, es, bt>& number, bool nibbleMark
 	return s.str();
 }
 
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMarker = false) {
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
 	regime<nbits, es, bt> r;
 	exponent<nbits, es, bt> e;
@@ -1697,16 +1697,16 @@ inline std::string to_triple(const posit<nbits, es, bt>& number, bool nibbleMark
 
 // numerical helpers
 
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline posit<nbits, es, bt> ulp(const posit<nbits, es, bt>& a) {
 	posit<nbits, es, bt> b(a);
 	return ++b - a;
 }
 
 // binary exponent representation: i.e. 1.0101010e2^-37
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s{ false };
 	scale(number);
 	regime<nbits, es, bt> r;
@@ -1722,52 +1722,52 @@ inline std::string to_base2_scientific(const posit<nbits, es, bt>& number) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // posit - posit binary logic operators
 
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return lhs._block == rhs._block;
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return !operator==(lhs, rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return twosComplementLessThan(lhs._block, rhs._block);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return operator< (rhs, lhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline posit<nbits, es, bt> operator+(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	posit<nbits, es, bt> sum = lhs;
 	return sum += rhs;
 }
 // BINARY SUBTRACTION
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline posit<nbits, es, bt> operator-(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	posit<nbits, es, bt> diff = lhs;
 	return diff -= rhs;
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline posit<nbits, es, bt> operator*(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	posit<nbits, es, bt> mul = lhs;
 	return mul *= rhs;
 }
 // BINARY DIVISION
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline posit<nbits, es, bt> operator/(const posit<nbits, es, bt>& lhs, const posit<nbits, es, bt>& rhs) {
 	posit<nbits, es, bt> ratio(lhs);
 	return ratio /= rhs;
@@ -1776,683 +1776,683 @@ inline posit<nbits, es, bt> operator/(const posit<nbits, es, bt>& lhs, const pos
 #if POSIT_ENABLE_LITERALS
 
 // posit - signed char logic operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(const posit<nbits, es>& lhs, signed char rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(const posit<nbits, es>& lhs, signed char rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, signed char rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, signed char rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(const posit<nbits, es>& lhs, signed char rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(const posit<nbits, es>& lhs, signed char rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // signed char - posit logic operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(signed char lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(signed char lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (signed char lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (signed char lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(signed char lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(signed char lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - char logic operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(const posit<nbits, es>& lhs, char rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(const posit<nbits, es>& lhs, char rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, char rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, char rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(const posit<nbits, es>& lhs, char rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(const posit<nbits, es>& lhs, char rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // char - posit logic operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(char lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(char lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (char lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (char lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(char lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(char lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - short logic operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(const posit<nbits, es>& lhs, short rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(const posit<nbits, es>& lhs, short rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, short rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, short rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(const posit<nbits, es>& lhs, short rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(const posit<nbits, es>& lhs, short rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // short - posit logic operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(short lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(short lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (short lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (short lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(short lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(short lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - unsigned short logic operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(const posit<nbits, es>& lhs, unsigned short rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(const posit<nbits, es>& lhs, unsigned short rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned short rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned short rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(const posit<nbits, es>& lhs, unsigned short rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(const posit<nbits, es>& lhs, unsigned short rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // unsigned short - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(unsigned short lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(unsigned short lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (unsigned short lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (unsigned short lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(unsigned short lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(unsigned short lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - int logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, int rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, int rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, int rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, int rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, int rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, int rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // int - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(int lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(int lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (int lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (int lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(int lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(int lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - unsigned int logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, unsigned int rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, unsigned int rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned int rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned int rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, unsigned int rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, unsigned int rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // unsigned int - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(unsigned int lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(unsigned int lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (unsigned int lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (unsigned int lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(unsigned int lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(unsigned int lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - long logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, long rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, long rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, long rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, long rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, long rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, long rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // long - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(long lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(long lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (long lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (long lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(long lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(long lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - unsigned long logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, unsigned long rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, unsigned long rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned long rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned long rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, unsigned long rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, unsigned long rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // unsigned long - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(unsigned long lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(unsigned long lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (unsigned long lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (unsigned long lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(unsigned long lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(unsigned long lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - unsigned long long logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, unsigned long long rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, unsigned long long rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, unsigned long long rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, unsigned long long rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, unsigned long long rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, unsigned long long rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // unsigned long long - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(unsigned long long lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(unsigned long long lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (unsigned long long lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (unsigned long long lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(unsigned long long lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(unsigned long long lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - long long logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, long long rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, long long rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, long long rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, long long rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, long long rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, long long rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // long long - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(long long lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(long long lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (long long lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (long long lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(long long lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(long long lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - float logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, float rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, float rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, float rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, float rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, float rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, float rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // float  - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(float lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(float lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (float lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (float lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(float lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(float lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - double logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, double rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, double rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, double rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, double rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, double rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, double rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // double  - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(double lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(double lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (double lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (double lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(double lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(double lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // posit - long double logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const posit<nbits, es>& lhs, long double rhs) {
 	return lhs == posit<nbits, es>(rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const posit<nbits, es>& lhs, long double rhs) {
 	return !operator==(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const posit<nbits, es>& lhs, long double rhs) {
 	return twosComplementLessThan(lhs._block, posit<nbits, es>(rhs)._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const posit<nbits, es>& lhs, long double rhs) {
 	return operator< (posit<nbits, es>(rhs), lhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const posit<nbits, es>& lhs, long double rhs) {
 	return !operator>(lhs, posit<nbits, es>(rhs));
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const posit<nbits, es>& lhs, long double rhs) {
 	return !operator<(lhs, posit<nbits, es>(rhs));
 }
 
 // long double  - posit logic operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(long double lhs, const posit<nbits, es>& rhs) {
 	return posit<nbits, es>(lhs) == rhs;
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(long double lhs, const posit<nbits, es>& rhs) {
 	return !operator==(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (long double lhs, const posit<nbits, es>& rhs) {
 	return twosComplementLessThan(posit<nbits, es>(lhs)._block, rhs._block);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (long double lhs, const posit<nbits, es>& rhs) {
 	return operator< (posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(long double lhs, const posit<nbits, es>& rhs) {
 	return !operator>(posit<nbits, es>(lhs), rhs);
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(long double lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
 // BINARY ADDITION
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
 	posit<nbits, es> sum = lhs;
 	sum += posit<nbits, es>(rhs);
@@ -2468,14 +2468,14 @@ template <typename T, typename U = void>
 using enable_intrinsic_numerical = std::enable_if_t<is_intrinsic_numerical<T>, U>;
 
 // More generic alternative to avoid ambiguities with intrinsic +
-template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
 inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, Value rhs) {
 	posit<nbits, es> sum = lhs;
 	sum += posit<nbits, es>(rhs);
 	return sum;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline posit<nbits, es> operator+(double lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> sum(lhs);
 	sum += rhs;
@@ -2483,7 +2483,7 @@ inline posit<nbits, es> operator+(double lhs, const posit<nbits, es>& rhs) {
 }
 
 // BINARY SUBTRACTION
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline posit<nbits, es> operator-(double lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> diff(lhs);
 	diff -= rhs;
@@ -2491,35 +2491,35 @@ inline posit<nbits, es> operator-(double lhs, const posit<nbits, es>& rhs) {
 }
 
 // More generic alternative to avoid ambiguities with intrinsic +
-template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
 inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, Value rhs) {
 	posit<nbits, es> diff = lhs;
 	diff -= posit<nbits, es>(rhs);
 	return diff;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, double rhs) {
 	posit<nbits, es> diff(lhs);
 	diff -= posit<nbits, es>(rhs);
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline posit<nbits, es> operator*(double lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 
-template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
 inline posit<nbits, es> operator*(Value lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
     
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, double rhs) {
 	posit<nbits, es> mul(lhs);
 	mul *= posit<nbits, es>(rhs);
@@ -2527,28 +2527,28 @@ inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, double rhs) {
 }
 
 // BINARY DIVISION
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline posit<nbits, es> operator/(double lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
 inline posit<nbits, es> operator/(Value lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, double rhs) {
 	posit<nbits, es> ratio(lhs);
 	ratio /= posit<nbits, es>(rhs);
 	return ratio;
 }
 
-template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+template<unsigned nbits, unsigned es, typename Value, typename = enable_intrinsic_numerical<Value> >
 inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, Value rhs) {
 	posit<nbits, es> ratio(lhs);
 	ratio /= posit<nbits, es>(rhs);
@@ -2558,11 +2558,11 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, Value rhs) {
 #endif // POSIT_ENABLE_LITERALS
 
 // Magnitude of a posit (expensive as we are creating a new posit).
-template<size_t nbits, size_t es> 
+template<unsigned nbits, unsigned es> 
 posit<nbits, es> abs(const posit<nbits, es>& p) {
 	return p.abs();
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits, es> fabs(const posit<nbits, es>& v) {
 	posit<nbits, es> p(v);
 	return p.abs();
@@ -2571,12 +2571,12 @@ posit<nbits, es> fabs(const posit<nbits, es>& v) {
 // Atomic fused operators
 
 // FMA: fused multiply-add:  a*b + c
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
-	constexpr size_t fbits = nbits - 3 - es;
-	constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
-	constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
-	constexpr size_t abits = mbits + 4;       // size of the addend
+	constexpr unsigned fbits = nbits - 3 - es;
+	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
+	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
+	constexpr unsigned abits = mbits + 4;       // size of the addend
 
 	internal::value<mbits> product;
 	internal::value<abits + 1> sum;
@@ -2620,12 +2620,12 @@ internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit
 }
 
 // FAM: fused add-multiply: (a + b) * c
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 internal::value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
-	constexpr size_t fbits = nbits - 3 - es;
-	constexpr size_t abits = fbits + 4;       // size of the addend
-	constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
-	constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
+	constexpr unsigned fbits = nbits - 3 - es;
+	constexpr unsigned abits = fbits + 4;       // size of the addend
+	constexpr unsigned fhbits = fbits + 1;      // size of fraction + hidden bit
+	constexpr unsigned mbits = 2 * fhbits;      // size of the multiplier output
 
 	internal::value<fbits> va, vb;
 	internal::value<abits+1> sum, vc;
@@ -2650,7 +2650,7 @@ internal::value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit
 }
 
 // FMMA: fused multiply-multiply-add: (a * b) +/- (c * d)
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 internal::value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c, const posit<nbits, es>& d, bool opIsAdd = true)
 {
 	// todo: implement

@@ -30,9 +30,9 @@
 namespace sw { namespace universal {
 
 // forward references
-template<size_t nbits, typename bt> class blocksignificant;
-template<size_t nbits, typename bt> constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>&) noexcept;
-template<size_t nbits, typename bt> struct bsquorem;
-template<size_t nbits, typename bt> bsquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>&, const blocksignificant<nbits, bt>&);
+template<unsigned nbits, typename bt> class blocksignificant;
+template<unsigned nbits, typename bt> constexpr blocksignificant<nbits, bt> twosComplementFree(const blocksignificant<nbits, bt>&) noexcept;
+template<unsigned nbits, typename bt> struct bsquorem;
+template<unsigned nbits, typename bt> bsquorem<nbits, bt> longdivision(const blocksignificant<nbits, bt>&, const blocksignificant<nbits, bt>&);
 
 }} // namespace sw::universal

@@ -18,10 +18,10 @@
 // TODO: fix test failures in VerifyBlockSignificantDivision<blocksignificantConfiguration>
 template<typename blocksignificantConfiguration>
 int VerifyBlockSignificantDivision(bool reportTestCases) {
-	constexpr size_t nbits = blocksignificantConfiguration::nbits;
+	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
 	using BlockType = typename blocksignificantConfiguration::BlockType;
 
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (1u << nbits);
 	using namespace sw::universal;
 
 	//	cout << endl;
@@ -31,22 +31,22 @@ int VerifyBlockSignificantDivision(bool reportTestCases) {
 
 	blocksignificant<nbits, BlockType> a, b, c;
 	// nbits = 2 * fhbits
-	constexpr size_t fhbits = (nbits >> 1);
-	constexpr size_t fbits = fhbits - 1;
+	constexpr unsigned fhbits = (nbits >> 1);
+	constexpr unsigned fbits = fhbits - 1;
 	a.setradix(2 * fbits);
 	b.setradix(2 * fbits);
 	a.setradix(2 * fbits);
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
-	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
-	for (size_t i = 0; i < NR_VALUES; i++) {
+	constexpr unsigned nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
+	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		aref.setbits(i);
-		for (size_t j = 0; j < NR_VALUES; j++) {
+		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			bref.setbits(j);
 			cref = aref / bref;
 			c.div(a, b);
-			for (size_t k = 0; k < nrBlocks; ++k) {
+			for (unsigned k = 0; k < nrBlocks; ++k) {
 				refResult.setblock(k, c.block(k));
 			}
 
@@ -65,13 +65,13 @@ int VerifyBlockSignificantDivision(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 void TestMostSignificantBit() {
 	using namespace sw::universal;
 	blocksignificant<nbits, BlockType> a;
 	std::cout << to_binary(a) << ' ' << a.msb() << '\n';
 	a.setbits(0x01ull);
-	for (size_t i = 0; i < nbits; ++i) {
+	for (unsigned i = 0; i < nbits; ++i) {
 		std::cout << to_binary(a) << ' ' << a.msb() << '\n';
 		a <<= 1;
 	}

@@ -19,7 +19,7 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for this posit, for example, posit<8,1>
-	template<size_t nbits, size_t es, typename bt>
+	template<unsigned nbits, unsigned es, typename bt>
 	std::string type_tag(const posit<nbits, es, bt> & = {}) {
 		std::stringstream str;
 		str << "sw::universal::posit<"
@@ -30,7 +30,7 @@ namespace sw { namespace universal {
 	}
 
 	// generate a posit format ASCII format nbits.esxNN...NNp
-	template<size_t nbits, size_t es, typename bt>
+	template<unsigned nbits, unsigned es, typename bt>
 	inline std::string hex_print(const posit<nbits, es, bt>& p) {
 		// we need to transform the posit into a string
 		std::stringstream str;
@@ -40,9 +40,9 @@ namespace sw { namespace universal {
 
 #ifdef LATER
 	// Generate a string representing the posit components: sign, regime, exponent, faction, and value
-	template<size_t nbits, size_t es, typename bt>
+	template<unsigned nbits, unsigned es, typename bt>
 	std::string components(const posit<nbits, es, bt>& p) {
-		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+		constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
 		bool		     		_sign;
 		regime<nbits, es, bt>   _regime;
@@ -61,7 +61,7 @@ namespace sw { namespace universal {
 		return str.str();
 	}
 
-	template<size_t nbits, size_t es, typename bt>
+	template<unsigned nbits, unsigned es, typename bt>
 	std::string component_values_to_string(const posit<nbits, es, bt>& p) {
 		std::stringstream str;
 		// TODO: hardcoded field sizes
@@ -85,9 +85,9 @@ namespace sw { namespace universal {
 		return str.str();
 	}
 
-	template<size_t nbits, size_t es, typename bt>
+	template<unsigned nbits, unsigned es, typename bt>
 	std::string pretty_print(const posit<nbits, es, pt>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
-		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+		constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
 		bool		     		_sign;
 		regime<nbits, es, bt>   _regime;
@@ -100,7 +100,7 @@ namespace sw { namespace universal {
 		int nrOfRegimeBitsProcessed = 0;
 		for (int i = nbits - 2; i >= 0; --i) {
 			if (regimeBits > nrOfRegimeBitsProcessed++) {
-				str << (r[static_cast<size_t>(i)] ? "1" : "0");
+				str << (r[static_cast<unsigned>(i)] ? "1" : "0");
 			}
 		}
 		str << " e";
@@ -109,7 +109,7 @@ namespace sw { namespace universal {
 		int nrOfExponentBitsProcessed = 0;
 		for (int i = int(es) - 1; i >= 0; --i) {
 			if (exponentBits > nrOfExponentBitsProcessed++) {
-				str << (e[static_cast<size_t>(i)] ? "1" : "0");
+				str << (e[static_cast<unsigned>(i)] ? "1" : "0");
 			}
 		}
 		str << " f";
@@ -119,7 +119,7 @@ namespace sw { namespace universal {
 		//for (int i = int(p.fbits) - 1; i >= 0; --i) {  // this does not look correct
 		for (int i = int(fbits) - 1; i >= 0; --i) {
 			if (fractionBits > nrOfFractionBitsProcessed++) {
-				str << (f[static_cast<size_t>(i)] ? "1" : "0");
+				str << (f[static_cast<unsigned>(i)] ? "1" : "0");
 			}
 		}
 		str << " q";
@@ -129,9 +129,9 @@ namespace sw { namespace universal {
 		return str.str();
 	}
 
-	template<size_t nbits, size_t es, typename bt>
+	template<unsigned nbits, unsigned es, typename bt>
 	std::string info_print(const posit<nbits, es, bt>& p, int printPrecision = 17) {
-		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+		constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
 		bool		     		_sign;
 		regime<nbits, es, bt>   _regime;
@@ -152,9 +152,9 @@ namespace sw { namespace universal {
 
 #endif // LATER
 
-	template<size_t nbits, size_t es, typename bt>
+	template<unsigned nbits, unsigned es, typename bt>
 	std::string color_print(const posit<nbits, es, bt>& p) {
-		constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+		constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 		std::stringstream str;
 		bool		     		_sign;
 		regime<nbits, es, bt>   _regime;
@@ -174,8 +174,8 @@ namespace sw { namespace universal {
 		blockbinary<nbits - 1, bt, BinaryNumberType::Unsigned> r = _regime.bits();
 		int regimeBits = (int)_regime.nrBits();
 		int nrOfRegimeBitsProcessed = 0;
-		for (size_t i = 0; i < nbits - 1; ++i) {
-			size_t bitIndex = nbits - 2ull - i;
+		for (unsigned i = 0; i < nbits - 1; ++i) {
+			unsigned bitIndex = nbits - 2ull - i;
 			if (regimeBits > nrOfRegimeBitsProcessed++) {
 				str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
 			}
@@ -186,7 +186,7 @@ namespace sw { namespace universal {
 		int nrOfExponentBitsProcessed = 0;
 		for (int i = int(es) - 1; i >= 0; --i) {
 			if (exponentBits > nrOfExponentBitsProcessed++) {
-				str << cyan << (_sign ? (e[static_cast<size_t>(i)] ? '0' : '1') : (e[static_cast<size_t>(i)] ? '1' : '0'));
+				str << cyan << (_sign ? (e[static_cast<unsigned>(i)] ? '0' : '1') : (e[static_cast<unsigned>(i)] ? '1' : '0'));
 			}
 		}
 
@@ -196,7 +196,7 @@ namespace sw { namespace universal {
 		int nrOfFractionBitsProcessed = 0;
 		for (int i = int(p.fbits) - 1; i >= 0; --i) {
 			if (fractionBits > nrOfFractionBitsProcessed++) {
-				str << magenta << (f[static_cast<size_t>(i)] ? "1" : "0");
+				str << magenta << (f[static_cast<unsigned>(i)] ? "1" : "0");
 			}
 		}
 

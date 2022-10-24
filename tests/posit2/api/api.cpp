@@ -42,25 +42,25 @@ Generate Posit Lookup table for a POSIT<4,2> in TXT format
   15:             1111            1001      -2       1      -8             001              --               ~                   -0.00390625 
 */
 
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 void VerifyToBinary() {
 	using namespace sw::universal;
-	constexpr size_t NR_VALUES = (1 << nbits);
+	constexpr unsigned NR_VALUES = (1 << nbits);
 
 	posit<nbits, es, bt> p;
-	for (size_t i = 0; i < NR_VALUES; ++i) {
+	for (unsigned i = 0; i < NR_VALUES; ++i) {
 		p.setbits(i);
 		std::cout << hex_format(p) << ' ' << color_print(p) << ' ' << to_binary(p) << ' ' << p << std::endl;
 	}
 }
 
-template<size_t nbits, size_t es, typename bt = std::uint8_t>
+template<unsigned nbits, unsigned es, typename bt = std::uint8_t>
 void Convert(float f) {
 	sw::universal::posit<nbits, es, bt> a{ f };
 	std::cout << a << " : " << to_binary(a) << " : " << color_print(a) << '\n';
 }
 
-template<size_t fbits, sw::universal::BlockTripleOperator op, typename Ty>
+template<unsigned fbits, sw::universal::BlockTripleOperator op, typename Ty>
 std::string convert(Ty f) {
 	using default_bt = uint8_t;
 	std::stringstream s;
@@ -69,7 +69,7 @@ std::string convert(Ty f) {
 	return s.str();
 }
 
-template<size_t fbits, typename bt = std::uint8_t>
+template<unsigned fbits, typename bt = std::uint8_t>
 void RealToBlockTriple(float f) {
 	std::cout << "real -> blocktriple\n";
 	sw::universal::blocktriple<fbits, sw::universal::BlockTripleOperator::REP, std::uint8_t> triple(f);
@@ -205,8 +205,8 @@ try {
 	// parsing of text input
 	{
 		// TODO: implement parse
-		constexpr size_t nbits = 128;
-		constexpr size_t rbits = 64;
+		constexpr unsigned nbits = 128;
+		constexpr unsigned rbits = 64;
 		parse<nbits, rbits> a, b, c, d;
 		a.assign("123456789.987654321");
 		parse("123456789.987654321", b);
@@ -217,8 +217,8 @@ try {
 	// arithmetic
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 8;
+		constexpr unsigned nbits = 16;
+		constexpr unsigned es = 8;
 		posit<nbits, es> a, b, c, d;
 		maxpos<nbits, es>(a);
 		maxneg<nbits, es>(b);
@@ -238,8 +238,8 @@ try {
 	// logic, in particular, all the literal constant combinations
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 8;
-		constexpr size_t es = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned es = 4;
 		posit<nbits, es> a, b, c, d;
 		a = 1;
 		b = 2l;
@@ -342,12 +342,12 @@ try {
 
 #ifdef SHOW_STATE_SPACE
 	{
-		constexpr size_t nbits = 7;
-		constexpr size_t es = 4;
-		constexpr size_t NR_VALUES = (1 << nbits);
+		constexpr unsigned nbits = 7;
+		constexpr unsigned es = 4;
+		constexpr unsigned NR_VALUES = (1 << nbits);
 
 		posit<nbits, es> a, b, c, d;
-		for (size_t i = 0; i < NR_VALUES; ++i) {
+		for (unsigned i = 0; i < NR_VALUES; ++i) {
 			a.set_raw_bits(i);
 			float f = float(a);
 			b = int(f);
@@ -359,8 +359,8 @@ try {
 	}
 
 	{
-		constexpr size_t nbits = 8;
-		constexpr size_t es = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned es = 4;
 		posit<nbits, es> a, b, c, d;
 
 		for (int i = -16; i < 16; ++i) {

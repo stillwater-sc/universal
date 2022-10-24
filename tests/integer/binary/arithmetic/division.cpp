@@ -4,8 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <string>
 // configure the integer arithmetic class
 // we need to enable exceptions to validate divide by zero and overflow conditions
 // however, we also need to make this work with exceptions turned off: TODO

@@ -7,7 +7,7 @@
 
 namespace std {
 
-	template <size_t nbits, size_t es, typename bt> 
+	template <unsigned nbits, unsigned es, typename bt>
 	class numeric_limits< sw::universal::posit<nbits, es, bt> > {
 	public:
 		using Posit = sw::universal::posit<nbits, es, bt>;
@@ -50,9 +50,9 @@ namespace std {
 		static constexpr int radix = 2;
 
 		static constexpr int min_exponent = static_cast<int>(2 - int(nbits)) * (1 << es);
-		static constexpr int min_exponent10 = int((min_exponent) / 3.3);
+		static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
 		static constexpr int max_exponent = (nbits - 2) * (1 << es);
-		static constexpr int max_exponent10 = int((max_exponent) / 3.3);
+		static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
 		static constexpr bool has_infinity = true;
 		static constexpr bool has_quiet_NaN = true;
 		static constexpr bool has_signaling_NaN = true;
