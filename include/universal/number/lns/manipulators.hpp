@@ -14,7 +14,7 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for this lns
-	template<size_t nbits, size_t rbits, typename BlockType, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
 	inline std::string type_tag(const lns<nbits, rbits, BlockType, xtra...>& = {}) {
 		std::stringstream s;
 		s << "lns<"
@@ -26,7 +26,7 @@ namespace sw { namespace universal {
 	}
 
 	// report dynamic range of a type, specialized for lns
-	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline std::string dynamic_range(const lns<nbits, rbits, bt, xtra...>& a) {
 		std::stringstream s;
 		lns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
@@ -38,7 +38,7 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline std::string range() {
 		std::stringstream s;
 		lns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
@@ -47,7 +47,7 @@ namespace sw { namespace universal {
 	}
 
 	// report if a native floating-point value is within the dynamic range of the lns configuration
-	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline bool isInRange(double v) {
 		using LNS = lns<nbits, rbits, bt, xtra...>;
 		LNS a{};
@@ -57,7 +57,7 @@ namespace sw { namespace universal {
 		return inRange;
 	}
 
-	template<size_t nbits, size_t rbits, typename BlockType, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
 	inline std::string color_print(const lns<nbits, rbits, BlockType, xtra...>& l, bool nibbleMarker = false) {
 
 		std::stringstream s;
@@ -73,7 +73,7 @@ namespace sw { namespace universal {
 	
 		// integer bits
 		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
-			s << cyan << (l.at(static_cast<size_t>(i)) ? '1' : '0');
+			s << cyan << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
 			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 		}
 
@@ -81,7 +81,7 @@ namespace sw { namespace universal {
 		if constexpr (rbits > 0) {
 			s << magenta << '.';
 			for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
-				s << magenta << (l.at(static_cast<size_t>(i)) ? '1' : '0');
+				s << magenta << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
 				if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
 			}
 		}

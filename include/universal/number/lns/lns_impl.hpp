@@ -17,7 +17,7 @@
 namespace sw { namespace universal {
 		
 // convert a floating-point value to a specific lns configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 inline lns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, lns<nbits, rbits, bt, xtra...>& p) {
 	if (v.iszero()) {
 		return p.setnan();
@@ -28,53 +28,53 @@ inline lns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, lns<n
 	return p;
 }
 
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 inline lns<nbits, rbits, bt, xtra...>& minpos(lns<nbits, rbits, bt, xtra...>& lminpos) {
 	return lminpos;
 }
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...>& maxpos(lns<nbits, rbits, bt, xtra...>& lmaxpos) {
 	return lmaxpos;
 }
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...>& minneg(lns<nbits, rbits, bt, xtra...>& lminneg) {
 	return lminneg;
 }
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...>& maxneg(lns<nbits, rbits, bt, xtra...>& lmaxneg) {
 	return lmaxneg;
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<size_t _nbits, size_t _rbits, typename bt = uint8_t, auto... xtra>
+template<unsigned _nbits, unsigned _rbits, typename bt = uint8_t, auto... xtra>
 class lns {
 	static_assert(_nbits > _rbits, "configuration not supported: not enough integer bits");
 	static_assert( sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported" );
 	static_assert(_nbits - _rbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
 	static_assert(_rbits < 64, "configuration not supported: scaling factor is > 2^64");
 public:
-	using BlockType = bt;
+	typedef bt BlockType;
 
-	static constexpr size_t   nbits    = _nbits;
-	static constexpr size_t   rbits    = _rbits;
+	static constexpr unsigned nbits    = _nbits;
+	static constexpr unsigned rbits    = _rbits;
 	static constexpr Behavior behavior = {xtra...};
 
 	static constexpr double   scaling = double(1ull << rbits);
-	static constexpr size_t   bitsInByte = 8ull;
-	static constexpr size_t   bitsInBlock = sizeof(bt) * bitsInByte;
-	static constexpr size_t   nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
+	static constexpr unsigned bitsInByte = 8ull;
+	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr unsigned nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock));
-	static constexpr size_t   MSU = nrBlocks - 1;
+	static constexpr unsigned MSU = nrBlocks - 1;
 	static constexpr bt       MSU_MASK = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr bt       SIGN_BIT_MASK = bt(1ull << ((nbits - 1ull) % bitsInBlock));
-	static constexpr size_t   MSB_UNIT = (1ull + ((nbits - 2) / bitsInBlock)) - 1ull;
+	static constexpr unsigned MSB_UNIT = (1ull + ((nbits - 2) / bitsInBlock)) - 1ull;
 	static constexpr bt       MSB_BIT_MASK = bt(1ull << ((nbits - 2ull) % bitsInBlock));
 	static constexpr bt       BLOCK_MSB_MASK = bt(1ull << (bitsInBlock - 1));
 	static constexpr bool     SPECIAL_BITS_TOGETHER = (nbits > ((nrBlocks - 1) * bitsInBlock + 1));
 	static constexpr bt       MSU_ZERO = MSB_BIT_MASK;
 	static constexpr bt       MSU_NAN = SIGN_BIT_MASK | MSU_ZERO;  // only valid when special bits together is true
-	static constexpr int64_t  maxShift = int(nbits) - int(rbits) - 2;
-	static constexpr size_t   leftShift = (maxShift < 0) ? 0 : maxShift;
+	static constexpr int64_t  maxShift = nbits - rbits - 2;
+	static constexpr unsigned leftShift = (maxShift < 0) ? 0 : maxShift;
 	static constexpr int64_t  min_exponent = (maxShift > 0) ? (-(1ll << leftShift)) : 0;
 	static constexpr int64_t  max_exponent = (maxShift > 0) ? (1ll << leftShift) - 1 : 0;
 
@@ -291,7 +291,7 @@ public:
 	constexpr void setnan()                        noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
 	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
-	constexpr void setbit(size_t i, bool v = true) noexcept {
+	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -306,7 +306,7 @@ public:
 			_block[0] = value & storageMask;
 		}
 		else if constexpr (1 < nrBlocks) {
-			for (size_t i = 0; i < nrBlocks; ++i) {
+			for (unsigned i = 0; i < nrBlocks; ++i) {
 				_block[i] = value & storageMask;
 				value >>= bitsInBlock;
 			}
@@ -367,13 +367,13 @@ public:
 		}
 		else {
 			if constexpr (SPECIAL_BITS_TOGETHER) {
-				for (size_t i = 0; i < nrBlocks - 1; ++i) {
+				for (unsigned i = 0; i < nrBlocks - 1; ++i) {
 					if (_block[i] != 0) return false;
 				}
 				return (_block[MSB_UNIT] == MSU_ZERO);  // this will cover the sign != 1 condition
 			}
 			else {
-				for (size_t i = 0; i < nrBlocks - 2; ++i) {
+				for (unsigned i = 0; i < nrBlocks - 2; ++i) {
 					if (_block[i] != 0) return false;
 				}
 				return !sign() && _block[MSB_UNIT] == BLOCK_MSB_MASK;
@@ -397,13 +397,13 @@ public:
 		}
 		else {
 			if constexpr (SPECIAL_BITS_TOGETHER) {
-				for (size_t i = 0; i < nrBlocks - 1; ++i) {
+				for (unsigned i = 0; i < nrBlocks - 1; ++i) {
 					if (_block[i] != 0) return false;
 				}
 				return (_block[MSB_UNIT] == MSU_NAN);
 			}
 			else {
-				for (size_t i = 0; i < nrBlocks - 2; ++i) {
+				for (unsigned i = 0; i < nrBlocks - 2; ++i) {
 					if (_block[i] != 0) return false;
 				}
 				return sign() && (_block[MSU - 1] == BLOCK_MSB_MASK);
@@ -423,13 +423,13 @@ public:
 		// TODO: how? and what is the size of the blockbinary? it is much bigger than nbits+2
 		return bb;
 	}
-	constexpr bool at(size_t bitIndex) const noexcept {
+	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		bt word = _block[bitIndex / bitsInBlock];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
-	inline constexpr bt block(size_t b) const noexcept {
+	inline constexpr bt block(unsigned b) const noexcept {
 		if (b < nrBlocks) return _block[b];
 		return bt(0); // return 0 when block index out of bounds
 	}
@@ -472,7 +472,7 @@ protected:
 	/// </summary>
 	/// <returns>reference to this cfloat object</returns>
 	constexpr lns& flip() noexcept { // in-place one's complement
-		for (size_t i = 0; i < nrBlocks; ++i) {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
@@ -634,7 +634,7 @@ protected:
 			}
 			else {
 				// we need to project the bits we have on the fixpnt
-				for (size_t i = 0; i < ieee754_parameter<Real>::fbits + 1; ++i) {
+				for (unsigned i = 0; i < ieee754_parameter<Real>::fbits + 1; ++i) {
 					if (rawFraction & 0x01) {
 						lnsExponent.setbit(i + shiftLeft);
 					}
@@ -670,20 +670,20 @@ protected:
 		if (iszero()) return TargetFloat(0.0f);
 		bool negative = sign(); // cache for later decision
 		// pick up the absolute value of the minimum normal and subnormal exponents 
-		constexpr size_t minNormalExponent = static_cast<size_t>(-ieee754_parameter<TargetFloat > ::minNormalExp);
-		constexpr size_t minSubnormalExponent = static_cast<size_t>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
+		constexpr unsigned minNormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat > ::minNormalExp);
+		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
 		static_assert(rbits <= minSubnormalExponent, "lns::to_ieee754: fraction is too small to represent with requested floating-point type");
 		TargetFloat multiplier = 0;
 		if constexpr (rbits > minNormalExponent) { // value is a subnormal number
 			multiplier = ieee754_parameter<TargetFloat>::minSubnormal;
-			for (size_t i = 0; i < minSubnormalExponent - rbits; ++i) {
+			for (unsigned i = 0; i < minSubnormalExponent - rbits; ++i) {
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
 		else {
 			// the value is a normal number
 			multiplier = ieee754_parameter<TargetFloat>::minNormal;
-			for (size_t i = 0; i < minNormalExponent - rbits; ++i) {
+			for (unsigned i = 0; i < minNormalExponent - rbits; ++i) {
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
@@ -693,11 +693,11 @@ protected:
 		if (expNegative) bb.twosComplement();
 		// construct the value
 		TargetFloat value{ 0.0 };
-		size_t bit = 0;
-		for (size_t b = 0; b < bb.nrBlocks; ++b) {
+		unsigned bit = 0;
+		for (unsigned b = 0; b < bb.nrBlocks; ++b) {
 			BlockType mask = static_cast<BlockType>(1ull);
 			BlockType limb = bb[b];
-			for (size_t i = 0; i < bitsInBlock; ++i) {
+			for (unsigned i = 0; i < bitsInBlock; ++i) {
 				if (limb & mask) value += multiplier;
 				if (bit == nbits - 2) break; // skip the sign bit of the lns
 				++bit;
@@ -830,34 +830,34 @@ private:
 };
 
 // return the Unit in the Last Position
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 inline lns<nbits, rbits, bt, xtra...> ulp(const lns<nbits, rbits, bt, xtra...>& a) {
 	lns<nbits, rbits, bt, xtra...> b(a);
 	return ++b - a;
 }
 
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string to_binary(const lns<nbits, rbits, bt, xtra...>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
 	if constexpr (nbits - 2 >= rbits) {
 		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
-			s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
 			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << '\'';
 		}
 	}
 	if constexpr (rbits > 0) {
 		s << '.';
 		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
-			s << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 		}
 	}
 	return s.str();
 }
 
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
@@ -867,7 +867,7 @@ std::string to_triple(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker
 	return s.str();
 }
 
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
@@ -885,19 +885,19 @@ std::string components(const lns<nbits, rbits, bt, xtra...>& v) {
 // standard library functions for floating point
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 constexpr lns<nbits, rbits, bt, xtra...> abs(const lns<nbits, rbits, bt, xtra...>& v) {
 	lns<nbits, rbits, bt, xtra...> magnitude(v);
 	magnitude.setsign(false);
 	return magnitude;
 }
 // ToDo constexpt frexp
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> frexp(const lns<nbits, rbits, bt, xtra...>& x, int* exp) {
 	return lns<nbits, rbits, bt, xtra...>(std::frexp(double(x), exp));
 }
 // ToDo constexpr ldexp
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> ldexp(const lns<nbits, rbits, bt, xtra...>& x, int exp) {
 		return lns<nbits, rbits, bt, xtra...>(std::ldexp(double(x), exp));
 }

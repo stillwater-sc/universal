@@ -11,7 +11,7 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Base-e exponential function
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> exp(lns<nbits, rbits, bt, xtra...> x) {
 	if (isnan(x)) return x;
 	lns<nbits, rbits, bt, xtra...> p;
@@ -26,7 +26,7 @@ lns<nbits, rbits, bt, xtra...> exp(lns<nbits, rbits, bt, xtra...> x) {
 }
 
 // Base-2 exponential function
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> exp2(lns<nbits, rbits, bt, xtra...> x) {
 	if (isnan(x)) return x;
 	lns<nbits, rbits, bt, xtra...> p;
@@ -41,13 +41,13 @@ lns<nbits, rbits, bt, xtra...> exp2(lns<nbits, rbits, bt, xtra...> x) {
 }
 
 // Base-10 exponential function
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> exp10(lns<nbits, rbits, bt, xtra...> x) {
 	return lns<nbits, rbits, bt, xtra...>(std::pow(10.0, double(x)));
 }
 		
 // Base-e exponential function exp(x)-1
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> expm1(lns<nbits, rbits, bt, xtra...> x) {
 	return lns<nbits, rbits, bt, xtra...>(std::expm1(double(x)));
 }
