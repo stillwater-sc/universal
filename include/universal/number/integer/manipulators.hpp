@@ -1,7 +1,7 @@
 #pragma once
 // manipulators.hpp: definition of manipulation functions for integer types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <exception>
@@ -9,7 +9,7 @@
 namespace sw { namespace universal {
 
 // Generate a type tag for general integer
-template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 std::string type_tag(const integer<nbits, BlockType, NumberType>& = {}) {
 	std::stringstream str;
 	str << "integer<"
@@ -20,9 +20,9 @@ std::string type_tag(const integer<nbits, BlockType, NumberType>& = {}) {
 }
 
 // return in triple form (sign, scale, fraction)
-template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::string to_triple(const integer<nbits, BlockType, NumberType>& number) {
-	using Integer = integer<nbits+1, BlockType, NumberType>; // to capture maxneg in magnitude conversion
+	using Integer = integer<nbits+1u, BlockType, NumberType>; // to capture maxneg in magnitude conversion
 
 	std::stringstream str;
 
@@ -43,7 +43,7 @@ inline std::string to_triple(const integer<nbits, BlockType, NumberType>& number
 		// the msb becomes the hidden bit
 		magnitude <<= (nbits - msb);
 		for (int i = nbits - 1; i >= 0; --i) {
-			str << (magnitude.at(static_cast<size_t>(i)) ? '1' : '0');
+			str << (magnitude.at(static_cast<unsigned>(i)) ? '1' : '0');
 		}
 	}
 
