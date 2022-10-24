@@ -3142,7 +3142,7 @@ inline std::string to_binary(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::string to_triple(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& number, bool nibbleMarker = true) {
 	std::stringstream s;
-	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, BlockTripleOperator::REPRESENTATION, bt> triple;
+	blocktriple<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits, BlockTripleOperator::REP, bt> triple;
 	number.normalize(triple);
 	s << to_triple(triple, nibbleMarker);
 	return s.str();

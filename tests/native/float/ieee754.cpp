@@ -129,9 +129,6 @@ void InfinityAdditions() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-#define NATIVE_ENVIRONMENT
-#define VALUE_REPRESENTATION
-
 int main()
 try {
 	using namespace sw::universal;
@@ -155,21 +152,17 @@ try {
 	std::cout << "This environment does not support a native long double format\n";
 #endif
 
-#ifdef NATIVE_ENVIRONMENT
 	NativeEnvironment(f);
 	NativeEnvironment(d);
 #if LONG_DOUBLE_SUPPORT
 	NativeEnvironment(ld);
 #endif
-#endif
 
-#ifdef VALUE_REPRESENTATION
 	// show all the different presentations for the different IEEE-754 native formats
 	valueRepresentations(f);
 	valueRepresentations(d);
 #if LONG_DOUBLE_SUPPORT
 	valueRepresentations(ld);
-#endif
 #endif
 
 	// show the scales that an IEEE-754 type contains

@@ -23,7 +23,7 @@ namespace sw { namespace universal {
 		using default_bt = uint8_t;
 		std::stringstream s;
 		sw::universal::blocktriple<fbits, op, default_bt> a(f);
-		s << std::setw(31) << sw::universal::to_binary(a) << " : " << a << " " << type_tag(a);
+		s << std::setw(31) << sw::universal::to_binary(a) << " : " << std::setw(40) << std::left << to_triple(a) << " : " << std::setw(10) << a << " : " << type_tag(a);
 		return s.str();
 	}
 
@@ -85,11 +85,11 @@ try {
 	float f;
 	f = 511.875f;
 	std::cout << to_binary(f, true) << '\n';
-	std::cout << convert<12, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
-	std::cout << convert<11, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
-	std::cout << convert<10, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
-	std::cout << convert<9, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
-	std::cout << convert<8, BlockTripleOperator::REPRESENTATION, float>(f) << '\n';
+	std::cout << convert<12, BlockTripleOperator::REP, float>(f) << '\n';
+	std::cout << convert<11, BlockTripleOperator::REP, float>(f) << '\n';
+	std::cout << convert<10, BlockTripleOperator::REP, float>(f) << '\n';
+	std::cout << convert<9, BlockTripleOperator::REP, float>(f) << '\n';
+	std::cout << convert<8, BlockTripleOperator::REP, float>(f) << '\n';
 	std::cout << convert<12, BlockTripleOperator::ADD, float>(f) << '\n';
 	std::cout << convert<11, BlockTripleOperator::ADD, float>(f) << '\n';
 	std::cout << convert<10, BlockTripleOperator::ADD, float>(f) << '\n';
@@ -167,7 +167,7 @@ try {
 	std::cout << convert<9, BlockTripleOperator::ADD, long>(l) << '\n';
 	std::cout << convert<8, BlockTripleOperator::ADD, long>(l) << '\n';
 
-//	nrOfFailedTestCases += VerifyBlocktripleConversion<5, BlockTripleOperator::REPRESENTATION, float>(reportTestCases);
+//	nrOfFailedTestCases += VerifyBlocktripleConversion<5, BlockTripleOperator::REP, float>(reportTestCases);
 	nrOfFailedTestCases += VerifyBlocktripleConversion<5, BlockTripleOperator::ADD, float>(reportTestCases);
 //	nrOfFailedTestCases += VerifyBlocktripleConversion<5, BlockTripleOperator::MUL, float>(reportTestCases);
 

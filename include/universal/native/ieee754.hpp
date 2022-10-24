@@ -181,6 +181,7 @@ inline int scale(long double v) {
 template<typename Real>
 void valueRepresentations(Real value) {
 	using namespace sw::universal;
+	std::cout << "IEEE-754 type : " << type_tag<Real>() << '\n';
 	std::cout << "hex    : " << to_hex(value) << '\n';
 	std::cout << "binary : " << to_binary(value) << '\n';
 	std::cout << "triple : " << to_triple(value) << '\n';

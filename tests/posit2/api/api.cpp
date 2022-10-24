@@ -60,11 +60,20 @@ void Convert(float f) {
 	std::cout << a << " : " << to_binary(a) << " : " << color_print(a) << '\n';
 }
 
+template<size_t fbits, sw::universal::BlockTripleOperator op, typename Ty>
+std::string convert(Ty f) {
+	using default_bt = uint8_t;
+	std::stringstream s;
+	sw::universal::blocktriple<fbits, op, default_bt> a(f);
+	s << std::setw(40) << sw::universal::to_binary(a) << " : " << std::setw(40) << std::left << to_triple(a) << " : " << std::setw(10) << a << " : " << type_tag(a);
+	return s.str();
+}
+
 template<size_t fbits, typename bt = std::uint8_t>
 void RealToBlockTriple(float f) {
 	std::cout << "real -> blocktriple\n";
-	sw::universal::blocktriple<23, sw::universal::BlockTripleOperator::REP, std::uint8_t> triple(f);
-	std::cout << to_triple(triple) << " : " << triple << '\n';
+	sw::universal::blocktriple<fbits, sw::universal::BlockTripleOperator::REP, std::uint8_t> triple(f);
+	std::cout << to_binary(triple) << " : " << to_triple(triple) << " : " << triple << '\n';
 	std::cout << triple.fraction() << '\n';
 }
 
@@ -83,6 +92,25 @@ try {
 	//// posit construction, initialization, assignment and comparisions
 
 	{
+		float f = 511.875f;
+		f = 1.0f;
+		std::cout << to_binary(f, true) << '\n';
+		std::cout << convert<3, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<6, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<9, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<12, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<13, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<16, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<19, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<20, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<21, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<22, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<23, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<24, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<32, BlockTripleOperator::REP, float>(f) << '\n';
+		std::cout << convert<52, BlockTripleOperator::REP, double>(f) << '\n';
+		std::cout << "-----\n";
+
 		RealToBlockTriple<3>(1.0f);
 		RealToBlockTriple<23>(1.0f);
 		RealToBlockTriple<24>(1.0f);
