@@ -1168,8 +1168,7 @@ namespace sw { namespace universal {
 
 	// validate the decrement operator--
 	template<typename TestType>
-	int VerifyCfloatDecrement(bool reportTestCases)
-	{
+	int VerifyCfloatDecrement(bool reportTestCases)	{
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;

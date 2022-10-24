@@ -15,8 +15,8 @@ namespace sw { namespace universal {
 // TODO: needs SFINAE
 template<typename CfloatConfiguration>
 std::string cfloat_range() {
-	constexpr size_t nbits = CfloatConfiguration::nbits;
-	constexpr size_t es = CfloatConfiguration::es;
+	constexpr unsigned nbits = CfloatConfiguration::nbits;
+	constexpr unsigned es = CfloatConfiguration::es;
 	using BlockType = typename CfloatConfiguration::BlockType;
 	constexpr bool hasSubnormals = CfloatConfiguration::hasSubnormals;
 	constexpr bool hasSupernormals = CfloatConfiguration::hasSupernormals;

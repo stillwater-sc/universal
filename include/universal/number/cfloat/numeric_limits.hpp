@@ -7,7 +7,7 @@
 #include <universal/number/cfloat/cfloat_impl.hpp>
 namespace std {
 
-template <size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating> 
+template <unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating> 
 class numeric_limits< sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > {
 public:
 	using Cfloat = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
@@ -44,7 +44,7 @@ public:
 	}
 
 	static constexpr int digits       = nbits - 1 - es + 1;
-	static constexpr int digits10     = int(digits / 3.3);
+	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
 	static constexpr int max_digits10 = digits10;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
@@ -52,9 +52,9 @@ public:
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent   = -int(1 << (es - 1));
-	static constexpr int min_exponent10 = int(min_exponent / 3.3);
+	static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
 	static constexpr int max_exponent   = int(1 << (es - 1));
-	static constexpr int max_exponent10 = int(max_exponent / 3.3);
+	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
 	static constexpr bool has_infinity  = true;
 	static constexpr bool has_quiet_NaN = true;
 	static constexpr bool has_signaling_NaN = true;
