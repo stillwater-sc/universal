@@ -1,16 +1,16 @@
 #pragma once
 //  bitblock_test_suite.hpp : bitblock-based arithmetic test suite
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 namespace sw { namespace universal { namespace internal {
 
-template<size_t nbits, size_t rbits>
+template<unsigned nbits, unsigned rbits>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
-	constexpr size_t OPERAND_COLUMN_WIDTH = nbits;
-	constexpr size_t RESULT_COLUMN_WIDTH = rbits;
+	constexpr unsigned OPERAND_COLUMN_WIDTH = nbits;
+	constexpr unsigned RESULT_COLUMN_WIDTH = rbits;
 	std::cerr << test_case << " "
 		<< std::setw(OPERAND_COLUMN_WIDTH) << lhs
 		<< " " << op << " "
@@ -21,10 +21,10 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< std::endl;
 }
 
-template<size_t nbits, size_t rbits>
+template<unsigned nbits, unsigned rbits>
 void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
-	constexpr size_t OPERAND_COLUMN_WIDTH = nbits;
-	constexpr size_t RESULT_COLUMN_WIDTH = rbits;
+	constexpr unsigned OPERAND_COLUMN_WIDTH = nbits;
+	constexpr unsigned RESULT_COLUMN_WIDTH = rbits;
 	std::cerr << test_case << " "
 		<< std::setw(OPERAND_COLUMN_WIDTH) << lhs
 		<< " " << op << " "
@@ -36,9 +36,9 @@ void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::stri
 }
 
 // verify bitset addition operator
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetAddition(bool bReportIndividualTestCases = false) {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	constexpr unsigned NR_TEST_CASES = (1u << nbits);
 	int nrOfFailedTestCases = 0;
 	bool carry;
 	bitblock<nbits> a, b;
@@ -69,9 +69,9 @@ int VerifyBitsetAddition(bool bReportIndividualTestCases = false) {
 }
 
 // verify bitset subtraction operator
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetSubtraction(bool bReportIndividualTestCases = false) {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	constexpr unsigned NR_TEST_CASES = (1u << nbits);
 	int nrOfFailedTestCases = 0;
 	bool borrow = false;
 	bitblock<nbits> a, b;
@@ -101,10 +101,10 @@ int VerifyBitsetSubtraction(bool bReportIndividualTestCases = false) {
 }
 
 // verify bitset multiplication operator
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetMultiplication(bool bReportIndividualTestCases = false) {
-	constexpr size_t rbits = 2 * nbits;
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	constexpr unsigned rbits = 2 * nbits;
+	constexpr unsigned NR_TEST_CASES = (1u << nbits);
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bitblock<rbits> bmul, bref;
@@ -130,10 +130,10 @@ int VerifyBitsetMultiplication(bool bReportIndividualTestCases = false) {
 }
 
 // verify bitset division operator
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetDivision(bool bReportIndividualTestCases = false) {
-	constexpr size_t rbits = 2 * nbits;
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	constexpr unsigned rbits = 2 * nbits;
+	constexpr unsigned NR_TEST_CASES = (1u << nbits);
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bitblock<rbits> bdiv, bref;

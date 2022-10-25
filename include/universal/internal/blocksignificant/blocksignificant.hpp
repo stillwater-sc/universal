@@ -125,7 +125,7 @@ public:
 	constexpr blocksignificant(int rhs) noexcept : radixPoint{ nbits }, encoding{ BitEncoding::Ones }, _block{} {}
 	
 	// raw bit constructors
-	template <unsigned... I>
+	template <size_t... I>
 	constexpr blocksignificant(const uint64_t raw, int radixPoint, std::index_sequence<I...>) noexcept
 	          : radixPoint{ radixPoint }, encoding{ BitEncoding::Flex }
 		  , _block{ static_cast<bt>(storageMask & (raw >> I*bitsInBlock))... } {}
@@ -467,7 +467,7 @@ public:
 		raw &= fractionBits;
 		return raw;
 	}
-	template <unsigned... I>
+	template <size_t... I>
 	constexpr uint64_t significant_ull(std::index_sequence<I...> = {}) const noexcept {
 		uint64_t raw{};
 		raw = _block[MSU];

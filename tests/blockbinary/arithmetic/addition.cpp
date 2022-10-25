@@ -1,21 +1,18 @@
 // addition.cpp: functional tests for block binary number addition
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
-#include <iostream>
-#include <iomanip>
-
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/blockbinary_test_status.hpp>
 
 // enumerate all addition cases for an blockbinary<nbits,BlockType> configuration
-template<size_t nbits, typename BlockType = uint8_t>
+template<unsigned nbits, typename BlockType = uint8_t>
 int VerifyAddition(bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	using namespace sw::universal;
 	
 	std::cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << ">\n";
@@ -27,10 +24,10 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	int nrOfUnderflows = 0;  // ref < maxneg
 	blockbinary<nbits, BlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
-	for (size_t i = 0; i < NR_VALUES; i++) {
+	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		aref = int64_t(a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
-		for (size_t j = 0; j < NR_VALUES; j++) {
+		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 			cref = aref + bref;
@@ -68,7 +65,7 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 // generate specific test case that you can trace with the trace conditions in blockbinary
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename StorageBlockType = uint8_t>
+template<unsigned nbits, typename StorageBlockType = uint8_t>
 void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	using namespace sw::universal;
 	blockbinary<nbits, StorageBlockType> a, b, result, reference;

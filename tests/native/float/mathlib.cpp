@@ -6,8 +6,6 @@
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <iostream>
-#include <string>
 #include <universal/math/math>
 
 #include <universal/number/cfloat/cfloat.hpp>
@@ -62,6 +60,7 @@ namespace sw { namespace universal {
 
 		Scalar result{ 0 };
 
+		std::cout << "arithmetic type   : " << type_tag(Scalar()) << '\n';
 		std::cout << "abs               : " << abs(a) << '\n';
 
 		std::cout << "fpclassify        : " << fpclassify(a) << '\n';
@@ -120,7 +119,7 @@ namespace sw { namespace universal {
 	}
 
 	template<typename Scalar>
-		int VerifyMathlibShim(bool reportTestCases) {
+	int VerifyMathlibShim(bool reportTestCases) {
 
 		int nrOfFailedTests = 0;
 
@@ -165,7 +164,7 @@ try {
 	// test Class Template Argument Deduction (CTAD) for elementary functions
 	
 	{
-		float f         = 1.5e-1;
+		float f         = 1.5e-1f;
 		MathlibShim(f);
 	}
 
@@ -187,8 +186,8 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< float >(reportTestCases), "float", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< posit<8,2> >(reportTestCases), "posit<8,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< cfloat<8,2> >(reportTestCases), "cfloat<8,2>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< posit<8,2> >(reportTestCases), "posit<8,2>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMathlibShim< cfloat<8,2> >(reportTestCases), "cfloat<8,2>", test_tag);
 
 #endif
 
