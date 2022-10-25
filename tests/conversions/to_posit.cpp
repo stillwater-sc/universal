@@ -4,9 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <string>
-
 // enable conversion between posits and integers
 #include <universal/adapters/adapt_integer_and_posit.hpp>
 // configure the integer arithmetic class
@@ -26,7 +23,7 @@
 // find msb -> scale is msb
 // shift all the msb-1 bits into a fraction, making the msb the hidden bit
 // round the bits we have with respect to the scale of the number
-template<size_t nbits, size_t es, size_t ibits, typename BlockType, sw::universal::IntegerNumberType NumberType>
+template<unsigned nbits, unsigned es, unsigned ibits, typename BlockType, sw::universal::IntegerNumberType NumberType>
 void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const sw::universal::integer<ibits, BlockType, NumberType>& w) {
 	using namespace std;
 	using namespace sw::universal;
@@ -52,16 +49,16 @@ void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const s
 	cout << "posit is   " << color_print(p) << " " << p << " " << hex_format(p) << endl;
 }
 
-template<size_t ibits, size_t pbits, size_t pes>
+template<unsigned ibits, unsigned pbits, unsigned pes>
 int VerifyInteger2PositConversion(bool reportTestCases) {
 	using namespace std;
 	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 	posit<pbits, pes> p;
 	integer<ibits> i;
-	constexpr size_t NR_INTEGERS = (1 << ibits);
+	constexpr unsigned NR_INTEGERS = (1 << ibits);
 	//for (integer<ibits> i = min_int<ibits>(); i <= max_int<ibits>(); ++i) {  // this doesn't work for signed integers
-	for (size_t pattern = 0; pattern < NR_INTEGERS; ++pattern) {
+	for (unsigned pattern = 0; pattern < NR_INTEGERS; ++pattern) {
 		i.setbits(pattern);
 		p = i; 
 		// p = i requires ADAPTER_POSIT_AND_INTEGER to be set which is accomplished by

@@ -43,13 +43,6 @@ constexpr IntegerNumberType IntegerNumber = IntegerNumberType::IntegerNumber;
 constexpr IntegerNumberType WholeNumber = IntegerNumberType::WholeNumber;
 constexpr IntegerNumberType NaturalNumber = IntegerNumberType::NaturalNumber;
 
-// forward references
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> class integer;
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> max_int();
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> integer<nbits, BlockType, NumberType> min_int();
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> struct idiv_t;
-template<unsigned nbits, typename BlockType, IntegerNumberType NumberType> idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, NumberType>&, const integer<nbits, BlockType, NumberType>&b);
-
 // scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 inline long scale(const integer<nbits, BlockType, NumberType>& i) {

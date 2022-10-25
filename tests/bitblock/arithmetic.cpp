@@ -1,6 +1,6 @@
 // arithmetic.cpp :  test suite for bitblock-based arithmetic operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -13,7 +13,7 @@
 
 int Conversions() {
 	using namespace sw::universal::internal;
-	const size_t nbits = 33;
+	const unsigned nbits = 33;
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b, ref;
 
@@ -32,7 +32,7 @@ int Conversions() {
 	ref = convert_to_bitblock<nbits, uint64_t>(uint64_t(0x1FFFFFFFA));
 	nrOfFailedTestCases += (ones_complement(b) != ref ? 1 : 0);
 
-	const size_t nnbits = 9;
+	const unsigned nnbits = 9;
 	bitblock<nnbits> c, ref2;
 	c = convert_to_bitblock<9,int8_t>(int8_t(-128));  // this looks like -1 for a 9bit posit
 	std::cout << "c                   = " << c << std::endl;
@@ -58,14 +58,14 @@ int Conversions() {
 // ? what is this trying to test TODO
 int IncrementRightAdjustedBitset() {
 	using namespace sw::universal::internal;
-	const size_t nbits = 5;
+	const unsigned nbits = 5;
 	int nrOfFailedTestCases = 0;
 
 	bitblock<nbits> r1;
 	bool carry;
 
 	std::cout << "Increments" << std::endl;
-	for (std::size_t i = 0; i < nbits; i++) {
+	for (unsigned i = 0; i < nbits; i++) {
 		r1.reset();
 		r1.set(nbits - 1 - i, true);
 		carry = false;
@@ -77,7 +77,7 @@ int IncrementRightAdjustedBitset() {
 	return nrOfFailedTestCases;
 }
 
-template<size_t src_size, size_t tgt_size>
+template<unsigned src_size, unsigned tgt_size>
 int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	using namespace sw::universal::internal;
 	int nrOfFailedTestCases = 0;
@@ -88,12 +88,12 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	
 	// use a programmatic pattern of alternating bits
 	// so it is easy to spot any differences
-	for (size_t i = 0; i < src_size; i = i + 2) {
+	for (unsigned i = 0; i < src_size; i = i + 2) {
 		reference.set(i, true);
 		operand.set(i, true);
 	}
 
-	for (size_t i = 0; i < tgt_size - src_size + 1; i++) {
+	for (unsigned i = 0; i < tgt_size - src_size + 1; i++) {
 		copy_into<src_size, tgt_size>(operand, i, addend);
 
 		if (reference != addend) {
@@ -125,7 +125,7 @@ try {
 	std::string tag = "Bitblock arithmetic operation failed";
 
 #if MANUAL_TESTING
-	const size_t nbits = 8;
+	const unsigned nbits = 8;
 	bitblock<nbits> a = convert_to_bitblock<nbits, uint32_t>(55);
 	bitblock<nbits> b = convert_to_bitblock<nbits, uint32_t>(5);
 	bitblock<nbits> r = convert_to_bitblock<nbits, uint32_t>(11);
@@ -144,7 +144,7 @@ try {
 	integer_divide_unsigned(a, b, div);
 	cout << "div " << div << endl;
 
-	constexpr size_t result_size = 2 * nbits + 3;
+	constexpr unsigned result_size = 2 * nbits + 3;
 	bitblock<result_size> div_with_fraction;
 	a = convert_to_bitblock<nbits, uint32_t>(0x80);  // representing 1.0000000
 	b = convert_to_bitblock<nbits, uint32_t>(0xA0);  // representing 1.0100000

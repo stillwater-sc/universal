@@ -1,11 +1,9 @@
 //  exceptions.cpp : test suite for arithmetic exceptions of areal numbers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <string>
 // configure the number system
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/areal/areal.hpp>

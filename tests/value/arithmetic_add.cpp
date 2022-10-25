@@ -9,12 +9,12 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
 // (sign, scale, fraction) representation using sbits for scale and fbits for fraction assuming a hidden bit
-template<size_t sbits, size_t fbits>
+template<unsigned sbits, unsigned fbits>
 int VerifyValueAdd(const std::string& tag, bool reportTestCases) {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
-	//constexpr size_t NR_OF_VALUES = (size_t(1) << (1 + scale + fbits));
-	constexpr size_t abits = fbits + 4;
+	//constexpr unsigned NR_OF_VALUES = (unsigned(1) << (1 + scale + fbits));
+	constexpr unsigned abits = fbits + 4;
 	int nrOfFailedTestCases = 0;
 	value<fbits> a, b;
 	value<abits+1> sum, ref;
@@ -22,17 +22,17 @@ int VerifyValueAdd(const std::string& tag, bool reportTestCases) {
 	// assume scale is a 2's complement representation and thus ranges from -2^(sbits-1) to 2^(sbits-1) - 1
 	int scale_lb = -(int(1) << (sbits - 1));
 	int scale_ub = (int(1) << (sbits - 1)) - 1;
-	size_t max_fract = (size_t(1) << fbits);
+	unsigned max_fract = (unsigned(1) << fbits);
 	bitblock<fbits> afraction, bfraction;
-	for (size_t lhssign = 0; lhssign < 2; ++lhssign) {
+	for (unsigned lhssign = 0; lhssign < 2; ++lhssign) {
 		for (int scale = scale_lb; scale < scale_ub; ++scale) {
-			for (size_t afrac = 0; afrac < max_fract; ++afrac) {
+			for (unsigned afrac = 0; afrac < max_fract; ++afrac) {
 				afraction = convert_to_bitblock<fbits>(afrac);
 				a.set(lhssign == 1, scale, afraction, false, false);
 				// std::cout << to_triple(a) << std::endl;
-				for (size_t rhssign = 0; rhssign < 2; ++rhssign) {
+				for (unsigned rhssign = 0; rhssign < 2; ++rhssign) {
 					for (int scale = scale_lb; scale < scale_ub; ++scale) {
-						for (size_t bfrac = 0; bfrac < max_fract; ++bfrac) {
+						for (unsigned bfrac = 0; bfrac < max_fract; ++bfrac) {
 							bfraction = convert_to_bitblock<fbits>(bfrac);
 							b.set(rhssign == 1, scale, bfraction, false, false);
 							module_add<fbits, abits>(a, b, sum);

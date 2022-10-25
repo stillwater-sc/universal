@@ -17,7 +17,7 @@
 namespace sw { namespace universal {
 
 // Generate a type tag for this posit, for example, posit<8,1>
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 std::string type_tag(const areal<nbits, es, bt>& = {}) {
 	std::stringstream ss;
 	ss << "areal<" << nbits << "," << es << ">";
@@ -25,7 +25,7 @@ std::string type_tag(const areal<nbits, es, bt>& = {}) {
 }
 
 // Generate a string representing the areal components: sign, exponent, faction, uncertainty bit, and value
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 std::string components(const areal<nbits, es, bt>& v) {
 	std::stringstream ss;
 	bool s{ false };
@@ -46,10 +46,10 @@ std::string components(const areal<nbits, es, bt>& v) {
 }
 
 // generate a binary string for areal
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_hex(const areal<nbits, es, bt>& v) {
-	constexpr size_t bitsInByte = 8;
-	constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	constexpr unsigned bitsInByte = 8;
+	constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
@@ -58,7 +58,7 @@ inline std::string to_hex(const areal<nbits, es, bt>& v) {
 	ss << "0x" << std::hex;
 	long nrNibbles = long(1ull + ((nbits - 1ull) >> 2ull));
 	for (long n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = v.nibble(size_t(n));
+		uint8_t nibble = v.nibble(unsigned(n));
 		ss << hexChar[nibble];
 		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}
@@ -66,17 +66,17 @@ inline std::string to_hex(const areal<nbits, es, bt>& v) {
 }
 
 // generate a areal format ASCII format nbits.esxNN...NNa
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string hex_print(const areal<nbits, es, bt>& r) {
 	std::stringstream ss;
 	ss << nbits << '.' << es << 'x' << to_hex(r) << 'r';
 	return ss.str();
 }
 
-template<size_t nbits, size_t es, typename bt>
-std::string pretty_print(const areal<nbits, es, bt>& r, int printPrecision = std::numeric_limits<double>::max_digits10) {
+template<unsigned nbits, unsigned es, typename bt>
+std::string pretty_print(const areal<nbits, es, bt>& r) {
 	std::stringstream ss;
-	constexpr size_t fbits = areal<nbits, es, bt>::fbits;
+	constexpr unsigned fbits = areal<nbits, es, bt>::fbits;
 	bool s{ false };
 	blockbinary<es, bt> e;
 	blockbinary<fbits, bt> f;
@@ -104,17 +104,18 @@ std::string pretty_print(const areal<nbits, es, bt>& r, int printPrecision = std
 	return ss.str();
 }
 
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 std::string info_print(const areal<nbits, es, bt>& p, int printPrecision = 17) {
 	return "TBD";
 }
 
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 std::string color_print(const areal<nbits, es, bt>& r) {
-	std::stringstream ss;
+	std::stringstream str;
+	constexpr unsigned fbits = areal<nbits, es, bt>::fbits;
 	bool s{ false };
-	blockbinary<es,bt> e;
-	blockbinary<areal<nbits, es, bt>::fbits> f;
+	blockbinary<es, bt> e;
+	blockbinary<fbits, bt> f;
 	bool ubit{ false };
 	decode(r, s, e, f, ubit);
 
@@ -127,23 +128,24 @@ std::string color_print(const areal<nbits, es, bt>& r) {
 	Color def(ColorCode::FG_DEFAULT);
 
 	// sign bit
-	ss << red << (r.isneg() ? "1" : "0");
+	str << red << (s ? "1" : "0");
 
 	// exponent bits
-	for (int i = int(es) - 1; i >= 0; --i) {
-		ss << cyan << (e.test(i) ? '1' : '0');
+	for (unsigned i = 0; i < es; ++i) {
+		unsigned bitIndex = es - 1 - i;
+		str << cyan << (e.test(bitIndex) ? '1' : '0');
 	}
 
 	// fraction bits
-	for (int i = int(r.fbits) - 1; i >= 0; --i) {
-		ss << magenta << (f.test(i) ? '1' : '0');
+	for (unsigned i = 0; i < fbits; ++i) {
+		unsigned bitIndex = fbits - 1 - i;
+		str << magenta << (f.test(bitIndex) ? '1' : '0');
 	}
 
 	// uncertainty bit
-	ss << yellow << (r.test(0) ? "1" : "0");
-
-	ss << def;
-	return ss.str();
+	str << yellow << (ubit ? "1" : "0");
+	str << def;
+	return str.str();
 }
 
 }} // namespace sw::universal

@@ -1,7 +1,7 @@
 #pragma once
 // posit_32_2.hpp: specialized 32-bit posit using fast compute specialized for posit<32,2>
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -27,13 +27,13 @@ namespace sw { namespace universal {
 template<>
 class posit<NBITS_IS_32, ES_IS_2> {
 public:
-	static constexpr size_t nbits = NBITS_IS_32;
-	static constexpr size_t es = ES_IS_2;
-	static constexpr size_t sbits = 1;
-	static constexpr size_t rbits = nbits - sbits;
-	static constexpr size_t ebits = es;
-	static constexpr size_t fbits = nbits - 3 - es;
-	static constexpr size_t fhbits = fbits + 1;
+	static constexpr unsigned nbits = NBITS_IS_32;
+	static constexpr unsigned es = ES_IS_2;
+	static constexpr unsigned sbits = 1;
+	static constexpr unsigned rbits = nbits - sbits;
+	static constexpr unsigned ebits = es;
+	static constexpr unsigned fbits = nbits - 3 - es;
+	static constexpr unsigned fhbits = fbits + 1;
 	static constexpr uint32_t sign_mask = 0x80000000ul;  // 0x8000'0000ul;
 
 	constexpr posit() : _bits(0) {}
@@ -517,7 +517,7 @@ public:
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;
-		for (size_t i = 0; i < nbits; i++) {
+		for (unsigned i = 0; i < nbits; i++) {
 			_raw_bits.set(i, (_bits & mask));
 			mask <<= 1;
 		}
@@ -576,7 +576,7 @@ private:
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;
-		for (size_t i = 0; i < nbits; i++) {
+		for (unsigned i = 0; i < nbits; i++) {
 			_raw_bits.set(i, (_bits & mask));
 			mask <<= 1;
 		}
@@ -597,7 +597,7 @@ private:
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;
-		for (size_t i = 0; i < nbits; i++) {
+		for (unsigned i = 0; i < nbits; i++) {
 			_raw_bits.set(i, (_bits & mask));
 			mask <<= 1;
 		}

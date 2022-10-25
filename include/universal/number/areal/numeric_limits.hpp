@@ -1,13 +1,13 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for arbitrary real types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/areal/areal.hpp>
 namespace std {
 
-template <size_t nbits, size_t es, typename bt> 
+template <unsigned nbits, unsigned es, typename bt> 
 class numeric_limits< sw::universal::areal<nbits,es,bt> > {
 public:
 	using AREAL = sw::universal::areal<nbits, es, bt>;
@@ -42,7 +42,7 @@ public:
 	}
 
 	static constexpr int digits       = nbits - 1 - es + 1;
-	static constexpr int digits10     = int(digits / 3.3);
+	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
 	static constexpr int max_digits10 = digits10;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
@@ -50,9 +50,9 @@ public:
 	static constexpr int radix        = 2;
 
 	static constexpr int min_exponent   = -int(1 << (es - 1));
-	static constexpr int min_exponent10 = int(min_exponent / 3.3);
+	static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
 	static constexpr int max_exponent   = int(1 << (es - 1));
-	static constexpr int max_exponent10 = int(max_exponent / 3.3);
+	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
 	static constexpr bool has_infinity  = true;
 	static constexpr bool has_quiet_NaN = true;
 	static constexpr bool has_signaling_NaN = true;

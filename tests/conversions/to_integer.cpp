@@ -4,9 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <string>
-
 // enable conversion between posits and integers
 #include <universal/adapters/adapt_integer_and_posit.hpp>
 // configure the integer arithmetic class
@@ -15,7 +12,6 @@
 // configure the posit arithmetic class
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-
 
 // is representable
 #include <universal/functions/isrepresentable.hpp>
@@ -27,7 +23,7 @@
 // find msb -> scale is msb
 // shift all the msb-1 bits into a fraction, making the msb the hidden bit
 // round the bits we have with respect to the scale of the number
-template<size_t nbits, size_t es, size_t ibits, typename BlockType, sw::universal::IntegerNumberType NumberType>
+template<unsigned nbits, unsigned es, unsigned ibits, typename BlockType, sw::universal::IntegerNumberType NumberType>
 void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const sw::universal::integer<ibits, BlockType, NumberType>& w) {
 	using namespace std;
 	using namespace sw::universal;
@@ -53,15 +49,15 @@ void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const s
 	cout << "posit is   " << color_print(p) << " " << p << " " << hex_format(p) << endl;
 }
 
-template<size_t ibits, size_t pbits, size_t pes>
+template<unsigned ibits, unsigned pbits, unsigned pes>
 int VerifyPosit2IntegerConversion(bool reportTestCases) {
 	using namespace std;
 	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 	posit<pbits, pes> p;
 	integer<ibits> i;
-	constexpr size_t NR_POSITS = (1 << pbits);
-	for (size_t pattern = 0; pattern < NR_POSITS; ++pattern) {
+	constexpr unsigned NR_POSITS = (1 << pbits);
+	for (unsigned pattern = 0; pattern < NR_POSITS; ++pattern) {
 		p.setbits(pattern);
 		long diff;
 		if (p.isnar()) {
