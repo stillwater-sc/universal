@@ -46,21 +46,15 @@
 namespace sw { namespace universal {
 
 /*
- * classic floats have denorms, but no gradual overflow, and 
- * project values outside of their dynamic range to +-inf
+ * classic floating-point cfloat offers denorms, gradual overflow, and 
+ * saturation. The default configuration turns off denorms, supernorms,
+ * and project values outside of their dynamic range to +-inf
  * 
  * Behavior flags
- *   gradual underflow: use all fraction encodings when exponent is all 0's
- *   gradual overflow: use all fraction encodings when exponent is all 1's
+ *   subnormals  : gradual underflow: use all fraction encodings when exponent is all 0's
+ *   supernormals: gradual overflow: use all fraction encodings when exponent is all 1's
  *   saturation to maxneg or maxpos when value is out of dynamic range
  */
-// Forward definitions
-template<unsigned nbits, unsigned es, typename bt, 
-	bool hasSubnormals, bool hasSupernormals, bool isSaturating> class cfloat;
-template<unsigned nbits, unsigned es, typename bt,
-	bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
-	abs(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&);
 
 /// <summary>
 /// decode an cfloat value into its constituent parts

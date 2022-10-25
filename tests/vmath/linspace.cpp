@@ -1,6 +1,6 @@
 // linspace.cpp: test suite for linspace/logspace/geomspace sequence generators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -36,7 +36,7 @@ void TestRangeGeneration() {
 	std::cout << "geomspace = " << v << '\n';
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal::blas;
 

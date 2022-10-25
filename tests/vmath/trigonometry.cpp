@@ -1,6 +1,6 @@
 // trigonometry.cpp: test suite for vectorized trigonometry math functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -8,16 +8,20 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
+// enable posit arithmetic exceptions
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/blas/blas.hpp>
 
 constexpr double PI = 3.14159265358979323846;  // best practice for C++
 
 template<typename Scalar>
-void TestTriangleVmath(size_t N = 12) {
+void TestTriangleVmath(unsigned N = 12) {
 	using namespace sw::universal::blas;
 	using std::pow;
 	using Vector = sw::universal::blas::vector<Scalar>;
 	Vector v = linspace<Scalar>(0, 2*PI, N);
+	std::cout << "\narithmetic type : " << sw::universal::type_tag(Scalar()) << '\n';
 	std::cout << "radians  = " << v << '\n';;
 	auto cosines = sw::universal::blas::cos(v);
 	std::cout << "cosines  = " << cosines << '\n';;
@@ -27,13 +31,14 @@ void TestTriangleVmath(size_t N = 12) {
 	std::cout << "tangents = " << tangents << '\n';;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal::blas;
 
 	int nrOfFailedTestCases = 0;
 
 	TestTriangleVmath<sw::universal::posit<32,2>>();
+	TestTriangleVmath<sw::universal::fp16>();
 	TestTriangleVmath<float>();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

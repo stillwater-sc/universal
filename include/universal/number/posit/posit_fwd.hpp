@@ -22,6 +22,7 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned es, unsigned fbits> posit<nbits, es>& convert(const internal::value<fbits>&, posit<nbits, es>&);
 
 	template<unsigned nbits> int decode_regime(const internal::bitblock<nbits>&);
+	template<unsigned nbits, unsigned es> constexpr int calculate_k(int scale);
 
 	// quire types
 	template<unsigned nbits, unsigned es, unsigned capacity> class quire;

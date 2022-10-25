@@ -1,6 +1,6 @@
 // components.cpp : examples working with regime/exponent/fraction components of a posit
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -10,7 +10,7 @@
 // These examples show the internal workings of the posit class and 
 // thus are intended for library developers and posit enthusiasts.
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void EnumeratePositComponentsAcrossTheirScale() {
 	using namespace sw::universal;
 
@@ -35,7 +35,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 	exponent<nbits, es> test_exponent;
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = calculate_k<nbits, es>(scale);
-		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
+		unsigned nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
 		std::cout << "scale of input number: " << std::setw(4) << scale << " exponent bits: " << test_exponent << '\n';
 	}
@@ -43,13 +43,13 @@ void EnumeratePositComponentsAcrossTheirScale() {
 
 	// fraction component of the posit
 	std::cout << "FRACTION\n";
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	bitblock<fbits> _fraction;
 	fraction<fbits> test_fraction;
 	test_fraction.set(_fraction, fbits);
 	for (int scale = -bound; scale < bound; scale++) {
-		int k = calculate_k<nbits, es>(scale);;
-		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
+		int k = calculate_k<nbits, es>(scale);
+		unsigned nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
 		std::cout << "scale of input number: " << std::setw(4) << scale << " fraction bits: " << test_fraction << '\n';
 	}
@@ -59,9 +59,6 @@ void EnumeratePositComponentsAcrossTheirScale() {
 int main()
 try {
 	using namespace sw::universal;
-
-	EnumeratePositComponentsAcrossTheirScale<4, 5>();
-	return 0;
 
 	EnumeratePositComponentsAcrossTheirScale<4, 0>();
 	EnumeratePositComponentsAcrossTheirScale<4, 1>();

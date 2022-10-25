@@ -47,6 +47,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/cfloat/exceptions.hpp>
+#include <universal/number/cfloat/cfloat_fwd.hpp>
 #include <universal/number/cfloat/cfloat_impl.hpp>
 #include <universal/traits/cfloat_traits.hpp>
 #include <universal/number/cfloat/numeric_limits.hpp>
