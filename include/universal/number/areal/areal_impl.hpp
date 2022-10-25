@@ -128,7 +128,7 @@ public:
 	static constexpr unsigned divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	static constexpr unsigned nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr unsigned storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 
 	static constexpr unsigned MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 	static constexpr bt ALLONES = bt(~0);
