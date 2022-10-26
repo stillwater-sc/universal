@@ -19,10 +19,10 @@ int Randoms(bool reportTestCases, const std::string& test_tag, size_t nrTests)
 	int fails{ 0 };
 	std::stringstream s;
 	s << test_tag << ' ' << nrTests;
-	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, OPCODE_ADD, nrTests), s.str(), "addition      ");
-	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, OPCODE_SUB, nrTests), s.str(), "subtraction   ");
-	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, OPCODE_MUL, nrTests), s.str(), "multiplication");
-	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, OPCODE_DIV, nrTests), s.str(), "division      ");
+	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, RandomsOp::OPCODE_ADD, nrTests), s.str(), "addition      ");
+	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, RandomsOp::OPCODE_SUB, nrTests), s.str(), "subtraction   ");
+	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, RandomsOp::OPCODE_MUL, nrTests), s.str(), "multiplication");
+	fails += ReportTestResult(VerifyBinaryOperatorThroughRandoms< Cfloat >(reportTestCases, RandomsOp::OPCODE_DIV, nrTests), s.str(), "division      ");
 	return fails;
 }
 

@@ -35,10 +35,10 @@ try {
 	return EXIT_SUCCESS; // ignore failures
 #else
 
-#define MY_DBL_MIN          2.2250738585072014e-308 // minpos value
+	constexpr double MY_DBL_MIN = 2.2250738585072014e-308; // minpos value
 
-	constexpr size_t nbits = 32;
-	constexpr size_t rbits = 8;
+	constexpr unsigned nbits = 32;
+	constexpr unsigned rbits = 8;
 	using bt = uint32_t;
 	using Number = lns<nbits, rbits, bt>;
 	Number cnan; cnan.setnan();

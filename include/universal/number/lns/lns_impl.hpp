@@ -91,7 +91,7 @@ public:
 
 	// specific value constructor
 	constexpr lns(const SpecificValue code) noexcept
-		: _block{ 0 } {
+		: _block{} {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();

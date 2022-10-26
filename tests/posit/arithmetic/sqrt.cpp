@@ -15,6 +15,7 @@
 #define POSIT_TRACE_SQRT
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
@@ -175,6 +176,10 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 2>(reportTestCases), "posit<10,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 2>(reportTestCases), "posit<12,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<14, 2>(reportTestCases), "posit<14,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 2>(reportTestCases), "posit<16,2>", "sqrt");
 
 #endif
 
@@ -183,16 +188,15 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
+	using Posit64_2 = posit<64, 2>;
+	using Posit64_3 = posit<64, 3>;
+	using Posit64_4 = posit<64, 4>;
+
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,3>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_2(SpecificValue::minpos))), type_tag(Posit64_2()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_3 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_3(SpecificValue::minpos))), type_tag(Posit64_3()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_4 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_4(SpecificValue::minpos))), type_tag(Posit64_4()), "sqrt");
 
-
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 1>(reportTestCases), "posit<10,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 1>(reportTestCases), "posit<12,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<14, 1>(reportTestCases), "posit<14,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 1>(reportTestCases), "posit<16,1>", "sqrt");
 #endif // REGRESSION_LEVEL_4
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

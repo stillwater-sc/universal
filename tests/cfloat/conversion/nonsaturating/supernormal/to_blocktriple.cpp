@@ -213,7 +213,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<25, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL> > (reportTestCases), test_tag, "cfloat<25,2,uint8,ftf> MUL");   // 4 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatToBlocktripleConversion< cfloat<25, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::MUL >(reportTestCases), test_tag, "cfloat<25,2,uint8,ftf> MUL");   // 4 blocks
 
 #endif
 

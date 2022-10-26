@@ -1,16 +1,9 @@
 // minij.cpp: Minimum IJ matrix
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifdef _MSC_VER
-#pragma warning(disable : 4100) // argc/argv unreferenced formal parameter
-#pragma warning(disable : 4514 4571)
-#pragma warning(disable : 4625 4626) // 4625: copy constructor was implicitly defined as deleted, 4626: assignment operator was implicitely defined as deleted
-#pragma warning(disable : 5025 5026 5027 5045)
-#pragma warning(disable : 4710 4774)
-#pragma warning(disable : 4820)
-#endif
+#include <universal/utility/directives.hpp>
 // enable the following define to show the intermediate steps in the fused-dot product
 // #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_MUL
