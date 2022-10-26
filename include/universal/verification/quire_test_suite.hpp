@@ -25,8 +25,8 @@ int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descript
 
 static constexpr unsigned QUIRE_TABLE_WIDTH = 15;
 
-template<size_t nbits, size_t es>
-void ReportQuireNonZeroError(const std::string& test_result, const std::string& op, size_t nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
+template<unsigned nbits, unsigned es>
+void ReportQuireNonZeroError(const std::string& test_result, const std::string& op, unsigned nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
 	std::cerr << test_result << " "
 		<< std::setprecision(20)
 		<< " " << op
@@ -40,8 +40,8 @@ void ReportQuireNonZeroError(const std::string& test_result, const std::string& 
 		<< std::endl;
 }
 
-template<size_t nbits, size_t es>
-void ReportQuireNonZeroSuccess(const std::string& test_result, const std::string& op, size_t nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
+template<unsigned nbits, unsigned es>
+void ReportQuireNonZeroSuccess(const std::string& test_result, const std::string& op, unsigned nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
 	std::cerr << test_result
 		<< std::setprecision(20)
 		<< " " << op
@@ -55,7 +55,7 @@ void ReportQuireNonZeroSuccess(const std::string& test_result, const std::string
 
 // quire value conversion tests
 
-template<size_t nbits, size_t es, size_t capacity>
+template<unsigned nbits, unsigned es, unsigned capacity>
 void GenerateUnsignedIntAssignments() {
 	quire<nbits, es, capacity> q;
 	unsigned upper_range = q.upper_range();
@@ -75,7 +75,7 @@ void GenerateUnsignedIntAssignments() {
 	}
 }
 
-template<size_t nbits, size_t es, size_t capacity>
+template<unsigned nbits, unsigned es, unsigned capacity>
 void GenerateSignedIntAssignments() {
 	quire<nbits, es, capacity> q;
 	unsigned upper_range = q.upper_range();
@@ -95,13 +95,13 @@ void GenerateSignedIntAssignments() {
 	}
 }
 
-template<size_t nbits, size_t es, size_t capacity, size_t fbits = 1>
+template<unsigned nbits, unsigned es, unsigned capacity, unsigned fbits = 1>
 void GenerateValueAssignments() {
 	quire<nbits, es, capacity> q;
 
 	// report some parameters about the posit and quire configuration
-	size_t max_scale = q.max_scale();
-	size_t min_scale = q.min_scale();
+	unsigned max_scale = q.max_scale();
+	unsigned min_scale = q.min_scale();
 	std::cout << "Maximum scale  = " << max_scale << " Minimum scale  = " << min_scale << " Dynamic range = " << q.dynamic_range() << std::endl;
 	std::cout << "Maxpos Squared = " << maxpos_scale<nbits, es>() * 2 << " Minpos Squared = " << minpos_scale<nbits, es>() * 2 << std::endl;
 
@@ -128,7 +128,7 @@ void GenerateValueAssignments() {
 }
 
 // Depends on quire assignment to be correct
-template<size_t nbits, size_t es, size_t capacity>
+template<unsigned nbits, unsigned es, unsigned capacity>
 int GenerateRegimePatternsForQuireAccumulation(bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 
@@ -182,7 +182,7 @@ int GenerateRegimePatternsForQuireAccumulation(bool bReportIndividualTestCases) 
 
 	// accumulate a progressively larger product result
 	// starting from minpos^2
-	for (size_t i = 0; i < nbits; i++) {
+	for (unsigned i = 0; i < nbits; i++) {
 		pattern = patterns[i];
 		//std::cout << "posit pattern: " << pattern << std::endl;
 		pa.set_raw_bits(pattern);
@@ -216,13 +216,13 @@ int GenerateRegimePatternsForQuireAccumulation(bool bReportIndividualTestCases) 
 	return nrOfFailedTests;;
 }
 
-template<size_t nbits, size_t es>
-std::vector< posit<nbits, es> > GenerateVectorForZeroValueFDP(size_t nrOfElements, const posit<nbits, es>& seed) {
+template<unsigned nbits, unsigned es>
+std::vector< posit<nbits, es> > GenerateVectorForZeroValueFDP(unsigned nrOfElements, const posit<nbits, es>& seed) {
 	std::vector< posit<nbits, es> > t(nrOfElements);
 	// first half of the vector is positive seed, second half is negative seed
 	if (nrOfElements % 2) nrOfElements++; // vector size has to be even to yield zero
-	size_t half = nrOfElements >> 1;
-	for (size_t i = 0; i < half; i++) {
+	unsigned half = nrOfElements >> 1;
+	for (unsigned i = 0; i < half; i++) {
 		t[i] = seed;
 		t[i + half] = -seed;
 	}
@@ -233,7 +233,7 @@ std::vector< posit<nbits, es> > GenerateVectorForZeroValueFDP(size_t nrOfElement
 
 // use a well-defined set of vectors with a known fused dot-product result
 // the biggest stress are vectors where the first half is accumulating and the second half is subtracting
-template<size_t nbits, size_t es, size_t capacity>
+template<unsigned nbits, unsigned es, unsigned capacity>
 int ValidateQuireAccumulation(bool bReportIndividualTestCases, const std::vector< posit<nbits, es> >& t) {
 	int nrOfFailedTests = 0;
 
@@ -242,7 +242,7 @@ int ValidateQuireAccumulation(bool bReportIndividualTestCases, const std::vector
 
 	// accumulate a progressively larger product result
 	// starting from minpos^2
-	for (size_t i = 0; i < t.size(); i++) {
+	for (unsigned i = 0; i < t.size(); i++) {
 		pa = t[i];
 		//std::cout << "posit pattern: " << pattern << std::endl;
 

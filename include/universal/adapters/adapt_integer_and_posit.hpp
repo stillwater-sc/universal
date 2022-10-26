@@ -26,7 +26,9 @@
 
 namespace sw { namespace universal {
 
-	template<unsigned fbits> class internal::bitblock;
+	namespace internal {
+		template<unsigned fbits> class bitblock;
+	}
 
 	// convert a Posit to an Integer
 	template<unsigned nbits, unsigned es, unsigned ibits, typename BlockType, IntegerNumberType NumberType>
@@ -64,7 +66,7 @@ namespace sw { namespace universal {
 
 	/////////////////////////////////////////////////////////////////////////
 	// convert an Integer to a Posit
-	template<unsigned ibits, typename BlockType, IntegerNumberType NumberType, size_t nbits, size_t es>
+	template<unsigned ibits, typename BlockType, IntegerNumberType NumberType, unsigned nbits, unsigned es>
 	inline void convert_i2p(const integer<ibits, BlockType, NumberType>& w, posit<nbits, es>& p) {
 		using Integer = integer<ibits, BlockType, NumberType>;
 

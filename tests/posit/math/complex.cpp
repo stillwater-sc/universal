@@ -40,8 +40,8 @@ try {
 	// manual exhaustive test
 
 	{
-	    constexpr size_t nbits = 8;
-	    constexpr size_t rbits = 4;
+	    constexpr unsigned nbits = 8;
+	    constexpr unsigned rbits = 4;
 	    constexpr bool arithmetic = Saturating;
 	    typedef uint8_t bt;
 	    using Real = fixpnt<nbits, rbits, arithmetic, bt>;
@@ -55,8 +55,8 @@ try {
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	constexpr size_t nbits = 10;
-	constexpr size_t es = 0;
+	constexpr unsigned nbits = 10;
+	constexpr unsigned es = 0;
 	using Real = posit<nbits, es>;
 	std::complex<Real> x, y;
 	auto bla = std::complex<Real>(copysign(x.real(), y.real()), copysign(x.real(), y.real()));

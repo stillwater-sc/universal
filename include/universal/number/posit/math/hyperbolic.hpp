@@ -1,7 +1,7 @@
 #pragma once
 // hyperbolic.hpp: hyperbolic functions for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -14,37 +14,37 @@ namespace sw { namespace universal {
 // One radian is equivalent to 180/PI degrees
 
 // hyperbolic sine of an angle of x radians
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> sinh(posit<nbits,es> x) {
 	return posit<nbits,es>(std::sinh(double(x)));
 }
 
 // hyperbolic cosine of an angle of x radians
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> cosh(posit<nbits,es> x) {
 	return posit<nbits,es>(std::cosh(double(x)));
 }
 
 // hyperbolic tangent of an angle of x radians
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> tanh(posit<nbits,es> x) {
 	return posit<nbits,es>(std::tanh(double(x)));
 }
 
 // hyperbolic cotangent of an angle of x radians
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> atanh(posit<nbits,es> x) {
 	return posit<nbits,es>(std::atanh(double(x)));
 }
 
 // hyperbolic cosecant of an angle of x radians
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> acosh(posit<nbits,es> x) {
 	return posit<nbits,es>(std::acosh(double(x)));
 }
 
 // hyperbolic secant of an angle of x radians
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> asinh(posit<nbits,es> x) {
 	return posit<nbits,es>(std::asinh(double(x)));
 }

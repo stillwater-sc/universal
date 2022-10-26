@@ -1,7 +1,7 @@
 #pragma once
 // sqrt_tables.hpp: specialized posit configurations to support efficient sqrt for small posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -10,7 +10,7 @@ namespace sw { namespace universal {
 // need a better code generator for the small posits up to nbits = 8
 // TODO: find if there is any structure in these tables across nbits and es
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void GenerateSqrtTable() {
 	constexpr unsigned int NR_POSITS = (unsigned(1) << (nbits - 1)); // no need for negative posits
 

@@ -1,7 +1,7 @@
 #pragma once
 // exponent.hpp: exponent functions for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -11,7 +11,7 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Base-e exponential function
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> exp(posit<nbits,es> x) {
 	if (isnar(x)) return x;
 	posit<nbits, es> p;
@@ -26,7 +26,7 @@ posit<nbits,es> exp(posit<nbits,es> x) {
 }
 
 // Base-2 exponential function
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> exp2(posit<nbits,es> x) {
 	if (isnar(x)) return x;
 	posit<nbits, es> p;
@@ -41,13 +41,13 @@ posit<nbits,es> exp2(posit<nbits,es> x) {
 }
 
 // Base-10 exponential function
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits, es> exp10(posit<nbits, es> x) {
 	return posit<nbits, es>(std::pow(10.0, double(x)));
 }
 		
 // Base-e exponential function exp(x)-1
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> expm1(posit<nbits,es> x) {
 	return posit<nbits,es>(std::expm1(double(x)));
 }
