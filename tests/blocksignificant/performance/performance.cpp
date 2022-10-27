@@ -359,29 +359,45 @@ try {
 
 	std::string test_suite  = "blocksignificant operator performance benchmarking";
 	std::string test_tag    = "blocksignificant performance";
-//	bool reportTestCases    = false;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
 	ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >(1);
-	
-	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS; // ignore failures
-#else
 
 	TestBlockPerformanceOnConstruction();
 	TestBlockPerformanceOnShift();
 	TestBlockPerformanceOnAdd();
 	TestBlockPerformanceOnMul();
+	// these are long running tests due to the fact that blocksignificant div is slow for large configurations
 	TestBlockPerformanceOnDiv();
 #ifdef FRACTION_REMAINDER
 	TestBlockPerformanceOnRem();
+#endif
+	
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else
+
+#if REGRESSION_LEVEL_1
+	TestShiftOperatorPerformance();
+	TestArithmeticOperatorPerformance();
+
+	ShiftPerformanceWorkload< sw::universal::blocksignificant<8, uint8_t> >(1);
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

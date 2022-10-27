@@ -62,22 +62,4 @@ inline long double fraction_value(const fixpnt<nbits, rbits, arithmetic, bt>& v)
 	return (long double)(fp);
 }
 
-
-
-// clang <complex> implementation is calling these functions so we need implementations for fixpnt
-
-//template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-//inline bool isnan(const fixpnt<nbits, rbits, arithmetic, bt>& p) { return false; }
-
-//template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-//inline bool isinf(const fixpnt<nbits, rbits, arithmetic, bt>& p) { return false; }
-
-// copysign returns a value with the magnitude of a, and the sign of b
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-inline fixpnt<nbits, rbits, arithmetic, bt> copysign(const fixpnt<nbits, rbits, arithmetic, bt>& a, const fixpnt<nbits, rbits, arithmetic, bt>& b) { 
-    fixpnt<nbits, rbits, arithmetic, bt> c(a);
-    if (a.sign() == b.sign()) return c;
-    return -c; 
-}
-
 }} // namespace sw::universal

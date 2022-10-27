@@ -1,7 +1,7 @@
 #pragma once
 // mathlib.hpp: elementary functions for the posit number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -40,6 +40,7 @@ namespace sw { namespace universal {
         // precondition
         if (!a.isinteger() || !b.isinteger()) return posit<nbits, es>(0);
 
+        // TODO: using uint64_t as ipow constraints dynamic range
         uint64_t result(1);
         uint64_t base = uint64_t(a); 
         uint64_t exp = uint64_t(b);

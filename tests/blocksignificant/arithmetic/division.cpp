@@ -77,6 +77,8 @@ void TestMostSignificantBit() {
 	}
 }
 
+// TODO: blocksignificant div is failing, currently regression testing is disabled
+// 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -111,12 +113,12 @@ try {
 		c.div(a, b);
 	}
 
-//	TestMostSignificantBit<27, uint8_t>();
-//	TestMostSignificantBit<27, uint16_t>();
-//	TestMostSignificantBit<33, uint32_t>();
+	TestMostSignificantBit<27, uint8_t>();
+	TestMostSignificantBit<27, uint16_t>();
+	TestMostSignificantBit<33, uint32_t>();
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4>", "division");
-//	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8,uint8_t>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
