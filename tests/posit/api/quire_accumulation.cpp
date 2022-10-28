@@ -31,13 +31,13 @@ void PrintTestVector(std::ostream& ostr, const std::vector< sw::universal::posit
 }
 
 template<unsigned nbits, unsigned es, unsigned capacity>
-int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, unsigned nrOfElements, const sw::universal::posit<nbits,es>& seed) {
+int GenerateQuireAccumulationTestCase(bool reportTestCases, unsigned nrOfElements, const sw::universal::posit<nbits,es>& seed) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 	std::stringstream ss;
 	ss << "quire<" << nbits << "," << es << "," << capacity << ">";
 	std::vector< sw::universal::posit<nbits, es> > t = GenerateVectorForZeroValueFDP(nrOfElements, seed);
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
+	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<nbits, es, capacity>(reportTestCases, t), ss.str(), "accumulation");
 	return nrOfFailedTestCases;
 }
 
@@ -278,7 +278,7 @@ int ValidateBorrowPropagation() {
 }
 
 template<unsigned nbits, unsigned es, unsigned capacity = 2>
-int ValidateQuireAccumulation(bool bReportIndividualTestCases) {
+int ValidateQuireAccumulation(bool reportTestCases) {
 	int nrOfFailedTests = 0;
 
 	return nrOfFailedTests;
@@ -313,13 +313,12 @@ void TestCaseForProperZeroHandling() {
 }
 
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
 
 int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << "Quire experiments\n";
@@ -347,7 +346,7 @@ try {
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<16, 1>();
 	
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(reportTestCases, 16, posit<8, 1>(SpecificValue::minpos));
 	
 	std::cout << "Carry Propagation\n";
 	nrOfFailedTestCases += ReportTestResult(ValidateCarryPropagation<4, 1>(), "carry propagation", "increment");
@@ -362,36 +361,30 @@ try {
 
 #else
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 2>(bReportIndividualTestCases, 16, posit<8, 0>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 2>(bReportIndividualTestCases, 16, posit<8, 2>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 5>(bReportIndividualTestCases, 16, posit<8, 0>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 5>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 5>(bReportIndividualTestCases, 16, posit<8, 2>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 2>(reportTestCases, 16, posit<8, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(reportTestCases, 16, posit<8, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 2>(reportTestCases, 16, posit<8, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 5>(reportTestCases, 16, posit<8, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 5>(reportTestCases, 16, posit<8, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 5>(reportTestCases, 16, posit<8, 2>(SpecificValue::maxpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 2>(bReportIndividualTestCases, 256, posit<16, 0>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 2>(bReportIndividualTestCases, 256, posit<16, 1>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 2>(bReportIndividualTestCases, 256, posit<16, 2>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 5>(bReportIndividualTestCases, 16, posit<16, 0>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 5>(bReportIndividualTestCases, 16, posit<16, 1>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 5>(bReportIndividualTestCases, 16, posit<16, 2>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 2>(reportTestCases, 256, posit<16, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 2>(reportTestCases, 256, posit<16, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 2>(reportTestCases, 256, posit<16, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 5>(reportTestCases, 16, posit<16, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 5>(reportTestCases, 16, posit<16, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 5>(reportTestCases, 16, posit<16, 2>(SpecificValue::maxpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 0, 2>(bReportIndividualTestCases, 4096, posit<24, 0>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 1, 2>(bReportIndividualTestCases, 4096, posit<24, 1>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 2, 2>(bReportIndividualTestCases, 4096, posit<24, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 0, 2>(reportTestCases, 4096, posit<24, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 1, 2>(reportTestCases, 4096, posit<24, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 2, 2>(reportTestCases, 4096, posit<24, 2>(SpecificValue::minpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 2>(bReportIndividualTestCases, 65536, posit<32, 0>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 2>(bReportIndividualTestCases, 65536, posit<32, 1>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 2>(bReportIndividualTestCases, 65536, posit<32, 2>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 5>(bReportIndividualTestCases, 16, posit<32, 0>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 5>(bReportIndividualTestCases, 16, posit<32, 1>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 5>(bReportIndividualTestCases, 16, posit<32, 2>(SpecificValue::maxpos));
-
-#ifdef STRESS_TESTING
-
-
-#endif // STRESS_TESTING
-
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 2>(reportTestCases, 65536, posit<32, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 2>(reportTestCases, 65536, posit<32, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 2>(reportTestCases, 65536, posit<32, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 5>(reportTestCases, 16, posit<32, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 5>(reportTestCases, 16, posit<32, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 5>(reportTestCases, 16, posit<32, 2>(SpecificValue::maxpos));
 
 #endif // MANUAL_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
