@@ -118,7 +118,7 @@ namespace sw::universal::internal {
 		using namespace sw::universal;
 		std::cout << "\nArithmetic operator performance\n";
 
-		size_t NR_OPS = 1024ull * 1024ull;
+		size_t NR_OPS = 4 * 1024ull;
 		PerformanceRunner("lns< 4, 1, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns< 4, 1, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns< 8, 3, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns< 8, 3, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns<12, 4, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns<12, 4, uint8_t> >, NR_OPS);
