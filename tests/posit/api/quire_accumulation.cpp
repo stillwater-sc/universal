@@ -441,7 +441,7 @@ void Issue45() {
 	constexpr int n = 64;
 	std::vector<positX> Acoefficients(n);
 	for (int i = 0; i < n; ++i) {
-		Acoefficients[i] = posit<nbits, es>(sw::universal::SpecificValue::minpos);
+		Acoefficients[i] = positX(sw::universal::SpecificValue::minpos);
 	}
 	std::vector<positX> xcoefficients(n);
 	for (int i = 0; i < n; ++i) {
