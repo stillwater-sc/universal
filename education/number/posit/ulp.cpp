@@ -1,13 +1,13 @@
 // ulp.cpp: examples of unit in the last place
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
 
 
 // generate the maximum value unit in the last place
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void GenerateMaxRangeUlp(int64_t startValue = 0, int precision = 20) {
 	using Posit = sw::universal::posit<nbits, es>;
 	Posit p = 0;

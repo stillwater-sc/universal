@@ -1,6 +1,6 @@
 ﻿// factorial.cpp: evaluation of factorials in the posit number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 // enable conversion between posits and integers
@@ -17,7 +17,7 @@
 // in the body of the function: ETLO 1/19/2020
 
 // generate factorials in an Integer and a Posit number system to compare
-template<size_t pbits, size_t pes>
+template<unsigned pbits, unsigned pes>
 void GenerateFactorialTableComparison(unsigned upperbound, unsigned long long factorialValue = 1, sw::universal::posit<pbits,pes> positRef = 1, int columnWidth = 30) {
 	std::cout << "\n+---------------\n" << typeid(factorialValue).name() << " and " << typeid(positRef).name() << '\n';
 	std::cout << "  i    " << std::setw(columnWidth) << "integer(N!)" << "  " << std::setw(columnWidth) << "posit(N!)" << std::setw(columnWidth) << "abs(error)\n";
@@ -31,7 +31,7 @@ void GenerateFactorialTableComparison(unsigned upperbound, unsigned long long fa
 	}
 }
 
-template<size_t ibits, size_t pbits, size_t pes>
+template<unsigned ibits, unsigned pbits, unsigned pes>
 void GenerateFactorialTableComparison(unsigned upperbound, sw::universal::integer<ibits> factorialValue = 1, sw::universal::posit<pbits, pes> positRef = 1, int columnWidth = 30) {
 	std::cout << "\n+---------------\n" << typeid(factorialValue).name() << " and " << typeid(positRef).name() << '\n';
 	std::cout << "  i    " << std::setw(columnWidth) << "integer(N!)" << "  " << std::setw(columnWidth) << "posit(N!)" << std::setw(columnWidth) << "abs(error)\n";
@@ -64,8 +64,8 @@ try {
 		// 21! can not be represented by a 64-bit integer
 		// 13! and up generate integers that a 32-bit posit can't represent
 		using Integer = unsigned long long;
-		constexpr size_t nbits = 32;
-		constexpr size_t es = 2;
+		constexpr unsigned nbits = 32;
+		constexpr unsigned es = 2;
 		using Posit = posit<nbits, es>;
 		int columnWidth = 40;
 		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
@@ -102,8 +102,8 @@ unsigned __int64 and class sw::universal::posit<32,2>
 		// 20! can still be represented by a 64-bit integer
         // 21! can not be represented by a 64-bit integer
 		using Integer = unsigned long long;
-		constexpr size_t nbits = 64;
-		constexpr size_t es = 2;
+		constexpr unsigned nbits = 64;
+		constexpr unsigned es = 2;
 		using Posit = posit<nbits, es>;
 		int columnWidth = 40;
 		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
@@ -138,8 +138,8 @@ unsigned __int64 and class sw::universal::posit<64,2>
 	upperbound = 30;
 	{
 		using Integer = sw::universal::integer<128>;
-		constexpr size_t nbits = 64;
-		constexpr size_t es = 3;
+		constexpr unsigned nbits = 64;
+		constexpr unsigned es = 3;
 		using Posit = posit<nbits, es>;
 		int columnWidth = 40;
 		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
@@ -180,8 +180,8 @@ class sw::universal::integer<128> and class sw::universal::posit<64,3>
 
 	{
 		using Integer = sw::universal::integer<128>;
-		constexpr size_t nbits = 128;
-		constexpr size_t es = 4;
+		constexpr unsigned nbits = 128;
+		constexpr unsigned es = 4;
 		using Posit = posit<nbits, es>;
 		int columnWidth = 40;
 		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);

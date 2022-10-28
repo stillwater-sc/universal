@@ -1,7 +1,7 @@
 #pragma once
 // twoSum.hpp :  TwoSum specialization for posit number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -25,7 +25,7 @@ Given two floating point values a and b, generate a rounded sum s and a remainde
 s = RoundToNearest(a + b), and
 a + b = s + r
 */
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::pair< posit<nbits, es>, posit<nbits, es> > twoSum(const posit<nbits, es>& a, const posit<nbits, es>& b) {
 #if GEOMETRIC_ROUNDING_CASES
 	posit<nbits, es> pminpos(SpecificValue::minpos), pmaxpos(SpecificValue::maxpos);
@@ -55,7 +55,7 @@ std::pair< posit<nbits, es>, posit<nbits, es> > twoSum(const posit<nbits, es>& a
 		hardware will end up targeting... "When you make a bug in blockchain code, people write books about it"
 		so we should make a reasonable effort to find (s,r) of the smallest r where s+r=a+b.
 
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	std::pair< posit<nbits, es>, posit<nbits, es> > add_exact(const posit<nbits, es>& a, const posit<nbits, es>& b) {
 		using Scalar = posit<nbits, es>;
 

@@ -237,7 +237,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
-		ptt = k < 0 ? minpos_pattern<nbits, es>(_sign) : maxpos_pattern<nbits, es>(_sign);
+//		ptt = k < 0 ? minpos_pattern<nbits, es>(_sign) : maxpos_pattern<nbits, es>(_sign);
 		// we are done
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
@@ -258,7 +258,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
 		unsigned esval = e % (unsigned(1) << static_cast<int>(es));
-		exponent = convert_to_bitblock<pt_len>(esval);
+//		exponent = convert_to_bitblock<pt_len>(esval);
 		unsigned nf = unsigned(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
@@ -2612,7 +2612,7 @@ internal::value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit
 			ctmp.set(sign(c), scale(c), extract_fraction<nbits, es, fbits>(c), c.iszero(), c.isnar());
 			internal::value<mbits> vc;
 			vc.template right_extend<fbits, mbits>(ctmp); // right-extend the c argument and assign to adder input
-			module_add<mbits, abits>(product, vc, sum);
+//			module_add<mbits, abits>(product, vc, sum);
 		}
 	}
 

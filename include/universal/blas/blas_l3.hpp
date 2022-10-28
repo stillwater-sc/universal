@@ -178,14 +178,15 @@ vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
 	return vector<value_type>{-1};
 }
 
-
+// TODO: how to generalize this to posit, cfloat, lns, integer, etc.
+//
 // A times B = C fused matrix-vector product
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 matrix< sw::universal::posit<nbits, es> > fmm(const matrix< sw::universal::posit<nbits, es> >& A, const matrix< sw::universal::posit<nbits, es> >& B) {
 	// preconditions
 	assert(A.cols() == B.rows());
 
-	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
+	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
 	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
 	size_t rows = A.rows();
 	size_t cols = B.cols();

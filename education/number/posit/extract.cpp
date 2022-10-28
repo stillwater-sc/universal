@@ -1,6 +1,6 @@
 // extract.cpp : extracting IEEE floating point components and relate them to posit components
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -51,9 +51,9 @@ long double frexp(long double in, int* exponent)
 
 */
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 sw::universal::posit<nbits, es> extract(float f) {
-	constexpr size_t fbits = sw::universal::posit<nbits, es>::fbits;
+	constexpr unsigned fbits = sw::universal::posit<nbits, es>::fbits;
 	sw::universal::posit<nbits, es> p;
 	bool		 _sign;
 	int			 _scale;
@@ -66,9 +66,9 @@ sw::universal::posit<nbits, es> extract(float f) {
 	return sw::universal::convert(v, p);
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 sw::universal::posit<nbits, es> extract(double d) {
-	constexpr size_t fbits = sw::universal::posit<nbits, es>::fbits;
+	constexpr unsigned fbits = sw::universal::posit<nbits, es>::fbits;
 	sw::universal::posit<nbits, es> p;
 	bool				_sign;
 	int					_scale;
@@ -85,8 +85,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	const size_t nbits = 32;
-	const size_t es = 2;
+	const unsigned nbits = 32;
+	const unsigned es = 2;
 
 	posit<nbits,es>		p;
 	bool 				sign;

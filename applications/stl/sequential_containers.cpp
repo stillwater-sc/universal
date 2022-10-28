@@ -57,7 +57,7 @@ bool GenerateData(size_t nrOfSamples, std::vector<long double>& data) {
 	return true;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 bool GenerateData(size_t nrOfSamples, std::vector< sw::universal::posit<nbits, es> >& data) {
 	std::random_device seed;
 	std::mt19937 engine(seed());
@@ -104,9 +104,9 @@ void TimedExperiment(std::vector<Ty>& data) {
 int main()
 try {
 #ifdef STRESS_TESTING
-	constexpr size_t NR_SAMPLES = 1'000'000;
+	constexpr unsigned NR_SAMPLES = 1'000'000;
 #else
-	constexpr size_t NR_SAMPLES = 1000;
+	constexpr unsigned NR_SAMPLES = 1000;
 #endif
 	{
 		using value_type = int;
@@ -118,8 +118,8 @@ try {
 
 	{
 		using namespace sw::universal;
-		constexpr size_t nbits = 16;
-		constexpr size_t es = 1;
+		constexpr unsigned nbits = 16;
+		constexpr unsigned es = 1;
 		using value_type = posit<nbits,es>;
 
 		std::vector<value_type> data;

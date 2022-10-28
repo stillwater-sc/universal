@@ -1,4 +1,4 @@
-//  perf.cpp : baseline performance benchmarking of arithmetic operators on the lns arithmetic type
+// performance.cpp : baseline performance benchmarking of arithmetic operators on the lns arithmetic type
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -149,7 +149,7 @@ namespace sw::universal::internal {
 		using namespace sw::universal;
 		std::cout << "\nArithmetic operator performance\n";
 
-		size_t NR_OPS = 1024ull * 1024ull;
+		size_t NR_OPS = 4 * 1024ull;
 		PerformanceRunner("lns< 4, 1, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns< 4, 1, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns< 8, 3, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns< 8, 3, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns<12, 4, uint8_t >   add/subtract   ", AdditionSubtractionWorkload< lns<12, 4, uint8_t> >, NR_OPS);
@@ -206,7 +206,7 @@ namespace sw::universal::internal {
 		using namespace sw::universal;
 		std::cout << "\nArithmetic operator performance\n";
 
-		size_t NR_OPS = 1024ull * 1024ull;
+		size_t NR_OPS = 4 * 1024ull;
 		PerformanceRunner("lns<  8, 2, uint8_t >  add/subtract  ", AdditionSubtractionWorkload< lns<  8,  2, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns< 16, 5, uint16_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 16,  5, uint16_t> >, NR_OPS);
 		PerformanceRunner("lns< 32, 8, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 32,  8, uint32_t> >, NR_OPS);

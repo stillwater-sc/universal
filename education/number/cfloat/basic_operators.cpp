@@ -1,11 +1,12 @@
 // basic_operators.cpp : examples of the basic arithmetic operators using classic cfloats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/cfloat/cfloat.hpp>
+
 // quick helper to report on a cfloat's specialness
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 void checkSpecialCases(sw::universal::cfloat<nbits, es, bt> b) {
 	std::cout << "cfloat is " << (b.iszero() ? "zero " : "non-zero ") << (b.ispos() ? "positive " : "negative ") << (b.isnan() ? "Not a Number" : "Its a Real") << std::endl;
 }
@@ -15,8 +16,8 @@ int main()
 try {
 	using namespace sw::universal;	// standard namespace for cfloat
 
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 5;
+	constexpr unsigned nbits = 16;
+	constexpr unsigned es = 5;
 	using bt = uint16_t;  // storage block type
 	using Real = cfloat<nbits, es, bt>;   // construct the Real number we want
 	Real b1, b2, b3, b4, b5, b6;

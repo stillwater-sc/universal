@@ -1,15 +1,15 @@
 // conversion.cpp: step-by-step example of conversion of values to posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
 
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t es, typename Ty>
+template<unsigned nbits, unsigned es, typename Ty>
 sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
-	constexpr size_t fbits = std::numeric_limits<Ty>::digits - 1;
+	constexpr unsigned fbits = std::numeric_limits<Ty>::digits - 1;
 	using namespace sw::universal;
 
 	internal::value<fbits> v((Ty)rhs);
@@ -55,7 +55,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 		std::cout << "projection  rounding ";
 	}
 	else {
-		constexpr size_t pt_len = nbits + 3 + es;
+		constexpr unsigned pt_len = nbits + 3 + es;
 		bitblock<pt_len> pt_bits;
 		bitblock<pt_len> regime;
 		bitblock<pt_len> exponent;
@@ -147,8 +147,8 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
+	constexpr unsigned nbits = 16;
+	constexpr unsigned es = 1;
 
 #define ONE_SAMPLE 1
 #if ONE_SAMPLE

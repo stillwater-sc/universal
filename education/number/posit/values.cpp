@@ -1,6 +1,6 @@
 //  values.cpp : tests on values in scientific notation (sign, scale, fraction)
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -64,7 +64,7 @@ void TestConversionResult(bool bValid, const std::string& descriptor) {
 	}
 }
 
-template<size_t fbits>
+template<unsigned fbits>
 bool ValidateValue() {
 	using namespace sw::universal;
 
@@ -113,7 +113,7 @@ FLT_TRUE_MIN
 DBL_TRUE_MIN    (C++17)
 LDBL_TRUE_MIN
  */
-template<size_t fbits>
+template<unsigned fbits>
 bool ValidateSubnormalFloats() {
 	using namespace sw::universal;
 
@@ -130,7 +130,7 @@ bool ValidateSubnormalFloats() {
 	internal::value<23> v;
 	float flt = flt_min;
 	std::cout << to_triple(v) <<'\n';
-	for (size_t i = 0; i < 24; ++i) {
+	for (unsigned i = 0; i < 24; ++i) {
 		flt /= 2.0;
 		v = flt;
 		std::cout << std::hexfloat << flt << std::defaultfloat << " " << flt << " " << to_triple(v) << " " << v << '\n';
@@ -143,7 +143,7 @@ bool ValidateSubnormalFloats() {
 	return bSuccess;
 }
 
-template<size_t fbits>
+template<unsigned fbits>
 void PrintValue(float f, const sw::universal::internal::value<fbits>& v) {
 	std::cout << "float: " << std::setw(fbits) << f << sw::universal::internal::to_triple(v) << std::endl;
 }

@@ -1,6 +1,6 @@
 // enumeration.cpp: examples of enumerating the posit state space
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -18,13 +18,13 @@ try {
 	// forward enumeration
 	std::cout << "Increment-based ascention from 0 to NaR and back to 0\n";
 	posit<nbits, es> p(0);
-	for (size_t i = 0; i <= (size_t(1) << nbits); ++i) {
+	for (unsigned i = 0; i <= (unsigned(1) << nbits); ++i) {
 		std::cout << components(p++) << '\n';
 	}
 	// reverse enumeration from NaR to 0
 	std::cout << "Decrement-based descention from NaR to 0 and back to NaR\n";
 	p.setnar();
-	for (long i = (size_t(1) << nbits); i >= 0; --i) {
+	for (long i = (unsigned(1) << nbits); i >= 0; --i) {
 		std::cout << components(p--) << '\n';
 	}
 	std::cout << '\n';
@@ -33,13 +33,13 @@ try {
 	// forward enumeration
 	std::cout << "Increment-based ascention from 0 to NaR and back to 0\n";
 	p = 0;
-	for (size_t i = 0; i <= (size_t(1) << nbits); ++i) {
+	for (unsigned i = 0; i <= (unsigned(1) << nbits); ++i) {
 		std::cout << pretty_print(p++) << '\n';
 	}
 	// reverse enumeration from NaR to 0
 	std::cout << "Decrement-based descention from NaR to 0 and back to NaR\n";
 	p.setnar();
-	for (long i = (size_t(1) << nbits); i >= 0; --i) {
+	for (long i = (unsigned(1) << nbits); i >= 0; --i) {
 		std::cout << pretty_print(p--) << '\n';
 	}
 	std::cout << '\n';
@@ -48,13 +48,13 @@ try {
 	// forward enumeration
 	std::cout << "Increment-based ascention from 0 to NaR and back to 0\n";
 	p = 0;
-	for (size_t i = 0; i <= (size_t(1) << nbits); ++i) {
+	for (unsigned i = 0; i <= (unsigned(1) << nbits); ++i) {
 		std::cout << info_print(p++, nbits) << '\n';
 	}
 	// reverse enumeration from NaR to 0
 	std::cout << "Decrement-based descention from NaR to 0 and back to NaR\n";
 	p.setnar();
-	for (long i = (size_t(1) << nbits); i >= 0; --i) {
+	for (long i = (unsigned(1) << nbits); i >= 0; --i) {
 		std::cout << info_print(p--, nbits) << '\n';
 	}
 

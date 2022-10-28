@@ -17,12 +17,12 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& a, 
 		           const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& b) 
 {
 	sw::universal::quire<nbits, es> q(0);
-	for (size_t i = 0; i < a.size(); ++i) {
+	for (unsigned i = 0; i < a.size(); ++i) {
 		q += sw::universal::quire_mul(a[i], b[i]);
 		std::cout << a[i] << " * " << b[i] << " = " << a[i] * b[i] << std::endl << "quire " << q << std::endl;
 	}
@@ -35,18 +35,17 @@ void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-	using namespace sw::universal::blas;
 
 	// set up the properties of the arithmetic system
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	using Scalar = sw::universal::posit<nbits, es>;
-	using Vector = sw::universal::blas::vector<Scalar>;
+	constexpr unsigned nbits = 32;
+	constexpr unsigned es = 2;
+	using Scalar = posit<nbits, es>;
+	using Vector = blas::vector<Scalar>;
 
-	constexpr size_t vectorSize = SIZE_32K + 2;
+	constexpr unsigned vectorSize = SIZE_32K + 2;
 	Vector a(vectorSize), b(vectorSize);
 	Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
-	for (size_t i = 1; i < vectorSize-1; ++i) {
+	for (unsigned i = 1; i < vectorSize-1; ++i) {
 		a[i] = 1;
 		b[i] = epsilon;
 	}
@@ -66,7 +65,7 @@ try {
 	//  fdp will calculate the sum of products correctly
 	// dot: 0
 	// fdp: 0.000244141
-	std::cout << "\naccumulation of 32k epsilons (" << hex_format(epsilon) << " = " << epsilon << ") for a " << typeid(Scalar).name() << " yields:\n";
+	std::cout << "\naccumulation of 32k epsilons (" << epsilon << ") for a " << type_tag(Scalar()) << " yields:\n";
 	std::cout << "dot            : " << dot(a, b)  << " : " << hex_format(dot(a,b)) << '\n';
 	std::cout << "fdp            : " << fdp(a, b)  << " : " << hex_format(fdp(a,b)) << '\n';
 	Scalar validation = (vectorSize - 2) * epsilon;
@@ -74,13 +73,13 @@ try {
 
 	// scale a vector
 	std::cout << "\nscaling a vector\n";
-	for (size_t i = 0; i < vectorSize; ++i) {
+	for (unsigned i = 0; i < vectorSize; ++i) {
 		a[i] = 1;
 		b[i] = epsilon;
 	}
 	a *= epsilon; // a * epsilon -> b
 	bool success = true;
-	for (size_t i = 0; i < size(a); ++i) {
+	for (unsigned i = 0; i < size(a); ++i) {
 		if (a[i] != b[i]) {
 			std::cout << a[i] << " != " << b[i] << '\n';
 			success = false;
@@ -96,12 +95,12 @@ try {
 
 	// normalize a vector
 	std::cout << "\nnormalizing a vector\n";
-	for (size_t i = 0; i < vectorSize; ++i) {
+	for (unsigned i = 0; i < vectorSize; ++i) {
 		a[i] = 1;
 	}
 	b /= epsilon; // b / epsilon -> a
 	success = true;
-	for (size_t i = 0; i < size(a); ++i) {
+	for (unsigned i = 0; i < size(a); ++i) {
 		if (a[i] != b[i]) {
 			std::cout << a[i] << " != " << b[i] << '\n';
 			success = false;
