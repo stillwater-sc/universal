@@ -6,6 +6,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/lns_math_test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -85,7 +86,7 @@ try {
 
 #if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< lns<64, 2, std::uint32_t> >(reportTestCases, RandomsOp::OPCODE_HYPOT, 1000, 0.0), "lns<64,2>", "hypot");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

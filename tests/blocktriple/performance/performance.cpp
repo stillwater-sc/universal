@@ -1,6 +1,6 @@
 //  performance.cpp : performance benchmarking for internal blocktriple operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -105,7 +105,7 @@ namespace sw::universal::internal {
 		PerformanceRunner("blocktriple<512>  multiplication", MultiplicationWorkload< sw::universal::blocktriple<512, sw::universal::BlockTripleOperator::MUL, uint32_t> >, NR_OPS / 512);     // TODO: why is this so slow?
 		PerformanceRunner("blocktriple<1024> multiplication", MultiplicationWorkload< sw::universal::blocktriple<1024, sw::universal::BlockTripleOperator::MUL, uint32_t> >, NR_OPS / 1024);   // TODO: why is this so slow?
 
-		NR_OPS = 1024ull * 512ull;
+		NR_OPS = 1024ull * 32ull;
 		PerformanceRunner("blocktriple<16>   division      ", DivisionWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<32>   division      ", DivisionWorkload< sw::universal::blocktriple<32, sw::universal::BlockTripleOperator::DIV, uint32_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<64>   division      ", DivisionWorkload< sw::universal::blocktriple<64, sw::universal::BlockTripleOperator::DIV, uint64_t> >, NR_OPS / 2);
@@ -173,7 +173,7 @@ namespace sw::universal::internal {
 		using namespace sw::universal;
 		std::cout << "\nADDITION: blocktriple arithemetic performance as a function of size and BlockType\n";
 
-		constexpr size_t NR_OPS = 32ull * 1024ull * 1024ull;
+		constexpr size_t NR_OPS = 2ull * 1024ull * 1024ull;
 
 		PerformanceRunner("blocktriple<4,uint8_t>      add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<4, sw::universal::BlockTripleOperator::ADD, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<8,uint8_t>      add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<8, sw::universal::BlockTripleOperator::ADD, uint8_t> >, NR_OPS);
@@ -210,7 +210,7 @@ namespace sw::universal::internal {
 		using namespace sw::universal;
 		std::cout << "\nDIVISION: blocktriple arithemetic performance as a function of size and BlockType\n";
 
-		constexpr size_t NR_OPS = 1024ull * 1024;
+		constexpr size_t NR_OPS = 1024ull * 4;
 		PerformanceRunner("blocktriple<4,uint8>      div   ", DivisionWorkload< sw::universal::blocktriple<4, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<8,uint8>      div   ", DivisionWorkload< sw::universal::blocktriple<8, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<16,uint8>     div   ", DivisionWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS);
@@ -218,15 +218,15 @@ namespace sw::universal::internal {
 		PerformanceRunner("blocktriple<64,uint8>     div   ", DivisionWorkload< sw::universal::blocktriple<64, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<128,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<128, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS / 2);
 		PerformanceRunner("blocktriple<256,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<256, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS / 4);
-		PerformanceRunner("blocktriple<512,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<512, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS / 8);
-		PerformanceRunner("blocktriple<1024,uint8>   div   ", DivisionWorkload< sw::universal::blocktriple<1024, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS / 16);
+		PerformanceRunner("blocktriple<512,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<512, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS / 16);
+		PerformanceRunner("blocktriple<1024,uint8>   div   ", DivisionWorkload< sw::universal::blocktriple<1024, sw::universal::BlockTripleOperator::DIV, uint8_t> >, NR_OPS / 256);
 	}
 
 	void TestBlockPerformanceOnMul() {
 		using namespace sw::universal;
 		std::cout << "\nMULTIPLICATION: blocktriple arithemetic performance as a function of size and BlockType\n";
 
-		constexpr size_t NR_OPS = 512ull * 1024;
+		constexpr size_t NR_OPS = 1024ull * 4;
 		PerformanceRunner("blocktriple<4,uint8>      mul   ", MultiplicationWorkload< sw::universal::blocktriple<4, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<8,uint8>      mul   ", MultiplicationWorkload< sw::universal::blocktriple<8, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<16,uint8>     mul   ", MultiplicationWorkload< sw::universal::blocktriple<16, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
@@ -234,8 +234,8 @@ namespace sw::universal::internal {
 		PerformanceRunner("blocktriple<64,uint8>     mul   ", MultiplicationWorkload< sw::universal::blocktriple<64, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS);
 		PerformanceRunner("blocktriple<128,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<128, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS / 2);
 		PerformanceRunner("blocktriple<256,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<256, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS / 16);
-		PerformanceRunner("blocktriple<512,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<512, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS / 512);
-		PerformanceRunner("blocktriple<1024,uint8>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<1024, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS / 1024);
+		PerformanceRunner("blocktriple<512,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<512, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS / 16);
+		PerformanceRunner("blocktriple<1024,uint8>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<1024, sw::universal::BlockTripleOperator::MUL, uint8_t> >, NR_OPS / 256);
 
 	}
 }
@@ -278,6 +278,14 @@ try {
 
 #if REGRESSION_LEVEL_1
 	TestSmallArithmeticOperatorPerformance();
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
 #endif
 
 #if REGRESSION_LEVEL_4

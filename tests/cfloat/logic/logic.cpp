@@ -1,6 +1,6 @@
 // logic.cpp: functional tests for logic tests on classic cfloats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -13,8 +13,8 @@ namespace sw::universal {
 
 	template<typename TestType>
 	int VerifyCfloatLogicEqual() {
-		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
@@ -51,8 +51,8 @@ namespace sw::universal {
 
 	template<typename TestType>
 	int VerifyCfloatLogicNotEqual() {
-		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
@@ -90,8 +90,8 @@ namespace sw::universal {
 
 	template<typename TestType>
 	int VerifyCfloatLogicLessThan() {
-		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
@@ -121,8 +121,8 @@ namespace sw::universal {
 
 	template<typename TestType>
 	int VerifyCfloatLogicLessOrEqualThan() {
-		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
@@ -148,8 +148,8 @@ namespace sw::universal {
 
 	template<typename TestType>
 	int VerifyCfloatLogicGreaterThan() {
-		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
@@ -175,8 +175,8 @@ namespace sw::universal {
 
 	template<typename TestType>
 	int VerifyCfloatLogicGreaterOrEqualThan() {
-		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
@@ -604,13 +604,13 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<12, 1> >(), "cfloat<12,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<14, 1> >(), "cfloat<14,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<16, 1> >(), "cfloat<16,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<12, 1, uint16_t, true, true, false> >(), "cfloat<12,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<14, 1, uint16_t, true, true, false> >(), "cfloat<14,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicEqual< cfloat<16, 1, uint16_t, true, true, false> >(), "cfloat<16,1>", "==");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<12, 1> >(), "cfloat<12,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<14, 1> >(), "cfloat<14,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<16, 1> >(), "cfloat<16,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<12, 1, uint16_t, true, true, false> >(), "cfloat<12,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<14, 1, uint16_t, true, true, false> >(), "cfloat<14,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatLogicNotEqual< cfloat<16, 1, uint16_t, true, true, false> >(), "cfloat<16,1>", "!=");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

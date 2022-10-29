@@ -43,17 +43,17 @@ namespace sw { namespace universal {
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypot(posit<nbits,es> x, posit<nbits,es> y) {
 	return posit<nbits,es>(std::hypot(double(x),double(y)));
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypotf(posit<nbits,es> x, posit<nbits,es> y) {
 	return posit<nbits,es>(std::hypotf(float(x),float(y)));
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y) {
 	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y)));
 }
@@ -67,17 +67,17 @@ posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y) {
 
 #ifdef LATER
 // since C++17
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypot(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
 	return posit<nbits,es>(std::hypot(double(x),double(y),double(z)));
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypotf(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
 	return posit<nbits,es>(std::hypotf(float(x),float(y),float(z)));
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
 	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y),(long double)(z)));
 }

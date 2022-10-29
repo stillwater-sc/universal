@@ -1,6 +1,6 @@
 // performance.cpp: functional tests of the value type API
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -23,12 +23,10 @@
 #define REGRESSION_LEVEL_4 1
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
-
-	if (argc > 1) for (int i = 0; i < argc; ++i) std::cout << argv[i] << ' ';
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
@@ -41,7 +39,7 @@ try {
 
 	std::cout << "single precision float\n";
 	{
-		constexpr size_t fbits = 22;
+		constexpr unsigned fbits = 22;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
@@ -54,7 +52,7 @@ try {
 #if REGRESSION_LEVEL_1
 	std::cout << "half precision float\n";
 	{
-		constexpr size_t fbits = 10;
+		constexpr unsigned fbits = 10;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
@@ -66,7 +64,7 @@ try {
 #if REGRESSION_LEVEL_2
 	std::cout << "single precision float\n";
 	{
-		constexpr size_t fbits = 22;
+		constexpr unsigned fbits = 22;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
@@ -78,7 +76,7 @@ try {
 #if REGRESSION_LEVEL_3
 	std::cout << "double precision float\n";
 	{
-		constexpr size_t fbits = 53;
+		constexpr unsigned fbits = 53;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
@@ -88,7 +86,7 @@ try {
 
 	std::cout << "extended precision float\n";
 	{
-		constexpr size_t fbits = 64;
+		constexpr unsigned fbits = 64;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);
@@ -100,7 +98,7 @@ try {
 #if REGRESSION_LEVEL_4
 	std::cout << "quad precision float\n";
 	{
-		constexpr size_t fbits = 112;
+		constexpr unsigned fbits = 112;
 		value<fbits> number{ 1 };
 		OperatorPerformance perfReport;
 		GeneratePerformanceReport(number, perfReport);

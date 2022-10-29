@@ -40,16 +40,18 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/integer/exceptions.hpp>
+#include <universal/number/integer/integer_fwd.hpp>
 #include <universal/number/integer/integer_impl.hpp>
 #include <universal/number/integer/numeric_limits.hpp>
 
+/// useful functions to work with integers
 #include <universal/number/integer/primes.hpp>
 #include <universal/number/integer/sieves.hpp>
 #include <universal/number/integer/manipulators.hpp>
 #include <universal/number/integer/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// math functions
+/// math library specialized for integer<>
 #include <universal/number/integer/mathlib.hpp>
 
 #endif

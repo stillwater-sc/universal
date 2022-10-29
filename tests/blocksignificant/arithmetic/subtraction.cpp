@@ -1,6 +1,6 @@
 // subtraction.cpp: functional tests for blocksignificant subtraction
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,16 +11,15 @@
 #include <universal/native/integers.hpp> // for to_binary(int)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp>
-#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/test_suite.hpp>
 
 // enumerate all addition cases for an blocksignificant configuration
 template<typename blocksignificantConfiguration>
 int VerifyBlockSignificantSubtraction(bool reportTestCases) {
-	constexpr size_t nbits = blocksignificantConfiguration::nbits;
+	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
 	using BlockType = typename blocksignificantConfiguration::BlockType;
 
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (1u << nbits);
 	using namespace sw::universal;
 
 //	cout << endl;
@@ -30,15 +29,15 @@ int VerifyBlockSignificantSubtraction(bool reportTestCases) {
 
 	blocksignificant<nbits, BlockType> a, b, c;
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
-	for (size_t i = 0; i < NR_VALUES; i++) {
+	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		aref.setbits(i);
-		for (size_t j = 0; j < NR_VALUES; j++) {
+		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			bref.setbits(j);
 			cref = aref - bref;
 			c.sub(a, b);
-			for (size_t k = 0; k < blockbinary<nbits, BlockType>::nrBlocks; ++k) {
+			for (unsigned k = 0; k < blockbinary<nbits, BlockType>::nrBlocks; ++k) {
 				refResult.setblock(k, c.block(k));
 			}
 			if (refResult != cref) {
@@ -58,7 +57,7 @@ int VerifyBlockSignificantSubtraction(bool reportTestCases) {
 
 // generate specific test case that you can trace with the trace conditions in blocksignificant
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType>& lhs, const sw::universal::blocksignificant <nbits, BlockType>& rhs) {
 	using namespace sw::universal;
 
@@ -121,7 +120,7 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 

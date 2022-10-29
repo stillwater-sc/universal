@@ -3,8 +3,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// minimum set of include files to reflect source code dependencies
+#include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
 //#include <universal/verification/test_suite.hpp>    // there is a generic VerifyAddition there: we need a trait to break template match
 // in the mean time: explicity bring in the dependencies to get the test running

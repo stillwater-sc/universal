@@ -20,7 +20,7 @@
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_mul
-template<size_t nbits, size_t es, typename Ty>
+template<unsigned nbits, unsigned es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
 	sw::universal::posit<nbits, es> pa, pb, pref, pmul;
@@ -36,7 +36,7 @@ void GenerateTestCase(Ty a, Ty b) {
 	std::cout << std::setprecision(5);
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void GenerateTestCase( sw::universal::posit<nbits,es> pa, sw::universal::posit<nbits,es> pb, sw::universal::posit<nbits, es> pref) {
 	double a = double(pa);
 	double b = double(pb);
@@ -86,8 +86,8 @@ void DifficultRoundingCases() {
 		0xb61e2f1f, 0xfffffffe, 0x00000002, 0x00000003,
 		0xfffffffe, 0xb61e2f1f, 0x00000002, 0x00000003,
 	};
-	// size_t nrOfTests = cases.size() >> 2;  // divide by 4
-	for (size_t i = 0; i < cases.size(); i+= 4) {
+	// unsigned nrOfTests = cases.size() >> 2;  // divide by 4
+	for (unsigned i = 0; i < cases.size(); i+= 4) {
 		a.setbits(cases[i]);
 		b.setbits(cases[i + 1]);
 		pref.setbits(cases[i + 3]);

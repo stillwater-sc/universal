@@ -1,6 +1,6 @@
 //  logic.cpp : logic operators test suite for block binary numbers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -16,7 +16,7 @@ namespace sw {
 namespace universal {
 
 #define INTEGER_TABLE_WIDTH 20
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 void ReportBinaryLogicError(const std::string& test_case, const std::string& op, const blockbinary<nbits, BlockType>& lhs, const blockbinary<nbits, BlockType>& rhs, bool iref, bool iresult) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -32,18 +32,18 @@ void ReportBinaryLogicError(const std::string& test_case, const std::string& op,
 }
 
 // enumerate all less than cases for an blockbinary<nbits, BlockType> configuration
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 int VerifyEqual(bool bReportIndividualTestCases) {
-	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+	constexpr unsigned NR_INTEGERS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
 	bool iresult, iref;
 
 	int64_t i64a, i64b;
-	for (size_t i = 0; i < NR_INTEGERS; i++) {
+	for (unsigned i = 0; i < NR_INTEGERS; i++) {
 		ia.setbits(i);
 		i64a = (long long)(ia);
-		for (size_t j = 0; j < NR_INTEGERS; j++) {
+		for (unsigned j = 0; j < NR_INTEGERS; j++) {
 			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a == i64b;
@@ -64,18 +64,18 @@ int VerifyEqual(bool bReportIndividualTestCases) {
 }
 
 // enumerate all less than or equal cases for an blockbinary<nbits, BlockType> configuration
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 int VerifyNotEqual(bool bReportIndividualTestCases) {
-	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+	constexpr unsigned NR_INTEGERS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
 	bool iresult, iref;
 
 	int64_t i64a, i64b;
-	for (size_t i = 0; i < NR_INTEGERS; i++) {
+	for (unsigned i = 0; i < NR_INTEGERS; i++) {
 		ia.setbits(i);
 		i64a = (long long)(ia);
-		for (size_t j = 0; j < NR_INTEGERS; j++) {
+		for (unsigned j = 0; j < NR_INTEGERS; j++) {
 			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a != i64b;
@@ -96,18 +96,18 @@ int VerifyNotEqual(bool bReportIndividualTestCases) {
 }
 
 // enumerate all less than cases for an blockbinary<nbits, BlockType> configuration
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 int VerifyLessThan(bool bReportIndividualTestCases) {
-	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+	constexpr unsigned NR_INTEGERS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
 	bool iresult, iref;
 
 	int64_t i64a, i64b;
-	for (size_t i = 0; i < NR_INTEGERS; i++) {
+	for (unsigned i = 0; i < NR_INTEGERS; i++) {
 		ia.setbits(i);
 		i64a = (long long)(ia);
-		for (size_t j = 0; j < NR_INTEGERS; j++) {
+		for (unsigned j = 0; j < NR_INTEGERS; j++) {
 			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a < i64b;
@@ -128,18 +128,18 @@ int VerifyLessThan(bool bReportIndividualTestCases) {
 }
 
 // enumerate all less than or equal cases for an blockbinary<nbits, BlockType> configuration
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 int VerifyLessOrEqualThan(bool bReportIndividualTestCases) {
-	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+	constexpr unsigned NR_INTEGERS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
 	bool iresult, iref;
 
 	int64_t i64a, i64b;
-	for (size_t i = 0; i < NR_INTEGERS; i++) {
+	for (unsigned i = 0; i < NR_INTEGERS; i++) {
 		ia.setbits(i);
 		i64a = (long long)(ia);
-		for (size_t j = 0; j < NR_INTEGERS; j++) {
+		for (unsigned j = 0; j < NR_INTEGERS; j++) {
 			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a <= i64b;
@@ -160,18 +160,18 @@ int VerifyLessOrEqualThan(bool bReportIndividualTestCases) {
 }
 
 // enumerate all greater than cases for an blockbinary<nbits, BlockType> configuration
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 int VerifyGreaterThan(bool bReportIndividualTestCases) {
-	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+	constexpr unsigned NR_INTEGERS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
 	bool iresult, iref;
 
 	int64_t i64a, i64b;
-	for (size_t i = 0; i < NR_INTEGERS; i++) {
+	for (unsigned i = 0; i < NR_INTEGERS; i++) {
 		ia.setbits(i);
 		i64a = (long long)(ia);
-		for (size_t j = 0; j < NR_INTEGERS; j++) {
+		for (unsigned j = 0; j < NR_INTEGERS; j++) {
 			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a < i64b;
@@ -192,18 +192,18 @@ int VerifyGreaterThan(bool bReportIndividualTestCases) {
 }
 
 // enumerate all greater than or equal cases for an blockbinary<nbits, BlockType> configuration
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 int VerifyGreaterOrEqualThan(bool bReportIndividualTestCases) {
-	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+	constexpr unsigned NR_INTEGERS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
 	bool iresult, iref;
 
 	int64_t i64a, i64b;
-	for (size_t i = 0; i < NR_INTEGERS; i++) {
+	for (unsigned i = 0; i < NR_INTEGERS; i++) {
 		ia.setbits(i);
 		i64a = (long long)(ia);
-		for (size_t j = 0; j < NR_INTEGERS; j++) {
+		for (unsigned j = 0; j < NR_INTEGERS; j++) {
 			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a >= i64b;

@@ -1,6 +1,6 @@
 //  fractions.cpp : examples of working with posit fractions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -17,7 +17,7 @@ int ReportTestResult(int nrOfFailedTests, const std::string& description, const 
 	return nrOfFailedTests;
 }
 
-template<size_t fbits>
+template<unsigned fbits>
 void ReportError(const std::string& test_case, const std::string& op, double input, double reference, const sw::universal::fraction<fbits>& _fraction) {
 	std::cerr << test_case
 		<< " " << op << " "
@@ -28,7 +28,7 @@ void ReportError(const std::string& test_case, const std::string& op, double inp
 		<< std::endl;
 }
 
-template<size_t fbits>
+template<unsigned fbits>
 int ValidateFractionValue(const std::string& tag, bool bReportIndividualTestCases)
 {
 	const uint64_t NR_OF_FRACTIONS = (uint64_t(1) << fbits);
@@ -51,7 +51,7 @@ int ValidateFractionValue(const std::string& tag, bool bReportIndividualTestCase
 	return nrOfFailedTests;
 }
 
-template<size_t fbits>
+template<unsigned fbits>
 int ValidateFixedPointNumber(const std::string& tag, bool bReportIndividualTestCases)
 {
 	const uint64_t NR_OF_FRACTIONS = (uint64_t(1) << fbits);
@@ -76,7 +76,7 @@ int ValidateFixedPointNumber(const std::string& tag, bool bReportIndividualTestC
 	return nrOfFailedTests;
 }
 
-template<size_t fbits>
+template<unsigned fbits>
 int ValidateRoundingAssessment(const std::string& tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 

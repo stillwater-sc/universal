@@ -1,6 +1,6 @@
 // distinct_powers.cpp : algorithm to find all integer combinations of a^b for some range [min, max]
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -15,15 +15,17 @@
 #define POSIT_ENABLE_LITERALS 1
 #include <universal/number/posit/posit.hpp>
 
+namespace sw {
+	namespace universal {
 /*
  * Consider all integer combinations of a^b for lowerbound <= a <= upperbound, lowerbound <= b <= upperbound
  *
  * Sorted, with any repeats removed, we get some sequence. What is the cardinality of that sequence?
  */
-template<size_t nbits>
-sw::universal::integer<nbits> IntegerPowerCombinationsUsingVector(const sw::universal::integer<nbits>& min, const sw::universal::integer<nbits>& max) {
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+integer<nbits, BlockType, NumberType> IntegerPowerCombinationsUsingVector(const integer<nbits, BlockType, NumberType>& min, const integer<nbits, BlockType, NumberType>& max) {
 	using namespace sw::universal;
-	using Integer = integer<nbits>;
+	using Integer = integer<nbits, BlockType, NumberType>;
 
 	std::vector<Integer> combinations;
 	for (Integer a = min; a <= max; ++a) {
@@ -37,10 +39,10 @@ sw::universal::integer<nbits> IntegerPowerCombinationsUsingVector(const sw::univ
 	return Integer(combinations.size());
 }
 	
-template<size_t nbits>
-sw::universal::integer<nbits> IntegerPowerCombinationsUsingSet(const sw::universal::integer<nbits>& min, const sw::universal::integer<nbits>& max) {
+template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
+integer<nbits, BlockType, NumberType> IntegerPowerCombinationsUsingSet(const integer<nbits, BlockType, NumberType>& min, const integer<nbits, BlockType, NumberType>& max) {
 	using namespace sw::universal;
-	using Integer = integer<nbits>;
+	using Integer = integer<nbits, BlockType, NumberType>;
 
 	std::set<Integer> combinations;
 	for (Integer a = min; a <= max; ++a) {
@@ -51,8 +53,8 @@ sw::universal::integer<nbits> IntegerPowerCombinationsUsingSet(const sw::univers
 	return Integer(combinations.size());
 }
 
-template<size_t nbits, size_t es>
-size_t IntegerPowerCombinationsUsingSet(const sw::universal::posit<nbits, es>& min, const sw::universal::posit<nbits, es>& max) {
+template<unsigned nbits, unsigned es>
+size_t IntegerPowerCombinationsUsingSet(const posit<nbits, es>& min, const posit<nbits, es>& max) {
 	using namespace sw::universal;
 	using Posit = posit<nbits, es>;
 
@@ -69,11 +71,13 @@ size_t DistinctPowerCombinations(size_t min, size_t max) {
 	std::set<double> combinations;
 	for (size_t a = min; a <= max; ++a) {
 		for (size_t b = min; b <= max; ++b) {
-			combinations.insert(pow(a, b));
+			combinations.insert(ipow(a, b));
 		}
 	}
 	return combinations.size();
 }
+
+}}  // namespace sw::universal
 
 int main()
 try {

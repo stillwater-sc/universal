@@ -350,12 +350,13 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual<16, 1>(reportTestCases), "fixpnt<16,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual<16, 1>(reportTestCases), "fixpnt<16,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan<16, 1>(reportTestCases), "fixpnt<16,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan<16, 1>(reportTestCases), "fixpnt<16,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan<16, 1>(reportTestCases), "fixpnt<16,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<16, 1>(reportTestCases), "fixpnt<16,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual< fixpnt<16, 1> >(reportTestCases), "fixpnt<16,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual< fixpnt<16, 1> >(reportTestCases), "fixpnt<16,1>", "!=");
+	/* <, <=, >, and >= are implemented using subtraction and thus are arithmetic complexity */
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan< fixpnt<10, 6> >(reportTestCases), "fixpnt<10,6>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan< fixpnt<10, 6> >(reportTestCases), "fixpnt<10,6>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan< fixpnt<10, 6> >(reportTestCases), "fixpnt<10,6>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan< fixpnt<10, 6> >(reportTestCases), "fixpnt<10,6>", ">=");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -1,7 +1,7 @@
 #pragma once
-// exceptions.hpp: exceptions for problems in posit calculations
+// exceptions.hpp: exception hierarchy for exceptions during posit calculations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>

@@ -1,7 +1,7 @@
 #pragma once
 // test_suite_exceptions.hpp : test suite for arithmetic exceptions for arbitrary universal number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -33,9 +33,9 @@ namespace sw { namespace universal {
 	constexpr size_t TAG_WIDTH = 30;
 
 template<typename Scalar>
-int TestDivisionByZero(bool bReportIndividualTestCases) {
+int TestDivisionByZero(bool reportTestCases) {
 	using namespace sw::universal;
-	if (bReportIndividualTestCases) {
+	if (reportTestCases) {
 		auto flags = std::cerr.flags();
 		std::cerr << std::left << std::setw(TAG_WIDTH) << "TestDivisionByZero: ";
 		std::cerr.flags(flags);
@@ -47,24 +47,24 @@ int TestDivisionByZero(bool bReportIndividualTestCases) {
 		c = a / b;
 	}
 	catch (const universal_arithmetic_exception& err) {
-		if (bReportIndividualTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
+		if (reportTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
 		thrownAndCaught = true;
 	}
 	catch (...) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	if (!thrownAndCaught) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	return nrOfFailedTestCases;
 }
 
 template<typename Scalar>
-int TestOverflowOnAddition(bool bReportIndividualTestCases, const Scalar& a, const Scalar& b) {
+int TestOverflowOnAddition(bool reportTestCases, const Scalar& a, const Scalar& b) {
 	using namespace sw::universal;
-	if (bReportIndividualTestCases) {
+	if (reportTestCases) {
 		auto flags = std::cerr.flags();
 		std::cerr << std::left << std::setw(TAG_WIDTH) << "TestOverflowOnAddition: ";
 		std::cerr.flags(flags);
@@ -75,24 +75,24 @@ int TestOverflowOnAddition(bool bReportIndividualTestCases, const Scalar& a, con
 		Scalar c = a + b;
 	}
 	catch (const universal_arithmetic_exception& err) {
-		if (bReportIndividualTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
+		if (reportTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
 		thrownAndCaught = true;
 	}
 	catch (...) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	if (!thrownAndCaught) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	return nrOfFailedTestCases;
 }
 
 template<typename Scalar>
-int TestOverflowOnSubtraction(bool bReportIndividualTestCases, const Scalar& a, const Scalar& b) {
+int TestOverflowOnSubtraction(bool reportTestCases, const Scalar& a, const Scalar& b) {
 	using namespace sw::universal;
-	if (bReportIndividualTestCases) {
+	if (reportTestCases) {
 		auto flags = std::cerr.flags();
 		std::cerr << std::left << std::setw(TAG_WIDTH) << "TestOverflowOnSubtraction: ";
 		std::cerr.flags(flags);
@@ -103,24 +103,24 @@ int TestOverflowOnSubtraction(bool bReportIndividualTestCases, const Scalar& a, 
 		Scalar c = a - b;
 	}
 	catch (const universal_arithmetic_exception& err) {
-		if (bReportIndividualTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
+		if (reportTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
 		thrownAndCaught = true;
 	}
 	catch (...) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	if (!thrownAndCaught) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	return nrOfFailedTestCases;
 }
 
 template<typename Scalar>
-int TestOverflowOnMultiplication(bool bReportIndividualTestCases, const Scalar& a, const Scalar& b) {
+int TestOverflowOnMultiplication(bool reportTestCases, const Scalar& a, const Scalar& b) {
 	using namespace sw::universal;
-	if (bReportIndividualTestCases) {
+	if (reportTestCases) {
 		auto flags = std::cerr.flags();
 		std::cerr << std::left << std::setw(TAG_WIDTH) << "TestOverflowOnMultiplication: ";
 		std::cerr.flags(flags);
@@ -131,24 +131,24 @@ int TestOverflowOnMultiplication(bool bReportIndividualTestCases, const Scalar& 
 		Scalar c = a * b;
 	}
 	catch (const universal_arithmetic_exception& err) {
-		if (bReportIndividualTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
+		if (reportTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
 		thrownAndCaught = true;
 	}
 	catch (...) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	if (!thrownAndCaught) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	return nrOfFailedTestCases;
 }
 
 template<typename Scalar>
-int TestOverflowOnDivision(bool bReportIndividualTestCases, const Scalar& a, const Scalar& b) {
+int TestOverflowOnDivision(bool reportTestCases, const Scalar& a, const Scalar& b) {
 	using namespace sw::universal;
-	if (bReportIndividualTestCases) {
+	if (reportTestCases) {
 		auto flags = std::cerr.flags();
 		std::cerr << std::left << std::setw(TAG_WIDTH) << "TestOverflowOnDivision: ";
 		std::cerr.flags(flags);
@@ -160,24 +160,24 @@ int TestOverflowOnDivision(bool bReportIndividualTestCases, const Scalar& a, con
 		if (c == a && a != 0) ++nrOfFailedTestCases; // should never happen, but the compiler needs something
 	}
 	catch (const universal_arithmetic_exception& err) {
-		if (bReportIndividualTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
+		if (reportTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
 		thrownAndCaught = true;
 	}
 	catch (...) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	if (!thrownAndCaught) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	return nrOfFailedTestCases;
 }
 
 template<typename Scalar>
-int TestNegativeSqrtArgument(bool bReportIndividualTestCases) {
+int TestNegativeSqrtArgument(bool reportTestCases) {
 	using namespace sw::universal;
-	if (bReportIndividualTestCases) {
+	if (reportTestCases) {
 		auto flags = std::cerr.flags();
 		std::cerr << std::left << std::setw(TAG_WIDTH) << "TestNegativeSqrtArgument: ";
 		std::cerr.flags(flags);
@@ -190,15 +190,15 @@ int TestNegativeSqrtArgument(bool bReportIndividualTestCases) {
 		if (b.ispos()) ++nrOfFailedTestCases; // should never happen, but the compiler needs something
 	}
 	catch (const universal_arithmetic_exception& err) {
-		if (bReportIndividualTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
+		if (reportTestCases) std::cerr << "PASS: caught arithmetic exception: " << err.what() << std::endl;
 		thrownAndCaught = true;
 	}
 	catch (...) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: caught unknown exception" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	if (!thrownAndCaught) {
-		if (bReportIndividualTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
+		if (reportTestCases) std::cerr << "FAIL: no exception was raised" << std::endl;
 		++nrOfFailedTestCases;
 	}
 	return nrOfFailedTestCases;

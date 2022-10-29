@@ -40,7 +40,7 @@ Rounding rules:
 // find msb -> scale is msb
 // shift all the msb-1 bits into a fraction, making the msb the hidden bit
 // round the bits we have with respect to the scale of the number
-template<size_t nbits, size_t es, size_t ibits>
+template<unsigned nbits, unsigned es, unsigned ibits>
 void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const sw::universal::integer<ibits>& w) {
 	using namespace std;
 	using namespace sw::universal;
@@ -68,7 +68,7 @@ void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const s
 
 
 
-template<size_t nbits>
+template<unsigned nbits>
 void VerifyScale() {
 	assert(nbits > 1); // we are representing numbers not booleans
 	int cntr = 0;

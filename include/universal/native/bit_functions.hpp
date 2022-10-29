@@ -16,8 +16,11 @@ namespace sw { namespace universal {
 
 //static const unsigned int bval[] = { 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
 
-// find the most significant bit set
-// first bit is defined to be at position 1, so that no bits set returns 0
+/// <summary>
+/// find most significant bit that is set
+/// </summary>
+/// <param name="x">value to</param>
+/// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int findMostSignificantBit(unsigned int x) {
 	// find the first non-zero bit
 	unsigned int base = 0;
@@ -32,6 +35,11 @@ inline constexpr unsigned int findMostSignificantBit(unsigned int x) {
 	return base + bval;
 }
 
+/// <summary>
+/// find most significant bit that is set
+/// </summary>
+/// <param name="x">value to</param>
+/// <returns> position of MSB that is set. LSB is defined to be at position 1, so no bits set returns 0</returns>
 inline constexpr unsigned int findMostSignificantBit(unsigned long x) {
 	// find the first non-zero bit
 	unsigned int base = 0;

@@ -18,7 +18,7 @@ template<typename Scalar>
 std::string conditional_fdp(const sw::universal::blas::vector< Scalar >& a, const sw::universal::blas::vector< Scalar >& b) {
 	return std::string("no FDP for non-posit value_type");
 }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& a, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
 	std::stringstream ss;
 	ss << sw::universal::fdp(a, b);

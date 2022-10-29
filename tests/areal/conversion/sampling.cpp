@@ -1,21 +1,14 @@
 // sampling.cpp: sampling comparison between different areal configurations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
-#include <iostream>
-#include <iomanip>
+#include <universal/utility/directives.hpp>
 // Configure the areal template environment
 // first: enable general or specialized configurations
 #define AREAL_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
-
 #include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
@@ -43,42 +36,63 @@ void GenerateArealComparisonTable(const std::string& tag) {
 	}
 }
 
-// conditional compile flags
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "areal value sampling verification";
+	std::string test_tag    = "sampling";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "sampling of the real line: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
+	// generate individual testcases to hand trace/debug
+
+	// manual test
 	GenerateArealComparisonTable<5, 2>(tag);
 
-#if STRESS_TESTING
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
+#else
 
-	// manual exhaustive test
+#if REGRESSION_LEVEL_1
 
 #endif
 
-#else  // !MANUAL_TESTING
+#if REGRESSION_LEVEL_2
 
-	std::cout << "Sampling of the reals by different areal configurations\n";
+#endif
 
+#if REGRESSION_LEVEL_3
 
+#endif
 
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_4
 
-#endif  // STRESS_TESTING
+#endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

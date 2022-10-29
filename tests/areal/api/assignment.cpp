@@ -1,13 +1,9 @@
 // assignment.cpp: functional tests for assignments of native types to areals
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
+#include <universal/utility/directives.hpp>
 // Configure the areal template environment
 // first: enable general or specialized configurations
 #define AREAL_FAST_SPECIALIZATION
@@ -21,7 +17,7 @@
 #include <universal/number/areal/table.hpp>
 
 // print the constexpr values of the areal class
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 void configuration() {
 	sw::universal::areal<nbits, es, bt> a;
 	a.debug();
@@ -30,13 +26,13 @@ void configuration() {
 // free function that does the same as the private copyBits function of the areal class
 template<typename ArgumentBlockType, typename BlockType>
 void copyBits(ArgumentBlockType v, BlockType _block[16]) {
-	size_t bitsInBlock = sizeof(BlockType) * 8;
-	size_t nrBlocks = 16;
+	unsigned bitsInBlock = sizeof(BlockType) * 8;
+	unsigned nrBlocks = 16;
 	int blocksRequired = (8 * sizeof(v)) / bitsInBlock;
 	int maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
 	BlockType b{ 0 }; b = ~b;
 	ArgumentBlockType mask = ArgumentBlockType(b);
-	size_t shift = 0;
+	unsigned shift = 0;
 	for (int i = 0; i < maxBlockNr; ++i) {
 		_block[i] = (mask & v) >> shift;
 		mask <<= bitsInBlock;
@@ -45,38 +41,38 @@ void copyBits(ArgumentBlockType v, BlockType _block[16]) {
 }
 
 // verify the subnormals of an areal configuration
-template<size_t nbits, size_t es, typename bt = uint8_t, typename NativeFloatingPointType = double>
-int VerifySubnormalReverseSampling(const std::string& tag, bool bReportIndividualTestCases = false, bool verbose = false) {
+template<unsigned nbits, unsigned es, typename bt = uint8_t, typename NativeFloatingPointType = double>
+int VerifySubnormalReverseSampling(bool reportTestCases = false, bool verbose = false) {
 	// subnormals exist in the exponent = 0 range
-	constexpr size_t fbits = nbits - 1ull - es - 1ull;
-	constexpr size_t NR_SAMPLES = (1ull << (fbits + 1ull)); //  the first segment of fbits+ubit are subnormals
+	constexpr unsigned fbits = nbits - 1ull - es - 1ull;
+	constexpr unsigned NR_SAMPLES = (1ull << (fbits + 1ull)); //  the first segment of fbits+ubit are subnormals
 	int nrOfFailedTestCases = 0;
 	using Real = sw::universal::areal<nbits, es, bt>;
 	Real ref{ 0 }; Real result{ 0 };
-	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
+	for (unsigned i = 0; i < NR_SAMPLES; i += 2) {
 		ref.setbits(i);
 		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
 		if (result != ref) {
 			nrOfFailedTestCases++;
 			//			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
-			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 		}
 		else {
-			if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+			if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 		}
 	}
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits, size_t es, typename bt = uint8_t, typename NativeFloatingPointType = double>
-int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCases = false, bool verbose = false) {
-	constexpr size_t NR_SAMPLES = (1ull << nbits);
+template<unsigned nbits, unsigned es, typename bt = uint8_t, typename NativeFloatingPointType = double>
+int VerifyReverseSampling(bool reportTestCases = false, bool verbose = false) {
+	constexpr unsigned NR_SAMPLES = (1ull << nbits);
 	int nrOfFailedTestCases = 0;
 	using Real = sw::universal::areal<nbits, es, bt>;
 	Real ref{ 0 }; Real result{ 0 };
 	std::cout << std::setw(40) << typeid(result).name() << "   : ";
-	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
+	for (unsigned i = 0; i < NR_SAMPLES; i += 2) {
 		ref.setbits(i);
 		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
@@ -85,53 +81,53 @@ int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCase
 			// optimization compilers may destroy the sign on -0
 			if (input != 0) {
 				nrOfFailedTestCases++;
-				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
-				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 			}
 		}
 		else if (ref.isnan()) {
 			// optimization compilers may change signalling NaNs to quiet NaNs
 			if (std::fpclassify(input) != FP_NAN) {
 				nrOfFailedTestCases++;
-				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
-				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 			}
 		}
 		else if (ref.isinf()) {
 			// optimization compilers may destroy the sign on -0
 			if (std::fpclassify(input) != FP_INFINITE) {
 				nrOfFailedTestCases++;
-				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
-				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 			}
 		}
 		else if (result != ref) {
                           
 			nrOfFailedTestCases++;
 //			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
-			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 		}
 		else {
-			if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+			if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
 		}
 	}
 	return nrOfFailedTestCases;
 }
 
 template<typename TestType, typename NativeFloatingPointType>
-int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases = false) {
+int VerifySpecialCases(bool reportTestCases = false) {
 	using namespace sw::universal;
 	int nrOfFailedTests{ 0 };
 	TestType a{ 0 };
 	NativeFloatingPointType fa{ 0 };
 
-	std::cout << "Verify special cases for " << typeid(NativeFloatingPointType).name() << '\n';
+	if (reportTestCases) std::cout << "Verify special cases for " << typeid(NativeFloatingPointType).name() << '\n';
 
 	// test sNaN
 	a.setnan(NAN_TYPE_SIGNALLING);
@@ -182,7 +178,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	std::cout << "Test negative 0.0\n";
 	a.setbits(0x80);
 	std::cout << "conversion(a)= " << double(a) << '\n';
-	fa = double(a);
+	fa = float(a);
 	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
 	a = fa;
 	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
@@ -191,7 +187,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	return nrOfFailedTests;
 }
 
-#if EXPERIMENT
+#ifdef EXPERIMENT
 void projectToFloat() {
 	uint32_t a = 0x3F55'5555;
 	float f = *(float*)(&a);
@@ -209,8 +205,8 @@ void ConversionTest(NativeFloatingPointType& value) {
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 }
 
-template<size_t es, typename NativeFloatingPointType>
-int TestSingleBlockRepresentations(const std::string& tag, const std::string& op, bool bReportIndividualTestCases, bool bVerbose) {
+template<unsigned es, typename NativeFloatingPointType>
+int TestSingleBlockRepresentations(const std::string& op, bool reportTestCases, bool bVerbose) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 
@@ -222,74 +218,74 @@ int TestSingleBlockRepresentations(const std::string& tag, const std::string& op
 		std::stringstream ss;
 		ss << "areal<4, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 4, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 4, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 3) {
 		std::stringstream ss;
 		ss << "areal<5, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 5, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 5, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 4) {
 		std::stringstream ss;
 		ss << "areal<6, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 6, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 6, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 5) {
 		std::stringstream ss;
 		ss << "areal<7, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 7, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 7, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 6) {
 		std::stringstream ss;
 		ss << "areal<8, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 8, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 8, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 7) {
 		std::stringstream ss;
 		ss << "areal<9, " << es << ", uint16_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, es, uint16_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, es, uint16_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 8) {
 		std::stringstream ss;
 		ss << "areal<10, " << es << ", uint16_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, es, uint16_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, es, uint16_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 10) {
 		std::stringstream ss;
 		ss << "areal<12, " << es << ", uint16_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, es, uint16_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, es, uint16_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 12) {
 		std::stringstream ss;
 		ss << "areal<14, " << es << ", uint16_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, es, uint16_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, es, uint16_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 14) {
 		std::stringstream ss;
 		ss << "areal<16, " << es << ", uint16_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, es, uint16_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, es, uint16_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 18) {
 		std::stringstream ss;
 		ss << "areal<20, " << es << ", uint32_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint32_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint32_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 
 	return nrOfFailedTestCases;
 }
 
-template<size_t es, typename NativeFloatingPointType>
-int TestDoubleBlockRepresentations(const std::string& tag, const std::string& op, bool bReportIndividualTestCases, bool bVerbose) {
+template<unsigned es, typename NativeFloatingPointType>
+int TestDoubleBlockRepresentations(const std::string& op, bool reportTestCases, bool bVerbose) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 
@@ -302,44 +298,44 @@ int TestDoubleBlockRepresentations(const std::string& tag, const std::string& op
 		std::stringstream ss;
 		ss << "areal<9, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 8) {
 		std::stringstream ss;
 		ss << "areal<10, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 10) {
 		std::stringstream ss;
 		ss << "areal<12, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 12) {
 		std::stringstream ss;
 		ss << "areal<14, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 14) {
 		std::stringstream ss;
 		ss << "areal<16, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 	if constexpr (es < 18) {
 		std::stringstream ss;
 		ss << "areal<20, " << es << ", uint16_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint16_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint16_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 
 	return nrOfFailedTestCases;
 }
 
-template<size_t es, typename NativeFloatingPointType>
-int TestTripleBlockRepresentations(const std::string& tag, const std::string& op, bool bReportIndividualTestCases, bool bVerbose) {
+template<unsigned es, typename NativeFloatingPointType>
+int TestTripleBlockRepresentations(const std::string& op, bool reportTestCases, bool bVerbose) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 
@@ -351,15 +347,11 @@ int TestTripleBlockRepresentations(const std::string& tag, const std::string& op
 		std::stringstream ss;
 		ss << "areal<20, " << es << ", uint8_t> ";
 		testcase = ss.str();
-		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint8_t, NativeFloatingPointType>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint8_t, NativeFloatingPointType>(reportTestCases, bVerbose), testcase, op);
 	}
 
 	return nrOfFailedTestCases;
 }
-
-// conditional compile flags
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
 
 /*
 * e = exponent bit, m = most significant fraction bit, f = fraction bit, h = hidden bit
@@ -431,15 +423,33 @@ double      s-eee'eeee'eeee-ffff'...'ffff  (52 fraction bits, 1 hidden bit
 
 */
 
-int main(int argc, char** argv)
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
+
+int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "areal assignment";
-	std::string test_tag = "assignment";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "areal assignment";
+	std::string test_tag    = "assignment";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+	bool bVerbose           = false;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -492,78 +502,78 @@ try {
 
 	}
 
-#if STRESS_TESTING
-
-	// manual exhaustive test
-
-#endif
-
-	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	bool bVerbose = false;
+#if REGRESSION_LEVEL_1
 
 	std::cout << "Special cases: zero, inf, nan\n";
 	using Real = sw::universal::areal<8, 2>;
-	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->areal special cases");
-	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->areal special cases");
-	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->areal special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<Real, float>(), "float->areal", "special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<Real, double>(), "double->areal", "special cases");
+	nrOfFailedTestCases += ReportTestResult(VerifySpecialCases<Real, long double>(), "long double->areal", "special cases");
 
 	std::cout << "Single block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<1, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<1, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestSingleBlockRepresentations<1, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestSingleBlockRepresentations<1, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 	std::cout << "--------------------------------------------- es = 2 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<2, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<2, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestSingleBlockRepresentations<2, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestSingleBlockRepresentations<2, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 	std::cout << "--------------------------------------------- es = 3 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<3, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<3, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestSingleBlockRepresentations<3, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestSingleBlockRepresentations<3, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 	std::cout << "--------------------------------------------- es = 4 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<4, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestSingleBlockRepresentations<4, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestSingleBlockRepresentations<4, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestSingleBlockRepresentations<4, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 
 	std::cout << "Double block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<1, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestDoubleBlockRepresentations<1, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestDoubleBlockRepresentations<1, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 	std::cout << "--------------------------------------------- es = 2 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<2, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestDoubleBlockRepresentations<2, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestDoubleBlockRepresentations<2, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 	std::cout << "--------------------------------------------- es = 3 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<3, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestDoubleBlockRepresentations<3, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestDoubleBlockRepresentations<3, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 	std::cout << "--------------------------------------------- es = 4 encodings\n";
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestDoubleBlockRepresentations<4, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestDoubleBlockRepresentations<4, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestDoubleBlockRepresentations<4, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 
 	std::cout << "Triple block representations\n--------------------------------------------- es = 1 encodings\n";
-	nrOfFailedTestCases += TestTripleBlockRepresentations<1, float>(test_tag, "=float", bReportIndividualTestCases, bVerbose);
-	nrOfFailedTestCases += TestTripleBlockRepresentations<1, double>(test_tag, "=double", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += ReportTestResult(TestTripleBlockRepresentations<1, float>("=float", reportTestCases, bVerbose), test_tag, "=float");
+	nrOfFailedTestCases += ReportTestResult(TestTripleBlockRepresentations<1, double>("=double", reportTestCases, bVerbose), test_tag, "=double");
 
 
 	/*
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<4, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<4,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<4, 1,  uint8_t>, float>(reportTestCases), tag, "areal<4,1,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<6, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<6,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<6, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<6,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<6, 1,  uint8_t>, float>(reportTestCases), tag, "areal<6,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<6, 2,  uint8_t>, float>(reportTestCases), tag, "areal<6,2,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<8,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<8,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 3,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<8,3,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 1,  uint8_t>, float>(reportTestCases), tag, "areal<8,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 2,  uint8_t>, float>(reportTestCases), tag, "areal<8,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 3,  uint8_t>, float>(reportTestCases), tag, "areal<8,3,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<10,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<10,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 3,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<10,3,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 1,  uint8_t>, float>(reportTestCases), tag, "areal<10,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 2,  uint8_t>, float>(reportTestCases), tag, "areal<10,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 3,  uint8_t>, float>(reportTestCases), tag, "areal<10,3,uint8_t>");
 	*/
+#endif
 
-	nrOfFailedTestCases = 0;
-#if STRESS_TESTING
+#if REGRESSION_LEVEL_2
+#endif
 
-#endif  // STRESS_TESTING
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

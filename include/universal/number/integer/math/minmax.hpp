@@ -7,12 +7,12 @@
 
 namespace sw { namespace universal {
 
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 integer<nbits, BlockType> min(integer<nbits, BlockType> x, integer<nbits, BlockType> y) {
 	return (x < y ? x : y);
 }
 
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 integer<nbits, BlockType> max(integer<nbits, BlockType> x, integer<nbits, BlockType> y) {
 	return (x > y ? x : y);
 }

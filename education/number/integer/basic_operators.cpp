@@ -1,13 +1,13 @@
 // basic_operators.cpp : examples of the basic arithmetic operators using integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/integer/integer.hpp>
 
 // quick helper to report on a posit's specialness
-template<size_t nbits>
-void checkSpecialCases(sw::universal::integer<nbits> i) {
+template<unsigned nbits, typename BlockType>
+void checkSpecialCases(const sw::universal::integer<nbits, BlockType>& i) {
 	std::cout << "integer is " << (i.iszero() ? "zero " : "non-zero ") << (i.ispos() ? "positive " : "negative ") << std::endl;
 }
 
@@ -17,7 +17,7 @@ try {
 	using namespace sw::universal;	// standard namespace for integer<>
 
 	using bt = uint8_t;
-	const size_t nbits = 16;
+	const unsigned nbits = 16;
 	using Integer = integer<nbits, bt>;
 	Integer i1, i2, i3, i4, i5, i6;
 

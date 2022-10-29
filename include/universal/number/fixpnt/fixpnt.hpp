@@ -45,8 +45,8 @@
 #include <universal/number/fixpnt/numeric_limits.hpp>
 
 // useful functions to work with fixpnts
-#include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/number/fixpnt/attributes.hpp>
+#include <universal/number/fixpnt/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions

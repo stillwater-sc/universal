@@ -24,23 +24,23 @@ namespace sw { namespace universal {
 // enumerate all NATURAL LOGARITHM cases for an lns configuration
 template<typename TestType>
 int VerifyLog(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, alog, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		alog = sw::universal::log(a);
+		result = sw::universal::log(a);
 		// generate reference
 		double da = double(a);
-		aref = std::log(da);
-		if (alog != aref) {
+		ref = std::log(da);
+		if (result != ref) {
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log", a, alog, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log", a, alog, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -49,23 +49,23 @@ int VerifyLog(bool reportTestCases) {
 // enumerate all BINARY LOGARITHM cases for an lns configuration
 template<typename TestType>
 int VerifyLog2(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, alog2, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		alog2 = sw::universal::log2(a);
+		result = sw::universal::log2(a);
 		// generate reference
 		double da = double(a);
-		aref = std::log2(da);
-		if (alog2 != aref) {
+		ref = std::log2(da);
+		if (result != ref) {
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log2", a, alog2, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log2", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log2", a, alog2, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log2", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -75,23 +75,23 @@ int VerifyLog2(bool reportTestCases) {
 // enumerate all DECIMAL LOGARITHM cases for an lns configuration
 template<typename TestType>
 int VerifyLog10(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, alog10, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		alog10 = sw::universal::log10(a);
+		result = sw::universal::log10(a);
 		// generate reference
 		double da = double(a);
-		aref = std::log10(da);
-		if (alog10 != aref) {
+		ref = std::log10(da);
+		if (result != ref) {
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log10", a, alog10, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "log10", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log10", a, alog10, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "log10", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -101,19 +101,19 @@ int VerifyLog10(bool reportTestCases) {
 // enumerate all base-e exponent cases for an lns configuration
 template<typename TestType>
 int VerifyExp(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, cexp, cref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		cexp = sw::universal::exp(a);
+		result = sw::universal::exp(a);
 		// generate reference
 		double da = double(a);
 		double dref = std::exp(da);
-		cref = dref;
-		if (cexp != cref) {
+		ref = dref;
+		if (result != ref) {
 			// filter out inconsistencies among different math library implementations
 			if (dref == 0.0) {
 				static bool firstRoundingFilterEvent = true;
@@ -122,7 +122,7 @@ int VerifyExp(bool reportTestCases) {
 					firstRoundingFilterEvent = false;
 				}
 			}
-			else if (cexp.isnan() && cref.isnan()) { 
+			else if (result.isnan() && ref.isnan()) {
 				static bool firstSofteningNanEvent = true;
 				if (firstSofteningNanEvent && reportTestCases) {
 					std::cerr << "filtering snan to nan softening\n";
@@ -131,11 +131,11 @@ int VerifyExp(bool reportTestCases) {
 			}
 			else {
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportOneInputFunctionError("FAIL", "exp", a, cexp, cref);
+				if (reportTestCases)	ReportOneInputFunctionError("FAIL", "exp", a, result, ref);
 			}
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "exp", a, cexp, cref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "exp", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -144,19 +144,19 @@ int VerifyExp(bool reportTestCases) {
 // enumerate all base-2 exponent cases for an lns configuration
 template<typename TestType>
 int VerifyExp2(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, cexp2, cref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		cexp2 = sw::universal::exp2(a);
+		result = sw::universal::exp2(a);
 		// generate reference
 		double da = double(a);
 		double dref = std::exp2(da);
-		cref = dref;
-		if (cexp2 != cref) {
+		ref = dref;
+		if (result != ref) {
 			// filter out inconsistencies among different math library implementations
 			if (dref == 0.0) {
 				static bool firstRoundingFilterEvent = true;
@@ -165,7 +165,7 @@ int VerifyExp2(bool reportTestCases) {
 					firstRoundingFilterEvent = false;
 				}
 			}
-			else if (cexp2.isnan() && cref.isnan()) {
+			else if (result.isnan() && ref.isnan()) {
 				static bool firstSofteningNanEvent = true;
 				if (firstSofteningNanEvent && reportTestCases) {
 					std::cerr << "filtering snan to nan softening\n";
@@ -174,11 +174,11 @@ int VerifyExp2(bool reportTestCases) {
 			}
 			else {
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportOneInputFunctionError("FAIL", "exp2", a, cexp2, cref);
+				if (reportTestCases)	ReportOneInputFunctionError("FAIL", "exp2", a, result, ref);
 			}
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "exp2", a, cexp2, cref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "exp2", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -187,21 +187,21 @@ int VerifyExp2(bool reportTestCases) {
 // enumerate all power method cases for an lns configuration
 template<typename TestType>
 int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
-	constexpr size_t nbits = TestType::nbits; 
-	constexpr size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	constexpr unsigned nbits = TestType::nbits; 
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, b, cpow, cref;
+	TestType a, b, result, ref;
 
 	uint32_t testNr = 0;
-	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		double da = double(a);
-		for (size_t j = 0; j < NR_TEST_CASES; ++j) {
+		for (unsigned j = 0; j < NR_TEST_CASES; ++j) {
 			b.setbits(j);
 			double db = double(b);
 #if LNS_THROW_ARITHMETIC_EXCEPTION
 			try {
-				cpow = pow(a, b);
+				result = pow(a, b);
 			}
 			catch (const lns_arithmetic_exception& err) {
 				if (a.isnan()) {
@@ -212,16 +212,16 @@ int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
 				}
 			}
 #else
-			cpow = pow(a, b);
+			result = pow(a, b);
 #endif
-			cref = std::pow(da, db);
-			if (cpow != cref) {
-				if (cpow.isnan() && cref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			ref = std::pow(da, db);
+			if (result != ref) {
+				if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, cpow, cref);
+				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "pow", a, b, result, ref);
 			}
 			else {
-				//if (reportTestCases) ReportTwoInputFunctionSuccess("aSS", "pow", a, b, cpow, cref);
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("aSS", "pow", a, b, result, ref);
 			}
 			++testNr;
 			if (testNr > maxSamples) {
@@ -237,24 +237,24 @@ int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
 // enumerate all trigonometric sine cases for an lns configuration
 template<typename TestType>
 int VerifySine(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, asin, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		asin = sw::universal::sin(a);
+		result = sw::universal::sin(a);
 		// generate reference
 		double da = double(a);
-		aref = std::sin(da);
-		if (asin != aref) {
-			if (asin.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::sin(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sin", a, asin, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sin", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "sin", a, asin, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "sin", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -263,24 +263,24 @@ int VerifySine(bool reportTestCases) {
 // enumerate all trigonometric cosine cases for an lns configuration
 template<typename TestType>
 int VerifyCosine(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, acos, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		acos = sw::universal::cos(a);
+		result = sw::universal::cos(a);
 		// generate reference
 		double da = double(a);
-		aref = std::cos(da);
-		if (acos != aref) {
-			if (acos.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::cos(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cos", a, acos, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cos", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "cos", a, acos, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "cos", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -289,24 +289,24 @@ int VerifyCosine(bool reportTestCases) {
 // enumerate all trigonometric tangent cases for an lns configuration
 template<typename TestType>
 int VerifyTangent(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, atan, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		atan = sw::universal::tan(a);
+		result = sw::universal::tan(a);
 		// generate reference
 		double da = double(a);
-		aref = std::tan(da);
-		if (atan != aref) {
-			if (atan.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::tan(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tan", a, atan, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tan", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "tan", a, atan, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "tan", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -315,24 +315,24 @@ int VerifyTangent(bool reportTestCases) {
 // enumerate all trigonometric cotangent cases for an lns configuration
 template<typename TestType>
 int VerifyAtan(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, aatan, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		aatan = sw::universal::atan(a);
+		result = sw::universal::atan(a);
 		// generate reference
 		double da = double(a);
-		aref = std::atan(da);
-		if (aatan != aref) {
-			if (aatan.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::atan(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atan", a, aatan, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atan", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "atan", a, aatan, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "atan", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -341,24 +341,24 @@ int VerifyAtan(bool reportTestCases) {
 // enumerate all trigonometric sec cases for an lns configuration
 template<typename TestType>
 int VerifyAsin(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, aasin, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		aasin = sw::universal::asin(a);
+		result = sw::universal::asin(a);
 		// generate reference
 		double da = double(a);
-		aref = std::asin(da);
-		if (aasin != aref) {
-			if (aasin.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::asin(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asin", a, aasin, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asin", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "asin", a, aasin, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "asin", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -367,24 +367,24 @@ int VerifyAsin(bool reportTestCases) {
 // enumerate all trigonometric cosec cases for an lns configuration
 template<typename TestType>
 int VerifyAcos(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, aacos, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		aacos = sw::universal::acos(a);
+		result = sw::universal::acos(a);
 		// generate reference
 		double da = double(a);
-		aref = std::acos(da);
-		if (aacos != aref) {
-			if (aacos.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::acos(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "acos", a, aacos, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "acos", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "acos", a, aacos, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "acos", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -393,24 +393,24 @@ int VerifyAcos(bool reportTestCases) {
 // enumerate all hyperbolic sine cases for an lns configuration
 template<typename TestType>
 int VerifySinh(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, asinh, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		asinh = sw::universal::sinh(a);
+		result = sw::universal::sinh(a);
 		// generate reference
 		double da = double(a);
-		aref = std::sinh(da);
-		if (asinh != aref) {
-			if (asinh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::sinh(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sinh", a, asinh, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "sinh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "sinh", a, asinh, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "sinh", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -419,24 +419,24 @@ int VerifySinh(bool reportTestCases) {
 // enumerate all hyperbolic cosine cases for an lns configuration
 template<typename TestType>
 int VerifyCosh(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, acosh, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		acosh = sw::universal::cosh(a);
+		result = sw::universal::cosh(a);
 		// generate reference
 		double da = double(a);
-		aref = std::cosh(da);
-		if (acosh != aref) {
-			if (acosh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::cosh(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cosh", a, acosh, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "cosh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "cosh", a, acosh, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "cosh", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -445,24 +445,24 @@ int VerifyCosh(bool reportTestCases) {
 // enumerate all hyperbolic tangent cases for an lns configuration
 template<typename TestType>
 int VerifyTanh(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, atanh, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		atanh = sw::universal::tanh(a);
+		result = sw::universal::tanh(a);
 		// generate reference
 		double da = double(a);
-		aref = std::tanh(da);
-		if (atanh != aref) {
-			if (atanh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::tanh(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tanh", a, atanh, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "tanh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "tanh", a, atanh, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "tanh", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -471,24 +471,24 @@ int VerifyTanh(bool reportTestCases) {
 // enumerate all hyperbolic cotangent cases for an lns configuration
 template<typename TestType>
 int VerifyAtanh(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, aatanh, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		aatanh = sw::universal::atanh(a);
+		result = sw::universal::atanh(a);
 		// generate reference
 		double da = double(a);
-		aref = std::atanh(da);
-		if (aatanh != aref) {
-			if (aatanh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::atanh(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atanh", a, aatanh, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "atanh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "atanh", a, aatanh, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "atanh", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -497,24 +497,24 @@ int VerifyAtanh(bool reportTestCases) {
 // enumerate all hyperbolic sec cases for an lns configuration
 template<typename TestType>
 int VerifyAsinh(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, aasinh, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		aasinh = sw::universal::asinh(a);
+		result = sw::universal::asinh(a);
 		// generate reference
 		double da = double(a);
-		aref = std::asinh(da);
-		if (aasinh != aref) {
-			if (aasinh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::asinh(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asinh", a, aasinh, aref);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "asinh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "asinh", a, aasinh, aref);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "asinh", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -523,24 +523,24 @@ int VerifyAsinh(bool reportTestCases) {
 // enumerate all hyperbolic cosec cases for an lns configuration
 template<typename TestType>
 int VerifyAcosh(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, aacosh, aref;
+	TestType a, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
-		aacosh = sw::universal::acosh(a);
+		result = sw::universal::acosh(a);
 		// generate reference
 		double da = double(a);
-		aref = std::acosh(da);
-		if (aacosh != aref) {
-			if (aacosh.isnan() && aref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+		ref = std::acosh(da);
+		if (result != ref) {
+			if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "acosh", a, aref, aacosh);
+			if (reportTestCases)	ReportOneInputFunctionError("FAIL", "acosh", a, result, ref);
 		}
 		else {
-			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "acosh", a, aref, aacosh);
+			//if (reportTestCases) ReportOneInputFunctionSuccess("aSS", "acosh", a, result, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -549,27 +549,27 @@ int VerifyAcosh(bool reportTestCases) {
 // enumerate all hypotenuse cases for an lns configuration
 template<typename TestType>
 int VerifyHypot(bool reportTestCases) {
-	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t NR_TEST_CASES = (1 << nbits);
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	TestType a, b, hypot, ref;
+	TestType a, b, result, ref;
 
-	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 1; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		double da = double(a);
-		for (size_t j = 1; j < NR_TEST_CASES; ++j) {
+		for (unsigned j = 1; j < NR_TEST_CASES; ++j) {
 			b.setbits(j);
-			hypot = sw::universal::hypot(a, b);
+			result = sw::universal::hypot(a, b);
 			// generate reference
 			double db = double(b);
 			ref = std::hypot(da, db);
-			if (hypot != ref) {
-				if (hypot.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
+			if (result != ref) {
+				if (result.isnan() && ref.isnan()) return 0; // (s)nan != (s)nan, so the regular equivalance test fails
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "hypot", a, b, hypot, ref);
+				if (reportTestCases)	ReportTwoInputFunctionError("FAIL", "hypot", a, b, result, ref);
 			}
 			else {
-				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "hypot", a, b, hypot, ref);
+				//if (reportTestCases) ReportTwoInputFunctionSuccess("PASS", "hypot", a, b, result, ref);
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 //  conversion.cpp : test suite runner for blocksignificant construction and conversion from float/double
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
+#include <universal/verification/test_suite.hpp>
 
 /*
 A blocksignificant is a 1's or 2's complement binary encoding with a radix point 
@@ -37,12 +38,35 @@ right abstraction. High-performance arbitrary precision systems use a
 dynamic data structure and a custom memory manager to avoid copies.
 
 */
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "blocksignificant storage class value conversion testing";
+	std::string test_suite  = "blocksignificant conversion validation";
+	std::string test_tag    = "conversion";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
 
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
 	// we have deprecated the blocksignificant copy constructor to catch any
 	// unsuspecting conversion copies in blocksignificant use-cases
 	{
@@ -104,6 +128,26 @@ try {
 			std::cout << to_binary(a) << " : " << a << '\n';
 		}
 	}
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else
+
+#if REGRESSION_LEVEL_1
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

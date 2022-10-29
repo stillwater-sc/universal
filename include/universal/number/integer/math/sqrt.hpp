@@ -9,7 +9,7 @@
 namespace sw { namespace universal {
 
 	// square root of an arbitrary integer
-	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+	template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 	integer<nbits, BlockType, NumberType> sqrt(const integer<nbits, BlockType, NumberType>& a) {
 		// if (a < 0) is very inefficient as it will do a diff between a and 0
 		// instead, use the isneg() function which simply checks the sign bit
@@ -28,7 +28,7 @@ namespace sw { namespace universal {
 	// specialized sqrt configurations
 
 	// square root of an arbitrary integer does a binary search for the floor(sqrt(a))
-	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+	template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 	integer<nbits, BlockType, NumberType> floor_sqrt(const integer<nbits, BlockType, NumberType>& a) {
 		// if (a < 0) is very inefficient as it will do a diff between a and 0
 		// instead, use the isneg() function which simply checks the sign bit
@@ -60,7 +60,7 @@ namespace sw { namespace universal {
 	}
 
 	// square root of an arbitrary integer does a binary search for the ceil(sqrt(a))
-	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+	template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 	integer<nbits, BlockType, NumberType> ceil_sqrt(const integer<nbits, BlockType, NumberType>& a) {
 		integer<nbits, BlockType, NumberType> c = floor_sqrt(a);
 		if (c * c != a) ++c;
@@ -68,7 +68,7 @@ namespace sw { namespace universal {
 	}
 
 	// test if the argument is a perfect square
-	template<size_t nbits, typename BlockType, IntegerNumberType NumberType>
+	template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 	bool perfect_square(const integer<nbits, BlockType, NumberType>& a) {
 		using Integer = integer<nbits, BlockType, NumberType>;
 		Integer square = sqrt(a);

@@ -113,7 +113,7 @@ void GenerateTestCaseAtanh(Ty v) {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-const double pi = 3.14159265358979323846;
+// const double pi = 3.14159265358979323846;
 
 int main()
 try {

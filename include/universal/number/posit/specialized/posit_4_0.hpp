@@ -1,7 +1,7 @@
 #pragma once
 // posit_4_0.hpp: specialized 4-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2021 Supercomputing, Inc.
+// Copyright (C) 2017-2022 Supercomputing, Inc.
 // First implementation: 2019
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
@@ -107,13 +107,13 @@ constexpr uint8_t posit_4_0_reciprocal_lookup[16] = {
 template<>
 class posit<NBITS_IS_4, ES_IS_0> {
 public:
-	static constexpr size_t nbits = NBITS_IS_4;
-	static constexpr size_t es = ES_IS_0;
-	static constexpr size_t sbits = 1;
-	static constexpr size_t rbits = nbits - sbits;
-	static constexpr size_t ebits = es;
-	static constexpr size_t fbits = nbits - 3;
-	static constexpr size_t fhbits = fbits + 1;
+	static constexpr unsigned nbits = NBITS_IS_4;
+	static constexpr unsigned es = ES_IS_0;
+	static constexpr unsigned sbits = 1;
+	static constexpr unsigned rbits = nbits - sbits;
+	static constexpr unsigned ebits = es;
+	static constexpr unsigned fbits = nbits - 3;
+	static constexpr unsigned fhbits = fbits + 1;
 	static constexpr uint8_t index_shift = 4;
 	static constexpr uint8_t bit_mask = 0x0F;
 	static constexpr uint8_t nar_encoding = 0x08;
@@ -375,7 +375,7 @@ private:
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;
-		for (size_t i = 0; i < nbits; i++) {
+		for (unsigned i = 0; i < nbits; i++) {
 			_raw_bits.set(i, (_bits & mask));
 			mask <<= 1;
 		}
@@ -396,7 +396,7 @@ private:
 		bitblock<nbits>		 _raw_bits;
 		_raw_bits.reset();
 		uint64_t mask = 1;
-		for (size_t i = 0; i < nbits; i++) {
+		for (unsigned i = 0; i < nbits; i++) {
 			_raw_bits.set(i, (_bits & mask));
 			mask <<= 1;
 		}

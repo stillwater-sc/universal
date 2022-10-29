@@ -15,7 +15,7 @@ namespace sw { namespace universal {
 	template<typename SornType>
 	int VerifyMultiplication_(bool reportTestCases) {
 		constexpr size_t nbits = SornType::nbits;
-		using value_type = typename SornType::value_type;
+		// using value_type = typename SornType::value_type;
 
 		SornType s;
 		std::cerr << "SORN type : " << type_tag(s) << " : nbits = " << nbits << '\n';

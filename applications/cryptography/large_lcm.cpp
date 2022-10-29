@@ -1,6 +1,6 @@
 // large_lcm.cpp: calculating a least common multiple of a very large set
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -13,7 +13,7 @@
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
 
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 void MeasureLCM(const std::vector<sw::universal::integer<nbits, BlockType>>& v) {
 	std::chrono::steady_clock::time_point begin, end;
 	begin = std::chrono::steady_clock::now();
@@ -39,7 +39,7 @@ try {
 	int nrOfFailedTestCases = 0;
 	   	
 	{
-		constexpr size_t nbits = 512;
+		constexpr unsigned nbits = 512;
 		using Integer = integer<nbits, uint32_t>;
 		Integer factor;
 
@@ -72,7 +72,7 @@ try {
 
 	// this triggers the integer_overflow exception
 	{
-		constexpr size_t nbits = 1024;
+		constexpr unsigned nbits = 1024;
 		using Integer = integer<nbits, uint32_t>;
 		Integer factor;
 
@@ -103,7 +103,7 @@ try {
 
 #if STRESS_TESTING
 	{
-		constexpr size_t nbits = 2048;
+		constexpr unsigned nbits = 2048;
 		using Integer = integer<nbits, uint32_t>;
 		Integer factor;
 

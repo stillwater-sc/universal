@@ -1,7 +1,7 @@
 #pragma once
 // exponent.hpp: exponent functions for cfloats
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -11,7 +11,7 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Base-e exponential function
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
 	if (isnan(x)) return x;
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> p;
@@ -26,7 +26,7 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp(cfloat<n
 }
 
 // Base-2 exponential function
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp2(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
 	if (isnan(x)) return x;
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> p;
@@ -41,13 +41,13 @@ cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp2(cfloat<
 }
 
 // Base-10 exponential function
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> exp10(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
 	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::pow(10.0, double(x)));
 }
 		
 // Base-e exponential function exp(x)-1
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> expm1(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x) {
 	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::expm1(double(x)));
 }

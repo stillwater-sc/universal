@@ -1,12 +1,12 @@
 // raw_bit_patterns.cpp : generate regime patterns and showcase the raw bit pattern set API of the posit.
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <universal/number/posit/posit.hpp>
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void EnumerateRegimePatterns() {
 	sw::universal::posit<nbits, es> p;
 	sw::universal::bitblock<nbits> raw;
@@ -93,8 +93,8 @@ catch (...) {
 		0000000000000000      0
 */
 void ManualPatternSet() {
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 2;
+	constexpr unsigned nbits = 16;
+	constexpr unsigned es = 2;
 	sw::universal::posit<nbits, es> p;
 	sw::universal::bitblock<nbits> raw;
 

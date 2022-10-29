@@ -1,6 +1,6 @@
 // blockbinary_test_status.cpp : functions to aid in testing and test reporting block binary numbers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -11,7 +11,7 @@
 namespace sw { namespace universal {
 
 #define COLUMN_WIDTH 20
-template<size_t nbits, typename BlockType, BinaryNumberType NumberType>
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const blockbinary<nbits, BlockType, NumberType>& a, const blockbinary<nbits, BlockType, NumberType>& b, const blockbinary<nbits, BlockType, NumberType>& result, int64_t reference) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -28,7 +28,7 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< std::endl;
 }
 
-template<size_t nbits, typename BlockType, BinaryNumberType NumberType>
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
 void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const blockbinary<nbits, BlockType, NumberType>& a, const blockbinary<nbits, BlockType, NumberType>& b, const blockbinary<nbits, BlockType, NumberType>& result, int64_t reference) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -45,8 +45,8 @@ void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::stri
 		<< std::endl;
 }
 
-template<size_t nbits, typename BlockType, BinaryNumberType NumberType>
-void ReportArithmeticShiftError(const std::string& test_case, const std::string& op, const blockbinary<nbits, BlockType, NumberType>& a, const size_t divider, const blockbinary<nbits, BlockType, NumberType>& result, int64_t reference) {
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
+void ReportArithmeticShiftError(const std::string& test_case, const std::string& op, const blockbinary<nbits, BlockType, NumberType>& a, const unsigned divider, const blockbinary<nbits, BlockType, NumberType>& result, int64_t reference) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
@@ -62,8 +62,8 @@ void ReportArithmeticShiftError(const std::string& test_case, const std::string&
 		<< std::endl;
 }
 
-template<size_t nbits, typename BlockType, BinaryNumberType NumberType>
-void ReportArithmeticShiftSuccess(const std::string& test_case, const std::string& op, const blockbinary<nbits, BlockType, NumberType>& a, const size_t divider, const blockbinary<nbits, BlockType, NumberType>& result, int64_t reference) {
+template<unsigned nbits, typename BlockType, BinaryNumberType NumberType>
+void ReportArithmeticShiftSuccess(const std::string& test_case, const std::string& op, const blockbinary<nbits, BlockType, NumberType>& a, const unsigned divider, const blockbinary<nbits, BlockType, NumberType>& result, int64_t reference) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)

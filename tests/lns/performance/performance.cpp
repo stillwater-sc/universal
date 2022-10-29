@@ -1,4 +1,4 @@
-//  perf.cpp : baseline performance benchmarking of arithmetic operators on the lns arithmetic type
+// performance.cpp : baseline performance benchmarking of arithmetic operators on the lns arithmetic type
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -112,7 +112,38 @@ namespace sw::universal::internal {
 	lns<16, 5, uint32_t>   division           1048576 per       0.0058155sec -> 180 Mops/sec
 	lns<20, 6, uint32_t>   division           1048576 per       0.0018611sec -> 563 Mops/sec
 	lns<32, 8, uint32_t>   division           1048576 per       0.0016528sec -> 634 Mops/sec
-	 */
+
+	October 24th, NZXT AMD Ryzen 7 2700X Eight-Core Processor, 3.70 GHz 
+	5-10x slower compared to i7 for some reason
+	
+	Arithmetic operator performance
+	lns< 4, 1, uint8_t >   add/subtract       1048576 per         2.39943sec -> 437 Kops/sec
+	lns< 8, 3, uint8_t >   add/subtract       1048576 per         4.06563sec -> 257 Kops/sec
+	lns<12, 4, uint8_t >   add/subtract       1048576 per         4.12357sec -> 254 Kops/sec
+	lns<12, 4, uint16_t>   add/subtract       1048576 per         4.08521sec -> 256 Kops/sec
+	lns<16, 5, uint16_t>   add/subtract       1048576 per         4.09803sec -> 255 Kops/sec
+	lns<16, 5, uint32_t>   add/subtract       1048576 per         4.11181sec -> 255 Kops/sec
+	lns<20, 6, uint32_t>   add/subtract       1048576 per         4.29146sec -> 244 Kops/sec
+	lns<32, 8, uint32_t>   add/subtract       1048576 per         4.33838sec -> 241 Kops/sec
+
+	lns< 4, 1, uint8_t >   multiplication     1048576 per       0.0082187sec -> 127 Mops/sec
+	lns< 8, 3, uint8_t >   multiplication     1048576 per       0.0040326sec -> 260 Mops/sec
+	lns<12, 4, uint8_t >   multiplication     1048576 per       0.0085892sec -> 122 Mops/sec
+	lns<12, 4, uint16_t>   multiplication     1048576 per       0.0031166sec -> 336 Mops/sec
+	lns<16, 5, uint16_t>   multiplication     1048576 per       0.0035843sec -> 292 Mops/sec
+	lns<16, 5, uint32_t>   multiplication     1048576 per       0.0027879sec -> 376 Mops/sec
+	lns<20, 6, uint32_t>   multiplication     1048576 per       0.0027407sec -> 382 Mops/sec
+	lns<32, 8, uint32_t>   multiplication     1048576 per       0.0112044sec ->  93 Mops/sec
+
+	lns< 4, 1, uint8_t >   division           1048576 per       0.0088832sec -> 118 Mops/sec
+	lns< 8, 3, uint8_t >   division           1048576 per       0.0276199sec ->  37 Mops/sec
+	lns<12, 4, uint8_t >   division           1048576 per       0.0635278sec ->  16 Mops/sec
+	lns<12, 4, uint16_t>   division           1048576 per       0.0101647sec -> 103 Mops/sec
+	lns<16, 5, uint16_t>   division           1048576 per       0.0285868sec ->  36 Mops/sec
+	lns<16, 5, uint32_t>   division           1048576 per       0.0579237sec ->  18 Mops/sec
+	lns<20, 6, uint32_t>   division           1048576 per        0.008636sec -> 121 Mops/sec
+	lns<32, 8, uint32_t>   division           1048576 per       0.0280106sec ->  37 Mops/sec
+	*/
 
 	void TestSmallArithmeticOperatorPerformance() {
 		using namespace sw::universal;
@@ -175,26 +206,33 @@ namespace sw::universal::internal {
 		using namespace sw::universal;
 		std::cout << "\nArithmetic operator performance\n";
 
-		size_t NR_OPS = 1024ull * 1024ull;
+		size_t NR_OPS = 4 * 1024ull;
 		PerformanceRunner("lns<  8, 2, uint8_t >  add/subtract  ", AdditionSubtractionWorkload< lns<  8,  2, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns< 16, 5, uint16_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 16,  5, uint16_t> >, NR_OPS);
 		PerformanceRunner("lns< 32, 8, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 32,  8, uint32_t> >, NR_OPS);
 		PerformanceRunner("lns< 64,11, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns<128, 15, uint32_t> >, NR_OPS / 2);
+		PerformanceRunner("lns< 96,32, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns< 96, 32, uint32_t> >, NR_OPS);
+
+		// an lns<128,rbits> is always going to be too big to represent exponents in 64bit native
+		//PerformanceRunner("lns<128,15, uint32_t>  add/subtract  ", AdditionSubtractionWorkload< lns<128, 15, uint32_t> >, NR_OPS / 2);
 
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("lns<  8, 2, uint8_t >  multiplication", MultiplicationWorkload< lns<  8,  2, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns< 16, 5, uint16_t>  multiplication", MultiplicationWorkload< lns< 16,  5, uint16_t> >, NR_OPS);
 		PerformanceRunner("lns< 32, 8, uint32_t>  multiplication", MultiplicationWorkload< lns< 32,  8, uint32_t> >, NR_OPS);
 		PerformanceRunner("lns< 64,11, uint32_t>  multiplication", MultiplicationWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  multiplication", MultiplicationWorkload< lns<128, 15, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 96,32, uint32_t>  add/subtract  ", MultiplicationWorkload< lns< 96, 32, uint32_t> >, NR_OPS);
+		// configuration too big
+		//PerformanceRunner("lns<128,15, uint32_t>  multiplication", MultiplicationWorkload< lns<128, 15, uint32_t> >, NR_OPS);
 
 		NR_OPS = 1024ull * 1024ull;
 		PerformanceRunner("lns<  8, 2, uint8_t >  division      ", DivisionWorkload< lns<  8,  2, uint8_t> >, NR_OPS);
 		PerformanceRunner("lns< 16, 5, uint16_t>  division      ", DivisionWorkload< lns< 16,  5, uint16_t> >, NR_OPS);
 		PerformanceRunner("lns< 32, 8, uint32_t>  division      ", DivisionWorkload< lns< 32,  8, uint32_t> >, NR_OPS);
 		PerformanceRunner("lns< 64,11, uint32_t>  division      ", DivisionWorkload< lns< 64, 11, uint32_t> >, NR_OPS);
-		PerformanceRunner("lns<128,15, uint32_t>  division      ", DivisionWorkload< lns<128, 15, uint32_t> >, NR_OPS);
+		PerformanceRunner("lns< 96,32, uint32_t>  add/subtract  ", DivisionWorkload< lns< 96, 32, uint32_t> >, NR_OPS);
+		// configuration too big
+		//PerformanceRunner("lns<128,15, uint32_t>  division      ", DivisionWorkload< lns<128, 15, uint32_t> >, NR_OPS);
 	}
 
 	/*

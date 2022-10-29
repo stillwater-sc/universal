@@ -1,7 +1,7 @@
 #pragma once
 // linspace.hpp: linspace/logspace/geomspace implementations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/blas/vector.hpp>
@@ -38,9 +38,9 @@ sw::universal::blas::vector<Scalar> linspace(const Scalar& start, const Scalar& 
 	if (steps == 1) return sw::universal::blas::vector<Scalar>(1) = start;
 	sw::universal::blas::vector<Scalar> v(steps);
 	steps = (endpoint ? steps - 1 : steps); // if endpoint is inclusive, we have one less segment
-	Scalar step = (stop - start) / steps;
+	Scalar step = (stop - start) / Scalar(steps);
 	for (size_t i = 0; i < steps; ++i) {
-		v[i] = i * step;
+		v[i] = Scalar(i) * step;
 	}
 	v += start; // this can vectorize
 	if (endpoint) v[steps] = stop;

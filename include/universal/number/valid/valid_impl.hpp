@@ -10,7 +10,7 @@
 
 namespace sw { namespace universal {
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 class valid {
 
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
@@ -25,7 +25,7 @@ class valid {
 	}
 
 public:
-	static constexpr size_t somebits = 10;
+	static constexpr unsigned somebits = 10;
 
 	valid() : lb{ 0 }, ub{ 0 }, lubit{ false }, uubit{ false } { }
 
@@ -114,7 +114,7 @@ public:
 	} 
 
 	// relative_order returns -1 if v was rounded up, 0 if it was exact, and 1 if v was rounded down
-	template <size_t NrFractionBits>
+	template <unsigned NrFractionBits>
 	inline int relative_order(const internal::value<NrFractionBits>& v) {
 		if (v.iszero()) {
 			return 0;
@@ -144,7 +144,7 @@ private:
 
 
 	// convert assumes that ZERO and NaR cases are handled. Only non-zero and non-NaR values are allowed.
-	template<size_t input_fbits>
+	template<unsigned input_fbits>
 	int convert(bool sign, int scale, bitblock<input_fbits> input_fraction) {
 		// construct the posit
 		//int k = calculate_unconstrained_k<nbits, es>(scale);
@@ -153,7 +153,7 @@ private:
 			return 1; // rounded down
 		}
 		else {
-			const size_t pt_len = nbits + 3 + es;
+			const unsigned pt_len = nbits + 3 + es;
 			bitblock<pt_len> pt_bits;
 			bitblock<pt_len> regime;
 			bitblock<pt_len> exponent;
@@ -211,28 +211,28 @@ private:
 
 	// friends
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend std::ostream& operator<< (std::ostream& ostr, const valid<nnbits, ees>& p);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend std::istream& operator>> (std::istream& istr, valid<nnbits, ees>& p);
 
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator==(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator!=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator< (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator> (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator<=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator>=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs);
 };
 
 
 // VALID operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline std::ostream& operator<<(std::ostream& ostr, const valid<nbits, es>& v) {
 	// determine lower bound
 	if (v.lubit == true) {  // exact lower bound
@@ -250,64 +250,64 @@ inline std::ostream& operator<<(std::ostream& ostr, const valid<nbits, es>& v) {
 	return ostr;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& v) {
 	istr >> v._Bits;
 	return istr;
 }
 
 // valid - logic operators
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator==(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return false; }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator!=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator< (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return false; }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator> (const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator<=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator>=(const valid<nnbits, ees>& lhs, const valid<nnbits, ees>& rhs) { return !operator< (lhs, rhs); }
 
 // valid - literal logic operators
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator==(const valid<nnbits, ees>& lhs, double rhs) { return lhs == valid<nnbits, ees>(rhs); }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator!=(const valid<nnbits, ees>& lhs, double rhs) { return !operator==(lhs, rhs); }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator< (const valid<nnbits, ees>& lhs, double rhs) { return lhs < valid<nnbits, ees>(rhs); }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator> (const valid<nnbits, ees>& lhs, double rhs) { return  operator< (rhs, lhs); }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator<=(const valid<nnbits, ees>& lhs, double rhs) { return !operator> (lhs, rhs); }
-template<size_t nnbits, size_t ees>
+template<unsigned nnbits, unsigned ees>
 inline bool operator>=(const valid<nnbits, ees>& lhs, double rhs) { return !operator< (lhs, rhs); }
 
 // valid - valid binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline valid<nbits, es> operator+(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
 	valid<nbits, es> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline valid<nbits, es> operator-(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
 	valid<nbits, es> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline valid<nbits, es> operator*(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
 	valid<nbits, es> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline valid<nbits, es> operator/(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
 	valid<nbits, es> ratio(lhs);
 	ratio /= rhs;

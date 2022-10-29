@@ -1,6 +1,6 @@
 // logic.cpp : test suite for bitblock logic operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -14,9 +14,9 @@
 
 namespace sw::universal::internal {
 
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetLogicLessThan() {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bool ref, bref;
@@ -36,9 +36,9 @@ int VerifyBitsetLogicLessThan() {
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetLogicGreaterThan() {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bool ref, bref;
@@ -58,9 +58,9 @@ int VerifyBitsetLogicGreaterThan() {
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetLogicEqual() {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bool ref, bref;
@@ -80,9 +80,9 @@ int VerifyBitsetLogicEqual() {
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetLogicNotEqual() {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bool ref, bref;
@@ -102,9 +102,9 @@ int VerifyBitsetLogicNotEqual() {
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetLogicLessOrEqualThan() {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bool ref, bref;
@@ -124,9 +124,9 @@ int VerifyBitsetLogicLessOrEqualThan() {
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits>
+template<unsigned nbits>
 int VerifyBitsetLogicGreaterOrEqualThan() {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b;
 	bool ref, bref;

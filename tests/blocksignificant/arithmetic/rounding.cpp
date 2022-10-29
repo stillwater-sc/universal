@@ -12,8 +12,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp> 
-#include <universal/verification/test_reporters.hpp> 
+#include <universal/verification/test_suite.hpp> 
 
 #ifdef TBD
 // enumerate all rounding cases for an blocksignificant<nbits,BlockType> configuration
@@ -48,16 +47,36 @@ int VerifyRounding(bool reportTestCases) {
 }
 #endif
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
 int main()
 try {
 	using namespace sw::universal;
 	
+	std::string test_suite  = "blocksignificant rounding validation";
+	std::string test_tag    = "rounding";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
-	std::string tag = "blocksignificant rounding";
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
 //	constexpr BitEncoding twos = BitEncoding::Twos;
 
-	std::cout << tag << '\n';
-
+#if MANUAL_TESTING
 	// Map out the full rounding truth table
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -91,14 +110,32 @@ try {
 		for (size_t i = 0; i < 8; ++i) {
 			size_t bits = (i << 4);
 			a.setbits(bits);
-			std::cout <<  to_binary(a, true) << " round " << (a.roundingDirection(6) ? "up" : "down") << '\n';
+			std::cout << to_binary(a, true) << " round " << (a.roundingDirection(6) ? "up" : "down") << '\n';
 			bits |= 0x1;
 			a.setbits(bits);
 			std::cout << to_binary(a, true) << " round " << (a.roundingDirection(6) ? "up" : "down") << '\n';
 		}
 	}
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else
+
+#if REGRESSION_LEVEL_1
+#endif
+
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

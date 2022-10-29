@@ -14,7 +14,7 @@ namespace sw { namespace universal {
 		: false_type
 	{
 	};
-	template<size_t nbits, size_t rbits>
+	template<unsigned nbits, unsigned rbits>
 	struct is_fixpnt_trait< sw::universal::fixpnt<nbits, rbits> >
 		: true_type
 	{

@@ -1,7 +1,7 @@
 #pragma once
 // posit_8_1.hpp: specialized 8-bit posit using fast implementation specialized for posit<8,1>
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

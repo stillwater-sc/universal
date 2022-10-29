@@ -86,12 +86,9 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 //		float fb = std::numeric_limits<float>::infinity();
 		float fb = 1.5f;
 
-		constexpr size_t nbits = 4;
-		constexpr size_t es = 2;
-		constexpr bool hasSubnormal = true;
-		constexpr bool hasSupernormal = true;
-		constexpr bool isSaturating = true;
-		using Cfloat = cfloat < nbits, es, uint8_t, hasSubnormal, hasSupernormal, isSaturating >;
+		constexpr unsigned nbits = 4;
+		constexpr unsigned es = 2;
+		using Cfloat = cfloat < nbits, es, uint8_t, hasSubnormals, hasSupernormals, isSaturating >;
 		Cfloat a, b, c; // uninitialized
 //		GenerateTable<Cfloat>(cout);
 //		a.constexprClassParameters();
@@ -103,7 +100,7 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 
 		TestCase< Cfloat, float>(TestCaseOperator::MUL, fa, fb);
 	}
-	return 0;
+
 	{ // special cases of snan/qnan
 		constexpr float fa = std::numeric_limits<float>::quiet_NaN();
 		constexpr float fb = std::numeric_limits<float>::signaling_NaN();
@@ -124,7 +121,6 @@ Generate table for a class sw::universal::cfloat<3,1,unsigned char,1,1,0> in TXT
 		std::cout << 0.0f << " * " << fa << " = " << (0.0f * fa) << '\n';
 		std::cout << to_binary(fa - fb) << '\n';
 	}
-//	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatMultiplication< 

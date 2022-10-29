@@ -1,6 +1,6 @@
 // posit_3_0.hpp: specialized 3-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -96,13 +96,13 @@ constexpr bool posit_3_0_less_than_lookup[64] = {
 template<>
 class posit<NBITS_IS_3, ES_IS_0> {
 public:
-	static constexpr size_t nbits = NBITS_IS_3;
-	static constexpr size_t es = ES_IS_0;
-	static constexpr size_t sbits = 1;
-	static constexpr size_t rbits = nbits - sbits;
-	static constexpr size_t ebits = es;
-	static constexpr size_t fbits = 0;
-	static constexpr size_t fhbits = fbits + 1;
+	static constexpr unsigned nbits = NBITS_IS_3;
+	static constexpr unsigned es = ES_IS_0;
+	static constexpr unsigned sbits = 1;
+	static constexpr unsigned rbits = nbits - sbits;
+	static constexpr unsigned ebits = es;
+	static constexpr unsigned fbits = 0;
+	static constexpr unsigned fhbits = fbits + 1;
 	static constexpr uint8_t index_shift = NBITS_IS_3;
 	static constexpr uint8_t bit_mask = 0x07;  // last three bits
 	static constexpr uint8_t nar_encoding = 0x04;
@@ -403,7 +403,7 @@ private:
 			if (_trace_rounding) std::cout << "projection  rounding ";
 		}
 		else {
-			const size_t pt_len = nbits + 3 + es;
+			const unsigned pt_len = nbits + 3 + es;
 			bitblock<pt_len> pt_bits;
 			bitblock<pt_len> regime;
 			bitblock<pt_len> exponent;

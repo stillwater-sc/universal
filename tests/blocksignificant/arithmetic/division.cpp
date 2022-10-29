@@ -12,17 +12,16 @@
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
+#include <universal/verification/test_suite.hpp>
 
 // enumerate all division cases for an blocksignificant<nbits,BlockType> configuration
 // TODO: fix test failures in VerifyBlockSignificantDivision<blocksignificantConfiguration>
 template<typename blocksignificantConfiguration>
 int VerifyBlockSignificantDivision(bool reportTestCases) {
-	constexpr size_t nbits = blocksignificantConfiguration::nbits;
+	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
 	using BlockType = typename blocksignificantConfiguration::BlockType;
 
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (1u << nbits);
 	using namespace sw::universal;
 
 	//	cout << endl;
@@ -32,22 +31,22 @@ int VerifyBlockSignificantDivision(bool reportTestCases) {
 
 	blocksignificant<nbits, BlockType> a, b, c;
 	// nbits = 2 * fhbits
-	constexpr size_t fhbits = (nbits >> 1);
-	constexpr size_t fbits = fhbits - 1;
+	constexpr unsigned fhbits = (nbits >> 1);
+	constexpr unsigned fbits = fhbits - 1;
 	a.setradix(2 * fbits);
 	b.setradix(2 * fbits);
 	a.setradix(2 * fbits);
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
-	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
-	for (size_t i = 0; i < NR_VALUES; i++) {
+	constexpr unsigned nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
+	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		aref.setbits(i);
-		for (size_t j = 0; j < NR_VALUES; j++) {
+		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			bref.setbits(j);
 			cref = aref / bref;
 			c.div(a, b);
-			for (size_t k = 0; k < nrBlocks; ++k) {
+			for (unsigned k = 0; k < nrBlocks; ++k) {
 				refResult.setblock(k, c.block(k));
 			}
 
@@ -66,18 +65,20 @@ int VerifyBlockSignificantDivision(bool reportTestCases) {
 	return nrOfFailedTests;
 }
 
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 void TestMostSignificantBit() {
 	using namespace sw::universal;
 	blocksignificant<nbits, BlockType> a;
 	std::cout << to_binary(a) << ' ' << a.msb() << '\n';
 	a.setbits(0x01ull);
-	for (size_t i = 0; i < nbits; ++i) {
+	for (unsigned i = 0; i < nbits; ++i) {
 		std::cout << to_binary(a) << ' ' << a.msb() << '\n';
 		a <<= 1;
 	}
 }
 
+// TODO: blocksignificant div is failing, currently regression testing is disabled
+// 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -99,11 +100,11 @@ try {
 	using namespace sw::universal;
 	
 	std::string test_suite  = "blocksignificant division validation";
-	std::string test_tag    = "blocksignificant division";
+	std::string test_tag    = "division";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -112,12 +113,12 @@ try {
 		c.div(a, b);
 	}
 
-//	TestMostSignificantBit<27, uint8_t>();
-//	TestMostSignificantBit<27, uint16_t>();
-//	TestMostSignificantBit<33, uint32_t>();
+	TestMostSignificantBit<27, uint8_t>();
+	TestMostSignificantBit<27, uint16_t>();
+	TestMostSignificantBit<33, uint32_t>();
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4>", "division");
-//	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<4, uint8_t> >(reportTestCases), "blocksignificant<4,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyBlockSignificantDivision< blocksignificant<8, uint8_t> >(reportTestCases), "blocksignificant<8,uint8_t>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

@@ -1,7 +1,7 @@
 #pragma once
 // posit_2_0.hpp: specialized 2-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 // First implementation: 2018
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
@@ -69,13 +69,13 @@ constexpr uint8_t posit_2_0_reciprocal_lookup[4] = {
 template<>
 class posit<NBITS_IS_2, ES_IS_0> {
 public:
-	static constexpr size_t nbits = NBITS_IS_2;
-	static constexpr size_t es = ES_IS_0;
-	static constexpr size_t sbits = 1;
-	static constexpr size_t rbits = nbits - sbits;
-	static constexpr size_t ebits = es;
-	static constexpr size_t fbits = 0;
-	static constexpr size_t fhbits = fbits + 1;
+	static constexpr unsigned nbits = NBITS_IS_2;
+	static constexpr unsigned es = ES_IS_0;
+	static constexpr unsigned sbits = 1;
+	static constexpr unsigned rbits = nbits - sbits;
+	static constexpr unsigned ebits = es;
+	static constexpr unsigned fbits = 0;
+	static constexpr unsigned fhbits = fbits + 1;
 	static constexpr uint8_t index_shift = NBITS_IS_2;
 	static constexpr uint8_t bit_mask = 0x3;  // last two bits
 	static constexpr uint8_t nar_encoding = 0x02;

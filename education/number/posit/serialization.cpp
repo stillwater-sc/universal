@@ -1,6 +1,6 @@
 //  serialization.cpp : examples how to serialize posit values
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -16,8 +16,8 @@ try {
 
 	std::cout << "Lossless serialization of posit values\n";
 
-	constexpr size_t nbits = 40;
-	constexpr size_t es    =  3;
+	constexpr unsigned nbits = 40;
+	constexpr unsigned es    =  3;
 	posit<nbits, es> a, b, c;
 
 	a =  1.23456789012345;

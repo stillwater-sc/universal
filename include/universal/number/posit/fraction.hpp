@@ -1,7 +1,7 @@
 #pragma once
 // fraction.hpp: definition of a posit fractions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>
@@ -13,7 +13,7 @@ using namespace sw::universal::internal;
 
 // fraction is spec'ed with the size of the posit it belongs to.
 // However, the size of the fraction segment is nbits-3, but we maintain an extra guard bit, so the size of the actual fraction we manage is nbits-2
-template<size_t fbits>
+template<unsigned fbits>
 class fraction {
 public:
 	fraction() : _Bits(), _NrOfBits(0) {}
@@ -26,7 +26,7 @@ public:
 	
 	// selectors
 	bool none() const {	return _Bits.none(); }
-	size_t nrBits() const { return _NrOfBits;	}
+	unsigned nrBits() const { return _NrOfBits;	}
 	// fractions are assumed to have a hidden bit, the case where they do not must be managed by the container of the fraction
 	// calculate the value of the fraction ignoring the hidden bit. So a fraction of 1010 has the value 0.5+0.125=5/8
 	long double value() const { 
@@ -35,7 +35,7 @@ public:
 		if constexpr (fbits > 0) {
 			long double scale = 0.5l;
 			for (int i = int(fbits) - 1; i >= 0; i--) {
-				if (_Bits.test(size_t(i))) v += scale;
+				if (_Bits.test(unsigned(i))) v += scale;
 				scale *= 0.5l;
 				if (scale == 0.0l) break;
 			}
@@ -52,7 +52,7 @@ public:
 	internal::bitblock<fbits> get() const {
 		return _Bits;
 	}
-	void set(const internal::bitblock<fbits>& raw, std::size_t nrOfFractionBits = fbits) {
+	void set(const internal::bitblock<fbits>& raw, unsigned nrOfFractionBits = fbits) {
 		_Bits = raw;
 		_NrOfBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
@@ -66,8 +66,8 @@ public:
 		return fixed_point_number;
 	}
 	// Copy the bits into the fraction. Rounds away from zero.	
-	template <size_t FBits>
-	bool assign(unsigned int remaining_bits, internal::bitblock<FBits>& _fraction, std::size_t hpos = FBits)
+	template <unsigned FBits>
+	bool assign(unsigned int remaining_bits, internal::bitblock<FBits>& _fraction, unsigned hpos = FBits)
 	{
         if (hpos > FBits)
             throw posit_hpos_too_large{};
@@ -86,14 +86,14 @@ public:
                     return hpos > 0 && _fraction[hpos-1];                                        
                 
 		long   ipos = hpos - 1;
-		for (size_t i = 0, fpos = fbits - 1; i < remaining_bits && ipos >= 0; ++i, --fpos, --ipos, ++_NrOfBits) 
+		for (unsigned i = 0, fpos = fbits - 1; i < remaining_bits && ipos >= 0; ++i, --fpos, --ipos, ++_NrOfBits) 
                     _Bits[fpos] = _fraction[ipos];
 		
 		// If we one or more bit in the input -> use it for round_up decision
 		return ipos >= 0 && _fraction[ipos];
 	}
 
-	template <size_t FBits>
+	template <unsigned FBits>
 	bool assign2(unsigned int remaining_bits, internal::bitblock<FBits>& _fraction)
 	{
 		if (remaining_bits > fbits)
@@ -111,14 +111,14 @@ public:
 			return hpos > 0 && _fraction[hpos - 1];
 
 		long   ipos = hpos - 1;
-		for (size_t i = 0, fpos = fbits - 1; i < remaining_bits && ipos >= 0; ++i, --fpos, --ipos, ++_NrOfBits)
+		for (unsigned i = 0, fpos = fbits - 1; i < remaining_bits && ipos >= 0; ++i, --fpos, --ipos, ++_NrOfBits)
 			_Bits[fpos] = _fraction[ipos];
 
 		// If we one or more bits left in the input -> use it for round_up decision
 		return ipos >= 0 && sticky<FBits>(_fraction, ipos);
 	}
 
-	template<size_t FBits>
+	template<unsigned FBits>
 	bool sticky(const internal::bitblock<FBits>& bits, unsigned msb) {
 		bool running = false;
 		for (int i = msb; i >= 0; i--) {
@@ -151,7 +151,7 @@ public:
 #endif 
 
 	/// Normalized shift (e.g., for addition).
-	template <size_t Size>
+	template <unsigned Size>
 	internal::bitblock<Size> nshift(long shift) const
 	{
 		bitblock<Size> number;
@@ -213,38 +213,38 @@ private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
 	// but we maintain 1 guard bit for rounding decisions
 	internal::bitblock<fbits>    _Bits;
-	size_t             _NrOfBits;
+	unsigned             _NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	// Without the template (i.e. only own operators are friends) we get linker errors
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend std::ostream& operator<< (std::ostream& ostr, const fraction<nfbits>& f);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend std::istream& operator>> (std::istream& istr, fraction<nfbits>& f);
 
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator==(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator!=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator< (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator> (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator<=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
 };
 
 ////////////////////// FRACTION operators
-template<size_t nfbits>
+template<unsigned nfbits>
 inline std::ostream& operator<<(std::ostream& ostr, const fraction<nfbits>& f) {
-	size_t nrOfFractionBitsProcessed = 0;
+	unsigned nrOfFractionBitsProcessed = 0;
 	if (nfbits > 0) {
 		int upperbound = int(nfbits) - 1;
 		for (int i = upperbound; i >= 0; --i) {
 			if (f._NrOfBits > ++nrOfFractionBitsProcessed) {
-				ostr << (f._Bits[size_t(i)] ? "1" : "0");
+				ostr << (f._Bits[unsigned(i)] ? "1" : "0");
 			}
 			else {
 				ostr << "-";
@@ -255,13 +255,13 @@ inline std::ostream& operator<<(std::ostream& ostr, const fraction<nfbits>& f) {
 	return ostr;
 }
 
-template<size_t nfbits>
+template<unsigned nfbits>
 inline std::istream& operator>> (std::istream& istr, const fraction<nfbits>& f) {
 	istr >> f._Bits;
 	return istr;
 }
 
-template<size_t nfbits>
+template<unsigned nfbits>
 inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, bool nibbleMarker = false) {
 	unsigned int nrOfFractionBitsProcessed = 0;
 	std::stringstream sstr;
@@ -271,7 +271,7 @@ inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, 
 		upperbound--;
 		for (int i = upperbound; i >= 0; --i) {
 			if (f.nrBits() > nrOfFractionBitsProcessed++) {
-				sstr << (bb[static_cast<size_t>(i)] ? '1' : '0');
+				sstr << (bb[static_cast<unsigned>(i)] ? '1' : '0');
 
 			}
 			else {
@@ -284,17 +284,17 @@ inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, 
 	return sstr.str();
 }
 
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator==(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits == rhs._Bits; }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator!=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator< (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._NrOfBits <= rhs._NrOfBits && lhs._Bits < rhs._Bits; }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator> (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator<=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator< (lhs, rhs); }
 
 }} // namespace sw::universal
