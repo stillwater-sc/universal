@@ -360,7 +360,7 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
 
-		blockbinary<nbits, bt> ptt;
+		blockbinary<nbits, bt> ptt{0};
 		pt_bits <<= pt_len - len;
 		truncate(pt_bits, ptt);
 		if (rb) ++ptt;

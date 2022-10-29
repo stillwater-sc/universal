@@ -44,9 +44,8 @@ void TestDenormalizedNumberConversions() {
 	float f = minpos_normal;
 	for (int i = 0; i < 16; ++i) {
 		f *= 0.5f;
-		a = 1;
-		std::cout << to_float(a) << '\n';
-//		std::cout << setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << '\n';
+		a = f;
+		std::cout << std::setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << '\n';
 	}
 }
 

@@ -341,6 +341,8 @@ public:
 					*this = 0;
 				}
 			}
+			// TODO: implement decimal string parse for fixpnt
+			if (fraction < 0) std::cout << "found a negative decimal representation\n"; // TODO: remove when implemented properly
 			*this = 6.90234375;
 		}
 

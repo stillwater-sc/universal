@@ -65,8 +65,8 @@ namespace sw { namespace universal {
 		std::stringstream s;
 
 //		using Real = sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>::Real;
-		auto lowerBound = number.minVal();
-		auto upperBound = number.maxVal();
+//		auto lowerBound = number.minVal();
+//		auto upperBound = number.maxVal();
 
 //		s << "[ " << to_binary(float(lowerBound), nibbleMarker) << ", " << to_binary(float(upperBound), nibbleMarker) << "]";
 
