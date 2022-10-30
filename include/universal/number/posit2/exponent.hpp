@@ -124,8 +124,8 @@ inline int scale(const exponent<nbits, es, bt>& e) { return e.scale(); }
 /////////////////// EXPONENT operators
 template<unsigned nbits, unsigned es, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es, bt>& e) {
-	unsigned nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
+		unsigned nrOfExponentBitsProcessed = 0;
 		for (unsigned i = 0; i < es; ++i) {
 			unsigned bitIndex = es - 1ull - i;
 			if (e._nrExpBits > nrOfExponentBitsProcessed++) {
