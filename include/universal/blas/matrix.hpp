@@ -399,26 +399,26 @@ matrix<Scalar> operator>(const matrix<Scalar>& A, const Scalar& x) {
 
 // maxelement (jq 2022-10-15)
 template<typename Scalar>
-void maxelement(const matrix<Scalar>&A) {
+Scalar maxelement(const matrix<Scalar>&A) {
 	auto x = abs(A(0,0));
 	for (size_t i = 0; i < num_rows(A); ++i) {
 		for (size_t j = 0; j < num_cols(A); ++j) {
 			x = (abs(A(i, j)) > x) ? abs(A(i, j)) : x;
 		}
 	}
-	std::cout << "Max. Element = " << x << std::endl;
+	return x;
 }
 
 // minelement (jq 2022-10-15)
 template<typename Scalar>
-void minelement(const matrix<Scalar>&A) {
+Scalar minelement(const matrix<Scalar>&A) {
 	auto x = abs(A(0,0));
 	for (size_t i = 0; i < num_rows(A); ++i) {
 		for (size_t j = 0; j < num_cols(A); ++j) {
 			x = (abs(A(i, j)) < x && A(i,j)!=0) ? abs(A(i, j)) : x;
 		}
 	}
-	std::cout << "Min. Element = " << x << std::endl;
+	return x;
 }
 
 
