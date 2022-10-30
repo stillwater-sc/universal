@@ -13,8 +13,10 @@
 Higham, N. J., & Mary, T. (2019). A new preconditioner that exploits 
     low-rank approximations to factorization error. SIAM Journal on 
     Scientific Computing, 41(1), A59-A82.
-
 */
+
+// Build Directory
+// universal/build/applications/numeric
 
 // Environmental Configurations
 #include<universal/utility/directives.hpp>
@@ -29,10 +31,12 @@ Higham, N. J., & Mary, T. (2019). A new preconditioner that exploits
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/blas.hpp>
+#include <universal/blas/utes/matnorm.hpp>
+#include <universal/blas/utes/condest.hpp>
 
 // Support Packages
 //#include <universal/blas/solvers/jacobi.hpp>
-//#include <universal/blas/solvers/lu.hpp>
+// #include <universal/blas/solvers/lu.hpp>  // solve()
 #include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
@@ -42,6 +46,7 @@ Higham, N. J., & Mary, T. (2019). A new preconditioner that exploits
 // Matrix Test Suite
 #include <universal/blas/matrices/q3.hpp>            // 3 x 3 test matrix
 #include <universal/blas/matrices/q4.hpp>            // 4 x 4 test matrix
+#include <universal/blas/matrices/q5.hpp>            // 4 x 4 test matrix
 #include <universal/blas/matrices/lu4.hpp>           // 4 x 4 test matrix
 #include <universal/blas/matrices/s4.hpp>            // 4 x 4 test matrix
 #include <universal/blas/matrices/west0132.hpp>      //
@@ -63,12 +68,17 @@ try {
 	using namespace sw::universal::blas;
 
     // Configurations
-    constexpr size_t wbits = 64;
-    constexpr size_t wes = 11;
-    constexpr size_t lbits = 16;
-    constexpr size_t les = 2;
-    constexpr size_t hbits = 128;
-    constexpr size_t hes = 15;
+    constexpr unsigned wbits = 64;
+    constexpr unsigned wes = 11;
+
+    constexpr unsigned lbits = 16;
+    constexpr unsigned les = 6;
+    
+    constexpr unsigned hbits = 128;
+    constexpr unsigned hes = 15;
+
+    // Squeeze Selection
+    size_t algo = 22;
 
     // Precision Templates
     using WorkingPrecision = cfloat<wbits,wes,uint32_t, true, false, false>;
@@ -97,35 +107,53 @@ try {
     size_t niters = 0;
         
     // Let A be n x n ("working precision") nonsingular matrix.
-    Mw Aw = q3;  // rand4, lu4, west0167, steam1, steam3, fs_183_1, fs_183_3, faires74x3
+    Mw Aw = q5;  // rand4, lu4, west0167, steam1, steam3, fs_183_1, fs_183_3, faires74x3
     size_t n = num_cols(Aw);
     Mh A(Aw);
+
+    // matnorm
+    // std::cout << "||A|| = " << matnorm(Aw) << std::endl;
+    std::cout << "K = " << condest(Aw) << std::endl;
     
-    maxelement(Aw);
-    minelement(Aw);
-     
+    
     
     Vh X(n,1);    // X is exact solution = [1, 1, 1, ..., 1]
     Vw x(X);
     Vh b = A*X;   // Generate b vector in high precision.  
-    
+    Vw bw(b);
 
     // Store A in Low Precision
-    Ml Al(A);
+    WorkingPrecision T = 0.0001;
+    
+    Ml Al(Aw);
+    if (algo == 21){
+        squeezeScaleRound(Al);
+    }
+    {
+        /* code */
+    }
+    
+    squeeze(Al,algo);
+    
+    // std::cout << "Max. Element = " << maxelement(Al) << std::endl;    
+    // std::cout << "Min. Element = " << minelement(Al) << std::endl;
+
+    
+    std::cout << "Al = \n" << Al << std::endl;
     // Ml I(n,n); // Identity Matrix
     // I = 1;
-    Vw bw(b);
-    // squeeze(Al, 1);
+
+    
 
     // Print Results
     // std::cout << "A = " << A << std::endl;
-    std::cout << "Al = " << Al << std::endl;
+    // std::cout << "Al = " << Al << std::endl;
     // std::cout << "b = " << b << std::endl;
     // std::cout << "bw = " << bw << std::endl;
 
     // Factor A = LU
     auto [Pl, Ll, Ul] = plu(Al);  // Factor low precision
-    Mw L(Ll), U(Ul);             // Coerce to working precision
+    Mw L(Ll), U(Ul);              // Coerce to working precision
 
     // Is P identity?
     /*
