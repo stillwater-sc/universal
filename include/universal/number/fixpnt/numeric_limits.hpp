@@ -10,7 +10,7 @@ namespace std {
 
 	using namespace sw::universal;
 
-template <size_t nbits, size_t rbits, bool arithmetic, typename bt> 
+template <unsigned nbits, unsigned rbits, bool arithmetic, typename bt> 
 class numeric_limits< fixpnt<nbits,rbits,arithmetic,bt> > {
 public:
 	using FixedPoint = sw::universal::fixpnt<nbits, rbits, arithmetic, bt>;

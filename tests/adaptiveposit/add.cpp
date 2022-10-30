@@ -1,8 +1,10 @@
 // add.cpp: functional tests for addition on adaptive precision tapered floating-point
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -11,7 +13,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/adaptiveposit/adaptiveposit.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in mpreal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -67,19 +69,34 @@ void Progressions(uint32_t digit) {
 	}
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 0
+#define REGRESSION_LEVEL_4 0
+#endif
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	std::string test_suite  = "adaptive posit addition";
+	std::string test_tag    = "addition";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "adaptive precision linear float addition failed: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-//	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase(INFINITY, INFINITY);
@@ -115,18 +132,18 @@ try {
 		std::cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << '\n';
 	}
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;   // ignore errors
 #else
 
-	cout << "adaptive precision linear float addition validation" << endl;
+#if REGRESSION_LEVEL_1
+
+#endif
 
 
-#if STRESS_TESTING
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

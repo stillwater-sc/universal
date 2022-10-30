@@ -1,7 +1,7 @@
 #pragma once
 // complex.hpp: functions for complex posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <complex>
@@ -12,19 +12,19 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Real component of a complex posit
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> real(std::complex< posit<nbits,es> > x) {
   return posit<nbits,es>(x.real());
 }
 
 // Imaginary component of a complex posit
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> imag(std::complex< posit<nbits,es> > x) {
   return posit<nbits,es>(x.imag());
 }
 
 // Conjucate of a complex posit
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::complex< posit<nbits,es> > conj(std::complex< posit<nbits,es> > x) {
   return std::complex< posit<nbits,es> >(x.real(), -x.imag());
 }

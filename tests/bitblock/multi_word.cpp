@@ -1,6 +1,6 @@
 // multi_word.cpp :  test suite for bitblock-based multi-word operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,17 +12,19 @@
 #include <universal/verification/bitblock_test_suite.hpp>
 
 #if defined(_MSC_VER)
+// TODO: remove the need for this code
+// 
 // Disable warnings for Microsoft Visual Studio
 //  warning C4293: '<<': shift count negative or too big, undefined behavior
 // for 64 bit shifts on the mask
 #pragma warning (disable : 4293)
 
-// disable this warning: as the logic is correct
+// Disable this warning: as the logic is correct
 // warning C4146 : unary minus operator applied to unsigned type, result still unsigned
 #pragma warning( disable : 4146)
 
-template<size_t bits_in_value, size_t bytes_in_word>
-size_t NrWords() {
+template<unsigned bits_in_value, unsigned bytes_in_word>
+unsigned NrWords() {
 	return ((bits_in_value + (8 * bytes_in_word) - 1) / (8 * bytes_in_word));
 }
 
@@ -96,7 +98,7 @@ void CheckMultiWordBehavior() {
 
 int Conversions() {
 	using namespace sw::universal::internal;
-	const size_t nbits = 33;
+	const unsigned nbits = 33;
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b, ref;
 
@@ -115,7 +117,7 @@ int Conversions() {
 	ref = convert_to_bitblock<nbits, uint64_t>(uint64_t(0x1FFFFFFFA));
 	nrOfFailedTestCases += (ones_complement(b) != ref ? 1 : 0);
 
-	const size_t nnbits = 9;
+	const unsigned nnbits = 9;
 	bitblock<nnbits> c, ref2;
 	c = convert_to_bitblock<9, int8_t>(int8_t(-128));  // this looks like -1 for a 9bit posit
 	std::cout << "c                   = " << c << std::endl;
@@ -138,7 +140,7 @@ int Conversions() {
 	return nrOfFailedTestCases;
 }
 
-template<size_t src_size, size_t tgt_size>
+template<unsigned src_size, unsigned tgt_size>
 int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	using namespace sw::universal::internal;
 	int nrOfFailedTestCases = 0;
@@ -149,12 +151,12 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	
 	// use a programmatic pattern of alternating bits
 	// so it is easy to spot any differences
-	for (size_t i = 0; i < src_size; i = i + 2) {
+	for (unsigned i = 0; i < src_size; i = i + 2) {
 		reference.set(i, true);
 		operand.set(i, true);
 	}
 
-	for (size_t i = 0; i < tgt_size - src_size + 1; i++) {
+	for (unsigned i = 0; i < tgt_size - src_size + 1; i++) {
 		copy_into<src_size, tgt_size>(operand, i, addend);
 
 		if (reference != addend) {

@@ -9,7 +9,7 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/native/ieee754.hpp>
-#include <universal/common/numeric_limits_utility.hpp>
+#include <universal/common/number_traits.hpp>
 #include <universal/internal/value/value>
 
 // receive a float and print the components of a long double representation

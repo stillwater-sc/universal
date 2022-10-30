@@ -11,37 +11,37 @@ namespace sw { namespace universal {
 // One radian is equivalent to 180/PI degrees
 
 // hyperbolic sine of an angle of x radians
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> sinh(lns<nbits, rbits, bt, xtra...> x) {
 	return lns<nbits, rbits, bt, xtra...>(std::sinh(double(x)));
 }
 
 // hyperbolic cosine of an angle of x radians
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> cosh(lns<nbits, rbits, bt, xtra...> x) {
 	return lns<nbits, rbits, bt, xtra...>(std::cosh(double(x)));
 }
 
 // hyperbolic tangent of an angle of x radians
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> tanh(lns<nbits, rbits, bt, xtra...> x) {
 	return lns<nbits, rbits, bt, xtra...>(std::tanh(double(x)));
 }
 
 // hyperbolic cotangent of an angle of x radians
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> atanh(lns<nbits, rbits, bt, xtra...> x) {
 	return lns<nbits, rbits, bt, xtra...>(std::atanh(double(x)));
 }
 
 // hyperbolic cosecant of an angle of x radians
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> acosh(lns<nbits, rbits, bt, xtra...> x) {
 	return lns<nbits, rbits, bt, xtra...>(std::acosh(double(x)));
 }
 
 // hyperbolic secant of an angle of x radians
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> asinh(lns<nbits, rbits, bt, xtra...> x) {
 	return lns<nbits, rbits, bt, xtra...>(std::asinh(double(x)));
 }

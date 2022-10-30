@@ -15,17 +15,17 @@
 namespace sw { namespace universal {
 		
 // Forward definitions
-template<size_t esizesize, size_t fsizesize, typename bt> class unum2;
-template<size_t esizesize, size_t fsizesize, typename bt> unum2<esizesize,fsizesize,bt> abs(const unum2<esizesize,fsizesize,bt>& v);
+template<unsigned esizesize, unsigned fsizesize, typename bt> class unum2;
+template<unsigned esizesize, unsigned fsizesize, typename bt> unum2<esizesize,fsizesize,bt> abs(const unum2<esizesize,fsizesize,bt>& v);
 
 // template class reprfsizesizeenting a value in scientific notation, using a template size for the number of fraction bits
-template<size_t esizesize, size_t fsizesize, typename bt = uint8_t>
+template<unsigned esizesize, unsigned fsizesize, typename bt = uint8_t>
 class unum2 {
 public:
-	static constexpr size_t UTAGSIZE   = 1 + esizesize + fsizesize;
-	static constexpr size_t UTAGMASK   = size_t(~(int64_t(-1) << UTAGSIZE));
-	static constexpr size_t EBITSMASK  = 1;
-	static constexpr size_t FBITSMASK  = 2;
+	static constexpr unsigned UTAGSIZE   = 1 + esizesize + fsizesize;
+	static constexpr unsigned UTAGMASK   = unsigned(~(int64_t(-1) << UTAGSIZE));
+	static constexpr unsigned EBITSMASK  = 1;
+	static constexpr unsigned FBITSMASK  = 2;
 
 	unum2() {}
 
@@ -219,75 +219,75 @@ public:
 private:
 
 	// template parameters need namfsizesize different from class template parameters (for gcc and clang)
-	template<size_t nesizesize, size_t nfsizesize, typename nbt>
+	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 	friend std::ostream& operator<< (std::ostream& ostr, const unum2<nesizesize,nfsizesize,nbt>& r);
-	template<size_t nesizesize, size_t nfsizesize, typename nbt>
+	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 	friend std::istream& operator>> (std::istream& istr, unum2<nesizesize,nfsizesize,nbt>& r);
 
-	template<size_t nesizesize, size_t nfsizesize, typename nbt>
+	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 	friend bool operator==(const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs);
-	template<size_t nesizesize, size_t nfsizesize, typename nbt>
+	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 	friend bool operator!=(const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs);
-	template<size_t nesizesize, size_t nfsizesize, typename nbt>
+	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 	friend bool operator< (const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs);
-	template<size_t nesizesize, size_t nfsizesize, typename nbt>
+	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 	friend bool operator> (const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs);
-	template<size_t nesizesize, size_t nfsizesize, typename nbt>
+	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 	friend bool operator<=(const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs);
-	template<size_t nesizesize, size_t nfsizesize, typename nbt>
+	template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 	friend bool operator>=(const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs);
 };
 
 ////////////////////// operators
-template<size_t nesizesize, size_t nfsizesize, typename nbt>
+template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const unum2<nesizesize,nfsizesize,nbt>& v) {
 
 	return ostr;
 }
 
-template<size_t nesizesize, size_t nfsizesize, typename nbt>
+template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 inline std::istream& operator>>(std::istream& istr, const unum2<nesizesize,nfsizesize,nbt>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
-template<size_t nesizesize, size_t nfsizesize, typename nbt>
+template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 inline bool operator==(const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs) { return false; }
-template<size_t nesizesize, size_t nfsizesize, typename nbt>
+template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 inline bool operator!=(const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nesizesize, size_t nfsizesize, typename nbt>
+template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 inline bool operator< (const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs) { return false; }
-template<size_t nesizesize, size_t nfsizesize, typename nbt>
+template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 inline bool operator> (const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nesizesize, size_t nfsizesize, typename nbt>
+template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 inline bool operator<=(const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nesizesize, size_t nfsizesize, typename nbt>
+template<unsigned nesizesize, unsigned nfsizesize, typename nbt>
 inline bool operator>=(const unum2<nesizesize,nfsizesize,nbt>& lhs, const unum2<nesizesize,nfsizesize,nbt>& rhs) { return !operator< (lhs, rhs); }
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
-template<size_t esizesize, size_t fsizesize, typename bt>
+template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline unum2<esizesize, fsizesize, bt> operator+(const unum2<esizesize, fsizesize, bt>& lhs, const unum2<esizesize, fsizesize, bt>& rhs) {
 	unum2<esizesize, fsizesize> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<size_t esizesize, size_t fsizesize, typename bt>
+template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline unum2<esizesize, fsizesize, bt> operator-(const unum2<esizesize, fsizesize, bt>& lhs, const unum2<esizesize, fsizesize, bt>& rhs) {
 	unum2<esizesize, fsizesize> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t esizesize, size_t fsizesize, typename bt>
+template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline unum2<esizesize, fsizesize, bt> operator*(const unum2<esizesize, fsizesize, bt>& lhs, const unum2<esizesize, fsizesize, bt>& rhs) {
 	unum2<esizesize, fsizesize> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<size_t esizesize, size_t fsizesize, typename bt>
+template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline unum2<esizesize, fsizesize, bt> operator/(const unum2<esizesize, fsizesize, bt>& lhs, const unum2<esizesize, fsizesize, bt>& rhs) {
 	unum2<esizesize, fsizesize> ratio(lhs);
 	ratio /= rhs;
@@ -295,7 +295,7 @@ inline unum2<esizesize, fsizesize, bt> operator/(const unum2<esizesize, fsizesiz
 }
 
 
-template<size_t esizesize, size_t fsizesize, typename bt>
+template<unsigned esizesize, unsigned fsizesize, typename bt>
 inline std::string components(const unum2<esizesize,fsizesize,bt>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
@@ -311,7 +311,7 @@ inline std::string components(const unum2<esizesize,fsizesize,bt>& v) {
 }
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<size_t esizesize, size_t fsizesize, typename bt>
+template<unsigned esizesize, unsigned fsizesize, typename bt>
 unum2<esizesize,fsizesize> abs(const unum2<esizesize,fsizesize,bt>& v) {
 	return unum2<esizesize,fsizesize>(false, v.scale(), v.fraction(), v.isZero());
 }

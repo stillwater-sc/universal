@@ -10,7 +10,7 @@
 // configure the value<> environment
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/internal/value/value.hpp>  // INTERNAL class: not part of the public Universal API
+#include <universal/internal/value/value.hpp>  // TODO remove: INTERNAL class: not part of the public Universal API
 #include <universal/number/decimal/decimal.hpp>
 #include <universal/number/integer/integer.hpp>         // TODO remove: temporary as we are developing the string conversion functionality
 #include <universal/number/adaptiveint/adaptiveint.hpp> // TODO remove: temporary
@@ -21,7 +21,7 @@
 using namespace sw::universal;
 using namespace sw::universal::internal;
 
-template<size_t fbits>
+template<unsigned fbits>
 int Check(const value<fbits>& v, double ref, bool reportTestCases) {
 	int fails = 0;
 	if (v.to_double() != ref) {

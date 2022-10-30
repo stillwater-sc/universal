@@ -1,7 +1,7 @@
 #pragma once
 // math_next.hpp: nextafter/nexttoward functions for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -23,7 +23,7 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> nextafter(posit<nbits,es> x, posit<nbits, es> target) {
 	if (x == target || x.isnar()) return x;
 	if (target.isnar()) {
@@ -45,7 +45,7 @@ posit<nbits,es> nextafter(posit<nbits,es> x, posit<nbits, es> target) {
 	return x;
 }
 		
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> nexttoward(posit<nbits,es> x, posit<256, 5> target) {
 	posit<256, 5> _x(x);
 	if (_x == target || x.isnar()) return x;

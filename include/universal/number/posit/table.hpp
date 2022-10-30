@@ -8,15 +8,15 @@
 namespace sw { namespace universal {
 
 // generate a full binary representation table for a given posit configuration
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
-	static constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
-	const size_t size = (1 << nbits);
+	static constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+	const unsigned size = (1 << nbits);
 	posit<nbits, es>	p;
 	if (csvFormat) {
 		ostr << "\"Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in CSV format\"" << std::endl;
 		ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value, posit\n";
-		for (size_t i = 0; i < size; i++) {
+		for (unsigned i = 0; i < size; i++) {
 			p.setbits(i);
 			bool		     	 s;
 			regime<nbits, es>    r;
@@ -41,16 +41,16 @@ void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
 	else {
 		ostr << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in TXT format" << std::endl;
 
-		const size_t index_column = 5;
-		const size_t bin_column = 16;
-		const size_t k_column = 8;
-		const size_t sign_column = 8;
-		const size_t scale_column = 8;
-		const size_t regime_column = 16;
-		const size_t exponent_column = 16;
-		const size_t fraction_column = 16;
-		const size_t value_column = 30;
-		const size_t posit_format_column = 16;
+		const unsigned index_column = 5;
+		const unsigned bin_column = 16;
+		const unsigned k_column = 8;
+		const unsigned sign_column = 8;
+		const unsigned scale_column = 8;
+		const unsigned regime_column = 16;
+		const unsigned exponent_column = 16;
+		const unsigned fraction_column = 16;
+		const unsigned value_column = 30;
+		const unsigned posit_format_column = 16;
 
 		ostr << std::setw(index_column) << " # "
 			<< std::setw(bin_column) << "Binary"
@@ -64,7 +64,7 @@ void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
 			<< std::setw(value_column) << "value"
 			<< std::setw(posit_format_column) << "posit_format"
 			<< std::endl;
-		for (size_t i = 0; i < size; i++) {
+		for (unsigned i = 0; i < size; i++) {
 			p.setbits(i);
 			bool		     	 s;
 			regime<nbits, es>    r;

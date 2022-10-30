@@ -17,7 +17,7 @@
 namespace sw { namespace universal {
 
 // Generate a type tag for this cfloat, for example, cfloat<8,1, unsigned char, hasSubnormals, noSupernormals, notSaturating>
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& = {}) {
 	std::stringstream s;
 	s << "cfloat<"
@@ -33,8 +33,8 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 // generate and tabulate subnormals of a cfloat configuration
 template<typename cfloatConfiguration>
 void subnormals() {
-	constexpr size_t nbits         = cfloatConfiguration::nbits;
-	constexpr size_t es            = cfloatConfiguration::es;
+	constexpr unsigned nbits       = cfloatConfiguration::nbits;
+	constexpr unsigned es          = cfloatConfiguration::es;
 	using bt                       = typename cfloatConfiguration::BlockType;
 	constexpr bool hasSubnormals   = cfloatConfiguration::hasSubnormals;
 	constexpr bool hasSupernormals = cfloatConfiguration::hasSupernormals;
@@ -44,9 +44,9 @@ void subnormals() {
 	// generate the smallest subnormal with ULP set
 	++a;
 	if constexpr (hasSubnormals) {
-		constexpr size_t fbits = cfloatConfiguration::fbits;
+		constexpr unsigned fbits = cfloatConfiguration::fbits;
 		std::cout << type_tag(a) << " subnormals\n";
-		if constexpr (nbits < 65) {
+		if constexpr (nbits < 65u) {
 			for (size_t i = 0; i < fbits; ++i) {
 				std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
 				uint64_t fraction = a.fraction_ull();
@@ -73,7 +73,7 @@ void subnormals() {
 }
 
 // report dynamic range of a type, specialized for a cfloat
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string dynamic_range(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& a) {
 	std::stringstream s;
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
@@ -88,26 +88,26 @@ std::string dynamic_range(const cfloat<nbits, es, bt, hasSubnormals, hasSupernor
 	return s.str();
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 int minpos_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
 	return c.minpos().scale();
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 int maxpos_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
 	return c.maxpos().scale();
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 int max_negative_scale(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& b) {
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> c(b);
 	return c.maxneg().scale();
 }
 
 // Generate a string representing the cfloat components: sign, exponent, faction and value
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string components(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
 	std::stringstream s;
 	bool sign{ false };
@@ -126,10 +126,10 @@ std::string components(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 }
 
 // generate a binary string for cfloat
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
-	constexpr size_t bitsInByte = 8;
-	constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	constexpr unsigned bitsInByte = 8;
+	constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
@@ -138,7 +138,7 @@ inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernor
 	s << "0x" << std::hex;
 	long nrNibbles = long(1ull + ((nbits - 1ull) >> 2ull));
 	for (long n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = v.nibble(size_t(n));
+		uint8_t nibble = v.nibble(unsigned(n));
 		s << hexChar[nibble];
 		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) s << '\'';
 	}
@@ -146,14 +146,14 @@ inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernor
 }
 
 // generate a cfloat format ASCII hex format nbits.esxNN...NNa
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::string hex_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
 	std::stringstream s;
 	s << nbits << '.' << es << 'x' << to_hex(c) << 'c';
 	return s.str();
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
 	std::stringstream s;
 	constexpr size_t fhbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fhbits;
@@ -180,13 +180,13 @@ std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorm
 	return s.str();
 }
 
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string info_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& p, int printPrecision = 17) {
 	return "TBD";
 }
 
 // generate a binary, color-coded representation of the cfloat
-template<size_t nbits, size_t es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string color_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r, bool nibbleMarker = false) {
 	using Real = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	std::stringstream s;

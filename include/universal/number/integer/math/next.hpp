@@ -23,7 +23,7 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 integer<nbits, BlockType> nextafter(integer<nbits, BlockType> x, integer<nbits, BlockType> target) {
 	if (x == target) return target;
 	if (x > target) {
@@ -35,7 +35,7 @@ integer<nbits, BlockType> nextafter(integer<nbits, BlockType> x, integer<nbits, 
 	return x;
 }
 		
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 integer<nbits, BlockType> nexttoward(integer<nbits, BlockType> x, long double target) {
 	if (x == target) return target;
 	if (x > target) {

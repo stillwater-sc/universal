@@ -34,7 +34,7 @@ namespace sw::universal {
 		using bt = typename CfloatConfiguration::BlockType;
 		cfloat<nbits, es, bt> a;
 		constexpr size_t fbits = CfloatConfiguration::fbits;
-		blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt> b;  // representing significant
+		blocktriple<fbits, BlockTripleOperator::REP, bt> b;  // representing significant
 		int nrOfTestFailures{ 0 };
 		for (size_t i = 0; i < 64; ++i) {
 			a.setbits(i);
@@ -102,7 +102,7 @@ try {
 		constexpr size_t fbits = Real::fbits;
 		{
 			// normalize conversion to blocktriple
-			blocktriple<fbits, BlockTripleOperator::REPRESENTATION, bt> _a, _b;
+			blocktriple<fbits, BlockTripleOperator::REP, bt> _a, _b;
 			a.normalize(_a);
 			b.normalize(_b);
 			std::cout << to_binary(a) << " : " << to_triple(_a) << '\n';

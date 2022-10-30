@@ -33,7 +33,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fixed-point class interface ";
+	std::string test_suite  = "fixpnt arithmetic type API";
 //	std::string test_tag    = "";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -146,8 +146,8 @@ try {
 
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned rbits = 4;
 		fixpnt<nbits, rbits> a, b;
 		a = 1;
 		if (!a.test(4)) ++nrOfFailedTestCases;
@@ -164,17 +164,17 @@ try {
 	{
 		int start = nrOfFailedTestCases;
 		// state/bit management
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned rbits = 4;
 		fixpnt<nbits, rbits> a, b, c, d;
-		for (size_t i = 0; i < rbits; ++i) {
+		for (unsigned i = 0; i < rbits; ++i) {
 			a.setbit(i, true);
 		}
 		b.setbits(0x0F); // same as the fixpnt a above
 		if ((a - b) != 0) ++nrOfFailedTestCases;
 		c = b;
 		// manually flip the bits of b: don't use flip() as we are going to confirm flip() is correct
-		for (size_t i = 0; i < nbits; ++i) {
+		for (unsigned i = 0; i < nbits; ++i) {
 			b.setbit(i, !b.test(i));
 		}
 		c.flip();  // in-place 1's complement, so now b and c are the same
@@ -192,8 +192,8 @@ try {
 	// complements
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned rbits = 4;
 		fixpnt<nbits, rbits> a, b;
 		a.setbits(0xFF);
 		b = onesComplement(a);
@@ -207,8 +207,8 @@ try {
 	}
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned rbits = 4;
 		fixpnt<nbits, rbits, Modulo, uint16_t> a, b; // testing poorly selected BlockType
 		a.setbits(0xFF);
 		b = onesComplement(a);
@@ -222,8 +222,8 @@ try {
 	}
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned rbits = 4;
 		fixpnt<nbits, rbits, Modulo, uint32_t> a, b; // testing poorly selected BlockType
 		a.setbits(0xFF);
 		b = onesComplement(a);
@@ -239,8 +239,8 @@ try {
 	////////////////////////////////////////////////////////////////////////////////////
 	// parsing and assignment of text input values
 	{
-		constexpr size_t nbits = 12;
-		constexpr size_t rbits = 8;
+		constexpr unsigned nbits = 12;
+		constexpr unsigned rbits = 8;
 		fixpnt<nbits, rbits, Modulo, uint32_t> a, b;
 		a.assign("6.90234375");
 		std::cout << to_binary(a, true) << " : " << a << '\n';
@@ -256,8 +256,8 @@ try {
 
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 16;
-		constexpr size_t rbits = 8;
+		constexpr unsigned nbits = 16;
+		constexpr unsigned rbits = 8;
 		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
@@ -279,8 +279,8 @@ try {
 	// logic, in particular, all the literal constant combinations
 	{
 		int start = nrOfFailedTestCases;
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned rbits = 4;
 		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
@@ -385,14 +385,14 @@ try {
 
 #ifdef SHOW_STATE_SPACE
 	{
-		constexpr size_t nbits = 7;
-		constexpr size_t rbits = 4;
+		constexpr unsigned nbits = 7;
+		constexpr unsigned rbits = 4;
 		constexpr bool arithmetic = Modulo;
-		constexpr size_t NR_VALUES = (1 << nbits);
+		constexpr unsigned NR_VALUES = (1 << nbits);
 		using blocktype = uint32_t;
 
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
-		for (size_t i = 0; i < NR_VALUES; ++i) {
+		for (unsigned i = 0; i < NR_VALUES; ++i) {
 			a.setbits(i);
 			float f = float(a);
 			b = int(f);
@@ -404,8 +404,8 @@ try {
 	}
 
 	{
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		constexpr unsigned nbits = 8;
+		constexpr unsigned rbits = 4;
 		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;

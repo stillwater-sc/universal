@@ -188,7 +188,7 @@ public:
 										) *
 										(flagNeg ? 2 : 1) +														// double if negative values/intervals are included
 										(flagZero ? 1 : 0) -													// consider the exact zero value
-										(flagOpen & flagInf & flagNeg ? 1 : 0);									// for open intervals only one value for +-inf is used
+										((flagOpen & flagInf & flagNeg) ? 1 : 0);									// for open intervals only one value for +-inf is used
 	static constexpr size_t nbits = sornBits;
 
 	// SORN datatype
@@ -400,17 +400,23 @@ public:
 				if		(rhsLOW >= 0)				{ resLOW = lhsLOW * rhsLOW;		resUP = lhsUP  * rhsUP;		resLOWc = lhsLOWc || rhsLOWc;	resUPc = lhsUPc  || rhsUPc; }
 				else if (rhsLOW < 0 && rhsUP >= 0)	{ resLOW = lhsUP  * rhsLOW;		resUP = lhsUP  * rhsUP;		resLOWc = lhsUPc  || rhsLOWc;	resUPc = lhsUPc  || rhsUPc; }
 				else if (rhsUP < 0)					{ resLOW = lhsUP  * rhsLOW;		resUP = lhsLOW * rhsUP;		resLOWc = lhsUPc  || rhsLOWc;	resUPc = lhsLOWc || rhsUPc; }
+				else                                { resLOW = 0              ;		resUP = 0             ;		resLOWc = 0                 ;	resUPc = 0                ; } // ETLO added
 			}
 			else if (lhsLOW < 0 && lhsUP >= 0) {
 				if		(rhsLOW >= 0)				{ resLOW = lhsLOW * rhsUP;		resUP = lhsUP  * rhsUP;		resLOWc = lhsLOWc || rhsUPc;	resUPc = lhsUPc  || rhsUPc; }
 				else if (rhsLOW < 0 && rhsUP >= 0)	{ resLOW = fmin(lhsLOW * rhsUP  , lhsUP * rhsLOW);			resLOWc = (lhsLOW * rhsUP  < lhsUP*rhsLOW ? lhsLOWc || rhsUPc  : lhsUPc || rhsLOWc);	// lower bound & condition
 													  resUP  = fmax(lhsLOW * rhsLOW , lhsUP * rhsUP );			resUPc  = (lhsLOW * rhsLOW > lhsUP*rhsUP  ? lhsLOWc || rhsLOWc : lhsUPc || rhsUPc ); }	// upper bound & condition
 				else if (rhsUP < 0)					{ resLOW = lhsUP  * rhsLOW;		resUP = lhsLOW * rhsLOW;	resLOWc = lhsUPc  || rhsLOWc;	resUPc = lhsLOWc || rhsLOWc;}
+				else                                { resLOW = 0              ;		resUP = 0             ;		resLOWc = 0                 ;	resUPc = 0                ; } // ETLO added 
 			}
 			else if (lhsUP < 0) {
 				if		(rhsLOW >= 0)				{ resLOW = lhsLOW * rhsUP;		resUP = lhsUP  * rhsLOW;	resLOWc = lhsLOWc || rhsUPc;	resUPc = lhsUPc  || rhsLOWc;}
 				else if (rhsLOW < 0 && rhsUP >= 0)	{ resLOW = lhsLOW * rhsUP;		resUP = lhsLOW * rhsLOW;	resLOWc = lhsLOWc || rhsUPc;	resUPc = lhsLOWc || rhsLOWc;}
 				else if (rhsUP < 0)					{ resLOW = lhsUP  * rhsUP;		resUP = lhsLOW * rhsLOW;	resLOWc = lhsUPc  || rhsUPc;	resUPc = lhsLOWc || rhsLOWc;}
+				else                                { resLOW = 0              ;		resUP = 0             ;		resLOWc = 0                 ;	resUPc = 0                ; } // ETLO added
+			}
+			else {
+				{ resLOW = 0              ;		resUP = 0             ;		resLOWc = 0                 ;	resUPc = 0                ; } // ETLO added
 			}
 			// 5. set results
 			if (resLOW == -0) { resLOW = 0; } // remove -0

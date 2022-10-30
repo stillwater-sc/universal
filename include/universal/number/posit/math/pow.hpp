@@ -1,7 +1,7 @@
 #pragma once
 // pow.hpp: pow functions for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -10,17 +10,17 @@ namespace sw { namespace universal {
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> pow(posit<nbits,es> x, posit<nbits, es> y) {
 	return posit<nbits,es>(std::pow(double(x), double(y)));
 }
 		
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> pow(posit<nbits,es> x, int y) {
 	return posit<nbits,es>(std::pow(double(x), double(y)));
 }
 		
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> pow(posit<nbits,es> x, double y) {
 	return posit<nbits,es>(std::pow(double(x), y));
 }

@@ -108,7 +108,7 @@ int VerifyDivision(bool reportTestCases) {
 				double cref = aref * bref; // calculate the reference test value
 
 				// map the result into the unrounded representation
-				blocktriple<2*fbits + 1, BlockTripleOperator::REPRESENTATION> reference;
+				blocktriple<2*fbits + 1, BlockTripleOperator::REP> reference;
 				reference = cref;
 				double btref = double(reference);  // map the double result to the unrounded blocktriple representation
 
@@ -157,7 +157,7 @@ void TestCase(ArgumentType lhs, ArgumentType rhs) {
 
 	// map the result into the unrounded representation
 	constexpr size_t divbits = 2 * (fbits);
-	blocktriple<divbits, BlockTripleOperator::REPRESENTATION> reference;
+	blocktriple<divbits, BlockTripleOperator::REP> reference;
 	reference = _c;
 
 	ArgumentType btref = ArgumentType(reference);

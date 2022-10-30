@@ -4,23 +4,20 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// minimum set of include files to reflect source code dependencies
-#define POSIT_FAST_POSIT_32_2 1
+// Configure the posit template environment
+// first: enable general or specialized configurations
+#define POSIT_FAST_SPECIALIZATION
+// second: enable/disable arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+// third: enable support for native literals in logic and arithmetic operations
 #define POSIT_ENABLE_LITERALS 1
+// fourth: enable/disable error-free serialization I/O
+#define POSIT_ERROR_FREE_IO_FORMAT 0
+// fifth: potentiall trace conversions or arithmetic
+#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_CONVERSION
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
-
-// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
-// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
-// It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
-#ifndef REGRESSION_LEVEL_OVERRIDE
-#define REGRESSION_LEVEL_1 1
-#define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 1
-#define REGRESSION_LEVEL_4 1
-#endif
+#include <universal/verification/test_suite.hpp>
 
 template<size_t nbits, size_t es>
 void VerifyToBinary() {
@@ -34,6 +31,12 @@ void VerifyToBinary() {
 	}
 }
 
+template<size_t nbits, size_t es>
+void Convert(float f) {
+	sw::universal::posit<nbits, es> a{ f };
+	std::cout << a << " : " << to_binary(a) << " : " << color_print(a) << '\n';
+}
+
 // This is a test suite that must test parsing of large literals 
 // and output/input of large values using native posit algorithms 
 // that do not cast to native floating point types.
@@ -42,40 +45,20 @@ int main()
 try {
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
+	std::string test_suite  = "posit serialization";
+	std::string test_tag    = "serialization";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "serialization TBD: ";
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-#if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
+	Convert<8, 2>(1.0f);
+//	Convert<8, 2>(2.0f);
+//	Convert<8, 2>(7.0f);
 
-	VerifyToBinary<4, 0>();
+//	VerifyToBinary<4, 0>();
 
-	nrOfFailedTestCases = 0; // nullify accumulated test failures in manual testing
-
-#else
-
-	std::cout << "Posit serialization validation\n";
-
-#if REGRESSION_LEVEL_1
-
-#endif
-
-#if REGRESSION_LEVEL_2
-
-#endif
-
-#if REGRESSION_LEVEL_3
-
-#endif
-
-#if REGRESSION_LEVEL_4
-
-#endif
-
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

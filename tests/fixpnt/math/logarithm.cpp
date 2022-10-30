@@ -104,15 +104,15 @@ try {
 	}
 	{
 		using FixedPoint = fixpnt<12, 6, Saturate, uint8_t>;
-		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint), "log");
+		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log");
 	}
 	{
 		using FixedPoint = fixpnt<14, 7, Saturate, uint8_t>;
-		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint), "log");
+		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log");
 	}
 	{
 		using FixedPoint = fixpnt<16, 8, Saturate, uint8_t>;
-		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint), "log");
+		nrOfFailedTestCases += ReportTestResult(VerifyLog< FixedPoint >(reportTestCases), type_tag(FixedPoint()), "log");
 	}
 #endif
 

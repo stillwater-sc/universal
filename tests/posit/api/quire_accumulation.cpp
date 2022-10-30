@@ -1,6 +1,6 @@
 //  quire_accumulations.cpp : computational path experiments with quires
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -20,31 +20,31 @@
 //#define ISSUE_45_DEBUG
 #ifdef ISSUE_45_DEBUG
 // forward reference
-template<size_t nbits, size_t es, size_t capacity> void Issue45_2();
+template<unsigned nbits, unsigned es, unsigned capacity> void Issue45_2();
 #endif
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void PrintTestVector(std::ostream& ostr, const std::vector< sw::universal::posit<nbits,es> >& pv) {
 	std::for_each (begin(pv), end(pv), [&ostr](const sw::universal::posit<nbits,es>& p){
 		ostr << p << std::endl;
 	});
 }
 
-template<size_t nbits, size_t es, size_t capacity>
-int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nrOfElements, const sw::universal::posit<nbits,es>& seed) {
+template<unsigned nbits, unsigned es, unsigned capacity>
+int GenerateQuireAccumulationTestCase(bool reportTestCases, unsigned nrOfElements, const sw::universal::posit<nbits,es>& seed) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 	std::stringstream ss;
 	ss << "quire<" << nbits << "," << es << "," << capacity << ">";
 	std::vector< sw::universal::posit<nbits, es> > t = GenerateVectorForZeroValueFDP(nrOfElements, seed);
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
+	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<nbits, es, capacity>(reportTestCases, t), ss.str(), "accumulation");
 	return nrOfFailedTestCases;
 }
 
 // initialize a vector
 template<typename Vector, typename Scalar>
 void init(Vector& x, const Scalar& value) {
-	for (size_t i = 0; i < x.size(); ++i) x[i] = value;
+	for (unsigned i = 0; i < x.size(); ++i) x[i] = value;
 }
 
 // regular dot product
@@ -55,13 +55,13 @@ typename Vector::value_type dot(const Vector& a, const Vector& b) {
 		std::cerr << "vectors are not the same size\n";
 		return sum;
 	}
-	for (size_t i = 0; i < size(a); ++i) {
+	for (unsigned i = 0; i < size(a); ++i) {
 		sum += a[i] * b[i];
 	}
 	return sum;
 }
 
-template<size_t nbits, size_t es, size_t nrElements = 16>
+template<unsigned nbits, unsigned es, unsigned nrElements = 16>
 int ValidateExactDotProduct() {
 	using namespace sw::universal;
 	int nrOfFailures = 0;
@@ -116,7 +116,7 @@ int ValidateQuireMagnitudeComparison() {
 	return 0;
 }
 
-template<size_t nbits, size_t es, size_t capacity = 2>
+template<unsigned nbits, unsigned es, unsigned capacity = 2>
 int ValidateSignMagnitudeTransitions() {
 	using namespace sw::universal;
 
@@ -237,17 +237,17 @@ int ValidateSignMagnitudeTransitions() {
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits, size_t es, size_t capacity = 2>
+template<unsigned nbits, unsigned es, unsigned capacity = 2>
 int ValidateCarryPropagation() {
 	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 
-	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	constexpr unsigned mbits = 2 * (nbits - 2 - es);
 	quire<nbits, es, capacity> q;
 	posit<nbits, es> mp(SpecificValue::minpos);
 	internal::value<mbits> minpos_square = quire_mul(mp, mp);
-	constexpr size_t NR_INCREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits+1));
-	for (size_t i = 0; i < NR_INCREMENTS_TO_OVERFLOW; ++i) {
+	constexpr unsigned NR_INCREMENTS_TO_OVERFLOW = (unsigned(1) << (q.qbits+1));
+	for (unsigned i = 0; i < NR_INCREMENTS_TO_OVERFLOW; ++i) {
 		q += minpos_square;
 	}
 	std::cout << q << '\n';
@@ -256,19 +256,19 @@ int ValidateCarryPropagation() {
 	return nrOfFailedTests;
 }
 
-template<size_t nbits, size_t es, size_t capacity = 2>
+template<unsigned nbits, unsigned es, unsigned capacity = 2>
 int ValidateBorrowPropagation() {
 	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 
-	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	constexpr unsigned mbits = 2 * (nbits - 2 - es);
 	quire<nbits, es, capacity> q;
 	posit<nbits, es> mp(SpecificValue::minpos);
 	internal::value<mbits> minpos_square = quire_mul(mp, mp);
 	q -= minpos_square;
 	std::cout << q << '\n';
-	constexpr size_t NR_DECREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits + 1));
-	for (size_t i = 0; i < NR_DECREMENTS_TO_OVERFLOW-1; ++i) {
+	constexpr unsigned NR_DECREMENTS_TO_OVERFLOW = (unsigned(1) << (q.qbits + 1));
+	for (unsigned i = 0; i < NR_DECREMENTS_TO_OVERFLOW-1; ++i) {
 		q -= minpos_square;
 	}
 	std::cout << q << '\n';
@@ -277,8 +277,8 @@ int ValidateBorrowPropagation() {
 	return nrOfFailedTests;
 }
 
-template<size_t nbits, size_t es, size_t capacity = 2>
-int ValidateQuireAccumulation(bool bReportIndividualTestCases) {
+template<unsigned nbits, unsigned es, unsigned capacity = 2>
+int ValidateQuireAccumulation(bool reportTestCases) {
 	int nrOfFailedTests = 0;
 
 	return nrOfFailedTests;
@@ -313,13 +313,12 @@ void TestCaseForProperZeroHandling() {
 }
 
 #define MANUAL_TESTING 1
-#define STRESS_TESTING 0
 
 int main()
 try {
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
+	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << "Quire experiments\n";
@@ -347,7 +346,7 @@ try {
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<16, 1>();
 	
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(reportTestCases, 16, posit<8, 1>(SpecificValue::minpos));
 	
 	std::cout << "Carry Propagation\n";
 	nrOfFailedTestCases += ReportTestResult(ValidateCarryPropagation<4, 1>(), "carry propagation", "increment");
@@ -362,36 +361,30 @@ try {
 
 #else
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 2>(bReportIndividualTestCases, 16, posit<8, 0>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 2>(bReportIndividualTestCases, 16, posit<8, 2>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 5>(bReportIndividualTestCases, 16, posit<8, 0>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 5>(bReportIndividualTestCases, 16, posit<8, 1>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 5>(bReportIndividualTestCases, 16, posit<8, 2>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 2>(reportTestCases, 16, posit<8, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(reportTestCases, 16, posit<8, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 2>(reportTestCases, 16, posit<8, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 5>(reportTestCases, 16, posit<8, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 5>(reportTestCases, 16, posit<8, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 5>(reportTestCases, 16, posit<8, 2>(SpecificValue::maxpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 2>(bReportIndividualTestCases, 256, posit<16, 0>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 2>(bReportIndividualTestCases, 256, posit<16, 1>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 2>(bReportIndividualTestCases, 256, posit<16, 2>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 5>(bReportIndividualTestCases, 16, posit<16, 0>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 5>(bReportIndividualTestCases, 16, posit<16, 1>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 5>(bReportIndividualTestCases, 16, posit<16, 2>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 2>(reportTestCases, 256, posit<16, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 2>(reportTestCases, 256, posit<16, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 2>(reportTestCases, 256, posit<16, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 5>(reportTestCases, 16, posit<16, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 5>(reportTestCases, 16, posit<16, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 5>(reportTestCases, 16, posit<16, 2>(SpecificValue::maxpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 0, 2>(bReportIndividualTestCases, 4096, posit<24, 0>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 1, 2>(bReportIndividualTestCases, 4096, posit<24, 1>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 2, 2>(bReportIndividualTestCases, 4096, posit<24, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 0, 2>(reportTestCases, 4096, posit<24, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 1, 2>(reportTestCases, 4096, posit<24, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 2, 2>(reportTestCases, 4096, posit<24, 2>(SpecificValue::minpos));
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 2>(bReportIndividualTestCases, 65536, posit<32, 0>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 2>(bReportIndividualTestCases, 65536, posit<32, 1>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 2>(bReportIndividualTestCases, 65536, posit<32, 2>(SpecificValue::minpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 5>(bReportIndividualTestCases, 16, posit<32, 0>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 5>(bReportIndividualTestCases, 16, posit<32, 1>(SpecificValue::maxpos));
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 5>(bReportIndividualTestCases, 16, posit<32, 2>(SpecificValue::maxpos));
-
-#ifdef STRESS_TESTING
-
-
-#endif // STRESS_TESTING
-
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 2>(reportTestCases, 65536, posit<32, 0>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 2>(reportTestCases, 65536, posit<32, 1>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 2>(reportTestCases, 65536, posit<32, 2>(SpecificValue::minpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 5>(reportTestCases, 16, posit<32, 0>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 5>(reportTestCases, 16, posit<32, 1>(SpecificValue::maxpos));
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 5>(reportTestCases, 16, posit<32, 2>(SpecificValue::maxpos));
 
 #endif // MANUAL_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -426,11 +419,11 @@ catch (...) {
 // specific debug scenarios of note
 //
 // use forward reference to bring them up to the main body
-// template<size_t nbits, size_t es, size_t capacity> void Issue45();
-// template<size_t nbits, size_t es, size_t capacity> void Issue45_2();
+// template<unsigned nbits, unsigned es, unsigned capacity> void Issue45();
+// template<unsigned nbits, unsigned es, unsigned capacity> void Issue45_2();
 
 // test case for github issue #45
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void Issue45() {
 	using ScalarType = sw::universal::posit<nbits, es>;
 	using magnitude = sw::universal::posit<nbits, es>;
@@ -441,7 +434,7 @@ void Issue45() {
 	constexpr int n = 64;
 	std::vector<positX> Acoefficients(n);
 	for (int i = 0; i < n; ++i) {
-		Acoefficients[i] = posit<nbits, es>(sw::universal::SpecificValue::minpos);
+		Acoefficients[i] = positX(sw::universal::SpecificValue::minpos);
 	}
 	std::vector<positX> xcoefficients(n);
 	for (int i = 0; i < n; ++i) {
@@ -506,13 +499,13 @@ taking -2.68435e+08 += quire_mul(-0.00828552, 0.000999451) (which equals -8.2809
 */
 
 // step by step testing to find where the failure occurred
-template<size_t nbits, size_t es, size_t capacity = 30>
+template<unsigned nbits, unsigned es, unsigned capacity = 30>
 void Issue45_2() {
 	using namespace sw::universal;
 
 	std::cout << "Debug of issue #45\n";
 
-	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	constexpr unsigned mbits = 2 * (nbits - 2 - es);
 	sw::universal::quire<nbits, es, capacity> q, q_base;
 	sw::universal::value<mbits> unrounded, q_value;
 	sw::universal::bitblock<mbits> fraction;
@@ -661,13 +654,13 @@ void Issue45_2() {
 	std::cout << q << std::endl;
 
 	{
-		constexpr size_t mbits = 2 * (nbits - 2 - es);
+		constexpr unsigned mbits = 2 * (nbits - 2 - es);
 		sw::universal::quire<nbits, es, capacity> q, q_base;
 
 		// inefficient as we are copying a whole quire just to reset the sign bit, but we are leveraging the comparison logic
 		//quire<nbits, es, capacity> absq = abs(*this);
-		//constexpr size_t qbits = (size_t(1) << es) * (4 * nbits - 8) + capacity;
-		//constexpr size_t fbits = nbits - 3 - es;
+		//constexpr unsigned qbits = (unsigned(1) << es) * (4 * nbits - 8) + capacity;
+		//constexpr unsigned fbits = nbits - 3 - es;
 		//value<qbits> absq = abs(q);
 		quire <nbits, es, capacity> absq = abs(q);
 		internal::value<mbits> absv = abs(unrounded);

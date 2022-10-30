@@ -60,10 +60,10 @@ void TestSizeof() {
 	std::cout << std::setw(WIDTH) << type_tag(k) << "  size in bytes " << k.nbits / 8 << '\n';
 	std::cout << std::setw(WIDTH) << type_tag(m) << "  size in bytes " << m.nbits / 8 << '\n';
 	std::cout << std::setw(WIDTH) << type_tag(o) << "  size in bytes " << o.nbits / 8 << '\n';
-	if (a.nbits >> 3 != sizeof(a)) pass = false;
-	if (k.nbits >> 3 != sizeof(k)) pass = false;
-	if (m.nbits >> 3 != sizeof(m)) pass = false;
-	if (o.nbits >> 3 != sizeof(o)) pass = false;
+	if constexpr (a.nbits >> 3 != sizeof(a)) pass = false;
+	if constexpr (k.nbits >> 3 != sizeof(k)) pass = false;
+	if constexpr (m.nbits >> 3 != sizeof(m)) pass = false;
+	if constexpr (o.nbits >> 3 != sizeof(o)) pass = false;
 
 	std::cout << (pass ? "PASS" : "FAIL") << '\n';
 }
@@ -101,7 +101,7 @@ void TestFindMsb() {
 	for (int i = 0; i < int(sizeof(golden_ref)/sizeof(int)); ++i) {
 		int msb = findMsb(a);
 		std::cout << "msb of " << to_binary(a) << " is " << msb << '\n';
-		if (msb >= 0) a.setbit(msb, false);
+		if (msb >= 0) a.setbit(static_cast<unsigned>(msb), false);
 		if (msb != golden_ref[i]) pass = false;
 	}
 
@@ -164,17 +164,16 @@ try {
 	std::cout << "16G = " << 16 * c << '\n';
 
 	{
-		constexpr size_t nbits = 128;
-		integer<nbits> c;
-		c.clear();
-		c.setbit(nbits - 1);
-		std::cout << "maxneg = " << to_binary(c) << '\n';
-		for (size_t i = 0; i < nbits; ++i) {
-			std::cout << c << " : " << to_triple(c) << '\n';
-			c /= 2;
+		constexpr unsigned nbits = 128;
+		integer<nbits, std::uint32_t> d;
+		d.clear();
+		d.setbit(nbits - 1);
+		std::cout << "maxneg = " << to_binary(d) << '\n';
+		for (unsigned i = 0; i < nbits; ++i) {
+			std::cout << d << " : " << to_triple(d) << '\n';
+			d /= 2;
 		}
 	}
-
 
 	std::cout << '\n';
 

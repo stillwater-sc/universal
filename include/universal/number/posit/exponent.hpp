@@ -1,7 +1,7 @@
 #pragma once
 // exponent.hpp: definition of a posit exponent
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -15,7 +15,7 @@ static constexpr int GEOMETRIC_ROUND_UP     =  2;
 static constexpr int ARITHMETIC_ROUNDING    =  5;
 
 // exponent
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 class exponent {
 public:
 	exponent() : _NrOfBits(0) {}
@@ -31,7 +31,7 @@ public:
 		_Bits.reset();
 	}
 	void setzero() { reset(); }
-	size_t nrBits() const {
+	unsigned nrBits() const {
 		return _NrOfBits;
 	}
 	int scale() const {
@@ -43,22 +43,22 @@ public:
 	bitblock<es> get() const {
 		return _Bits;
 	}
-	void set(const bitblock<es>& raw, size_t nrExponentBits) {
+	void set(const bitblock<es>& raw, unsigned nrExponentBits) {
 		_Bits = raw;
 		_NrOfBits = nrExponentBits;
 	}
 	
 	// extract the exponent bits given a pattern and the location of the starting point
-	void extract_exponent_bits(const bitblock<nbits>& _raw_bits, size_t nrRegimeBits) {
+	void extract_exponent_bits(const bitblock<nbits>& _raw_bits, unsigned nrRegimeBits) {
 		_Bits.reset();
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int msb = int(static_cast<int>(nbits) - 1ull - (1ull + nrRegimeBits));
 		if (es > 0) {
-			size_t nrExponentBits = 0;
+			unsigned nrExponentBits = 0;
 			bitblock<es> _exp;
 			if (msb >= 0 && es > 0) {
-				nrExponentBits = (static_cast<size_t>(msb) >= es - 1ull ? es : static_cast<size_t>(msb) + 1ull);
-				for (size_t i = 0; i < nrExponentBits; i++) {
+				nrExponentBits = (static_cast<unsigned>(msb) >= es - 1ull ? es : static_cast<unsigned>(msb) + 1ull);
+				for (unsigned i = 0; i < nrExponentBits; i++) {
 					_exp[es - 1 - i] = _raw_bits[msb - i];
 				}
 			}
@@ -81,16 +81,16 @@ public:
 	// calculate the exponent given a number's scale and the number of regime bits, 
 	// returning an indicator which type of rounding is required to complete the posit
 	// DEPRECATED
-	int assign_exponent_bits(int scale, int k, size_t nrRegimeBits) {
+	int assign_exponent_bits(int scale, int k, unsigned nrRegimeBits) {
 		int rounding_mode = NO_ADDITIONAL_ROUNDING;
 		_Bits.reset();
 		// we need to get to an adjusted scale that encodes regime and exponent
 		// value scale = useed ^ k * 2 ^ exponent = 2^(k*2^es) * 2^e -> k*2^es + e
 		// e = scale - k*2^es
 		int raw = scale - k*(1 << es);
-		size_t my_exponent = raw < 0 ? -raw : raw;
+		unsigned my_exponent = raw < 0 ? -raw : raw;
 		// convert value into bitset
-		size_t mask = 0x1;
+		unsigned mask = 0x1;
 		for (unsigned i = 0; i < es; i++) {
 			_Bits[i] = my_exponent & mask;
 			mask <<= 1;
@@ -140,39 +140,39 @@ public:
 	}
 private:
 	bitblock<es>    _Bits;
-	size_t			_NrOfBits;
+	unsigned			_NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend std::ostream& operator<< (std::ostream& ostr, const exponent<nnbits, ees>& e);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend std::istream& operator>> (std::istream& istr, exponent<nnbits, ees>& e);
 
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator==(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator!=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator< (const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator> (const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator<=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	friend bool operator>=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
 };
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline int scale(const exponent<nbits, es>& e) { return e.scale(); }
 
 /////////////////// EXPONENT operators
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
-	size_t nrOfExponentBitsProcessed = 0;
+	unsigned nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
 		for (int i = int(es) - 1; i >= 0; --i) {
 			if (e._NrOfBits > nrOfExponentBitsProcessed++) {
-				ostr << (e._Bits[size_t(i)] ? "1" : "0");
+				ostr << (e._Bits[unsigned(i)] ? "1" : "0");
 			}
 			else {
 				ostr << "-";
@@ -185,21 +185,21 @@ inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e
 	return ostr;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& e) {
 	istr >> e._Bits;
 	return istr;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = true, bool nibbleMarker = false) {
 	std::stringstream sstr;
-	size_t nrOfExponentBitsProcessed = 0;
+	unsigned nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
 		for (int i = int(es) - 1; i >= 0; --i) {
 			if (e.nrBits() > nrOfExponentBitsProcessed++) {
 				bitblock<es> bb = e.get();
-				sstr << (bb[size_t(i)] ? '1' : '0');
+				sstr << (bb[unsigned(i)] ? '1' : '0');
 			}
 			else {
 				sstr << (dashExtent ? "-" : "");
@@ -213,17 +213,17 @@ inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = tru
 	return sstr.str();
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator==(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._NrOfBits == rhs._NrOfBits; }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator!=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator< (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits < rhs._Bits; }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator> (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator<=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline bool operator>=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator< (lhs, rhs); }
 
 }}  // namespace sw::universal

@@ -6,6 +6,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/lns_math_test_suite.hpp>
+#include <universal/verification/test_suite_random.hpp>
 
 // Background: http://numbers.computation.free.fr/Constants/E/e.html
 //
@@ -58,7 +59,7 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -90,8 +91,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns<8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "exp");
 	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<8, 4, uint8_t> >(reportTestCases), "lns<8,4>", "exp2");
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
+#if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 8, 2, uint8_t> >(reportTestCases), "lns<8,2>", "exp");
 	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 8, 3, uint8_t> >(reportTestCases), "lns<8,3>", "exp");
 	nrOfFailedTestCases += ReportTestResult(VerifyExp< lns< 9, 2, uint8_t> >(reportTestCases), "lns<9,2>", "exp");
@@ -108,11 +112,21 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<10, 3, uint8_t> >(reportTestCases), "lns<10,3>", "exp2");
 	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<12, 4, uint8_t> >(reportTestCases), "lns<12,4>", "exp2");
 	nrOfFailedTestCases += ReportTestResult(VerifyExp2< lns<16, 5, uint8_t> >(reportTestCases), "lns<16,5>", "exp2");
+#endif
 
+#if REGRESSION_LEVEL_2
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ReportTestResult(VerifyElementaryFunctionThroughRandoms< lns<32, 27, std::uint32_t, Behavior::Wrapping > >(true, RandomsOp::OPCODE_EXP, 1000), "lns<32,27>", "exp");
+	nrOfFailedTestCases += ReportTestResult(VerifyElementaryFunctionThroughRandoms< lns<64, 59, std::uint32_t, Behavior::Wrapping > >(true, RandomsOp::OPCODE_EXP2, 1000), "lns<64,59>", "exp2");
+#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
 #endif  // MANUAL_TESTING
 }
 catch (char const* msg) {

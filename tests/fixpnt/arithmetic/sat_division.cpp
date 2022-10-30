@@ -19,7 +19,7 @@
 
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using nbits modulo arithmetic with final sign
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 inline sw::universal::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::universal::blockbinary<nbits, BlockType>& a, const sw::universal::blockbinary<nbits, BlockType>& b) {
 	using namespace sw::universal;
 	blockbinary<2 * nbits, BlockType> result(0);
@@ -37,7 +37,7 @@ inline sw::universal::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::
 	std::cout << "    " << a_new << " * " << b_new << std::endl;
 	std::cout << std::setw(3) << 0 << ' ' << multiplicant << ' ' << result << std::endl;
 
-	for (size_t i = 0; i < (nbits + 1); ++i) {
+	for (unsigned i = 0; i < (nbits + 1); ++i) {
 		if (a_new.at(i)) {
 			result += multiplicant;  // if multiplicant is not the same size as result, the assignment will get sign-extended if the MSB is true, this is not correct because we are assuming unsigned binaries in this loop
 		}
@@ -53,7 +53,7 @@ inline sw::universal::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::
 
 
 // unrounded division, returns a blockbinary that is of size 2*nbits
-template<size_t nbits, size_t roundingBits, typename BlockType>
+template<unsigned nbits, unsigned roundingBits, typename BlockType>
 inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(const sw::universal::blockbinary<nbits, BlockType>& a, const sw::universal::blockbinary<nbits, BlockType>& b, sw::universal::blockbinary<roundingBits, BlockType>& r) {
 	using namespace sw::universal;
 
@@ -97,10 +97,10 @@ inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			quotient.setbit(static_cast<size_t>(i));
+			quotient.setbit(static_cast<unsigned>(i));
 		}
 		else {
-			quotient.setbit(static_cast<size_t>(i), false);
+			quotient.setbit(static_cast<unsigned>(i), false);
 		}
 		subtractand >>= 1;
 
@@ -115,7 +115,7 @@ inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, typename Ty>
+template<unsigned nbits, unsigned rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
 	sw::universal::fixpnt<nbits, rbits, sw::universal::Saturate> a, b, cref, result;
@@ -132,22 +132,22 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-template<size_t nbits, size_t rbits>
+template<unsigned nbits, unsigned rbits>
 void GenerateValueTable() {
 	using namespace sw::universal;
-	size_t NR_VALUES = (1 << nbits);
+	unsigned NR_VALUES = (1 << nbits);
 
 	fixpnt<nbits, rbits> a;
 	std::cout << "Fixed-point type: " << typeid(a).name() << '\n';
 
-	for (size_t i = 0; i < NR_VALUES; ++i) {
+	for (unsigned i = 0; i < NR_VALUES; ++i) {
 		a.setbits(i);
 		std::cout << to_binary(i,nbits) << " : " << to_binary(a) << " = " << std::setw(10) << a << '\n';
 	}
 }
 
-template<size_t nbits, size_t rbits>
-void GenerateComparison(size_t a_bits, size_t b_bits) {
+template<unsigned nbits, unsigned rbits>
+void GenerateComparison(unsigned a_bits, unsigned b_bits) {
 	using namespace sw::universal;
 
 	fixpnt<nbits, rbits> a, b, c;
@@ -179,20 +179,21 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 
 	{
 		std::cout << "division trace\n";
+		constexpr unsigned roundingDecisionBits = 4; // guard, round, and 2 sticky bits
+		blockbinary<2 * nbits + roundingDecisionBits> unrounded;
 
 		{
 			std::cout << "----------------------------------------------\n";
 			std::cout << c << " / " << b << '\n';
 
-			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits> roundingBits;
-			blockbinary<2 * nbits + roundingDecisionBits> a = unrounded_div(c.bits(), b.bits(), roundingBits);
-			std::cout << c.bits() << " / " << b.bits() << " = " << a << " rounding bits " << roundingBits;
-			bool roundUp = a.roundingMode(rbits + roundingDecisionBits);
-			a >>= rbits + nbits + roundingDecisionBits - 1;
-			if (roundUp) ++a;
-			std::cout << " rounded " << a << '\n';
-			fixpnt<nbits, rbits> result; result = a; // select the lower nbits of the result
+			unrounded = unrounded_div(c.bits(), b.bits(), roundingBits);
+			std::cout << c.bits() << " / " << b.bits() << " = " << unrounded << " rounding bits " << roundingBits;
+			bool roundUp = unrounded.roundingMode(rbits + roundingDecisionBits);
+			unrounded >>= rbits + nbits + roundingDecisionBits - 1;
+			if (roundUp) ++unrounded;
+			std::cout << " rounded " << unrounded << '\n';
+			fixpnt<nbits, rbits> result; result = unrounded; // select the lower nbits of the result
 			std::cout << "final result: " << to_binary(result) << " : " << result << '\n';
 		}
 
@@ -200,15 +201,14 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 			std::cout << "----------------------------------------------\n";
 			std::cout << c << " / " << a << '\n';
 
-			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits> roundingBits;
-			blockbinary<2 * nbits + roundingDecisionBits> b = unrounded_div(c.bits(), a.bits(), roundingBits);
-			std::cout << c.bits() << " / " << a.bits() << " = " << b << " rounding bits " << roundingBits;
-			bool roundUp = b.roundingMode(rbits + roundingDecisionBits);
-			b >>= rbits + nbits + roundingDecisionBits - 1;
-			if (roundUp) ++b;
-			std::cout << " rounded " << b << '\n';
-			fixpnt<nbits, rbits> result; result = b; // select the lower nbits of the result
+			unrounded = unrounded_div(c.bits(), a.bits(), roundingBits);
+			std::cout << c.bits() << " / " << a.bits() << " = " << unrounded << " rounding bits " << roundingBits;
+			bool roundUp = unrounded.roundingMode(rbits + roundingDecisionBits);
+			unrounded >>= rbits + nbits + roundingDecisionBits - 1;
+			if (roundUp) ++unrounded;
+			std::cout << " rounded " << unrounded << '\n';
+			fixpnt<nbits, rbits> result; result = unrounded; // select the lower nbits of the result
 			std::cout << "final result: " << to_binary(result) << " : " << result << '\n';
 		}
 	}
@@ -243,8 +243,8 @@ try {
 
 #if MANUAL_TESTING
 
-	constexpr size_t nbits = 4;
-	constexpr size_t rbits = 1;
+	constexpr unsigned nbits = 4;
+	constexpr unsigned rbits = 1;
 
 	GenerateValueTable<nbits, rbits>();
 

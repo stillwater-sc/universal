@@ -44,8 +44,8 @@ try {
 
 #define MY_DBL_MIN          2.2250738585072014e-308 // min positive value
 
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
+	constexpr unsigned nbits = 32;
+	constexpr unsigned es = 2;
 	posit<nbits, es> pnar; pnar.setnar();
 	posit<nbits, es> pinf; pinf.setnar();
 	posit<nbits, es> pzero(0);

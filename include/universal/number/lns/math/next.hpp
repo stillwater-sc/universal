@@ -23,7 +23,7 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> nextafter(lns<nbits, rbits, bt, xtra...> x, lns<nbits, rbits, bt, xtra...> target) {
 	if (x == target) return target;
 	if (target.isnan()) {
@@ -45,7 +45,7 @@ lns<nbits, rbits, bt, xtra...> nextafter(lns<nbits, rbits, bt, xtra...> x, lns<n
 	return x;
 }
 		
-template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 lns<nbits, rbits, bt, xtra...> nexttoward(lns<nbits, rbits, bt, xtra...> x, lns<128, 15, bt, xtra...> target) {
 	lns<128, 15, bt, xtra...> _x(x);
 	if (_x == target) return x;

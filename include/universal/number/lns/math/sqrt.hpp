@@ -26,7 +26,7 @@ namespace sw { namespace universal {
 	}
 */
 
-	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline lns<nbits, rbits, bt, xtra...> BabylonianMethod(const lns<nbits, rbits, bt, xtra...>& v) {
 		using LnsType = lns<nbits, rbits, bt, xtra...>;
 		constexpr double eps = 1.0e-5;
@@ -77,7 +77,7 @@ namespace sw { namespace universal {
 
 #if LNS_NATIVE_SQRT
 	// sqrt for arbitrary lns
-	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline lns<nbits, rbits, bt, xtra...> sqrt(const lns<nbits, rbits, bt, xtra...>& a) {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw lns_negative_sqrt_arg();
@@ -88,7 +88,7 @@ namespace sw { namespace universal {
 		return lns<nbits, rbits, bt, xtra...>(std::sqrt((double)a));  // TBD
 	}
 #else
-	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline lns<nbits, rbits, bt, xtra...> sqrt(const lns<nbits, rbits, bt, xtra...>& a) {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw lns_negative_sqrt_arg();
@@ -101,7 +101,7 @@ namespace sw { namespace universal {
 #endif
 
 	// reciprocal sqrt
-	template<size_t nbits, size_t rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline lns<nbits, rbits, bt, xtra...> rsqrt(const lns<nbits, rbits, bt, xtra...>& a) {
 		lns<nbits, rbits, bt, xtra...> v = sqrt(a);
 		return v.reciprocate();

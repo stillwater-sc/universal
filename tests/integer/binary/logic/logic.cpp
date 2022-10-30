@@ -24,8 +24,8 @@
 namespace sw { namespace universal {
 
 #define INTEGER_TABLE_WIDTH 20
-	template<size_t nbits>
-	void ReportBinaryLogicError(const std::string& test_case, const std::string& op, const integer<nbits>& lhs, const integer<nbits>& rhs, bool iref, bool iresult) {
+	template<unsigned nbits, typename bt>
+	void ReportBinaryLogicError(const std::string& test_case, const std::string& op, const integer<nbits, bt>& lhs, const integer<nbits, bt>& rhs, bool iref, bool iresult) {
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case << " "
 			<< std::setprecision(20)
@@ -40,11 +40,11 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all less than cases for an integer<nbits> configuration
-	template<size_t nbits>
+	template<unsigned nbits, typename bt>
 	int VerifyEqual(bool reportTestCases) {
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (1ull << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib;
+		integer<nbits, bt> ia, ib;
 		bool iresult, iref;
 
 		int64_t i64a, i64b;
@@ -72,11 +72,11 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all less than or equal cases for an integer<nbits> configuration
-	template<size_t nbits>
+	template<unsigned nbits, typename bt>
 	int VerifyNotEqual(bool reportTestCases) {
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (1ull << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib;
+		integer<nbits, bt> ia, ib;
 		bool iresult, iref;
 
 		int64_t i64a, i64b;
@@ -104,11 +104,11 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all less than cases for an integer<nbits> configuration
-	template<size_t nbits>
+	template<unsigned nbits, typename bt>
 	int VerifyLessThan(bool reportTestCases) {
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (1ull << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib;
+		integer<nbits, bt> ia, ib;
 		bool iresult, iref;
 
 		int64_t i64a, i64b;
@@ -136,11 +136,11 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all less than or equal cases for an integer<nbits> configuration
-	template<size_t nbits>
+	template<unsigned nbits, typename bt>
 	int VerifyLessOrEqualThan(bool reportTestCases) {
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (1ull << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib;
+		integer<nbits, bt> ia, ib;
 		bool iresult, iref;
 
 		int64_t i64a, i64b;
@@ -168,11 +168,11 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all greater than cases for an integer<nbits> configuration
-	template<size_t nbits>
+	template<unsigned nbits, typename bt>
 	int VerifyGreaterThan(bool reportTestCases) {
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (1ull << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib;
+		integer<nbits, bt> ia, ib;
 		bool iresult, iref;
 
 		int64_t i64a, i64b;
@@ -200,11 +200,11 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all greater than or equal cases for an integer<nbits> configuration
-	template<size_t nbits>
+	template<unsigned nbits, typename bt>
 	int VerifyGreaterOrEqualThan(bool reportTestCases) {
-		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		constexpr size_t NR_INTEGERS = (1ull << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib;
+		integer<nbits, bt> ia, ib;
 		bool iresult, iref;
 
 		int64_t i64a, i64b;
@@ -237,7 +237,7 @@ namespace sw { namespace universal {
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
-//#undef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
 #undef REGRESSION_LEVEL_1
 #undef REGRESSION_LEVEL_2
@@ -261,7 +261,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Integer logic operator verfication\n";
+	std::string test_suite  = "Integer logic operator verification\n";
 	std::string test_tag    = "logic";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
@@ -270,58 +270,58 @@ try {
 
 #if MANUAL_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<4>(reportTestCases), "integer<4>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<4>(reportTestCases), "integer<4>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<4>(reportTestCases), "integer<4>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<4>(reportTestCases), "integer<4>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<4>(reportTestCases), "integer<4>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<4>(reportTestCases), "integer<4>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<4, std::uint8_t>(reportTestCases), "integer<4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<4, std::uint8_t>(reportTestCases), "integer<4>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<4, std::uint8_t>(reportTestCases), "integer<4>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<4, std::uint8_t>(reportTestCases), "integer<4>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<4, std::uint8_t>(reportTestCases), "integer<4>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<4, std::uint8_t>(reportTestCases), "integer<4>", ">=");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<4>(reportTestCases), "integer<4>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<4>(reportTestCases), "integer<4>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<4>(reportTestCases), "integer<4>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<4>(reportTestCases), "integer<4>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<4>(reportTestCases), "integer<4>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<4>(reportTestCases), "integer<4>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<4, std::uint8_t>(reportTestCases), "integer<4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<4, std::uint8_t>(reportTestCases), "integer<4>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<4, std::uint8_t>(reportTestCases), "integer<4>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<4, std::uint8_t>(reportTestCases), "integer<4>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<4, std::uint8_t>(reportTestCases), "integer<4>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<4, std::uint8_t>(reportTestCases), "integer<4>", ">=");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<8>(reportTestCases), "integer<8>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<8>(reportTestCases), "integer<8>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<8>(reportTestCases), "integer<8>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<8>(reportTestCases), "integer<8>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<8>(reportTestCases), "integer<8>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<8>(reportTestCases), "integer<8>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<8, std::uint8_t>(reportTestCases), "integer<8>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<8, std::uint8_t>(reportTestCases), "integer<8>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<8, std::uint8_t>(reportTestCases), "integer<8>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<8, std::uint8_t>(reportTestCases), "integer<8>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<8, std::uint8_t>(reportTestCases), "integer<8>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<8, std::uint8_t>(reportTestCases), "integer<8>", ">=");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<10>(reportTestCases), "integer<10>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<10>(reportTestCases), "integer<10>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<10>(reportTestCases), "integer<10>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<10>(reportTestCases), "integer<10>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<10>(reportTestCases), "integer<10>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<10>(reportTestCases), "integer<10>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<10, std::uint8_t>(reportTestCases), "integer<10>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<10, std::uint8_t>(reportTestCases), "integer<10>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<10, std::uint8_t>(reportTestCases), "integer<10>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<10, std::uint8_t>(reportTestCases), "integer<10>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<10, std::uint8_t>(reportTestCases), "integer<10>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<10, std::uint8_t>(reportTestCases), "integer<10>", ">=");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<12>(reportTestCases), "integer<12>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<12>(reportTestCases), "integer<12>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<12>(reportTestCases), "integer<12>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<12>(reportTestCases), "integer<12>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<12>(reportTestCases), "integer<12>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<12>(reportTestCases), "integer<12>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<12, std::uint8_t>(reportTestCases), "integer<12>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<12, std::uint8_t>(reportTestCases), "integer<12>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<12, std::uint8_t>(reportTestCases), "integer<12>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<12, std::uint8_t>(reportTestCases), "integer<12>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<12, std::uint8_t>(reportTestCases), "integer<12>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<12, std::uint8_t>(reportTestCases), "integer<12>", ">=");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<13>(reportTestCases), "integer<13>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<13>(reportTestCases), "integer<13>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<13>(reportTestCases), "integer<13>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<13>(reportTestCases), "integer<13>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<13>(reportTestCases), "integer<13>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<13>(reportTestCases), "integer<13>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<13, std::uint8_t>(reportTestCases), "integer<13>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<13, std::uint8_t>(reportTestCases), "integer<13>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<13, std::uint8_t>(reportTestCases), "integer<13>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<13, std::uint8_t>(reportTestCases), "integer<13>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<13, std::uint8_t>(reportTestCases), "integer<13>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<13, std::uint8_t>(reportTestCases), "integer<13>", ">=");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -1,7 +1,7 @@
 #pragma once
 // next.hpp: nextafter/nexttoward functions for cfloat
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -23,7 +23,7 @@ Return Value
 	- And math_errhandling has MATH_ERRNO set: the global variable errno is set to ERANGE.
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
 cfloat<nbits,es, bt, hasSubnormal, hasSupernormal, isSaturating> nextafter(cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x, cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> target) {
 	if (x == target) return target;
 	if (target.isnan()) {
@@ -45,7 +45,7 @@ cfloat<nbits,es, bt, hasSubnormal, hasSupernormal, isSaturating> nextafter(cfloa
 	return x;
 }
 		
-template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
 cfloat<nbits,es, bt, hasSubnormal, hasSupernormal, isSaturating> nexttoward(cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x, cfloat<128, 15, bt, hasSubnormal, hasSupernormal, isSaturating> target) {
 	cfloat<128, 15, bt, hasSubnormal, hasSupernormal, isSaturating> _x(x);
 	if (_x == target) return x;

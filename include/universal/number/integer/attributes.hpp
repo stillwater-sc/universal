@@ -1,7 +1,7 @@
 #pragma once
 // attributes.hpp: definition of attribute functions for integer types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -12,7 +12,7 @@ namespace sw { namespace universal {
 // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
 
 // calculate the integer power a ^ b using exponentiation by squaring
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 integer<nbits, BlockType> ipow(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
 	integer<nbits, BlockType> result(1), base(a), exp(b);
 	for (;;) {

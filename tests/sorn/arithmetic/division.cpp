@@ -15,7 +15,7 @@ namespace sw { namespace universal {
 	template<typename SornType>
 	int VerifyDivision_(bool reportTestCases) {
 		constexpr size_t nbits = SornType::nbits;
-		using value_type = typename SornType::value_type;
+		// using value_type = typename SornType::value_type;
 
 		SornType s;
 		std::cerr << "SORN type : " << type_tag(s) << " : nbits = " << nbits << '\n';
@@ -85,7 +85,7 @@ try {
 
 #if MANUAL_TESTING
 	
-	using FloatSorn = sorn<0, 4, 8 >; // set up SORN datatype (linear);
+//	using FloatSorn = sorn<0, 4, 8 >; // set up SORN datatype (linear);
 
 //	TestCase< FloatSorn, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 

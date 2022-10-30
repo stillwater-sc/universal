@@ -1,12 +1,13 @@
 // basic_operators.cpp : examples of the basic arithmetic operators using areals
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/areal/manipulators.hpp>
-// quick helper to report on a posit's specialness
-template<size_t nbits, size_t es>
+
+// quick helper to report on the specialness
+template<unsigned nbits, unsigned es>
 void checkSpecialCases(sw::universal::areal<nbits, es> p) {
 	std::cout << "areal is " << (p.iszero() ? "zero " : "non-zero ") << (p.ispos() ? "positive " : "negative ") << (p.isnan() ? "Not a Number" : "Its a Real") << std::endl;
 }
@@ -16,8 +17,8 @@ int main()
 try {
 	using namespace sw::universal;	// standard namespace for areal
 
-	const size_t nbits = 16;
-	const size_t es = 5;
+	const unsigned nbits = 16;
+	const unsigned es = 5;
 	using Real = areal<nbits, es>;
 	Real p1, p2, p3, p4, p5, p6;
 

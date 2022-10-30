@@ -83,8 +83,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "hypot");
+
+
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

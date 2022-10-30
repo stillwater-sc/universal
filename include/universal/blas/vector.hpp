@@ -1,7 +1,7 @@
 #pragma once
 // vector.hpp: super-simple vector class
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -245,7 +245,7 @@ std::ostream& operator<<(std::ostream& ostr, const vector<Scalar>& v) {
 }
 
 // generate a posit format ASCII format nbits.esxNN...NNp
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline std::string hex_format(const vector< sw::universal::posit<nbits, es> >& v) {
 	// we need to transform the posit into a string
 	std::stringstream ss;
@@ -343,9 +343,9 @@ typename std::enable_if<sw::universal::is_posit<Scalar>, Scalar>::type operator*
 		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
 		return Scalar{ 0 };
 	}
-	constexpr size_t nbits = Scalar::nbits;
-	constexpr size_t es = Scalar::es;
-	constexpr size_t capacity = 20;
+	constexpr unsigned nbits = Scalar::nbits;
+	constexpr unsigned es = Scalar::es;
+	constexpr unsigned capacity = 20;
 	sw::universal::quire<nbits, es, capacity> sum{ 0 };
 	for (size_t i = 0; i < N; ++i) {
 		sum += sw::universal::quire_mul(a(i), b(i));

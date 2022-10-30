@@ -148,8 +148,8 @@ inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleM
 	std::stringstream s;
 	if (nbits == 0) nbits = 8*sizeof(number);
 	s << "0b";
-	uint64_t mask = (uint64_t(1) << (nbits - 1));
-	for (int i = int(nbits) - 1; i >= 0; --i) {
+	uint64_t mask = (1ull << (nbits - 1));
+	for (int i = nbits - 1; i >= 0; --i) {
 		s << ((number & mask) ? '1' : '0');
 		if (bNibbleMarker && i > 0 && i % 4 == 0) s << '\'';
 		mask >>= 1;

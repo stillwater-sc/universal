@@ -1,7 +1,7 @@
 #pragma once
 //  posit_traits.hpp : traits for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/traits/integral_constant.hpp>
@@ -14,7 +14,7 @@ struct is_posit_trait
 	: false_type
 {
 };
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 struct is_posit_trait< sw::universal::posit<nbits, es> >
 	: true_type
 {

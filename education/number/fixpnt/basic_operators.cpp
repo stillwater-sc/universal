@@ -1,13 +1,13 @@
 // basic_operators.cpp : examples of the basic arithmetic operators using fixpnts
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 
 // quick helper to report on a fixpnt's specialness
-template<size_t nbits, size_t rbits>
+template<unsigned nbits, unsigned rbits>
 void checkSpecialCases(sw::universal::fixpnt<nbits, rbits> fp) {
 	std::cout << "fixpnt is " << (fp.iszero() ? "zero " : "non-zero ") << (fp.ispos() ? "positive " : "negative ") << std::endl;
 }
@@ -17,8 +17,8 @@ int main()
 try {
 	using namespace sw::universal;	// standard namespace for fixpnt
 
-	const size_t nbits = 16;
-	const size_t rbits = 8;
+	const unsigned nbits = 16;
+	const unsigned rbits = 8;
 	using Fixpnt = fixpnt<nbits, rbits>;
 	Fixpnt p1, p2, p3, p4, p5, p6;
 

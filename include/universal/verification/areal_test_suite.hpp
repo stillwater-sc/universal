@@ -17,7 +17,7 @@ namespace sw { namespace universal {
 
 	template<typename SrcType, typename TestType>
 	void ReportIntervalConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
-		// constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		// constexpr unsigned nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case
 			<< " " << op << " "
@@ -32,7 +32,7 @@ namespace sw { namespace universal {
 
 	template<typename SrcType, typename TestType>
 	void ReportIntervalConversionSuccess(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
-		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr unsigned nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		std::cerr << test_case
 			<< " " << op << " "
 			<< std::setw(NUMBER_COLUMN_WIDTH) << input
@@ -44,14 +44,14 @@ namespace sw { namespace universal {
 	}
 
 	template<typename SrcType, typename TestType>
-	int Compare(SrcType input, const TestType& testValue, const TestType& reference, bool bReportIndividualTestCases) {
+	int Compare(SrcType input, const TestType& testValue, const TestType& reference, bool reportTestCases) {
 		int fail = 0;
 		if (testValue != reference) {
 			fail++;
-			if (bReportIndividualTestCases)	ReportIntervalConversionError("FAIL", "=", input, reference, testValue);
+			if (reportTestCases)	ReportIntervalConversionError("FAIL", "=", input, reference, testValue);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportIntervalConversionSuccess("PASS", "=", input, reference, testValue);
+			//if (reportTestCases) ReportIntervalConversionSuccess("PASS", "=", input, reference, testValue);
 		}
 		return fail;
 	}
@@ -64,10 +64,10 @@ namespace sw { namespace universal {
 		/// <typeparam name="TestType">the test configuration</typeparam>
 		/// <typeparam name="SrcType">the source type to convert from</typeparam>
 		/// <param name="tag">string to indicate what is being tested</param>
-		/// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
+		/// <param name="reportTestCases">if true print results of each test case. Default is false.</param>
 		/// <returns>number of failed test cases</returns>
 	template<typename TestType, typename SrcType>
-	int VerifyArealIntervalConversion(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyArealIntervalConversion(bool reportTestCases) {
 		// areal<> is organized as a set of exact samples followed by an interval to the next exact value
 		//
 		// vprev    exact value          ######-0     ubit = false     some value [vprev,vprev]
@@ -80,11 +80,11 @@ namespace sw { namespace universal {
 		// the assignment test can thus be constructed by enumerating the exact values of a configuration
 		// and taking a -diff to obtain the interval value of vprev, 
 		// and taking a +diff to obtain the interval value of v
-		constexpr size_t nbits = TestType::nbits;
-		constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 
 		const unsigned max = nbits > 20 ? 20 : nbits + 1;
-		size_t max_tests = (size_t(1) << max);
+		unsigned max_tests = (unsigned(1) << max);
 		if (max_tests < NR_TEST_CASES) {
 			std::cout << "VerifyArealIntervalConversion " << typeid(TestType).name() << ": NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
 		}
@@ -99,7 +99,7 @@ namespace sw { namespace universal {
 		TestType debugTarget;
 //		debugTarget.setbits(0x1FE); // set it to something to catch
 
-		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; i += 2) {
+		for (unsigned i = 0; i < NR_TEST_CASES && i < max_tests; i += 2) {
 			TestType current, interval;
 			SrcType testValue{ 0.0 };
 			current.setbits(i);
@@ -126,12 +126,12 @@ namespace sw { namespace universal {
 					nut = testValue;
 					if (!nut.iszero()) {
 						// working around optimizing compilers ignoring or flipping the sign on 0
-						nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
+						nrOfFailedTests += Compare(testValue, nut, current, reportTestCases);
 					}
 					// da - delta = (-0,-minpos)
 					testValue = da - delta;
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, interval, reportTestCases);
 				}
 				else {
 					// da         = [0]
@@ -139,13 +139,13 @@ namespace sw { namespace universal {
 					nut = testValue;
 					if (!nut.iszero()) {
 						// working around optimizing compilers ignoring of flipping the sign on 0
-						nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
+						nrOfFailedTests += Compare(testValue, nut, current, reportTestCases);
 					}
 					// da + delta = (0,minpos)
 					testValue = da + delta;
 					if (issubnorm(testValue)) { std::cout << testValue << " is denormalized\n"; }
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(testValue, nut, interval, reportTestCases);
 				}
 			}
 			else if (current.isinf(INF_TYPE_NEGATIVE)) {
@@ -177,15 +177,15 @@ namespace sw { namespace universal {
 				// da - delta = (prev,current) == previous + ubit = previous interval value
 				testValue = da - delta;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, previousInterval, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, previousInterval, reportTestCases);
 				// da         = [v]
 				testValue = da;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, current, reportTestCases);
 				// da + delta = (v+,next) == current + ubit = current interval value
 				testValue = da + delta;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, interval, reportTestCases);
 
 				if (nrOfFailedTests - currentFailures) {
 					std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
@@ -205,8 +205,8 @@ namespace sw { namespace universal {
 	}
 
 	// validate the increment operator++
-	template<size_t nbits, size_t es>
-	int VerifyIncrement(const std::string& tag, bool bReportIndividualTestCases)
+	template<unsigned nbits, unsigned es>
+	int VerifyIncrement(bool reportTestCases)
 	{
 		std::vector< areal<nbits, es> > set;
 		//	GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -220,7 +220,7 @@ namespace sw { namespace universal {
 			p++;
 			ref = *(it + 1);
 			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -229,8 +229,8 @@ namespace sw { namespace universal {
 	}
 
 	// validate the decrement operator--
-	template<size_t nbits, size_t es>
-	int VerifyDecrement(const std::string& tag, bool bReportIndividualTestCases)
+	template<unsigned nbits, unsigned es>
+	int VerifyDecrement(bool reportTestCases)
 	{
 		std::vector< areal<nbits, es> > set;
 		//	GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -244,7 +244,7 @@ namespace sw { namespace universal {
 			p--;
 			ref = *(it - 1);
 			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}

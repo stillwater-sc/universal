@@ -23,7 +23,7 @@
 namespace sw { namespace universal {
 
 	// enumerate all shift left cases for an integer<nbits, BlockType> configuration
-	template<size_t nbits, typename BlockType = uint8_t, IntegerNumberType NumberType = IntegerNumberType::IntegerNumber>
+	template<unsigned nbits, typename BlockType = std::uint8_t, IntegerNumberType NumberType = IntegerNumberType::IntegerNumber>
 	int VerifyLeftShift(bool reportTestCases) {
 		using namespace sw::universal;
 		using Integer = integer<nbits, BlockType>;
@@ -34,7 +34,7 @@ namespace sw { namespace universal {
 		int nrOfFailedTests = 0;
 		Integer a, result, ref;
 		uint64_t shiftRef;
-		for (size_t i = 0; i < nbits + 1; i++) {
+		for (unsigned i = 0; i < nbits + 1u; i++) {
 			shiftRef = (~0ull << i);
 			if (i == nbits) shiftRef = 0; // shift all bits out
 			ref.setbits(shiftRef);

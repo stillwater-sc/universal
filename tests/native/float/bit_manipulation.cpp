@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
-#include <bit>
 #include <universal/native/ieee754.hpp>
 #include <universal/verification/test_suite.hpp>
 

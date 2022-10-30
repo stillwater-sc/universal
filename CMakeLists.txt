@@ -15,8 +15,10 @@ print_header()
 # the folks at KitWare have done for the open-source community, we are
 # going to specify a recent version. 
 # As of UNIVERSAL v3.0 December 2019
-# Ubuntu 16.04 LTS runs cmake 3.5.1
-# Ubuntu 18.04 LTS runs cmake 3.10.2
+# Ubuntu 16.04 LTS runs cmake 3.5
+# Ubuntu 18.04 LTS runs cmake 3.10
+# Ubuntu 20.04 LTS runs cmake 3.16
+# Ubuntu 22.04 LTS runs cmake 3.22
 # container runs cmake 3.7.1
 # gcc5 container runs cmake 3.0.2
 cmake_minimum_required(VERSION 3.22)
@@ -33,7 +35,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 60)
+  set(UNIVERSAL_VERSION_MINOR 61)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -72,14 +74,16 @@ endif(NOT CMAKE_BUILD_TYPE)
 option(USE_SSE3                          "Build code with SSE3 ISA support"                    OFF)
 option(USE_AVX                           "Build code with AVX ISA support"                     OFF)
 option(USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
+
 # control which projects get enabled
 # Continuous Integration override to build all
 option(BUILD_ALL                         "Set to ON to build all components"                   OFF)
+option(BUILD_CI                          "Set to ON to build ci components"                    OFF)
 # or subsets of the components
 option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
+option(BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
 option(BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
 option(BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
-option(BUILD_NUMBER_SYSTEMS              "Set to ON to build all the number systems"           OFF)
 option(BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
 
 # or, build individual components
@@ -90,12 +94,11 @@ option(BUILD_EDUCATION                   "Set to ON to build educational example
 option(BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
 
 # numerical and special math functions
+option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special function programs"        OFF)
+option(BUILD_NUMERIC_QUIRES              "Set to ON to build quire programs"                   OFF)
 option(BUILD_NUMERIC_CHALLENGES          "Set to ON to build numerical challenge programs"     OFF)
 option(BUILD_NUMERIC_UTILS               "Set to ON to build numerical utilities"              OFF)
 option(BUILD_NUMERIC_FPBENCH             "Set to ON to build fpbench benchmarks"               OFF)
-option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special functions programs"       OFF)
-# reproducible IEEE-754
-option(BUILD_NUMERIC_IEEE_QUIRES         "Set to ON to build reproducible IEEE floats"         OFF)
 
 # application environment tests
 option(BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
@@ -197,15 +200,9 @@ endif()
 
 ####
 # Configure the compiler options
-if(MSVC)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++20 has been enabled by default")
-else()
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++20 has been enabled by default: but bit_cast<> requires gcc 11")
-endif()
 
 # enable the regression testing level of the build
 if(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
@@ -562,7 +559,7 @@ if(BUILD_ALL)
 	set(BUILD_DEMONSTRATION ON)
 	set(BUILD_NUMERICS ON)
 	set(BUILD_BENCHMARKS ON)
-	set(BUILD_NUMBER_SYSTEMS ON)
+	set(BUILD_NUMBERS ON)
 	set(BUILD_MIXEDPRECISION_SDK ON)
 	set(BUILD_APP_ENVIRONMENT ON)
 
@@ -578,6 +575,15 @@ if(BUILD_ALL)
 	set(BUILD_VALIDATION_HW ON)
 endif(BUILD_ALL)
 
+if(BUILD_CI)
+	# set the grouped components to build (will trigger builds when tested)
+	set(BUILD_NUMBERS ON)
+	set(BUILD_DEMONSTRATION OFF)
+	set(BUILD_NUMERICS OFF)
+	set(BUILD_MIXEDPRECISION_SDK OFF)
+	set(BUILD_APP_ENVIRONMENT ON)
+endif(BUILD_CI)
+
 if(BUILD_DEMONSTRATION)
 	# core demonstration example applications that use the library
 	set(BUILD_EDUCATION ON)
@@ -586,21 +592,7 @@ if(BUILD_DEMONSTRATION)
 	set(BUILD_PLAYGROUND ON)
 endif(BUILD_DEMONSTRATION)
 
-if(BUILD_NUMERICS)
-	set(BUILD_NUMERIC_CHALLENGES ON)
-	set(BUILD_NUMERIC_UTILS ON)
-	set(BUILD_NUMERIC_FUNCTIONS ON)
-	set(BUILD_NUMERIC_IEEE_QUIRES ON)
-endif(BUILD_NUMERICS)
-
-if(BUILD_BENCHMARKS)
-	# build the benchmark suites
-	set(BUILD_BENCHMARK_PERFORMANCE ON)
-	set(BUILD_BENCHMARK_ACCURACY ON)
-	set(BUILD_BENCHMARK_ENERGY ON)
-endif(BUILD_BENCHMARKS)
-
-if(BUILD_NUMBER_SYSTEMS)
+if(BUILD_NUMBERS)
 	# build the different test/verification suites for each number system
 	set(BUILD_NUMBER_ARITHMETIC_CLASSES ON)
 	set(BUILD_NUMBER_NATIVE_TYPES ON)
@@ -620,7 +612,23 @@ if(BUILD_NUMBER_SYSTEMS)
 	
 	# build the conversion test suites
 	set(BUILD_NUMBER_CONVERSIONS ON)
-endif(BUILD_NUMBER_SYSTEMS)
+endif(BUILD_NUMBERS)
+
+# build numerical tools and tests
+if(BUILD_NUMERICS)
+	set(BUILD_NUMERIC_FUNCTIONS ON)
+	set(BUILD_NUMERIC_QUIRES ON)
+	set(BUILD_NUMERIC_CHALLENGES ON)
+	set(BUILD_NUMERIC_UTILS ON)
+	set(BUILD_NUMERIC_FPBENCH ON)
+endif(BUILD_NUMERICS)
+
+# build the benchmark suites
+if(BUILD_BENCHMARKS)
+	set(BUILD_BENCHMARK_PERFORMANCE ON)
+	set(BUILD_BENCHMARK_ACCURACY ON)
+	set(BUILD_BENCHMARK_ENERGY ON)
+endif(BUILD_BENCHMARKS)
 
 if(BUILD_MIXEDPRECISION_SDK)
 	set(BUILD_MIXEDPRECISION_ROOTS ON)
@@ -631,9 +639,15 @@ if(BUILD_MIXEDPRECISION_SDK)
 	set(BUILD_MIXEDPRECISION_LINEARALGEBRA ON)
 endif(BUILD_MIXEDPRECISION_SDK)
 
+##################################################################
+###          multi-file application regression environment
+
 if(BUILD_APP_ENVIRONMENT)
 add_subdirectory("tests/appenv")
 endif(BUILD_APP_ENVIRONMENT)
+
+##################################################################
+###          arithmetic type regression environment
 
 # Build the tests for the underlying storage classes
 if(BUILD_NUMBER_ARITHMETIC_CLASSES)
@@ -692,6 +706,7 @@ if(BUILD_NUMBER_POSITS)
 add_subdirectory("tests/posit")
 add_subdirectory("tests/posit/specialized")
 add_subdirectory("tests/adaptiveposit")
+add_subdirectory("tests/posit2")
 endif(BUILD_NUMBER_POSITS)
 
 if(BUILD_NUMBER_VALIDS)
@@ -713,6 +728,8 @@ if(BUILD_NUMBER_CONVERSIONS)
 add_subdirectory("tests/conversions")
 endif(BUILD_NUMBER_CONVERSIONS)
 
+##################################################################
+###          mixed-precision environment
 
 if(BUILD_MIXEDPRECISION_ROOTS)
 add_subdirectory("mixedprecision/roots")
@@ -738,6 +755,9 @@ if(BUILD_MIXEDPRECISION_LINEARALGEBRA)
 add_subdirectory("mixedprecision/linearalgebra")
 endif(BUILD_MIXEDPRECISION_LINEARALGEBRA)
 
+##################################################################
+###          benchmark environment
+
 # performance benchmarks
 if(BUILD_BENCHMARK_PERFORMANCE)
 add_subdirectory("benchmark/performance/blas")
@@ -754,6 +774,9 @@ if(BUILD_BENCHMARK_ENERGY)
 add_subdirectory("benchmark/energy/blas")
 endif(BUILD_BENCHMARK_ENERGY)
 
+##################################################################
+###          tools, utilities, education, playground environment
+
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
@@ -766,6 +789,13 @@ add_subdirectory("education/tables")
 add_subdirectory("education/ranges")
 add_subdirectory("education/quire")
 endif(BUILD_EDUCATION)
+
+if(BUILD_PLAYGROUND)
+add_subdirectory("playground")
+endif(BUILD_PLAYGROUND)
+
+##################################################################
+###          application examples
 
 # application examples
 if(BUILD_APPLICATIONS)
@@ -794,27 +824,40 @@ add_subdirectory("applications/stream")
 add_subdirectory("applications/weather")
 endif(BUILD_APPLICATIONS)
 
+##################################################################
+###          numerical utilities and challenges 
+
 # numerical benchmarks and challenge problems
 if(BUILD_NUMERIC_CHALLENGES)
-add_subdirectory("tests/numerical/properties")
+add_subdirectory("numeric/properties")
 endif(BUILD_NUMERIC_CHALLENGES)
+
 if(BUILD_NUMERIC_UTILS)
-add_subdirectory("tests/numerical/utils")
+add_subdirectory("numeric/utils")
 endif(BUILD_NUMERIC_UTILS)
-if(BUILD_NUMERIC_FPBENCH)
-add_subdirectory("tests/numerical/fpbench")
-endif(BUILD_NUMERIC_FPBENCH)
+
 if(BUILD_NUMERIC_FUNCTIONS)
-add_subdirectory("tests/functions")
+add_subdirectory("numeric/functions")
 endif(BUILD_NUMERIC_FUNCTIONS)
+
+# quire capability
+if(BUILD_NUMERIC_QUIRES)
+add_subdirectory("numeric/quire/ieee754")
+endif(BUILD_NUMERIC_QUIRES)
+
+if(BUILD_NUMERIC_FPBENCH)
+add_subdirectory("numeric/fpbench")
+endif(BUILD_NUMERIC_FPBENCH)
+
+##################################################################
+###          hardware validation environment
 
 if(BUILD_VALIDATION_HW)
 add_subdirectory("validation/hw")
 endif(BUILD_VALIDATION_HW)
 
-if(BUILD_PLAYGROUND)
-add_subdirectory("playground")
-endif(BUILD_PLAYGROUND)
+##################################################################
+###          C api
 
 # C API library and their tests
 if(BUILD_C_API_PURE_LIB)
@@ -827,10 +870,8 @@ add_subdirectory("c_api/shim/posit")
 add_subdirectory("c_api/shim/test/posit")
 endif(BUILD_C_API_SHIM_LIB)
 
-# IEEE float/double quire capability
-if(BUILD_IEEE_FLOAT_QUIRES)
-add_subdirectory("tests/float")
-endif(BUILD_IEEE_FLOAT_QUIRES)
+##################################################################
+###          dense BLAS environment for experimentation
 
 # Basic Linear Algebra library
 if(BUILD_LINEAR_ALGEBRA_BLAS)

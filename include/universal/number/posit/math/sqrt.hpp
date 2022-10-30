@@ -1,7 +1,7 @@
 #pragma once
 // sqrt.hpp: sqrt functions for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
@@ -24,7 +24,7 @@ namespace sw { namespace universal {
 		return x_n;
 	}
 
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	inline posit<nbits, es> BabylonianMethod(const posit<nbits, es>& v) {
 		const double eps = 1.0e-5;
 		posit<nbits, es> half(0.5);
@@ -123,7 +123,7 @@ namespace sw { namespace universal {
 	}
 
 	// fast sqrt at a given posit configuration.
-	template<size_t nbits, size_t es, size_t fbits>
+	template<unsigned nbits, unsigned es, unsigned fbits>
 	inline internal::value<fbits> fast_sqrt(internal::value<fbits>& v) {
 		if (_trace_sqrt) std::cout << "---------------------------  SQRT -----------------------" << std::endl;
 		//			static_assert(nbits >= 16, "fast_sqrt requires posit configurations nbits >= 16");
@@ -162,7 +162,7 @@ namespace sw { namespace universal {
 
 #if POSIT_NATIVE_SQRT
 	// sqrt for arbitrary posit
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
 		posit<nbits, es> p;
 		if (a.isneg() || a.isnar()) {
@@ -171,8 +171,8 @@ namespace sw { namespace universal {
 		}
 
 		// for small posits use a more precise posit to do the calculation while keeping the es config the same
-		constexpr size_t anbits = nbits > 33 ? nbits : 33;
-		constexpr size_t fbits = posit<anbits, es>::fbits;
+		constexpr unsigned anbits = nbits > 33 ? nbits : 33;
+		constexpr unsigned fbits = posit<anbits, es>::fbits;
 		value<fbits> v;
 		a.normalize_to(v);
 		value<fbits> vsqrt = fast_sqrt<anbits, es, fbits>(v);
@@ -181,14 +181,14 @@ namespace sw { namespace universal {
 		return p;
 	}
 #else
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
 		return posit<nbits, es>(std::sqrt((double)a));
 	}
 #endif
 
 	// reciprocal sqrt
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	inline posit<nbits, es> rsqrt(const posit<nbits, es>& a) {
 		posit<nbits, es> v = sqrt(a);
 		return v.reciprocate();
