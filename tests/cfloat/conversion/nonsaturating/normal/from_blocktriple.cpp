@@ -35,9 +35,9 @@ template<size_t nbits, size_t es>
 void Test() 
 {
 	using BlockType = uint8_t;
-	constexpr bool hasSubnormals = false;
+	constexpr bool hasSubnormals   = false;
 	constexpr bool hasSupernormals = false;
-	constexpr bool isSaturating = false;
+	constexpr bool isSaturating    = false;
 	using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 //	constexpr BlockTripleOperator op = BlockTripleOperator::ADD;
 // 	constexpr size_t fbits = nbits - es - 1ull;
