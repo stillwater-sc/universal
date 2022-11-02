@@ -1,6 +1,6 @@
 //  constexpr.cpp : compile-time tests for constexpr of blockbinary type
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -8,12 +8,18 @@
 #include <iostream>
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/verification/test_suite.hpp>
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "blockbinary storage class constexpr compile-time testing";
+	std::string test_suite  = "blockbinary constexpr compile-time validation";
+	std::string test_tag    = "constexpr";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	{
 		constexpr blockbinary<8, uint8_t> b8_1b(0x5555);
@@ -31,6 +37,8 @@ try {
 		std::cout << b16_1 << '\n' << b16_2 << '\n' << b16_4b << '\n';
 	}
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

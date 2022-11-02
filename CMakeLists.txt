@@ -116,6 +116,7 @@ option(BUILD_NUMBER_DECIMALS             "Set to ON to build decimal tests"     
 option(BUILD_NUMBER_RATIONALS            "Set to ON to build rational tests"                   OFF)
 option(BUILD_NUMBER_FIXPNTS              "Set to ON to build fixed-point tests"                OFF)
 option(BUILD_NUMBER_CFLOATS              "Set to ON to build cfloat tests"                     OFF)
+option(BUILD_NUMBER_DFLOATS              "Set to ON to build dfloat tests"                     OFF)
 option(BUILD_NUMBER_AREALS               "Set to ON to build areal tests"                      OFF)
 option(BUILD_NUMBER_UNUM_TYPE_1          "Set to ON to build unum Type 1 tests"                OFF)
 option(BUILD_NUMBER_UNUM_TYPE_2          "Set to ON to build unum Type 2 tests"                OFF)
@@ -603,6 +604,7 @@ if(BUILD_NUMBERS)
 	set(BUILD_NUMBER_RATIONALS ON)
 	set(BUILD_NUMBER_FIXPNTS ON)
 	set(BUILD_NUMBER_CFLOATS ON)
+	set(BUILD_NUMBER_DFLOATS ON)
 	set(BUILD_NUMBER_AREALS ON)
 	set(BUILD_NUMBER_UNUM_TYPE_1 ON)
 	set(BUILD_NUMBER_UNUM_TYPE_2 ON)
@@ -655,6 +657,7 @@ endif(BUILD_APP_ENVIRONMENT)
 if(BUILD_NUMBER_ARITHMETIC_CLASSES)
 add_subdirectory("tests/bitblock")
 add_subdirectory("tests/value")
+add_subdirectory("tests/blockdecimal")
 add_subdirectory("tests/blockbinary")
 add_subdirectory("tests/blocksignificant")
 add_subdirectory("tests/blocktriple")
@@ -724,10 +727,15 @@ if(BUILD_NUMBER_AREALS)
 add_subdirectory("tests/areal")
 endif(BUILD_NUMBER_AREALS)
 
-# cfloats
+# classic floats
 if(BUILD_NUMBER_CFLOATS)
 add_subdirectory("tests/cfloat")
 endif(BUILD_NUMBER_CFLOATS)
+
+# decimal floats
+if(BUILD_NUMBER_DFLOATS)
+add_subdirectory("tests/dfloat")
+endif(BUILD_NUMBER_DFLOATS)
 
 # conversion tests suites
 if(BUILD_NUMBER_CONVERSIONS)

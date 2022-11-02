@@ -1,4 +1,4 @@
-// api.cpp: test suite runner for class interface tests of the fixpnt<nbits,rbits,Modulo/Saturate,BlockType> type
+// api.cpp: test suite runner for class interface tests of the binary fixpnt type
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -34,7 +34,7 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "fixpnt arithmetic type API";
-//	std::string test_tag    = "";
+	std::string test_tag    = "api";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 

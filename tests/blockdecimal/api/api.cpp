@@ -1,4 +1,4 @@
-//  conversion.cpp : test suite runner for blockbinary construction and conversion of blockbinary
+//  api.cpp : test suite runner for the class interface of the blockdecimal type
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -7,35 +7,33 @@
 #include <universal/utility/long_double.hpp>
 #include <iostream>
 
-#include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blockdecimal/blockdecimal.hpp>
 #include <universal/verification/test_suite.hpp>
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "blockbinary conversion validation";
-	std::string test_tag    = "conversion";
+	std::string test_suite  = "blockdecimal API validation";
+	std::string test_tag    = "API";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
+	/////////////////         construction
 	{
-		// scenario that happens in unrounded add/sub where blockbinary is used as storage type for fraction or significant
-		constexpr size_t fbits = 8;
-		constexpr size_t fhbits = fbits + 1;
-		constexpr size_t abits = fhbits + 3;
-		constexpr size_t sumbits = abits + 1;
-		size_t msbMask = 1;
-		blockbinary<fhbits, uint8_t> a;
-		for (size_t i = 0; i < fbits; ++i) {
-			a.setbits(msbMask);
-			blockbinary<sumbits, uint8_t> b(a);
-			std::cout << to_binary(a, true) << '\n';
-			std::cout << to_binary(b, true) << '\n';
-			msbMask <<= 1;
-		}
+		// default uses byte alignment and represents a 2's complement number
+//		blockdecimal<16> a;
+//		a = -1;
+//		std::cout << a << '\n';
+
+	}
+
+	{
+//		constexpr blockdecimal<8, uint8_t> b8(0x5555);
+//		std::cout << a << '\n';
+
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

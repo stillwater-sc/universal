@@ -31,7 +31,7 @@ namespace sw { namespace universal {
 11 -1
 */
 constexpr float posit_2_0_values_lookup[8] = {
-	0.0f, 1.0f, -INFINITY, -1.0f,
+	0.0f, 1.0f, std::numeric_limits<float>::signaling_NaN(), -1.0f,
 };
 
 constexpr uint8_t posit_2_0_addition_lookup[16] = {

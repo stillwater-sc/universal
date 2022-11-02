@@ -19,7 +19,7 @@
 
 template<typename TestType>
 void ReportTrivialityOfType() {
-	std::string testType = sw::universal::type_tag(TestType());
+	std::string testType = "type_tag is TBD"; // sw::universal::type_tag(TestType());
 
 	bool isTrivial = bool(std::is_trivial<TestType>());
 	static_assert(std::is_trivial<TestType>(), " should be trivial but failed the assertion");
