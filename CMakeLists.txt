@@ -122,7 +122,7 @@ option(BUILD_NUMBER_UNUM_TYPE_1          "Set to ON to build unum Type 1 tests" 
 option(BUILD_NUMBER_UNUM_TYPE_2          "Set to ON to build unum Type 2 tests"                OFF)
 option(BUILD_NUMBER_POSITS               "Set to ON to build unum Type 3 posit tests"          OFF)
 option(BUILD_NUMBER_VALIDS               "Set to ON to build unum Type 3 valid tests"          OFF)
-option(BUILD_NUMBER_REALS                "Set to ON to build real tests"                       OFF)
+option(BUILD_NUMBER_ORACLES              "Set to ON to build oracle number system tests"       OFF)
 option(BUILD_NUMBER_LNS                  "Set to ON to build LNS tests"                        OFF)
 option(BUILD_NUMBER_MDLNS                "Set to ON to build MDLNS tests"                      OFF)
 option(BUILD_NUMBER_SORNS                "Set to ON to build SORN tests"                       OFF)
@@ -598,7 +598,7 @@ if(BUILD_NUMBERS)
 	# build the different test/verification suites for each number system
 	set(BUILD_NUMBER_ARITHMETIC_CLASSES ON)
 	set(BUILD_NUMBER_NATIVE_TYPES ON)
-	set(BUILD_NUMBER_REALS ON)
+	set(BUILD_NUMBER_ORACLES ON)
 	set(BUILD_NUMBER_INTEGERS ON)
 	set(BUILD_NUMBER_DECIMALS ON)
 	set(BUILD_NUMBER_RATIONALS ON)
@@ -647,7 +647,7 @@ endif(BUILD_MIXEDPRECISION_SDK)
 ###          multi-file application regression environment
 
 if(BUILD_APP_ENVIRONMENT)
-add_subdirectory("tests/appenv")
+add_subdirectory("static/appenv")
 endif(BUILD_APP_ENVIRONMENT)
 
 ##################################################################
@@ -655,91 +655,91 @@ endif(BUILD_APP_ENVIRONMENT)
 
 # Build the tests for the underlying storage classes
 if(BUILD_NUMBER_ARITHMETIC_CLASSES)
-add_subdirectory("tests/bitblock")
-add_subdirectory("tests/value")
-add_subdirectory("tests/blockdecimal")
-add_subdirectory("tests/blockbinary")
-add_subdirectory("tests/blocksignificant")
-add_subdirectory("tests/blocktriple")
+add_subdirectory("internal/bitblock")
+add_subdirectory("internal/value")
+add_subdirectory("internal/blockdecimal")
+add_subdirectory("internal/blockbinary")
+add_subdirectory("internal/blocksignificant")
+add_subdirectory("internal/blocktriple")
 endif(BUILD_NUMBER_ARITHMETIC_CLASSES)
 
 if(BUILD_NUMBER_NATIVE_TYPES)
-add_subdirectory("tests/native")
+add_subdirectory("static/native")
 endif(BUILD_NUMBER_NATIVE_TYPES)
 
 # Arbitrary integers tests
 if(BUILD_NUMBER_INTEGERS)
-add_subdirectory("tests/integer")
-add_subdirectory("tests/adaptiveint")
+add_subdirectory("static/integer")
 endif(BUILD_NUMBER_INTEGERS)
 
 if(BUILD_NUMBER_DECIMALS)
-add_subdirectory("tests/decimal")
+add_subdirectory("elastic/decimal")
 endif(BUILD_NUMBER_DECIMALS)
 
 if(BUILD_NUMBER_RATIONALS)
-add_subdirectory("tests/rational")
+add_subdirectory("elastic/rational")
 endif(BUILD_NUMBER_RATIONALS)
 
 # Arbitrary fixed-point tests
 if(BUILD_NUMBER_FIXPNTS)
-add_subdirectory("tests/fixpnt")
+add_subdirectory("static/fixpnt")
 endif(BUILD_NUMBER_FIXPNTS)
 
 # Arbitrary reals tests
-if(BUILD_NUMBER_REALS)
-add_subdirectory("tests/adaptivefloat")
-endif(BUILD_NUMBER_REALS)
+if(BUILD_NUMBER_ORACLES)
+add_subdirectory("elastic/adaptiveint")
+add_subdirectory("elastic/adaptivefloat")
+add_subdirectory("elastic/adaptiveposit")
+endif(BUILD_NUMBER_ORACLES)
 
 if(BUILD_NUMBER_LNS)
-add_subdirectory("tests/lns")
+add_subdirectory("static/lns")
 endif(BUILD_NUMBER_LNS)
 
 if(BUILD_NUMBER_MDLNS)
-add_subdirectory("tests/mdlns")
+add_subdirectory("static/mdlns")
 endif(BUILD_NUMBER_MDLNS)
 
 if(BUILD_NUMBER_SORNS)
-add_subdirectory("tests/sorn")
+add_subdirectory("static/sorn")
 endif(BUILD_NUMBER_SORNS)
 
 if(BUILD_NUMBER_UNUM_TYPE_1)
-add_subdirectory("tests/unum")
+add_subdirectory("elastic/unum")
 endif(BUILD_NUMBER_UNUM_TYPE_1)
 
 if(BUILD_NUMBER_UNUM_TYPE_2)
-add_subdirectory("tests/unum2")
+add_subdirectory("static/unum2")
 endif(BUILD_NUMBER_UNUM_TYPE_2)
 
 if(BUILD_NUMBER_POSITS)
-add_subdirectory("tests/posit")
-add_subdirectory("tests/posit/specialized")
-add_subdirectory("tests/adaptiveposit")
-add_subdirectory("tests/posit2")
+add_subdirectory("static/posit")
+add_subdirectory("static/posit/specialized")
+add_subdirectory("static/posit2")
 endif(BUILD_NUMBER_POSITS)
 
 if(BUILD_NUMBER_VALIDS)
-add_subdirectory("tests/valid")
+add_subdirectory("static/valid")
 endif(BUILD_NUMBER_VALIDS)
 
 # reals with an uncertainty bit
 if(BUILD_NUMBER_AREALS)
-add_subdirectory("tests/areal")
+add_subdirectory("static/areal")
 endif(BUILD_NUMBER_AREALS)
 
 # classic floats
 if(BUILD_NUMBER_CFLOATS)
-add_subdirectory("tests/cfloat")
+add_subdirectory("static/cfloat")
 endif(BUILD_NUMBER_CFLOATS)
 
 # decimal floats
 if(BUILD_NUMBER_DFLOATS)
-add_subdirectory("tests/dfloat")
+add_subdirectory("static/dfloat")
 endif(BUILD_NUMBER_DFLOATS)
 
 # conversion tests suites
 if(BUILD_NUMBER_CONVERSIONS)
-add_subdirectory("tests/conversions")
+add_subdirectory("static/conversions")
 endif(BUILD_NUMBER_CONVERSIONS)
 
 ##################################################################
@@ -889,10 +889,10 @@ endif(BUILD_C_API_SHIM_LIB)
 
 # Basic Linear Algebra library
 if(BUILD_LINEAR_ALGEBRA_BLAS)
-add_subdirectory("tests/blas")
+add_subdirectory("linalg/blas")
 endif(BUILD_LINEAR_ALGEBRA_BLAS)
 if(BUILD_LINEAR_ALGEBRA_VMATH)
-add_subdirectory("tests/vmath")
+add_subdirectory("linalg/vmath")
 endif(BUILD_LINEAR_ALGEBRA_VMATH)
 
 ####
