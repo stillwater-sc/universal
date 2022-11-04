@@ -13,11 +13,11 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/adaptiveint/adaptiveint.hpp>
+#include <universal/number/einteger/einteger.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
-
+#include <universal/number/lns/lns.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -40,22 +40,24 @@ using Integer = sw::universal::integer<8, uint8_t, sw::universal::IntegerNumberT
 using Fixpnt  = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
 using Cfloat  = sw::universal::half;
 using Posit   = sw::universal::posit<8,2>;
+using Lns     = sw::universal::lns<8, 2>;
 
 Integer integerPolynomial(const std::vector<int>& coef, const Integer& x);
 Fixpnt  fixpntPolynomial(const std::vector<int>& coef, const Fixpnt& x);
 Cfloat  cfloatPolynomial(const std::vector<int>& coef, const Cfloat& x);
 Posit   positPolynomial(const std::vector<int>& coef, const Posit& x);
+Lns     lnsPolynomial(const std::vector<int>& coef, const Lns& x);
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "multifile application environment";
-	std::string test_tag = "multifile application";
-	//bool reportTestCases = true;
+	std::string test_suite  = "multifile application environment";
+	std::string test_tag    = "multifile application";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -74,7 +76,7 @@ try {
 	std::cout << "fixpnt       : " << fixpntPolynomial(coefficients, Fixpnt(a)) << '\n';
 	std::cout << "cfloat       : " << cfloatPolynomial(coefficients, Cfloat(a)) << '\n';
 	std::cout << "posit        : " << positPolynomial(coefficients, Posit(a)) << '\n';
-
+	std::cout << "lns          : " << lnsPolynomial(coefficients, Lns(a)) << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

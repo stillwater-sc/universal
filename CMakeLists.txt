@@ -109,23 +109,29 @@ option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"
 option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 
 # number systems and their verification suites
-option(BUILD_NUMBER_ARITHMETIC_CLASSES   "Set to ON to build arithmetic class tests"           OFF)
+option(BUILD_NUMBER_INTERNALS            "Set to ON to build internal arithmetic type tests"   OFF)
 option(BUILD_NUMBER_NATIVE_TYPES         "Set to ON to build native type tests"                OFF)
-option(BUILD_NUMBER_INTEGERS             "Set to ON to build integer tests"                    OFF)
-option(BUILD_NUMBER_DECIMALS             "Set to ON to build decimal tests"                    OFF)
-option(BUILD_NUMBER_RATIONALS            "Set to ON to build rational tests"                   OFF)
-option(BUILD_NUMBER_FIXPNTS              "Set to ON to build fixed-point tests"                OFF)
-option(BUILD_NUMBER_CFLOATS              "Set to ON to build cfloat tests"                     OFF)
-option(BUILD_NUMBER_DFLOATS              "Set to ON to build dfloat tests"                     OFF)
-option(BUILD_NUMBER_AREALS               "Set to ON to build areal tests"                      OFF)
-option(BUILD_NUMBER_UNUM_TYPE_1          "Set to ON to build unum Type 1 tests"                OFF)
-option(BUILD_NUMBER_UNUM_TYPE_2          "Set to ON to build unum Type 2 tests"                OFF)
-option(BUILD_NUMBER_POSITS               "Set to ON to build unum Type 3 posit tests"          OFF)
-option(BUILD_NUMBER_VALIDS               "Set to ON to build unum Type 3 valid tests"          OFF)
-option(BUILD_NUMBER_ORACLES              "Set to ON to build oracle number system tests"       OFF)
-option(BUILD_NUMBER_LNS                  "Set to ON to build LNS tests"                        OFF)
-option(BUILD_NUMBER_MDLNS                "Set to ON to build MDLNS tests"                      OFF)
-option(BUILD_NUMBER_SORNS                "Set to ON to build SORN tests"                       OFF)
+
+option(BUILD_NUMBER_ELASTICS             "Set to ON to build arbitrary precision tests"        OFF)
+option(BUILD_NUMBER_EINTEGERS            "Set to ON to build elastic integer tests"            OFF)
+option(BUILD_NUMBER_EFLOATS              "Set to ON to build elastic float tests"              OFF)
+option(BUILD_NUMBER_DECIMALS             "Set to ON to build elastic decimal tests"            OFF)
+option(BUILD_NUMBER_RATIONALS            "Set to ON to build elastic rational tests"           OFF)
+option(BUILD_NUMBER_EPOSITS              "Set to ON to build elastic posit tests"              OFF)
+
+option(BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
+option(BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
+option(BUILD_NUMBER_FIXPNTS              "Set to ON to build static fixed-point tests"         OFF)
+option(BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
+option(BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
+option(BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
+option(BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
+option(BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
+option(BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
+option(BUILD_NUMBER_VALIDS               "Set to ON to build static unum type 3 valid tests"   OFF)
+option(BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
+option(BUILD_NUMBER_MDLNS                "Set to ON to build static mdlns tests"               OFF)
+option(BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
 # conversion test suites
 option(BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -144,7 +150,7 @@ option(BUILD_MIXEDPRECISION_APPROXIMATE   "Set to ON to build mixed-precision ap
 option(BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-precision integration"     OFF)
 option(BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
 option(BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
-option(BUILD_MIXEDPRECISION_LINEARALGEBRA "Set to ON to build mixed-precision linear algebra"  OFF)
+option(BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
 
 # validation
 option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -577,8 +583,8 @@ if(BUILD_ALL)
 	set(BUILD_VALIDATION_HW ON)
 endif(BUILD_ALL)
 
+# set the grouped components to build (will trigger builds when tested)
 if(BUILD_CI)
-	# set the grouped components to build (will trigger builds when tested)
 	set(BUILD_NUMBERS ON)
 	set(BUILD_DEMONSTRATION OFF)
 	set(BUILD_NUMERICS OFF)
@@ -586,8 +592,8 @@ if(BUILD_CI)
 	set(BUILD_APP_ENVIRONMENT ON)
 endif(BUILD_CI)
 
+# core demonstration example applications that use the library
 if(BUILD_DEMONSTRATION)
-	# core demonstration example applications that use the library
 	set(BUILD_EDUCATION ON)
 	set(BUILD_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
@@ -596,27 +602,37 @@ endif(BUILD_DEMONSTRATION)
 
 if(BUILD_NUMBERS)
 	# build the different test/verification suites for each number system
-	set(BUILD_NUMBER_ARITHMETIC_CLASSES ON)
+	set(BUILD_NUMBER_INTERNALS ON)
 	set(BUILD_NUMBER_NATIVE_TYPES ON)
-	set(BUILD_NUMBER_ORACLES ON)
-	set(BUILD_NUMBER_INTEGERS ON)
+	set(BUILD_NUMBER_ELASTICS ON)
+	set(BUILD_NUMBER_STATICS ON)
+	
+	# build the conversion test suites
+	set(BUILD_NUMBER_CONVERSIONS ON)
+endif(BUILD_NUMBERS)
+
+if(BUILD_NUMBER_ELASTICS)
+	set(BUILD_NUMBER_EINTEGERS ON)
 	set(BUILD_NUMBER_DECIMALS ON)
 	set(BUILD_NUMBER_RATIONALS ON)
+	set(BUILD_NUMBER_EFLOATS ON)
+	set(BUILD_NUMBER_EPOSITS ON)
+endif(BUILD_NUMBER_ELASTICS)
+
+if(BUILD_NUMBER_STATICS)
+	set(BUILD_NUMBER_INTEGERS ON)
 	set(BUILD_NUMBER_FIXPNTS ON)
 	set(BUILD_NUMBER_CFLOATS ON)
 	set(BUILD_NUMBER_DFLOATS ON)
 	set(BUILD_NUMBER_AREALS ON)
-	set(BUILD_NUMBER_UNUM_TYPE_1 ON)
-	set(BUILD_NUMBER_UNUM_TYPE_2 ON)
+	set(BUILD_NUMBER_UNUM1S ON)
+	set(BUILD_NUMBER_UNUM2S ON)
 	set(BUILD_NUMBER_POSITS ON)
 	set(BUILD_NUMBER_VALIDS ON)
 	set(BUILD_NUMBER_LNS ON)
 	set(BUILD_NUMBER_MDLNS ON)
 	set(BUILD_NUMBER_SORNS ON)
-	
-	# build the conversion test suites
-	set(BUILD_NUMBER_CONVERSIONS ON)
-endif(BUILD_NUMBERS)
+endif(BUILD_NUMBER_STATICS)
 
 # build numerical tools and tests
 if(BUILD_NUMERICS)
@@ -654,23 +670,26 @@ endif(BUILD_APP_ENVIRONMENT)
 ###          arithmetic type regression environment
 
 # Build the tests for the underlying storage classes
-if(BUILD_NUMBER_ARITHMETIC_CLASSES)
+if(BUILD_NUMBER_INTERNALS)
 add_subdirectory("internal/bitblock")
 add_subdirectory("internal/value")
 add_subdirectory("internal/blockdecimal")
 add_subdirectory("internal/blockbinary")
 add_subdirectory("internal/blocksignificant")
 add_subdirectory("internal/blocktriple")
-endif(BUILD_NUMBER_ARITHMETIC_CLASSES)
+endif(BUILD_NUMBER_INTERNALS)
 
+# native type int and float tests
 if(BUILD_NUMBER_NATIVE_TYPES)
 add_subdirectory("static/native")
 endif(BUILD_NUMBER_NATIVE_TYPES)
 
-# Arbitrary integers tests
-if(BUILD_NUMBER_INTEGERS)
-add_subdirectory("static/integer")
-endif(BUILD_NUMBER_INTEGERS)
+###################################################################
+###                  Arbitrary precision tests
+
+if(BUILD_NUMBER_EINTEGERS)
+add_subdirectory("elastic/einteger")
+endif(BUILD_NUMBER_EINTEGERS)
 
 if(BUILD_NUMBER_DECIMALS)
 add_subdirectory("elastic/decimal")
@@ -680,17 +699,25 @@ if(BUILD_NUMBER_RATIONALS)
 add_subdirectory("elastic/rational")
 endif(BUILD_NUMBER_RATIONALS)
 
-# Arbitrary fixed-point tests
+if(BUILD_NUMBER_EFLOATS)
+add_subdirectory("elastic/efloat")
+endif(BUILD_NUMBER_EFLOATS)
+
+if(BUILD_NUMBER_EPOSITS)
+add_subdirectory("elastic/eposit")
+endif(BUILD_NUMBER_EPOSITS)
+
+
+###################################################################
+###                  fixed-size number system tests
+
+if(BUILD_NUMBER_INTEGERS)
+add_subdirectory("static/integer")
+endif(BUILD_NUMBER_INTEGERS)
+
 if(BUILD_NUMBER_FIXPNTS)
 add_subdirectory("static/fixpnt")
 endif(BUILD_NUMBER_FIXPNTS)
-
-# Arbitrary reals tests
-if(BUILD_NUMBER_ORACLES)
-add_subdirectory("elastic/adaptiveint")
-add_subdirectory("elastic/adaptivefloat")
-add_subdirectory("elastic/adaptiveposit")
-endif(BUILD_NUMBER_ORACLES)
 
 if(BUILD_NUMBER_LNS)
 add_subdirectory("static/lns")
@@ -704,13 +731,13 @@ if(BUILD_NUMBER_SORNS)
 add_subdirectory("static/sorn")
 endif(BUILD_NUMBER_SORNS)
 
-if(BUILD_NUMBER_UNUM_TYPE_1)
+if(BUILD_NUMBER_UNUM1S)
 add_subdirectory("elastic/unum")
-endif(BUILD_NUMBER_UNUM_TYPE_1)
+endif(BUILD_NUMBER_UNUM1S)
 
-if(BUILD_NUMBER_UNUM_TYPE_2)
+if(BUILD_NUMBER_UNUM2S)
 add_subdirectory("static/unum2")
-endif(BUILD_NUMBER_UNUM_TYPE_2)
+endif(BUILD_NUMBER_UNUM2S)
 
 if(BUILD_NUMBER_POSITS)
 add_subdirectory("static/posit")
@@ -765,9 +792,9 @@ if(BUILD_MIXEDPRECISION_OPTIMIZE)
 add_subdirectory("mixedprecision/optimization")
 endif(BUILD_MIXEDPRECISION_OPTIMIZE)
 
-if(BUILD_MIXEDPRECISION_LINEARALGEBRA)
-add_subdirectory("mixedprecision/linearalgebra")
-endif(BUILD_MIXEDPRECISION_LINEARALGEBRA)
+if(BUILD_MIXEDPRECISION_TENSOR)
+add_subdirectory("mixedprecision/tensor")
+endif(BUILD_MIXEDPRECISION_TENSOR)
 
 ##################################################################
 ###          benchmark environment

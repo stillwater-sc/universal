@@ -1,4 +1,4 @@
-// comparison.cpp: test suite runner for logic comparisons on adaptive precision binary integers
+// exceptions.cpp: test suite runner for exceptions on adaptive precision binary integers
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -33,8 +33,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "adaptive precision linear float addition validation";
-	std::string test_tag    = "adaptive precision binary integer comparison failed: ";
+	std::string test_suite  = "adaptive precision binary integer exception validation";
+	std::string test_tag    = "einteger exception failed";
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
