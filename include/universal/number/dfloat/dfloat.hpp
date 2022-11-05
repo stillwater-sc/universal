@@ -54,7 +54,7 @@
 
 // useful functions to work with cfloats
 //#include <universal/number/dfloat/attributes.hpp>
-//#include <universal/number/dfloat/manipulators.hpp>
+#include <universal/number/dfloat/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// elementary math functions library

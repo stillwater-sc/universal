@@ -7,18 +7,31 @@
 
 namespace sw { namespace universal {
 
-// core dfloat types
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating> class dfloat;
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-		dfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-		abs(const dfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&);
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-		dfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-		sqrt(const dfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&);
+	// forward references
+	template<size_t ndigits, size_t es, typename BlockType> class dfloat;
 
-template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-		dfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
-		fabs(dfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>);
+	template<size_t ndigits, size_t es, typename BlockType, typename NativeFloat> 
+	dfloat<ndigits, es, BlockType>& 
+		convert(NativeFloat v, dfloat<ndigits, es, BlockType>& result);
+
+	template<size_t ndigits, size_t es, typename BlockType>
+	dfloat<ndigits, es, BlockType>&
+		convert_unsigned(std::uint64_t v, dfloat<ndigits, es, BlockType>& result);
+
+	template<size_t ndigits, size_t es, typename BlockType>
+	bool parse(const std::string& number, dfloat<ndigits, es, BlockType>& v);
+
+	template<size_t ndigits, size_t es, typename BlockType>
+	dfloat<ndigits, es, BlockType>
+		abs(const dfloat<ndigits, es, BlockType>&);
+		
+	template<size_t ndigits, size_t es, typename BlockType>
+	dfloat<ndigits, es, BlockType>
+		sqrt(const dfloat<ndigits, es, BlockType>&);
+
+	template<size_t ndigits, size_t es, typename BlockType>
+	dfloat<ndigits, es, BlockType>
+		fabs(dfloat<ndigits, es, BlockType>);
 
 #ifdef DFLOAT_QUIRE
 
