@@ -15,7 +15,7 @@
 namespace sw { namespace universal {
 
 // dfloat is an adaptive precision decimal floating-point type
-template<size_t _ndigits, size_t _es, typename bt = std::uint8_t> 
+template<unsigned _ndigits, unsigned _es, typename bt = std::uint8_t> 
 class dfloat {
 public:
 	static constexpr unsigned ndigits = _ndigits;

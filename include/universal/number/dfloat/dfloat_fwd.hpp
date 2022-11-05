@@ -8,28 +8,28 @@
 namespace sw { namespace universal {
 
 	// forward references
-	template<size_t ndigits, size_t es, typename BlockType> class dfloat;
+	template<unsigned ndigits, unsigned es, typename BlockType> class dfloat;
 
-	template<size_t ndigits, size_t es, typename BlockType, typename NativeFloat> 
+	template<unsigned ndigits, unsigned es, typename BlockType, typename NativeFloat> 
 	dfloat<ndigits, es, BlockType>& 
 		convert(NativeFloat v, dfloat<ndigits, es, BlockType>& result);
 
-	template<size_t ndigits, size_t es, typename BlockType>
+	template<unsigned ndigits, unsigned es, typename BlockType>
 	dfloat<ndigits, es, BlockType>&
 		convert_unsigned(std::uint64_t v, dfloat<ndigits, es, BlockType>& result);
 
-	template<size_t ndigits, size_t es, typename BlockType>
+	template<unsigned ndigits, unsigned es, typename BlockType>
 	bool parse(const std::string& number, dfloat<ndigits, es, BlockType>& v);
 
-	template<size_t ndigits, size_t es, typename BlockType>
+	template<unsigned ndigits, unsigned es, typename BlockType>
 	dfloat<ndigits, es, BlockType>
 		abs(const dfloat<ndigits, es, BlockType>&);
 		
-	template<size_t ndigits, size_t es, typename BlockType>
+	template<unsigned ndigits, unsigned es, typename BlockType>
 	dfloat<ndigits, es, BlockType>
 		sqrt(const dfloat<ndigits, es, BlockType>&);
 
-	template<size_t ndigits, size_t es, typename BlockType>
+	template<unsigned ndigits, unsigned es, typename BlockType>
 	dfloat<ndigits, es, BlockType>
 		fabs(dfloat<ndigits, es, BlockType>);
 
