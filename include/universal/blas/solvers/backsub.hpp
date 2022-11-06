@@ -23,10 +23,8 @@ Vector backsub(const Matrix& A, const Vector& b) {
             y += A(i,j)*x(j);
         }
         x(i) = (b(i) - y)/A(i,i);
-        // std::cout << i << "   " <<   x(i) << std::endl; 
     }
 
 	return x;
 }
-
 }}} // namespace sw::universal::blas

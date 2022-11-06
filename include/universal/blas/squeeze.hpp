@@ -11,6 +11,7 @@
 // --------------------------------------------------------------- //
 #pragma once
 #include <universal/blas/matrix.hpp>
+// #include <universal/blas/vector.hpp>
 #include <universal/blas/blas.hpp>
 
 namespace sw{namespace universal{
@@ -30,13 +31,59 @@ void squeezeRoundReplace(blas::matrix<Scalar>& A){
 } // Round and Replace
 
 
-template<typename Scalar>
-void squeezeScaleRound(blas::matrix<Scalar>& A, Scalar T = 1){
+template<typename Working, typename Low>
+void squeezeScaleRound(blas::matrix<Working>& A, Working T = 1.0){
         /* scale by scalar, then round */
-        Scalar maxpos(SpecificValue::maxpos);
-        Scalar mu = T*maxpos / maxelement(A);
-        A = mu*A;
+        Low xmax(SpecificValue::maxpos);
+        //std::cout << "X max = " << xmax << std::endl;
+        Working Xmax(xmax);
+        Working Amax = maxelement(A);
+        Working mu =(T*Xmax) / Amax;
+        A = mu*A;  //Scale A
+        // Al = A;
+        // std::cout << Xmax << "\t" << Amax << "\t" << T << "\t" << mu << "\n" << std::endl;
+
 } // Scale and Round
+
+
+
+template<typename Working, typename Low>
+void twosideScaleRound(blas::matrix<Working>& A, Working T = 1.0){
+        /* two-sided scale, then round */
+        blas::matrix<Working> R(num_rows(A),num_cols(A));
+        blas::matrix<Working> S(num_rows(A),num_cols(A));
+        R = 1;
+        S = 1;
+
+        Low xmax(SpecificValue::maxpos);
+        Working Xmax(xmax);
+        Working beta = maxelement(R*A*S);
+        Working mu = (T*Xmax) / beta;
+        A = mu*A;  //Scale A
+        // std::cout << Xmax << "\t" << beta << "\t" << T << "\t" << mu << "\n" << std::endl;
+
+} // Scale and Round
+
+
+//template<typename Scalar>
+//blas::matrix<Scalar> squeezeTest(blas::matrix<Scalar>& A){
+        //  / * scale by scalar, then round */
+//        Scalar maxpos(SpecificValue::maxpos);
+//        Scalar mu = maxpos / maxelement(A);
+//        blas::matrix<Scalar> B = mu*A;
+//        return B;
+//} // Scale and Round 
+
+
+//template<typename Scalar>
+//blas::matrix<Scalar> squeezeTest(blas::matrix<Scalar>& A){
+        //  / * scale by scalar, then round */
+//        Scalar maxpos(SpecificValue::maxpos);
+//        Scalar mu = maxpos / maxelement(A);
+//        blas::matrix<Scalar> B = mu*A;
+//        return B;
+//} // Scale and Round 
+
 
 
 }} // namespace

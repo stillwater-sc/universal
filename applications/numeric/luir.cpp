@@ -1,27 +1,23 @@
-// luir: Iterative Refinement Experiment
-//      This focuses on the fundamentally important problem of solving Ax = b.
-//      It factors A into a low-precision LU, then solves for x.
-//      This estimate is then refined by solving (LU)d = r = b - Ax, and
-//      overwriting x with x + d, that is, x = x + d.  
-//      The process is repeated until convergence.  
-//
+// ************************************************************************
+// LUIR: Iterative Refinement with POSITS
+//    Addresses fundamental important problem of solving Ax = b.
+//      
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 // @jamesquinlan
-// Modified: 2022-09-30
+// Modified: 2022-11-05 (see history)
 // 
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+// This file is part of the universal numbers project, 
+// which is released under an MIT Open Source license.
 
-// See Notes at EOF.
+// ************************************************************************
+// Build Directory
+// universal/build/applications/numeric
 
 // Environmental Configurations
 #include<universal/utility/directives.hpp>
 #include<universal/utility/long_double.hpp>
 #include<universal/utility/bit_cast.hpp>
 #include <universal/utility/number_system_properties.hpp>
-
-// Configure the posit library with arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit.hpp>
 
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/cfloat/cfloat.hpp>
@@ -30,82 +26,34 @@
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/blas.hpp>
+#include <universal/blas/utes/matnorm.hpp>
+#include <universal/blas/utes/condest.hpp>
 
 // Support Packages
-//#include <universal/blas/solvers/jacobi.hpp>
-//#include <universal/blas/solvers/lu.hpp>
+#include <universal/blas/solvers/luq.hpp>
 #include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
-// #include <universal/blas/squeeze.hpp>
+#include <universal/blas/squeeze.hpp>
 // #include <universal/blas/nnz.hpp>
 
 // Matrix Test Suite
-// #include <universal/blas/matrices/q3.hpp>            // 3 x 3 test matrix
-// #include <universal/blas/matrices/q4.hpp>            // 4 x 4 test matrix
-// #include <universal/blas/matrices/lu4.hpp>           // 4 x 4 test matrix
-// #include <universal/blas/matrices/s4.hpp>            // 4 x 4 test matrix
-// #include <universal/blas/matrices/west0132.hpp>      //
-// #include <universal/blas/matrices/west0167.hpp>      //
-// #include <universal/blas/matrices/steam1.hpp>        //
-// #include <universal/blas/matrices/steam3.hpp>        //
-// #include <universal/blas/matrices/fs_183_1.hpp>      //
-//#include <universal/blas/matrices/fs_183_3.hpp>         // 
-//#include <universal/blas/matrices/faires74x3.hpp>       // Example Burden and Faires 3x3 Ill-conditioned
-#include <universal/blas/matrices/rand4.hpp>            // Random 4x4 (low condition) for testing
-
-namespace sw { namespace universal { namespace blas {  
-template<typename Scalar>
-std::tuple<vector<Scalar>, vector<Scalar>> luir(const matrix<Scalar>& A){ 
-    using Vector = sw::universal::blas::vector<Scalar>;
-    Vector xx(10,1); // vector length 10 of values 1 = ones(10,1);
-    //std::cout << x << std::endl;
-    Vector r = {1,1,1,1}; // 
-    return std::make_tuple(xx,r); 
-}
-}}} // namespaces
-
-
-// Currently not used
-template<typename Real>
-void test(const Real &a, const Real &b){
-    std::cout << "Test TBD\n";
-}
-
-
-// Run Posit
-template<size_t nbits, size_t es>
-void runPosit()
-{
-    using namespace sw::universal;
-    posit<nbits, es> p, q, mp;  // mp = minpos
-    p.maxpos();
-    q.maxneg();
-    mp.minpos();
-
-    // test<posit<nbits, es>>(q, p);
-     std::cout << "Maxpos = " << p << '\n';
-     std::cout << "Minpos = " << mp << '\n';
-     double dminpos = double(mp);
-     std::cout << "Double min real = " << dminpos << '\n';
-     std::cout << "Dynamic range " << dynamic_range<posit<nbits,es>>() << '\n';
-     std::cout << "Dynamic Double " << dynamic_range<double>() << '\n';
-}
-
-// Run Cfloat function - NOT USED
-template<size_t nbits, size_t es>
-void runCfloat()
-{
-    using namespace sw::universal;
-    using Cfloat = cfloat<nbits,es, uint16_t, true, false, false>;
-    Cfloat a, b;
-    a.minpos();
-    b.maxpos();
-    std::cout << b << std::endl;
-
-    //test<Cfloat>(a,b);
-}
-
+#include <universal/blas/matrices/q3.hpp>            // 3 x 3 test matrix
+#include <universal/blas/matrices/q4.hpp>            // 4 x 4 test matrix
+#include <universal/blas/matrices/q5.hpp>            // 4 x 4 test matrix
+#include <universal/blas/matrices/lu4.hpp>           // 4 x 4 test matrix
+#include <universal/blas/matrices/s4.hpp>            // 4 x 4 test matrix
+#include <universal/blas/matrices/west0132.hpp>      //
+#include <universal/blas/matrices/west0167.hpp>      //
+#include <universal/blas/matrices/steam1.hpp>        //
+#include <universal/blas/matrices/steam3.hpp>        //
+#include <universal/blas/matrices/fs_183_1.hpp>      //
+#include <universal/blas/matrices/fs_183_3.hpp>      // 
+#include <universal/blas/matrices/faires74x3.hpp>    // Example Burden and Faires 3x3 Ill-conditioned
+#include <universal/blas/matrices/rand4.hpp>         // Random 4x4 (low condition) for testing
+#include <universal/blas/matrices/cage3.hpp>         //
+#include <universal/blas/matrices/bwm200.hpp>        // Chem. simulation 1e3.
+#include <universal/blas/matrices/gre_343.hpp>       // Directed Weighted Graph
 
 int main(){
 try {
@@ -113,146 +61,147 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-	#define NUMERIC 5
-	// 1 = POSIT, 2 = CFLOAT, 3 = Float, 4 = FIXPT.
-   
-	// Squeeze to Posit
-	#if NUMERIC == 1 
-    runPosit<64,2>();
+    // Configurations
+    constexpr unsigned wbits = 64;
+    constexpr unsigned wes = 11;
 
-	// Squeeze to Cfloat
-	#elif NUMERIC == 2
-	runCfloat<32,8>();
+    constexpr unsigned lbits = 16;
+    constexpr unsigned les = 6;
+    
+    constexpr unsigned hbits = 128;
+    constexpr unsigned hes = 15;
 
-	// Squeeze to Float (base case)
-	#elif NUMERIC == 3
-	{
-		test<float>(FLT_MAX,FLT_MIN);	
-	}
-	
+    // Squeeze Selection
+    size_t algo = 50; // See Higham 2019 Squeeze
 
+    // Precision Templates
+    using WorkingPrecision = cfloat<wbits,wes,uint32_t, true, false, false>;
+    using LowPrecision  = cfloat<lbits,les,uint32_t, true, false, false>;
+    using HighPrecision  =  cfloat<hbits,hes,uint32_t, true, false, false>;
 
-	// Squeeze to Fix Point
-	#elif NUMERIC == 4
-	{
-		test<fixpnt<nbits,rbits>>();
-	}
+    // View Numerical Properties of Configuration
+    LowPrecision m, M;
+    m.minpos();
+    M.maxpos();
+    std::cout << "Numeric Bounds = (" << m << ", " << M << ")" << std::endl;
+    // std::cout << "Dynamic range " << dynamic_range<LowPrecision>() << '\n';
 
-	#elif NUMERIC == 5
-	{
-        // Configurations
-        constexpr size_t hbits = 64;
-        constexpr size_t hes = 0;
-        constexpr size_t lnbits = 8;
-        constexpr size_t les = 0;
-
-        // Precision Templates
-        using WorkingPrecision = posit<hbits,hes>; // cfloat<hbits,hes,uint16_t, true, false, false>;
-        using FactorPrecision  =  posit<lnbits,les>; // cfloat<lbits,les,uint16_t, true, false, false>;
-        
-        // Matrix and Vector Types
-        // Type alias
-        using Mw = sw::universal::blas::matrix<WorkingPrecision>; // Working precision
-        using Vw = sw::universal::blas::vector<WorkingPrecision>;
-        using Mf = sw::universal::blas::matrix<FactorPrecision>;
-        using Vf = sw::universal::blas::vector<FactorPrecision>;
-
-       
-        
-        // Initialize Variables
-        size_t niters = 0;
-
-        
-        // Let A be n x n ("working precision") nonsingular matrix.
-        Mw A = rand4;  // lu4, west0167, steam1, steam3, fs_183_1, fs_183_3, faires74x3
-        size_t n = num_cols(A);
-
-        Vw X(n,1);    // X is exact solution = [1, 1, 1, ..., 1]
-        Vw b = A*X;   // Generate b vector in working precision.  
-
-        // Store A and b in Low Precision
-        Mf B(A);
-        Vf c(b);
-
-        // Print Results
-        std::cout << "A = " << A << std::endl;
-        std::cout << "B = " << B << std::endl;
-        std::cout << "b = " << b << std::endl;
-        std::cout << "c = " << c << std::endl;
+    // Matrix and Vector Type alias
+    using Mh = sw::universal::blas::matrix<HighPrecision>;
+    using Vh = sw::universal::blas::vector<HighPrecision>;
+    using Mw = sw::universal::blas::matrix<WorkingPrecision>; // Working precision
+    using Vw = sw::universal::blas::vector<WorkingPrecision>;
+    using Ml = sw::universal::blas::matrix<LowPrecision>;
 
 
-        // Factor A = LU
-        auto [P, L, U] = plu(B);  // Factor low precision
-        Mw Lw(L), Uw(U);          // Refining low precision LU
+    // Let A be n x n ("working precision") nonsingular matrix.
+    Mw A = q5;  // rand4, lu4, west0167, steam1, steam3, fs_183_1, fs_183_3, faires74x3
+    unsigned n = num_cols(A);
+    Mh Ah(A); // High precision A
 
-        // Print Results
-        std::cout << "L = " << L << std::endl;
-        std::cout << "U = " << U << std::endl;
+    
+    Vh X(n,1);    // X is exact solution = [1, 1, 1, ..., 1]
+    Vw x(X);
+    Vh b = Ah*X;   // Generate b vector in high precision.  
+    Vw bw(b);
 
+    // Store A in Low Precision
+    WorkingPrecision T = 1;
+    
 
-        // Header
-        std::cout << "#" << "      "  << "Residual   " << '\n';
-        std::cout << "-------------------------------"  << '\n';
+    Ml Al; //(A);  // Declare low precision matmrix
+    std::cout << "A = "  << A << std::endl;
+    if (algo == 21){ //Round, then replace
+        Al = A;
+        //squeezeRoundReplace(Al);
+        // std::cout << "Print This!!! = " << Al << std::endl;
+    
+    }else if(algo == 22){
+        // std::cout << A << std::endl;
+        LowPrecision dummy = 1.0;
+        //squeezeScaleRound(A, T, dummy);
+        Al = A;  // put this in function, pass ref &Al to function
+        std::cout << Al << std::endl;
+    
+    
+    }else if(algo == 23){
+        std::cout << A << std::endl;
+        LowPrecision dummy = 1.0;
+        //squeezeScaleRound(A, T, dummy);
+        Al = A;  // put this in function
+        // std::cout << A << std::endl;
+        // Ml Al = squeezeTest(Aw);
+    
+    }else if(algo == 24){
+        std::cout << A << std::endl;
+        LowPrecision dummy = 1.0;
+        //squeezeScaleRound(A, T, dummy);
+        Al = A;  // put this in function
+        std::cout << A << std::endl;
+    
+    }else if(algo == 25){
+        std::cout << A << std::endl;
+        LowPrecision dummy = 1.0;
+        //squeezeScaleRound(A, T, dummy);
+        Al = A;  // put this in function
+        std::cout << A << std::endl;
+    
+    }else{
+        // Do nothing
+        Al = A;
+        std::cout << A << std::endl;
+        std::cout << Al << std::endl;
+    }
+    
+  
+    // Factor A = LU
+    luq(Al);  // factor low-precision A and store in Working precision
+    Mw LU(Al);// store in working precision
 
-        // 1. Solve Ax0 = b in low-precision, then store x0 in working
-        // std::cout << "L \\ c " <<  forwsub(L,c) << std::endl;
-        auto x = backsub(U,forwsub(L,c));
-        //std::cout << "x = " <<  x << std::endl;
-        
-        // Make working precision version of x and b. 
-        Vw y(x), r(b);  
+    // 1. Solve Ax = b in low-precision, then store x in working
+    auto xn = backsub(LU,forwsub(LU,bw));
 
-        // Print Results
-        // std::cout << "x = " << x << std::endl;
-        // std::cout << "y = " << y << std::endl;
-        // std::cout << "b = " << b << std::endl;
-        // std::cout << "r = " << r << std::endl;
-         
+    // Results Header
+    std::cout << "#" << "      "  << " ||x - xn||   " << '\n'; 
+    std::cout << "-------------------------------"  << '\n';
 
-        // Iterative Refinement 
-        while(((y - X).norm() > 1e-5) && (niters < 50)){
-            niters += 1;
-            // y = x;
-            // y.disp();
+    // Iterative Refinement 
+    // Stratagem: compute a quantity by adding a small correction to previous approximation.
+    Vh r; // High precision residual vector
+    size_t niters = 0;
+    while(((x - xn).norm() > 1e-7) && (niters < 25)){
+        niters += 1;
+        // ----------------------------------------------------------- 
+        // Residual Calculation
+        // A, b, y in "Working" precision (r in "higher")
+        // r is using the quire to defer rounding to working precision
+        // until assignment. 
+        Vh xh(xn);
+        r = b - Ah*xh;
+        Vw rn(r); // Store in working presicion
 
-            // ----------------------------------------------------------- 
-            // Residual Calculation
-            // A, b, y in "Working" precision (r in "higher")
-            // r is using the quire to defer rounding to working precision
-            // until assignment.  
-            for (size_t i = 0; i < n; ++i) {
-                sw::universal::quire<hbits, hes> q(r(i));
-                for (size_t j = 0; j < n; ++j) {
-                    q -= sw::universal::quire_mul(A(i,j), y(j));
-                }
-                sw::universal::convert(q.to_value(), r(i));  
-            }
-            //std::cout << "r = " << r << '\n';
-            // ----------------------------------------------------------- 
-
-
-
-            // ----------------------------------------------------------- 
-            // Solve Ad = r where A = LU (low precision)
-            // Solved in HIGH PRECESION using LU.
+        // Solve Ad = r where A = LU (low precision)
+        // Note: LU was coerced to working precision
+        auto d = backsub(LU,forwsub(LU,rn));  // Stored d in working precision         
+        xn += d;  // update solution vector with corrector
             
-            auto d = backsub(Uw,forwsub(Lw,r));
-            //std::cout << "d = " << d << '\n';
-            
-            y += d;  // y = y + d
-            //std::cout << "x = " << y << '\n';
-            // ----------------------------------------------------------- 
-            
-            // Results
-            std::cout << niters <<  "      "    << (X - y).norm() << '\n';
-        }
-	}
-	#endif
+        // Print Results
+        std::cout << niters << "\t"  << (x - xn).norm() << '\n';
+
+    } //wend
+
+    // Print solution vector
+    std::cout << "-------------------------------"  << '\n';
+    std::cout << "Showing first few elements of solution vector..." << '\n';
+    std::cout << "x = " << '\n';
+    for(size_t i=0;i < 3;++i){
+        std::cout << xn(i) << '\n';
+    }
 
 
 	int nrOfFailedTestCases = 0;
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-}
+} //try
 
     // Error messages
     catch (char const* msg) {
@@ -275,10 +224,37 @@ try {
         std::cerr << "Caught unknown exception" << std::endl;
         return EXIT_FAILURE;
     }
-}
+} // main
 
-// NOTES
-/*
+// Modification History
+/* ************************************************************************
+2022-11-05 
+ - Created an in-place LU decomposition to save storage.
+ - Updated forsub.hpp to in-place.  No longer requires lower triangular matrix
+    Added input parameter of type boolean to indicate whether it is lower tri.
+    In that case, we assume diagonal is all ones.  
+***************************************************************************
+*/
+
+// References
+/* ************************************************************************
+Higham, N. J., & Mary, T. (2019). A new preconditioner that exploits 
+    low-rank approximations to factorization error. SIAM Journal on 
+    Scientific Computing, 41(1), A59-A82.
+***************************************************************************
+*/ 
+
+
+// Iterative Refinement 
+// ``The general stratagem in numerical calculations is that it is best to compute a 
+//   quantity by adding a small correction term to a (previous) approximation." Kincaid-Cheny, p.76.
+//   e.g., In Bisection method, the midpoint c is computed as c = a + (b — a)/2 rather than 
+//   as c = (a + b)/2 to adhere to the stratagem above.  
+
+
+
+// NOTES and out takes while in development.
+/* ************************************************************************
 The purpose of this code is to solve Ax = b using iterative refinement method.
 It uses multi-precision arithmetic, in particular
 low precision to factor A = LU.  The method should save both time and space
@@ -309,7 +285,10 @@ The process:
 10. Goto 7
 */ 
 
-
+// It factors A into a low-precision LU, then solves for x.
+//      This estimate is then refined by solving (LU)d = r = b - Ax, and
+//      overwriting x with x + d, that is, x = x + d.  
+//      The process is repeated until convergence.  
 
 
 /*
@@ -324,5 +303,29 @@ for (size_t i = 0; i < nr; ++i) {
 	sw::universal::convert(q.to_value(), b[i]);  
 }
 
+// matnorm
+    // std::cout << "||A|| = " << matnorm(Aw) << std::endl;
+    // std::cout << "K = " << condest(Aw) << std::endl;
+
 
 */
+
+// Print Results
+    // std::cout << "L = \n" << L << std::endl;
+    // std::cout << "U = \n" << U << std::endl;
+    /*
+    for(int i = 0;i < 10;++i){
+        for(int j = 0; j<10;++j){
+            if(L(i,j) != 0){
+                // std::cout <<  L(i,j) << std::endl;
+            }
+        }
+    }
+
+
+    // Factor A = LU
+    // auto [Pl, Ll, Ul] = plu(Al);  // Factor low precision
+    // Mw L(Ll), U(Ul);              // Coerce to working precision
+
+
+    */
