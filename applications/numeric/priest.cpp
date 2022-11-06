@@ -1,4 +1,4 @@
-// priest.cpp: experiments with Douglas Priest arbitrary precision floating-point arithmetic
+// priest.cpp: experiments with Douglas Priest's arbitrary precision floating-point arithmetic
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //

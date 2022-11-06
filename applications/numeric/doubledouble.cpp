@@ -1,4 +1,4 @@
-// double-double.cpp: experiments with double-double floating-point arithmetic
+// doubledouble.cpp: experiments with double-double floating-point arithmetic
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //

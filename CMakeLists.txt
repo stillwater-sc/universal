@@ -840,7 +840,6 @@ endif(BUILD_PLAYGROUND)
 
 # application examples
 if(BUILD_APPLICATIONS)
-add_subdirectory("applications/adaptive")
 add_subdirectory("applications/approximation")
 add_subdirectory("applications/blas")
 add_subdirectory("applications/chaos")
