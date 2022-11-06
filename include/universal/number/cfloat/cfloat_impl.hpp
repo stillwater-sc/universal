@@ -304,13 +304,13 @@ public:
 	static constexpr bool     subsuper = (_hasSubnormals && _hasSupernormals);
 	static constexpr bool     special = (subsuper ? true : (_es > 1));
 	static_assert(special, "when es == 1, cfloat must have both subnormals and supernormals");
-	static constexpr unsigned bitsInByte = 8ull;
+	static constexpr unsigned bitsInByte = 8u;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
 
 	static constexpr unsigned nbits = _nbits;
 	static constexpr unsigned es = _es;
-	static constexpr unsigned fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
+	static constexpr unsigned fbits  = nbits - 1u - es;    // number of fraction bits excluding the hidden bit
 	static constexpr unsigned fhbits = nbits - es;           // number of fraction bits including the hidden bit
 
 	static constexpr uint64_t  storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
@@ -322,12 +322,12 @@ public:
 	static constexpr uint64_t ALL_ONES_FR = (topfbits > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> FR_SHIFT) : 0ull); // special case for nbits <= 64
 	static constexpr uint64_t INF_ENCODING = (ALL_ONES_FR & ~1ull);
 
-	static constexpr unsigned nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr unsigned MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+	static constexpr unsigned nrBlocks = 1u + ((nbits - 1ull) / bitsInBlock);
+	static constexpr unsigned MSU = nrBlocks - 1u; // MSU == Most Significant Unit, as MSB is already taken
 	static constexpr bt       MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr unsigned bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
 	static constexpr unsigned fBlocks = 1ull + ((fbits - 1ull) / bitsInBlock); // nr of blocks with fraction bits
-	static constexpr unsigned FSU = fBlocks - 1ull;  // FSU = Fraction Significant Unit: the index of the block that contains the most significant fraction bits
+	static constexpr unsigned FSU = fBlocks - 1u;  // FSU = Fraction Significant Unit: the index of the block that contains the most significant fraction bits
 	static constexpr bt       FSU_MASK = (ALL_ONES >> (fBlocks * bitsInBlock - fbits));
 	static constexpr unsigned bitsInFSU = bitsInBlock - (fBlocks * bitsInBlock - fbits);
 
@@ -336,8 +336,8 @@ public:
 	static constexpr bool     MSU_CAPTURES_EXP = (1ull + es) <= bitsInMSU;
 	static constexpr unsigned EXP_SHIFT = (MSU_CAPTURES_EXP ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
 	static constexpr bt       MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
-	static constexpr int      EXP_BIAS = ((1l << (es - 1ull)) - 1l);
-	static constexpr int      MAX_EXP = (es == 1) ? 1 : ((1l << es) - EXP_BIAS - 1);
+	static constexpr int      EXP_BIAS = ((1 << (es - 1u)) - 1l);
+	static constexpr int      MAX_EXP = (es == 1) ? 1 : ((1 << es) - EXP_BIAS - 1);
 	static constexpr int      MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int      MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 

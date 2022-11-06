@@ -238,7 +238,7 @@ inline bitblock<nbits> decoded(const posit<nbits, es>& p) {
 
 	bitblock<nbits> _Bits;
 	_Bits.set(nbits - 1, _sign);
-	unsigned msb = nbits - 2u;
+	int msb = nbits - 2u;
 	for (unsigned i = 0; i < nrRegimeBits; i++) {
 		_Bits.set(msb--, r[nbits - 2 - i]);
 	}

@@ -121,7 +121,7 @@ public:
 	}
 	posit operator-() const {
 		posit p;
-		return p.setbits((~_bits) + 1ul);
+		return p.setbits((~_bits) + 1u);
 	}
 	// arithmetic assignment operators
 	posit& operator+=(const posit& b) {
