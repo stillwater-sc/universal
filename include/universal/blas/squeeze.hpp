@@ -11,10 +11,17 @@
 // --------------------------------------------------------------- //
 #pragma once
 #include <universal/blas/matrix.hpp>
-// #include <universal/blas/vector.hpp>
+#include <universal/blas/vector.hpp>
 #include <universal/blas/blas.hpp>
 
 namespace sw{namespace universal{
+
+template<typename Scalar>
+void rowScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& R){
+        // 
+       
+} // Scale Rows of A
+
 
 template<typename Scalar>
 void squeezeRoundReplace(blas::matrix<Scalar>& A){
@@ -50,10 +57,9 @@ void squeezeScaleRound(blas::matrix<Working>& A, Working T = 1.0){
 template<typename Working, typename Low>
 void twosideScaleRound(blas::matrix<Working>& A, Working T = 1.0){
         /* two-sided scale, then round */
-        blas::matrix<Working> R(num_rows(A),num_cols(A));
-        blas::matrix<Working> S(num_rows(A),num_cols(A));
-        R = 1;
-        S = 1;
+        blas::vector<Working> R(num_rows(A),1);
+        blas::vector<Working> S(num_rows(A),1);
+        
 
         Low xmax(SpecificValue::maxpos);
         Working Xmax(xmax);
