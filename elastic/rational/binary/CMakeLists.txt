@@ -1,0 +1,11 @@
+file(GLOB API_SRC        "api/*.cpp")
+file(GLOB CONVERSION_SRC "conversion/*.cpp")
+file(GLOB LOGIC_SRC      "logic/*.cpp")
+file(GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
+file(GLOB MATH_SRC       "math/*.cpp")
+
+compile_all("true" "ebinratio" "Number Systems/elastic/rational/binary/ebinratio/api"        "${API_SRC}")
+compile_all("true" "ebinratio" "Number Systems/elastic/rational/binary/ebinratio/conversion" "${CONVERSION_SRC}")
+compile_all("true" "ebinratio" "Number Systems/elastic/rational/binary/ebinratio/logic"      "${LOGIC_SRC}")
+compile_all("true" "ebinratio" "Number Systems/elastic/rational/binary/ebinratio/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "ebinratio" "Number Systems/elastic/rational/binary/ebinratio/math"       "${MATH_SRC}")

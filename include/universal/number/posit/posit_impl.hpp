@@ -167,7 +167,7 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 		if (msb >= 0 && es > 0) {
 			nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<unsigned>(msb + 1ll);
 			for (unsigned i = 0; i < nrExponentBits; ++i) {
-				_exp[es - unsigned{1} - i] = tmp[static_cast<unsigned>(msb) - i];
+				_exp[es - 1u - i] = tmp[static_cast<unsigned>(msb) - i];
 			}
 		}
 		_exponent.set(_exp, nrExponentBits);
