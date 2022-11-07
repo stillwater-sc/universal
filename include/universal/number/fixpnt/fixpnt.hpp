@@ -30,12 +30,22 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
+// enable native SQRT instruction for this arithmetic
+#if !defined(FIXPNT_NATIVE_SQRT)
+// default is to enable them
+#define FIXPNT_NATIVE_SQRT 1
+// if disabled, the sqrt function marshals through native IEEE-754 double
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////
 // enable throwing specific exceptions for integer arithmetic errors
 // left to application to enable
 #if !defined(FIXPNT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr for signalling an error
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library

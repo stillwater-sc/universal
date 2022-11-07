@@ -3,18 +3,17 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// Configure the posit library with arithmetic exceptions
-// enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit.hpp>
+#include <universal/utility/directives.hpp>
+// enable arithmetic exceptions
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/fixpnt/fixpnt.hpp>
 
 // best practice for C++ is to assign a literal
 // but even this literal gets rounded in an assignment to an IEEE double
 constexpr 
-double phi = 1.618033988749895;
-//    phi  = 1.618033988749894902525739    value of above literal
-//   ref   = 1.61803398874989484820458683436563811772030917980576
+double phi_ = 1.618033988749895;
+//     phi  = 1.618033988749894902525739    value of above literal
+//     ref  = 1.61803398874989484820458683436563811772030917980576
 
 // first 50 digits of phi
 static std::string phi50 = "1.\
@@ -42,21 +41,48 @@ static std::string phi1000 = "1.\
 78780178899219902707769038953219681986151437803149\
 97411069260886742962267575605231727775203536139362";
 
+
+template<unsigned fbits>
+sw::universal::fixpnt<fbits+5, fbits> goldenRatio() {
+	sw::universal::fixpnt<fbits + 5, fbits> phi(5);
+	return (1 + sqrt(phi)) / 2;
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	print_cmd_line(argc, argv);
 	int nrOfFailedTestCases = 0;
 
 	std::cout << "Perfect approximations of the Golden Ratio constant PHI for different number systems\n";
 
 	std::cout << phi1000 << '\n';
-	std::cout << "phi  = " << std::setprecision(25) << phi << '\n';
+	std::cout << "phi  = " << std::setprecision(25) << phi_ << '\n';
 	std::cout << "ref  = " << phi50 << '\n';
 
 	// 1000 digits -> 1.e1000 -> 2^3322 -> 1.051103774764883380737596422798e+1000 -> you will need 3322 bits to represent 1000 digits of phi
 	// 
 	// TODO: we need to implement parse(string) on the Universal number systems to calculate error
+
+	// phi are the roots of the question: phi^2 - phi - 1 = 0
+	// +phi = (1 + sqrt(5))/2  -phi = (1 - sqrt(5))/2
+
+	// 50 digits -> 1.e50 -> 2^165 -> so we need 165 bits to represent 50 digits of phi
+	// 10 digits ->  33 bits
+	// 20 digits ->  66 bits
+	// 30 digits ->  99 bits
+	// 40 digits -> 132 bits
+	fixpnt<40, 33> phi10(5);
+	std::cout << phi50 << '\n';
+	std::cout << goldenRatio<33>() << '\n';
+	std::cout << goldenRatio<66>() << '\n';
+	std::cout << goldenRatio<99>() << '\n';
+	std::cout << goldenRatio<132>() << '\n';
+	std::cout << goldenRatio<165>() << '\n';
+	std::cout << goldenRatio<198>() << '\n';
+	std::cout << goldenRatio<231>() << '\n';
+
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
