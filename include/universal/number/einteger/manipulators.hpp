@@ -12,7 +12,7 @@ namespace sw { namespace universal {
 template<typename BlockType>
 std::string type_tag(const einteger<BlockType>& = {}) {
 	std::stringstream s;
-	s << "adaptiveint<" << typeid(BlockType).name() << '>';
+	s << "einteger<" << typeid(BlockType).name() << '>';
 	return s.str();
 }
 

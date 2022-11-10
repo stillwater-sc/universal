@@ -93,12 +93,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "adaptive precision binary integer addition";
-	std::string test_tag = "einteger addition";
-	bool reportTestCases = true;
+	std::string test_suite  = "adaptive precision binary integer addition";
+	std::string test_tag    = "einteger addition";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 

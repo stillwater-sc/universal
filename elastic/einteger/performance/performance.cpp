@@ -11,7 +11,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/einteger/einteger.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -35,13 +35,15 @@ try {
 
 	std::string test_suite  = "einteger performance testing";
 	std::string test_tag    = "einteger performance";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
 
@@ -61,9 +63,9 @@ try {
 
 #endif
 
-#endif  // MANUAL_TESTING
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif  // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
