@@ -43,7 +43,7 @@ namespace sw {
 			gfp& operator=(Real v) {
 				bool sign{ false };
 				uint64_t biased{ 0 }, f64{ 0 };
-				extractFields<Real>(v, sign, biased, f64);
+				extractFields(v, sign, biased, f64);
 				s = sign;
 				e = static_cast<int>(biased) - ieee754_parameter<Real>::bias;
 				f = static_cast<UnsignedInt>(f64);

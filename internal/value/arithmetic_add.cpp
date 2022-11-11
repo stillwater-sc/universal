@@ -4,13 +4,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/internal/bitblock/bitblock.hpp>  // TODO: remove: should not have an internal type in the public interface
+#define VALUE_THROW_ARITHMETIC_EXCEPTION 1
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
+//#include <universal/internal/bitblock/bitblock.hpp>  // TODO: remove: should not have an internal type in the public interface
 #include <universal/internal/value/value.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
 // (sign, scale, fraction) representation using sbits for scale and fbits for fraction assuming a hidden bit
 template<unsigned sbits, unsigned fbits>
-int VerifyValueAdd(const std::string& tag, bool reportTestCases) {
+int VerifyValueAdd(bool reportTestCases) {
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
 	//constexpr unsigned NR_OF_VALUES = (unsigned(1) << (1 + scale + fbits));
@@ -25,16 +27,16 @@ int VerifyValueAdd(const std::string& tag, bool reportTestCases) {
 	unsigned max_fract = (unsigned(1) << fbits);
 	bitblock<fbits> afraction, bfraction;
 	for (unsigned lhssign = 0; lhssign < 2; ++lhssign) {
-		for (int scale = scale_lb; scale < scale_ub; ++scale) {
+		for (int ascale = scale_lb; ascale < scale_ub; ++ascale) {
 			for (unsigned afrac = 0; afrac < max_fract; ++afrac) {
 				afraction = convert_to_bitblock<fbits>(afrac);
-				a.set(lhssign == 1, scale, afraction, false, false);
+				a.set(lhssign == 1, ascale, afraction, false, false);
 				// std::cout << to_triple(a) << std::endl;
 				for (unsigned rhssign = 0; rhssign < 2; ++rhssign) {
-					for (int scale = scale_lb; scale < scale_ub; ++scale) {
+					for (int bscale = scale_lb; bscale < scale_ub; ++bscale) {
 						for (unsigned bfrac = 0; bfrac < max_fract; ++bfrac) {
 							bfraction = convert_to_bitblock<fbits>(bfrac);
-							b.set(rhssign == 1, scale, bfraction, false, false);
+							b.set(rhssign == 1, bscale, bfraction, false, false);
 							module_add<fbits, abits>(a, b, sum);
 							//std::cout << to_triple(a) << " + " << to_triple(b) << " = " << to_triple(sum) << std::endl;
 
@@ -59,7 +61,6 @@ int VerifyValueAdd(const std::string& tag, bool reportTestCases) {
 								std::cout << a << " + " << b << " = " << sum << " vs " << ref << std::endl;
 							}
 #endif
-
 						}
 					}
 				}
@@ -76,6 +77,10 @@ int VerifyValueAdd(const std::string& tag, bool reportTestCases) {
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -113,19 +118,19 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 3>("FAIL", reportTestCases), "value<3> scale 2^5", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 3>(reportTestCases), "value<3> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 4>("FAIL", reportTestCases), "value<4> scale 2^5", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 4>(reportTestCases), "value<4> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 5>("FAIL", reportTestCases), "value<5> scale 2^5", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 5>(reportTestCases), "value<5> scale 2^5", "addition");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", reportTestCases), "value<8> scale 2^3", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>(reportTestCases), "value<8> scale 2^3", "addition");
 #endif
 
 #endif // MANUAL_TESTING

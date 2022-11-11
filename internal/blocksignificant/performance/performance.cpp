@@ -271,7 +271,7 @@ void TestBlockPerformanceOnDiv() {
 #endif
 }
 
-#if FRACTION_REMAINDER
+#ifdef FRACTION_REMAINDER
 void TestBlockPerformanceOnRem() {
 	using namespace sw::universal;
 	std::cout << "\nREMAINDER: blocksignificant arithemetic performance as a function of size and BlockType\n";

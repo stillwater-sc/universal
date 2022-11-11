@@ -40,7 +40,7 @@ union double_decoder {
   } parts;
 };
 
-inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
+inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
 	float_decoder decoder;
 	decoder.f = value;
 	s = decoder.parts.sign ? true : false;
@@ -48,7 +48,7 @@ inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint6
 	rawFractionBits = static_cast<uint64_t>(decoder.parts.fraction);
 }
 
-inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
+inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
 	double_decoder decoder;
 	decoder.d = value;
 	s = decoder.parts.sign ? true : false;
