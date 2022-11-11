@@ -22,11 +22,21 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	/////////////////         construction
-	gfp<uint8_t> a;
+	gfp<uint64_t> a, b, c;
 
-	a = 1.0f;
+	{
+		a = 1.0e0f;
+		b = 1.0e0f;
+		c = a * b;
+		std::cout << a << " * " << b << " = " << c << '\n';
+	}
 
-	std::cout << a << '\n';
+	{
+		a.set(false, 0, 0xf'ffff'ffff);
+		b.set(false, 0, 0x1'ffff'ffff);
+		c = a * b;
+		std::cout << a << " * " << b << " = " << c << '\n';
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
