@@ -41,8 +41,10 @@ namespace sw {
 
 			template<typename Real>
 			gfp& operator=(Real v) {
+				bool sign{ false };
 				uint64_t biased{ 0 }, f64{ 0 };
-				extractFields<Real>(v, s, biased, f64);
+				extractFields<Real>(v, sign, biased, f64);
+				s = sign;
 				e = static_cast<int>(biased) - ieee754_parameter<Real>::bias;
 				f = static_cast<UnsignedInt>(f64);
 				return *this;
@@ -59,6 +61,8 @@ namespace sw {
 			}
 			gfp& operator*=(const gfp& rhs) {
 				std::uint64_t mask = (~0ull) >> rightShift;
+				std::cout << to_binary(mask) << '\n';
+				std::cout << to_hex(mask) << '\n';
 				std::uint64_t a = f >> rightShift;
 				std::uint64_t b = f & mask;
 				std::uint64_t c = rhs.f >> rightShift;
@@ -70,7 +74,7 @@ namespace sw {
 				std::uint64_t tmp = (bd >> rightShift) + (ad & mask) + (bc & mask);
 				tmp += (1ull << (rightShift - 1));  // round
 				f = ac + (ad >> rightShift) + (bc >> rightShift) + (tmp >> rightShift);
-				e = e + rhs.e + sizeOfUint;
+				e = e + rhs.e + static_cast<int>(sizeOfUint);
 				return *this;
 			}
 
