@@ -6,6 +6,8 @@
 #pragma warning(disable : 4515) // unreferenced inline function has been removed
 #pragma warning(disable : 4710) // function is not inlined
 #pragma warning(disable : 4820) // bytes padding added after data member
+#pragma warning(disable : 5262) // implicit fall-through occurs here
+#pragma warning(disable : 5264) // 'const' variable is not used
 
 // this is a good warning to catch Universal library conditional compilation errors
 //#pragma warning(disable : 4688)  warning C4668: 'LONG_DOUBLE_SUPPORT' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'

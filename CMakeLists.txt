@@ -672,6 +672,7 @@ endif(BUILD_APP_ENVIRONMENT)
 # Build the tests for the underlying storage classes
 if(BUILD_NUMBER_INTERNALS)
 add_subdirectory("internal/bitblock")
+add_subdirectory("internal/gfp")
 add_subdirectory("internal/value")
 add_subdirectory("internal/blockdecimal")
 add_subdirectory("internal/blockbinary")

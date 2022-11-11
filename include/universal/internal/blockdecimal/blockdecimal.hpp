@@ -8,7 +8,7 @@
 #include <string>
 #include <sstream>
 
-// should be defined by calling environment, just catching it here just in case it is not
+// should be defined by calling environment, catching it here just in case it is not
 #ifndef LONG_DOUBLE_SUPPORT
 #pragma message("LONG_DOUBLE_SUPPORT is not defined")
 #define LONG_DOUBLE_SUPPORT 0
