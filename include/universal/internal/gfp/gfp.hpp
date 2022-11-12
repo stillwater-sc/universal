@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <cassert>
 
 // should be defined by calling environment, catching it here just in case it is not
 #ifndef LONG_DOUBLE_SUPPORT
@@ -46,7 +47,8 @@ namespace sw {
 				extractFields(v, sign, biased, f64);
 				s = sign;
 				e = static_cast<int>(biased) - ieee754_parameter<Real>::bias;
-				f = static_cast<UnsignedInt>(f64);
+				q = ieee754_parameter<Real>::fbits;
+				f = static_cast<UnsignedInt>(ieee754_parameter<Real>::hmask | f64); // add the hidden bit
 				return *this;
 			}
 			gfp& operator+=(const gfp& rhs) {
@@ -61,8 +63,6 @@ namespace sw {
 			}
 			gfp& operator*=(const gfp& rhs) {
 				std::uint64_t mask = (~0ull) >> rightShift;
-				std::cout << to_binary(mask) << '\n';
-				std::cout << to_hex(mask) << '\n';
 				std::uint64_t a = f >> rightShift;
 				std::uint64_t b = f & mask;
 				std::uint64_t c = rhs.f >> rightShift;
@@ -73,7 +73,7 @@ namespace sw {
 				std::uint64_t bd = b * d;
 				std::uint64_t tmp = (bd >> rightShift) + (ad & mask) + (bc & mask);
 				tmp += (1ull << (rightShift - 1));  // round
-				f = ac + (ad >> rightShift) + (bc >> rightShift) + (tmp >> rightShift);
+				f = static_cast<UnsignedInt>(ac + (ad >> rightShift) + (bc >> rightShift) + (tmp >> rightShift));
 				e = e + rhs.e + static_cast<int>(sizeOfUint);
 				return *this;
 			}
@@ -81,14 +81,23 @@ namespace sw {
 			void set(bool sign, int exponent, uint64_t fraction) noexcept {
 				s = sign;
 				e = exponent;
-				f = fraction;
+				f = static_cast<UnsignedInt>(fraction); // TODO: or is it better to push the UnsignedInt type in the argument?
 			}
+
+			UnsignedInt significant() const noexcept {
+				return f;
+			}
+			unsigned radix() const noexcept {
+				return q;
+			}
+
 		protected:
 
 		private:
 			bool        s;
 			int         e;
 			UnsignedInt f;
+			unsigned    q;
 
 			template<typename U>
 			friend std::ostream& operator<<(std::ostream&, const gfp<U>&);
@@ -98,6 +107,24 @@ namespace sw {
 		std::ostream& operator<<(std::ostream& ostr, const gfp<UnsignedInt>& v) {
 			ostr << (v.s ? "-" : "+") << static_cast<std::uint64_t>(v.f) << "e" << v.e;
 			return ostr;
+		}
+
+		// reflect the radix point after the hidden bit, which is explicity in gfp
+		template<typename UnsignedInt>
+		std::string to_binary(const gfp<UnsignedInt>& v) {
+			std::stringstream s;
+
+			constexpr unsigned nbits = sizeof(UnsignedInt) * 8;
+			unsigned q = v.radix();
+			std::uint64_t mask = (1ull << (nbits - 1ull));
+			std::uint64_t significant = v.significant();
+			for (int i = nbits - 1; i >= 0; --i) {
+				s << ((mask & significant) ? '1' : '0');
+				mask >>= 1ull;
+				if (i == static_cast<int>(q)) s << '.';
+				else if (i > 0 && ((i % 4) == 0)) s << '\'';
+			}
+			return s.str();
 		}
 
 		template<typename UnsignedInt>

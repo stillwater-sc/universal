@@ -20,18 +20,31 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	/////////////////         construction
-	gfp<uint64_t> a, b, c;
+
 
 	{
+		gfp<uint32_t> a, b, c;
 		a = 1.0e0f;
+		std::cout << to_binary(a) << '\n';
 		b = 1.0e0f;
-		c = a * b;
+		c = a + b;
 		std::cout << a << " * " << b << " = " << c << '\n';
 	}
 
 	{
+		gfp<uint64_t> a, b, c;
+		a = 1.0e0;
+		std::cout << to_binary(a) << '\n';
+		b = 1.0e0;
+		c = a + b;
+		std::cout << a << " * " << b << " = " << c << '\n';
+	}
+
+	{
+		gfp<uint64_t> a, b, c;
 		a.set(false, 0, 0xf'ffff'ffff);
 		b.set(false, 0, 0x1'ffff'ffff);
+		std::cout << to_hex(b.significant()) << '\n';
 		c = a * b;
 		std::cout << a << " * " << b << " = " << c << '\n';
 	}
