@@ -5,6 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/internal/gfp/gfp.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -42,13 +43,40 @@ try {
 
 	{
 		gfp<uint64_t> a, b, c;
-		a.set(false, 0, 0xf'ffff'ffff);
-		b.set(false, 0, 0x1'ffff'ffff);
+		a.set(false, 0, 0xf'ffff'ffffull, 52); // emulate a double
+		b.set(false, 0, 0x1'ffff'ffffull, 52); // emulate a double);
 		std::cout << to_hex(b.significant()) << '\n';
 		c = a * b;
 		std::cout << a << " * " << b << " = " << c << '\n';
+		int alpha = 0;
+		std::cout << "alpha : " << alpha << "  k : " << c.calculate_k(alpha) << '\n';
 	}
 
+	{
+		int alpha = 0;
+		for (int binaryScale = -10; binaryScale <= 64; ++binaryScale) {
+			std::cout << "binaryScale : " << binaryScale << " vs decimalScale : " << decimalScale(binaryScale, 64, alpha) << '\n';
+		}
+	}
+
+	{
+		using Scalar = std::uint64_t;
+		gfp<Scalar> a;
+		a = 1.0;
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << "decimal scale : " << decimalScale(0, sizeof(Scalar)) << '\n';
+	}
+	{
+		half f{ 0.03125 };
+		std::cout << "floating-point value : " << to_binary(f) << " : " << f << " : " << to_triple(f) << '\n';
+
+		duble d{ 0.0312 };
+		std::cout << "floating-point value : " << to_binary(d) << " : " << d << " : " << to_triple(d) << '\n';
+	}
+
+	{
+		std::cout << grisu<std::uint64_t>(1.0) << '\n';
+	}
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
