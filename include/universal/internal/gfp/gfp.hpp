@@ -174,6 +174,9 @@ namespace sw {
 				return *this;
 			}
 
+			explicit operator float() const noexcept { return to_native_ieee754<float>(); }
+			explicit operator double() const noexcept { return to_native_ieee754<double>(); }
+
 			/////////////////////////////////////////////////////
 			// member functions
 			
@@ -209,6 +212,32 @@ namespace sw {
 			}
 
 		protected:
+
+			template<typename Real>
+			Real to_native_ieee754() const noexcept {
+				Real v{ 0.0f };
+				if constexpr (sizeof(Real) == 4) {
+					union {
+						uint32_t b;
+						float f;
+					} bits;
+					bits.b = static_cast<uint64_t>(e + ieee754_parameter<Real>::bias) << ieee754_parameter<Real>::fbits;
+					bits.b |= f & ~ieee754_parameter<Real>::hmask;
+					bits.b |= (s ? (1ull << 31) : 0);
+					v = bits.f;
+				}
+				else if constexpr (sizeof(Real) == 8) {
+					union {
+						uint64_t b;
+						double d;
+					} bits;
+					bits.b = static_cast<uint64_t>(e + ieee754_parameter<Real>::bias) << ieee754_parameter<Real>::fbits;
+					bits.b |= f & ~ieee754_parameter<Real>::hmask;
+					bits.b |= (s ? (1ull << 63) : 0);
+					v = bits.d;
+				}
+				return v;
+			}
 
 		private:
 			bool        s;

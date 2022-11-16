@@ -60,18 +60,44 @@ try {
 	}
 
 	{
+		using Scalar = std::uint32_t;
+		gfp<Scalar> a;
+		a = 1.0f;
+		std::cout << to_binary(a) << " : " << float(a) << '\n';
+
+		a = 0.03125f;
+		std::cout << to_binary(a) << " : " << float(a) << '\n';
+	}
+
+	{
 		using Scalar = std::uint64_t;
 		gfp<Scalar> a;
 		a = 1.0;
-		std::cout << to_binary(a) << " : " << a << '\n';
-		std::cout << "decimal scale : " << decimalScale(0, sizeof(Scalar)) << '\n';
+		std::cout << to_binary(a) << " : " << double(a) << '\n';
+
+		a = 0.03125;
+		std::cout << to_binary(a) << " : " << double(a) << '\n';
 	}
+
 	{
 		half f{ 0.03125 };
 		std::cout << "floating-point value : " << to_binary(f) << " : " << f << " : " << to_triple(f) << '\n';
 
 		duble d{ 0.0312 };
 		std::cout << "floating-point value : " << to_binary(d) << " : " << d << " : " << to_triple(d) << '\n';
+	}
+
+	{
+		gfp<uint64_t> a;
+		unsigned q = 64;
+		// print out the cached powers
+		for (int mk = 0; mk < 88; ++mk) {
+			CachedPower cp = CachedPowers[mk];
+			std::cout << mk << " : " << to_binary(cp.significand, 64, true) << " : ";
+			a.set(false, cp.binary_exponent, cp.significand, q);
+			std::cout << double(a) << '\n';
+
+		}
 	}
 
 	{
