@@ -67,7 +67,9 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
+    // -----------------------------------------------------//
     // Configurations
+    // -----------------------------------------------------//
     constexpr unsigned wbits = 64;
     constexpr unsigned wes = 11;
 
@@ -79,6 +81,8 @@ try {
 
     // Squeeze Selection
     size_t algo = 24; // See Higham 2019 Squeeze
+    // -----------------------------------------------------//
+
 
     // Write Configurations
     /*
@@ -161,9 +165,10 @@ try {
     Vh b = Ah*X;   // Generate b vector in high precision.  
     Vw bw(b);
   
-    // Factor A = LU
+    // Factor A = LU - this matrix after Algo 2.4 almost certainly needs pivoting
     luq(Al);  // factor low-precision A and store in Working precision
     Mw LU(Al);// store in working precision
+    std::cout << "LU = " << LU << std::endl;
 
     // 1. Solve Ax = b in low-precision, then store x in working
     auto xn = backsub(LU,forwsub(LU,bw));
