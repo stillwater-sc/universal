@@ -17,10 +17,10 @@
 #include<universal/utility/directives.hpp>
 #include<universal/utility/long_double.hpp>
 #include<universal/utility/bit_cast.hpp>
-#include <universal/utility/number_system_properties.hpp>
+// #include <universal/utility/number_system_properties.hpp>
 
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/cfloat/cfloat.hpp>
+// #include <universal/number/cfloat/cfloat.hpp>
 
 // Higher Order Libraries
 #include <universal/blas/vector.hpp>
@@ -31,10 +31,9 @@
 
 // Support Packages
 #include <universal/blas/solvers/luq.hpp>
-#include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
-#include <universal/blas/squeeze.hpp>
+// #include <universal/blas/squeeze.hpp>
 // #include <universal/blas/nnz.hpp>
 
 // Matrix Test Suite
@@ -63,21 +62,29 @@ try {
 
     // Configurations
     constexpr unsigned wbits = 64;
-    constexpr unsigned wes = 11;
+    constexpr unsigned wes = 2;
 
     constexpr unsigned lbits = 16;
-    constexpr unsigned les = 6;
+    constexpr unsigned les = 2;
     
-    constexpr unsigned hbits = 128;
-    constexpr unsigned hes = 15;
+    constexpr unsigned hbits = 64;
+    constexpr unsigned hes = 2;
 
     // Squeeze Selection
     size_t algo = 50; // See Higham 2019 Squeeze
 
     // Precision Templates
-    using WorkingPrecision = cfloat<wbits,wes,uint32_t, true, false, false>;
-    using LowPrecision  = cfloat<lbits,les,uint32_t, true, false, false>;
-    using HighPrecision  =  cfloat<hbits,hes,uint32_t, true, false, false>;
+    using WorkingPrecision = posit<wbits,wes>;
+    using LowPrecision  = posit<lbits,les>;
+    using HighPrecision  =  posit<hbits,hes>;
+
+    // Matrix and Vector Type alias
+    using Mh = sw::universal::blas::matrix<HighPrecision>;
+    using Vh = sw::universal::blas::vector<HighPrecision>;
+    using Mw = sw::universal::blas::matrix<WorkingPrecision>;  
+    using Vw = sw::universal::blas::vector<WorkingPrecision>;
+    using Ml = sw::universal::blas::matrix<LowPrecision>;
+
 
     // View Numerical Properties of Configuration
     LowPrecision m, M;
@@ -86,31 +93,17 @@ try {
     std::cout << "Numeric Bounds = (" << m << ", " << M << ")" << std::endl;
     // std::cout << "Dynamic range " << dynamic_range<LowPrecision>() << '\n';
 
-    // Matrix and Vector Type alias
-    using Mh = sw::universal::blas::matrix<HighPrecision>;
-    using Vh = sw::universal::blas::vector<HighPrecision>;
-    using Mw = sw::universal::blas::matrix<WorkingPrecision>; // Working precision
-    using Vw = sw::universal::blas::vector<WorkingPrecision>;
-    using Ml = sw::universal::blas::matrix<LowPrecision>;
-
 
     // Let A be n x n ("working precision") nonsingular matrix.
     Mw A = q5;  // rand4, lu4, west0167, steam1, steam3, fs_183_1, fs_183_3, faires74x3
     unsigned n = num_cols(A);
-    Mh Ah(A); // High precision A
 
-    
-    Vh X(n,1);    // X is exact solution = [1, 1, 1, ..., 1]
-    Vw x(X);
-    Vh b = Ah*X;   // Generate b vector in high precision.  
-    Vw bw(b);
 
     // Store A in Low Precision
-    WorkingPrecision T = 1;
-    
-
     Ml Al; //(A);  // Declare low precision matmrix
     std::cout << "A = "  << A << std::endl;
+
+    // WorkingPrecision T = 1;
     if (algo == 21){ //Round, then replace
         Al = A;
         //squeezeRoundReplace(Al);
@@ -118,31 +111,27 @@ try {
     
     }else if(algo == 22){
         // std::cout << A << std::endl;
-        LowPrecision dummy = 1.0;
-        //squeezeScaleRound(A, T, dummy);
+         //squeezeScaleRound(A, T, dummy);
         Al = A;  // put this in function, pass ref &Al to function
         std::cout << Al << std::endl;
     
     
     }else if(algo == 23){
         std::cout << A << std::endl;
-        LowPrecision dummy = 1.0;
-        //squeezeScaleRound(A, T, dummy);
+         //squeezeScaleRound(A, T, dummy);
         Al = A;  // put this in function
         // std::cout << A << std::endl;
         // Ml Al = squeezeTest(Aw);
     
     }else if(algo == 24){
         std::cout << A << std::endl;
-        LowPrecision dummy = 1.0;
         //squeezeScaleRound(A, T, dummy);
         Al = A;  // put this in function
         std::cout << A << std::endl;
     
     }else if(algo == 25){
         std::cout << A << std::endl;
-        LowPrecision dummy = 1.0;
-        //squeezeScaleRound(A, T, dummy);
+         //squeezeScaleRound(A, T, dummy);
         Al = A;  // put this in function
         std::cout << A << std::endl;
     
@@ -153,6 +142,12 @@ try {
         std::cout << Al << std::endl;
     }
     
+
+    Mh Ah(A);     // High precision A (same as working in Posits)
+    Vh X(n,1);    // X is exact solution = [1, 1, 1, ..., 1]
+    Vw x(X);
+    Vh b = Ah*X;  // Generate b vector in high precision.  
+    Vw bw(b);
   
     // Factor A = LU
     luq(Al);  // factor low-precision A and store in Working precision
@@ -302,6 +297,8 @@ for (size_t i = 0; i < nr; ++i) {
 	}
 	sw::universal::convert(q.to_value(), b[i]);  
 }
+b = A*x; where A and x are both posits.
+
 
 // matnorm
     // std::cout << "||A|| = " << matnorm(Aw) << std::endl;

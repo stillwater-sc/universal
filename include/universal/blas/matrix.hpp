@@ -364,6 +364,7 @@ bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	bool equal = true;
 	for (size_t i = 0; i < num_rows(A); ++i) {
 		for (size_t j = 0; j < num_cols(A); ++j) {
+			// a tolerance is needed (equal up to eps)
 			if (A(i, j) != B(i, j)) {
 				equal = false;
 				break;

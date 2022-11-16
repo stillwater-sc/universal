@@ -3,7 +3,7 @@
 //    Addresses fundamental important problem of solving Ax = b.
 //      
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
-// @jamesquinlan
+// Author: James Quinlan
 // Modified: 2022-11-05 (see history)
 // 
 // This file is part of the universal numbers project, 
@@ -17,7 +17,7 @@
 #include<universal/utility/directives.hpp>
 #include<universal/utility/long_double.hpp>
 #include<universal/utility/bit_cast.hpp>
-#include <universal/utility/number_system_properties.hpp>
+// #include <universal/utility/number_system_properties.hpp>
 
 #define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/cfloat/cfloat.hpp>
@@ -31,7 +31,7 @@
 
 // Support Packages
 #include <universal/blas/solvers/luq.hpp>
-#include <universal/blas/solvers/plu.hpp>
+// #include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
 #include <universal/blas/squeeze.hpp>
@@ -50,11 +50,16 @@
 #include <universal/blas/matrices/steam3.hpp>        //
 #include <universal/blas/matrices/fs_183_1.hpp>      //
 #include <universal/blas/matrices/fs_183_3.hpp>      // 
-#include <universal/blas/matrices/faires74x3.hpp>    // Example Burden and Faires 3x3 Ill-conditioned
+#include <universal/blas/matrices/faires74x3.hpp>    // Burden Faires 3x3 Ill-conditioned
 #include <universal/blas/matrices/rand4.hpp>         // Random 4x4 (low condition) for testing
 #include <universal/blas/matrices/cage3.hpp>         //
 #include <universal/blas/matrices/bwm200.hpp>        // Chem. simulation 1e3.
 #include <universal/blas/matrices/gre_343.hpp>       // Directed Weighted Graph
+
+// File I/O
+#include <iostream>
+#include <fstream>
+
 
 int main(){
 try {
@@ -66,87 +71,88 @@ try {
     constexpr unsigned wbits = 64;
     constexpr unsigned wes = 11;
 
-    constexpr unsigned lbits = 20;
+    constexpr unsigned lbits = 16;
     constexpr unsigned les = 5;
     
     constexpr unsigned hbits = 128;
     constexpr unsigned hes = 15;
 
     // Squeeze Selection
-    size_t algo = 0; // See Higham 2019 Squeeze
+    size_t algo = 24; // See Higham 2019 Squeeze
+
+    // Write Configurations
+    /*
+    std::ofstream MyFile("configs_highamir.txt", std::ios_base::app); // Create and open a text file
+    MyFile << "-------------------------\n";
+    MyFile << "Algo = \t" << algo << "\n";         // Write to the file
+    MyFile << "--------------------------\n\n";
+    MyFile << "(hbits, hes) = (" << hbits << ", " << hes << ") \n";
+    MyFile << "(wbits, wes) = (" << wbits << ", " << wes << ") \n";
+    MyFile << "(lbits, les) = (" << lbits << ", " << les << ") \n";
+    MyFile.close();                  // Close the file
+    */
 
     // Precision Templates
     using WorkingPrecision = cfloat<wbits,wes,uint32_t, true, false, false>;
     using LowPrecision  = cfloat<lbits,les,uint32_t, true, false, false>;
     using HighPrecision  =  cfloat<hbits,hes,uint32_t, true, false, false>;
 
+    // Matrix and Vector Type alias
+    using Mh = sw::universal::blas::matrix<HighPrecision>;
+    using Vh = sw::universal::blas::vector<HighPrecision>;
+    using Mw = sw::universal::blas::matrix<WorkingPrecision>;
+    using Vw = sw::universal::blas::vector<WorkingPrecision>;
+    using Ml = sw::universal::blas::matrix<LowPrecision>;
+
     // View Numerical Properties of Configuration
     LowPrecision m, M;
     m.minpos();
     M.maxpos();
-    std::cout << "Numeric Bounds = (" << m << ", " << M << ")" << std::endl;
+    std::cout << "Numeric Bounds fp<" << lbits << "," << les << "> = (" << m << ", " << M << ")" << std::endl;
     // std::cout << "Dynamic range " << dynamic_range<LowPrecision>() << '\n';
-    
-    // std::cout << "Precision = " << ULP  <<  std::endl;
-
-    // Matrix and Vector Type alias
-    using Mh = sw::universal::blas::matrix<HighPrecision>;
-    using Vh = sw::universal::blas::vector<HighPrecision>;
-    using Mw = sw::universal::blas::matrix<WorkingPrecision>; // Working precision
-    using Vw = sw::universal::blas::vector<WorkingPrecision>;
-    using Ml = sw::universal::blas::matrix<LowPrecision>;
-
+    // std::cout << "Precision = " << ULP  <<  std::endl;    
 
     // Let A be n x n ("working precision") nonsingular matrix.
-    Mw A = q3;  // rand4, lu4, west0167, steam1, steam3, fs_183_1, fs_183_3, faires74x3
+    Mw A = h3;  // rand4, lu4, west0167, steam1, steam3, fs_183_1, fs_183_3, faires74x3
     unsigned n = num_cols(A);
    
 
     // Store A in Low Precision
-    WorkingPrecision T = 1.0;  // \in (0,1]
-    
+    Ml Al; //(A);  // Declare low precision matrix
 
-    Ml Al; //(A);  // Declare low precision matmrix
-    // std::cout << "A = "  << A << std::endl;
     
+    // Squeezing
+    WorkingPrecision T = 1.0;  // \in (0,1]
     // Round, then replace inf (overflow)
     if (algo == 21){ //Round, then replace
-        Al = A;
-        squeezeRoundReplace(Al);
+        std::cout << A << std::endl;
+        squeezeRoundReplace(A, Al);
         std::cout << "Al = \n" << Al << std::endl;
     
     // Scale and Round
     }else if(algo == 22){
-        // std::cout << A << std::endl;
-        squeezeScaleRound<WorkingPrecision, LowPrecision>(A, T);
-        Al = A;  // put this in function, pass &Al to function
-        std::cout << Al << std::endl;
+        std::cout << "A = \n" << A << std::endl;
+        squeezeScaleRound<WorkingPrecision, LowPrecision>(A, Al, T);
+        std::cout << "Al = \n" << Al << std::endl;
     
     
     }else if(algo == 23){
-        std::cout << A << std::endl;
-        twosideScaleRound<WorkingPrecision, LowPrecision>(A, T);
-        Al = A;  // put this in function
-        std::cout << Al << std::endl;
+        std::cout << "A = \n" << A << std::endl;
+        twosideScaleRound<WorkingPrecision, LowPrecision>(A, Al, T, algo);
+        std::cout << "Al = \n" << Al << std::endl;
         
     }else if(algo == 24){
-        std::cout << A << std::endl;
-        squeezeScaleRound<WorkingPrecision, LowPrecision>(A, T);
-        Al = A;  // put this in function
-        std::cout << A << std::endl;
-    
-    }else if(algo == 25){
-        std::cout << A << std::endl;
-        squeezeScaleRound<WorkingPrecision, LowPrecision>(A, T);
-        Al = A;  // put this in function
-        std::cout << A << std::endl;
-    
+        std::cout << "A = \n" << A << std::endl;
+        twosideScaleRound<WorkingPrecision, LowPrecision>(A, Al, T, algo);
+        std::cout << "Al = \n" << Al << std::endl;
+
     }else{
         // Do nothing
         Al = A;
-        std::cout << A << std::endl;
-        std::cout << Al << std::endl;
+        std::cout << "A = \n" << A << std::endl;
+        std::cout << "Al = \n" << Al << std::endl;
     }
+
     
     // Bookkeeping of Copies (after squeezing)
     Mh Ah(A); // High precision A
@@ -173,16 +179,13 @@ try {
     while(((x - xn).norm() > 1e-7) && (niters < 25)){
         niters += 1;
         // ----------------------------------------------------------- 
-        // Residual Calculation
-        // A, b, y in "Working" precision (r in "higher")
-        // r is using the quire to defer rounding to working precision
-        // until assignment. 
+        // Residual Calculation (high precision)
         Vh xh(xn);
         r = b - Ah*xh;
         Vw rn(r); // Store in working presicion
 
         // Solve Ad = r where A = LU (low precision)
-        // Note: LU was coerced to working precision
+        // Note: LU was coerced to working precision (but performed in Low Precision)
         auto d = backsub(LU,forwsub(LU,rn));  // Stored d in working precision         
         xn += d;  // update solution vector with corrector
             
@@ -327,6 +330,27 @@ for (size_t i = 0; i < nr; ++i) {
     // Factor A = LU
     // auto [Pl, Ll, Ul] = plu(Al);  // Factor low precision
     // Mw L(Ll), U(Ul);              // Coerce to working precision
+    */
 
 
+   /* 
+    Is there a difference between C++ compiler and MATLAB implementation???
+    Below is a test for the case of subnormals in Higham's squeeze paper.
+    This code can run independently.   
+
+    NOTE: Subnormals done in software. 
+    using LowPrecisionP1  = cfloat<lbits+1,les,uint32_t, true, false, false>;
+    LowPrecisionP1 Ap(Al(0,1));
+    std::cout << "Binary A(0,1) = " << to_binary(A(0,1)) << std::endl;
+    std::cout << "Binary A(0,1) = " << to_binary(Al(0,1)) << std::endl;
+    std::cout << "Binary Ap(0,1) = " << to_binary(Ap) << " : " << Ap << std::endl;
+    std::cout << "Binary Ap/2(0,1) = " << to_binary(Ap/2) << " : " << Ap/2 << std::endl;
+    
+    cfloat<32,8,uint32_t, true, false, false> aa(SpecificValue::minpos);
+    std::cout << "Binary of Single Precision " << to_binary(aa) << " : " << aa << std::endl;
+    float f = float(aa);
+    // 1.401298464324817e-45
+    std::cout << "Binary of Single Precision " << to_binary(f) << " : " << f << std::endl;
+    float g = f*3/4;
+    std::cout << "Binary of g " << to_binary(g) << " : " << g << std::endl;
     */

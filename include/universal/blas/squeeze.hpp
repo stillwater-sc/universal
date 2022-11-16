@@ -12,26 +12,66 @@
 #pragma once
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/vector.hpp>
-#include <universal/blas/blas.hpp>
+#include <universal/blas/blas.hpp>  // this includes matrix/vector (are the above needed?)
 
 namespace sw{namespace universal{
 
+ 
 template<typename Scalar>
-void rowScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& R){
-        // 
-       
+void getR(blas::matrix<Scalar>& A, blas::vector<Scalar>& R){
+    for (unsigned i = 0; i < num_rows(A); ++i){
+        blas::vector<Scalar> localvec(num_rows(A),1);
+        for (unsigned j = 0; j < num_cols(A); ++j){
+            localvec(j) = A(i,j);
+        }
+        R(i) = 1/normLinf(localvec);
+    }  
+} // Get Row scaler
+ 
+
+
+ 
+template<typename Scalar>
+void getS(blas::matrix<Scalar>& A, blas::vector<Scalar>& S){
+    for (unsigned j = 0; j < num_rows(A); ++j){
+        blas::vector<Scalar> localvec(num_rows(A),1);
+        for (unsigned i = 0; i < num_cols(A); ++i){
+            localvec(i) = A(i,j);
+        }
+        S(j) = 1/normLinf(localvec);
+    }  
+} // Get Column scaler
+ 
+
+
+template<typename Scalar>
+void rowScale(blas::vector<Scalar>& R, blas::matrix<Scalar>& A){
+    for (unsigned i = 0; i < num_rows(A); ++i){
+        for (unsigned j = 0; j < num_cols(A); ++j){
+            A(i,j) = R(i)*A(i,j);
+        }
+    }  
 } // Scale Rows of A
 
-
 template<typename Scalar>
-void squeezeRoundReplace(blas::matrix<Scalar>& A){
-        /* round then replace infinities */
-        Scalar maxpos(SpecificValue::maxpos);
+void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S){
+    for (unsigned j = 0; j < num_rows(A); ++j){
+        for (unsigned i = 0; i < num_cols(A); ++i){
+            A(i,j) = S(j)*A(i,j);
+        }
+    }
+} // Scale Columns of A
+
+template<typename Working, typename Low>
+void squeezeRoundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al){
+        /* Algo 21: round then replace infinities */
+        Al = A;
+        Low maxpos(SpecificValue::maxpos);
         for (size_t i = 0; i < num_rows(A); ++i){
             for (size_t j = 0; j < num_cols(A); ++j){
-                Scalar sgn = (A(i,j) > 0) ? 1 : ((A(i,j) < 0) ? -1 : 0);
-                if (isinf(abs(A(i,j)))){
-                    A(i,j) = sgn*(maxpos);   
+                Low sgn = (Al(i,j) > 0) ? 1 : ((Al(i,j) < 0) ? -1 : 0);
+                if (isinf(abs(Al(i,j)))){
+                    Al(i,j) = sgn*(maxpos);   
                 }
             }
         }
@@ -39,97 +79,69 @@ void squeezeRoundReplace(blas::matrix<Scalar>& A){
 
 
 template<typename Working, typename Low>
-void squeezeScaleRound(blas::matrix<Working>& A, Working T = 1.0){
-        /* scale by scalar, then round */
-        Low xmax(SpecificValue::maxpos);
-        //std::cout << "X max = " << xmax << std::endl;
-        Working Xmax(xmax);
+void squeezeScaleRound(blas::matrix<Working>& A, blas::matrix<Low>& Al, Working T = 1.0){
+        /* Algo 22:  scale by scalar, then round */
         Working Amax = maxelement(A);
+        Low xmax(SpecificValue::maxpos);
+        Working Xmax(xmax);
         Working mu =(T*Xmax) / Amax;
         A = mu*A;  //Scale A
-        // Al = A;
-        // std::cout << Xmax << "\t" << Amax << "\t" << T << "\t" << mu << "\n" << std::endl;
-
+        //std::cout << "A (after scaling)  = \n" << A << std::endl;
+        Al = A;
+        //std::cout << "Al (after scaling)  = \n" << B << std::endl;
+        //std::cout << "--------------------------------------------" << std::endl;
+        //std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << std::endl;
+        /* 
+        std::cout << "A (after scaling)  = \n" << A << std::endl;
+        std::cout << "Xmax \t  Amax \t      T \t     mu " << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << std::endl;
+        */
 } // Scale and Round
 
 
 
 template<typename Working, typename Low>
-void twosideScaleRound(blas::matrix<Working>& A, Working T = 1.0){
-        /* two-sided scale, then round */
+void twosideScaleRound(blas::matrix<Working>& A, blas::matrix<Low>& Al, Working T = 1.0, size_t algo = 23){
         blas::vector<Working> R(num_rows(A),1);
         blas::vector<Working> S(num_rows(A),1);
         
-
+        if (algo == 24){xyyEQU(R,A,S);}
+        if (algo == 25){
+            // 
+        }
+        squeezeScaleRound(A, Al, T );
+        /* Algo 23: general two-sided scaling, then round*/
+        /*
         Low xmax(SpecificValue::maxpos);
         Working Xmax(xmax);
-        Working beta = maxelement(R*A*S);
+        Working beta = maxelement(A);
         Working mu = (T*Xmax) / beta;
-        A = mu*A;  //Scale A
+        A = mu*A;   // Scale A
+        B = A;     // Round
+        */
         // std::cout << Xmax << "\t" << beta << "\t" << T << "\t" << mu << "\n" << std::endl;
-
-} // Scale and Round
-
-
-//template<typename Scalar>
-//blas::matrix<Scalar> squeezeTest(blas::matrix<Scalar>& A){
-        //  / * scale by scalar, then round */
-//        Scalar maxpos(SpecificValue::maxpos);
-//        Scalar mu = maxpos / maxelement(A);
-//        blas::matrix<Scalar> B = mu*A;
-//        return B;
-//} // Scale and Round 
+} // Two-sided Scale and Round
 
 
-//template<typename Scalar>
-//blas::matrix<Scalar> squeezeTest(blas::matrix<Scalar>& A){
-        //  / * scale by scalar, then round */
-//        Scalar maxpos(SpecificValue::maxpos);
-//        Scalar mu = maxpos / maxelement(A);
-//        blas::matrix<Scalar> B = mu*A;
-//        return B;
-//} // Scale and Round 
+template<typename Scalar>
+void xyyEQU(blas::vector<Scalar>& R, blas::matrix<Scalar>& A, blas::vector<Scalar>& S){
+        /* Algo 24: construct R and S */
+        /* Algo 24: row and column equilibration */
+        getR(A,R);          // Lines:1-4
+        std::cout << "R = \n" << R << std::endl;
+        rowScale(R,A);      // Line: 5,  A is row equilibrated
+        std::cout << "RA = \n" << A << std::endl;
+        getS(A,S);          // Lines: 6 - 9
+        std::cout << "S = \n" << S << std::endl;
+        colScale(A,S);
+        std::cout << "RAS = \n" << A << std::endl;
+
+} // Construct R and S
+
+
+
 
 
 
 }} // namespace
-
-template<typename Scalar>
-void squeeze(sw::universal::blas::matrix<Scalar>& A, size_t algo = 1, Scalar T = 1) {
-    /**
-    * A is n x n matrix. 
-    * algo = Which squeezing technique? See higham2019squeezing
-    * T = Theta in Algorithm 2.2
-    */
-    
-    Scalar M;
-
-    if (algo == 1){ 
-        /* do nothing to A */
-    }
-    else if (algo == 21) // Algo 2.1
-    {
-        /* round then replace infinities */
-        // Ml Al(A);
-        for (size_t i = 0; i < num_rows(A); ++i){
-            for (size_t j = 0; j < num_cols(A); ++j){
-                Scalar sgn = (A(i,j) > 0) ? 1 : ((A(i,j) < 0) ? -1 : 0);
-                if (isinf(abs(A(i,j)))){
-                    A(i,j) = sgn*(M.maxpos());   
-                }
-            }
-        }
-    }
-    else if (algo == 22) // Algo 2.2
-    {
-        /* scale by scalar, then round */
-        Scalar mu = T*(M.maxpos()) / maxelement(A);
-        //std::cout << A << std::endl;
-        //std::cout << "T = " << T << ", M = " << M.maxpos() << ", Amax = " << maxelement(A) << std::endl;
-        A = mu*A;
-        // Ml Al(A);
-    }
-    
-    
-
-} // end squeeze

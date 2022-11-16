@@ -33,4 +33,33 @@ Vector forwsub(const Matrix& A, const Vector& b, bool lower = false) {
 	return x;
 }
 
+
+template<unsigned nbits, unsigned es>
+vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b, bool lower = false) {
+	// using Scalar = typename Matrix::value_type;
+	size_t n = size(b);
+    using Vector = vector<posit<nbits,es>>;
+    constexpr unsigned capacity = 10;
+
+    Vector x(n);
+    Vector d(n,1);
+    
+    if (lower){d = diag(A);}  
+    
+    x(0) = b(0)/d(0);
+	for (int i = 1; i < n; ++i){
+        quire<nbits,es,capacity> q{0};
+        for (int j = 0; j < i; ++j){
+            q += quire_mul(A(i,j), x(j));
+        }
+        posit<nbits,es> y;
+        convert(q.to_value(), y); 
+        x(i) = (b(i) - y)/d(i);
+    }
+	return x;
+}
+
+
+
+
 }}}
