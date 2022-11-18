@@ -133,46 +133,39 @@ namespace sw {
 			f2s(const f2s&) noexcept = default;
 			f2s(f2s&&) noexcept = default;
 
+			f2s(float rhs) noexcept { *this = rhs; }
+			f2s(double rhs) noexcept { *this = rhs; }
+
 			f2s& operator=(const f2s&) noexcept = default;
 			f2s& operator=(f2s&&) noexcept = default;
 
-			template<typename Real>
-			f2s& operator=(Real v) {
-				bool sign{ false };
-				uint64_t biased{ 0 }, f64{ 0 };
-				extractFields(v, sign, biased, f64);
-				s = sign;
-				e = static_cast<int>(biased) - ieee754_parameter<Real>::bias;
-				f = static_cast<UnsignedInt>(ieee754_parameter<Real>::hmask | f64); // add the hidden bit
-				constexpr unsigned storageAdjustment = sizeOfSignificant - 32;
-				constexpr unsigned normingShift = (sizeof(Real) == 4) ? (storageAdjustment + 8) : 11;
-				f <<= normingShift;
-				return *this;
-			}
+			f2s& operator=(float rhs) noexcept { return convert_ieee754(rhs); }
+			f2s& operator=(double rhs) noexcept { return convert_ieee754(rhs); }
+
 			f2s& operator+=(const f2s& rhs) {
-				assert(e == rhs.e && f >= rhs.f);
-				f += rhs.f;
+				assert(e_ == rhs.e_ && f_ >= rhs.f_);
+				f_ += rhs.f_;
 				return *this;
 			}
 			f2s& operator-=(const f2s& rhs) {
-				assert(e == rhs.e && f >= rhs.f);
-				f -= rhs.f;
+				assert(e_ == rhs.e_ && f_ >= rhs.f_);
+				f_ -= rhs.f_;
 				return *this;
 			}
 			f2s& operator*=(const f2s& rhs) {
 				std::uint64_t mask = (~0ull) >> rightShift;
-				std::uint64_t a = f >> rightShift;
-				std::uint64_t b = f & mask;
-				std::uint64_t c = rhs.f >> rightShift;
-				std::uint64_t d = rhs.f & mask;
+				std::uint64_t a = f_ >> rightShift;
+				std::uint64_t b = f_ & mask;
+				std::uint64_t c = rhs.f_ >> rightShift;
+				std::uint64_t d = rhs.f_ & mask;
 				std::uint64_t ac = a * c;
 				std::uint64_t bc = b * c;
 				std::uint64_t ad = a * d;
 				std::uint64_t bd = b * d;
 				std::uint64_t tmp = (bd >> rightShift) + (ad & mask) + (bc & mask);
 				tmp += (1ull << (rightShift - 1));  // round
-				f = static_cast<UnsignedInt>(ac + (ad >> rightShift) + (bc >> rightShift) + (tmp >> rightShift));
-				e = e + rhs.e + static_cast<int>(sizeOfSignificant);
+				f_ = static_cast<UnsignedInt>(ac + (ad >> rightShift) + (bc >> rightShift) + (tmp >> rightShift));
+				e_ = e_ + rhs.e_ + static_cast<int>(sizeOfSignificant);
 				return *this;
 			}
 
@@ -187,21 +180,50 @@ namespace sw {
 				return static_cast<int>(std::ceil((alpha - e + (sizeOfSignificant - 1)) * oneoverlog2of10));
 			}
 
+			// Computes the two boundaries of a double value.
+			// The bigger boundary (m_plus) is normalized. The lower boundary has the same exponent as m_plus.
+			// Precondition: the f2s is a raw copy of a double  
+			void normalizedBoundaries(f2s& m_minus, f2s& m_plus) const {
+				m_plus.set(false, e_ - 1, (f_ << 1) + 1);
+				m_plus.normalize();
+				if (lowerBoundaryIsCloser()) {
+					m_minus.set(false, e_ - 2, (f_ << 2) - 1);
+				}
+				else {
+					m_minus.set(false, e_ - 1, (f_ << 1) - 1);
+				}
+				UnsignedInt frac = m_minus.f() << (m_minus.e() - m_plus.e());
+				int exp = m_plus.e();
+				m_minus.set(false, exp, frac);
+			}
 			/////////////////////////////////////////////////////
 			// modifiers
 
-			// set raw components
+			// set raw components, do not implicitely normalize the f2s
 			void set(bool sign, int exponent, uint64_t fraction) noexcept {
-				s = sign;
-				e = exponent;
-				f = static_cast<UnsignedInt>(fraction);
-				normalize();
+				s_ = sign;
+				e_ = exponent;
+				f_ = static_cast<UnsignedInt>(fraction);
+			}
+
+			bool lowerBoundaryIsCloser() const {
+				// The boundary is closer if the significand is of the form f == 2^p-1 then
+				// the lower boundary is closer.
+				// Think of v = 1000e10 and v- = 9999e9.
+				// Then the boundary (== (v - v-)/2) is not just at a distance of 1e9 but
+				// at a distance of 1e8.
+				// The only exception is for the smallest normal: the largest denormal is
+				// at the same distance as its successor.
+				// Note: denormals have the same exponent as the smallest normals.
+				//bool physical_significand_is_zero = ((AsUint64() & kSignificandMask) == 0);
+				//return physical_significand_is_zero && (Exponent() != kDenormalExponent);
+				return false;  // TODO
 			}
 
 			void normalize() {
-				assert(f != 0);
-				uint64_t significand = f;
-				int32_t exponent = e;
+				assert(f_ != 0);
+				uint64_t significand = f_;
+				int32_t exponent = e_;
 
 				// This method is mainly called for normalizing boundaries. In general,
 				// boundaries need to be shifted by 10 bits, and we optimize for this case.
@@ -215,21 +237,38 @@ namespace sw {
 					significand <<= 1;
 					exponent--;
 				}
-				f = significand;
-				e = exponent;
+				f_ = significand;
+				e_ = exponent;
 			}
 			/////////////////////////////////////////////////////
 			// selectors
 
-			int exponent() const noexcept {
-				return e;
+			bool s() const noexcept {
+				return s_;
 			}
-
-			UnsignedInt significant() const noexcept {
-				return f;
+			int e() const noexcept {
+				return e_;
+			}
+			UnsignedInt f() const noexcept {
+				return f_;
 			}
 
 		protected:
+
+			template<typename Real>
+			f2s& convert_ieee754(Real v) noexcept {
+				bool sign{ false };
+				uint64_t biased{ 0 }, f64{ 0 };
+				extractFields(v, sign, biased, f64);
+				s_ = sign;
+				e_ = static_cast<int>(biased) - ieee754_parameter<Real>::bias;
+				f_ = static_cast<UnsignedInt>(ieee754_parameter<Real>::hmask | f64); // add the hidden bit
+				constexpr unsigned storageAdjustment = sizeOfSignificant - 32;
+				constexpr unsigned normingShift = (sizeof(Real) == 4) ? (storageAdjustment + 8) : 11;
+				f_ <<= normingShift;
+				e_ -= (sizeOfSignificant - 1);
+				return *this;
+			}
 
 			template<typename Real>
 			Real to_native_ieee754() const noexcept {
@@ -241,9 +280,9 @@ namespace sw {
 					} bits;
 					constexpr unsigned floatOffset = sizeOfSignificant - 32;
 					constexpr unsigned denormShift = sizeOfSignificant - floatOffset - 8; // msb of internal f is explicit hidden bit
-					bits.b = static_cast<uint64_t>(e + ieee754_parameter<Real>::bias) << ieee754_parameter<Real>::fbits;
-					bits.b |= (f >> denormShift) & ~ieee754_parameter<Real>::hmask; // denormalize and remove the hidden bit
-					bits.b |= (s ? (1ull << 31) : 0);
+					bits.b = static_cast<uint64_t>(e_ + ieee754_parameter<Real>::bias) << ieee754_parameter<Real>::fbits;
+					bits.b |= (f_ >> denormShift) & ~ieee754_parameter<Real>::hmask; // denormalize and remove the hidden bit
+					bits.b |= (s_ ? (1ull << 31) : 0);
 					v = bits.f;
 				}
 				else if constexpr (sizeof(Real) == 8) {
@@ -252,18 +291,18 @@ namespace sw {
 						double d;
 					} bits;
 					constexpr unsigned denormShift = sizeOfSignificant - 10; // msb of internal f is explicit hidden bit
-					bits.b = static_cast<uint64_t>(e + ieee754_parameter<Real>::bias) << ieee754_parameter<Real>::fbits;
-					bits.b |= (f >> denormShift) & ~ieee754_parameter<Real>::hmask; // denormalize and remove the hidden bit
-					bits.b |= (s ? (1ull << 63) : 0);
+					bits.b = static_cast<uint64_t>(e_ + ieee754_parameter<Real>::bias) << ieee754_parameter<Real>::fbits;
+					bits.b |= (f_ >> denormShift) & ~ieee754_parameter<Real>::hmask; // denormalize and remove the hidden bit
+					bits.b |= (s_ ? (1ull << 63) : 0);
 					v = bits.d;
 				}
 				return v;
 			}
 
 		private:
-			bool        s;
-			int         e;
-			UnsignedInt f;
+			bool        s_;
+			int         e_;
+			UnsignedInt f_;
 
 			template<typename U>
 			friend std::ostream& operator<<(std::ostream&, const f2s<U>&);
@@ -271,7 +310,7 @@ namespace sw {
 
 		template<typename UnsignedInt>
 		std::ostream& operator<<(std::ostream& ostr, const f2s<UnsignedInt>& v) {
-			ostr << (v.s ? "-" : "+") << static_cast<std::uint64_t>(v.f) << "e" << v.e;
+			ostr << (v.s() ? "-" : "+") << static_cast<std::uint64_t>(v.f()) << "e" << v.e();
 			return ostr;
 		}
 
@@ -282,13 +321,22 @@ namespace sw {
 
 			constexpr unsigned nbits = sizeof(UnsignedInt) * 8;
 			std::uint64_t mask = (1ull << (nbits - 1ull));
-			std::uint64_t significant = v.significant();
+			std::uint64_t significant = v.f();
 			for (int i = nbits - 1; i >= 0; --i) {
 				s << ((mask & significant) ? '1' : '0');
 				mask >>= 1ull;
 				if (i == static_cast<int>(nbits - 1)) s << '.';
 				else if (i > 0 && ((i % 4) == 0)) s << '\'';
 			}
+			return s.str();
+		}
+
+		template<typename UnsignedInt>
+		std::string to_triple(const f2s<UnsignedInt>& v) {
+			std::stringstream s;
+			s << '(' << (v.s() ? "-, " : "+, ");
+			s << to_hex(v.f(), 0, true) << ", ";
+			s << v.e() << ')';
 			return s.str();
 		}
 
