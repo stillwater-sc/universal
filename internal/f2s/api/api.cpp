@@ -32,7 +32,7 @@ namespace sw {
 		bool Grisu3(double v, unsigned mode, char buffer[], int& length, int& decimal_exponent) {
 			using F2S = f2s<std::uint64_t>;
 			F2S w;
-			w.set(false, scale(v)-52, significant(v));
+			w.set(false, scale(v)-52, significant(v), ieee754_parameter<double>::fbits);
 			// boundary_minus and boundary_plus are the boundaries between v and its
 			// closest floating-point neighbors. Any number strictly between
 			// boundary_minus and boundary_plus will round to v when converted to a double.
@@ -167,16 +167,28 @@ try {
 #endif
 
 	{
+		/*
+			ten_mk  {f_=0x9c40000000000000 e_=0xffffffce }
+			a       {f_=0x8000000000000000 e_=0xffffffc1 }
+
+			boundary_minus  0x0000006290efe828 {f_=0x7ffffffffffffe00 e_=0xffffffc1 }
+			boundary_plus   0x0000006290efe858 {f_=0x8000000000000400 e_=0xffffffc1 }
+		*/
 		std::cout << "normalizedBoundaries around 1.0\n";
 		f2s<uint64_t> a, a_minus, a_plus;
 		a = 1.0e0;
+		std::cout << to_triple(a) << '\n';
+
 		a.normalizedBoundaries(a_minus, a_plus);
 		std::cout << to_triple(a_minus) << '\n';
-		std::cout << to_triple(a) << '\n';
 		std::cout << to_triple(a_plus) << '\n';
+
+		a.normalize();
+		std::cout << to_triple(a) << '\n';
 	}
 
 	{
+
 		std::cout << "grisu3\n";
 		char buffer[128];
 		int nrOfDigits{ 0 };

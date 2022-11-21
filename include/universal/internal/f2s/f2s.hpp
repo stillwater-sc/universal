@@ -182,28 +182,30 @@ namespace sw {
 
 			// Computes the two boundaries of a double value.
 			// The bigger boundary (m_plus) is normalized. The lower boundary has the same exponent as m_plus.
-			// Precondition: the f2s is a raw copy of a double  
+			// Precondition: the f2s is a raw (not-normalized) copy of a double  
 			void normalizedBoundaries(f2s& m_minus, f2s& m_plus) const {
-				m_plus.set(false, e_ - 1, (f_ << 1) + 1);
+				m_plus.set(false, e_ - 1, (f_ << 1) + 1, q_);
 				m_plus.normalize();
 				if (lowerBoundaryIsCloser()) {
-					m_minus.set(false, e_ - 2, (f_ << 2) - 1);
+					m_minus.set(false, e_ - 2, (f_ << 2) - 1, q_);
 				}
 				else {
-					m_minus.set(false, e_ - 1, (f_ << 1) - 1);
+					m_minus.set(false, e_ - 1, (f_ << 1) - 1, q_);
 				}
 				UnsignedInt frac = m_minus.f() << (m_minus.e() - m_plus.e());
 				int exp = m_plus.e();
-				m_minus.set(false, exp, frac);
+				m_minus.set(false, exp, frac, m_plus.q());
 			}
 			/////////////////////////////////////////////////////
 			// modifiers
 
 			// set raw components, do not implicitely normalize the f2s
-			void set(bool sign, int exponent, uint64_t fraction) noexcept {
+			void set(bool sign, int exponent, uint64_t fraction, unsigned precision) noexcept {
+				assert(precision < sizeOfSignificant);
 				s_ = sign;
 				e_ = exponent;
 				f_ = static_cast<UnsignedInt>(fraction);
+				q_ = precision;
 			}
 
 			bool lowerBoundaryIsCloser() const {
@@ -239,6 +241,7 @@ namespace sw {
 				}
 				f_ = significand;
 				e_ = exponent;
+				q_ = sizeOfSignificant - 1;
 			}
 			/////////////////////////////////////////////////////
 			// selectors
@@ -252,6 +255,9 @@ namespace sw {
 			UnsignedInt f() const noexcept {
 				return f_;
 			}
+			unsigned q() const noexcept {
+				return q_;
+			}
 
 		protected:
 
@@ -263,10 +269,13 @@ namespace sw {
 				s_ = sign;
 				e_ = static_cast<int>(biased) - ieee754_parameter<Real>::bias;
 				f_ = static_cast<UnsignedInt>(ieee754_parameter<Real>::hmask | f64); // add the hidden bit
-				constexpr unsigned storageAdjustment = sizeOfSignificant - 32;
-				constexpr unsigned normingShift = (sizeof(Real) == 4) ? (storageAdjustment + 8) : 11;
-				f_ <<= normingShift;
-				e_ -= (sizeOfSignificant - 1);
+				q_ = ieee754_parameter<Real>::fbits;
+				// do not automatically normalize
+				// constexpr unsigned storageAdjustment = sizeOfSignificant - 32;
+				// constexpr unsigned normingShift = (sizeof(Real) == 4) ? (storageAdjustment + 8) : 11;
+				// f_ <<= normingShift;
+				// e_ -= (sizeOfSignificant - 1);
+				e_ -= q_; // fbits or fhbits - 1
 				return *this;
 			}
 
@@ -303,6 +312,7 @@ namespace sw {
 			bool        s_;
 			int         e_;
 			UnsignedInt f_;
+			unsigned    q_; // the radix point
 
 			template<typename U>
 			friend std::ostream& operator<<(std::ostream&, const f2s<U>&);
@@ -336,7 +346,7 @@ namespace sw {
 			std::stringstream s;
 			s << '(' << (v.s() ? "-, " : "+, ");
 			s << to_hex(v.f(), 0, true) << ", ";
-			s << v.e() << ')';
+			s << v.e() << '(' << to_hex(v.e(), 16, true) << ')' << ')';
 			return s.str();
 		}
 
