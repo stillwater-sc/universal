@@ -174,11 +174,6 @@ namespace sw {
 
 			/////////////////////////////////////////////////////
 			// member functions
-			
-			int calculate_k(int alpha) {
-				constexpr double oneoverlog2of10 = 0.30102999566398114;
-				return static_cast<int>(std::ceil((alpha - e + (sizeOfSignificant - 1)) * oneoverlog2of10));
-			}
 
 			// Computes the two boundaries of a double value.
 			// The bigger boundary (m_plus) is normalized. The lower boundary has the same exponent as m_plus.
@@ -369,6 +364,12 @@ namespace sw {
 			f2s<UnsignedInt> product(a);
 			product *= b;
 			return product;
+		}
+
+
+		int calculate_k(int alpha, int e, unsigned q) {
+			constexpr double oneoverlog2of10 = 0.30102999566398114;
+			return static_cast<int>(std::ceil((alpha - e + (q - 1)) * oneoverlog2of10));
 		}
 
 		int decimalScale(int binaryScale, int q, int alpha = 0 /*, int gamma = 3*/) noexcept {
