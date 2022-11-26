@@ -19,7 +19,7 @@ template<typename Scalar>
 class ConstRowProxy {
 public:
 	ConstRowProxy(typename std::vector<Scalar>::const_iterator iter) : _iter(iter) {}
-	Scalar operator[](size_t col) const { return *(_iter + int64_t(col)); }
+	Scalar operator[](unsigned col) const { return *(_iter + int64_t(col)); }
 
 private:
 	typename std::vector<Scalar>::const_iterator _iter;
@@ -28,7 +28,7 @@ template<typename Scalar>
 class RowProxy {
 public:
 	RowProxy(typename std::vector<Scalar>::iterator iter) : _iter(iter) {}
-	Scalar& operator[](size_t col) { return *(_iter + int64_t(col)); }
+	Scalar& operator[](unsigned col) { return *(_iter + int64_t(col)); }
 
 private:
 	typename std::vector<Scalar>::iterator _iter;
@@ -44,15 +44,15 @@ public:
 	typedef typename std::vector<Scalar>::size_type size_type;
 
 	matrix() : _m{ 0 }, _n{ 0 }, data(0) {}
-	matrix(size_t m, size_t n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
+	matrix(unsigned m, unsigned n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
 	matrix(std::initializer_list< std::initializer_list<Scalar> > values) {
-		size_t nrows = values.size();
-		size_t ncols = values.begin()->size();
+		unsigned nrows = values.size();
+		unsigned ncols = values.begin()->size();
 		data.resize(nrows * ncols);
-		size_t r = 0;
+		unsigned r = 0;
 		for (auto l : values) {
 			if (l.size() == ncols) {
-				size_t c = 0;
+				unsigned c = 0;
 				for (auto v : l) {
 					data[r*ncols + c] = v;
 					++c;
@@ -69,8 +69,8 @@ public:
 	template<typename SourceType>
 	matrix(const matrix<SourceType>& A) : _m{ A.rows() }, _n{A.cols() }{
 		data.resize(_m*_n);
-		for (size_t i = 0; i < _m; ++i){
-			for (size_t j = 0; j < _n; ++j){
+		for (unsigned i = 0; i < _m; ++i){
+			for (unsigned j = 0; j < _n; ++j){
 				data[i*_n + j] = Scalar(A(i,j));
 			}
 		}
@@ -86,19 +86,19 @@ public:
 	// Identity matrix operator
 	matrix& operator=(const Scalar& one) {
 		setzero();
-		size_t smallestDimension = (_m < _n ? _m : _n);
-		for (size_t i = 0; i < smallestDimension; ++i) data[i*_n + i] = one;
+		unsigned smallestDimension = (_m < _n ? _m : _n);
+		for (unsigned i = 0; i < smallestDimension; ++i) data[i*_n + i] = one;
 		return *this;
 	}
 
-	Scalar operator()(size_t i, size_t j) const { return data[i*_n + j]; }
-	Scalar& operator()(size_t i, size_t j) { return data[i*_n + j]; }
-	RowProxy<Scalar> operator[](size_t i) {
+	Scalar operator()(unsigned i, unsigned j) const { return data[i*_n + j]; }
+	Scalar& operator()(unsigned i, unsigned j) { return data[i*_n + j]; }
+	RowProxy<Scalar> operator[](unsigned i) {
 		typename std::vector<Scalar>::iterator it = data.begin() + int64_t(i) * int64_t(_n);
 		RowProxy<Scalar> proxy(it);
 		return proxy;
 	}
-	ConstRowProxy<Scalar> operator[](size_t i) const {
+	ConstRowProxy<Scalar> operator[](unsigned i) const {
 		typename std::vector<Scalar>::const_iterator it = data.begin() + static_cast<int64_t>(i * _n);
 		ConstRowProxy<Scalar> proxy(it);
 		return proxy;
@@ -150,24 +150,24 @@ public:
 
 	// modifiers
 	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
-	inline void resize(size_t m, size_t n) { _m = m; _n = n; data.resize(m * n); }
+	inline void resize(unsigned m, unsigned n) { _m = m; _n = n; data.resize(m * n); }
 	// selectors
-	inline size_t rows() const { return _m; }
-	inline size_t cols() const { return _n; }
-	inline std::pair<size_t, size_t> size() const { return std::make_pair(_m, _n); }
+	inline unsigned rows() const { return _m; }
+	inline unsigned cols() const { return _n; }
+	inline std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
 
 	// in-place transpose
 	matrix& transpose() {
-		size_t size = _m * _n - 1;
-		std::map<size_t, bool> b; // mark visits
+		unsigned size = _m * _n - 1;
+		std::map<unsigned, bool> b; // mark visits
 		b[0] = true; // A(0,0) is stationary
 		b[size] = true; // A(m-1,n-1) is stationary
-		size_t index = 1;
+		unsigned index = 1;
 		while (index < size) {
-			size_t cycleStart = index; // holds start of cycle
+			unsigned cycleStart = index; // holds start of cycle
 			Scalar e = data[index]; // holds value of the element to be swapped
 			do {
-				size_t next = (index * _m) % size; // index of e
+				unsigned next = (index * _m) % size; // index of e
 				std::swap(data[next], e);
 				b[index] = true;
 				index = next;
@@ -180,32 +180,32 @@ public:
 	}
 
 	// Eigen operators I need to reverse engineer
-	matrix Zero(size_t m, size_t n) {
+	matrix Zero(unsigned m, unsigned n) {
 		matrix z(m, n);
 		return z;
 	}
 
 private:
-	size_t _m, _n; // m rows and n columns
+	unsigned _m, _n; // m rows and n columns
 	std::vector<Scalar> data;
 
 };
 
 template<typename Scalar>
-inline size_t num_rows(const matrix<Scalar>& A) { return A.rows(); }
+inline unsigned num_rows(const matrix<Scalar>& A) { return A.rows(); }
 template<typename Scalar>
-inline size_t num_cols(const matrix<Scalar>& A) { return A.cols(); }
+inline unsigned num_cols(const matrix<Scalar>& A) { return A.cols(); }
 template<typename Scalar>
-inline std::pair<size_t, size_t> size(const matrix<Scalar>& A) { return A.size(); }
+inline std::pair<unsigned, unsigned> size(const matrix<Scalar>& A) { return A.size(); }
 
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 	auto width = ostr.width();
-	size_t m = A.rows();
-	size_t n = A.cols();
-	for (size_t i = 0; i < m; ++i) {
-		for (size_t j = 0; j < n; ++j) {
+	unsigned m = A.rows();
+	unsigned n = A.cols();
+	for (unsigned i = 0; i < m; ++i) {
+		for (unsigned j = 0; j < n; ++j) {
 			ostr << std::setw(width) << A(i, j) << " ";
 		}
 		ostr << '\n';
@@ -214,14 +214,14 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 }
 
 // generate a posit format ASCII format nbits.esxNN...NNp
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline std::string hex_format(const matrix< sw::universal::posit<nbits, es> >& A) {
 	// we need to transform the posit into a string
 	std::stringstream ostr;
-	size_t m = A.rows();
-	size_t n = A.cols();
-	for (size_t i = 0; i < m; ++i) {
-		for (size_t j = 0; j < n; ++j) {
+	unsigned m = A.rows();
+	unsigned n = A.cols();
+	for (unsigned i = 0; i < m; ++i) {
+		for (unsigned j = 0; j < n; ++j) {
 			ostr << hex_format(A(i,j)) << " ";
 		}
 		ostr << '\n';
@@ -268,9 +268,9 @@ matrix<Scalar> operator/(const matrix<Scalar>& A, const Scalar& b) {
 template<typename Scalar>
 vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	vector<Scalar> b(A.rows());
-	for (size_t i = 0; i < A.rows(); ++i) {
+	for (unsigned i = 0; i < A.rows(); ++i) {
 		b[i] = Scalar(0);
-		for (size_t j = 0; j < A.cols(); ++j) {
+		for (unsigned j = 0; j < A.cols(); ++j) {
 			b[i] += A(i, j) * x[j];
 		}
 	}
@@ -278,13 +278,13 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 }
 
 // overload for posits to use fused dot products
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const vector< posit<nbits, es> >& x) {
-	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
+	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
 	vector< posit<nbits, es> > b(A.rows());
-	for (size_t i = 0; i < A.rows(); ++i) {
+	for (unsigned i = 0; i < A.rows(); ++i) {
 		quire<nbits, es, capacity> q;
-		for (size_t j = 0; j < A.cols(); ++j) {
+		for (unsigned j = 0; j < A.cols(); ++j) {
 			q += quire_mul(A(i, j), x[j]);
 		}
 		convert(q.to_value(), b[i]); // one and only rounding step of the fused-dot product
@@ -295,14 +295,14 @@ vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 template<typename Scalar>
 matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	size_t rows = A.rows();
-	size_t cols = B.cols();
-	size_t dots = A.cols();
+	unsigned rows = A.rows();
+	unsigned cols = B.cols();
+	unsigned dots = A.cols();
 	matrix<Scalar> C(rows, cols);
-	for (size_t i = 0; i < rows; ++i) {
-		for (size_t j = 0; j < cols; ++j) {
+	for (unsigned i = 0; i < rows; ++i) {
+		for (unsigned j = 0; j < cols; ++j) {
 			Scalar e = Scalar(0);
-			for (size_t k = 0; k < dots; ++k) {
+			for (unsigned k = 0; k < dots; ++k) {
 				e += A(i, k) * B(k, j);
 			}
 			C(i, j) = e;
@@ -318,12 +318,12 @@ template<typename Scalar>
 matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	// Hadamard Product A.*B.  Element-wise multiplication.
 	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	size_t rows = A.rows();
-	size_t cols = A.cols();
+	unsigned rows = A.rows();
+	unsigned cols = A.cols();
 	 
 	matrix<Scalar> C(rows, cols);
-	for (size_t i = 0; i < rows; ++i) {
-		for (size_t j = 0; j < cols; ++j) {
+	for (unsigned i = 0; i < rows; ++i) {
+		for (unsigned j = 0; j < cols; ++j) {
 			C(i, j) = A(i, j) * B(i, j);
 		}
 	}
@@ -333,18 +333,18 @@ matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 
 
 // overload for posits uses fused dot products
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const matrix< posit<nbits, es> >& B) {
-	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
+	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
 	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	size_t rows = A.rows();
-	size_t cols = B.cols();
-	size_t dots = A.cols();
+	unsigned rows = A.rows();
+	unsigned cols = B.cols();
+	unsigned dots = A.cols();
 	matrix< posit<nbits, es> > C(rows, cols);
-	for (size_t i = 0; i < rows; ++i) {
-		for (size_t j = 0; j < cols; ++j) {
+	for (unsigned i = 0; i < rows; ++i) {
+		for (unsigned j = 0; j < cols; ++j) {
 			quire<nbits, es, capacity> q;
-			for (size_t k = 0; k < dots; ++k) {
+			for (unsigned k = 0; k < dots; ++k) {
 				q += quire_mul(A(i, k), B(k, j));
 			}
 			convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
@@ -359,8 +359,8 @@ bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	if (num_rows(A) != num_rows(B) ||
 		num_cols(A) != num_cols(B)) return false;
 	bool equal = true;
-	for (size_t i = 0; i < num_rows(A); ++i) {
-		for (size_t j = 0; j < num_cols(A); ++j) {
+	for (unsigned i = 0; i < num_rows(A); ++i) {
+		for (unsigned j = 0; j < num_cols(A); ++j) {
 			if (A(i, j) != B(i, j)) {
 				equal = false;
 				break;
@@ -385,8 +385,8 @@ template<typename Scalar>
 matrix<Scalar> operator>(const matrix<Scalar>& A, const Scalar& x) {
 	matrix<Scalar> B(A.cols(), A.rows());
 	
-	for (size_t i = 0; i < num_rows(A); ++i) {
-		for (size_t j = 0; j < num_cols(A); ++j) {
+	for (unsigned i = 0; i < num_rows(A); ++i) {
+		for (unsigned j = 0; j < num_cols(A); ++j) {
 			B(i,j) = (A(i, j) > x) ? 1 : 0;
 		}
 	}

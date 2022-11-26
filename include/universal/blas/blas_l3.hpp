@@ -13,15 +13,15 @@ vector<typename Matrix::value_type> sum(Matrix& A, int dim = 0) {
 	using value_type = typename Matrix::value_type;
 	using size_type = typename Matrix::size_type;
 
-	size_type rows = num_rows(A);
-	size_type cols = num_cols(A);
+	unsigned rows = num_rows(A);
+	unsigned cols = num_cols(A);
 
 	switch (dim) {
 	case 0:
 	{
 		value_type sum{ 0 };
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
+		for (unsigned i = 0; i < rows; ++i) {
+			for (unsigned j = 0; j < cols; ++j) {
 				sum += A(i, j);
 			}
 		}
@@ -31,8 +31,8 @@ vector<typename Matrix::value_type> sum(Matrix& A, int dim = 0) {
 	case 1: 
 	{
 		vector<value_type> rowSums(rows);
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
+		for (unsigned i = 0; i < rows; ++i) {
+			for (unsigned j = 0; j < cols; ++j) {
 				rowSums[i] += A(i, j);
 			}
 		}
@@ -42,8 +42,8 @@ vector<typename Matrix::value_type> sum(Matrix& A, int dim = 0) {
 	case 2:
 	{
 		vector<value_type> colSums(cols);
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
+		for (unsigned i = 0; i < rows; ++i) {
+			for (unsigned j = 0; j < cols; ++j) {
 				colSums[j] += A(i, j);
 			}
 		}

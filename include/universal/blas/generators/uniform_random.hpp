@@ -1,7 +1,7 @@
 #pragma once
 // uniform_random.hpp: uniform random matrix generator
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
@@ -11,7 +11,7 @@ namespace sw { namespace universal { namespace blas {
 
 // generate a uniform random MxN matrix
 template<typename Matrix>
-Matrix uniform_random(size_t M, size_t N, double lowerbound = 0.0, double upperbound = 1.0) {
+Matrix uniform_random(unsigned M, unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
 	Matrix A(M, N);
 	return uniform_random(A, lowerbound, upperbound);
 }
@@ -32,7 +32,7 @@ vector<Scalar>& uniform_random(vector<Scalar>& v, double lowerbound = 0.0, doubl
 	// double rnd_value = dist(engine);
 
 	// generate and insert random values in A
-	for (size_t i = 0; i < v.size(); ++i) {
+	for (unsigned i = 0; i < v.size(); ++i) {
 		v[i] = Scalar(dist(engine));
 	}
 	return v;
