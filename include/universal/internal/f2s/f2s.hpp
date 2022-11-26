@@ -19,6 +19,8 @@
 namespace sw {
 	namespace universal {
 
+		template<typename UInt> class f2s;
+
 		struct CachedPower {
 			uint64_t significand;
 			int binary_exponent;
@@ -114,6 +116,51 @@ namespace sw {
 		  {(0xeb96bf6ebadf77d9), 1039, 332},
 		  {(0xaf87023b9bf0ee6b), 1066, 340},
 		};
+
+		// Not all powers of ten are cached. The decimal exponent of two neighboring
+		// cached numbers will differ by kDecimalExponentDistance.
+		static constexpr int kDecimalExponentDistance = 8;
+
+		// The minimal and maximal target exponent define the range of w's binary
+		// exponent, where 'w' is the result of multiplying the input by a cached power
+		// of ten.
+		//
+		// A different range might be chosen on a different platform, to optimize digit
+		// generation, but a smaller range requires more powers of ten to be cached.
+		static const int kMinimalTargetExponent = -60;
+		static const int kMaximalTargetExponent = -32;
+
+		static constexpr int kMinDecimalExponent = -348;
+		static constexpr int kMaxDecimalExponent = 340;
+		static constexpr int kCachedPowersOffset = 348;  // -1 * the first decimal_exponent.
+		static constexpr double kD_1_LOG2_10 = 0.30102999566398114;  //  1 / lg(10)
+
+		template<typename UnsignedInt>
+		void GetCachedPowerForBinaryExponentRange(const int min_exponent, const int max_exponent, f2s<UnsignedInt>& power, int& decimal_exponent) {
+			using F2S = f2s<UnsignedInt>;
+			int kQ = sizeof(UnsignedInt) * 4;
+			double k = std::ceil((min_exponent + kQ - 1) * kD_1_LOG2_10);
+			int index =	(kCachedPowersOffset + static_cast<int>(k) - 1) / kDecimalExponentDistance + 1;
+			assert(0 <= index && index < static_cast<int>(sizeof(CachedPowers)));
+			CachedPower cached_power = CachedPowers[index];
+			assert(min_exponent <= cached_power.binary_exponent);
+			(void)max_exponent;  // Mark variable as used.
+			assert(cached_power.binary_exponent <= max_exponent);
+			decimal_exponent = cached_power.decimal_exponent;
+			power.set(false,  cached_power.binary_exponent, cached_power.significand, sizeof(UnsignedInt)*8);
+		}
+
+		template<typename UnsignedInt>
+		void GetCachedPowerForDecimalExponent(const int requested_exponent, f2s<UnsignedInt>& power, int& found_exponent) {
+			assert(kMinDecimalExponent <= requested_exponent);
+			assert(requested_exponent < kMaxDecimalExponent + kDecimalExponentDistance);
+			int index =	(requested_exponent + kCachedPowersOffset) / kDecimalExponentDistance;
+			CachedPower cached_power = CachedPowers[index];
+			power.set(false, cached_power.binary_exponent, cached_power.significand, sizeof(UnsignedInt)*8);
+			found_exponent = cached_power.decimal_exponent;
+			assert(found_exponent <= requested_exponent);
+			assert(requested_exponent < found_exponent + kDecimalExponentDistance);
+		}
 
 		template<typename UnsignedInt>
 		class f2s {
@@ -366,7 +413,6 @@ namespace sw {
 			return product;
 		}
 
-
 		int calculate_k(int alpha, int e, unsigned q) {
 			constexpr double oneoverlog2of10 = 0.30102999566398114;
 			return static_cast<int>(std::ceil((alpha - e + (q - 1)) * oneoverlog2of10));
@@ -386,7 +432,7 @@ namespace sw {
 			int mk = decimalScale(w.exponent() + q, alpha);
 			CachedPower c_mk = CachedPowers[mk];
 			f2s<UnsignedInt> p10;
-			p10.set(true, c_mk.binary_exponent, c_mk.significand);
+			p10.set(false, c_mk.binary_exponent, c_mk.significand);
 
 			f2s<UnsignedInt> D = w * p10;
 			std::stringstream s;

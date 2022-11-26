@@ -15,8 +15,6 @@ namespace sw {
 
 #define NOW
 #ifdef NOW
-		constexpr unsigned FAST_DTOA_SHORTEST = 0;
-		constexpr unsigned FAST_DTOA_SHORTEST_SINGLE = 1;
 
 		// Provides a decimal representation of v.
 		// Returns true if it succeeds, otherwise the result cannot be trusted.
@@ -29,7 +27,7 @@ namespace sw {
 		// The last digit will be closest to the actual v. That is, even if several
 		// digits might correctly yield 'v' when read again, the closest will be
 		// computed.
-		bool Grisu3(double v, unsigned mode, char buffer[], int& length, int& decimal_exponent) {
+		bool Grisu3(double v, char buffer[], int& length, int& decimal_exponent) {
 			using F2S = f2s<std::uint64_t>;
 			F2S w;
 			w.set(false, scale(v)-52, significant(v), ieee754_parameter<double>::fbits);
@@ -38,15 +36,8 @@ namespace sw {
 			// boundary_minus and boundary_plus will round to v when converted to a double.
 			// Grisu3 will never output representations that lie exactly on a boundary.
 			F2S boundary_minus, boundary_plus;
-			if (mode == FAST_DTOA_SHORTEST) {
-				w.normalizedBoundaries(boundary_minus, boundary_plus);
-			}
-			else {
-//				assert(mode == FAST_DTOA_SHORTEST_SINGLE);
-//				float single_v = static_cast<float>(v);
-//				Single(single_v).NormalizedBoundaries(&boundary_minus, &boundary_plus);
-			}
-//			assert(boundary_plus.e() == w.e());
+			w.normalizedBoundaries(boundary_minus, boundary_plus);
+			assert(boundary_plus.e() == w.e());
 
 			std::cout << to_triple(boundary_minus) << '\n';
 			std::cout << to_triple(boundary_plus) << '\n';
@@ -54,38 +45,41 @@ namespace sw {
 			length = 0;
 			decimal_exponent = 0;
 			bool result{ false };
-#ifdef LATER
+
 			F2S ten_mk;  // Cached power of ten: 10^-k
 			int mk;        // -k
-			int ten_mk_minimal_binary_exponent = kMinimalTargetExponent - (w.e() + F2S::sizeOfSignificant);
-			int ten_mk_maximal_binary_exponent = kMaximalTargetExponent - (w.e() + F2S::sizeOfSignificant);
-			PowersOfTenCache::GetCachedPowerForBinaryExponentRange(
-				ten_mk_minimal_binary_exponent,
-				ten_mk_maximal_binary_exponent,
-				&ten_mk, &mk);
-			assert((kMinimalTargetExponent <= w.e() + ten_mk.e() +
-				F2S::sizeOfSignificant) &&
-				(kMaximalTargetExponent >= w.e() + ten_mk.e() +
-					F2S::sizeOfSignificant));
+			int precision = static_cast<int>(F2S::sizeOfSignificant);
+			int ten_mk_minimal_binary_exponent = kMinimalTargetExponent - (w.e() + precision);
+			int ten_mk_maximal_binary_exponent = kMaximalTargetExponent - (w.e() + precision);
+
+			GetCachedPowerForBinaryExponentRange(ten_mk_minimal_binary_exponent, ten_mk_maximal_binary_exponent, ten_mk, mk);
+			int bla = w.e() + ten_mk.e() + static_cast<int>(F2S::sizeOfSignificant);
+			assert((kMinimalTargetExponent <= bla) && (kMaximalTargetExponent >= bla));
+
+			std::cout << "w.e()               : " << w.e() << '\n';
+			std::cout << "ten_mk.e()          : " << ten_mk.e() << '\n';
+			std::cout << "mk                  : " << mk << '\n';
+			std::cout << "sizeOfSignificant   : " << precision << '\n';
+			std::cout << "min target exponent : " << kMinimalTargetExponent << '\n';
+			std::cout << "bla                 : " << bla << '\n';
+			std::cout << "max target exponent : " << kMaximalTargetExponent << '\n';
 			// Note that ten_mk is only an approximation of 10^-k. A DiyFp only contains a
 			// 64 bit significand and ten_mk is thus only precise up to 64 bits.
 
-			// The DiyFp::Times procedure rounds its result, and ten_mk is approximated
-			// too. The variable scaled_w (as well as scaled_boundary_minus/plus) are now
-			// off by a small amount.
+			// operator*() rounds its result, and ten_mk is thus approximate.
+			// The variable scaled_w (as well as scaled_boundary_minus/plus) are off by a small amount.
 			// In fact: scaled_w - w*10^k < 1ulp (unit in the last place) of scaled_w.
 			// In other words: let f = scaled_w.f() and e = scaled_w.e(), then
 			//           (f-1) * 2^e < w*10^k < (f+1) * 2^e
-			F2S scaled_w = F2S::Times(w, ten_mk);
-			assert(scaled_w.e() ==
-				boundary_plus.e() + ten_mk.e() + F2S::sizeOfSignificant);
+			F2S scaled_w = (w * ten_mk);
+			assert(scaled_w.e() == boundary_plus.e() + ten_mk.e() + precision);
 			// In theory it would be possible to avoid some recomputations by computing
 			// the difference between w and boundary_minus/plus (a power of 2) and to
 			// compute scaled_boundary_minus/plus by subtracting/adding from
 			// scaled_w. However the code becomes much less readable and the speed
 			// enhancements are not terrific.
-			F2S scaled_boundary_minus = F2S::Times(boundary_minus, ten_mk);
-			F2S scaled_boundary_plus = F2S::Times(boundary_plus, ten_mk);
+			F2S scaled_boundary_minus = boundary_minus * ten_mk;
+			F2S scaled_boundary_plus = boundary_plus * ten_mk;
 
 			// DigitGen will generate the digits of scaled_w. Therefore we have
 			// v == (double) (scaled_w * 10^-mk).
@@ -93,6 +87,7 @@ namespace sw {
 			// integer than it will be updated. For instance if scaled_w == 1.23 then
 			// the buffer will be filled with "123" and the decimal_exponent will be
 			// decreased by 2.
+#ifdef LATER
 			int kappa;
 			bool result = DigitGen(scaled_boundary_minus, scaled_w, scaled_boundary_plus,
 				buffer, length, &kappa);
@@ -193,7 +188,7 @@ try {
 		char buffer[128];
 		int nrOfDigits{ 0 };
 		int decimalExponent{ 0 };
-		bool success = Grisu3(1.0, FAST_DTOA_SHORTEST, buffer, nrOfDigits, decimalExponent) << '\n';
+		bool success = Grisu3(1.0, buffer, nrOfDigits, decimalExponent) << '\n';
 		if (success) {
 			std::cout << std::string(buffer) << '\n';
 		}
