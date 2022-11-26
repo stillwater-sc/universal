@@ -2,7 +2,9 @@
 #include <universal/blas/blas.hpp>
 
 // Size = 6 x 6 
-// Rank 6; Matrix 1-Norm = 36712 ; Cond(est) = 10^16 
+// Rank 6; 
+// Matrix 1-Norm = 36712 ; 
+// Cond(est) = 10^16 
 // symmetric = No
 // pos.def = NO 
 // Matrix ID = none

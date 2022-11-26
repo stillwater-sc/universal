@@ -15,6 +15,9 @@ sw::universal::blas::matrix<double>  h3 = {
 
 /* 
 Higham's Examples in Squeeze
+Norm = 3.5355e+06
+Cond = 4.6194e+06
+
 {1.0, 1.0, 2.5e6},
 {1.0, -1.0, 2.5e6},
 {1.0, 1.0, 0.0}

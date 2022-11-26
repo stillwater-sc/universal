@@ -2,9 +2,10 @@
 #include <universal/blas/blas.hpp>
 
 // Size = 4 x 4 
-// Rank 4; Matrix Norm = ; Cond. =  
+// Rank 4; Matrix Norm = 10.6585; 
+// Cond. = 11.6810 
 // symmetric = NO
-/// pos.def =   
+// pos.def =   
 // Matrix ID = ---
 // NNZ = 12
 

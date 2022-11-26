@@ -423,4 +423,27 @@ Scalar minelement(const matrix<Scalar>&A) {
 }
 
 
+
+// getRow (jq 2022-11-19)
+template<typename Scalar>
+vector<Scalar> getRow(unsigned i, const matrix<Scalar>&A) {
+	vector<Scalar> x(num_cols(A),0);
+	for (size_t j = 0; j < num_cols(A); ++j) {
+		x(j) = A(i,j);
+		}
+	return x;
+}
+
+
+// permat (jq 2022-11-19)
+//template<typename Scalar>
+//void permat(vector<Scalar>&P, matrix<Scalar>&A) {
+//	vector<Scalar> x(num_cols(A),0);
+//	for (size_t row = 0; row < num_rows(A); ++row) {
+//		x = getRow(row,A);
+//		something here
+//		}
+//}
+
+
 }}} // namespace sw::universal::blas

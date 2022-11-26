@@ -41,8 +41,8 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
         Scalar absmax = abs(U(i,i)); 
         size_t argmax = i;
 
-        // Find largest element in ith column
-        for (size_t k = i + 1; k < n; ++k){ // i = subsequent row (ele. in column k)
+        // Select k >= i to maximize |U(k,i)| 
+        for (size_t k = i + 1; k < n; ++k){ // subsequent row (ele. in column k)
             if (abs(U(k,i)) > absmax){
                 absmax = abs(U(k,i));
                 argmax = k;
@@ -51,16 +51,22 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
         // Check for necessary swaps
         if (argmax != i){
             // Swap rows loop
-            for (size_t j = 0; j < n;++j){
+            for (size_t j = i; j < n;++j){
                 x = U(i,j);
                 U(i,j) = U(argmax,j);
                 U(argmax,j) = x;
-
+            }
+            for (size_t j = 0; j < n;++j){
                 x = P(i,j);
                 P(i,j) = P(argmax,j);
                 P(argmax,j) = x;
             }
-            
+                // Permuate entries in L to match P
+            for (size_t j = 0; j < i; ++j){
+                x = L(i,j);
+                L(i,j) = L(argmax,j);
+                L(argmax,j) = x;
+            }
         }
         // Continue with row reduction
         for (size_t k = i + 1; k < n; ++k){  // objective row
