@@ -66,7 +66,7 @@
 #include <universal/blas/matrices/bcsstk04.hpp>      // 132 x 132
 #include <universal/blas/matrices/bcsstk05.hpp>      // 153 x 153
 #include <universal/blas/matrices/bcsstk22.hpp>      // 138 x 138
-// #include <universal/blas/matrices/bcsstk13.hpp>
+
 
 // File I/O
 #include <iostream>
