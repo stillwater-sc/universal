@@ -285,6 +285,7 @@ vector<Scalar> operator*(const Scalar& alpha, const vector<Scalar>& x) {
 	vector<Scalar> scaled(x);
 	return scaled *= alpha;
 }
+ 
 
 // scale a vector through operator* overload
 template<typename Scalar>

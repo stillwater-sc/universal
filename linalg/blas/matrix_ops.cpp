@@ -11,9 +11,32 @@
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 
+template<typename Scalar>
+void FdpTest() {
+	using namespace sw::universal::blas;
+	std::cout << "Fused DOT product BLAS when posits are used\n";
+	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Vector = sw::universal::blas::vector<Scalar>;
+	constexpr unsigned M = 15;
+	constexpr unsigned N = M;
+	Matrix A = row_order_index<Scalar>(M, N);
+	Vector x(M, 1);
+	
+	auto b = A * x;
+	std::cout << b << '\n';
+}
+
+
 int main(int argc, char* argv[])
 try {
 	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	{
+		std::cout << "Fused DOT product BLAS when posits are used\n";
+		FdpTest<float>();
+		FdpTest<posit<16, 2> >();
+	}
+
 
 	{
 		using Scalar = float;

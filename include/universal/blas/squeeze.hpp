@@ -86,11 +86,12 @@ void squeezeScaleRound(blas::matrix<Working>& A,
     Working Amax = maxelement(A);
     Low xmax(SpecificValue::maxpos);
     Working Xmax(xmax);
-    mu =(T*Xmax) / Amax;
+    // mu =(T*Xmax) / Amax;  // use for cfloats
+    mu =T / Amax;
     A = mu*A;  //Scale A
     // std::cout << "A (after scaling)  = \n" << A << std::endl;
     Al = A;
-    // std::cout << "Al (after scaling)  = \n" << B << std::endl;
+    // std::cout << "Al (after scaling)  = \n" << Al << std::endl;
     // std::cout << "--------------------------------------------" << std::endl;
     // std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << std::endl;
     /* 
@@ -110,7 +111,7 @@ void twosideScaleRound(blas::matrix<Working>& A,
                        blas::vector<Working>& S, 
                        Working T,
                        Working &mu, 
-                       size_t algo = 23){
+                       size_t algo = 24){
         
     if (algo == 24){xyyEQU(R,A,S);}
     if (algo == 25){

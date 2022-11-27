@@ -95,8 +95,8 @@ try {
     // 0 Round
     // 21 
     // 22
-    // 24
-    size_t algo = 22; // See Higham 2019 Squeeze
+    // 24 - Two-sided Scaling
+    size_t algo = 24; // See Higham 2019 Squeeze
 
     bool print = false;
     // -----------------------------------------------------//

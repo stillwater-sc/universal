@@ -267,6 +267,7 @@ matrix<Scalar> operator/(const matrix<Scalar>& A, const Scalar& b) {
 	return B /= b;
 }
 
+ 
 // matrix-vector multiply
 template<typename Scalar>
 vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
@@ -279,9 +280,9 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	}
 	return b;
 }
-
-// overload for posits to use fused dot products
-template<size_t nbits, size_t es>
+ 
+// overload for posits to use fused dot products (fdp)
+template<unsigned nbits, unsigned es>
 vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const vector< posit<nbits, es> >& x) {
 	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
 	vector< posit<nbits, es> > b(A.rows());
@@ -316,27 +317,12 @@ matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 
 
 
-
-template<typename Scalar>
-matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
-	// Hadamard Product A.*B.  Element-wise multiplication.
-	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	size_t rows = A.rows();
-	size_t cols = A.cols();
-	 
-	matrix<Scalar> C(rows, cols);
-	for (size_t i = 0; i < rows; ++i) {
-		for (size_t j = 0; j < cols; ++j) {
-			C(i, j) = A(i, j) * B(i, j);
-		}
-	}
-	return C;
-}
-
+ 
+ 
 
 
 // overload for posits uses fused dot products
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const matrix< posit<nbits, es> >& B) {
 	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
 	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
@@ -351,6 +337,23 @@ matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 				q += quire_mul(A(i, k), B(k, j));
 			}
 			convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
+		}
+	}
+	return C;
+}
+
+
+template<typename Scalar>
+matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
+	// Hadamard Product A.*B.  Element-wise multiplication.
+	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+	size_t rows = A.rows();
+	size_t cols = A.cols();
+	 
+	matrix<Scalar> C(rows, cols);
+	for (size_t i = 0; i < rows; ++i) {
+		for (size_t j = 0; j < cols; ++j) {
+			C(i, j) = A(i, j) * B(i, j);
 		}
 	}
 	return C;
