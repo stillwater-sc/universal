@@ -11,6 +11,8 @@
 #include <regex>
 
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/number/shared/nan_encoding.hpp>
+#include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/bfloat/bfloat16_fwd.hpp>
 #include <universal/number/bfloat/exceptions.hpp>
 
@@ -31,6 +33,8 @@ public:
 	constexpr bfloat16(const SpecificValue code) noexcept {
 		switch (code) {
 		case SpecificValue::infpos:
+			setinf(false);
+			break;
 		case SpecificValue::maxpos:
 			maxpos();
 			break;
@@ -45,13 +49,17 @@ public:
 			minneg();
 			break;
 		case SpecificValue::infneg:
+			setinf(true);
+			break;
 		case SpecificValue::maxneg:
 			maxneg();
 			break;
-		case SpecificValue::snan:
 		case SpecificValue::qnan:
 		case SpecificValue::nar:
-			setnan();
+			setnan(NAN_TYPE_QUIET);
+			break;
+		case SpecificValue::snan:
+			setnan(NAN_TYPE_SIGNALLING);
 			break;
 		}
 	}
@@ -163,17 +171,22 @@ public:
 	// modifiers
 	constexpr void clear() noexcept { _bits = 0; }
 	constexpr void setzero() noexcept { clear(); }
-	constexpr void setnan(bool sign = true) noexcept { _bits = (sign ? 0xFF10u : 0x7F10u); }
+	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
+		_bits = (NaNType == NAN_TYPE_SIGNALLING ? 0xFF81u : 0x7F81u);
+	}
+	constexpr void setinf(bool sign = false) noexcept { 
+		_bits = (sign ? 0xFF80u : 0x7F80u); 
+	}
 	constexpr void setbits(unsigned short value) noexcept { _bits = value; }
 	constexpr bfloat16& assign(const std::string& txt) noexcept {
 		return *this;
 	}
 
-	constexpr bfloat16& minpos() noexcept { _bits = 0x0100u; return *this; }
-	constexpr bfloat16& maxpos() noexcept { _bits = 0x7FFFu; return *this; }
+	constexpr bfloat16& minpos() noexcept { _bits = 0x0080u; return *this; }
+	constexpr bfloat16& maxpos() noexcept { _bits = 0x7F7Fu; return *this; }
 	constexpr bfloat16& zero()   noexcept { _bits = 0x0000u; return *this; }
-	constexpr bfloat16& minneg() noexcept { _bits = 0x8100u; return *this; }
-	constexpr bfloat16& maxneg() noexcept { _bits = 0xFFFFu; return *this; }
+	constexpr bfloat16& minneg() noexcept { _bits = 0x8080u; return *this; }
+	constexpr bfloat16& maxneg() noexcept { _bits = 0xFF7Fu; return *this; }
 
 	// selectors
 	constexpr bool iszero() const noexcept { return _bits == 0; }
@@ -182,7 +195,24 @@ public:
 	constexpr bool iseven() const noexcept { return !isodd(); }
 	constexpr bool ispos()  const noexcept { return !(_bits & 0x8000u); }
 	constexpr bool isneg()  const noexcept { return (_bits & 0x8000u); }
-	constexpr bool isnan()  const noexcept { return (_bits & 0x7F80u); }
+	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept { 
+		bool negative = isneg();
+		bool isNaN    = (_bits & 0x7F80u) && (_bits & 0x007F);
+		bool isNegNaN = isNaN && negative;
+		bool isPosNaN = isNaN && !negative;	
+		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) :
+			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
+				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
+	}
+	constexpr bool isinf(int InfType = INF_TYPE_EITHER)  const noexcept { 
+		bool negative = isneg();
+		bool isInf    = (_bits & 0x7F80u);
+		bool isNegInf = isInf && negative;
+		bool isPosInf = isInf && !negative;
+		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
+			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
+				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
+	}
 	constexpr bool sign()   const noexcept { return isneg(); }
 	constexpr int  scale()  const noexcept { int biased = static_cast<int>((_bits & 0x7F80u) >> 7); return biased - 127; }
 	constexpr unsigned short bits() const noexcept { return _bits; }
@@ -204,7 +234,7 @@ protected:
 			setzero();
 		}
 		else {
-			float f = v;
+			float f = float(v);
 			uint16_t pun[2];
 			std::memcpy(pun, &f, 4);
 			_bits = pun[1];
@@ -218,7 +248,7 @@ protected:
 			setzero();
 		}
 		else {
-			float f = v;
+			float f = float(v);
 			uint16_t pun[2];
 			std::memcpy(pun, &f, 4);
 			_bits = pun[1];
@@ -289,7 +319,7 @@ inline std::istream& operator>>(std::istream& istr, bfloat16& p) {
 
 ////////////////// string operators
 
-std::string to_binary(bfloat16 bf) {
+std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
 	std::stringstream s;
 	unsigned short bits = bf.bits();
 	unsigned short mask = 0x8000u;
@@ -299,7 +329,7 @@ std::string to_binary(bfloat16 bf) {
 		 if (9 == i) {
 			s << '.';
 		}
-		else if (4 == i || 8 == i || 12 == i) {
+		else if (bNibbleMarker && (4 == i || 8 == i || 12 == i)) {
 			s << '\'';
 		}
 		

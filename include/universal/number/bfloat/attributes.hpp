@@ -11,20 +11,30 @@ namespace sw { namespace universal {
 
 // functions to provide details about properties of a bfloat configuration
 
-inline int scale(bfloat16 bf) {
-	return bf.scale();
-}
-	
-inline std::string dynamic_range(const bfloat16& a) {
-	std::stringstream s;
-	bfloat16 b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+	inline bool sign(bfloat16 bf) {
+		return bf.sign();
+	}
 
-	s << type_tag(a) << ": ";
-	s << "minpos scale " << std::setw(10) << d.scale() << "    ";
-	s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
-	s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
-	s << "[" << to_binary(b) << " ... " << to_binary(c) << ", 0, " << to_binary(d) << " ... " << to_binary(e) << "]\n";
-	return s.str();
-}
+	inline int scale(bfloat16 bf) {
+		return bf.scale();
+	}
+	
+	inline std::uint32_t significant(bfloat16 bf) {
+		return ((bf.bits() & 0x007Fu) | 0x0080u);
+	}
+
+	// generate the maxneg through maxpos value range of a bfloat configuration
+	template<typename Bfloat>
+	std::string bfloat_range() {
+		Bfloat v{ 0 };
+		std::stringstream s;
+		s << std::setw(80) << type_tag(v) << " : [ "
+			<< v.maxneg() << " ... "
+			<< v.minneg() << " "
+			<< "0 "
+			<< v.minpos() << " ... "
+			<< v.maxpos() << " ]";
+		return s.str();
+	}
 
 }}  // namespace sw::universal

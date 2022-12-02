@@ -276,7 +276,6 @@ private:
 
 ////////////////////////    functions   /////////////////////////////////
 
-
 inline eposit abs(const eposit& a) {
 	return (a.isneg() ? -a : a);
 }

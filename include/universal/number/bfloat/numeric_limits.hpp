@@ -22,7 +22,9 @@ public:
 		return Bfloat(sw::universal::SpecificValue::maxneg);
 	} 
 	static Bfloat epsilon() { // return smallest effective increment from 1.0
-		return Bfloat(0x7F01u);
+		Bfloat one{ 1.0f }, oneplus{ 1.0f };
+		++oneplus;
+		return oneplus - one;
 	}
 	static Bfloat round_error() { // return largest rounding error
 		return Bfloat(0.5f);

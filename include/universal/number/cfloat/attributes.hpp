@@ -25,7 +25,7 @@ std::string cfloat_range() {
 	using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 	Cfloat v;
 	std::stringstream s;
-	s << std::setw(40) << type_tag(v) << " : [ "
+	s << std::setw(80) << type_tag(v) << " : [ "
 		<< v.maxneg() << " ... "
 		<< v.minneg() << " "
 		<< "0 "
