@@ -18,9 +18,7 @@ namespace sw { namespace universal {
 
 // forward references
 class eposit;
-inline eposit& convert(int64_t v, eposit& result);
-inline eposit& convert_unsigned(uint64_t v, eposit& result);
-bool parse(const std::string& number, eposit& v);
+bool parse(const std::string& number, eposit& v) noexcept;
 
 // eposit is an adaptive precision linear floating-point type
 class eposit {
@@ -50,16 +48,16 @@ public:
 	explicit eposit(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
-	eposit& operator=(const signed char rhs)        { return convert(rhs, *this); }
-	eposit& operator=(const short rhs)              { return convert(rhs, *this); }
-	eposit& operator=(const int rhs)                { return convert(rhs, *this); }
-	eposit& operator=(const long rhs)               { return convert(rhs, *this); }
-	eposit& operator=(const long long rhs)          { return convert(rhs, *this); }
-	eposit& operator=(const char rhs)               { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const unsigned short rhs)     { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const unsigned int rhs)       { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const unsigned long rhs)      { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const unsigned long long rhs) { return convert_unsigned(rhs, *this); }
+	eposit& operator=(const signed char rhs)        { return convert(rhs); }
+	eposit& operator=(const short rhs)              { return convert(rhs); }
+	eposit& operator=(const int rhs)                { return convert(rhs); }
+	eposit& operator=(const long rhs)               { return convert(rhs); }
+	eposit& operator=(const long long rhs)          { return convert(rhs); }
+	eposit& operator=(const char rhs)               { return convert_unsigned(rhs); }
+	eposit& operator=(const unsigned short rhs)     { return convert_unsigned(rhs); }
+	eposit& operator=(const unsigned int rhs)       { return convert_unsigned(rhs); }
+	eposit& operator=(const unsigned long rhs)      { return convert_unsigned(rhs); }
+	eposit& operator=(const unsigned long long rhs) { return convert_unsigned(rhs); }
 	eposit& operator=(const float rhs)              { return convert_ieee754(rhs); }
 	eposit& operator=(const double rhs)             { return convert_ieee754(rhs); }
 	eposit& operator=(const long double rhs)        { return convert_ieee754(rhs); }
@@ -81,9 +79,9 @@ public:
 	}
 
 	// conversion operators
-	explicit operator float() const noexcept { return float(convert_to_ieee754()); }
-	explicit operator double() const noexcept { return float(convert_to_ieee754()); }
-	explicit operator long double() const noexcept { return convert_to_ieee754(); }
+	explicit operator float() const noexcept { return convert_to_ieee754<float>(); }
+	explicit operator double() const noexcept { return convert_to_ieee754<double>(); }
+	explicit operator long double() const noexcept { return convert_to_ieee754<long double>(); }
 
 	// arithmetic operators
 	eposit& operator+=(const eposit& rhs) noexcept {
@@ -168,14 +166,34 @@ protected:
 
 	// HELPER methods
 
-	// convert to native floating-point, use conversion rules to cast down to float and double
-	long double convert_to_ieee754() const noexcept {
-		long double ld = 0;
-		return ld;
+	// convert to native floating-point
+	template<typename Real>
+	Real convert_to_ieee754() const noexcept {
+		Real r = 0;
+		return r;
 	}
-
-	template<typename Ty>
-	eposit& convert_ieee754(Ty& rhs) noexcept {
+	template<typename SignedInt>
+	eposit& convert(SignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
+		}
+		else {
+			// convert 
+		}
+		return *this;
+	}
+	template<typename UnsignedInt>
+	eposit& convert_unsigned(UnsignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
+		}
+		else {
+			// convert 
+		}
+		return *this;
+	}
+	template<typename Real>
+	eposit& convert_ieee754(Real& rhs) noexcept {
 		clear();
 		long long base = (long long)rhs;
 		*this = base;
@@ -256,33 +274,12 @@ private:
 	friend signed findMsb(const eposit& v);
 };
 
-inline eposit& convert(int64_t v, eposit& result) noexcept {
-	if (0 == v) {
-		result.setzero();
-	}
-	else {
-		// convert 
-	}
-	return result;
-}
-
-inline eposit& convert_unsigned(uint64_t v, eposit& result) noexcept {
-	if (0 == v) {
-		result.setzero();
-	}
-	else {
-		// convert 
-	}
-	return result;
-}
-
 ////////////////////////    functions   /////////////////////////////////
 
 
 inline eposit abs(const eposit& a) {
-	return a; // (a < 0 ? -a : a);
+	return (a.isneg() ? -a : a);
 }
-
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
 
