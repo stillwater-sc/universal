@@ -122,6 +122,7 @@ option(BUILD_NUMBER_EPOSITS              "Set to ON to build elastic posit tests
 option(BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
 option(BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
 option(BUILD_NUMBER_FIXPNTS              "Set to ON to build static fixed-point tests"         OFF)
+option(BUILD_NUMBER_BFLOATS              "Set to ON to build static bfloat tests"              OFF)
 option(BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
 option(BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
 option(BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
@@ -622,6 +623,7 @@ endif(BUILD_NUMBER_ELASTICS)
 if(BUILD_NUMBER_STATICS)
 	set(BUILD_NUMBER_INTEGERS ON)
 	set(BUILD_NUMBER_FIXPNTS ON)
+	set(BUILD_NUMBER_BFLOATS ON)
 	set(BUILD_NUMBER_CFLOATS ON)
 	set(BUILD_NUMBER_DFLOATS ON)
 	set(BUILD_NUMBER_AREALS ON)
@@ -755,6 +757,11 @@ endif(BUILD_NUMBER_VALIDS)
 if(BUILD_NUMBER_AREALS)
 add_subdirectory("static/areal")
 endif(BUILD_NUMBER_AREALS)
+
+# brain floats
+if(BUILD_NUMBER_BFLOATS)
+add_subdirectory("static/bfloat")
+endif(BUILD_NUMBER_BFLOATS)
 
 # classic floats
 if(BUILD_NUMBER_CFLOATS)

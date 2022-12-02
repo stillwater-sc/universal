@@ -69,6 +69,7 @@
 // use fast code.
 //#include <universal/number/posit2/specializations.hpp>
 
+////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with posits
 #include <universal/number/posit2/manipulators.hpp>
 #include <universal/number/posit2/attributes.hpp>

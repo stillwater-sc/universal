@@ -50,14 +50,14 @@ public:
 	einteger(double initial_value)             { *this = initial_value; }
 
 	// assignment operators for native types
-	einteger& operator=(int rhs)                noexcept { return assign_signed(rhs); }
-	einteger& operator=(long rhs)               noexcept { return assign_signed(rhs); }
-	einteger& operator=(long long rhs)          noexcept { return assign_signed(rhs); }
-	einteger& operator=(unsigned int rhs)       noexcept { return assign_unsigned(rhs); }
-	einteger& operator=(unsigned long rhs)      noexcept { return assign_unsigned(rhs); }
-	einteger& operator=(unsigned long long rhs) noexcept { return assign_unsigned(rhs); }
-	einteger& operator=(float rhs)              noexcept { return assign_native_ieee(rhs); }
-	einteger& operator=(double rhs)             noexcept { return assign_native_ieee(rhs); }
+	einteger& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	einteger& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	einteger& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	einteger& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	einteger& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	einteger& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	einteger& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	einteger& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
 	explicit operator int() const noexcept         { return convert_to_native_integer<int>(); }
@@ -68,7 +68,7 @@ public:
 
 #if LONG_DOUBLE_SUPPORT
 	einteger(long double initial_value) { *this = initial_value; }
-	einteger& operator=(long double rhs)        noexcept { return assign_native_ieee(rhs); }
+	einteger& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 	explicit operator long double() const noexcept { return convert_to_native_ieee<long double>(); }
 #endif
 
@@ -693,7 +693,7 @@ protected:
 	}
 	
 	template<typename SignedInt>
-	einteger& assign_signed(SignedInt v) {
+	einteger& convert_signed(SignedInt v) {
 		clear();
 		if (v != 0) {
 			if (v < 0) {
@@ -708,7 +708,7 @@ protected:
 	}
 
 	template<typename UnsignedInt>
-	einteger& assign_unsigned(UnsignedInt v) {
+	einteger& convert_unsigned(UnsignedInt v) {
 		if (0 == v) {
 			setzero();
 		}
@@ -719,7 +719,7 @@ protected:
 	}
 
 	template<typename Real>
-	einteger& assign_native_ieee(Real& rhs) {
+	einteger& convert_ieee754(Real& rhs) {
 		clear();
 		bool s{ false };
 		std::uint64_t rawExponent{ 0 };

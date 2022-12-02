@@ -49,7 +49,7 @@ try {
 		using Posit = posit<16, 2>;
 		Posit a{ 0 };
 		std::cout << "type identifier : " << type_tag(a) << '\n';
-		std::cout << "standard posit  : " << type_tag(posit< 8, 2>()) << '\n';
+		std::cout << "standard posit  : " << type_tag(posit<  8, 2>()) << '\n';
 		std::cout << "standard posit  : " << type_tag(posit< 16, 2>()) << '\n';
 		std::cout << "standard posit  : " << type_tag(posit< 32, 2>()) << '\n';
 		std::cout << "standard posit  : " << type_tag(posit< 64, 2>()) << '\n';

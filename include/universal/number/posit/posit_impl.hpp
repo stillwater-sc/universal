@@ -488,12 +488,12 @@ public:
 
 	/// Construct posit from another posit
 	template<unsigned nnbits, unsigned ees>
-	posit(const posit<nnbits, ees>& a) {
+	posit(const posit<nnbits, ees>& a) noexcept {
 		*this = a.to_value();
 	}
 
 	// specific value constructor
-	constexpr posit(const SpecificValue code) {
+	constexpr posit(const SpecificValue code) noexcept {
 		switch (code) {
 		case SpecificValue::infpos:
 		case SpecificValue::maxpos:
@@ -522,22 +522,22 @@ public:
 	}
 
 	// initializers for native types, allow for implicit conversion (Peter)
-	constexpr posit(signed char initial_value)        { *this = initial_value; }
-	constexpr posit(short initial_value)              { *this = initial_value; }
-	constexpr posit(int initial_value)                { *this = initial_value; }
-	constexpr posit(long initial_value)               { *this = initial_value; }
-	constexpr posit(long long initial_value)          { *this = initial_value; }
-	constexpr posit(char initial_value)               { *this = initial_value; }
-	constexpr posit(unsigned short initial_value)     { *this = initial_value; }
-	constexpr posit(unsigned int initial_value)       { *this = initial_value; }
-	constexpr posit(unsigned long initial_value)      { *this = initial_value; }
-	constexpr posit(unsigned long long initial_value) { *this = initial_value; }
-	constexpr posit(float initial_value)              { *this = initial_value; }
-	constexpr posit(double initial_value)             { *this = initial_value; }
-	constexpr posit(long double initial_value)        { *this = initial_value; }
+	constexpr posit(signed char initial_value)        noexcept { *this = initial_value; }
+	constexpr posit(short initial_value)              noexcept { *this = initial_value; }
+	constexpr posit(int initial_value)                noexcept { *this = initial_value; }
+	constexpr posit(long initial_value)               noexcept { *this = initial_value; }
+	constexpr posit(long long initial_value)          noexcept { *this = initial_value; }
+	constexpr posit(char initial_value)               noexcept { *this = initial_value; }
+	constexpr posit(unsigned short initial_value)     noexcept { *this = initial_value; }
+	constexpr posit(unsigned int initial_value)       noexcept { *this = initial_value; }
+	constexpr posit(unsigned long initial_value)      noexcept { *this = initial_value; }
+	constexpr posit(unsigned long long initial_value) noexcept { *this = initial_value; }
+	constexpr posit(float initial_value)              noexcept { *this = initial_value; }
+	constexpr posit(double initial_value)             noexcept { *this = initial_value; }
+	constexpr posit(long double initial_value)        noexcept { *this = initial_value; }
 
 	// assignment operators for native types
-	posit& operator=(signed char rhs) {
+	posit& operator=(signed char rhs) noexcept {
 		internal::value<8*sizeof(signed char)-1> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -548,7 +548,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(short rhs) {
+	posit& operator=(short rhs) noexcept {
 		internal::value<8*sizeof(short)-1> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -559,7 +559,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(int rhs) {
+	posit& operator=(int rhs) noexcept {
 		internal::value<8*sizeof(int)-1> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -570,7 +570,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(long rhs) {
+	posit& operator=(long rhs) noexcept {
 		internal::value<8*sizeof(long)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -581,7 +581,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(long long rhs) {
+	posit& operator=(long long rhs) noexcept {
 		internal::value<8*sizeof(long long)-1> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -592,7 +592,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(char rhs) {
+	posit& operator=(char rhs) noexcept {
 		internal::value<8*sizeof(char)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -603,7 +603,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(unsigned short rhs) {
+	posit& operator=(unsigned short rhs) noexcept {
 		internal::value<8*sizeof(unsigned short)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -614,7 +614,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(unsigned int rhs) {
+	posit& operator=(unsigned int rhs) noexcept {
 		internal::value<8*sizeof(unsigned int)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -625,7 +625,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(unsigned long rhs) {
+	posit& operator=(unsigned long rhs) noexcept {
 		internal::value<8*sizeof(unsigned long)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -636,7 +636,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(unsigned long long rhs) {
+	posit& operator=(unsigned long long rhs) noexcept {
 		internal::value<8*sizeof(unsigned long long)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -647,15 +647,15 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(float rhs) {
-		return float_assign(rhs);
+	posit& operator=(float rhs) noexcept {
+		return convert_ieee754(rhs);
 	}
-	constexpr posit& operator=(double rhs) & {
-            float_assign(rhs);
+	constexpr posit& operator=(double rhs) noexcept {
+            convert_ieee754(rhs);
             return *this; 
 	}
-	posit& operator=(long double rhs) {
-       	return float_assign(rhs);
+	posit& operator=(long double rhs) noexcept {
+       	return convert_ieee754(rhs);
 	}
 
 #ifdef ADAPTER_POSIT_AND_INTEGER
@@ -689,20 +689,20 @@ public:
 		return negated;
 	}
 	// prefix/postfix operators
-	posit& operator++() {
+	posit& operator++() noexcept {
 		increment_posit();
 		return *this;
 	}
-	posit operator++(int) {
+	posit operator++(int) noexcept {
 		posit tmp(*this);
 		operator++();
 		return tmp;
 	}
-	posit& operator--() {
+	posit& operator--() noexcept {
 		decrement_posit();
 		return *this;
 	}
-	posit operator--(int) {
+	posit operator--(int) noexcept {
 		posit tmp(*this);
 		operator--();
 		return tmp;
@@ -994,28 +994,28 @@ public:
 	explicit operator long double() const { return to_long_double(); }
 
 	// Selectors
-	inline bool sign() const { return _raw_bits[nbits - 1]; }
-	inline bool isnar() const {
+	bool sign() const { return _raw_bits[nbits - 1]; }
+	bool isnar() const {
 		if (_raw_bits[nbits - 1] == false) return false;
 		bitblock<nbits> tmp(_raw_bits);			
 		tmp.reset(nbits - 1);
 		return tmp.none() ? true : false;
 	}
-	inline bool iszero() const { return _raw_bits.none() ? true : false; }
-	inline bool isone() const { // pattern 010000....
+	bool iszero() const { return _raw_bits.none() ? true : false; }
+	bool isone() const { // pattern 010000....
 		bitblock<nbits> tmp(_raw_bits);
 		tmp.set(nbits - 2, false);
 		return _raw_bits[nbits - 2] & tmp.none();
 	}
-	inline bool isminusone() const { // pattern 110000...
+	bool isminusone() const { // pattern 110000...
 		bitblock<nbits> tmp(_raw_bits);
 		tmp.set(nbits - 1, false);
 		tmp.set(nbits - 2, false);
 		return _raw_bits[nbits - 1] & _raw_bits[nbits - 2] & tmp.none();
 	}
-	inline bool isneg() const { return _raw_bits[nbits - 1]; }
-	inline bool ispos() const { return !_raw_bits[nbits - 1]; }
-	inline bool ispowerof2() const {
+	bool isneg() const { return _raw_bits[nbits - 1]; }
+	bool ispos() const { return !_raw_bits[nbits - 1]; }
+	bool ispowerof2() const {
 		bool s{ false };
 		regime<nbits, es> r;
 		exponent<nbits, es> e;
@@ -1023,43 +1023,24 @@ public:
 		decode(_raw_bits, s, r, e, f);
 		return f.none();
 	}
-	inline bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
+	bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
 
 	bitblock<nbits>    get() const { return _raw_bits; }
 	unsigned long long encoding() const { return _raw_bits.to_ullong(); }
 
 	// Modifiers
-	inline constexpr void clear() { _raw_bits.reset(); }
-	inline constexpr void setzero() { clear(); }
-	inline constexpr void setnar() {
+	constexpr void clear() { _raw_bits.reset(); }
+	constexpr void setzero() { clear(); }
+	constexpr void setnar() {
 		_raw_bits.reset();
 		_raw_bits.set(nbits - 1, true);
 	}
-	// set minpos value
-	inline posit& minpos() {
-		clear();
-		return ++(*this);
-	}
-	// set maxpos value
-	inline posit& maxpos() {
-		setnar();
-		return --(*this);
-	}
-	// set zero value
-	inline posit& zero() {
-		clear();
-		return *this;
-	}
-	// set minneg value
-	inline posit& minneg() {
-		clear();
-		return --(*this);
-	}
-	// set maxneg value
-	inline posit& maxneg() {
-		setnar();
-		return ++(*this);
-	}
+
+	posit& minpos() noexcept { clear(); return ++(*this); }
+	posit& maxpos() noexcept { setnar(); return --(*this); }
+	posit& zero()   noexcept { clear(); return *this; }
+	posit& minneg() noexcept { clear(); return --(*this); }
+	posit& maxneg() noexcept { setnar(); return ++(*this); }
 
 	// set the posit bits explicitely
 	constexpr posit<nbits, es>& setBitblock(const bitblock<nbits>& raw_bits) {
@@ -1218,7 +1199,7 @@ private:
 		return s * r * e * f;
 	}
 	template <typename T>
-	constexpr posit<nbits, es>& float_assign(const T& rhs) {
+	constexpr posit<nbits, es>& convert_ieee754(const T& rhs) {
 		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
 		internal::value<dfbits> v(static_cast<T>(rhs));
 
