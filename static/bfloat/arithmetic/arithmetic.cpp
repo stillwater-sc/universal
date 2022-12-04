@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition on bfloat16s
+// arithmetic.cpp: test suite runner for arithmetic on bfloat16s
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -31,8 +31,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite         = "Google Brain Float addition validation";
-	std::string test_tag           = "bfloat16 addition";
+	std::string test_suite         = "Google Brain Float arithmetic validation";
+	std::string test_tag           = "bfloat16";
 	bool reportTestCases           = false;
 	int nrOfFailedTestCases        = 0;
 
@@ -62,11 +62,35 @@ try {
 #if REGRESSION_LEVEL_1
 
 	constexpr unsigned nrOfRandoms = 1000;
-	std::stringstream s;
-	s << test_tag << " " << nrOfRandoms << " random pairs";
-	std::string description = s.str();
+	std::stringstream adds;
+	adds << test_tag << " " << nrOfRandoms << " random adds";
+	std::string description = adds.str();
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_ADD, nrOfRandoms),
+		description, 
+		test_tag
+	); 
+	std::stringstream subs;
+	subs << test_tag << " " << nrOfRandoms << " random subs";
+	description = subs.str();
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_SUB, nrOfRandoms),
+		description, 
+		test_tag
+	); 
+	std::stringstream muls;
+	muls << test_tag << " " << nrOfRandoms << " random muls";
+	description = muls.str();
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_MUL, nrOfRandoms),
+		description, 
+		test_tag
+	); 
+	std::stringstream divs;
+	divs << test_tag << " " << nrOfRandoms << " random divs";
+	description = divs.str();
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyBinaryOperatorThroughRandoms<bfloat16>(reportTestCases, RandomsOp::OPCODE_DIV, nrOfRandoms),
 		description, 
 		test_tag
 	); 

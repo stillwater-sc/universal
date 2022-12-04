@@ -138,6 +138,7 @@ namespace sw { namespace universal {
 		using std::atanh;
 
 		double reference = 0.0;
+		result = 0;
 		switch (opcode) {
  		case RandomsOp::OPCODE_ASSIGN:
 			result = da;
@@ -217,6 +218,7 @@ namespace sw { namespace universal {
 			break;
 		case RandomsOp::OPCODE_NOP:
 		default:
+			result = std::numeric_limits<float>::signaling_NaN();
 			std::cerr << "Unsupported unary operator: operation ignored\n";
 			break;
 		}
@@ -272,7 +274,7 @@ namespace sw { namespace universal {
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			TestType testa, testb, result, ref;
+			TestType testa, testb, result{0}, ref{0};
 			testa.setbits(distr(eng));
 			testb.setbits(distr(eng));
 			double da = double(testa);

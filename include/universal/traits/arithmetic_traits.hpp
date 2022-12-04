@@ -32,7 +32,6 @@ namespace sw { namespace universal {
 	template<typename Ty>
 	std::string symmetry() {
 		std::stringstream str;
-		constexpr unsigned WIDTH = 20;
 		str << std::left << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty()) << " : ";
 		str << "[ "
 			<< std::numeric_limits<Ty>::lowest()

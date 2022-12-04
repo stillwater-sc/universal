@@ -10,18 +10,20 @@
 
 // generate specific test case that you can trace with the trace conditions in cfloat.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<typename Ty>
-void GenerateTestCase(Ty _a, Ty _b) {
+template<typename Ty,
+    typename = typename std::enable_if<std::is_floating_point<Ty>::type, Ty>::value
+>
+void GenerateTestCase(Ty fa, Ty fb) {
 	constexpr unsigned nbits = 16;
-	Ty reference;
+	Ty fref;
 	sw::universal::bfloat16 a, b, ref, power;
-	a = _a;
-	b = _b;
-	reference = std::pow(a,b);
-	ref = reference;
+	a = fa;
+	b = fb;
+	fref = std::pow(fa, fb);
+	ref = fref;
 	power = sw::universal::pow(a, b);
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << " -> pow(" << _a << "," << _b << ") = " << std::setw(nbits) << reference << std::endl;
+	std::cout << std::setw(nbits) << " -> pow(" << fa << "," << fb << ") = " << std::setw(nbits) << fref << std::endl;
 	std::cout << " -> pow( " << a << "," << b << ") = " << to_binary(power) << " (reference: " << to_binary(ref) << ")   " ;
 	std::cout << (ref == power ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
