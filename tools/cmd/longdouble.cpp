@@ -1,6 +1,6 @@
 // longdouble.cpp: components of a long double: cli to show the sign/scale/fraction components of a long double native IEEE float
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -9,7 +9,7 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/native/ieee754.hpp>
-#include <universal/common/number_traits.hpp>
+#include <universal/common/number_traits_reports.hpp>
 #include <universal/internal/value/value>
 
 // receive a float and print the components of a long double representation

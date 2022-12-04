@@ -16,10 +16,6 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-// bring in the trait functions
-#include <universal/common/arithmetic_traits.hpp>
-#include <universal/common/number_traits.hpp>
-
 template<typename Real>
 void NumericalLimits() {
 	Real a;

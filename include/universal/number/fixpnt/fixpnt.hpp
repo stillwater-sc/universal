@@ -45,7 +45,11 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
-
+///////////////////////////////////////////////////////////////////////////////////////
+// bring in the trait functions
+#include <universal/traits/number_traits.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
+#include <universal/common/number_traits_reports.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library

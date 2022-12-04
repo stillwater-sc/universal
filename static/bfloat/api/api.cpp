@@ -133,7 +133,7 @@ try {
 		std::cout << "zero   : " << a.zero() << " : " << scale(a) << '\n';
 		std::cout << "minneg : " << a.minneg() << " : " << scale(a) << '\n';
 		std::cout << "maxneg : " << a.maxneg() << " : " << scale(a) << '\n';
-		std::cout << dynamic_range(a) << std::endl;
+		std::cout << dynamic_range<bfloat16>() << std::endl;
 	}
 
 	std::cout << "+---------    cfloat<16, 5, uint32_t, hasSubnormals, noSupernormals, notSaturating>         half-precision subnormals   --------+\n";
@@ -182,7 +182,7 @@ try {
 			subnormal *= 2.0f;
 
 			if (i < 8) { // the last iteration is a normal encoding
-				constexpr bool isNormal = false;
+//				constexpr bool isNormal = false;
 //				int scale_offset = static_cast<int>(a.significant(significant, isNormal)); // significant will be in leading 1 format, so not interesting unless you are doing arithmetic
 //				int check = a.MIN_EXP_NORMAL - scale_offset;
 //				std::cout << a.MIN_EXP_NORMAL << " - " << scale_offset << " = (" << check << ") should be equal to " << a.scale() << std::endl;

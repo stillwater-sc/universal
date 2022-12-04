@@ -14,11 +14,6 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/valid/valid.hpp>
 
-// bring in the trait functions
-#include <universal/common/arithmetic_traits.hpp>
-#include <universal/common/number_traits.hpp>
-
-
 //constexpr long double pi     = 3.14159265358979323846;
 //constexpr long double e      = 2.71828182845904523536;
 //constexpr long double log_2e = 1.44269504088896340736;

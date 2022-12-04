@@ -4,8 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/common/number_traits.hpp>
-#include <universal/common/arithmetic_traits.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
