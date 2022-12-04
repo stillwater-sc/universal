@@ -56,6 +56,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/bfloat/math_functions.hpp>
+#include <universal/number/bfloat/mathlib.hpp>
 
 #endif

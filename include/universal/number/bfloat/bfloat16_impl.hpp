@@ -21,6 +21,9 @@ namespace sw { namespace universal {
 // bfloat16 is Google's Brain Float type
 class bfloat16 {
 public:
+	static constexpr unsigned nbits = 16;
+	static constexpr unsigned es = 8;
+
 	bfloat16() = default;
 
 	constexpr bfloat16(const bfloat16&) = default;
@@ -189,12 +192,13 @@ public:
 	constexpr bfloat16& maxneg() noexcept { _bits = 0xFF7Fu; return *this; }
 
 	// selectors
-	constexpr bool iszero() const noexcept { return _bits == 0; }
-	constexpr bool isone()  const noexcept { return (_bits & 0x7F00u); }
-	constexpr bool isodd()  const noexcept { return (_bits & 0x0001u); }
-	constexpr bool iseven() const noexcept { return !isodd(); }
-	constexpr bool ispos()  const noexcept { return !(_bits & 0x8000u); }
-	constexpr bool isneg()  const noexcept { return (_bits & 0x8000u); }
+	constexpr bool iszero()    const noexcept { return _bits == 0; }
+	constexpr bool isone()     const noexcept { return (_bits & 0x7F00u); }
+	constexpr bool isodd()     const noexcept { return (_bits & 0x0001u); }
+	constexpr bool iseven()    const noexcept { return !isodd(); }
+	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
+	constexpr bool ispos()     const noexcept { return !(_bits & 0x8000u); }
+	constexpr bool isneg()     const noexcept { return (_bits & 0x8000u); }
 	constexpr bool isnan(int NaNType = NAN_TYPE_EITHER)  const noexcept { 
 		bool negative = isneg();
 		bool isNaN    = (_bits & 0x7F80u) && (_bits & 0x007F);
