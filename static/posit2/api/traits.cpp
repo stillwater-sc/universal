@@ -30,7 +30,7 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// posit attribute functions
+	//// posit type attribute functions
 
 	{
 		using Real = posit<8, 2, std::uint8_t>;
@@ -61,7 +61,7 @@ try {
 	}
 
 	{
-		std::cout << "Dynamic ranges of the standard posit configurations\n";
+		std::cout << "Min/max values of the standard posit configurations\n";
 		std::cout << minmax_range< posit<  8, 2> >() << '\n';
 		std::cout << minmax_range< posit< 16, 2> >() << '\n';
 		std::cout << minmax_range< posit< 32, 2> >() << '\n';
@@ -71,7 +71,7 @@ try {
 	}
 
 	{
-		std::cout << "Dynamic ranges of the standard posit configurations\n";
+		std::cout << "Sampling ranges of the standard posit configurations\n";
 		std::cout << symmetry< posit<  8, 2> >() << '\n';
 		std::cout << symmetry< posit< 16, 2> >() << '\n';
 		std::cout << symmetry< posit< 32, 2> >() << '\n';

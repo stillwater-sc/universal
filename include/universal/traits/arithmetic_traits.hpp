@@ -21,7 +21,7 @@ namespace sw { namespace universal {
 	template<typename Ty>
 	std::string minmax_range() {
 		std::stringstream str;
-		str << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty());
+		str << std::left << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty());
 		str << " : ";
 		str << "min " << std::setw(13) << std::numeric_limits<Ty>::min() << "     ";
 		str << "max " << std::setw(13) << std::numeric_limits<Ty>::max() << "     ";
@@ -33,16 +33,15 @@ namespace sw { namespace universal {
 	std::string symmetry() {
 		std::stringstream str;
 		constexpr unsigned WIDTH = 20;
-		str << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty());
-		str << " : ";
+		str << std::left << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty()) << " : ";
 		str << "[ "
-			<< std::setw(WIDTH) << std::numeric_limits<Ty>::lowest()
-			<< ", "
-			<< std::setw(WIDTH) << -std::numeric_limits<Ty>::denorm_min()
-			<< "       0  "
-			<< std::setw(WIDTH) << std::numeric_limits<Ty>::denorm_min()
-			<< ", "
-			<< std::setw(WIDTH) << std::numeric_limits<Ty>::max() << ']';
+			<< std::numeric_limits<Ty>::lowest()
+			<< " ... "
+			<< -std::numeric_limits<Ty>::denorm_min()
+			<< "  0  "
+			<< std::numeric_limits<Ty>::denorm_min()
+			<< " ... "
+			<< std::numeric_limits<Ty>::max() << ']';
 		return str.str();
 	}
 
@@ -50,7 +49,7 @@ namespace sw { namespace universal {
 	template<typename Ty>
 	std::string dynamic_range() {
 		std::stringstream str;
-		str << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty());
+		str << std::left << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty());
 		str << " : ";
 		str << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
 		str << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";

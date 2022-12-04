@@ -30,7 +30,7 @@ public:
 		return Bfloat(0.5f);
 	}
 	static constexpr Bfloat denorm_min() {  // return minimum denormalized value
-		return Bfloat(0x0001u);;
+		return Bfloat(sw::universal::SpecificValue::minpos);;
 	}
 	static constexpr Bfloat infinity() { // return positive infinity
 		return Bfloat(sw::universal::SpecificValue::infpos);

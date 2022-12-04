@@ -72,7 +72,7 @@ namespace sw { namespace universal {
 
 // IEEE-754
 // IEEE-754 quarter precision floating-point
-using quarter  = cfloat<  8, 2, uint16_t, true, false, false>;
+using quarter  = cfloat<  8, 2, uint8_t, true, false, false>;
 using fp8      = quarter;
 // IEEE-754 half precision floating-point
 using half     = cfloat< 16, 5, uint16_t, true, false, false>;
