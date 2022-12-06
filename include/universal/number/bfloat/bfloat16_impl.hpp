@@ -20,6 +20,54 @@ namespace sw { namespace universal {
 
 // bfloat16 is Google's Brain Float type
 class bfloat16 {
+		// HELPER methods
+	template<typename SignedInt,
+		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
+	constexpr bfloat16& convert_signed(SignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
+		}
+		else {
+			float f = float(v);
+			uint16_t pun[2];
+			std::memcpy(pun, &f, 4);
+			_bits = pun[1];
+		}
+		return *this;
+	}
+	template<typename UnsignedInt,
+		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
+	constexpr bfloat16& convert_unsigned(UnsignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
+		}
+		else {
+			float f = float(v);
+			uint16_t pun[2];
+			std::memcpy(pun, &f, 4);
+			_bits = pun[1];
+		}
+		return *this;
+	}
+	template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	constexpr bfloat16& convert_ieee754(Real rhs) noexcept {
+		float f = float(rhs);
+		uint16_t pun[2];
+		std::memcpy(pun, &f, 4);
+		_bits = pun[1];
+		return *this;
+	}
+		template<typename Real,
+		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
+	constexpr Real convert_to_ieee754() const noexcept {
+		float f;
+		uint16_t pun[2];
+		pun[1] = _bits;
+		pun[0] = 0;
+		std::memcpy(&f, pun, 4);
+		return Real(f);
+	}
 public:
 	static constexpr unsigned nbits = 16;
 	static constexpr unsigned es = 8;
@@ -68,34 +116,39 @@ public:
 	}
 
 	// initializers for native types
-	constexpr bfloat16(const signed char initial_value)        { *this = initial_value; }
-	constexpr bfloat16(const short initial_value)              { *this = initial_value; }
-	constexpr bfloat16(const int initial_value)                { *this = initial_value; }
-	constexpr bfloat16(const long initial_value)               { *this = initial_value; }
-	constexpr bfloat16(const long long initial_value)          { *this = initial_value; }
-	constexpr bfloat16(const char initial_value)               { *this = initial_value; }
-	constexpr bfloat16(const unsigned short initial_value)     { *this = initial_value; }
-	constexpr bfloat16(const unsigned int initial_value)       { *this = initial_value; }
-	constexpr bfloat16(const unsigned long initial_value)      { *this = initial_value; }
-	constexpr bfloat16(const unsigned long long initial_value) { *this = initial_value; }
-	constexpr bfloat16(const float initial_value)              { *this = initial_value; }
-	constexpr bfloat16(const double initial_value)             { *this = initial_value; }
-	constexpr bfloat16(const long double initial_value)        { *this = initial_value; }
+	constexpr bfloat16(signed char initial_value)        noexcept { *this = initial_value; }
+	constexpr bfloat16(short initial_value)              noexcept { *this = initial_value; }
+	constexpr bfloat16(int initial_value)                noexcept { *this = initial_value; }
+	constexpr bfloat16(long initial_value)               noexcept { *this = initial_value; }
+	constexpr bfloat16(long long initial_value)          noexcept { *this = initial_value; }
+	constexpr bfloat16(char initial_value)               noexcept { *this = initial_value; }
+	constexpr bfloat16(unsigned short initial_value)     noexcept { *this = initial_value; }
+	constexpr bfloat16(unsigned int initial_value)       noexcept { *this = initial_value; }
+	constexpr bfloat16(unsigned long initial_value)      noexcept { *this = initial_value; }
+	constexpr bfloat16(unsigned long long initial_value) noexcept { *this = initial_value; }
+	constexpr bfloat16(float initial_value)              noexcept { *this = initial_value; }
+	constexpr bfloat16(double initial_value)             noexcept { *this = initial_value; }
+	constexpr bfloat16(long double initial_value)        noexcept { *this = initial_value; }
 
 	// assignment operators for native types
-	constexpr bfloat16& operator=(const signed char rhs)        { return convert(rhs); }
-	constexpr bfloat16& operator=(const short rhs)              { return convert(rhs); }
-	constexpr bfloat16& operator=(const int rhs)                { return convert(rhs); }
-	constexpr bfloat16& operator=(const long rhs)               { return convert(rhs); }
-	constexpr bfloat16& operator=(const long long rhs)          { return convert(rhs); }
-	constexpr bfloat16& operator=(const char rhs)               { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(const unsigned short rhs)     { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(const unsigned int rhs)       { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(const unsigned long rhs)      { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(const unsigned long long rhs) { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(const float rhs)              { return convert_ieee754(rhs); }
-	constexpr bfloat16& operator=(const double rhs)             { return convert_ieee754(rhs); }
-	constexpr bfloat16& operator=(const long double rhs)        { return convert_ieee754(rhs); }
+	constexpr bfloat16& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr bfloat16& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr bfloat16& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr bfloat16& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr bfloat16& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr bfloat16& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat16& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat16& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat16& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat16& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat16& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	constexpr bfloat16& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
+	constexpr bfloat16& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+
+	// conversion operators
+	explicit operator float() const noexcept { return convert_to_ieee754<float>(); }
+	explicit operator double() const noexcept { return convert_to_ieee754<double>(); }
+	explicit operator long double() const noexcept { return convert_to_ieee754<long double>(); }
 
 	// prefix operators
 	bfloat16 operator-() const noexcept {
@@ -166,11 +219,6 @@ public:
 		return *this;
 	}
 
-	// conversion operators
-	explicit operator float() const { return convert_to_ieee754<float>(); }
-	explicit operator double() const { return convert_to_ieee754<double>(); }
-	explicit operator long double() const { return convert_to_ieee754<long double>(); }
-
 	// modifiers
 	constexpr void clear() noexcept { _bits = 0; }
 	constexpr void setzero() noexcept { clear(); }
@@ -181,9 +229,6 @@ public:
 		_bits = (sign ? 0xFF80u : 0x7F80u); 
 	}
 	constexpr void setbits(unsigned short value) noexcept { _bits = value; }
-	constexpr bfloat16& assign(const std::string& txt) noexcept {
-		return *this;
-	}
 
 	constexpr bfloat16& minpos() noexcept { _bits = 0x0080u; return *this; }
 	constexpr bfloat16& maxpos() noexcept { _bits = 0x7F7Fu; return *this; }
@@ -221,61 +266,8 @@ public:
 	constexpr int  scale()  const noexcept { int biased = static_cast<int>((_bits & 0x7F80u) >> 7); return biased - 127; }
 	constexpr unsigned short bits() const noexcept { return _bits; }
 
-	// convert to string containing digits number of digits
-	std::string str(unsigned nrDigits = 0) const {
-		return std::string("TBD");
-	}
-
-
 protected:
 	unsigned short _bits;
-
-	// HELPER methods
-	template<typename SignedInt,
-		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
-	constexpr bfloat16& convert(SignedInt v) noexcept {
-		if (0 == v) {
-			setzero();
-		}
-		else {
-			float f = float(v);
-			uint16_t pun[2];
-			std::memcpy(pun, &f, 4);
-			_bits = pun[1];
-		}
-		return *this;
-	}
-	template<typename UnsignedInt,
-		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
-	constexpr bfloat16& convert_unsigned(UnsignedInt v) noexcept {
-		if (0 == v) {
-			setzero();
-		}
-		else {
-			float f = float(v);
-			uint16_t pun[2];
-			std::memcpy(pun, &f, 4);
-			_bits = pun[1];
-		}
-		return *this;
-	}
-	template<typename Real>
-	constexpr bfloat16& convert_ieee754(Real rhs) noexcept {
-		float f = float(rhs);
-		uint16_t pun[2];
-		std::memcpy(pun, &f, 4);
-		_bits = pun[1];
-		return *this;
-	}
-	template<typename Real>
-	constexpr Real convert_to_ieee754() const {
-		float f;
-		uint16_t pun[2];
-		pun[1] = _bits;
-		pun[0] = 0;
-		std::memcpy(&f, pun, 4);
-		return Real(f);
-	}
 
 private:
 

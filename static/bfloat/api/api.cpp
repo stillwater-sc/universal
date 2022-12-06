@@ -25,8 +25,7 @@ try {
 		a = 1.0f;
 		std::cout << to_binary(a) << " : " << a << '\n';
 	}
-
-
+/*
 	// important behavioral traits
 	{
 		using TestType = bfloat16;
@@ -41,10 +40,9 @@ try {
 		Real a(1.0f), b(0.5f);
 		ArithmeticOperators(a, b);
 	}
-	return 0;
 
 	// report on the dynamic range of some standard configurations
-	std::cout << "+---------    Dynamic ranges of standard bfloat16 configurations   --------+\n";
+	std::cout << "+---------    Dynamic ranges of standard cfloat configurations   --------+\n";
 	{
 		// quarter, half, single, duble, quad, and octo precision IEEE-754 style floating-point
 		std::cout << "quarter  precision: " << cfloat_range<quarter>() << '\n';
@@ -245,7 +243,7 @@ try {
 		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
 		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
 	}
-
+*/
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
