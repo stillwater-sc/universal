@@ -15,13 +15,15 @@
 -------------------------------
 
 
-The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point that are more efficient and mathematically robust.
-By tailoring the arithmetic types to the precision and dynamic range requirements of the application enables a new level of mixed-precision algorithm
-development and optimization particularly valuable for embedded applications that require high computational density and efficiency.
+The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point for experimentation and development. In addition, tailoring the arithmetic types to the application's precision and dynamic range requirements enables a new level of mixed-precision algorithm development and optimization, particularly valuable for embedded applications that require high computational density and efficiency.
+Deep Learning provides another example where alternative formats and precisions, such as half-floats and bfloats yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
 
-The motivation to find improvements to IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound and computational scientists were looking for alternatives that provided more granularity in precision and dynamic range. Even though the inefficiency of IEEE floating-point had been measured and agreed upon in the HPC community, it was the commercial demands of Deep Learning that provided the incentive to replace IEEE-754 with alternatives, such as half-floats, and bfloats. These alternatives are tailored to the application and yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
+<!-- 
+The motivation to find improvements to IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory-bound and computational scientists were looking for alternatives that provided more granularity in precision and dynamic range. Even though the inefficiency of the IEEE floating-point had been measured and agreed upon in the HPC community, the commercial demands of Deep Learning provided the incentive to replace IEEE-754 with alternatives, such as half-floats and bfloats. These alternatives are tailored to the application and yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
+--> 
 
-The Universal library is a ready-to-use header-only library that provides plug-in replacement for native types, and provides a low-friction environment to start exploring alternatives to IEEE floating-point in your own algorithms. 
+
+The Universal Library is a ready-to-use header-only library that provides a plug-in replacement for native types and a low-friction environment to explore alternatives to IEEE floating-point in algorithms.
 
 The basic use pattern is as simple as:
 
@@ -108,18 +110,17 @@ For Ubuntu, snap will install the latest cmake, and would be the preferred metho
 > sudo snap install cmake --classic
 ```
 
-The Universal library is a pure C++ template library without any further dependencies, even for the regression test suites,
+The Universal Library is a pure C++ template library without any further dependencies, even for the regression test suites,
 to enable hassle-free installation and use.
 
-Simply clone the github repo, and you are ready to build the different components of the Universal library.  
-The library contains tools to work with integers, decimals, fixed-points, floats, posits, valids, and logarithmic
-number systems. It contains educational programs that showcase simple use cases to familiarize yourself with
-different number systems, and application examples to highlight the use of different number systems to gain performance
-or numerical accuracy. Finally, each number system offers its own verification suite. 
+Clone the GitHub repo, and you are ready to build the different components of the Universal library.  
+The library contains tools for using integers, decimals, fixed-points, floats, posits, valids, and logarithmic
+number systems. It includes educational programs that showcase simple use cases to familiarize yourself with
+different number systems and application examples to highlight the use of other number systems to gain performance
+or numerical accuracy. Finally, each number system offers its verification suite. 
 
-The easiest way to become familiar with all the options in the build process is to fire up the CMake GUI
-(or ccmake if you are on a headless server). The cmake output will summarize which options have been set.  
-The output will looks something like this:
+The easiest way to become familiar with all the options in the build process is to fire up the CMake GUI (or ccmake if you are on a headless server). The CMake output will summarize which options have been set.  
+The output will look something like this:
 
 ```text
 $ git clone https://github.com/stillwater-sc/universal
@@ -312,60 +313,68 @@ The positive regime for a posit shows a very specific structure, as can be seen 
 
 ## Motivation
 
-Modern AI applications have demonstrated the inefficiencies of the IEEE floating point format. Both Google and Microsoft have jettisonned IEEE floating point for their AI cloud services to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded applications are shifting away from IEEE floating point. But, AI applications are hardly the only applications that expose the limitations of floating point. Cloud scale, IoT, embedded, control, and HPC applications are also limited by the inefficiencies of the IEEE floating point format. A simple change to a new number system can improve scale and cost of these appliations by orders of magnitude.
+Modern AI applications have demonstrated the inefficiencies of the 64-bit format. Both Google and Microsoft have jettisoned IEEE floating point for their AI cloud services to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded applications are shifting away from the IEEE floating point as well. But, AI applications are only some of the applications that expose the limitations of floating points. The inefficiencies of the IEEE floating point format also limit cloud scale, IoT, embedded control, and HPC applications. A simple change to a new number system can improve the scale and cost of these applications by orders of magnitude.
 
-When performance and/or power efficiency are differentiating attributes for the use case, the complexity of IEEE floats simply can't compete with number systems that are tailored to the needs of the application. 
+When performance and power efficiency are differentiating attributes for the use case, the complexity of IEEE floats can't compete with number systems that are tailored to the needs of the application. 
 
 ## Advantages of posits: better, faster, cheaper, and more power efficient
 
-The core limitations of IEEE floating point are caused by two key problems of the format: 
+Two critical concerns of the IEEE floating point formats: 
 
 -   inefficient representation of the reals
 -   irreproducibility in the context of concurrency
 
-The complete list of issues that are holding back IEEE floating point formats:
+In particular, 
 
 1.   **Wasted Bit Patterns** 
-    -   32-bit IEEE floating point has around eight million ways to represent NaN (Not-A-Number), while 64-bit floating point has two quadrillion, that is approximately 2.251x10^15 to be more exact. A NaN is an exception value to represent undefined or invalid results, such as the result of a division by zero.
+    -   32-bit IEEE floating point has around eight million ways to represent NaN (Not-A-Number), while the 64-bit floating point has two quadrillion, which is approximately 2.251x10^15 to be more exact.  A NaN is an exceptional value to represent undefined or invalid results, such as the result of a division by zero.
 2.   **Mathematically Incorrect** 
     -   The format specifies two zeroes, a negative and positive zero, which have different behaviors. 
-    -   Loss of associative and distributive law due to rounding after each operation. This loss of associative and distributive arithmetic behavior creates irreproducible result of concurrent programs that use IEEE floating point. This is particularly problematic for embedded and control applications.
+    -   Loss of associative and distributive law due to rounding after each operation.  This loss of associative and distributive arithmetic behavior creates an irreproducible result of concurrent programs that use the IEEE floating point.  This is particularly problematic for embedded and control applications.
 3.   **Overflows to ± inf and underflows to 0** 
     -   Overflowing to ± inf increases the relative error by an infinite factor, while underflowing to 0 loses sign information.
 4.   **Unused dynamic range** 
     -   The dynamic range of double precision floats is a whopping 2^2047, whereas most numerical software is architected to operate around 1.0.
 5.   **Complicated Circuitry** 
-    -   Denormalized floating point numbers have a hidden bit of 0 instead of 1. This creates
+    -   Denormalized floating point numbers have a hidden bit of 0 instead of 1.  This creates
 a host of special handling requirements that complicate compliant hardware implementations.
 6.   **No Gradual Overflow and Fixed Accuracy** 
-    -   If accuracy is defined as the number of significand bits, IEEE floating point have fixed accuracy for all numbers except denormalized numbers because the number of signficand digits is fixed. Denormalized numbers are characterized by a decreased number of significand digits when the value approaches zero as a result of having a zero hidden bit. Denormalized numbers fill the underflow gap (i.e.  the gap between zero and the least non-zero values). The counterpart for gradual underflow is gradual overflow which does not exist in IEEE floating points.
+    -   If accuracy is defined as the number of significand bits, the IEEE floating point has fixed accuracy for all numbers except denormalized numbers because the number of signficand digits is fixed.  Denormalized numbers are characterized by decreased significand digits when the value approaches zero due to having a zero hidden bit.  Denormalized numbers fill the underflow gap (i.e., between zero and the least non-zero values).  The counterpart for gradual underflow is gradual overflow which does not exist in IEEE floating points.
 
-In contrast, the _posit_ number system is designed to be efficient, symmetric, and mathematically correct in any concurrency environment.
+In contrast, for example, the _posit_ number system has the following features: 
+<!-- is designed to be efficient, symmetric, and mathematically correct in any concurrency environment. -->
 
 1.   **Economical** 
-    -   No bit patterns are redundant. There is one representation for infinity denoted as ± inf and zero.  All other bit patterns are valid distinct non-zero real numbers. ± inf serves as a replacement for NaN.
-2.   **Mathematical Elegant** 
-    -   There is only one representation for zero, and the encoding is symmetric around 1.0. Associative and distributive laws are supported through deferred rounding via the quire, enabling reproducible linear algebra algorithms in any concurrency environment.
+    -   No bit patterns are redundant.  There is one representation for infinity denoted as ± inf and zero.  All other bit patterns are valid distinct non-zero real numbers. ± inf serves as a replacement for NaN.
+2.   **Perserves Mathematical Properites** 
+    -   There is only one representation for zero, and the encoding is symmetric around 1.0.  Associative and distributive laws are supported through deferred rounding via the quire, enabling reproducible linear algebra algorithms in any concurrency environment.
 3.   **Tapered Accuracy** 
-    -   Tapered accuracy is when values with small exponent have more digits of accuracy and values with large exponents have fewer digits of accuracy. This concept was first introduced by Morris (1971) in his paper ”Tapered Floating Point: A New Floating-Point Representation”.
+    -   Tapered accuracy is when values with small exponents have more precision and values with large exponents have fewer digits of accuracy.  This concept was first introduced by Morris (1971) in his paper ”Tapered Floating Point: A New Floating-Point Representation”.
 4.   **Parameterized precision and dynamic range** 
-    -   posits are defined by a size, _nbits_, and the number of exponent bits, _es_. This enables system designers the freedom to pick the right precision and dynamic range required for the application. For example, for AI applications we may pick 5 or 6 bit posits without any exponent bits to improve performance. For embedded DSP applications, such as 5G base stations, we may select a 16 bit posit with 1 exponent bit to improve performance per Watt.
+    -   posits are defined by a size, _nbits_, and the number of exponent bits, _es_. This enables system designers the freedom to pick the right precision and dynamic range required for the application.  For example, we may pick 5- or 6-bit posits without any exponent bits for AI applications to improve performance.  For embedded DSP applications, such as 5G base stations, we may select a 16-bit posit with one exponent bit to improve performance per Watt.
 5.   **Simpler Circuitry** 
-    -   There are only two special cases, Not a Real and Zero. No denormalized numbers, overflow, or underflow. 
+    -   There are only two exceptional cases, Not a Real and Zero.  No denormalized numbers, overflow, or underflow. 
+
+
+
 
 ## Goals of the library
 
 The _Universal_ library started as a bit-level arithmetic reference implementation of the evolving unum Type III (posit and valid) standard.
 However, the demands for supporting number systems, such as adaptive-precision integers to solve large factorials, adaptive-precision 
 floats to act as Oracles, or comparing linear and tapered floats provided the opportunity to create a complete platform for
-numerical analysis and computational mathematics. With this _Universal_ platform we enable a new direction for optimization of algorithms 
-to take advantage of mixed-precision to maximize performance and/or minimize energy demands. Energy efficiency is going to be the
+numerical analysis and computational mathematics. With this _Universal_ platform, we enable a new direction for optimizing algorithms 
+to take advantage of mixed precision to maximize performance and minimize energy demands. Energy efficiency is going to be the
 key differentiator for embedded intelligence applications.
 
-As a reference library, _Universal_ offers an xtensive test infrastructure to validate number system arithmetic operations, and there is 
+As a reference library, _Universal_ offers an extensive test infrastructure to validate number system arithmetic operations, and there is 
 a host of utilities to inspect the internal encodings and operations of the different number systems.
 
-The design space for custom arithmetic is vast, and any contribution to expand the capability of the _Universal_ library is encouraged. 
+The design space for custom arithmetic is vast, and any contribution to expanding the capability of the _Universal_ library is encouraged. 
+
+
+
+
 
 ## Contributing to universal
 
@@ -375,7 +384,7 @@ We are happy to accept pull requests via GitHub. The only requirement is that th
 
 ## Verification Suite
 
-Normally, the verification suite is run as part of the _make test_ command in the build directory. However, it is possible to run specific components of the test suite, for example, to validate algorithmic changes to more complex arithmetic functions, such as square root, exponent, logarithm, and trigonometric functions.
+Typically, the verification suite is run as part of the build directory's _make test_ command. However, it is possible to run specific test suite components, for example, to validate algorithmic changes to more complex arithmetic functions, such as square root, exponent, logarithm, and trigonometric functions.
 
 Here is an example:
 
@@ -427,32 +436,34 @@ Here is a complete list:
 
 And each of these functionality groups have an associated test suite located in ".../universal/tests/..."
 
+
+
+
 ## Background information
 
-Universal numbers, unums for short, are for expressing real numbers, and ranges of real numbers. 
-There are two modes of operation, selectable by the programmer, _posit_ mode, and _valid_ mode.
+Universal numbers, unums for short, express real numbers and ranges of real numbers. There are two modes of operation, selectable by the programmer, _posit_ mode and _valid_ mode.
 
-In _posit_ mode, a unum behaves much like a floating-point number of fixed size, 
-rounding to the nearest expressible value if the result of a calculation is not expressible exactly.
-A posit offers more accuracy and a larger dynamic range than floats with the same number of bits.
+In _posit_ mode, a unum behaves like a floating-point number of fixed size, rounding to the nearest expressible value if the result of a calculation is not expressible exactly.
+A posit offers more accuracy and a wider dynamic range than floats with the same number of bits.
 
-In _valid_ mode, a unum represents a range of real numbers and can be used to rigorously bound answers 
-much like interval arithmetic does.
+In _valid_ mode, a unum represents a range of real numbers and can be used to bound answers rigorously, much as interval arithmetic does.
 
-Posit configurations have a very specific relationship to one another. When expanding a posit, 
-the new value falls 'between' the old values of the smaller posit. The new value is the arithmetic mean 
-of the two numbers if the expanding bit is a fraction bit, and it is the geometric mean of the two numbers 
-if the expanding bit is a regime or exponent bit. 
+Posit configurations have a specific relationship to one another. When expanding a posit, the new value falls 'between' the old values of the smaller posit. The new value is the arithmetic mean of the two numbers if the expanding bit is a fraction bit, and it is the geometric mean of the two numbers if the expanding bit is a regime or exponent bit. 
 This [page](docs/PositRefinementViz.md) shows a visualization of the expansion of _posit<2,0>_ to _posit<7,1>_:
+
+
 
 ## Public Domain and community resources
 
-The unum format is a public domain specification, and there are a collection of web resources that
-manage information and discussions around the use of unums.
+The unum format is a public domain specification and a collection of web resources to manage information and discussions using unums.
 
 [Posit Hub](https://posithub.org)
 
 [Unum-computing Google Group](https://groups.google.com/forum/#!forum/unum-computing)
+
+
+
+
 
 ## Projects that leverage posits
 
