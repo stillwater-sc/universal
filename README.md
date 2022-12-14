@@ -313,18 +313,22 @@ The positive regime for a posit shows a very specific structure, as can be seen 
 
 ## Motivation
 
-Modern AI applications have demonstrated the inefficiencies of the 64-bit format. Both Google and Microsoft have jettisoned IEEE floating point for their AI cloud services to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded applications are shifting away from the IEEE floating point as well. But, AI applications are only some of the applications that expose the limitations of floating points. The inefficiencies of the IEEE floating point format also limit cloud scale, IoT, embedded control, and HPC applications. A simple change to a new number system can improve the scale and cost of these applications by orders of magnitude.
+Modern AI applications have demonstrated the inefficiencies of the 64-bit format. Both Google and Microsoft have jettisoned IEEE floating point for their AI cloud services to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded applications are shifting away from the IEEE floating point as well. But, AI applications are only some of the applications that expose the limitations of floating points.  Inefficiencies in numeric storage and operations can also limit cloud scale, IoT, embedded control, and HPC applications. A simple change to a new number system may improve the scale and cost of these applications by orders of magnitude.
 
-When performance and power efficiency are differentiating attributes for the use case, the complexity of IEEE floats can't compete with number systems that are tailored to the needs of the application. 
+For example, when performance and power efficiency are the differentiating attributes for a use case, number systems that are tailored to the needs of the application are desired.
+
+<!-- the complexity of IEEE floats can't compete with number systems that are tailored to the needs of the application. 
 
 ## Advantages of posits: better, faster, cheaper, and more power efficient
+-->
 
-Two critical concerns of the IEEE floating point formats: 
+
+In particular, two critical concerns of the IEEE floating point formats: 
 
 -   inefficient representation of the reals
 -   irreproducibility in the context of concurrency
 
-In particular, 
+More specifically, 
 
 1.   **Wasted Bit Patterns** 
     -   32-bit IEEE floating point has around eight million ways to represent NaN (Not-A-Number), while the 64-bit floating point has two quadrillion, which is approximately 2.251x10^15 to be more exact.  A NaN is an exceptional value to represent undefined or invalid results, such as the result of a division by zero.
