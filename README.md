@@ -42,8 +42,7 @@ int main() {
 
     Real a = sqrt(2);
     Real b = pi;
-    std::cout << "Result: " << MyKernel(a, b) << std::endl;
-  
+    std::cout << "Result: " << MyKernel(a, b) << std::endl;  
 }
 ```
 
