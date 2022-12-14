@@ -323,7 +323,7 @@ For example, when performance and power efficiency are the differentiating attri
 -->
 
 
-In particular, two critical concerns of the IEEE floating point formats: 
+In particular, there are two primary concerns of the IEEE floating point formats: 
 
 -   inefficient representation of the reals
 -   irreproducibility in the context of concurrency
