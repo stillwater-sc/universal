@@ -31,7 +31,7 @@ Scalar condest(const sw::universal::blas::matrix<Scalar> & A){
     sw::universal::blas::vector<Scalar> b(num_cols(A),1);
 
     auto [P, L, U] = plu(A);
-    auto x = solve((L*U).transpose(), b);
+    auto x = solve((L*U).transpose(), b);  // x = (LU')^(-1)*b
     auto z = forwsub(L,x);
     auto y = backsub(U,z);
 

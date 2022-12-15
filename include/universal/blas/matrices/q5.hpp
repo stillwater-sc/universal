@@ -1,14 +1,14 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Size = 5 x 5 
-// Rank 5; 
-// Matrix Norm = 66000; 
-// Cond. =  1.1e+04
-// symmetric = No
-// pos.def = No 
-// Matrix ID = x
-// NNZ = 16
+// Matrix ID 	= x
+// Size 		= 5 x 5 
+// Rank 		= 5 
+// Norm 		= 66000; 
+// Cond 		= 1.1e+04
+// symmetric 	= No
+// pos.def 		= No 
+// NNZ 			= 16
 
 sw::universal::blas::matrix<double> q5 = {
     	{ 10.0, -1.0,  2.0,  0.0, 0.0}, 

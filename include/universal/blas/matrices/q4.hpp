@@ -1,12 +1,21 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
+// Matrix ID 	= x
 // Size = 4 x 4 
-// Rank 4; Matrix Norm = 14.x; Cond. =  2.35
-// symmetric = YES
-// pos.def = YES 
-// Matrix ID = x
-// NNZ = 14
+// Rank 		= 4 
+// Norm 		= 14.x
+// Condition #  =  2.35
+// symmetric 	= YES
+// pos.def 		= YES 
+// NNZ 			= 14
+
+/*
+Use to check LU decomposition and Amax, etc.  
+Easy to view 3 x 3 matrix.  
+
+See also q3, q5
+*/
 
 sw::universal::blas::matrix<double> q4 = {
     	{ 10.0, -1.0,  2.0,  0.0}, 

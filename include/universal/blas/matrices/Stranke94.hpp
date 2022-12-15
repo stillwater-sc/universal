@@ -1,13 +1,17 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Size = 10 x 10 
-// Rank 10; Matrix Norm = 1.336242e+03; Cond. =  5.173300e+01
-// symmetric = YES
-// pos.def = No 
-// Matrix ID = 1524
-// NNZ = 90
-// Kind: Undirected Weighted Graph
+/* 
+ * Size         = 10 x 10 
+ * Rank         = 10
+ * Matrix Norm  = 1.336242e+03 
+ * Cond.        = 5.173300e+01
+ * symmetric    = YES
+ * pos.def      = No 
+ * Matrix ID    = 1524
+ * NNZ          = 90
+ * Kind: Undirected Weighted Graph
+*/
 
 sw::universal::blas::matrix<double> Stranke94 = {
 {0.000000e+00, -2.150000e+02, 1.140000e+02, -8.900000e+01, -7.700000e+01, 9.400000e+01, -1.700000e+02, 1.760000e+02, 1.170000e+02, -2.100000e+02 },

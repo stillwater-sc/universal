@@ -39,7 +39,7 @@ vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<
 	// using Scalar = typename Matrix::value_type;
 	size_t n = size(b);
     using Vector = vector<posit<nbits,es>>;
-    constexpr unsigned capacity = 10;
+    constexpr unsigned capacity = 20;
 
     Vector x(n);
     Vector d(n,1);

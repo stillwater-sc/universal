@@ -1,11 +1,13 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Rank 80; Matrix Norm = 1.738567e+10; Cond. = 5.51e+10
-// symmetric = NO
-// pos.def = NO 
-// Matrix ID = 253
-// NNZ = 314
+// Matrix ID        = 253
+// Rank             = 80 
+// Norm             = 1.738567e+10
+// Condition #      = 5.51e+10
+// symmetric        = NO
+// pos.def          = NO 
+// NNZ              = 314
 // Computational Fluid Dynamics
 
 sw::universal::blas::matrix<double> steam3 = {

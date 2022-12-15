@@ -1,13 +1,21 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Size = 4 x 4 
-// Rank 4; Matrix Norm = 10.6585; 
-// Cond. = 11.6810 
-// symmetric = NO
-// pos.def =   
-// Matrix ID = ---
-// NNZ = 12
+// Matrix ID   = ---
+// Size        = 4 x 4 
+// Rank        = 4
+// Norm        = 10.6585 
+// Cond.       = 11.6810 
+// symmetric   = No
+// pos.def     = No   
+// NNZ         = 12
+
+/*
+Use to check LU decomposition and Amax, etc.  
+Easy to view 4 x 4 matrix.  
+
+See also int3.hpp 
+*/
 
 sw::universal::blas::matrix<double>  lu4 = {
      { 1.0,   1.0,   0.0,   3.0}, 

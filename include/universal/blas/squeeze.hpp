@@ -62,7 +62,7 @@ void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S){
 // Squeeze Methods
 // ----------------------------------------------------------------------- 
 template<typename Working, typename Low>
-void squeezeRoundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al){
+void roundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al){
     /* Algo 21: round then replace infinities */
     Al = A;
     Low maxpos(SpecificValue::maxpos);
@@ -78,7 +78,7 @@ void squeezeRoundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al){
 
 
 template<typename Working, typename Low>
-void squeezeScaleRound(blas::matrix<Working>& A, 
+void scaleRound(blas::matrix<Working>& A, 
                     blas::matrix<Low>& Al, 
                     Working T, 
                     Working &mu){
@@ -87,7 +87,7 @@ void squeezeScaleRound(blas::matrix<Working>& A,
     Low xmax(SpecificValue::maxpos);
     Working Xmax(xmax);
     // mu =(T*Xmax) / Amax;  // use for cfloats
-    mu =T / Amax;
+    mu = T / Amax;  // use for posits
     A = mu*A;  //Scale A
     // std::cout << "A (after scaling)  = \n" << A << std::endl;
     Al = A;
@@ -117,7 +117,7 @@ void twosideScaleRound(blas::matrix<Working>& A,
     if (algo == 25){
         // nothing here to see
     }
-    squeezeScaleRound(A, Al, T, mu);
+    scaleRound(A, Al, T, mu);
     /* Algo 23: general two-sided scaling, then round*/
     /*
     Low xmax(SpecificValue::maxpos);

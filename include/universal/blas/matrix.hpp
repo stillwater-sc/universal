@@ -416,20 +416,20 @@ Scalar maxelement(const matrix<Scalar>&A) {
 // minelement (jq 2022-10-15)
 template<typename Scalar>
 Scalar minelement(const matrix<Scalar>&A) {
-	auto x = abs(A(0,0));
+	auto x = maxelement(A);
 	for (size_t i = 0; i < num_rows(A); ++i) {
 		for (size_t j = 0; j < num_cols(A); ++j) {
-			x = (abs(A(i, j)) < x && A(i,j)!=0) ? abs(A(i, j)) : x;
+			x = ((abs(A(i, j)) < x) && (A(i,j)!=0)) ? abs(A(i, j)) : x;
 		}
 	}
 	return x;
 }
 
 
-
 // getRow (jq 2022-11-19)
 template<typename Scalar>
 vector<Scalar> getRow(unsigned i, const matrix<Scalar>&A) {
+	// Gets the ith row of matrix A
 	vector<Scalar> x(num_cols(A),0);
 	for (size_t j = 0; j < num_cols(A); ++j) {
 		x(j) = A(i,j);

@@ -1,12 +1,14 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Size = 4 x 4 
-// Rank 4; Matrix Norm = 2.28; Cond. =  27.81
-// symmetric = NO
-// pos.def = NO 
-// Matrix ID = na
-// NNZ = 16
+// Matrix ID    = na
+// Size         = 4 x 4 
+// Rank         = 4
+// Norm         = 2.28
+//Cond.         = 27.81
+// symmetric    = NO
+// pos.def      = NO 
+// NNZ          = 16
 
 sw::universal::blas::matrix<double> rand4 = {
     { 0.826415369653239,   0.031110084193812,   0.248544297835642,   0.235211994298505},

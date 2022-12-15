@@ -1,11 +1,13 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Size = 3 x 3 
-// Rank 3; Matrix Norm = ; Cond. = 15999 
-// symmetric = NO
-/// pos.def = NO 
 // Matrix ID = ---
+// Size 	= 3 x 3 
+// Rank 	= 3
+// Norm 	= 15920
+// Cond		= 15999 
+// Sym	 	= NO
+// Pos.def 	= NO 
 // NNZ = 9
 
 sw::universal::blas::matrix<double>  faires74x3 = {

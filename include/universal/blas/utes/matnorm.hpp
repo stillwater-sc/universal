@@ -1,9 +1,13 @@
-// matnorm.hpp: matrix norm
-//
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
-// @jquinlan
-//
-// This file is part of the universal numbers project, released under an MIT Open Source license.
+/**
+ * @file matnorm.hpp
+ * @author james quinlan
+ * @brief Calculates ||A||_p for p = 1, 2, and inf.  
+ * @version 0.1
+ * @date 2022-12-13
+ * 
+ * @copyright Copyright (c) 2017-2021 Stillwater Supercomputing, Inc.
+ * This file is part of the universal numbers project, released under an MIT Open Source license.
+ */
 
 #pragma once
 #include <universal/blas/blas.hpp>
@@ -24,7 +28,6 @@ Scalar matnorm(const sw::universal::blas::matrix<Scalar> & A, size_t p = 2){
             }
             if (N >= Cmax){Cmax = N;}
         }
-        // std::cout << "Cmax = " << Cmax << std::endl;
         return Cmax;
     } else{
         // Row max = Inf-norm
@@ -37,7 +40,6 @@ Scalar matnorm(const sw::universal::blas::matrix<Scalar> & A, size_t p = 2){
             }
             if (N >= Rmax){Rmax = N;}
         }
-        // std::cout << "Rmax = " << Rmax << std::endl;
         return Rmax;
     }
 

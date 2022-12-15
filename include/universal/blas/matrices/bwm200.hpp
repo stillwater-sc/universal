@@ -1,12 +1,13 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Rank 200;
-// Matrix Norm = 1.235555e+03; 
-// Cond. = 2.412527e+03; 
-// NOT: symmetric, pos.def, 
-// Matrix ID = 298
-// NNZ = 796
+// Matrix ID    = 298
+// Rank         = 200
+// Matrix Norm  = 1.235555e+03; 
+// Cond.        = 2.412527e+03; 
+// Symmetric    = No
+// Pos.def      = No 
+// NNZ          = 796
 // Chemical Process Simulation Problem
 // Source: https://sparse.tamu.edu/Bai/bwm200
 

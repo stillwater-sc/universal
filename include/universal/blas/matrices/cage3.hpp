@@ -1,11 +1,13 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Rank 5; Matrix Norm = 1.136696e+00; 
-// Cond. = 1.884547e+01; 
-// NOT: symmetric, pos.def, 
-// Matrix ID = 904
-// NNZ = 19
+// Matrix ID    = 904
+// Rank         = 5
+// Matrix Norm  = 1.136696e+00; 
+// Cond.        = 1.884547e+01; 
+// Symmetric    = No
+// Pos.def      = No 
+// NNZ          = 19
 // Directed Weighted Graph (1 connected component)
 // Source: https://sparse.tamu.edu/vanHeukelum/cage3
 

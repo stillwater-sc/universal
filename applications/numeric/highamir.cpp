@@ -4,7 +4,7 @@
 //      
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 // Author: James Quinlan
-// Modified: 2022-11-05 (see history)
+// Modified: 2022-12-03 (see history)
 // 
 // This file is part of the universal numbers project, 
 // which is released under an MIT Open Source license.
@@ -66,6 +66,9 @@
 #include <universal/blas/matrices/bcsstk04.hpp>      // 132 x 132
 #include <universal/blas/matrices/bcsstk05.hpp>      // 153 x 153
 #include <universal/blas/matrices/bcsstk22.hpp>      // 138 x 138
+#include <universal/blas/matrices/lund_a.hpp>        //  
+#include <universal/blas/matrices/nos1.hpp>          //  
+#include <universal/blas/matrices/tumorAntiAngiogenesis_2.hpp>      //  
 
 
 // File I/O
@@ -141,14 +144,35 @@ try {
         q3, q4, q5, h3, pores_1, Stranke94, bcsstk05  ...
     */ 
     // ----------------------------------------------------------------------------
-    Mw A = pores_1;
+    Mw A = steam3;
+    WorkingPrecision eps = 0.0;    
+
+
     if(print){std::cout << "A = \n" << A << std::endl;}
     unsigned n = num_cols(A);
     // Met-A data
-    std::cout << "Condition estimate: " << condest(A) << std::endl;
+    // std::cout << "Condition estimate: " << condest(A) << std::endl;
     std::cout << "Size: (" << n << ", " << n  << ")\n" << std::endl;
 
-
+    // Perturbations
+    /* 
+    {
+        See gaussian_random.hpp
+        int ii;
+        int jj;
+        int numperturbed;
+        srand(time(0));
+        numperturbed =  rand() % n;
+        for (size_t i = 0; i < numperturbed; ++i){
+            ii =  rand() % n;
+            jj =  rand() % n;
+            eps = abs(cos(rand()));
+            A(ii,jj) = A(ii,jj) + eps*(1e+05);
+        }
+        if(print){std::cout << "A = \n" << A << std::endl;}
+    }
+    */
+   
     Ml Al; //(A);  // Declare low precision matrix to store A
    
     // Test getRow(i,A);
@@ -168,12 +192,12 @@ try {
 
     // Round, then replace inf (overflow)
     if (algo == 21){ //Round, then replace
-        squeezeRoundReplace(A, Al);
+        roundReplace(A, Al);
         if(print){std::cout << "Algorithm: Round, then replace infinities.\n" << std::endl;}
     
     // Scale and Round
     }else if(algo == 22){
-        squeezeScaleRound<WorkingPrecision, LowPrecision>(A, Al, T, mu);
+        scaleRound<WorkingPrecision, LowPrecision>(A, Al, T, mu);
         if(print){std::cout << "Algorithm: Scale, then round.\n" << std::endl;}
     
     }else if(algo == 23 || algo == 24 || algo == 25){
@@ -214,6 +238,11 @@ try {
     Mh Ah(A);       // High precision A
     Vh X(n,1);      // X is exact solution = [1, 1, 1, ..., 1]
     Vh b = Ah*X;    // Generate b vector in high precision.
+
+    Vw rrr(5);
+    gaussian_random(rrr,0,1);
+    // std::cout << "Random Vec = \n" << rrr << std::endl;
+    rrr.disp();
 
     // Store working
     Vw x(X);  

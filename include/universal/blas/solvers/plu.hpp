@@ -35,7 +35,6 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
     L = 1;
     U = A;
 
-     
     // Elimination Process
     for (size_t i = 0; i < n-1; ++i){ // i-th row
         Scalar absmax = abs(U(i,i)); 
@@ -86,5 +85,9 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
     U = triu(U);
     return std::make_tuple(P,L,U); 
 } // LU
+
+
+
+
 
 }}} // namespace sw::universal::blas

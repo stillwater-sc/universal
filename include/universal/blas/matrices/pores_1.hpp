@@ -1,14 +1,14 @@
 #pragma once
 #include <universal/blas/blas.hpp>
 
-// Size = 30 x 30
-// Rank 30; 
-// Matrix Norm = 3.123907e+07; 
-// Condition Number =  1.812616e+06
-// symmetric = NO
-/// pos.def = NO 
-// Matrix ID = 232
-// NNZ = 180
+// Matrix ID    = 232
+// Size         = 30 x 30
+// Rank         = 30
+// Norm         = 3.123907e+07; 
+// Condition    = 1.812616e+06
+// symmetric    = NO
+// pos.def      = NO 
+// NNZ          = 180
 // Kind: Fluid Dynamics
 
 sw::universal::blas::matrix<double>  pores_1 = {
