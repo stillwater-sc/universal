@@ -6,8 +6,8 @@
 #include <universal/number/lns/lns.hpp>
 
 // quick helper to report on a posit's specialness
-template<size_t nbits, size_t rbits, typename bt>
-void checkSpecialCases(sw::universal::lns<nbits, rbits, bt> p) {
+template<unsigned nbits, unsigned rbits, typename bt, auto... x>
+void checkSpecialCases(sw::universal::lns<nbits, rbits, bt, x...> p) {
 	std::cout << "lns is " << (p.iszero() ? "zero " : "non-zero ") << (p.ispos() ? "positive " : "negative ") << (p.isnan() ? "Not a Number" : "Its a Real") << std::endl;
 }
 
@@ -16,10 +16,10 @@ int main()
 try {
 	using namespace sw::universal;	// standard namespace for lns
 
-	constexpr size_t nbits = 16;
-	constexpr size_t rbits = 5;
+	constexpr unsigned nbits = 16;
+	constexpr unsigned rbits = 5;
 	using LNS16 = lns<nbits, rbits, std::uint16_t>;
-	LNS16 p1, p2, p3, p4, p5, p6;
+	LNS16 p1{}, p2{}, p3{}, p4{}, p5{}, p6{};
 
 //	/* constexpr */ double minpos = minpos_value<nbits>();
 //	/* constexpr */ double maxpos = maxpos_value<nbits>();

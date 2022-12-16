@@ -8,7 +8,7 @@
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
 #endif
-#include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
+#include <universal/common/arithmetic_traits.hpp>
 
 // select the number systems we would like to compare
 #include <universal/number/integer/integer.hpp>

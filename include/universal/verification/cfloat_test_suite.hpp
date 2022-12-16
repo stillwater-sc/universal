@@ -922,7 +922,7 @@ namespace sw { namespace universal {
 		if constexpr (op == BlockTripleOperator::MUL) {
 			constexpr size_t fbits = CfloatConfiguration::fbits;
 			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-			blocktriple<2 * fbits, BlockTripleOperator::REPRESENTATION, bt> ref;
+			blocktriple<2 * fbits, BlockTripleOperator::REP, bt> ref;
 			for (size_t i = 0; i < NR_VALUES; ++i) {
 				a.setbits(i);
 				a.normalizeMultiplication(b);
@@ -947,7 +947,7 @@ namespace sw { namespace universal {
 		if constexpr (op == BlockTripleOperator::DIV) {
 			constexpr size_t fbits = CfloatConfiguration::fbits;
 			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-			blocktriple<2 * fbits, BlockTripleOperator::REPRESENTATION, bt> ref;
+			blocktriple<2 * fbits, BlockTripleOperator::REP, bt> ref;
 			for (size_t i = 0; i < NR_VALUES; ++i) {
 				a.setbits(i);
 				a.normalizeDivision(b);
@@ -1168,8 +1168,7 @@ namespace sw { namespace universal {
 
 	// validate the decrement operator--
 	template<typename TestType>
-	int VerifyCfloatDecrement(bool reportTestCases)
-	{
+	int VerifyCfloatDecrement(bool reportTestCases)	{
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;

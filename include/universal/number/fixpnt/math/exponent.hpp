@@ -1,7 +1,7 @@
 #pragma once
 // exponent.hpp: exponent functions for fixed-points
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -11,7 +11,7 @@ namespace sw { namespace universal {
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Base-e exponential function
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> exp(fixpnt<nbits, rbits, arithmetic, bt> x) {
 	if (isnan(x)) return x;
 	fixpnt<nbits, rbits, arithmetic, bt> p;
@@ -26,7 +26,7 @@ fixpnt<nbits, rbits, arithmetic, bt> exp(fixpnt<nbits, rbits, arithmetic, bt> x)
 }
 
 // Base-2 exponential function
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> exp2(fixpnt<nbits, rbits, arithmetic, bt> x) {
 	if (isnan(x)) return x;
 	fixpnt<nbits, rbits, arithmetic, bt> p;
@@ -41,13 +41,13 @@ fixpnt<nbits, rbits, arithmetic, bt> exp2(fixpnt<nbits, rbits, arithmetic, bt> x
 }
 
 // Base-10 exponential function
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> exp10(fixpnt<nbits, rbits, arithmetic, bt> x) {
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::pow(10.0, double(x)));
 }
 		
 // Base-e exponential function exp(x)-1
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> expm1(fixpnt<nbits, rbits, arithmetic, bt> x) {
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::expm1(double(x)));
 }

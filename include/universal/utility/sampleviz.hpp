@@ -1,13 +1,17 @@
 #pragma once
-
+// sampleviz.hpp: utility
+//
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 namespace sw {
 	namespace universal {
 
 		template<typename Real, typename NumberSystem, typename EnvelopingNumberSystem>
 		void sampleviz(NumberSystem start, NumberSystem stop, Real sample) {
 			using namespace sw::universal;
-			NumberSystem a, s(sample);
-			EnvelopingNumberSystem b;
+			NumberSystem a{}, s(sample);
+			EnvelopingNumberSystem b{};
 			std::string tag1 = type_tag(a);
 			std::string tag2 = type_tag(b);
 			size_t twidth = tag2.size() + 5;

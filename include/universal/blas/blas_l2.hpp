@@ -31,7 +31,7 @@ void matvec(Vector& b, const Matrix& A, const Vector& x) {
 
 #ifdef QUIRE_ENABLED_MATVEC
 // Matrix-vector product: b = A * x, posit specialized
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void matvec(sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b, const sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x) {
 	// preconditions
 	assert(A.cols() == size(x));
@@ -71,8 +71,10 @@ void matvec(sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b, c
 }
 #endif // QUIRE_ENABLED_MATVEC
 
+// TODO: how would you generalize this to posits, cfloats, lns, integer, or even native int and float?
+//
 // A times x = b fused matrix-vector product
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 sw::universal::blas::vector< sw::universal::posit<nbits, es> > fmv(const sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x) {
 	// preconditions
 	assert(A.cols() == size(x));

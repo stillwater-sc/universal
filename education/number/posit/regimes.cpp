@@ -1,6 +1,6 @@
 //  regimes.cpp : examples of working with posit regimes
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -32,7 +32,7 @@ Regime range example for a posit<6,es>
 	 11110          3
 	 11111          4
 */
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 int ValidateRegimeOperations(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr int NR_TEST_CASES = int(nbits);
 	int nrOfFailedTestCases = 0;
@@ -54,7 +54,7 @@ int ValidateRegimeOperations(const std::string& tag, bool bReportIndividualTestC
 }
 
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 int ValidateInwardProjection(const std::string& tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	unsigned useed_scale = unsigned(1) << es;
@@ -76,7 +76,7 @@ int ValidateInwardProjection(const std::string& tag, bool bReportIndividualTestC
 	return nrOfFailedTests;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 int ValidateRegimeScales(const std::string& tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	int useed_scale = int(1) << es;  // int because we are doing int math with it

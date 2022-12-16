@@ -1,7 +1,7 @@
 #pragma once
 // sqrt.hpp: sqrt functions for cfloat
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
@@ -26,13 +26,13 @@ namespace sw { namespace universal {
 	}
 */
 
-	template<size_t nbits, size_t es, typename bt>
-	inline cfloat<nbits, es, bt> BabylonianMethod(const cfloat<nbits, es, bt>& v) {
+	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> BabylonianMethod(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& v) {
 		const double eps = 1.0e-5;
-		cfloat<nbits, es, bt> half(0.5);
-		cfloat<nbits, es, bt> x_next;
-		cfloat<nbits, es, bt> x_n = half * v;
-		cfloat<nbits, es, bt> diff;
+		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> half(0.5);
+		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x_next;
+		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> x_n = half * v;
+		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> diff;
 		do {
 			x_next = (x_n + v / x_n) * half;
 			diff = x_next - x_n;
@@ -76,7 +76,7 @@ namespace sw { namespace universal {
 
 #if CFLOAT_NATIVE_SQRT
 	// sqrt for arbitrary cfloat
-	template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
 	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();
@@ -87,7 +87,7 @@ namespace sw { namespace universal {
 		return cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>(std::sqrt((double)a));  // TBD
 	}
 #else
-	template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
 	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> sqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (a.isneg()) throw cfloat_negative_sqrt_arg();
@@ -100,7 +100,7 @@ namespace sw { namespace universal {
 #endif
 
 	// reciprocal sqrt
-	template<size_t nbits, size_t es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
+	template<unsigned nbits, unsigned es, typename bt, bool hasSubnormal, bool hasSupernormal, bool isSaturating>
 	inline cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> rsqrt(const cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating>& a) {
 		cfloat<nbits, es, bt, hasSubnormal, hasSupernormal, isSaturating> v = sqrt(a);
 		return v.reciprocate();

@@ -19,7 +19,7 @@
 namespace sw { namespace universal {
 
 // report dynamic range of a type, specialized for a posit
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string dynamic_range() {
 	std::stringstream str;
 	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
@@ -30,7 +30,7 @@ std::string dynamic_range() {
 }
 
 // report the dynamic range of the type associated with a value
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string dynamic_range(const posit<nbits, es>& p) {
 	std::stringstream str;
 	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
@@ -41,7 +41,7 @@ std::string dynamic_range(const posit<nbits, es>& p) {
 }
 
 // report the dynamic range of a posit
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string posit_range() {
 	std::stringstream str;
 	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
@@ -54,20 +54,19 @@ std::string posit_range() {
 }
 
 // Generate a type tag for this posit, for example, posit<8,1>
-template<size_t nbits, size_t es>
-std::string type_tag(const posit<nbits, es>& p) {
+template<unsigned nbits, unsigned es>
+std::string type_tag(const posit<nbits, es>& = {}) {
 	std::stringstream str;
 	str << "sw::universal::posit<" 
 		<< std::setw(3) << nbits << ", " 
 		<< std::setw(1) << es << '>';
-	if (p.iszero()) str << ' '; // to get rid of unused parameter warning
 	return str.str();
 }
 
 // Generate a string representing the posit components: sign, regime, exponent, faction, and value
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string components(const posit<nbits, es>& p) {
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
 	regime<nbits, es>    _regime;
@@ -86,7 +85,7 @@ std::string components(const posit<nbits, es>& p) {
 	return str.str();
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string component_values_to_string(const posit<nbits, es>& p) {
 	std::stringstream str;
 	// TODO: hardcoded field sizes
@@ -111,7 +110,7 @@ std::string component_values_to_string(const posit<nbits, es>& p) {
 }
 
 // generate a posit format ASCII format nbits.esxNN...NNp
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 inline std::string hex_print(const posit<nbits, es>& p) {
 	// we need to transform the posit into a string
 	std::stringstream str;
@@ -119,9 +118,9 @@ inline std::string hex_print(const posit<nbits, es>& p) {
 	return str.str();
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
 	regime<nbits, es>    _regime;
@@ -134,7 +133,7 @@ std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::nu
 	int nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (regimeBits > nrOfRegimeBitsProcessed++) {
-			str << (r[static_cast<size_t>(i)] ? "1" : "0");
+			str << (r[static_cast<unsigned>(i)] ? "1" : "0");
 		}
 	}
 	str << " e";
@@ -143,7 +142,7 @@ std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::nu
 	int nrOfExponentBitsProcessed = 0;
 	for (int i = int(es) - 1; i >= 0; --i) {
 		if (exponentBits > nrOfExponentBitsProcessed++) {
-			str << (e[static_cast<size_t>(i)] ? "1" : "0");
+			str << (e[static_cast<unsigned>(i)] ? "1" : "0");
 		}
 	}
 	str << " f";
@@ -153,7 +152,7 @@ std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::nu
 	//for (int i = int(p.fbits) - 1; i >= 0; --i) {  // this does not look correct
 	for (int i = int(fbits) - 1; i >= 0; --i) {
 		if (fractionBits > nrOfFractionBitsProcessed++) {
-			str << (f[static_cast<size_t>(i)] ? "1" : "0");
+			str << (f[static_cast<unsigned>(i)] ? "1" : "0");
 		}
 	}
 	str << " q";
@@ -163,9 +162,9 @@ std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::nu
 	return str.str();
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string info_print(const posit<nbits, es>& p, int printPrecision = 17) {
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
 	regime<nbits, es>    _regime;
@@ -184,9 +183,9 @@ std::string info_print(const posit<nbits, es>& p, int printPrecision = 17) {
 	return str.str();
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 std::string color_print(const posit<nbits, es>& p) {
-	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
+	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
 	regime<nbits, es>    _regime;
@@ -206,18 +205,22 @@ std::string color_print(const posit<nbits, es>& p) {
 	bitblock<nbits - 1> r = _regime.get();
 	int regimeBits = (int)_regime.nrBits();
 	int nrOfRegimeBitsProcessed = 0;
-	for (int i = nbits - 2; i >= 0; --i) {
+	for (unsigned i = 0; i < nbits - 1; ++i) {
+		unsigned bitIndex = nbits - 2u - i;
 		if (regimeBits > nrOfRegimeBitsProcessed++) {
-			str << yellow << (_sign ? (r[static_cast<size_t>(i)] ? '0' : '1') : (r[static_cast<size_t>(i)] ? '1' : '0'));
+			str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
 		}
 	}
 
 	bitblock<es> e = _exponent.get();
 	int exponentBits = (int)_exponent.nrBits();
 	int nrOfExponentBitsProcessed = 0;
-	for (int i = int(es) - 1; i >= 0; --i) {
-		if (exponentBits > nrOfExponentBitsProcessed++) {
-			str << cyan << (_sign ? (e[static_cast<size_t>(i)] ? '0' : '1') : (e[static_cast<size_t>(i)] ? '1' : '0'));
+	if constexpr (es > 0) {
+		for (unsigned i = 0; i < es; ++i) {
+			unsigned bitIndex = es - 1u - i;
+			if (exponentBits > nrOfExponentBitsProcessed++) {
+				str << cyan << (_sign ? (e[bitIndex] ? '0' : '1') : (e[bitIndex] ? '1' : '0'));
+			}
 		}
 	}
 
@@ -225,9 +228,10 @@ std::string color_print(const posit<nbits, es>& p) {
 	f = (_sign ? twos_complement(f) : f);
 	int fractionBits = (int)_fraction.nrBits();
 	int nrOfFractionBitsProcessed = 0;
-	for (int i = int(p.fbits) - 1; i >= 0; --i) {
+	for (unsigned i = 0; i < p.fbits; ++i) {
+		unsigned bitIndex = p.fbits - 1u - i;
 		if (fractionBits > nrOfFractionBitsProcessed++) {
-			str << magenta << (f[static_cast<size_t>(i)] ? "1" : "0");
+			str << magenta << (f[bitIndex] ? "1" : "0");
 		}
 	}
 

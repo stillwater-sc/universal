@@ -1,7 +1,7 @@
 #pragma once
 // posit_parse.hpp: parsing a posit in posit format
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -12,7 +12,7 @@
 namespace sw { namespace universal {
 
 // read a posit ASCII format and make a memory posit out of it
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 bool parse(std::string& txt, posit<nbits, es>& p) {
 	bool bSuccess = false;
 	// check if the txt is of the native posit form: nbits.esXhexvalue
@@ -33,12 +33,12 @@ bool parse(std::string& txt, posit<nbits, es>& p) {
 			if (*it == 'p') break;
 			bitStr.append(1, *it);
 		}
-		size_t nbits_in = nbits;
+		unsigned nbits_in = nbits;
 		{
 			std::istringstream ss(nbitsStr);
 			ss >> nbits_in;
 		}
-		unsigned long long raw;
+		uint64_t raw;
 		std::istringstream ss(bitStr);
 		ss >> std::hex >> raw;
 		//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
@@ -59,6 +59,5 @@ bool parse(std::string& txt, posit<nbits, es>& p) {
 	}
 	return bSuccess;
 }
-
 
 }} // namespace sw::universal

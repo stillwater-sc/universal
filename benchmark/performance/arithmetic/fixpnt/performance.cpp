@@ -1,6 +1,6 @@
-//  performance.cpp : performance benchmarking for abitrary precision fixpnts
+//  performance.cpp : performance benchmarking for fixed-sized, abitrary precision fixpnts
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -28,52 +28,52 @@ void TestShiftOperatorPerformance() {
 
 	constexpr uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("fixpnt<8,4,    Saturating, uint8_t>  shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<8, 4, Saturating, uint8_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<16,8,   Saturating, uint16_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<16, 8, Saturating, uint16_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<32,16,  Saturating, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<32, 16, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<64,32,  Saturating, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<64, 32, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<128,32, Saturating, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<128, 32, Saturating, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("fixpnt<256,32, Saturating, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<256, 32, Saturating, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("fixpnt<512,32, Saturating, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<512, 32, Saturating, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("fixpnt<1024,32,Saturating, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<1024, 32, Saturating, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("fixpnt<   8,  4, Saturate, uint8_t>  shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<   8,  4, Saturate, uint8_t> >, NR_OPS);
+	PerformanceRunner("fixpnt<  16,  8, Saturate, uint16_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<  16,  8, Saturate, uint16_t> >, NR_OPS);
+	PerformanceRunner("fixpnt<  32, 16, Saturate, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<  32, 16, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt<  64, 32, Saturate, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<  64, 32, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 128, 32, Saturate, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt< 128, 32, Saturate, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("fixpnt< 256, 32, Saturate, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt< 256, 32, Saturate, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("fixpnt< 512, 32, Saturate, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt< 512, 32, Saturate, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("fixpnt<1024, 32, Saturate, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<1024, 32, Saturate, uint32_t> >, NR_OPS / 16);
 }
 
 
 // measure performance of arithmetic operations
 void TestArithmeticOperatorPerformance() {
 	using namespace sw::universal;
-	std::cout << "\nFIXPNT Fixed-Point Saturating Arithmetic operator performance\n";
+	std::cout << "\nFIXPNT Fixed-Point Saturate Arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 1000000;
-	PerformanceRunner("fixpnt<8,4, Saturating,uint8_t>      add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt<8,4, Saturating, uint8_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<16,8, Saturating,uint16_t>    add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt<16,8, Saturating, uint16_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<32,16, Saturating,uint32_t>   add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt<32,16, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<64,32, Saturating,uint32_t>   add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt<64,32, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<128,32, Saturating,uint32_t>  add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt<128,32, Saturating, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("fixpnt<  8,  4, Saturate, uint8_t >  add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt<  8,  4, Saturate, uint8_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 16,  8, Saturate, uint16_t>  add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt< 16,  8, Saturate, uint16_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 32, 16, Saturate, uint32_t>  add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt< 32, 16, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 64, 32, Saturate, uint32_t>  add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt< 64, 32, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt<128, 32, Saturate, uint32_t>  add/subtract    ", AdditionSubtractionWorkload< sw::universal::fixpnt<128, 32, Saturate, uint32_t> >, NR_OPS / 2);
 
 #if 0
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("fixpnt<8,4,    Saturating,uint8_t>   division        ", DivisionWorkload< sw::universal::fixpnt<8,4, Saturating, uint8_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<16,8,   Saturating,uint16_t>  division        ", DivisionWorkload< sw::universal::fixpnt<16,8, Saturating, uint16_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<32,16,  Saturating,uint32_t>  division        ", DivisionWorkload< sw::universal::fixpnt<32,16, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<64,32,  Saturating,uint32_t>  division        ", DivisionWorkload< sw::universal::fixpnt<64,32, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<128,32, Saturating,uint32_t>  division        ", DivisionWorkload< sw::universal::fixpnt<128,32, Saturating, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("fixpnt<  8,  4, Saturate,uint8_t >  division        ", DivisionWorkload< sw::universal::fixpnt<  8,  4, Saturate, uint8_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 16,  8, Saturate,uint16_t>  division        ", DivisionWorkload< sw::universal::fixpnt< 16,  8, Saturate, uint16_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 32, 16, Saturate,uint32_t>  division        ", DivisionWorkload< sw::universal::fixpnt< 32, 16, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 64, 32, Saturate,uint32_t>  division        ", DivisionWorkload< sw::universal::fixpnt< 64, 32, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt<128, 32, Saturate,uint32_t>  division        ", DivisionWorkload< sw::universal::fixpnt<128, 32, Saturate, uint32_t> >, NR_OPS / 2);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("fixpnt<8,4,    Saturating,uint8_t>   remainder       ", RemainderWorkload< sw::universal::fixpnt<8,4, Saturating, uint8_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<16,8,   Saturating,uint16_t>  remainder       ", RemainderWorkload< sw::universal::fixpnt<16,8, Saturating, uint16_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<32,16,  Saturating,uint32_t>  remainder       ", RemainderWorkload< sw::universal::fixpnt<32,16, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<64,32,  Saturating,uint32_t>  remainder       ", RemainderWorkload< sw::universal::fixpnt<64,32, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<128,32, Saturating,uint32_t>  remainder       ", RemainderWorkload< sw::universal::fixpnt<128,32, Saturating, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("fixpnt<  8,  4, Saturate,uint8_t >  remainder       ", RemainderWorkload< sw::universal::fixpnt<  8,  4, Saturate, uint8_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 16,  8, Saturate,uint16_t>  remainder       ", RemainderWorkload< sw::universal::fixpnt< 16,  8, Saturate, uint16_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 32, 16, Saturate,uint32_t>  remainder       ", RemainderWorkload< sw::universal::fixpnt< 32, 16, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 64, 32, Saturate,uint32_t>  remainder       ", RemainderWorkload< sw::universal::fixpnt< 64, 32, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt<128, 32, Saturate,uint32_t>  remainder       ", RemainderWorkload< sw::universal::fixpnt<128, 32, Saturate, uint32_t> >, NR_OPS / 2);
 #endif
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("fixpnt<8,4,   Saturating,uint8_t>    multiplication ", MultiplicationWorkload< sw::universal::fixpnt<8,4, Saturating, uint8_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<16,8,  Saturating,uint16_t>   multiplication ", MultiplicationWorkload< sw::universal::fixpnt<16,8, Saturating, uint16_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<32,16  Saturating,,uint32_t>  multiplication ", MultiplicationWorkload< sw::universal::fixpnt<32,16, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<64,32, Saturating,uint32_t>   multiplication ", MultiplicationWorkload< sw::universal::fixpnt<64,32, Saturating, uint32_t> >, NR_OPS);
-	PerformanceRunner("fixpnt<128,32 Saturating,,uint32_t>  multiplication ", MultiplicationWorkload< sw::universal::fixpnt<128,32, Saturating, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("fixpnt<  8,  4, Saturate, uint8_t >  multiplication ", MultiplicationWorkload< sw::universal::fixpnt<  8,  4, Saturate, uint8_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 16,  8, Saturate, uint16_t>  multiplication ", MultiplicationWorkload< sw::universal::fixpnt< 16,  8, Saturate, uint16_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 32, 16  Saturate, uint32_t>  multiplication ", MultiplicationWorkload< sw::universal::fixpnt< 32, 16, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt< 64, 32, Saturate, uint32_t>  multiplication ", MultiplicationWorkload< sw::universal::fixpnt< 64, 32, Saturate, uint32_t> >, NR_OPS);
+	PerformanceRunner("fixpnt<128, 32, Saturate, uint32_t>  multiplication ", MultiplicationWorkload< sw::universal::fixpnt<128, 32, Saturate, uint32_t> >, NR_OPS / 2);
 }
 
 // conditional compilation

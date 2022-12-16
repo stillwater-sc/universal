@@ -1,7 +1,7 @@
 #pragma once
 // hypot.hpp: hypotenuse functions for fixed-points
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -40,17 +40,17 @@ hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN
 
 namespace sw { namespace universal {
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> hypot(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::hypot(double(x),double(y)));
 }
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> hypotf(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::hypotf(float(x),float(y)));
 }
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 fixpnt<nbits, rbits, arithmetic, bt> hypotl(fixpnt<nbits, rbits, arithmetic, bt> x, fixpnt<nbits, rbits, arithmetic, bt> y) {
 	return fixpnt<nbits, rbits, arithmetic, bt>(std::hypotl((long double)(x),(long double)(y)));
 }

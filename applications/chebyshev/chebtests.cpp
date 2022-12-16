@@ -59,7 +59,7 @@ try {
 		std::cout << "\nUsing POSIT<" << nbits << "," <<  es << ">\n\n";
 	#else	  
 		using Scalar = double;
-		std::cout << "\nUsing DOUBLE " << "\n\n";
+		std::cout << "\nUsing DOUBLE " << Scalar(0.0) << "\n\n";
 	#endif
 
 	// TESTS

@@ -1,7 +1,7 @@
 #pragma once
 // posit_3_1.hpp: specialized 3-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -58,13 +58,13 @@ namespace sw { namespace universal {
 			template<>
 			class posit<NBITS_IS_3, ES_IS_1> {
 			public:
-				static constexpr size_t nbits = NBITS_IS_2;
-				static constexpr size_t es = ES_IS_1;
-				static constexpr size_t sbits = 1;
-				static constexpr size_t rbits = nbits - sbits;
-				static constexpr size_t ebits = 0;			// <--- special case that needed this specialization
-				static constexpr size_t fbits = 0;
-				static constexpr size_t fhbits = fbits + 1;
+				static constexpr unsigned nbits = NBITS_IS_2;
+				static constexpr unsigned es = ES_IS_1;
+				static constexpr unsigned sbits = 1;
+				static constexpr unsigned rbits = nbits - sbits;
+				static constexpr unsigned ebits = 0;			// <--- special case that needed this specialization
+				static constexpr unsigned fbits = 0;
+				static constexpr unsigned fhbits = fbits + 1;
 				static constexpr uint8_t index_shift = 3;
 
 				posit() { _bits = 0; }
@@ -249,7 +249,7 @@ namespace sw { namespace universal {
 					bitblock<nbits>		 _raw_bits;
 					_raw_bits.reset();
 					uint64_t mask = 1;
-					for (size_t i = 0; i < nbits; i++) {
+					for (unsigned i = 0; i < nbits; i++) {
 						_raw_bits.set(i, (_bits & mask));
 						mask <<= 1;
 					}
@@ -270,7 +270,7 @@ namespace sw { namespace universal {
 					bitblock<nbits>		 _raw_bits;
 					_raw_bits.reset();
 					uint64_t mask = 1;
-					for (size_t i = 0; i < nbits; i++) {
+					for (unsigned i = 0; i < nbits; i++) {
 						_raw_bits.set(i, (_bits & mask));
 						mask <<= 1;
 					}

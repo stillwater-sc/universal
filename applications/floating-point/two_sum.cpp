@@ -1,6 +1,6 @@
 ﻿// two_sum.cpp: TwoSum evaluation of posit number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
@@ -37,7 +37,7 @@ generate a rounded sum s and a remainder r, such that
 
 */
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void ReportTwoSumError(const std::string& test_case, const std::string& op, const sw::universal::posit<nbits, es>& a, const sw::universal::posit<nbits, es>& b, const sw::universal::posit<nbits, es>& s, const sw::universal::posit<nbits, es>& r) {
 	std::cerr << test_case << " "
 		<< std::setw(nbits) << a.get()
@@ -56,7 +56,7 @@ void ReportTwoSumError(const std::string& test_case, const std::string& op, cons
 
 template<typename Scalar>
 bool GenerateTwoSumTestCase(const Scalar& a, const Scalar& b) {
-	constexpr size_t nbits = a.nbits;
+	constexpr unsigned nbits = a.nbits;
 
 	Scalar s = a + b;
 	Scalar aApprox = s - b;
@@ -82,9 +82,9 @@ bool GenerateTwoSumTestCase(const Scalar& a, const Scalar& b) {
 }
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
-template<size_t nbits, size_t es>
-int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
-	const size_t NR_POSITS = (size_t(1) << nbits);
+template<unsigned nbits, unsigned es>
+int ValidateTwoSum(const std::string& tag, bool reportTestCases) {
+	const unsigned NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	using Posit = sw::universal::posit<nbits, es>;
 	Posit pa, pb, ps, pr, psum, pref;
@@ -104,10 +104,10 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 
 			if (psum != pref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportTwoSumError("FAIL", "+", pa, pb, ps, pr);
+				if (reportTestCases)	ReportTwoSumError("FAIL", "+", pa, pb, ps, pr);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
 			}
 		}
 	}
@@ -126,7 +126,7 @@ try {
 	// bool verbose = false;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = true;
+	bool reportTestCases = true;
 	std::string tag = "TwoSum failed: ";
 
 	// preserve the existing ostream precision
@@ -137,8 +137,8 @@ try {
 
 #if MANUAL_TEST
 
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 1;
+	constexpr unsigned nbits = 8;
+	constexpr unsigned es = 1;
 	using Posit = posit<nbits, es>;
 	Posit a, b(SpecificValue::minpos);
 	a = b;
@@ -156,32 +156,32 @@ try {
 	std::cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << '\n';
 
 #else
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<2, 0>(tag, reportTestCases), "posit<2,0>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<3, 0>(tag, reportTestCases), "posit<3,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<3, 1>(tag, reportTestCases), "posit<3,1>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 2>(tag, bReportIndividualTestCases), "posit<4,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 0>(tag, reportTestCases), "posit<4,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 1>(tag, reportTestCases), "posit<4,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 2>(tag, reportTestCases), "posit<4,2>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 3>(tag, bReportIndividualTestCases), "posit<5,3>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 0>(tag, reportTestCases), "posit<5,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 1>(tag, reportTestCases), "posit<5,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 2>(tag, reportTestCases), "posit<5,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 3>(tag, reportTestCases), "posit<5,3>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 4>(tag, bReportIndividualTestCases), "posit<6,4>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 0>(tag, reportTestCases), "posit<6,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 1>(tag, reportTestCases), "posit<6,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 2>(tag, reportTestCases), "posit<6,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 3>(tag, reportTestCases), "posit<6,3>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 4>(tag, reportTestCases), "posit<6,4>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 0>(tag, reportTestCases), "posit<8,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 1>(tag, reportTestCases), "posit<8,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 2>(tag, reportTestCases), "posit<8,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 3>(tag, reportTestCases), "posit<8,3>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(tag, reportTestCases), "posit<8,4>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(tag, reportTestCases), "posit<8,5>", "twoSum");
 
 #endif // MANUAL_TEST
 

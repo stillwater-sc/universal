@@ -1,7 +1,7 @@
 #pragma once
 // hypot.hpp: hypotenuse functions for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -43,19 +43,44 @@ namespace sw { namespace universal {
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypot(posit<nbits,es> x, posit<nbits,es> y) {
 	return posit<nbits,es>(std::hypot(double(x),double(y)));
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypotf(posit<nbits,es> x, posit<nbits,es> y) {
 	return posit<nbits,es>(std::hypotf(float(x),float(y)));
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y) {
 	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y)));
 }
+
+// _MSVC_LANG Defined as an integer literal that specifies the C++ language standard targeted by the compiler.
+// It's set only in code compiled as C++. 
+// The macro is the integer literal value 201402L by default, or when the /std:c++14 compiler option is specified. 
+// The macro is set to 201703L if the /std:c++17 compiler option is specified. 
+// The macro is set to 202002L if the /std:c++20 compiler option is specified. 
+// It's set to a higher, unspecified value when the / std:c++latest option is specified.Otherwise, the macro is undefined.
+
+#ifdef LATER
+// since C++17
+template<unsigned nbits, unsigned es>
+posit<nbits,es> hypot(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
+	return posit<nbits,es>(std::hypot(double(x),double(y),double(z)));
+}
+
+template<unsigned nbits, unsigned es>
+posit<nbits,es> hypotf(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
+	return posit<nbits,es>(std::hypotf(float(x),float(y),float(z)));
+}
+
+template<unsigned nbits, unsigned es>
+posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
+	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y),(long double)(z)));
+}
+#endif
 
 }} // namespace sw::universal

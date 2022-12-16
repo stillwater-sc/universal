@@ -1,7 +1,7 @@
 #pragma once
 // mathlib.hpp: elementary functions for the posit number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -30,3 +30,43 @@ An algebraic treatment of elementary functions was started by Joseph Fels Ritt i
 #include <universal/number/posit/math/trigonometry.hpp>
 #include <universal/number/posit/math/truncate.hpp>
 
+namespace sw { namespace universal {
+    //////////////////////////////////////////////////////////////////////////
+
+    // calculate the integer power a ^ b
+    // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
+    template<unsigned nbits, unsigned es>
+    posit<nbits, es> ipow(const posit<nbits, es>& a, const posit<nbits, es>& b) {
+        // precondition
+        if (!a.isinteger() || !b.isinteger()) return posit<nbits, es>(0);
+
+        // TODO: using uint64_t as ipow constraints dynamic range
+        uint64_t result(1);
+        uint64_t base = uint64_t(a); 
+        uint64_t exp = uint64_t(b);
+        for (;;) {
+            if (exp & 0x1) result *= base;
+            exp >>= 1;
+            if (exp == 0) break;
+            base *= base;
+        }
+        return posit<nbits,es>(result);
+    }
+
+    // clang <complex> implementation is calling these functions so we need implementations for posit
+
+    // already defined in math/classify.hpp
+    //template<unsigned nbits, unsigned es>
+    //inline bool isnan(const posit<nbits, es>& p) { return p.isnar(); }
+    //
+    //template<unsigned nbits, unsigned es>
+    //inline bool isinf(const posit<nbits, es>& p) { return p.isnar(); }
+
+    // copysign returns a value with the magnitude of a, and the sign of b
+    template<unsigned nbits, unsigned es>
+    inline posit<nbits, es> copysign(const posit<nbits, es>& a, const posit<nbits, es>& b) {
+        posit<nbits, es> c(a);
+        if (a.sign() == b.sign()) return c;
+        return -c;
+    }
+}}

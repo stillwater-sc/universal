@@ -19,7 +19,7 @@ namespace sw { namespace universal {
 
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
 int Compare(double testValue, const fixpnt<nbits, rbits, arithmetic, BlockType>& presult, double reference, bool bReportIndividualTestCases) {
 	int fail = 0;
 	double result = double(presult);
@@ -33,15 +33,15 @@ int Compare(double testValue, const fixpnt<nbits, rbits, arithmetic, BlockType>&
 	return fail;
 }
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType, typename Ty>
 int VerifyAssignment(bool bReportIndividualTestCases) {
-	const size_t NR_NUMBERS = (size_t(1) << nbits);
+	const unsigned NR_NUMBERS = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 
 	// use only valid fixed-point values
 	// fixpnt_raw -> to value in Ty -> assign to fixpnt -> compare fixpnts
 	fixpnt<nbits, rbits, arithmetic, BlockType> p, assigned;
-	for (size_t i = 0; i < NR_NUMBERS; i++) {
+	for (unsigned i = 0; i < NR_NUMBERS; i++) {
 		p.setbits(i); 
 		//std::cout << to_binary(p) << std::endl;
 		Ty value = (Ty)(p);
@@ -63,7 +63,7 @@ int VerifyAssignment(bool bReportIndividualTestCases) {
 
  */
 // enumerate all conversion cases for a fixed-point configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
 int VerifyConversion(bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all fixed-point configs and their midpoints
 	// we do this by enumerating a fixed-point that is 1-bit larger than the test configuration
@@ -74,12 +74,12 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 	// To generate the three test cases, we'll enumerate the exact value, and a perturbation slightly
 	// smaller from the midpoint that will round down, and one slightly larger that will round up,
 	// to test the rounding logic of the conversion.
-	constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
-	constexpr size_t HALF = (size_t(1) << nbits);
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << (nbits + 1));
+	constexpr unsigned HALF = (unsigned(1) << nbits);
 	fixpnt<nbits + 1, rbits + 1, arithmetic, BlockType> ref, prev, next;
 
 	const unsigned max = nbits > 20 ? 20 : nbits + 1;
-	size_t max_tests = (size_t(1) << max);
+	unsigned max_tests = (unsigned(1) << max);
 	if (max_tests < NR_TEST_CASES) {
 		std::cout << "VerifyConversion<" << nbits << "," << rbits << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
 	}
@@ -94,7 +94,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 	// NUT: number under test
 	fixpnt<nbits, rbits, arithmetic, BlockType> nut;
 	double eps = dminpos / 2.0;  // the test value between 0 and minpos
-	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
+	for (unsigned i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 		double testValue{ 0.0 };
 		ref.setbits(i);
 		double da = double(ref);
@@ -193,9 +193,9 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 }
 
 // enumerate all addition cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
 int VerifyAddition(bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
 	double ref;
@@ -203,10 +203,10 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	// set the saturation clamps
 	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
+	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
+		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			db = double(b);
 			ref = da + db;
@@ -245,9 +245,9 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 }
 
 // enumerate all subtraction cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
 int VerifySubtraction(bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
 	double ref;
@@ -255,10 +255,10 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 	// set the saturation clamps
 	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
+	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
+		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			db = double(b);
 			ref = da - db;
@@ -297,9 +297,9 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 }
 
 // enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
 int VerifyMultiplication(bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
 	double ref;
@@ -307,10 +307,10 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 	// set the saturation clamps
 	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
+	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
+		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			db = double(b);
 			ref = da * db;
@@ -349,9 +349,9 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 }
 
 // enumerate all division cases for a fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
 int VerifyDivision(bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
 	double ref;
@@ -359,10 +359,10 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	// set the saturation clamps
 	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
 	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
+	for (unsigned i = 0; i < NR_VALUES; i++) {
 		a.setbits(i);
 		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
+		for (unsigned j = 0; j < NR_VALUES; j++) {
 			b.setbits(j);
 			db = double(b);
 			if (j != 0) {
@@ -407,12 +407,12 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 //////////////////////////////////////////////////////////////////////////
 // enumeration utility functions
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+template<unsigned nbits, unsigned rbits, bool arithmetic, typename BlockType>
 void GenerateFixedPointValues(std::ostream& ostr, const fixpnt<nbits, rbits, arithmetic, BlockType>& v) {
-	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
+	constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 	fixpnt<nbits, rbits, arithmetic, BlockType> a;
 	ostr << type_tag(v) << '\n';
-	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
+	for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 		a.setbits(i);
 		float f = float(a);
 		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << '\n';

@@ -1,7 +1,7 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for integer types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
@@ -24,10 +24,10 @@ A class that is a literal type is a class (defined with class, struct or union) 
 
 	TODO: how to make the integer class a literal type so that we can use it as a return type for min/max/lowest etc.
 */
-template <size_t nbits> 
-class numeric_limits< sw::universal::integer<nbits> > {
+template <unsigned nbits, typename bt> 
+class numeric_limits< sw::universal::integer<nbits, bt> > {
 public:
-	using Integer = sw::universal::integer<nbits>;
+	using Integer = sw::universal::integer<nbits, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr Integer min() { return 1; } // return minimum value
 	static constexpr Integer max() {             // return maximum value
@@ -61,7 +61,7 @@ public:
 	}
 
 	static constexpr int digits       = nbits - 1;
-	static constexpr int digits10     = int((digits) / 3.3);
+	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
 	static constexpr int max_digits10 = digits10;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = true;
@@ -71,7 +71,7 @@ public:
 	static constexpr int min_exponent   = 0;
 	static constexpr int min_exponent10 = 0;
 	static constexpr int max_exponent   = nbits - 1;
-	static constexpr int max_exponent10 = int((max_exponent) / 3.3);
+	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
 	static constexpr bool has_infinity  = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;

@@ -1,6 +1,6 @@
 // arbitrary fixed-point arithmetic type standard header
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _FIXPNT_STANDARD_HEADER_
@@ -45,8 +45,8 @@
 #include <universal/number/fixpnt/numeric_limits.hpp>
 
 // useful functions to work with fixpnts
-#include <universal/number/fixpnt/manipulators.hpp>
 #include <universal/number/fixpnt/attributes.hpp>
+#include <universal/number/fixpnt/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions

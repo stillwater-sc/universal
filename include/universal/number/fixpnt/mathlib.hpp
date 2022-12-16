@@ -1,7 +1,7 @@
 #pragma once
-// mathlib.hpp: definition of fixed-point mathematical functions
+// mathlib.hpp: definition of mathematical functions specialized for fixpnt arithmetic types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -19,3 +19,46 @@
 #include <universal/number/fixpnt/math/sqrt.hpp>
 #include <universal/number/fixpnt/math/trigonometry.hpp>
 #include <universal/number/fixpnt/math/truncate.hpp>
+
+namespace sw {
+    namespace universal {
+        //////////////////////////////////////////////////////////////////////////
+
+        // calculate the integer power a ^ b
+        // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
+        template<unsigned nbits, unsigned es, bool isSaturating, typename bt>
+        fixpnt<nbits, es, isSaturating, bt> ipow(const fixpnt<nbits, es, isSaturating, bt>& a, const fixpnt<nbits, es, isSaturating, bt>& b) {
+            // precondition
+            if (!a.isinteger() || !b.isinteger()) return fixpnt<nbits, es, isSaturating, bt>(0);
+
+            // TODO: using uint64_t as ipow constraints dynamic range
+            uint64_t result(1);
+            uint64_t base = uint64_t(a);
+            uint64_t exp = uint64_t(b);
+            for (;;) {
+                if (exp & 0x1) result *= base;
+                exp >>= 1;
+                if (exp == 0) break;
+                base *= base;
+            }
+            return fixpnt<nbits, es, isSaturating, bt>(result);
+        }
+
+        // clang <complex> implementation is calling these functions so we need implementations for posit
+
+        // already defined in math/classify.hpp
+        //template<unsigned nbits, unsigned es>
+        //inline bool isnan(const posit<nbits, es>& p) { return p.isnar(); }
+        //
+        //template<unsigned nbits, unsigned es>
+        //inline bool isinf(const posit<nbits, es>& p) { return p.isnar(); }
+
+        // copysign returns a value with the magnitude of a, and the sign of b
+        template<unsigned nbits, unsigned es, bool isSaturating, typename bt>
+        inline fixpnt<nbits, es, isSaturating, bt> copysign(const fixpnt<nbits, es, isSaturating, bt>& a, const fixpnt<nbits, es, isSaturating, bt>& b) {
+            fixpnt<nbits, es, isSaturating, bt> c(a);
+            if (a.sign() == b.sign()) return c;
+            return -c;
+        }
+    }
+}

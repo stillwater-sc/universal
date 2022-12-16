@@ -1,7 +1,7 @@
 #pragma once
 // value.hpp: definition of a (sign, scale, significant) representation of an approximation to a real value
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -31,8 +31,8 @@ struct value_shift_too_large : public value_internal_exception {
 using namespace sw::universal;
 
 // Forward definitions
-template<size_t fbits> class value;
-template<size_t fbits> value<fbits> abs(const value<fbits>& v);
+template<unsigned fbits> class value;
+template<unsigned fbits> value<fbits> abs(const value<fbits>& v);
 
 #ifdef VALUE_TRACE_CONVERSION
 constexpr bool _trace_value_conversion = true;
@@ -65,10 +65,10 @@ constexpr bool _trace_value_div = false;
 #endif
 
 // template class representing a value in scientific notation, using a template parameter to define the number of fraction bits
-template<size_t fbits>
+template<unsigned fbits>
 class value {
 public:
-	static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
+	static constexpr unsigned fhbits = fbits + 1;    // number of fraction bits including the hidden bit
 	constexpr value() 
           : _sign{false}, _scale{0}, _nrOfBits{fbits}, _fraction{}, _inf{false}, 
             _zero{true}, _nan{false} {}
@@ -373,7 +373,7 @@ public:
 	bitblock<fbits> fraction() const { return _fraction; }
 
 	// Normalized shift (e.g., for addition).
-	template <size_t Size>
+	template <unsigned Size>
 	bitblock<Size> nshift(int shift) const {
 	bitblock<Size> number;
 
@@ -395,16 +395,16 @@ public:
 			number[0] = true;
 			return number;
 		}
-		number[size_t(hpos)] = true; // hidden bit now safely set
+		number[unsigned(hpos)] = true; // hidden bit now safely set
 
 		// Copy fraction bits into certain part
 		for (int npos = hpos - 1, fpos = int(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
-			number[size_t(npos)] = _fraction[size_t(fpos)];
+			number[unsigned(npos)] = _fraction[unsigned(fpos)];
 
 		// Set uncertainty bit
 		bool uncertainty = false;
 		for (int fpos = std::min(int(fbits) - 1, -shift); fpos >= 0 && !uncertainty; --fpos)
-			uncertainty |= _fraction[size_t(fpos)];
+			uncertainty |= _fraction[unsigned(fpos)];
 		number[0] = uncertainty;
 		return number;
 	}
@@ -412,7 +412,7 @@ public:
 	bitblock<fhbits> get_fixed_point() const {
 		bitblock<fbits + 1> fixed_point_number;
 		fixed_point_number.set(fbits, true); // make hidden bit explicit
-		for (size_t i = 0; i < fbits; i++) {
+		for (unsigned i = 0; i < fbits; i++) {
 			fixed_point_number[i] = _fraction[i];
 		}
 		return fixed_point_number;
@@ -424,7 +424,7 @@ public:
 		Ty v = 1.0;
 		Ty scale = 0.5;
 		for (int i = int(fbits) - 1; i >= 0; i--) {
-			if (_fraction.test(size_t(i))) v += scale;
+			if (_fraction.test(unsigned(i))) v += scale;
 			scale *= 0.5;
 			if (scale == 0.0) break;
 		}
@@ -445,7 +445,7 @@ public:
 		Ty v = 1.0;
 		Ty scale = 0.5;
 		for (int i = int(fbits) - 1; i >= 0; i--) {
-			if (_fraction.test(size_t(i))) v += scale;
+			if (_fraction.test(unsigned(i))) v += scale;
 			scale *= 0.5;
 			if (scale == 0.0) break;
 		}
@@ -466,7 +466,7 @@ public:
 	explicit operator float() const { return to_float(); }
 
 	// TODO: this does not implement a 'real' right extend. tgtbits need to be shorter than fbits
-	template<size_t srcbits, size_t tgtbits>
+	template<unsigned srcbits, unsigned tgtbits>
 	void right_extend(const value<srcbits>& src) {
 		_sign = src.sign();
 		_scale = src.scale();
@@ -477,11 +477,11 @@ public:
 		bitblock<srcbits> src_fraction = src.fraction();
 		if (!_inf && !_zero && !_nan) {
 			for (int s = srcbits - 1, t = tgtbits - 1; s >= 0 && t >= 0; --s, --t)
-				_fraction[t] = src_fraction[s];
+				_fraction[static_cast<unsigned>(t)] = src_fraction[static_cast<unsigned>(s)];
 		}
 	}
 	// round to a target size number of bits using round-to-nearest round-to-even-on-tie
-	template<size_t tgt_size>
+	template<unsigned tgt_size>
 	value<tgt_size> round_to() {
 		bitblock<tgt_size> rounded_fraction;
 		if (tgt_size == 0) {
@@ -502,9 +502,9 @@ public:
 					int rb = int(tgt_size) - 1;
 					int lb = int(fbits) - int(tgt_size) - 1;
 					for (int i = int(fbits) - 1; i > lb; i--, rb--) {
-						rounded_fraction[static_cast<size_t>(rb)] = _fraction[static_cast<size_t>(i)];
+						rounded_fraction[static_cast<unsigned>(rb)] = _fraction[static_cast<unsigned>(i)];
 					}
-					bool blast = _fraction[static_cast<size_t>(lb)];
+					bool blast = _fraction[static_cast<unsigned>(lb)];
 					bool sb = false;
 					if (lb > 0) sb = anyAfter(_fraction, lb-1);
 					if (blast || sb) rounded_fraction[0ull] = true;
@@ -512,7 +512,7 @@ public:
 				else {
 					int rb = int(tgt_size) - 1;
 					for (int i = int(fbits) - 1; i >= 0; i--, rb--) {
-						rounded_fraction[static_cast<size_t>(rb)] = _fraction[static_cast<size_t>(i)];
+						rounded_fraction[static_cast<unsigned>(rb)] = _fraction[static_cast<unsigned>(i)];
 					}
 				}
 			}
@@ -530,34 +530,44 @@ private:
 	bool                _nan;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend std::ostream& operator<< (std::ostream& ostr, const value<nfbits>& r);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend std::istream& operator>> (std::istream& istr, value<nfbits>& r);
 
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator==(const value<nfbits>& lhs, const value<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator!=(const value<nfbits>& lhs, const value<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator> (const value<nfbits>& lhs, const value<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator<=(const value<nfbits>& lhs, const value<nfbits>& rhs);
-	template<size_t nfbits>
+	template<unsigned nfbits>
 	friend bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs);
 };
 
 ////////////////////// VALUE operators
 
+// ETLO 7/19/2022
+// OLD compiler guard
+// we are trying to get value<> to use a native string conversion so that we can support arbitrary large values
+// but this is turning out to be a complicated implementation with deep history and named algorithms, such as Dragon4, etc.
+// For the moment, we still take the easy way out.
 #define OLD
 #ifdef OLD
-template<size_t nfbits>
-inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, size_t precision = 0) {
+template<unsigned nfbits>
+inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, std::streamsize precision = 0) {
 	std::stringstream s;
 	if (v.isinf()) {
-		s << FP_INFINITE;
+		if (v.sign()) {
+			s << "-inf";
+		}
+		else {
+			s << ((flags & std::ios_base::showpos) ? "+inf" : "inf");
+		}
 	}
 	else {
 		if (precision) {
@@ -571,8 +581,8 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 }
 #else
 
-template<size_t nfbits>
-inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, size_t precision) {
+template<unsigned nfbits>
+inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<nfbits>& v, unsigned precision) {
 	std::string result;
 	// special case processing
 	if (v.isnan()) return std::string("nan");
@@ -581,7 +591,7 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 			result = "-inf";
 		}
 		else {
-			result = (flags & std::ios_base::showpos) ? "+inf" : "inf";
+			result = ((flags & std::ios_base::showpos) ? "+inf" : "inf");
 		}
 		return result;
 	}
@@ -622,12 +632,12 @@ inline std::string convert_to_string(std::ios_base::fmtflags flags, const value<
 #endif
 
 
-template<size_t nfbits>
+template<unsigned nfbits>
 inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
 	std::streamsize nrDigits = ostr.precision();
-	std::string s = convert_to_string(ostr.flags(), v, static_cast<size_t>(nrDigits));
+	std::string s = convert_to_string(ostr.flags(), v, nrDigits);
 	std::streamsize width = ostr.width();
-	if (width > static_cast<std::streamsize>(s.size())) {
+	if (static_cast<unsigned>(width) > s.size()) {
 		char fill = ostr.fill();
 		if ((ostr.flags() & std::ios_base::left) == std::ios_base::left)
 			s.append(static_cast<std::string::size_type>(width - s.size()), fill);
@@ -637,17 +647,17 @@ inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
 	return ostr << s;
 }
 
-template<size_t nfbits>
+template<unsigned nfbits>
 inline std::istream& operator>> (std::istream& istr, const value<nfbits>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator==(const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator!=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) {
 	if (lhs._inf) {
 		if (rhs._inf) return false; else return true; // everything is less than -infinity
@@ -715,20 +725,20 @@ inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) {
 	}
 //	return false; // all paths are taken care of
 }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator> (const value<nfbits>& lhs, const value<nfbits>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator<=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nfbits>
+template<unsigned nfbits>
 inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator< (lhs, rhs); }
 
-template<size_t nbits>
+template<unsigned nbits>
 inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true) {
 	if constexpr (nbits > 1) {
 		std::stringstream s;
 		s << "0b";
 		for (int i = int(nbits - 1); i >= 0; --i) {
-			s << (a[static_cast<size_t>(i)] ? '1' : '0');
+			s << (a[static_cast<unsigned>(i)] ? '1' : '0');
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 		}
 		return s.str();
@@ -737,7 +747,7 @@ inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true)
 		return std::string("-");
 	}
 }
-template<size_t fbits>
+template<unsigned fbits>
 inline std::string to_triple(const value<fbits>& v, bool nibbleMarker = true) {
 	std::stringstream s;
 	if (v.iszero()) {
@@ -755,13 +765,13 @@ inline std::string to_triple(const value<fbits>& v, bool nibbleMarker = true) {
 }
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<size_t nfbits>
+template<unsigned nfbits>
 value<nfbits> abs(const value<nfbits>& v) {
 	return value<nfbits>(false, v.scale(), v.fraction(), v.iszero());
 }
 
 // add two values with fbits fraction bits, round them to abits, and return the abits+1 result value
-template<size_t fbits, size_t abits>
+template<unsigned fbits, unsigned abits>
 void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
 	// with sign/magnitude adders it is customary to organize the computation 
 	// along the four quadrants of sign combinations
@@ -811,7 +821,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 		} 
 		else {
 			// the carry && signs!= implies ||result|| < ||r1||, must find MSB (in the complement)
-			for (int i = int(abits) - 1; i >= 0 && !sum[size_t(i)]; --i) {
+			for (int i = int(abits) - 1; i >= 0 && !sum[unsigned(i)]; --i) {
 				++shift;
 			}
 		}
@@ -832,7 +842,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 }
 
 // subtract module: use ADDER
-template<size_t fbits, size_t abits>
+template<unsigned fbits, unsigned abits>
 void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();
@@ -870,7 +880,7 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 		}
 		else {
 			// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
-			for (int i = static_cast<int>(abits) - 1; i >= 0 && !sum[static_cast<size_t>(i)]; --i) {
+			for (int i = static_cast<int>(abits) - 1; i >= 0 && !sum[static_cast<unsigned>(i)]; --i) {
 				shift++;
 			}
 		}
@@ -891,7 +901,7 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 }
 
 // subtract module using SUBTRACTOR: CURRENTLY BROKEN FOR UNKNOWN REASON
-template<size_t fbits, size_t abits>
+template<unsigned fbits, unsigned abits>
 void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
 
 	if (lhs.isinf() || rhs.isinf()) {
@@ -943,9 +953,9 @@ void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, va
 }
 
 // multiply module
-template<size_t fbits, size_t mbits>
+template<unsigned fbits, unsigned mbits>
 void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbits>& result) {
-	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
+	static constexpr unsigned fhbits = fbits + 1;  // fraction + hidden bit
 	if (_trace_value_mul) std::cout << "lhs  " << to_triple(lhs) << std::endl << "rhs  " << to_triple(rhs) << std::endl;
 
 	if (lhs.isinf() || rhs.isinf()) {
@@ -975,7 +985,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 			if (_trace_value_mul) std::cout << " shift " << shift << std::endl;
 			new_scale += 1;
 		}
-		result_fraction <<= static_cast<size_t>(shift);    // shift hidden bit out	
+		result_fraction <<= static_cast<unsigned>(shift);    // shift hidden bit out	
 	}
 	else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale
 		// multiply the hidden bits together, i.e. 1*1: we know the answer a priori
@@ -986,9 +996,9 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 }
 
 // divide module
-template<size_t fbits, size_t divbits>
+template<unsigned fbits, unsigned divbits>
 void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbits>& result) {
-	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
+	static constexpr unsigned fhbits = fbits + 1;  // fraction + hidden bit
 	if (_trace_value_div) std::cout << "lhs  " << to_triple(lhs) << std::endl << "rhs  " << to_triple(rhs) << std::endl;
 
 	if (lhs.isinf() || rhs.isinf()) {
@@ -1014,13 +1024,13 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 		// radix point is at divbits - fhbits
 		int msb = static_cast<int>(divbits - fhbits);
 		int shift = fhbits;
-		if (!result_fraction.test(static_cast<size_t>(msb))) {
+		if (!result_fraction.test(static_cast<unsigned>(msb))) {
 			msb--; shift++;
-			while (!result_fraction.test(static_cast<size_t>(msb))) { // search for the first 1
+			while (!result_fraction.test(static_cast<unsigned>(msb))) { // search for the first 1
 				msb--; shift++;
 			}
 		}
-		result_fraction <<= static_cast<size_t>(shift);    // shift hidden bit out
+		result_fraction <<= static_cast<unsigned>(shift);    // shift hidden bit out
 		new_scale -= (shift - static_cast<int>(fhbits));
 		if (_trace_value_div) std::cout << "shift  " << shift << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;;
 	}
@@ -1032,9 +1042,9 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 	result.set(new_sign, new_scale, result_fraction, false, false, false);
 }
 
-template<size_t fbits>
+template<unsigned fbits>
 value<fbits> operator+(const value<fbits>& lhs, const value<fbits>& rhs) {
-	constexpr size_t abits = fbits + 5;
+	constexpr unsigned abits = fbits + 5;
 	value<abits+1> result;
 	module_add<fbits,abits>(lhs, rhs, result);
 #if defined(__GNUC__) || defined(__GNUG__)
@@ -1043,9 +1053,9 @@ value<fbits> operator+(const value<fbits>& lhs, const value<fbits>& rhs) {
 	return result.round_to<fbits>();
 #endif
 }
-template<size_t fbits>
+template<unsigned fbits>
 value<fbits> operator-(const value<fbits>& lhs, const value<fbits>& rhs) {
-	constexpr size_t abits = fbits + 5;
+	constexpr unsigned abits = fbits + 5;
 	value<abits+1> result;
 	module_subtract<fbits,abits>(lhs, rhs, result);
 #if defined(__GNUC__) || defined(__GNUG__)
@@ -1054,9 +1064,9 @@ value<fbits> operator-(const value<fbits>& lhs, const value<fbits>& rhs) {
 	return result.round_to<fbits>();
 #endif
 }
-template<size_t fbits>
+template<unsigned fbits>
 value<fbits> operator*(const value<fbits>& lhs, const value<fbits>& rhs) {
-	constexpr size_t mbits = 2*fbits + 2;
+	constexpr unsigned mbits = 2*fbits + 2;
 	value<mbits> result;
 	module_multiply(lhs, rhs, result);
 #if defined(__GNUC__) || defined(__GNUG__)
@@ -1065,9 +1075,9 @@ value<fbits> operator*(const value<fbits>& lhs, const value<fbits>& rhs) {
 	return result.round_to<fbits>();
 #endif
 }
-template<size_t fbits>
+template<unsigned fbits>
 value<fbits> operator/(const value<fbits>& lhs, const value<fbits>& rhs) {
-	constexpr size_t divbits = 2 * fbits + 5;
+	constexpr unsigned divbits = 2 * fbits + 5;
 	value<divbits> result;
 	module_divide(lhs, rhs, result);
 #if defined(__GNUC__) || defined(__GNUG__)
@@ -1076,7 +1086,7 @@ value<fbits> operator/(const value<fbits>& lhs, const value<fbits>& rhs) {
 	return result.round_to<fbits>();
 #endif
 }
-template<size_t fbits>
+template<unsigned fbits>
 value<fbits> sqrt(const value<fbits>& a) {
 	return std::sqrt(double(a));
 }

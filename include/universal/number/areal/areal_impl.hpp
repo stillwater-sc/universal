@@ -72,8 +72,8 @@ namespace sw { namespace universal {
 	constexpr bool AREAL_NIBBLE_MARKER = true;
 
 // Forward definitions
-template<size_t nbits, size_t es, typename bt> class areal;
-template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
+template<unsigned nbits, unsigned es, typename bt> class areal;
+template<unsigned nbits, unsigned es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
 
 /// <summary>
 /// decode an areal value into its constituent parts
@@ -84,7 +84,7 @@ template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const area
 /// <param name="e"></param>
 /// <param name="f"></param>
 /// <param name="ubit"></param>
-template<size_t nbits, size_t es, size_t fbits, typename bt>
+template<unsigned nbits, unsigned es, unsigned fbits, typename bt>
 void decode(const areal<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f, bool& ubit) {
 	s = v.at(nbits - 1ull);
 	ubit = v.at(0);
@@ -98,7 +98,7 @@ void decode(const areal<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, bloc
 /// <typeparam name="bt">Block type used for storage: derived through ADL</typeparam>
 /// <param name="v">the areal number for which we seek to know the binary scale</param>
 /// <returns>binary scale, i.e. 2^scale, of the value of the areal</returns>
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 int scale(const areal<nbits, es, bt>& v) {
 	return v.scale();
 }
@@ -109,35 +109,35 @@ int scale(const areal<nbits, es, bt>& v) {
 /// <typeparam name="nbits">number of bits in the encoding</typeparam>
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
 /// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
-template<size_t _nbits, size_t _es, typename bt = uint8_t>
+template<unsigned _nbits, unsigned _es, typename bt = uint8_t>
 class areal {
 public:
 	static_assert(_nbits > _es + 2ull, "nbits is too small to accomodate the requested number of exponent bits");
 	static_assert(_es < 2147483647ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a floating point number");
-	static constexpr size_t bitsInByte = 8ull;
-	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr unsigned bitsInByte = 8ull;
+	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
 
-	static constexpr size_t nbits = _nbits;
-	static constexpr size_t es = _es;
-	static constexpr size_t fbits  = nbits - 2ull - es;    // number of fraction bits excluding the hidden bit
-	static constexpr size_t fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
-	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
-	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
-	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
+	static constexpr unsigned nbits = _nbits;
+	static constexpr unsigned es = _es;
+	static constexpr unsigned fbits  = nbits - 2ull - es;    // number of fraction bits excluding the hidden bit
+	static constexpr unsigned fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
+	static constexpr unsigned abits = fhbits + 3ull;         // size of the addend
+	static constexpr unsigned mbits = 2ull * fhbits;         // size of the multiplier output
+	static constexpr unsigned divbits = 3ull * fhbits + 4ull;// size of the divider output
 
-	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr unsigned nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 
-	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+	static constexpr unsigned MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 	static constexpr bt ALLONES = bt(~0);
 	static constexpr bt MSU_MASK = (ALLONES >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
+	static constexpr unsigned bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
+	static constexpr unsigned EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALLONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
@@ -162,7 +162,7 @@ public:
 	/// construct an areal from another, block type bt must be the same
 	/// </summary>
 	/// <param name="rhs"></param>
-	template<size_t nnbits, size_t ees>
+	template<unsigned nnbits, unsigned ees>
 	areal(const areal<nnbits, ees, bt>& rhs) {
 		// this->assign(rhs);
 	}
@@ -171,19 +171,29 @@ public:
 	constexpr areal(const SpecificValue code) : _block{ 0 } {
 		switch (code) {
 		case SpecificValue::maxpos:
+		case SpecificValue::infpos:
 			maxpos();
 			break;
 		case SpecificValue::minpos:
 			minpos();
 			break;
-		default:
+		case SpecificValue::zero:
 			zero();
 			break;
 		case SpecificValue::minneg:
 			minneg();
 			break;
 		case SpecificValue::maxneg:
+		case SpecificValue::infneg:
 			maxneg();
+			break;
+		case SpecificValue::qnan:
+		case SpecificValue::snan:
+		case SpecificValue::nar:
+			setnan();
+			break;
+		default:
+			zero();
 			break;
 		}
 	}
@@ -505,7 +515,7 @@ public:
 			// but it might be a normal number in IEEE double precision representation
 			// which will require a reinterpretation of the bits as the hidden bit becomes explicit in a subnormal representation
 			if (exponent > -1022) {
-				mask = 0x001F'FFFF'FFFF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				mask = 0x001F'FFFF'FFFF'FFFFull >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 52);
 #if TRACE_CONVERSION
@@ -570,7 +580,7 @@ public:
 		bits |= raw;
 		bits &= 0xFFFF'FFFF'FFFF'FFFE;
 		bits |= (ubit ? 0x1 : 0x0);
-		if (nrBlocks == 1) {
+		if constexpr (nrBlocks == 1) {
 			_block[MSU] = bt(bits);
 		}
 		else {
@@ -680,7 +690,7 @@ public:
 	/// </summary>
 	/// <returns>void</returns>
 	inline constexpr void clear() noexcept {
-		for (size_t i = 0; i < nrBlocks; ++i) {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(0);
 		}
 	}
@@ -712,7 +722,7 @@ public:
 		}
 		else {
 			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
-			for (size_t i = 1; i < nrBlocks - 1; ++i) {
+			for (unsigned i = 1; i < nrBlocks - 1; ++i) {
 				_block[i] = BLOCK_MASK;
 			}
 			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
@@ -738,7 +748,7 @@ public:
 			_block[1] = BLOCK_MASK;
 		}
 		else {
-			for (size_t i = 0; i < nrBlocks - 1; ++i) {
+			for (unsigned i = 0; i < nrBlocks - 1; ++i) {
 				_block[i] = BLOCK_MASK;
 			}
 		}
@@ -801,7 +811,7 @@ public:
 			_block[0] = raw_bits & storageMask;
 		}
 		else {
-			for (size_t i = 0; i < nrBlocks; ++i) {
+			for (unsigned i = 0; i < nrBlocks; ++i) {
 				_block[i] = raw_bits & storageMask;
 				raw_bits >>= bitsInBlock; // shift can be the same size as type as it is protected by loop constraints
 			}
@@ -815,7 +825,7 @@ public:
 	/// <param name="i">bit index to set</param>
 	/// <param name="v">boolean value to set the bit to. Default is true.</param>
 	/// <returns>void</returns>
-	inline constexpr void set(size_t i, bool v = true) noexcept {
+	inline constexpr void set(unsigned i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -830,7 +840,7 @@ public:
 	/// </summary>
 	/// <param name="i">bit index to reset</param>
 	/// <returns>void</returns>
-	inline constexpr void reset(size_t i) noexcept {
+	inline constexpr void reset(unsigned i) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt mask = ~(1ull << (i % bitsInBlock));
@@ -843,7 +853,7 @@ public:
 	/// </summary>
 	/// <returns>reference to this areal object</returns>
 	inline constexpr areal& flip() noexcept { // in-place one's complement
-		for (size_t i = 0; i < nrBlocks; ++i) {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
@@ -869,7 +879,7 @@ public:
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
 				e = (2l - (1l << (es - 1ull))) - 1;
-				for (size_t i = nbits - 2ull - es; i > 0; --i) {
+				for (unsigned i = nbits - 2ull - es; i > 0; --i) {
 					if (test(i)) break;
 					--e;
 				}
@@ -884,7 +894,7 @@ public:
 			if (ebits.iszero()) {
 				// subnormal scale is determined by fraction
 				e = -1;
-				for (size_t i = nbits - 2ull - es; i > 0; --i) {
+				for (unsigned i = nbits - 2ull - es; i > 0; --i) {
 					if (test(i)) break;
 					--e;
 				}
@@ -911,7 +921,7 @@ public:
 			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 		else {
-			for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != 0) return false;
+			for (unsigned i = 0; i < nrBlocks-1; ++i) if (_block[i] != 0) return false;
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
@@ -954,7 +964,7 @@ public:
 		}
 		else {
 			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
-			for (size_t i = 1; i < nrBlocks - 1; ++i) {
+			for (unsigned i = 1; i < nrBlocks - 1; ++i) {
 				if (_block[i] != BLOCK_MASK) {
 					isInf = false;
 					break;
@@ -989,7 +999,7 @@ public:
 			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK);
 		}
 		else {
-			for (size_t i = 0; i < nrBlocks - 1; ++i) {
+			for (unsigned i = 0; i < nrBlocks - 1; ++i) {
 				if (_block[i] != BLOCK_MASK) {
 					isNaN = false;
 					break;
@@ -1003,10 +1013,10 @@ public:
 				   (NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
 
-	inline constexpr bool test(size_t bitIndex) const noexcept {
+	inline constexpr bool test(unsigned bitIndex) const noexcept {
 		return at(bitIndex);
 	}
-	inline constexpr bool at(size_t bitIndex) const noexcept {
+	inline constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];
 			bt mask = bt(1ull << (bitIndex % bitsInBlock));
@@ -1014,7 +1024,7 @@ public:
 		}
 		return false;
 	}
-	inline constexpr uint8_t nibble(size_t n) const noexcept {
+	inline constexpr uint8_t nibble(unsigned n) const noexcept {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
@@ -1024,7 +1034,7 @@ public:
 		}
 		return false;
 	}
-	inline constexpr bt block(size_t b) const noexcept {
+	inline constexpr bt block(unsigned b) const noexcept {
 		if (b < nrBlocks) {
 			return _block[b];
 		}
@@ -1066,7 +1076,7 @@ public:
 				e.setbits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
 			else {
-				for (size_t i = 0; i < es; ++i) { e.setbit(i, at(nbits - 1ull - es + i)); }
+				for (unsigned i = 0; i < es; ++i) { e.setbit(i, at(nbits - 1ull - es + i)); }
 			}
 		}
 	}
@@ -1079,7 +1089,7 @@ public:
 			f.setbits(bt(fraction >> bt(1ull)));
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(nbits - 1ull - es - fbits + i)); }
+			for (unsigned i = 0; i < fbits; ++i) { f.setbit(i, at(nbits - 1ull - es - fbits + i)); }
 		}
 	}
 	
@@ -1109,7 +1119,7 @@ public:
 		else { // TODO: this approach has catastrophic cancellation when nbits is large and native target float is small
 			TargetFloat f{ 0 };
 			TargetFloat fbit{ 0.5 };
-			for (size_t i = nbits - 2ull - es; i > 0; --i) {
+			for (unsigned i = nbits - 2ull - es; i > 0; --i) {
 				f += at(i) ? fbit : TargetFloat(0);
 				fbit *= TargetFloat(0.5);
 			}
@@ -1117,7 +1127,7 @@ public:
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				TargetFloat exponentiation = subnormal_exponent[es]; // precomputed values for 2^(2-2^(es-1))
+				TargetFloat exponentiation = static_cast<TargetFloat>(subnormal_exponent[es]); // precomputed values for 2^(2-2^(es-1))
 				v = exponentiation * f;
 			}
 			else {
@@ -1129,7 +1139,7 @@ public:
 				}
 				else {
 					double exponentiation = ipow(exponent);
-					v = exponentiation * (1.0 + f);
+					v = static_cast<TargetFloat>(exponentiation * (1.0 + f));
 				}
 			}
 			v = sign() ? -v : v;
@@ -1138,11 +1148,11 @@ public:
 	}
 
 	// make conversions to native types explicit
-	explicit operator int() const { return to_long_long(); }
-	explicit operator long long() const { return to_long_long(); }
-	explicit operator long double() const { return to_native<long double>(); }
-	explicit operator double() const { return to_native<double>(); }
-	explicit operator float() const { return to_native<float>(); }
+	explicit operator int()         const noexcept { return to_long_long(); }
+	explicit operator long long()   const noexcept { return to_long_long(); }
+	explicit operator long double() const noexcept { return to_native<long double>(); }
+	explicit operator double()      const noexcept { return to_native<double>(); }
+	explicit operator float()       const noexcept { return to_native<float>(); }
 
 protected:
 	// HELPER methods
@@ -1154,7 +1164,7 @@ protected:
 	/// <typeparam name="StorageType"></typeparam>
 	/// <param name="raw"></param>
 	/// <returns></returns>
-	template<size_t srcbits, typename StorageType>
+	template<unsigned srcbits, typename StorageType>
 	constexpr uint64_t round(StorageType raw, int& exponent) noexcept {
 		if constexpr (fhbits < srcbits) {
 			// round to even: lsb guard round sticky
@@ -1196,7 +1206,7 @@ protected:
 			}
 		}
 		else {
-			constexpr size_t shift = fhbits - srcbits;
+			constexpr unsigned shift = fhbits - srcbits;
 			raw <<= shift;
 		}
 		uint64_t significant = raw;
@@ -1204,12 +1214,12 @@ protected:
 	}
 	template<typename ArgumentBlockType>
 	constexpr void copyBits(ArgumentBlockType v) {
-		size_t blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;
-		size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
+		unsigned blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;
+		unsigned maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
 		bt b{ 0ul }; b = bt(~b);
 		ArgumentBlockType mask = ArgumentBlockType(b);
-		size_t shift = 0;
-		for (size_t i = 0; i < maxBlockNr; ++i) {
+		unsigned shift = 0;
+		for (unsigned i = 0; i < maxBlockNr; ++i) {
 			_block[i] = bt((mask & v) >> shift);
 			mask <<= bitsInBlock;
 			shift += bitsInBlock;
@@ -1250,12 +1260,12 @@ protected:
 			return;
 		}
 		bool signext = sign();
-		size_t blockShift = 0;
+		unsigned blockShift = 0;
 		if (bitsToShift >= long(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
 			if (MSU >= blockShift) {
 				// shift by blocks
-				for (size_t i = 0; i <= MSU - blockShift; ++i) {
+				for (unsigned i = 0; i <= MSU - blockShift; ++i) {
 					_block[i] = _block[i + blockShift];
 				}
 			}
@@ -1266,14 +1276,14 @@ protected:
 				if (signext) {
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += (long)(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 						this->set(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += (long)(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 						this->reset(i);
 					}
 				}
@@ -1294,14 +1304,14 @@ protected:
 		if (signext) {
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += (long)(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 				this->set(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += (long)(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			for (unsigned i = nbits - bitsToShift; i < nbits; ++i) {
 				this->reset(i);
 			}
 		}
@@ -1332,27 +1342,27 @@ private:
 	// friend functions
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, size_t nes, typename nbt>
+	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend std::ostream& operator<< (std::ostream& ostr, const areal<nnbits,nes,nbt>& r);
-	template<size_t nnbits, size_t nes, typename nbt>
+	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend std::istream& operator>> (std::istream& istr, areal<nnbits,nes,nbt>& r);
 
-	template<size_t nnbits, size_t nes, typename nbt>
+	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
+	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
+	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
+	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
+	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
-	template<size_t nnbits, size_t nes, typename nbt>
+	template<unsigned nnbits, unsigned nes, typename nbt>
 	friend bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
 };
 
 ////////////////////// operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const areal<nbits,es,bt>& v) {
 	// TODO: make it a native conversion
 	double d = double(v);
@@ -1374,56 +1384,56 @@ inline std::ostream& operator<<(std::ostream& ostr, const areal<nbits,es,bt>& v)
 	return ostr;
 }
 
-template<size_t nnbits, size_t nes, typename nbt>
+template<unsigned nnbits, unsigned nes, typename nbt>
 inline std::istream& operator>>(std::istream& istr, const areal<nnbits,nes,nbt>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
-template<size_t nnbits, size_t nes, typename nbt>
+template<unsigned nnbits, unsigned nes, typename nbt>
 inline bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { 
-	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
+	for (unsigned i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
 		}
 	}
 	return true;
 }
-template<size_t nnbits, size_t nes, typename nbt>
+template<unsigned nnbits, unsigned nes, typename nbt>
 inline bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
-template<size_t nnbits, size_t nes, typename nbt>
+template<unsigned nnbits, unsigned nes, typename nbt>
 inline bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return (lhs - rhs).isneg(); }
-template<size_t nnbits, size_t nes, typename nbt>
+template<unsigned nnbits, unsigned nes, typename nbt>
 inline bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
-template<size_t nnbits, size_t nes, typename nbt>
+template<unsigned nnbits, unsigned nes, typename nbt>
 inline bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
-template<size_t nnbits, size_t nes, typename nbt>
+template<unsigned nnbits, unsigned nes, typename nbt>
 inline bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline areal<nbits, es, bt> operator+(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline areal<nbits, es, bt> operator-(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline areal<nbits, es, bt> operator*(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es, bt> ratio(lhs);
 	ratio /= rhs;
@@ -1431,7 +1441,7 @@ inline areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const are
 }
 
 // convert to std::string
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_string(const areal<nbits,es,bt>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
@@ -1447,12 +1457,12 @@ inline std::string to_string(const areal<nbits,es,bt>& v) {
 }
 
 // transform areal to a binary representation
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMarker = false) {
 	std::stringstream ss;
 	ss << 'b';
-	size_t index = nbits;
-	for (size_t i = 0; i < nbits; ++i) {
+	unsigned index = nbits;
+	for (unsigned i = 0; i < nbits; ++i) {
 		ss << (number.at(--index) ? '1' : '0');
 		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
 	}
@@ -1460,7 +1470,7 @@ inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMark
 }
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 areal<nbits,es> abs(const areal<nbits,es,bt>& v) {
 	return areal<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
 }
@@ -1470,27 +1480,27 @@ areal<nbits,es> abs(const areal<nbits,es,bt>& v) {
 ///   binary logic literal comparisons
 
 // posit - long logic operators
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator==(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator==(lhs, areal<nbits, es, bt>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator!=(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator!=(lhs, areal<nbits, es, bt>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator< (const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator<(lhs, areal<nbits, es, bt>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator> (const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator<(areal<nbits, es, bt>(rhs), lhs);
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator<=(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return operator<(lhs, areal<nbits, es, bt>(rhs)) || operator==(lhs, areal<nbits, es, bt>(rhs));
 }
-template<size_t nbits, size_t es, typename bt>
+template<unsigned nbits, unsigned es, typename bt>
 inline bool operator>=(const areal<nbits, es, bt>& lhs, long long rhs) {
 	return !operator<(lhs, areal<nbits, es, bt>(rhs));
 }

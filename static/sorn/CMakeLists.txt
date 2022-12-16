@@ -1,0 +1,15 @@
+file (GLOB API_SRC "api/*.cpp")
+file (GLOB CONVERSION_SRC "conversion/*.cpp")
+file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
+file (GLOB LOGIC_SRC "logic/*.cpp")
+file (GLOB MATH_SRC "./math/*.cpp")
+file (GLOB PERFORMANCE_SRC "./performance/*.cpp")
+
+compile_all("true" "sorn" "Number Systems/static/floating-point/interval/sorn/api" "${API_SRC}")
+compile_all("true" "sorn" "Number Systems/static/floating-point/interval/sorn/logic" "${LOGIC_SRC}")
+compile_all("true" "sorn" "Number Systems/static/floating-point/interval/sorn/conversion" "${CONVERSION_SRC}")
+compile_all("true" "sorn" "Number Systems/static/floating-point/interval/sorn/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "sorn" "Number Systems/static/floating-point/interval/sorn/standard" "${STANDARD_SRC}")
+compile_all("true" "sorn" "Number Systems/static/floating-point/interval/sorn/math" "${MATH_SRC}")
+compile_all("true" "sorn" "Number Systems/static/floating-point/interval/sorn/performance" "${PERFORMANCE_SRC}")
+

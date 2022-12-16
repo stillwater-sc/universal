@@ -1,7 +1,7 @@
 #pragma once
 // lu.hpp: dense matrix LU decomposition and backsubstitution to solve systems of equations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -111,7 +111,7 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 ///////////////////////////////////////////////////////////////////////////////////
 /// CroutFDP with sw::universal::blas data structures
 
-template<size_t nbits, size_t es, size_t capacity = 10>
+template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void CroutFDP(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& S, sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& D) {
 	assert(num_rows(S) == num_rows(D));
 	assert(num_cols(S) == num_cols(D));
@@ -161,7 +161,7 @@ void CroutFDP(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& S,
 }
 
 // SolveCrout takes an LU decomposition, LU, and a right hand side vector, b, and produces a result, x.
-template<size_t nbits, size_t es, size_t capacity = 10>
+template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void SolveCroutFDP(const sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& LU, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x) {
 	size_t N = size(b);
 	std::vector< posit<nbits, es> > y(N);
@@ -289,7 +289,7 @@ void lubksb(const matrix<Scalar>& LU, const vector<int>& permutation, const vect
 */
 
 // in-place LU decomposition using partial pivoting with implicit pivoting applied
-template<size_t nbits, size_t es, size_t capacity = 10>
+template<unsigned nbits, unsigned es, unsigned capacity = 10>
 int ludcmp(matrix< posit<nbits, es> >& A, vector<size_t>& indx) {
 	using namespace std;
 	using std::fabs;
@@ -410,7 +410,7 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 }
 
 // backsubstitution of an LU decomposition: Matrix A is in (L + U) form
-template<size_t nbits, size_t es, size_t capacity = 10>
+template<unsigned nbits, unsigned es, unsigned capacity = 10>
 vector< sw::universal::posit<nbits, es> > lubksb(const matrix< sw::universal::posit<nbits, es> >& A, const vector<size_t>& indx, const vector<sw::universal::posit<nbits, es> >& b) {
 	using Scalar = sw::universal::posit<nbits, es>;
 	const size_t N = num_rows(A);
@@ -547,7 +547,7 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 }
 
 // solve the system of equations A x = b using partial pivoting LU
-template<size_t nbits, size_t es, size_t capacity = 10>
+template<unsigned nbits, unsigned es, unsigned capacity = 10>
 vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit<nbits, es> >& _A, const vector<sw::universal::posit<nbits, es>>& _b) {
 	using namespace std;
 	using std::fabs;

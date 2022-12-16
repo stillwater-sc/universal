@@ -56,6 +56,7 @@ namespace sw { namespace universal {
 	const int OPCODE_ATANH = 37;
 	// elementary functions with two operands
 	const int OPCODE_POW   = 50;
+	const int IPCODE_HYPOT = 51;
 	const int OPCODE_RAN   = 60;
 
 	// Execute a binary operator
@@ -202,7 +203,7 @@ namespace sw { namespace universal {
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<size_t nbits, size_t es>
-	int VerifyBinaryOperatorThroughRandoms(bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
+	int VerifyBinaryOperatorThroughRandoms(bool reportTestCases, int opcode, uint32_t nrOfRandoms) {
 		std::string operation_string;
 		switch (opcode) {
 		case OPCODE_ADD:
@@ -259,7 +260,7 @@ namespace sw { namespace universal {
 			}
 			catch (const posit_arithmetic_exception& err) {
 				if (testa.isnar() || testb.isnar() || ((opcode == OPCODE_DIV || opcode == OPCODE_IPD) && testb.iszero())) {
-					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+					if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
 					throw; // rethrow
@@ -272,21 +273,21 @@ namespace sw { namespace universal {
 			testresult = testref;
 			if (testresult != testref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testresult, testref);
+				if (reportTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testresult, testref);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, testa, testb, testresult, testref);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, testa, testb, testresult, testref);
 			}
 		}
 		return nrOfFailedTests;
 	}
 
-	// generate a random set of operands to test the binary operators for a posit configuration
+	// generate a random set of operands to test the unary operators for an arithmetic type configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
 	// provide 		double dminpos = double(minpos<nbits, es>(pminpos));
 	template<typename TestType>
-	int VerifyUnaryOperatorThroughRandoms(bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms, double dminpos) {
+	int VerifyUnaryOperatorThroughRandoms(bool reportTestCases, int opcode, uint32_t nrOfRandoms, double dminpos) {
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
@@ -308,39 +309,26 @@ namespace sw { namespace universal {
 			sqrtOperator = true;
 			break;
 		case OPCODE_EXP:
-			break;
 		case OPCODE_EXP2:
-			break;
 		case OPCODE_LOG:
-			break;
 		case OPCODE_LOG2:
-			break;
 		case OPCODE_LOG10:
-			break;
 		case OPCODE_SIN:
-			break;
 		case OPCODE_COS:
-			break;
 		case OPCODE_TAN:
-			break;
 		case OPCODE_ASIN:
-			break;
 		case OPCODE_ACOS:
-			break;
 		case OPCODE_ATAN:
-			break;
 		case OPCODE_SINH:
-			break;
 		case OPCODE_COSH:
-			break;
 		case OPCODE_TANH:
-			break;
 		case OPCODE_ASINH:
-			break;
 		case OPCODE_ACOSH:
-			break;
 		case OPCODE_ATANH:
-			break;
+			// two operand elementary functions
+		case OPCODE_POW:
+			std::cerr << "Unsupported binary operator, test cancelled\n";
+			return 1;
 		}
 		// generate the full state space set of valid posit values
 		std::random_device rd;     // get a random seed from the OS entropy device, or whatever
@@ -361,7 +349,7 @@ namespace sw { namespace universal {
 			}
 			catch (const posit_arithmetic_exception& err) {
 				if (testa.isnar()) {
-					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+					if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
 					throw;  // rethrow
@@ -372,10 +360,10 @@ namespace sw { namespace universal {
 #endif
 			if (testresult != testref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", operation_string, testa, testresult, testref);
+				if (reportTestCases) ReportUnaryArithmeticError("FAIL", operation_string, testa, testresult, testref);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", operation_string, testa, testresult, testref);
+				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", operation_string, testa, testresult, testref);
 			}
 		}
 
@@ -383,11 +371,11 @@ namespace sw { namespace universal {
 	}
 
 	template<size_t nbits, size_t es>
-	int Compare(long double input, const posit<nbits, es>& testresult, const posit<nbits, es>& ptarget, const posit<nbits+1,es>& pref, bool bReportIndividualTestCases) {
+	int Compare(long double input, const posit<nbits, es>& testresult, const posit<nbits, es>& ptarget, const posit<nbits+1,es>& pref, bool reportTestCases) {
 		int fail = 0;
 		if (testresult != ptarget) {
 			fail++;
-			if (bReportIndividualTestCases) {
+			if (reportTestCases) {
 				ReportConversionError("FAIL", "=", input, (long double)(ptarget), testresult);
 				std::cout << "reference   : " << pref.get() << std::endl;
 				std::cout << "target bits : " << ptarget.get() << std::endl;
@@ -395,7 +383,7 @@ namespace sw { namespace universal {
 			}
 		}
 		else {
-			// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, testresult);
+			// if (reportTestCases) ReportConversionSuccess("PASS", "=", input, reference, testresult);
 		}
 		return fail;
 	}
@@ -403,7 +391,7 @@ namespace sw { namespace universal {
 
 	// generate a random set of conversion cases
 	template<size_t nbits, size_t es>
-	int VerifyConversionThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, uint32_t nrOfRandoms) {
+	int VerifyConversionThroughRandoms(const std::string& tag, bool reportTestCases, uint32_t nrOfRandoms) {
 		// we are going to generate a test set that consists of all posit configs and their midpoints
 		// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 		// These larger posits will be at the mid-point between the smaller posit sample values
@@ -451,13 +439,13 @@ namespace sw { namespace universal {
 				testresult = input;
 				truncate(pprev.get(), raw_target);
 				ptarget.set(raw_target);
-				nrOfFailedTests += Compare(input, testresult, ptarget, pref, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, testresult, ptarget, pref, reportTestCases);
 				// round-up
 				input = (long double)(pnext);
 				testresult = input;
 				truncate(pnext.get(), raw_target);
 				ptarget.set(raw_target);
-				nrOfFailedTests += Compare(input, testresult, ptarget, pref, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, testresult, ptarget, pref, reportTestCases);
 			}
 			else {
 				// for even values, we are on a posit value, so we create the round-up and round-down cases
@@ -469,12 +457,12 @@ namespace sw { namespace universal {
 				input = (long double)(pprev);
 				testresult = input;
 				ptarget = (long double)(pref);
-				//nrOfFailedTests += Compare(input, testresult, ptarget, pref, bReportIndividualTestCases);
+				//nrOfFailedTests += Compare(input, testresult, ptarget, pref, reportTestCases);
 				// round-down
 				input = (long double)(pnext);
 				testresult = input;
 				ptarget = (long double)(pref);
-				nrOfFailedTests += Compare(input, testresult, ptarget, pref, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, testresult, ptarget, pref, reportTestCases);
 			}
 		}
 		return nrOfFailedTests;

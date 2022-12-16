@@ -1,6 +1,6 @@
 // arbitrary logarithmic number arithmetic type standard header
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _LNS_STANDARD_HEADER_
@@ -13,6 +13,11 @@
 #include <universal/utility/long_double.hpp>
 // compiler specific configuration for C++20 bit_cast
 #include <universal/utility/bit_cast.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
+/// required std libraries 
+#include <iostream>
+#include <iomanip>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -35,15 +40,17 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/lns/exceptions.hpp>
+#include <universal/number/lns/lns_fwd.hpp>
 #include <universal/number/lns/lns_impl.hpp>
 #include <universal/number/lns/lns_traits.hpp>
 #include <universal/number/lns/numeric_limits.hpp>
 
 // useful functions to work with logarithmic numbers
 #include <universal/number/lns/manipulators.hpp>
+#include <universal/number/lns/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/lns/math_functions.hpp>
+#include <universal/number/lns/mathlib.hpp>
 
 #endif

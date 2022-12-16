@@ -1,0 +1,11 @@
+file (GLOB API_SRC "./api/*.cpp")
+file (GLOB CONVERSION_SRC "./conversion/*.cpp")
+file (GLOB LOGIC_SRC "./logic/*.cpp")
+file (GLOB ARITHMETIC_SRC "./arithmetic/*.cpp")
+file (GLOB MATH_SRC "./math/*.cpp")
+
+compile_all("true" "valid" "Number Systems/static/floating-point/interval/valid/api" "${API_SRC}")
+compile_all("true" "valid" "Number Systems/static/floating-point/interval/valid/conversion" "${CONVERSION_SRC}")
+compile_all("true" "valid" "Number Systems/static/floating-point/interval/valid/logic" "${LOGIC_SRC}")
+compile_all("true" "valid" "Number Systems/static/floating-point/interval/valid/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "valid" "Number Systems/static/floating-point/interval/valid/math" "${MATH_SRC}")

@@ -15,11 +15,13 @@ print_header()
 # the folks at KitWare have done for the open-source community, we are
 # going to specify a recent version. 
 # As of UNIVERSAL v3.0 December 2019
-# Ubuntu 16.04 LTS runs cmake 3.5.1
-# Ubuntu 18.04 LTS runs cmake 3.10.2
+# Ubuntu 16.04 LTS runs cmake 3.5
+# Ubuntu 18.04 LTS runs cmake 3.10
+# Ubuntu 20.04 LTS runs cmake 3.16
+# Ubuntu 22.04 LTS runs cmake 3.22
 # container runs cmake 3.7.1
 # gcc5 container runs cmake 3.0.2
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.22)
 
 ####
 ## Enable project() command to manage VERSION variables
@@ -33,7 +35,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 57)
+  set(UNIVERSAL_VERSION_MINOR 62)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -72,14 +74,16 @@ endif(NOT CMAKE_BUILD_TYPE)
 option(USE_SSE3                          "Build code with SSE3 ISA support"                    OFF)
 option(USE_AVX                           "Build code with AVX ISA support"                     OFF)
 option(USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
+
 # control which projects get enabled
 # Continuous Integration override to build all
 option(BUILD_ALL                         "Set to ON to build all components"                   OFF)
+option(BUILD_CI                          "Set to ON to build ci components"                    OFF)
 # or subsets of the components
 option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
+option(BUILD_NUMBERS                     "Set to ON to build all the number systems"           OFF)
 option(BUILD_NUMERICS                    "Set to ON to build all the numeric components"       OFF)
 option(BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
-option(BUILD_NUMBER_SYSTEMS              "Set to ON to build all the number systems"           OFF)
 option(BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
 
 # or, build individual components
@@ -90,12 +94,11 @@ option(BUILD_EDUCATION                   "Set to ON to build educational example
 option(BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
 
 # numerical and special math functions
+option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special function programs"        OFF)
+option(BUILD_NUMERIC_QUIRES              "Set to ON to build quire programs"                   OFF)
 option(BUILD_NUMERIC_CHALLENGES          "Set to ON to build numerical challenge programs"     OFF)
 option(BUILD_NUMERIC_UTILS               "Set to ON to build numerical utilities"              OFF)
 option(BUILD_NUMERIC_FPBENCH             "Set to ON to build fpbench benchmarks"               OFF)
-option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special functions programs"       OFF)
-# reproducible IEEE-754
-option(BUILD_NUMERIC_IEEE_QUIRES         "Set to ON to build reproducible IEEE floats"         OFF)
 
 # application environment tests
 option(BUILD_APP_ENVIRONMENT             "Set to ON to build applicatoin environment tests"    OFF)
@@ -106,20 +109,29 @@ option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"
 option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 
 # number systems and their verification suites
-option(BUILD_NUMBER_ARITHMETIC_CLASSES   "Set to ON to build arithmetic class tests"           OFF)
+option(BUILD_NUMBER_INTERNALS            "Set to ON to build internal arithmetic type tests"   OFF)
 option(BUILD_NUMBER_NATIVE_TYPES         "Set to ON to build native type tests"                OFF)
-option(BUILD_NUMBER_INTEGERS             "Set to ON to build integer tests"                    OFF)
-option(BUILD_NUMBER_DECIMALS             "Set to ON to build decimal tests"                    OFF)
-option(BUILD_NUMBER_RATIONALS            "Set to ON to build rational tests"                   OFF)
-option(BUILD_NUMBER_FIXPNTS              "Set to ON to build fixed-point tests"                OFF)
-option(BUILD_NUMBER_CFLOATS              "Set to ON to build cfloat tests"                     OFF)
-option(BUILD_NUMBER_AREALS               "Set to ON to build areal tests"                      OFF)
-option(BUILD_NUMBER_UNUM_TYPE_1          "Set to ON to build unum Type 1 tests"                OFF)
-option(BUILD_NUMBER_UNUM_TYPE_2          "Set to ON to build unum Type 2 tests"                OFF)
-option(BUILD_NUMBER_POSITS               "Set to ON to build unum Type 3 posit tests"          OFF)
-option(BUILD_NUMBER_VALIDS               "Set to ON to build unum Type 3 valid tests"          OFF)
-option(BUILD_NUMBER_REALS                "Set to ON to build real tests"                       OFF)
-option(BUILD_NUMBER_LNS                  "Set to ON to build LNS tests"                        OFF)
+
+option(BUILD_NUMBER_ELASTICS             "Set to ON to build arbitrary precision tests"        OFF)
+option(BUILD_NUMBER_EINTEGERS            "Set to ON to build elastic integer tests"            OFF)
+option(BUILD_NUMBER_EFLOATS              "Set to ON to build elastic float tests"              OFF)
+option(BUILD_NUMBER_DECIMALS             "Set to ON to build elastic decimal tests"            OFF)
+option(BUILD_NUMBER_RATIONALS            "Set to ON to build elastic rational tests"           OFF)
+option(BUILD_NUMBER_EPOSITS              "Set to ON to build elastic posit tests"              OFF)
+
+option(BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
+option(BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
+option(BUILD_NUMBER_FIXPNTS              "Set to ON to build static fixed-point tests"         OFF)
+option(BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
+option(BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
+option(BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
+option(BUILD_NUMBER_UNUM1S               "Set to ON to build static unum type 1 tests"         OFF)
+option(BUILD_NUMBER_UNUM2S               "Set to ON to build static unum type 2 tests"         OFF)
+option(BUILD_NUMBER_POSITS               "Set to ON to build static unum type 3 posit tests"   OFF)
+option(BUILD_NUMBER_VALIDS               "Set to ON to build static unum type 3 valid tests"   OFF)
+option(BUILD_NUMBER_LNS                  "Set to ON to build static lns tests"                 OFF)
+option(BUILD_NUMBER_MDLNS                "Set to ON to build static mdlns tests"               OFF)
+option(BUILD_NUMBER_SORNS                "Set to ON to build static SORN tests"                OFF)
 # conversion test suites
 option(BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test suites"           OFF)
 
@@ -133,12 +145,12 @@ option(BUILD_BENCHMARK_ENERGY            "Set to ON to build mixed-prec energy b
 option(BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
 
 # mixed-precision algorithm design and optimization
-option(BUILD_MIXEDPRECISION_ROOTS        "Set to ON to build mixed-precision root finders"     OFF)
-option(BUILD_MIXEDPRECISION_APPROXIMATE  "Set to ON to build mixed-precision approximation"    OFF)
-option(BUILD_MIXEDPRECISION_INTEGRATE    "Set to ON to build mixed-precision integration"      OFF)
-option(BUILD_MIXEDPRECISION_INTERPOLATE  "Set to ON to build mixed-precision interpolation"    OFF)
-option(BUILD_MIXEDPRECISION_OPTIMIZE     "Set to ON to build mixed-precision optimization"     OFF)
-option(BUILD_MIXEDPRECISION_CONJUGATE    "Set to ON to build mixed-precision CG"               OFF)
+option(BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
+option(BUILD_MIXEDPRECISION_APPROXIMATE   "Set to ON to build mixed-precision approximation"   OFF)
+option(BUILD_MIXEDPRECISION_INTEGRATE     "Set to ON to build mixed-precision integration"     OFF)
+option(BUILD_MIXEDPRECISION_INTERPOLATE   "Set to ON to build mixed-precision interpolation"   OFF)
+option(BUILD_MIXEDPRECISION_OPTIMIZE      "Set to ON to build mixed-precision optimization"    OFF)
+option(BUILD_MIXEDPRECISION_TENSOR        "Set to ON to build mixed-precision tensor algebra"  OFF)
 
 # validation
 option(BUILD_VALIDATION_MATH             "Set to ON to build math validation testbenches"      OFF)
@@ -196,15 +208,9 @@ endif()
 
 ####
 # Configure the compiler options
-if(MSVC)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++20 has been enabled by default")
-else()
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++20 has been enabled by default: but bit_cast<> requires gcc 11")
-endif()
 
 # enable the regression testing level of the build
 if(BUILD_REGRESSION_SANITY OR BUILD_REGRESSION_LEVEL_1)
@@ -314,6 +320,7 @@ elseif(MSVC)
 	# Zc:__cplusplus not specified		Any value					199711L
 	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
+      set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus")
 	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
 	# for the moment turn off since we are getting: cl : Command line warning D9002: ignoring unknown option '/Zc:__cplusplus`
 	#set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} /std:c++17")
@@ -560,7 +567,7 @@ if(BUILD_ALL)
 	set(BUILD_DEMONSTRATION ON)
 	set(BUILD_NUMERICS ON)
 	set(BUILD_BENCHMARKS ON)
-	set(BUILD_NUMBER_SYSTEMS ON)
+	set(BUILD_NUMBERS ON)
 	set(BUILD_MIXEDPRECISION_SDK ON)
 	set(BUILD_APP_ENVIRONMENT ON)
 
@@ -576,48 +583,72 @@ if(BUILD_ALL)
 	set(BUILD_VALIDATION_HW ON)
 endif(BUILD_ALL)
 
+# set the grouped components to build (will trigger builds when tested)
+if(BUILD_CI)
+	set(BUILD_NUMBERS ON)
+	set(BUILD_DEMONSTRATION OFF)
+	set(BUILD_NUMERICS OFF)
+	set(BUILD_MIXEDPRECISION_SDK OFF)
+	set(BUILD_APP_ENVIRONMENT ON)
+endif(BUILD_CI)
+
+# core demonstration example applications that use the library
 if(BUILD_DEMONSTRATION)
-	# core demonstration example applications that use the library
 	set(BUILD_EDUCATION ON)
 	set(BUILD_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
 	set(BUILD_PLAYGROUND ON)
 endif(BUILD_DEMONSTRATION)
 
+if(BUILD_NUMBERS)
+	# build the different test/verification suites for each number system
+	set(BUILD_NUMBER_INTERNALS ON)
+	set(BUILD_NUMBER_NATIVE_TYPES ON)
+	set(BUILD_NUMBER_ELASTICS ON)
+	set(BUILD_NUMBER_STATICS ON)
+	
+	# build the conversion test suites
+	set(BUILD_NUMBER_CONVERSIONS ON)
+endif(BUILD_NUMBERS)
+
+if(BUILD_NUMBER_ELASTICS)
+	set(BUILD_NUMBER_EINTEGERS ON)
+	set(BUILD_NUMBER_DECIMALS ON)
+	set(BUILD_NUMBER_RATIONALS ON)
+	set(BUILD_NUMBER_EFLOATS ON)
+	set(BUILD_NUMBER_EPOSITS ON)
+endif(BUILD_NUMBER_ELASTICS)
+
+if(BUILD_NUMBER_STATICS)
+	set(BUILD_NUMBER_INTEGERS ON)
+	set(BUILD_NUMBER_FIXPNTS ON)
+	set(BUILD_NUMBER_CFLOATS ON)
+	set(BUILD_NUMBER_DFLOATS ON)
+	set(BUILD_NUMBER_AREALS ON)
+	set(BUILD_NUMBER_UNUM1S ON)
+	set(BUILD_NUMBER_UNUM2S ON)
+	set(BUILD_NUMBER_POSITS ON)
+	set(BUILD_NUMBER_VALIDS ON)
+	set(BUILD_NUMBER_LNS ON)
+	set(BUILD_NUMBER_MDLNS ON)
+	set(BUILD_NUMBER_SORNS ON)
+endif(BUILD_NUMBER_STATICS)
+
+# build numerical tools and tests
 if(BUILD_NUMERICS)
+	set(BUILD_NUMERIC_FUNCTIONS ON)
+	set(BUILD_NUMERIC_QUIRES ON)
 	set(BUILD_NUMERIC_CHALLENGES ON)
 	set(BUILD_NUMERIC_UTILS ON)
-	set(BUILD_NUMERIC_FUNCTIONS ON)
-	set(BUILD_NUMERIC_IEEE_QUIRES ON)
+	set(BUILD_NUMERIC_FPBENCH ON)
 endif(BUILD_NUMERICS)
 
+# build the benchmark suites
 if(BUILD_BENCHMARKS)
-	# build the benchmark suites
 	set(BUILD_BENCHMARK_PERFORMANCE ON)
 	set(BUILD_BENCHMARK_ACCURACY ON)
 	set(BUILD_BENCHMARK_ENERGY ON)
 endif(BUILD_BENCHMARKS)
-
-if(BUILD_NUMBER_SYSTEMS)
-	# build the different test/verification suites for each number system
-	set(BUILD_NUMBER_ARITHMETIC_CLASSES ON)
-	set(BUILD_NUMBER_NATIVE_TYPES ON)
-	set(BUILD_NUMBER_REALS ON)
-	set(BUILD_NUMBER_INTEGERS ON)
-	set(BUILD_NUMBER_DECIMALS ON)
-	set(BUILD_NUMBER_RATIONALS ON)
-	set(BUILD_NUMBER_FIXPNTS ON)
-	set(BUILD_NUMBER_CFLOATS ON)
-	set(BUILD_NUMBER_AREALS ON)
-	set(BUILD_NUMBER_UNUM_TYPE_1 ON)
-	set(BUILD_NUMBER_UNUM_TYPE_2 ON)
-	set(BUILD_NUMBER_POSITS ON)
-	set(BUILD_NUMBER_VALIDS ON)
-	set(BUILD_NUMBER_LNS ON)
-	
-	# build the conversion test suites
-	set(BUILD_NUMBER_CONVERSIONS ON)
-endif(BUILD_NUMBER_SYSTEMS)
 
 if(BUILD_MIXEDPRECISION_SDK)
 	set(BUILD_MIXEDPRECISION_ROOTS ON)
@@ -625,87 +656,121 @@ if(BUILD_MIXEDPRECISION_SDK)
 	set(BUILD_MIXEDPRECISION_INTEGRATE ON)
 	set(BUILD_MIXEDPRECISION_INTERPOLATE ON)
 	set(BUILD_MIXEDPRECISION_OPTIMIZE ON)
-	set(BUILD_MIXEDPRECISION_CONJUGATE ON)
+	set(BUILD_MIXEDPRECISION_TENSOR ON)
 endif(BUILD_MIXEDPRECISION_SDK)
 
+##################################################################
+###          multi-file application regression environment
+
 if(BUILD_APP_ENVIRONMENT)
-add_subdirectory("tests/appenv")
+add_subdirectory("static/appenv")
 endif(BUILD_APP_ENVIRONMENT)
 
-# Build the tests for the underlying storage classes
-if(BUILD_NUMBER_ARITHMETIC_CLASSES)
-add_subdirectory("tests/bitblock")
-add_subdirectory("tests/value")
-add_subdirectory("tests/blockbinary")
-add_subdirectory("tests/blocksignificant")
-add_subdirectory("tests/blocktriple")
-endif(BUILD_NUMBER_ARITHMETIC_CLASSES)
+##################################################################
+###          arithmetic type regression environment
 
+# Build the tests for the underlying storage classes
+if(BUILD_NUMBER_INTERNALS)
+add_subdirectory("internal/bitblock")
+add_subdirectory("internal/value")
+add_subdirectory("internal/blockdecimal")
+add_subdirectory("internal/blockbinary")
+add_subdirectory("internal/blocksignificant")
+add_subdirectory("internal/blocktriple")
+endif(BUILD_NUMBER_INTERNALS)
+
+# native type int and float tests
 if(BUILD_NUMBER_NATIVE_TYPES)
-add_subdirectory("tests/native")
+add_subdirectory("static/native")
 endif(BUILD_NUMBER_NATIVE_TYPES)
 
-# Arbitrary integers tests
-if(BUILD_NUMBER_INTEGERS)
-add_subdirectory("tests/integer")
-add_subdirectory("tests/adaptiveint")
-endif(BUILD_NUMBER_INTEGERS)
+###################################################################
+###                  Arbitrary precision tests
+
+if(BUILD_NUMBER_EINTEGERS)
+add_subdirectory("elastic/einteger")
+endif(BUILD_NUMBER_EINTEGERS)
 
 if(BUILD_NUMBER_DECIMALS)
-add_subdirectory("tests/decimal")
+add_subdirectory("elastic/decimal")
 endif(BUILD_NUMBER_DECIMALS)
 
 if(BUILD_NUMBER_RATIONALS)
-add_subdirectory("tests/rational")
+add_subdirectory("elastic/rational")
 endif(BUILD_NUMBER_RATIONALS)
 
-# Arbitrary fixed-point tests
+if(BUILD_NUMBER_EFLOATS)
+add_subdirectory("elastic/efloat")
+endif(BUILD_NUMBER_EFLOATS)
+
+if(BUILD_NUMBER_EPOSITS)
+add_subdirectory("elastic/eposit")
+endif(BUILD_NUMBER_EPOSITS)
+
+
+###################################################################
+###                  fixed-size number system tests
+
+if(BUILD_NUMBER_INTEGERS)
+add_subdirectory("static/integer")
+endif(BUILD_NUMBER_INTEGERS)
+
 if(BUILD_NUMBER_FIXPNTS)
-add_subdirectory("tests/fixpnt")
+add_subdirectory("static/fixpnt")
 endif(BUILD_NUMBER_FIXPNTS)
 
-# Arbitrary reals tests
-if(BUILD_NUMBER_REALS)
-add_subdirectory("tests/adaptivefloat")
-endif(BUILD_NUMBER_REALS)
-
 if(BUILD_NUMBER_LNS)
-add_subdirectory("tests/lns")
+add_subdirectory("static/lns")
 endif(BUILD_NUMBER_LNS)
 
-if(BUILD_NUMBER_UNUM_TYPE_1)
-add_subdirectory("tests/unum")
-endif(BUILD_NUMBER_UNUM_TYPE_1)
+if(BUILD_NUMBER_MDLNS)
+add_subdirectory("static/mdlns")
+endif(BUILD_NUMBER_MDLNS)
 
-if(BUILD_NUMBER_UNUM_TYPE_2)
-add_subdirectory("tests/unum2")
-endif(BUILD_NUMBER_UNUM_TYPE_2)
+if(BUILD_NUMBER_SORNS)
+add_subdirectory("static/sorn")
+endif(BUILD_NUMBER_SORNS)
+
+if(BUILD_NUMBER_UNUM1S)
+add_subdirectory("elastic/unum")
+endif(BUILD_NUMBER_UNUM1S)
+
+if(BUILD_NUMBER_UNUM2S)
+add_subdirectory("static/unum2")
+endif(BUILD_NUMBER_UNUM2S)
 
 if(BUILD_NUMBER_POSITS)
-add_subdirectory("tests/posit")
-add_subdirectory("tests/posit/specialized")
-add_subdirectory("tests/adaptiveposit")
+add_subdirectory("static/posit")
+add_subdirectory("static/posit/specialized")
+add_subdirectory("static/posit2")
 endif(BUILD_NUMBER_POSITS)
 
 if(BUILD_NUMBER_VALIDS)
-add_subdirectory("tests/valid")
+add_subdirectory("static/valid")
 endif(BUILD_NUMBER_VALIDS)
 
 # reals with an uncertainty bit
 if(BUILD_NUMBER_AREALS)
-add_subdirectory("tests/areal")
+add_subdirectory("static/areal")
 endif(BUILD_NUMBER_AREALS)
 
-# cfloats
+# classic floats
 if(BUILD_NUMBER_CFLOATS)
-add_subdirectory("tests/cfloat")
+add_subdirectory("static/cfloat")
 endif(BUILD_NUMBER_CFLOATS)
+
+# decimal floats
+if(BUILD_NUMBER_DFLOATS)
+add_subdirectory("static/dfloat")
+endif(BUILD_NUMBER_DFLOATS)
 
 # conversion tests suites
 if(BUILD_NUMBER_CONVERSIONS)
-add_subdirectory("tests/conversions")
+add_subdirectory("static/conversions")
 endif(BUILD_NUMBER_CONVERSIONS)
 
+##################################################################
+###          mixed-precision environment
 
 if(BUILD_MIXEDPRECISION_ROOTS)
 add_subdirectory("mixedprecision/roots")
@@ -727,9 +792,12 @@ if(BUILD_MIXEDPRECISION_OPTIMIZE)
 add_subdirectory("mixedprecision/optimization")
 endif(BUILD_MIXEDPRECISION_OPTIMIZE)
 
-if(BUILD_MIXEDPRECISION_CONJUGATE)
-add_subdirectory("mixedprecision/linearalgebra/cg")
-endif(BUILD_MIXEDPRECISION_CONJUGATE)
+if(BUILD_MIXEDPRECISION_TENSOR)
+add_subdirectory("mixedprecision/tensor")
+endif(BUILD_MIXEDPRECISION_TENSOR)
+
+##################################################################
+###          benchmark environment
 
 # performance benchmarks
 if(BUILD_BENCHMARK_PERFORMANCE)
@@ -747,6 +815,9 @@ if(BUILD_BENCHMARK_ENERGY)
 add_subdirectory("benchmark/energy/blas")
 endif(BUILD_BENCHMARK_ENERGY)
 
+##################################################################
+###          tools, utilities, education, playground environment
+
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
@@ -754,10 +825,18 @@ endif(BUILD_CMD_LINE_TOOLS)
 
 # educational examples
 if(BUILD_EDUCATION)
-add_subdirectory("education/tables")
 add_subdirectory("education/number")
+add_subdirectory("education/tables")
+add_subdirectory("education/ranges")
 add_subdirectory("education/quire")
 endif(BUILD_EDUCATION)
+
+if(BUILD_PLAYGROUND)
+add_subdirectory("playground")
+endif(BUILD_PLAYGROUND)
+
+##################################################################
+###          application examples
 
 # application examples
 if(BUILD_APPLICATIONS)
@@ -769,6 +848,7 @@ add_subdirectory("applications/chebyshev")
 add_subdirectory("applications/complex")
 add_subdirectory("applications/constants")
 add_subdirectory("applications/cryptography")
+add_subdirectory("applications/dnn")
 add_subdirectory("applications/dsp")
 add_subdirectory("applications/engineering")
 add_subdirectory("applications/floating-point")
@@ -785,27 +865,40 @@ add_subdirectory("applications/stream")
 add_subdirectory("applications/weather")
 endif(BUILD_APPLICATIONS)
 
+##################################################################
+###          numerical utilities and challenges 
+
 # numerical benchmarks and challenge problems
 if(BUILD_NUMERIC_CHALLENGES)
-add_subdirectory("tests/numerical/properties")
+add_subdirectory("numeric/properties")
 endif(BUILD_NUMERIC_CHALLENGES)
+
 if(BUILD_NUMERIC_UTILS)
-add_subdirectory("tests/numerical/utils")
+add_subdirectory("numeric/utils")
 endif(BUILD_NUMERIC_UTILS)
-if(BUILD_NUMERIC_FPBENCH)
-add_subdirectory("tests/numerical/fpbench")
-endif(BUILD_NUMERIC_FPBENCH)
+
 if(BUILD_NUMERIC_FUNCTIONS)
-add_subdirectory("tests/functions")
+add_subdirectory("numeric/functions")
 endif(BUILD_NUMERIC_FUNCTIONS)
+
+# quire capability
+if(BUILD_NUMERIC_QUIRES)
+add_subdirectory("numeric/quire/ieee754")
+endif(BUILD_NUMERIC_QUIRES)
+
+if(BUILD_NUMERIC_FPBENCH)
+add_subdirectory("numeric/fpbench")
+endif(BUILD_NUMERIC_FPBENCH)
+
+##################################################################
+###          hardware validation environment
 
 if(BUILD_VALIDATION_HW)
 add_subdirectory("validation/hw")
 endif(BUILD_VALIDATION_HW)
 
-if(BUILD_PLAYGROUND)
-add_subdirectory("playground")
-endif(BUILD_PLAYGROUND)
+##################################################################
+###          C api
 
 # C API library and their tests
 if(BUILD_C_API_PURE_LIB)
@@ -818,17 +911,15 @@ add_subdirectory("c_api/shim/posit")
 add_subdirectory("c_api/shim/test/posit")
 endif(BUILD_C_API_SHIM_LIB)
 
-# IEEE float/double quire capability
-if(BUILD_IEEE_FLOAT_QUIRES)
-add_subdirectory("tests/float")
-endif(BUILD_IEEE_FLOAT_QUIRES)
+##################################################################
+###          dense BLAS environment for experimentation
 
 # Basic Linear Algebra library
 if(BUILD_LINEAR_ALGEBRA_BLAS)
-add_subdirectory("tests/blas")
+add_subdirectory("linalg/blas")
 endif(BUILD_LINEAR_ALGEBRA_BLAS)
 if(BUILD_LINEAR_ALGEBRA_VMATH)
-add_subdirectory("tests/vmath")
+add_subdirectory("linalg/vmath")
 endif(BUILD_LINEAR_ALGEBRA_VMATH)
 
 ####

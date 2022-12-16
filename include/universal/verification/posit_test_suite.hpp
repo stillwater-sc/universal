@@ -1,7 +1,7 @@
 #pragma once
 // posit_test_suite.hpp : posit number system verification test suite
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -14,200 +14,29 @@
 
 namespace sw { namespace universal {
 
-#if 0
-	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
-
-	template<size_t nbits, size_t es>
-	void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const posit<nbits, es>& presult) {
-		constexpr size_t fbits = nbits - 3 - es;
-
-		bool		     	 _sign;
-		regime<nbits, es>    _regime;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(presult.get(), _sign, _regime, _exponent, _fraction);
-		int                  _scale = _regime.scale() + _exponent.scale();
-
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << input
-			<< " did not convert to "
-			<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
-			<< "  raw " << std::setw(nbits) << presult.get()
-			<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-			<< std::endl;
-	}
-
-	template<>
-	void ReportConversionError<2,0>(const std::string& test_case, const std::string& op, double input, double reference, const posit<2, 0>& presult) {
-		constexpr size_t nbits = 2;
-		//constexpr size_t es = 0;
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << input
-			<< " did not convert to "
-			<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
-			<< "  raw " << std::setw(nbits) << presult.get()
-//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-			<< std::endl;
-
-	}
-	template<>
-	void ReportConversionError<3, 1>(const std::string& test_case, const std::string& op, double input, double reference, const posit<3, 1>& presult) {
-		constexpr size_t nbits = 3;
-		//constexpr size_t es = 1; 
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << input
-			<< " did not convert to "
-			<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
-			<< "  raw " << std::setw(nbits) << presult.get()
-			//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-			<< std::endl;
-
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const posit<nbits, es>& presult) {
-		static_assert(nbits > 1, "component_to_string requires nbits >= 2");
-		if (nbits > 2) {
-			constexpr size_t fbits = nbits - 3 - es;
-
-			bool		     	 _sign;
-			regime<nbits, es>    _regime;
-			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(presult.get(), _sign, _regime, _exponent, _fraction);
-			int                  _scale = _regime.scale() + _exponent.scale();
-
-			std::cerr << test_case
-				<< " " << op << " "
-				<< std::setw(FLOAT_TABLE_WIDTH) << input
-				<< " did     convert to "
-				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
-				<< std::setw(FLOAT_TABLE_WIDTH) << reference
-				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-				<< std::endl;
-		}
-		else {
-			if (nbits == 2) {
-				std::cerr << test_case
-					<< " " << op << " "
-					<< std::setw(FLOAT_TABLE_WIDTH) << input
-					<< " did     convert to "
-					<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
-					<< std::setw(FLOAT_TABLE_WIDTH) << reference
-					<< "  raw " << std::setw(nbits) << presult.get()
-//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
-					<< std::endl;
-			}
-		}
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-			<< " != "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult
-			<< " " << pref.get() << " vs " << presult.get() << std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-			<< " == "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref
-			<< " " << pretty_print(presult) << std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case << " " 
-			<< std::setprecision(20)
-			<< std::setw(FLOAT_TABLE_WIDTH) << lhs
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-			<< " != "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult
-			<< " " << pref.get() << " vs " << presult.get() 
-			<< std::setprecision(5)
-			<< std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportBinaryArithmeticErrorInBinary(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case << " "
-			<< std::setw(nbits) << lhs.get()
-			<< " " << op << " "
-			<< std::setw(nbits) << rhs.get()
-			<< " != "
-			<< std::setw(nbits) << pref.get() << " instead it yielded "
-			<< std::setw(nbits) << presult.get()
-			<< " " << pretty_print(presult,20) << std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case << " "
-			<< std::setprecision(20)
-			<< std::setw(FLOAT_TABLE_WIDTH) << lhs
-			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
-			<< " == "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref
-			<< " " << pref.get() << " vs " << presult.get() 
-			<< std::setprecision(5)
-			<< std::endl;
-	}
-
-	template<size_t nbits, size_t es>
-	void ReportBinaryArithmeticSuccessInBinary(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-		std::cerr << test_case << " "
-			<< std::setw(nbits) << lhs.get()
-			<< " " << op << " "
-			<< std::setw(nbits) << rhs.get()
-			<< " == "
-			<< std::setw(nbits) << presult.get() << " reference value is "
-			<< std::setw(nbits) << pref.get()
-			<< " " << pretty_print(presult,20) << std::endl;
-	}
-#endif
-
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	void ReportDecodeError(const std::string& test_case, const posit<nbits, es>& actual, double golden_value) {
 		std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
 	}
 
 	/////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
-	template<size_t nbits, size_t es>
-	int Compare(double input, const posit<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
+	template<unsigned nbits, unsigned es>
+	int Compare(double input, const posit<nbits, es>& presult, double reference, bool reportTestCases) {
 		int fail = 0;
 		double result = double(presult);
 		if (std::fabs(result - reference) > 0.000000001) {
 			fail++;
-			if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, presult, reference);
+			if (reportTestCases)	ReportConversionError("FAIL", "=", input, presult, reference);
 		}
 		else {
-			// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+			// if (reportTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
 		}
 		return fail;
 	}
 
 	// logic operator consistency check
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	void testLogicOperators(const posit<nbits, es>& a, const posit<nbits, es>& b) {
 		using namespace std;
 		cout << a << " vs " << b << endl;
@@ -220,16 +49,16 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all conversion cases for a posit configuration
-	template<size_t nbits, size_t es>
-	int VerifyConversion(bool bReportIndividualTestCases) {
+	template<unsigned nbits, unsigned es>
+	int VerifyConversion(bool reportTestCases) {
 		// we are going to generate a test set that consists of all posit configs and their midpoints
 		// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 		// These larger posits will be at the mid-point between the smaller posit sample values
 		// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
 		// to test the rounding logic of the conversion.
-		constexpr size_t max = nbits > 14 ? 14 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << (max + 1));
-		size_t HALF = (size_t(1) << max);
+		constexpr unsigned max = nbits > 14 ? 14 : nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << (max + 1));
+		unsigned HALF = (unsigned(1) << max);
 
 		if (nbits > 20) {
 			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
@@ -238,7 +67,7 @@ namespace sw { namespace universal {
 		double halfMinpos = double(posit<nbits + 1, es>(SpecificValue::minpos)) / 2.0;
 		// execute the test
 		int nrOfFailedTests = 0;
-		for (size_t i = 0; i < NR_TEST_CASES; i++) {
+		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits + 1, es> pref, pprev, pnext;
 
 			pref.setbits(i);
@@ -253,24 +82,24 @@ namespace sw { namespace universal {
 					input = da - eps;
 					pa = input;
 					pnext.setbits(i + 1);
-					nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pnext, reportTestCases);
 					input = da + eps;
 					pa = input;
-					nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pnext, reportTestCases);
 				}
 				else if (i == HALF - 1) {
 					// special case of projecting to +maxpos
 					input = da - eps;
 					pa = input;
 					pprev.setbits(HALF - 2);
-					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pprev, reportTestCases);
 				}
 				else if (i == HALF + 1) {
 					// special case of projecting to -maxpos
 					input = da - eps;
 					pa = input;
 					pprev.setbits(HALF + 2);
-					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pprev, reportTestCases);
 				}
 				else if (i == NR_TEST_CASES - 1) {
 					// special case of projecting to -minpos
@@ -278,10 +107,10 @@ namespace sw { namespace universal {
 					input = da - eps;
 					pa = input;
 					pprev.setbits(i - 1);
-					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pprev, reportTestCases);
 					input = da + eps;
 					pa = input;
-					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pprev, reportTestCases);
 				}
 				else {
 					// for odd values, we are between posit values, so we create the round-up and round-down cases
@@ -289,12 +118,12 @@ namespace sw { namespace universal {
 					input = da - eps;
 					pa = input;
 					pprev.setbits(i - 1);
-					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pprev, reportTestCases);
 					// round-up
 					input = da + eps;
 					pa = input;
 					pnext.setbits(i + 1);
-					nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pnext, reportTestCases);
 				}
 			}
 			else {
@@ -303,36 +132,37 @@ namespace sw { namespace universal {
 					// special case of assigning to 0
 					input = 0.0;
 					pa = input;
-					nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, da, reportTestCases);
 					// special case of projecting to +minpos
 					input = da + eps;
 					pa = input;
 					pnext.setbits(i + 2);
-					nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pnext, reportTestCases);
 				}
 				else if (i == NR_TEST_CASES - 2) {
 					// special case of projecting to -minpos
 					input = da - eps;
 					pa = input;
 					pprev.setbits(NR_TEST_CASES - 2);
-					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, (double)pprev, reportTestCases);
 				}
 				else {
 					// round-up
 					input = da - eps;
 					pa = input;
-					nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, da, reportTestCases);
 					// round-down
 					input = da + eps;
 					pa = input;
-					nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
+					nrOfFailedTests += Compare(input, pa, da, reportTestCases);
 				}
 			}
 		}
 		return nrOfFailedTests;
 	}
+
 	template<>
-	int VerifyConversion<NBITS_IS_2, ES_IS_0>(bool bReportIndividualTestCases) {
+	int VerifyConversion<NBITS_IS_2, ES_IS_0>(bool reportTestCases) {
 		int nrOfFailedTestCases = 0;
 		// special case
 		posit<NBITS_IS_2, ES_IS_0> p = -INFINITY;
@@ -340,27 +170,27 @@ namespace sw { namespace universal {
 		// test vector
 		std::vector<double> in  = { -4.0, -2.0, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 2.0, 4.0 };
 		std::vector<double> ref = { -1.0, -1.0, -1.0, -1.0, -1.00, 0.0, 1.00, 1.0, 1.0, 1.0, 1.0 };
-		size_t ref_index = 0;
+		unsigned ref_index = 0;
 		for (auto v : in) {
 			p = v;
 			double refv = ref[ref_index++];
 			if (double(p) != refv) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << refv << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << refv << std::endl;
 				nrOfFailedTestCases++;
 			}
 			else {
-				//if (bReportIndividualTestCases) std::cout << " PASS " << p << " == " << refv << std::endl;
+				//if (reportTestCases) std::cout << " PASS " << p << " == " << refv << std::endl;
 			}
 		}
 		return nrOfFailedTestCases;
 	}
 
 	// enumerate all conversion cases for integers
-	template<size_t nbits, size_t es>
-	int VerifyIntegerConversion(bool bReportIndividualTestCases) {
+	template<unsigned nbits, unsigned es>
+	int VerifyIntegerConversion(bool reportTestCases) {
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;  
+		unsigned NR_TEST_CASES = (unsigned(1) << (max - 1)) + 1;  
 		int nrOfFailedTestCases = 0;		
 		// special cases in case we are clipped by the nbits > 20
 		long ref = 0x80000000;  // -2147483648
@@ -370,16 +200,16 @@ namespace sw { namespace universal {
 			nrOfFailedTestCases++;
 		}
 		posit<nbits, es> p(1);
-		for (size_t i = 0; i < NR_TEST_CASES; ++i) {
+		for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 			if (!p.isnar()) {
 				ref = (long)p; // obtain the integer cast of this posit
 				presult = ref;		// assign this integer to a posit				
 				if (ref != presult) { // compare the integer cast to the reference posit
-					if (bReportIndividualTestCases) std::cout << " FAIL long(" << p << ") != long(" << presult << ") : reference = " << ref << std::endl;
+					if (reportTestCases) std::cout << " FAIL long(" << p << ") != long(" << presult << ") : reference = " << ref << std::endl;
 					nrOfFailedTestCases++;
 				}
 				else {
-					//if (bReportIndividualTestCases) std::cout << " PASS " << p << " casts to " << presult << " : reference = " << ref << std::endl;
+					//if (reportTestCases) std::cout << " PASS " << p << " casts to " << presult << " : reference = " << ref << std::endl;
 				}
 			}
 			++p;
@@ -389,42 +219,42 @@ namespace sw { namespace universal {
 /*
 	// specialized template for fast posit<2,0>
 	template<>
-	int VerifyIntegerConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyIntegerConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool reportTestCases) {
 		std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
 		std::vector<int> ref = { -1, -1, -1, -1, 0, 1, 1, 1, 1 };
 		int nrOfFailedTestCases = 0;
-		size_t ref_index = 0;
+		unsigned ref_index = 0;
 		for (auto v : in) {
 			posit<NBITS_IS_2, ES_IS_0> p;
 			p = v;
 			int refv = ref[ref_index++];
 			if (p != refv) {
-				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
+				if (reportTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
 				nrOfFailedTestCases++;
 			}
 			else {
-				//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << refv << std::endl;
+				//if (reportTestCases) std::cout << tag << " PASS " << p << " == " << refv << std::endl;
 			}
 		}
 		return nrOfFailedTestCases;
 	}
 	// specialized template for fast posit<3,0>
 	template<>
-	int VerifyIntegerConversion<NBITS_IS_3, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyIntegerConversion<NBITS_IS_3, ES_IS_0>(const std::string& tag, bool reportTestCases) {
 		std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
 		std::vector<int> ref = { -2, -2, -2, -1, 0, 1, 2, 2, 2 };
 		int nrOfFailedTestCases = 0;
-		size_t ref_index = 0;
+		unsigned ref_index = 0;
 		for (auto v : in) {
 			posit<NBITS_IS_3, ES_IS_0> p;
 			p = v;
 			int refv = ref[ref_index++];
 			if (p != refv) {
-				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
+				if (reportTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
 				nrOfFailedTestCases++;
 			}
 			else {
-				//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << refv << std::endl;
+				//if (reportTestCases) std::cout << tag << " PASS " << p << " == " << refv << std::endl;
 			}
 		}
 		return nrOfFailedTestCases;
@@ -432,11 +262,11 @@ namespace sw { namespace universal {
 */
 
 // enumerate all conversion cases for integers
-	template<size_t nbits, size_t es>
-	int VerifyUintConversion(bool bReportIndividualTestCases) {
+	template<unsigned nbits, unsigned es>
+	int VerifyUintConversion(bool reportTestCases) {
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;
+		unsigned NR_TEST_CASES = (unsigned(1) << (max - 1)) + 1;
 		int nrOfFailedTestCases = 0;
 
 		posit<nbits, es> p, presult;
@@ -449,11 +279,11 @@ namespace sw { namespace universal {
 				unsigned long ref = (unsigned long)p;   // obtain the integer cast of this posit
 				presult = ref;		  // assign this integer to a reference posit
 				if (presult != ref) { // compare the integer cast to the reference posit
-					if (bReportIndividualTestCases) std::cout << " FAIL uint32(" << p << ") != uint32(" << presult << ") : reference = " << ref << std::endl;
+					if (reportTestCases) std::cout << " FAIL uint32(" << p << ") != uint32(" << presult << ") : reference = " << ref << std::endl;
 					nrOfFailedTestCases++;
 				}
 				else {
-					//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
+					//if (reportTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
 				}
 				--p;
 			}
@@ -461,19 +291,19 @@ namespace sw { namespace universal {
 		else {
 			p = 1;
 			if (!p.isone()) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << 1 << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << 1 << std::endl;
 				nrOfFailedTestCases++;
 			}
-			for (size_t i = 0; i < NR_TEST_CASES; ++i) {
+			for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 				if (!p.isnar()) {
 					unsigned long ref = (unsigned long)p;   // obtain the integer cast of this posit
 					presult = ref;		  // assign this integer to a reference posit
 					if (presult != ref) { // compare the integer cast to the reference posit
-						if (bReportIndividualTestCases) std::cout << " FAIL uint32(" << p << ") != uint32(" << presult << ") : reference = " << ref << std::endl;
+						if (reportTestCases) std::cout << " FAIL uint32(" << p << ") != uint32(" << presult << ") : reference = " << ref << std::endl;
 						nrOfFailedTestCases++;
 					}
 					else {
-						//if (bReportIndividualTestCases) std::cout << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
+						//if (reportTestCases) std::cout << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
 					}
 				}
 				++p;
@@ -483,13 +313,13 @@ namespace sw { namespace universal {
 	}
 
 	// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular posit config <nbits, es>
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
-		constexpr size_t NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
+		constexpr unsigned NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
 		std::vector< posit<nbits, es> > s(NR_OF_REALS);
 		posit<nbits, es> p;
 		// generate raw set, which will sort later
-		for (size_t i = 0; i < NR_OF_REALS; ++i) {
+		for (unsigned i = 0; i < NR_OF_REALS; ++i) {
 			p.setbits(i);
 			s[i] = p;
 		}
@@ -499,8 +329,8 @@ namespace sw { namespace universal {
 	}
 
 	// Verify the increment operator++
-	template<size_t nbits, size_t es>
-	int VerifyIncrement(bool bReportIndividualTestCases)	{
+	template<unsigned nbits, unsigned es>
+	int VerifyIncrement(bool reportTestCases)	{
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -513,7 +343,7 @@ namespace sw { namespace universal {
 			p++;
 			ref = *(it + 1);
 			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -522,8 +352,8 @@ namespace sw { namespace universal {
 	}
 
 	// Verify the decrement operator--
-	template<size_t nbits, size_t es>
-	int VerifyDecrement(bool bReportIndividualTestCases)
+	template<unsigned nbits, unsigned es>
+	int VerifyDecrement(bool reportTestCases)
 	{
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -537,7 +367,7 @@ namespace sw { namespace universal {
 			p--;
 			ref = *(it - 1);
 			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -546,8 +376,8 @@ namespace sw { namespace universal {
 	}
 
 	// Verify the postfix operator++
-	template<size_t nbits, size_t es>
-	int VerifyPostfix(bool bReportIndividualTestCases)
+	template<unsigned nbits, unsigned es>
+	int VerifyPostfix(bool reportTestCases)
 	{
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -561,7 +391,7 @@ namespace sw { namespace universal {
 			p++;
 			ref = *(it + 1);
 			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -570,8 +400,8 @@ namespace sw { namespace universal {
 	}
 
 	// Verify the prefix operator++
-	template<size_t nbits, size_t es>
-	int VerifyPrefix(bool bReportIndividualTestCases)
+	template<unsigned nbits, unsigned es>
+	int VerifyPrefix(bool reportTestCases)
 	{
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -585,7 +415,7 @@ namespace sw { namespace universal {
 			++p;
 			ref = *(it + 1);
 			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -594,14 +424,14 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifyNegation(bool bReportIndividualTestCases) {
-		constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifyNegation(bool reportTestCases) {
+		constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		posit<nbits, es> pa(0), pneg(0), pref(0);
 
 		double da;
-		for (size_t i = 1; i < NR_TEST_CASES; i++) {
+		for (unsigned i = 1; i < NR_TEST_CASES; i++) {
 			pa.setbits(i);
 			pneg = -pa;
 			// generate reference
@@ -609,22 +439,22 @@ namespace sw { namespace universal {
 			pref = -da;
 			if (pneg != pref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "-", pa, pref, pneg);
+				if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "-", pa, pref, pneg);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "-", pa, pref, pneg);
+				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "-", pa, pref, pneg);
 			}
 		}
 		return nrOfFailedTests;
 	}
 
 	// enumerate all SQRT cases for a posit configuration: executes within 10 sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifySqrt(bool bReportIndividualTestCases) {
-		constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifySqrt(bool reportTestCases) {
+		constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 
-		for (size_t i = 1; i < NR_TEST_CASES; i++) {
+		for (unsigned i = 1; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> pa, psqrt, pref;
 			pa.setbits(i);
 			psqrt = sw::universal::sqrt(pa);
@@ -634,28 +464,28 @@ namespace sw { namespace universal {
 			if (psqrt != pref) {
 				nrOfFailedTests++;
 				std::cout << psqrt << " != " << pref << std::endl;
-				if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", pa, pref, psqrt);
+				if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", pa, pref, psqrt);
 				if (nrOfFailedTests > 24) return nrOfFailedTests;
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", pa, pref, psqrt);
+				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", pa, pref, psqrt);
 			}
 		}
 		return nrOfFailedTests;
 	}
 
 	// enumerate all addition cases for a posit configuration
-	template<size_t nbits, size_t es>
-	int VerifyAddition(bool bReportIndividualTestCases) {
-		const size_t NR_POSITS = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifyAddition(bool reportTestCases) {
+		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		posit<nbits, es> pa, pb, psum, pref;
 
 		double da, db;
-		for (size_t i = 0; i < NR_POSITS; i++) {
+		for (unsigned i = 0; i < NR_POSITS; i++) {
 			pa.setbits(i);
 			da = double(pa);
-			for (size_t j = 0; j < NR_POSITS; j++) {
+			for (unsigned j = 0; j < NR_POSITS; j++) {
 				pb.setbits(j);
 				db = double(pb);
 				pref = da + db;
@@ -678,10 +508,10 @@ namespace sw { namespace universal {
 #endif
 				if (psum != pref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
 				}
 			}
 		}
@@ -690,15 +520,15 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all addition cases for a posit configuration
-	template<size_t nbits, size_t es>
-	int VerifyInPlaceAddition(bool bReportIndividualTestCases) {
-		const size_t NR_POSITS = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifyInPlaceAddition(bool reportTestCases) {
+		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
-		for (size_t i = 0; i < NR_POSITS; i++) {
+		for (unsigned i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
 			pa.setbits(i);
 			double da = double(pa);
-			for (size_t j = 0; j < NR_POSITS; j++) {
+			for (unsigned j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, psum, pref;
 				pb.setbits(j);
 				double db = double(pb);
@@ -724,10 +554,10 @@ namespace sw { namespace universal {
 #endif
 				if (psum != pref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+=", pa, pb, pref, psum);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+=", pa, pb, pref, psum);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+=", pa, pb, pref, psum);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+=", pa, pb, pref, psum);
 				}
 			}
 		}
@@ -736,15 +566,15 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifySubtraction(bool bReportIndividualTestCases) {
-		const size_t NR_POSITS = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifySubtraction(bool reportTestCases) {
+		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
-		for (size_t i = 0; i < NR_POSITS; i++) {
+		for (unsigned i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
 			pa.setbits(i);
 			double da = double(pa);
-			for (size_t j = 0; j < NR_POSITS; j++) {
+			for (unsigned j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pref, pdif;
 
 				pb.setbits(j);
@@ -768,10 +598,10 @@ namespace sw { namespace universal {
 #endif
 				if (pdif != pref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pref, pdif);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pref, pdif);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", pa, pb, pref, pdif);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", pa, pb, pref, pdif);
 				}
 			}
 		}
@@ -780,15 +610,15 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifyInPlaceSubtraction(bool bReportIndividualTestCases) {
-		const size_t NR_POSITS = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifyInPlaceSubtraction(bool reportTestCases) {
+		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
-		for (size_t i = 0; i < NR_POSITS; i++) {
+		for (unsigned i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
 			pa.setbits(i);
 			double da = double(pa);
-			for (size_t j = 0; j < NR_POSITS; j++) {
+			for (unsigned j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pref, pdif;
 				pb.setbits(j);
 				double db = double(pb);
@@ -813,10 +643,10 @@ namespace sw { namespace universal {
 #endif
 				if (pdif != pref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-=", pa, pb, pref, pdif);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-=", pa, pb, pref, pdif);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-=", pa, pb, pref, pdif);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-=", pa, pb, pref, pdif);
 				}
 			}
 		}
@@ -825,15 +655,15 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifyMultiplication(bool bReportIndividualTestCases) {
+	template<unsigned nbits, unsigned es>
+	int VerifyMultiplication(bool reportTestCases) {
 		int nrOfFailedTests = 0;
-		const size_t NR_POSITS = (size_t(1) << nbits);
-		for (size_t i = 0; i < NR_POSITS; i++) {
+		const unsigned NR_POSITS = (unsigned(1) << nbits);
+		for (unsigned i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
 			pa.setbits(i);
 			double da = double(pa);
-			for (size_t j = 0; j < NR_POSITS; j++) {
+			for (unsigned j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pmul, pref;
 				pb.setbits(j);
 				double db = double(pb);
@@ -855,11 +685,11 @@ namespace sw { namespace universal {
 				pmul = pa * pb;
 #endif
 				if (pmul != pref) {
-					if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul);
 					nrOfFailedTests++;
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
 				}
 			}
 		}
@@ -867,15 +697,15 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifyInPlaceMultiplication(bool bReportIndividualTestCases) {
+	template<unsigned nbits, unsigned es>
+	int VerifyInPlaceMultiplication(bool reportTestCases) {
 		int nrOfFailedTests = 0;
-		const size_t NR_POSITS = (size_t(1) << nbits);
-		for (size_t i = 0; i < NR_POSITS; i++) {
+		const unsigned NR_POSITS = (unsigned(1) << nbits);
+		for (unsigned i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
 			pa.setbits(i);
 			double da = double(pa);
-			for (size_t j = 0; j < NR_POSITS; j++) {
+			for (unsigned j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pmul, pref;
 				pb.setbits(j);
 				double db = double(pb);
@@ -899,11 +729,11 @@ namespace sw { namespace universal {
 				pmul *= pb;
 #endif
 				if (pmul != pref) {
-					if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "*=", pa, pb, pref, pmul);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*=", pa, pb, pref, pmul);
 					nrOfFailedTests++;
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*=", pa, pb, pref, pmul);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*=", pa, pb, pref, pmul);
 				}
 			}
 		}
@@ -911,11 +741,11 @@ namespace sw { namespace universal {
 	}
 
 	// enerate all reciprocation cases for a posit configuration: executes within 10 sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifyReciprocation(bool bReportIndividualTestCases) {
-		const size_t NR_TEST_CASES = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifyReciprocation(bool reportTestCases) {
+		const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
-		for (size_t i = 0; i < NR_TEST_CASES; i++) {
+		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> pa, preciprocal, preference;
 			pa.setbits(i);
 			// generate reference
@@ -931,25 +761,25 @@ namespace sw { namespace universal {
 
 			if (preciprocal != preference) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "reciprocate", pa, preference, preciprocal);
+				if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "reciprocate", pa, preference, preciprocal);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "reciprocate", pa, preference, preciprocal);
+				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "reciprocate", pa, preference, preciprocal);
 			}
 		}
 		return nrOfFailedTests;
 	}
 
 	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifyDivision(bool bReportIndividualTestCases) {
-		constexpr size_t NR_POSITS = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifyDivision(bool reportTestCases) {
+		constexpr unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
-		for (size_t i = 0; i < NR_POSITS; i++) {
+		for (unsigned i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
 			pa.setbits(i);
 			double da = double(pa);
-			for (size_t j = 0; j < NR_POSITS; j++) {
+			for (unsigned j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pdiv, pref;
 				pb.setbits(j);
 				double db = double(pb);
@@ -970,7 +800,7 @@ namespace sw { namespace universal {
 						//pdiv.setnar();
 					}
 					else {
-						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
 						throw; // rethrow
 					}
 				}
@@ -981,7 +811,7 @@ namespace sw { namespace universal {
 						//pdiv = 0.0f;
 					}
 					else {
-						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
 						throw; // rethrow
 					}
 				}
@@ -992,7 +822,7 @@ namespace sw { namespace universal {
 						//pdiv.setnar();
 					}
 					else {
-						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
 						throw; // rethrow
 					}
 				}
@@ -1001,11 +831,11 @@ namespace sw { namespace universal {
 #endif
 				// check against the IEEE reference
 				if (pdiv != pref) {
-					if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
 					nrOfFailedTests++;
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pref, pdiv);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pref, pdiv);
 				}
 
 			}
@@ -1014,15 +844,15 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int VerifyInPlaceDivision(bool bReportIndividualTestCases) {
-		constexpr size_t NR_POSITS = (size_t(1) << nbits);
+	template<unsigned nbits, unsigned es>
+	int VerifyInPlaceDivision(bool reportTestCases) {
+		constexpr unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
-		for (size_t i = 0; i < NR_POSITS; i++) {
+		for (unsigned i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
 			pa.setbits(i);
 			double da = double(pa);
-			for (size_t j = 0; j < NR_POSITS; j++) {
+			for (unsigned j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pdiv, pref;
 				pb.setbits(j);
 				double db = double(pb);
@@ -1044,7 +874,7 @@ namespace sw { namespace universal {
 						//pdiv.setnar();
 					}
 					else {
-						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
 						throw err; // rethrow
 					}
 				}
@@ -1055,7 +885,7 @@ namespace sw { namespace universal {
 						//pdiv = 0.0f;
 					}
 					else {
-						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
 						throw err; // rethrow
 					}
 				}
@@ -1066,7 +896,7 @@ namespace sw { namespace universal {
 						//pdiv.setnar();
 					}
 					else {
-						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pref, pdiv);
 						throw err; // rethrow
 					}
 				}
@@ -1076,11 +906,11 @@ namespace sw { namespace universal {
 #endif
 				// check against the IEEE reference
 				if (pdiv != pref) {
-					if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pref, pdiv);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pref, pdiv);
 					nrOfFailedTests++;
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/=", pa, pb, pref, pdiv);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/=", pa, pb, pref, pdiv);
 				}
 
 			}
@@ -1090,10 +920,10 @@ namespace sw { namespace universal {
 
 	// Posit equal diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR can be checked for equality/inequality
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	int VerifyPositLogicEqual() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = nbits > 10 ? 10 : nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
@@ -1135,10 +965,10 @@ namespace sw { namespace universal {
 
 	// Posit not-equal diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR can be checked for equality/inequality
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	int VerifyPositLogicNotEqual() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = nbits > 10 ? 10 : nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
@@ -1181,10 +1011,10 @@ namespace sw { namespace universal {
 
 	// Posit less-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR is smaller than any other value
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	int VerifyPositLogicLessThan() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = nbits > 10 ? 10 : nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
@@ -1218,10 +1048,10 @@ namespace sw { namespace universal {
 
 	// Posit greater-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Any number is greater-than posit NaR
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	int VerifyPositLogicGreaterThan() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = nbits > 10 ? 10 : nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
@@ -1247,10 +1077,10 @@ namespace sw { namespace universal {
 
 	// Posit less-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR is smaller or equal than any other value
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	int VerifyPositLogicLessOrEqualThan() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = nbits > 10 ? 10 : nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
@@ -1277,10 +1107,10 @@ namespace sw { namespace universal {
 
 	// Posit greater-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Any number is greater-or-equal-than posit NaR
-	template<size_t nbits, size_t es>
+	template<unsigned nbits, unsigned es>
 	int VerifyPositLogicGreaterOrEqualThan() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (size_t(1) << max);
+		constexpr unsigned max = nbits > 10 ? 10 : nbits;
+		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;

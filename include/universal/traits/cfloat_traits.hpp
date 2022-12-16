@@ -15,7 +15,7 @@ namespace sw { namespace universal {
 	{
 	};
 
-	template<size_t nbits, size_t es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+	template<unsigned nbits, unsigned es, typename BlockType, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 	struct is_cfloat_trait< sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> >
 		: true_type
 	{

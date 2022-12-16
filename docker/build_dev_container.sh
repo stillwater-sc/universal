@@ -10,7 +10,7 @@
 
 if [[ $# == 0 ]]; then
 	# default is GCC10
-	docker build --force-rm -t stillwater/universal:gcc10.builder -f Dockerfile.gcc10.builder .
+	docker build --force-rm -t stillwater/universal:clang14.builder -f Dockerfile.clang14.builder .
 else
 	# pick up the compiler to use
 	COMPILER=$1

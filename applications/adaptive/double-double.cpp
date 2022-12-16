@@ -9,8 +9,8 @@
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
 #endif
-#include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
-#include <universal/common/numeric_limits_utility.hpp>
+#include <universal/common/arithmetic_traits.hpp>
+#include <universal/common/number_traits.hpp>
 #include <universal/verification/performance_runner.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -45,18 +45,19 @@ try {
 	std::streamsize precision = std::cout.precision();
 	
 	{
-		using lns = lns<16, 10, std::uint16_t>;
+		using LNS = lns<16, 10, std::uint16_t>;
 
-		lns a, b, c;
+		LNS a{}, b{}, c{};
 		a = 0.5;
 		b = 2.0;
 		c = a * b;
-		ReportValues(a, "*", b, c);
+		ReportBinaryOperation(a, "*", b, c);
 	}
 
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;
 	
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

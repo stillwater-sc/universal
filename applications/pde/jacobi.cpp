@@ -1,6 +1,6 @@
 // jacobi.cpp: Jacobi iterative method
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 // Authors: Theodore Omtzigt, Allan Leal
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
@@ -9,6 +9,7 @@
 
 // standard library
 #include <limits>
+#include <universal/common/arithmetic_traits.hpp>
 // Configure the posit library to use arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -20,8 +21,6 @@
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/blas/solvers/jacobi.hpp>
-#include <universal/utility/number_system_properties.hpp>
-
 
 // specialized for native floating-point
 template<typename Scalar,

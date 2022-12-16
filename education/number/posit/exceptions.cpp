@@ -1,6 +1,6 @@
 // exception.cpp : special posit/quire arithmetic exceptions to be used by applications
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -13,9 +13,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	constexpr size_t capacity = 2;
+	constexpr unsigned nbits = 16;
+	constexpr unsigned es = 1;
+	constexpr unsigned capacity = 2;
 
 	posit<nbits, es> pa, pb, pc;
 

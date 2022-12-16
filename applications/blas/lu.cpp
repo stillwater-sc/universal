@@ -16,7 +16,7 @@
 #include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
 
-template<size_t nbits, size_t es, size_t capacity = 10>
+template<unsigned nbits, unsigned es, unsigned capacity = 10>
 void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
@@ -60,7 +60,7 @@ void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<
 	std::cout << std::endl;
 }
 
-template<size_t nbits, size_t es>
+template<unsigned nbits, unsigned es>
 void GaussianEliminationTest() {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
@@ -130,7 +130,7 @@ void LUwithoutQuire()
 	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
-	const size_t N = 5;
+	const unsigned N = 5;
 	Matrix A = {
 	{ 5, 4, 3, 2, 1 },
 	{ 4, 4, 3, 2, 1 },
@@ -171,7 +171,7 @@ void FrankMatrixTest() {
 	Vector b(9);
 	b = A * x;
 	// now solve for b should yield a vector of 1's
-	sw::universal::blas::vector<size_t> p;
+	sw::universal::blas::vector<std::uint64_t> p;
 	ludcmp(A, p);
 	auto xx = lubksb(A, p, b);
 	auto e = xx - x;
