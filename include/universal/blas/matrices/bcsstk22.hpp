@@ -2,11 +2,13 @@
 #include <universal/blas/blas.hpp>
 
 // 138 x 138
-// Rank 138; Matrix Norm = 5.850119e+06; Cond. = 1.107165e+05
-// Symmetric = YES
-// Pos.def = YES 
-// Matrix ID = 44
-// NNZ = 696
+// Matrix ID   = 44
+// Rank        = 138
+// Matrix Norm = 5.850119e+06
+// Cond.       = 1.107165e+05
+// Symmetric   = YES
+// Pos.def     = YES 
+// NNZ         = 696
 // Structural Engineering - SYMMETRIC STIFFNESS MATRIX, textile loom frame
 // https://sparse.tamu.edu/HB/bcsstk22
 
