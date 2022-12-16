@@ -10,9 +10,9 @@
 namespace sw { namespace universal { namespace blas {
 
 	// generate a uniform random N element vector
-	template<typename Vector>
-	Vector uniform_random(unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
-		Vector v(N);
+	template<typename Scalar>
+	vector<Scalar> uniform_random_vector(unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
+		vector<Scalar> v(N);
 		return uniform_random(v, lowerbound, upperbound);
 	}
 
@@ -39,9 +39,9 @@ namespace sw { namespace universal { namespace blas {
 	}
 
 	// generate a uniform random MxN matrix
-	template<typename Matrix>
-	Matrix uniform_random(unsigned M, unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
-		Matrix A(M, N);
+	template<typename Scalar>
+	matrix<Scalar> uniform_random_matrix(unsigned M, unsigned N, double lowerbound = 0.0, double upperbound = 1.0) {
+		matrix<Scalar> A(M, N);
 		return uniform_random(A, lowerbound, upperbound);
 	}
 

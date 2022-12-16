@@ -827,7 +827,7 @@ endif(BUILD_BENCHMARK_ACCURACY)
 # reproducibility benchmarks
 if(BUILD_BENCHMARK_REPRODUCIBILITY)
 add_subdirectory("benchmark/reproducibility/blas")
-endif(BUILD_BENCHMARK_ACCURACY)
+endif(BUILD_BENCHMARK_REPRODUCIBILITY)
 
 # performance benchmarks
 if(BUILD_BENCHMARK_PERFORMANCE)

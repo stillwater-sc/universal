@@ -827,11 +827,12 @@ public:
 	/// <returns>void</returns>
 	inline constexpr void set(unsigned i, bool v = true) noexcept {
 		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
+			unsigned blockIndex = i /bitsInBlock;
+			bt block = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt((block & null) | mask);
+			_block[blockIndex] = bt((block & null) | mask);
 			return;
 		}
 	}
@@ -1207,7 +1208,12 @@ protected:
 		}
 		else {
 			constexpr unsigned shift = fhbits - srcbits;
-			raw <<= shift;
+			if constexpr (shift < sizeof(raw)*8) {
+				raw <<= shift;
+			}
+			else {
+				raw = 0;
+			}
 		}
 		uint64_t significant = raw;
 		return significant;
