@@ -18,9 +18,6 @@
 The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point for experimentation and development. In addition, tailoring the arithmetic types to the application's precision and dynamic range requirements enables a new level of mixed-precision algorithm development and optimization, particularly valuable for embedded applications that require high computational density and efficiency.
 Deep Learning provides another example where alternative formats and precisions, such as half-floats and bfloats yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
 
-<!-- 
-The motivation to find improvements to IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory-bound and computational scientists were looking for alternatives that provided more granularity in precision and dynamic range. Even though the inefficiency of the IEEE floating-point had been measured and agreed upon in the HPC community, the commercial demands of Deep Learning provided the incentive to replace IEEE-754 with alternatives, such as half-floats and bfloats. These alternatives are tailored to the application and yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
---> 
 
 
 The Universal Library is a ready-to-use header-only library that provides a plug-in replacement for native types and a low-friction environment to explore alternatives to IEEE floating-point in algorithms.
@@ -315,11 +312,6 @@ The positive regime for a posit shows a very specific structure, as can be seen 
 Modern AI applications have demonstrated the inefficiencies of the 64-bit format. Both Google and Microsoft have jettisoned IEEE floating point for their AI cloud services to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded applications are shifting away from the IEEE floating point as well. But, AI applications are only some of the applications that expose the limitations of floating points.  Inefficiencies in numeric storage and operations can also limit cloud scale, IoT, embedded control, and HPC applications. A simple change to a new number system may improve the scale and cost of these applications by orders of magnitude.
 
 For example, when performance and power efficiency are the differentiating attributes for a use case, number systems that are tailored to the needs of the application are desired.
-
-<!-- the complexity of IEEE floats can't compete with number systems that are tailored to the needs of the application. 
-
-## Advantages of posits: better, faster, cheaper, and more power efficient
--->
 
 
 In particular, there are two primary concerns of the IEEE floating point formats: 
