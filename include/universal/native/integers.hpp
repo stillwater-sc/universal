@@ -157,6 +157,35 @@ inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleM
 	return s.str();
 }
 
+// generate a binary string for a native integer
+	// optional nbits argument indicating the size of the integer, if 0 use full size of native type
+template<typename Integer,
+	typename = typename std::enable_if< std::is_integral<Integer>::value, Integer >::type
+>
+inline std::string to_hex(const Integer& number, int nbits = 0, bool bWordMarker = true) {
+	std::stringstream s;
+	if (nbits == 0) nbits = 8 * sizeof(number);
+	char hex[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	s << "0x";
+	uint64_t mask = (1ull << (nbits - 1));
+	uint64_t nibble{ 0 };
+	unsigned nibbleIndex = nbits / 4 - 1u;
+	unsigned rightShift = nibbleIndex * 4;
+	for (int i = nbits - 1; i >= 0; --i) {
+		nibble |= (mask & number);
+		mask >>= 1;
+		if ((i % 4) == 0) {
+			nibble >>= rightShift;
+			s << hex[nibble];
+			rightShift -= 4;
+			nibble = 0;
+			if (bWordMarker && nibbleIndex > 0 && nibbleIndex % 4 == 0) s << '\'';
+			--nibbleIndex;
+		}
+	}
+	return s.str();
+}
+
 // finding leading non-zeros
 
 // find shift left value to move leading non-zero in a limb to most significant bit

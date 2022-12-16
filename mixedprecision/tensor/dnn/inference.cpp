@@ -60,7 +60,7 @@ try {
 	std::cout << dynamic_range(lns< 8, 6>()) << '\n';
 	std::cout << dynamic_range(lns<12, 4>()) << '\n';
 	std::cout << dynamic_range(lns<16, 5>()) << '\n';
-	std::cout << dynamic_range(bfloat16()) << '\n';
+	std::cout << dynamic_range(bfloat_t()) << '\n';
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -469,7 +469,7 @@ public:
 		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
 			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
-				_block[i] = _block[i - blockShift];
+				_block[i] = bt(_block[i - blockShift]);
 			}
 			for (int i = blockShift - 1; i >= 0; --i) {
 				_block[i] = bt(0);
@@ -509,7 +509,7 @@ public:
 			if (MSU >= blockShift) {
 				// shift by blocks
 				for (unsigned i = 0; i <= MSU - blockShift; ++i) {
-					_block[i] = _block[i + blockShift];
+					_block[i] = bt(_block[i + blockShift]);
 				}
 			}
 			// adjust the shift
@@ -1289,6 +1289,8 @@ idiv_t<nbits, BlockType, NumberType> idiv(const integer<nbits, BlockType, Number
 	}
 
 	idiv_t<nbits, BlockType, NumberType> divresult;
+	divresult.rem = 0;
+	divresult.quot = 0;
 
 	// generate the absolute values to do long division
 	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {

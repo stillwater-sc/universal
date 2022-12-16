@@ -15,10 +15,10 @@
 // enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
 template<typename blocksignificantConfiguration>
 int VerifyBlockSignificantAddition(bool reportTestCases) {
-	constexpr size_t nbits = blocksignificantConfiguration::nbits;
+	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
 	using BlockType = typename blocksignificantConfiguration::BlockType;
 
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned NR_VALUES = (1u << nbits);
 	using namespace sw::universal;
 	
 //	cout << endl;

@@ -18,16 +18,11 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-// bring in the trait functions
-#include <universal/common/number_traits.hpp>
-#include <universal/common/arithmetic_traits.hpp>
-#include <universal/common/number_traits.hpp>
-
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "generalized posit traits";
+	std::string test_suite  = "cfloat traits";
 	std::string test_tag    = "traits";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
@@ -35,7 +30,7 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// posit attribute functions
+	//// cfloat type attribute functions
 
 	{
 		using Real = cfloat<8, 2, std::uint8_t>;
@@ -45,7 +40,7 @@ try {
 
 		bool isTriviallyConstructible = bool(std::is_trivially_constructible<Real>());
 		static_assert(std::is_trivially_constructible<Real>(), "cfloat should be trivially constructible but failed the assertion");
-		std::cout << (isTriviallyConstructible ? "poscfloatit is trivial constructible: PASS" : "cfloat failed trivial constructible: FAIL") << '\n';
+		std::cout << (isTriviallyConstructible ? "cfloat is trivial constructible: PASS" : "cfloat failed trivial constructible: FAIL") << '\n';
 
 		bool isTriviallyCopyable = bool(std::is_trivially_copyable<Real>());
 		static_assert(std::is_trivially_copyable<Real>(), "cfloat should be trivially copyable but failed the assertion");
@@ -68,36 +63,24 @@ try {
 	}
 
 	{
-		std::cout << "Dynamic ranges of the standard classic floating-point configurations\n";
-		constexpr bool hasSubnormals = true;
-		std::cout << minmax_range< cfloat<  8, 2, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << minmax_range< cfloat< 16, 5, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << minmax_range< cfloat< 32, 8, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << minmax_range< cfloat< 64,11, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << minmax_range< cfloat<128,15, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << minmax_range< cfloat<256,19, std::uint32_t, hasSubnormals> >() << '\n';
+		std::cout << "Min/max values of the standard classic floating-point configurations\n";
+		std::cout << minmax_range< quarter >() << '\n';
+		std::cout << minmax_range< half >() << '\n';
+		std::cout << minmax_range< single >() << '\n';
+		std::cout << minmax_range< duble >() << '\n';
+		std::cout << minmax_range< quad >() << '\n';
+		std::cout << minmax_range< octo >() << '\n';
 	}
 
 	{
-		std::cout << "Dynamic ranges of the standard posit configurations\n";
-		constexpr bool hasSubnormals = true;
-		std::cout << symmetry< cfloat<  8, 2, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << symmetry< cfloat< 16, 5, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << symmetry< cfloat< 32, 8, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << symmetry< cfloat< 64, 11, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << symmetry< cfloat<128, 15, std::uint32_t, hasSubnormals> >() << '\n';
-		std::cout << symmetry< cfloat<256, 19, std::uint32_t, hasSubnormals> >() << '\n';
+		std::cout << "Sampling ranges of the standard classic floating-point configurations\n";
+		std::cout << symmetry< quarter >() << '\n';
+		std::cout << symmetry< half >() << '\n';
+		std::cout << symmetry< single >() << '\n';
+		std::cout << symmetry< duble >() << '\n';
+		std::cout << symmetry< quad >() << '\n';
+		std::cout << symmetry< octo >() << '\n';
 	}
-
-#ifdef LATER
-	{
-		std::cout << "Number traits of the standard posit configurations\n";
-		numberTraits< posit< 8, 2, std::uint8_t> >(std::cout);
-		numberTraits< posit<16, 2, std::uint16_t> >(std::cout);
-		numberTraits< posit<32, 2, std::uint32_t> >(std::cout);
-		numberTraits< posit<64, 2, std::uint64_t> >(std::cout);
-	}
-#endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

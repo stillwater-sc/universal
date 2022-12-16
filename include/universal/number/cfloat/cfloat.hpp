@@ -44,6 +44,12 @@
 #define CFLOAT_NATIVE_SQRT 0
 #endif
 
+///////////////////////////////////////////////////////////////////////////////////////
+// bring in the trait functions
+#include <universal/traits/number_traits.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
+#include <universal/common/number_traits_reports.hpp>
+
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/cfloat/exceptions.hpp>
@@ -66,7 +72,7 @@ namespace sw { namespace universal {
 
 // IEEE-754
 // IEEE-754 quarter precision floating-point
-using quarter  = cfloat<  8, 2, uint16_t, true, false, false>;
+using quarter  = cfloat<  8, 2, uint8_t, true, false, false>;
 using fp8      = quarter;
 // IEEE-754 half precision floating-point
 using half     = cfloat< 16, 5, uint16_t, true, false, false>;
@@ -86,7 +92,7 @@ using fp256    = octo;
 
 // DL
 // Google brain float
-using bfloat16 = cfloat<16, 8, std::uint16_t, false, false, false>;
+using bfloat_t = cfloat<16, 8, std::uint16_t, false, false, false>;
 using msfp8    = cfloat<8, 2, std::uint8_t, false, false, false>;
 using msfp9    = cfloat<9, 3, std::uint16_t, false, false, false>;
 using amd24    = cfloat<24, 8, std::uint32_t, false, false, false>;

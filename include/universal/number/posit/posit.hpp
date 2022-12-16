@@ -50,6 +50,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// define generic number system traits to be specialized by the posit library
 #include <universal/traits/number_traits.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
+#include <universal/common/number_traits_reports.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
@@ -59,7 +61,6 @@
 #include <universal/number/posit/posit_impl.hpp>
 #include <universal/traits/posit_traits.hpp>
 #include <universal/number/posit/numeric_limits.hpp>
-#include <universal/common/number_traits.hpp>
 
 // fast specializations for special posit configurations
 // enable fast implementations of the standard posits
@@ -91,6 +92,5 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// numerical functions
 #include <universal/number/posit/twoSum.hpp>
-
 
 #endif

@@ -60,9 +60,9 @@ public:
 	efloat& operator=(const unsigned int rhs)       { return convert_unsigned(rhs, *this); }
 	efloat& operator=(const unsigned long rhs)      { return convert_unsigned(rhs, *this); }
 	efloat& operator=(const unsigned long long rhs) { return convert_unsigned(rhs, *this); }
-	efloat& operator=(const float rhs)              { return float_assign(rhs); }
-	efloat& operator=(const double rhs)             { return float_assign(rhs); }
-	efloat& operator=(const long double rhs)        { return float_assign(rhs); }
+	efloat& operator=(const float rhs)              { return convert_ieee754(rhs); }
+	efloat& operator=(const double rhs)             { return convert_ieee754(rhs); }
+	efloat& operator=(const long double rhs)        { return convert_ieee754(rhs); }
 
 	// prefix operators
 	efloat operator-() const {
@@ -167,7 +167,7 @@ protected:
 	}
 
 	template<typename Ty>
-	efloat& float_assign(Ty& rhs) {
+	efloat& convert_ieee754(Ty& rhs) {
 		clear();
 		long long base = (long long)rhs;
 		*this = base;

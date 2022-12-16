@@ -18,10 +18,6 @@
 #include <universal/number/posit2/posit.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-// bring in the trait functions
-#include <universal/common/number_traits.hpp>
-#include <universal/common/arithmetic_traits.hpp>
-
 template<unsigned nbits, unsigned es, typename BlockType>
 void PositComponents(const sw::universal::posit<nbits, es, BlockType>& p) {
 	std::cout << "posit component values of a fully articulated standard posit\n";

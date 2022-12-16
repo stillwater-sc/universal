@@ -1,7 +1,7 @@
 #pragma once
 // riscv_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

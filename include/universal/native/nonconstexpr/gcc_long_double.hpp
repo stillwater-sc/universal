@@ -31,7 +31,7 @@ union long_double_decoder {
 };
 
 // extract the fields of a native C++ long double
-inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
+inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
 	long_double_decoder decoder;
 	decoder.ld = value;
 	s = decoder.parts.sign == 1 ? true : false;

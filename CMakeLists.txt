@@ -35,7 +35,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 62)
+  set(UNIVERSAL_VERSION_MINOR 63)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -122,6 +122,7 @@ option(BUILD_NUMBER_EPOSITS              "Set to ON to build elastic posit tests
 option(BUILD_NUMBER_STATICS              "Set to ON to build static arithmetic type tests"     OFF)
 option(BUILD_NUMBER_INTEGERS             "Set to ON to build static integer tests"             OFF)
 option(BUILD_NUMBER_FIXPNTS              "Set to ON to build static fixed-point tests"         OFF)
+option(BUILD_NUMBER_BFLOATS              "Set to ON to build static bfloat tests"              OFF)
 option(BUILD_NUMBER_CFLOATS              "Set to ON to build static cfloat tests"              OFF)
 option(BUILD_NUMBER_DFLOATS              "Set to ON to build static dfloat tests"              OFF)
 option(BUILD_NUMBER_AREALS               "Set to ON to build static areal tests"               OFF)
@@ -140,9 +141,11 @@ option(BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"    
 option(BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the BLAS vector math lib"         OFF)
 
 # benchmarking
-option(BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
-option(BUILD_BENCHMARK_ENERGY            "Set to ON to build mixed-prec energy benchmarks"     OFF)
+option(BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
 option(BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
+option(BUILD_BENCHMARK_REPRODUCIBILITY   "Set to ON to build reproducibility benchmarks"       OFF)
+option(BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
+option(BUILD_BENCHMARK_ENERGY            "Set to ON to build energy efficiency benchmarks"     OFF)
 
 # mixed-precision algorithm design and optimization
 option(BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
@@ -504,6 +507,8 @@ message(STATUS "PROJECT_NAME                = ${PROJECT_NAME}")
 message(STATUS "PROJECT_NAME_NOSPACES       = ${PROJECT_NAME_NOSPACES}")
 message(STATUS "PROJECT_SOURCE_DIR          = ${PROJECT_SOURCE_DIR}")
 message(STATUS "PROJECT_VERSION             = ${PROJECT_VERSION}")
+message(STATUS "CMAKE_C_COMPILER            = ${CMAKE_C_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER          = ${CMAKE_CXX_COMPILER}")
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR    = ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "CMAKE_CURRENT_BINARY_DIR    = ${CMAKE_CURRENT_BINARY_DIR}")
 message(STATUS "GIT_COMMIT_HASH             = ${GIT_COMMIT_HASH}")
@@ -622,6 +627,7 @@ endif(BUILD_NUMBER_ELASTICS)
 if(BUILD_NUMBER_STATICS)
 	set(BUILD_NUMBER_INTEGERS ON)
 	set(BUILD_NUMBER_FIXPNTS ON)
+	set(BUILD_NUMBER_BFLOATS ON)
 	set(BUILD_NUMBER_CFLOATS ON)
 	set(BUILD_NUMBER_DFLOATS ON)
 	set(BUILD_NUMBER_AREALS ON)
@@ -645,9 +651,11 @@ endif(BUILD_NUMERICS)
 
 # build the benchmark suites
 if(BUILD_BENCHMARKS)
-	set(BUILD_BENCHMARK_PERFORMANCE ON)
+	set(BUILD_BENCHMARK_ERROR ON)
 	set(BUILD_BENCHMARK_ACCURACY ON)
+	set(BUILD_BENCHMARK_REPRODUCIBILITY ON)
 	set(BUILD_BENCHMARK_ENERGY ON)
+	set(BUILD_BENCHMARK_PERFORMANCE ON)
 endif(BUILD_BENCHMARKS)
 
 if(BUILD_MIXEDPRECISION_SDK)
@@ -672,6 +680,8 @@ endif(BUILD_APP_ENVIRONMENT)
 # Build the tests for the underlying storage classes
 if(BUILD_NUMBER_INTERNALS)
 add_subdirectory("internal/bitblock")
+add_subdirectory("internal/gfp")
+add_subdirectory("internal/f2s")
 add_subdirectory("internal/value")
 add_subdirectory("internal/blockdecimal")
 add_subdirectory("internal/blockbinary")
@@ -754,6 +764,11 @@ if(BUILD_NUMBER_AREALS)
 add_subdirectory("static/areal")
 endif(BUILD_NUMBER_AREALS)
 
+# brain floats
+if(BUILD_NUMBER_BFLOATS)
+add_subdirectory("static/bfloat")
+endif(BUILD_NUMBER_BFLOATS)
+
 # classic floats
 if(BUILD_NUMBER_CFLOATS)
 add_subdirectory("static/cfloat")
@@ -799,16 +814,26 @@ endif(BUILD_MIXEDPRECISION_TENSOR)
 ##################################################################
 ###          benchmark environment
 
-# performance benchmarks
-if(BUILD_BENCHMARK_PERFORMANCE)
-add_subdirectory("benchmark/performance/blas")
-add_subdirectory("benchmark/performance/arithmetic")
-endif(BUILD_BENCHMARK_PERFORMANCE)
+# error benchmarks
+if(BUILD_BENCHMARK_ERROR)
+add_subdirectory("benchmark/error/sampling")
+endif(BUILD_BENCHMARK_ERROR)
 
 # accuracy benchmarks
 if(BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
 endif(BUILD_BENCHMARK_ACCURACY)
+
+# reproducibility benchmarks
+if(BUILD_BENCHMARK_REPRODUCIBILITY)
+add_subdirectory("benchmark/reproducibility/blas")
+endif(BUILD_BENCHMARK_REPRODUCIBILITY)
+
+# performance benchmarks
+if(BUILD_BENCHMARK_PERFORMANCE)
+add_subdirectory("benchmark/performance/blas")
+add_subdirectory("benchmark/performance/arithmetic")
+endif(BUILD_BENCHMARK_PERFORMANCE)
 
 # energy benchmarks
 if(BUILD_BENCHMARK_ENERGY)
@@ -840,7 +865,6 @@ endif(BUILD_PLAYGROUND)
 
 # application examples
 if(BUILD_APPLICATIONS)
-add_subdirectory("applications/adaptive")
 add_subdirectory("applications/approximation")
 add_subdirectory("applications/blas")
 add_subdirectory("applications/chaos")

@@ -1,6 +1,6 @@
 // euler.cpp: generating a 'perfect' approximation of Euler's constant e for a given number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -53,6 +53,10 @@ try {
 	std::cout << e1000 << '\n';
 	std::cout << "e   = " << std::setprecision(25) << e << '\n';
 	std::cout << "ref = " << e50 << '\n';
+
+	// 1000 digits -> 1.e1000 -> 2^3322 -> 1.051103774764883380737596422798e+1000 -> you will need 3322 bits to represent 1000 digits of phi
+	// 
+	// TODO: we need to implement parse(string) on the Universal number systems to calculate error
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

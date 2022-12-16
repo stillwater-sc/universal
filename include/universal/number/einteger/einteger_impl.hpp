@@ -13,15 +13,12 @@
 #include <vector>
 
 #include <universal/number/einteger/exceptions.hpp>
+#include <universal/number/einteger/einteger_fwd.hpp>
 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
 
 namespace sw { namespace universal {
-
-// forward references
-template<typename BlockType> class einteger;
-template<typename BlockType> bool parse(const std::string& number, einteger<BlockType>& v);
 
 // einteger is an adaptive precision integer type
 template<typename BlockType = std::uint32_t>
@@ -33,7 +30,7 @@ public:
 	static constexpr uint64_t BASE = (ALL_ONES + 1ull);
 	static_assert(bitsInBlock <= 32, "BlockType must be one of [uint8_t, uint16_t, uint32_t]");
 
-	einteger() : _sign(false), _block(0) { }
+	einteger() : _sign(false), _block{} { }
 
 	einteger(const einteger&) = default;
 	einteger(einteger&&) = default;
@@ -53,14 +50,14 @@ public:
 	einteger(double initial_value)             { *this = initial_value; }
 
 	// assignment operators for native types
-	einteger& operator=(int rhs)                noexcept { return assign_signed(rhs); }
-	einteger& operator=(long rhs)               noexcept { return assign_signed(rhs); }
-	einteger& operator=(long long rhs)          noexcept { return assign_signed(rhs); }
-	einteger& operator=(unsigned int rhs)       noexcept { return assign_unsigned(rhs); }
-	einteger& operator=(unsigned long rhs)      noexcept { return assign_unsigned(rhs); }
-	einteger& operator=(unsigned long long rhs) noexcept { return assign_unsigned(rhs); }
-	einteger& operator=(float rhs)              noexcept { return assign_native_ieee(rhs); }
-	einteger& operator=(double rhs)             noexcept { return assign_native_ieee(rhs); }
+	einteger& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	einteger& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	einteger& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	einteger& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	einteger& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	einteger& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	einteger& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	einteger& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
 	explicit operator int() const noexcept         { return convert_to_native_integer<int>(); }
@@ -71,7 +68,7 @@ public:
 
 #if LONG_DOUBLE_SUPPORT
 	einteger(long double initial_value) { *this = initial_value; }
-	einteger& operator=(long double rhs)        noexcept { return assign_native_ieee(rhs); }
+	einteger& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 	explicit operator long double() const noexcept { return convert_to_native_ieee<long double>(); }
 #endif
 
@@ -660,7 +657,7 @@ public:
 	}
 
 protected:
-	bool                   _sign;    // sign of the number: -1 if true, +1 if false, zero is positive
+	bool                   _sign;   // sign of the number: -1 if true, +1 if false, zero is positive
 	std::vector<BlockType> _block;  // building blocks representing a 1's complement magnitude
 
 	// HELPER methods
@@ -696,7 +693,7 @@ protected:
 	}
 	
 	template<typename SignedInt>
-	einteger& assign_signed(SignedInt v) {
+	einteger& convert_signed(SignedInt v) {
 		clear();
 		if (v != 0) {
 			if (v < 0) {
@@ -711,7 +708,7 @@ protected:
 	}
 
 	template<typename UnsignedInt>
-	einteger& assign_unsigned(UnsignedInt v) {
+	einteger& convert_unsigned(UnsignedInt v) {
 		if (0 == v) {
 			setzero();
 		}
@@ -722,7 +719,7 @@ protected:
 	}
 
 	template<typename Real>
-	einteger& assign_native_ieee(Real& rhs) {
+	einteger& convert_ieee754(Real& rhs) {
 		clear();
 		bool s{ false };
 		std::uint64_t rawExponent{ 0 };
@@ -796,6 +793,7 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 	using Integer = einteger<BlockType>;
 	bool bSuccess = false;
 	value.clear();
+	std::regex binary_regex("^[-+]*0b[01']+");
 	// check if the txt is an integer form: [0123456789]+
 	std::regex decimal_regex("^[-+]*[0-9]+");
 	std::regex octal_regex("^[-+]*0[1-7][0-7]*$");
@@ -920,6 +918,41 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 			}
 		}
 		value.setsign(sign);
+		bSuccess = true;
+	}
+	else if (std::regex_match(number, binary_regex)) {
+		//std::cout << "found a binary integer representation\n";
+		Integer scale = 1;
+		bool sign{ false };
+		unsigned byte{ 0 }; // using an unsigned to simplify accumulation, but accumulating 8-bit byte values
+		unsigned bitIndex = 0;
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			if (*r == '-') {
+				sign = true;;
+			}
+			else if (*r == '+') {
+				break;
+			}
+			else if (*r == '\'') {
+				// ignore separator
+			}
+			else {
+				if (*r == '1') {
+					byte |= (1u << (bitIndex % 8));
+				}
+				if (bitIndex == 7) {
+					value += scale * byte;
+					scale *= 256;
+					byte = 0;
+				}
+				++bitIndex;
+			}
+		}
+		if (bitIndex % 8) {
+			value += scale * byte;
+		}
 		bSuccess = true;
 	}
 	return bSuccess;
@@ -1057,10 +1090,10 @@ inline std::istream& operator>>(std::istream& istr, einteger<BlockType>& p) {
 
 template<typename BlockType>
 inline std::string to_binary(const einteger<BlockType>& a, bool nibbleMarker = true) {
-	if (a.limbs() == 0) return std::string("0x0");
+	if (a.limbs() == 0) return std::string("0b0");
 
 	std::stringstream s;
-	s << "0x";
+	s << "0b";
 	for (int b = static_cast<int>(a.limbs()) - 1; b >= 0; --b) {
 		BlockType segment = a.block(static_cast<size_t>(b));
 		BlockType mask = (0x1u << (a.bitsInBlock - 1));
@@ -1073,6 +1106,38 @@ inline std::string to_binary(const einteger<BlockType>& a, bool nibbleMarker = t
 	}
 
 	return s.str();
+}
+
+template<typename BlockType>
+inline std::string to_hex(const einteger<BlockType>& a, bool wordMarker = true) {
+	if (a.limbs() == 0) return std::string("0x0");
+
+	std::vector<char> nibbleLookup = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	std::stringstream s;
+	s << "0x";
+	unsigned bitIndex = a.limbs() * a.bitsInBlock - 1u;
+	for (int b = static_cast<int>(a.limbs()) - 1; b >= 0; --b) {
+		BlockType limb = a.block(static_cast<size_t>(b));
+		BlockType mask = (0x1u << (a.bitsInBlock - 1));
+		unsigned nibble{ 0 };
+		unsigned rightShift = a.bitsInBlock - 4u;
+		for (int i = a.bitsInBlock - 1; i >= 0; --i) {
+
+			nibble |= (limb & mask);
+			if ((i % 4) == 0) {
+				nibble >>= rightShift;
+				s << nibbleLookup[nibble];
+				nibble = 0;
+				rightShift -= 4u;
+			}
+			if (bitIndex > 0 && ((bitIndex % 16) == 0) && wordMarker) s << '\'';
+			mask >>= 1;
+			--bitIndex;
+		}
+	}
+
+	return s.str();
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////

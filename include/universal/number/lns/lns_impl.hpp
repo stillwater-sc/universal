@@ -292,26 +292,28 @@ public:
 	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
+		unsigned blockIndex = i / bitsInBlock;
 		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
+			bt block = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt((block & null) | mask);
+			//_block[i / bitsInBlock] = bt((block & null) | mask);
+			_block.setblock(blockIndex, bt((block & null) | mask));
 		}
 		// nop if i is out of range
 	}
 	constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
-			_block[0] = value & storageMask;
+			_block.setblock(0, value & storageMask);
 		}
 		else if constexpr (1 < nrBlocks) {
 			for (unsigned i = 0; i < nrBlocks; ++i) {
-				_block[i] = value & storageMask;
+				_block.setblock(i, value & storageMask);
 				value >>= bitsInBlock;
 			}
 		}
-		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block.setblock(MSU, _block[MSU] & MSU_MASK); // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
 	
 	// create specific number system values of interest
@@ -473,9 +475,11 @@ protected:
 	/// <returns>reference to this cfloat object</returns>
 	constexpr lns& flip() noexcept { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {
-			_block[i] = bt(~_block[i]);
+			//_block[i] = bt(~_block[i]);
+			_block.setblock(i, bt(~_block[i]));
 		}
-		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		//_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		_block.setblock(MSU, _block[MSU] & MSU_MASK);
 		return *this;
 	}
 
