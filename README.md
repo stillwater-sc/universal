@@ -18,9 +18,7 @@
 The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point for experimentation and development. In addition, tailoring the arithmetic types to the application's precision and dynamic range requirements enables a new level of mixed-precision algorithm development and optimization, particularly valuable for embedded applications that require high computational density and efficiency.
 Deep Learning provides another example where alternative formats and precisions, such as half-floats and bfloats yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
 
-<!-- 
-The motivation to find improvements to IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory-bound and computational scientists were looking for alternatives that provided more granularity in precision and dynamic range. Even though the inefficiency of the IEEE floating-point had been measured and agreed upon in the HPC community, the commercial demands of Deep Learning provided the incentive to replace IEEE-754 with alternatives, such as half-floats and bfloats. These alternatives are tailored to the application and yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
---> 
+
 
 
 The Universal Library is a ready-to-use header-only library that provides a plug-in replacement for native types and a low-friction environment to explore alternatives to IEEE floating-point in algorithms.
@@ -316,11 +314,6 @@ Modern AI applications have demonstrated the inefficiencies of the 64-bit format
 
 For example, when performance and power efficiency are the differentiating attributes for a use case, number systems that are tailored to the needs of the application are desired.
 
-<!-- the complexity of IEEE floats can't compete with number systems that are tailored to the needs of the application. 
-
-## Advantages of posits: better, faster, cheaper, and more power efficient
--->
-
 
 In particular, there are two primary concerns of the IEEE floating point formats: 
 
@@ -345,7 +338,7 @@ a host of special handling requirements that complicate compliant hardware imple
     -   If accuracy is defined as the number of significand bits, the IEEE floating point has fixed accuracy for all numbers except denormalized numbers because the number of signficand digits is fixed.  Denormalized numbers are characterized by decreased significand digits when the value approaches zero due to having a zero hidden bit.  Denormalized numbers fill the underflow gap (i.e., between zero and the least non-zero values).  The counterpart for gradual underflow is gradual overflow which does not exist in IEEE floating points.
 
 In contrast, for example, the _posit_ number system has the following features: 
-<!-- is designed to be efficient, symmetric, and mathematically correct in any concurrency environment. -->
+
 
 1.   **Economical** 
     -   No bit patterns are redundant.  There is one representation for infinity denoted as ± inf and zero.  All other bit patterns are valid distinct non-zero real numbers. ± inf serves as a replacement for NaN.
