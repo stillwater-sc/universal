@@ -2,7 +2,9 @@
 #include <universal/blas/blas.hpp>
 
 // 132 x 132
-// Rank 132; Matrix Norm = 9.660618e+06; Cond. = 2.292466e+06
+// Rank 132; 
+// Matrix Norm = 9.660618e+06; 
+// Cond. = 2.292466e+06
 // Symmetric = YES
 // Pos.def = YES 
 // Matrix ID = 26

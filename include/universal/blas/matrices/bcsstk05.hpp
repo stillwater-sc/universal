@@ -2,11 +2,13 @@
 #include <universal/blas/blas.hpp>
 
 // 153 x 153
-// Rank 153; Matrix Norm = 6.197287e+06; Cond. = 1.428114e+04
-// Symmetric = YES
-// Pos.def = YES 
-// Matrix ID = 27
-// NNZ = 2423
+// Matrix ID    = 27
+// Rank         = 153
+// Matrix Norm  = 6.197287e+06
+// Cond.        = 1.428114e+04
+// Symmetric    = YES
+// Pos.def      = YES 
+// NNZ          = 2423
 // Structural Engineering - SYMMETRIC STIFFNESS MATRIX, transmission tower, lumped masses
 // https://sparse.tamu.edu/HB/bcsstk05
 

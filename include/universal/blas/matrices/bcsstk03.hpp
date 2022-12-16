@@ -2,11 +2,13 @@
 #include <universal/blas/blas.hpp>
 
 // 112 x 112
-// Rank 112; Matrix Norm = 1.997345e+11; Cond. = 6.791333e+06
-// Symmetric = YES
-// Pos.def = YES 
-// Matrix ID = 25
-// NNZ = 640
+// Rank         = 112
+// Matrix Norm  = 1.997345e+11
+// Cond.        = 6.791333e+06
+// Symmetric    = YES
+// Pos.def      = YES 
+// Matrix ID    = 25
+// NNZ          = 640
 // Structural Engineering - SYMMETRIC STIFFNESS MATRIX
 
 sw::universal::blas::matrix<double> bcsstk03 = {
