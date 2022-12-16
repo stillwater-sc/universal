@@ -141,9 +141,11 @@ option(BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"    
 option(BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the BLAS vector math lib"         OFF)
 
 # benchmarking
-option(BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
-option(BUILD_BENCHMARK_ENERGY            "Set to ON to build mixed-prec energy benchmarks"     OFF)
+option(BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
 option(BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
+option(BUILD_BENCHMARK_REPRODUCIBILITY   "Set to ON to build reproducibility benchmarks"       OFF)
+option(BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
+option(BUILD_BENCHMARK_ENERGY            "Set to ON to build energy efficiency benchmarks"     OFF)
 
 # mixed-precision algorithm design and optimization
 option(BUILD_MIXEDPRECISION_ROOTS         "Set to ON to build mixed-precision root finders"    OFF)
@@ -649,9 +651,11 @@ endif(BUILD_NUMERICS)
 
 # build the benchmark suites
 if(BUILD_BENCHMARKS)
-	set(BUILD_BENCHMARK_PERFORMANCE ON)
+	set(BUILD_BENCHMARK_ERROR ON)
 	set(BUILD_BENCHMARK_ACCURACY ON)
+	set(BUILD_BENCHMARK_REPRODUCIBILITY ON)
 	set(BUILD_BENCHMARK_ENERGY ON)
+	set(BUILD_BENCHMARK_PERFORMANCE ON)
 endif(BUILD_BENCHMARKS)
 
 if(BUILD_MIXEDPRECISION_SDK)
@@ -810,16 +814,26 @@ endif(BUILD_MIXEDPRECISION_TENSOR)
 ##################################################################
 ###          benchmark environment
 
-# performance benchmarks
-if(BUILD_BENCHMARK_PERFORMANCE)
-add_subdirectory("benchmark/performance/blas")
-add_subdirectory("benchmark/performance/arithmetic")
-endif(BUILD_BENCHMARK_PERFORMANCE)
+# error benchmarks
+if(BUILD_BENCHMARK_ERROR)
+add_subdirectory("benchmark/error/sampling")
+endif(BUILD_BENCHMARK_ERROR)
 
 # accuracy benchmarks
 if(BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
 endif(BUILD_BENCHMARK_ACCURACY)
+
+# reproducibility benchmarks
+if(BUILD_BENCHMARK_REPRODUCIBILITY)
+add_subdirectory("benchmark/reproducibility/blas")
+endif(BUILD_BENCHMARK_ACCURACY)
+
+# performance benchmarks
+if(BUILD_BENCHMARK_PERFORMANCE)
+add_subdirectory("benchmark/performance/blas")
+add_subdirectory("benchmark/performance/arithmetic")
+endif(BUILD_BENCHMARK_PERFORMANCE)
 
 # energy benchmarks
 if(BUILD_BENCHMARK_ENERGY)

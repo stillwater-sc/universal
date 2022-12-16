@@ -63,6 +63,7 @@ public:
 	typedef const value_type&                 const_reference;
 	typedef value_type&                       reference;
 	typedef const value_type*                 const_pointer_type;
+	typedef typename std::vector<Scalar>::size_type size_type;
 	typedef typename std::vector<Scalar>::iterator     iterator;
 	typedef typename std::vector<Scalar>::const_iterator const_iterator;
 	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
