@@ -23,9 +23,9 @@ Vector forwsub(const Matrix& A, const Vector& b, bool lower = false) {
     if (lower){d = diag(A);}  
     
     x(0) = b(0)/d(0);
-	for (int i = 1; i < n; ++i){
+	for (size_t i = 1; i < n; ++i){
         Scalar y = 0.0;
-        for (int j = 0; j < i; ++j){
+        for (size_t j = 0; j < i; ++j){
             y += A(i,j)*x(j);
         }
         x(i) = (b(i) - y)/d(i);
@@ -47,9 +47,9 @@ vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<
     if (lower){d = diag(A);}  
     
     x(0) = b(0)/d(0);
-	for (int i = 1; i < n; ++i){
+	for (size_t i = 1; i < n; ++i){
         quire<nbits,es,capacity> q{0};
-        for (int j = 0; j < i; ++j){
+        for (size_t j = 0; j < i; ++j){
             q += quire_mul(A(i,j), x(j));
         }
         posit<nbits,es> y;

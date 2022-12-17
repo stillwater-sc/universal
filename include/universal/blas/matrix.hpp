@@ -358,21 +358,6 @@ matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 }
 
 
-template<typename Scalar>
-matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
-	// Hadamard Product A.*B.  Element-wise multiplication.
-	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	size_t rows = A.rows();
-	size_t cols = A.cols();
-	 
-	matrix<Scalar> C(rows, cols);
-	for (size_t i = 0; i < rows; ++i) {
-		for (size_t j = 0; j < cols; ++j) {
-			C(i, j) = A(i, j) * B(i, j);
-		}
-	}
-	return C;
-}
 
 // matrix equivalence tests
 template<typename Scalar>
