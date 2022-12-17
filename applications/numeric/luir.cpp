@@ -53,7 +53,7 @@ try {
 	using namespace sw::universal::blas;
 
      // Reporting Options
-    constexpr bool print          = false;
+    constexpr bool print          = true;
     constexpr bool showCondest    = false;
     constexpr bool showAmax       = true;
     constexpr bool showSize       = false;
@@ -90,24 +90,6 @@ try {
     std::streamsize old_precision = std::cout.precision();
     std::streamsize new_precision = 7;
     std::cout << std::setprecision(new_precision);
-    
-    /** *******************************************************************
-    * Experiment Configurations and reporting options 
-    * see configs.hpp
-    * *********************************************************************  
-    constexpr unsigned wbits = 64;
-    constexpr unsigned wes   = 2;
-
-    constexpr unsigned lbits = 16;
-    constexpr unsigned les   = 2;
-    
-    // Using the quire instead
-    constexpr unsigned hbits = 64;  
-    constexpr unsigned hes   = 2;
-    */
-   
-    
-    
     
 
     // Write Configurations
@@ -167,14 +149,6 @@ try {
     } 
 
     
-    // ---------------------------------------------------------------------------- 
-    /*
-    Let A be n x n ("working precision") nonsingular matrix.
-        Test Matrices in suite:
-        int3, rand4, lu4, west0167, steam1 <8,2>, steam3, fs_183_1 (t=0.4), fs_183_3, faires74x3
-        q3, q4, q5, h3, pores_1, Stranke94, bcsstk05, b1_ss  ...
-    */ 
-    // ----------------------------------------------------------------------------
     
     Mw A = getTestMatrix(testMatrix);
     std::cout << "Condition Number = " << kappa(testMatrix) << std::endl;
@@ -247,14 +221,8 @@ try {
     // Create high precision version 
     Mh Ah(A);       // High precision A
     Vh X(n,1);      // X is exact solution = [1, 1, 1, ..., 1]
-    Vh b = Ah*X;    // Generate b vector in high precision.
-    // std::cout << "Type of b " << type_tag(HighPrecision()) << std::endl;
-    // if (typeid(print) == typeid(bool)){
-    //if (std::is_same<HighPrecision, posit<64,2>>::value){
-    //      std::cout << "Same type" << std::endl;
-    //    }
-    // Or you could use the std::is_same type trait:
-    // if (std::is_same<t, int>::value)
+    Vh b = Ah*X;    // b vector in high precision.
+    
 
     // Store working
     Vw x(X);  
@@ -268,7 +236,6 @@ try {
     std::cout << "------------------------------------------------------------------"  << '\n';
 
     // Iterative Refinement 
-    // Stratagem: compute a quantity by adding a small correction to previous approximation.
     Vh r; // High precision residual vector
     size_t niters = 0;
     bool diverge = false;
