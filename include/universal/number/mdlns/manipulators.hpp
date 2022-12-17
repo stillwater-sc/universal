@@ -1,5 +1,5 @@
 #pragma once
-// manipulators.hpp: definitions of helper functions for logarithmic numbers manipulation
+// manipulators.hpp: definitions of helper functions for multi-dimensional logarithmic numbers manipulation
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -15,21 +15,21 @@ namespace sw { namespace universal {
 
 	// Generate a type tag for this lns
 	template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
-	inline std::string type_tag(const lns<nbits, rbits, BlockType, xtra...>& = {}) {
+	inline std::string mdlnstype_tag(const mdlns<nbits, rbits, BlockType, xtra...>& = {}) {
 		std::stringstream s;
-		s << "lns<"
+		s << "mdlns<"
 			<< std::setw(3) << nbits << ", "
 			<< std::setw(3) << rbits << ", "
-			<< std::setw(10) << type_tag(Behavior{xtra...}) << ", "
-			<< typeid(BlockType).name() << '>';
+			<< typeid(BlockType).name() << ", "
+			<< std::setw(10) << type_tag(Behavior{xtra...}) << '>';
 		return s.str();
 	}
 
 	// report dynamic range of a type, specialized for lns
 	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-	inline std::string dynamic_range(const lns<nbits, rbits, bt, xtra...>& a) {
+	inline std::string dynamic_range(const mdlns<nbits, rbits, bt, xtra...>& a) {
 		std::stringstream s;
-		lns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		mdlns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 		s << type_tag(a) << ": ";
 		s << "minpos scale " << std::setw(10) << d.scale() << "     ";
 		s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
@@ -41,7 +41,7 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline std::string range() {
 		std::stringstream s;
-		lns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		mdlns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
 		return s.str();
 	}
@@ -49,8 +49,8 @@ namespace sw { namespace universal {
 	// report if a native floating-point value is within the dynamic range of the lns configuration
 	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 	inline bool isInRange(double v) {
-		using LNS = lns<nbits, rbits, bt, xtra...>;
-		LNS a{};
+		using MDLNS = mdlns<nbits, rbits, bt, xtra...>;
+		MDLNS a{};
 
 		bool inRange = true;
 		if (v > double(a.maxpos()) || v < double(a.maxneg())) inRange = false;
@@ -58,7 +58,7 @@ namespace sw { namespace universal {
 	}
 
 	template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
-	inline std::string color_print(const lns<nbits, rbits, BlockType, xtra...>& l, bool nibbleMarker = false) {
+	inline std::string color_print(const mdlns<nbits, rbits, BlockType, xtra...>& l, bool nibbleMarker = false) {
 
 		std::stringstream s;
 

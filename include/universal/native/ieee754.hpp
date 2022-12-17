@@ -197,7 +197,7 @@ int _extractExponent(Real v) {
 	raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
 	Uint frac{ raw };
 	raw >>= ieee754_parameter<Real>::fbits;
-	// debias
+	// de-bias
 	int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
 	if (raw == 0) { // a subnormal encoding
 		int msb = findMostSignificantBit(frac);
@@ -221,7 +221,8 @@ int scale(Real v) {
 		_e = _extractExponent<std::uint64_t>(v);
 	}
 	else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
-		long double frac = frexpl(v, &_e);
+		//long double frac = frexpl(v, &_e);
+		frexpl(v, &_e);
 		_e -= 1;
 	}
 	return _e;

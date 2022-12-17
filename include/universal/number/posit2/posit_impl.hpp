@@ -224,6 +224,7 @@ void decode(const blockbinary<nbits, bt, BinaryNumberType::Signed>& raw_bits, bo
 	if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << std::endl;
 }
 
+#ifdef TBD
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
 inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sign, int _scale, const blockbinary<fbits, bt>& fraction_in, blockbinary<nbits, bt, BinaryNumberType::Signed>& ptt) {
@@ -237,7 +238,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
-//		ptt = k < 0 ? minpos_pattern<nbits, es>(_sign) : maxpos_pattern<nbits, es>(_sign);
+		ptt = k < 0 ? minpos_pattern<nbits, es>(_sign) : maxpos_pattern<nbits, es>(_sign);
 		// we are done
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
@@ -258,7 +259,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
 		unsigned esval = e % (unsigned(1) << static_cast<int>(es));
-//		exponent = convert_to_bitblock<pt_len>(esval);
+		exponent = convert_to_bitblock<pt_len>(esval);
 		unsigned nf = unsigned(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
@@ -294,6 +295,7 @@ inline blockbinary<nbits, bt, BinaryNumberType::Signed>& convert_to_bb(bool _sig
 	}
 	return ptt;
 }
+#endif
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<unsigned nbits, unsigned es, typename bt, unsigned fbits>
@@ -697,9 +699,10 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-//		internal::value<abits + 1> difference;
+		//		internal::value<abits + 1> difference;
 		//		internal::value<fbits> a, b;
-		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, difference;
+//		blocktriple<fbits, BlockTripleOperator::ADD, bt> a, b, difference;
+		blocktriple<fbits, BlockTripleOperator::ADD, bt> difference;
 
 		// transform the inputs into (sign,scale,fraction) triples
 //		normalize(a);
