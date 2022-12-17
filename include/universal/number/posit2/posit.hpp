@@ -49,6 +49,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// define generic number system traits to be specialized by the posit library
 #include <universal/traits/number_traits.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
+#include <universal/common/number_traits_reports.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
@@ -69,6 +71,7 @@
 // use fast code.
 //#include <universal/number/posit2/specializations.hpp>
 
+////////////////////////////////////////////////////////////////////////////////////////
 // useful functions to work with posits
 #include <universal/number/posit2/manipulators.hpp>
 #include <universal/number/posit2/attributes.hpp>

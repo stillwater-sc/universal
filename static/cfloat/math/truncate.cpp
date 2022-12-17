@@ -104,8 +104,8 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyFloor< half >(reportTestCases), "floor", "half");
 	nrOfFailedTestCases = ReportTestResult(VerifyCeil < half >(reportTestCases), "ceil ", "half");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor< bfloat16 >(reportTestCases), "floor", "bfloat16");
-	nrOfFailedTestCases = ReportTestResult(VerifyCeil < bfloat16 >(reportTestCases), "ceil ", "bfloat16");
+	nrOfFailedTestCases = ReportTestResult(VerifyFloor< bfloat_t >(reportTestCases), "floor", "bfloat_t");
+	nrOfFailedTestCases = ReportTestResult(VerifyCeil < bfloat_t >(reportTestCases), "ceil ", "bfloat_t");
 
 #endif
 

@@ -27,7 +27,7 @@ the blocksignificant is not a good solution.
 */
 
 template<typename blocksignificant>
-void PrintRoundingDirection(const blocksignificant& a, size_t targetLsb) {
+void PrintRoundingDirection(const blocksignificant& a, unsigned targetLsb) {
 	std::cout << to_binary(a) << " target lsb = " << targetLsb << " ->rounding mode is " << (a.roundingDirection(targetLsb) ? "up" : "down") << '\n';
 }
 
@@ -43,10 +43,10 @@ void TestRounding()
 	blocksignificant<8, uint8_t> a;
 	constexpr int radix = 5;
 	a.setradix(radix);
-	size_t lsbTarget = 3;
+	unsigned lsbTarget = 3;
 	a.setbits(0x2F);	// 0b001.01111  up
 	std::cout << to_binary(a) << " : " << a << '\n';
-	size_t bit = lsbTarget;
+	unsigned bit = lsbTarget;
 	std::cout << "lsb target = " << lsbTarget << '\n';
 	std::cout << " = a[" << bit << "] = " << (a.test(bit) ? '1' : '0') << '\n'; --bit;
 	std::cout << " = a[" << bit << "] = " << (a.test(bit) ? '1' : '0') << '\n'; --bit;

@@ -181,7 +181,7 @@ public:
 #endif
 
 	// limb access operators
-	constexpr BlockType& operator[](unsigned index) { return _block[index]; }
+//	constexpr BlockType& operator[](unsigned index) { return _block[index]; }
 	constexpr BlockType operator[](unsigned index) const { return _block[index]; }
 
 	// prefix operators
@@ -539,11 +539,11 @@ public:
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
 		unsigned blockIndex = i / bitsInBlock;
 		if (blockIndex < nrBlocks) {
-			bt block = _block[blockIndex];
+			bt blockBits = _block[blockIndex];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			_block[blockIndex] = bt((block & null) | mask);
+			_block[blockIndex] = bt((blockBits & null) | mask);
 		}
 		// nop if blockIndex is out of range
 	}
@@ -559,8 +559,8 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	constexpr void setblock(unsigned b, const bt& block) noexcept {
-		if (b < nrBlocks) _block[b] = block; // nop if b is out of range
+	constexpr void setblock(unsigned b, const bt& blockBits) noexcept {
+		if (b < nrBlocks) _block[b] = blockBits; // nop if b is out of range
 	}	
 	constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {

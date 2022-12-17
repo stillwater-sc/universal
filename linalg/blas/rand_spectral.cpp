@@ -36,7 +36,7 @@ try {
 	using Matrix = matrix<Scalar>;
 	constexpr size_t M = 5;
 	constexpr size_t N = 2;
-	Matrix Qbase = uniform_random<Matrix>(M, N);
+	Matrix Qbase = uniform_random_matrix<Scalar>(M, N);
 	std::cout << Qbase << '\n';
 
 	// normalize the column vectors

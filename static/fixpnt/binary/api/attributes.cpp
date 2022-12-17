@@ -16,10 +16,6 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_reporters.hpp>
 
-// bring in the trait functions
-#include <universal/common/arithmetic_traits.hpp>
-#include <universal/common/number_traits.hpp>
-
 int main()
 try {
 	using namespace sw::universal;

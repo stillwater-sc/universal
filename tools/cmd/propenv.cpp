@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/common/arithmetic_traits.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
 // configure the posit environment
 #define POSIT_FAST_SPECIALIZATION 1
 #include <universal/number/posit/posit.hpp>

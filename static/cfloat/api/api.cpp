@@ -113,7 +113,7 @@ try {
 		std::cout << "float32  : " << type_tag(f3) << '\n';
 		std::cout << f1 << " / " << f2 << " = " << f3 << " : " << to_binary(f3) << '\n';
 
-		sw::universal::bfloat16 b1(f1), b2(f2), b3;
+		sw::universal::bfloat_t b1(f1), b2(f2), b3;
 		b3 = b1 / b2;
 		std::cout << "bfloat16 : " << type_tag(b3) << '\n';
 		std::cout << b1 << " / " << b2 << " = " << b3 << " : " << to_binary(b3) << '\n';

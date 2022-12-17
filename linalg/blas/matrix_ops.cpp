@@ -6,6 +6,7 @@
 #include <universal/utility/directives.hpp>
 // pull in the number systems you would like to use
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/decimal/decimal.hpp>
 #include <universal/blas/blas.hpp>
@@ -26,9 +27,9 @@ void FdpTest() {
 	std::cout << b << '\n';
 }
 
-
 int main(int argc, char* argv[])
 try {
+	using namespace sw::universal;
 	using namespace sw::universal::blas;
 	using namespace sw::universal;
 	{
@@ -37,6 +38,12 @@ try {
 		FdpTest<posit<16, 2> >();
 	}
 
+
+	{
+		std::cout << "Fused DOT product BLAS when posits are used\n";
+		FdpTest<float>();
+		FdpTest<posit<16, 2> >();
+	}
 
 	{
 		using Scalar = float;

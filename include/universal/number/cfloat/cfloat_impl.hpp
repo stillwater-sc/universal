@@ -1523,6 +1523,7 @@ public:
 		exponent(e);
 		return e.all();// issupernormal returns true if exponent bits are all one, false otherwise
 	}
+	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
 	
 	template<typename NativeReal>
 	constexpr bool inrange(NativeReal v) {

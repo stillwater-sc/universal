@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/utility/long_double.hpp>
 #include <iostream>
 #include <iomanip>
 
@@ -56,8 +57,7 @@ int VerifySignedIntegerProgressions(bool reportTestCases) {
 	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 
-	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-	// generate the integer progression for this fixpnt, which is represented by a marging MSB
+	// generate the integer progression for this fixpnt, which is represented by a marching MSB
 	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
 	static_assert(ibits > 2, "test requires at least 3 bits of integer bits");
 	// assume that we have maximally 64 integer bits
@@ -67,30 +67,29 @@ int VerifySignedIntegerProgressions(bool reportTestCases) {
 	// largest positive integer    is 011111111
 	// largest positive power of 2 is 010000000
 
-	Fixed a;
-
-	constexpr Fixed maxneg(SpecificValue::maxneg);
+//	Fixed maxneg(SpecificValue::maxneg);
+	std::uint64_t maxneg{0xFFFFFFFFFFFFFFFFull};
+	maxneg <<= (ibits - 1);
 	int64_t marchingOne = (long long)maxneg;
+	std::cout << "ibits - 1 = " << (ibits - 1) << '\n';
+	std::cout << "maxneg      " << to_binary(maxneg) << '\n';
+	std::cout << "marchingOne " << to_binary(marchingOne) << '\n'; 
 	for (int i = static_cast<int>(ibits - 1); i >= 0; --i) {
-//		a = marchingOne;
+		fixpnt<nbits, rbits, arithmetic, bt> a = marchingOne;
 		if (i == 0) {
 			if (reportTestCases) std::cout << "i = " << std::setw(3) << 0 << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
 		}
 		else {
 			if (reportTestCases) std::cout << "i = " << std::setw(3) << -i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
 		}
-//		if (a != marchingOne) {
-//			++nrOfFailedTestCases;
-//		}
+		if (a != marchingOne) ++nrOfFailedTestCases;
 		marchingOne /= 2;
 	}
 	marchingOne = 1;
 	for (size_t i = 1; i < ibits; ++i) {
-		a = marchingOne;
+		fixpnt<nbits, rbits, arithmetic, bt> a = marchingOne;
 		if (reportTestCases) std::cout << "i = " << std::setw(3) << i << " bit pattern: " << to_binary(marchingOne) << " : " << to_binary(a) << " : " << a << '\n';
-//		if (a != marchingOne) {
-//			++nrOfFailedTestCases;
-//		}
+		if (a != marchingOne) ++nrOfFailedTestCases;
 		marchingOne *= 2;
 	}
 	return nrOfFailedTestCases;
@@ -249,23 +248,34 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 7, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 8, 7,Modulo,uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion<8, 8, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 8, 8,Modulo,uint8_t>");
 
-	nrOfFailedTestCases += VerifySignedIntegerProgressions<  8,  4, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifySignedIntegerProgressions< 16,  8, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifySignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifySignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifySignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases);
+#if defined(__GNUC__) || defined(__GNUG__)
+		/* GNU GCC/G++. --------------------------------------------- */
 
-	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat<  8, 4, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 16, 8, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 32, 16, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat< 64, 32, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifySignedIntegerProgressionsFloat<128, 64, Modulo, uint8_t>(reportTestCases);
+	// TODO GCC 11 is exhibiting undefined behavior with these progressions when they are issued together as in the else clause
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt<128,64, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat< 64, 32, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 64,32, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 32,16, Modulo, uint8_t>");
 
-	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions<  8, 4, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions< 16, 8, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases);
-	nrOfFailedTestCases += VerifyUnsignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases);
+#else
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions<  8,  4, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt<  8, 4, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 16,  8, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 16, 8, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 32,16, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 64,32, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt<128,64, Modulo, uint8_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat<  8, 4, Modulo, uint8_t>(reportTestCases),  test_tag, "fixpnt<  8, 4, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat< 16, 8, Modulo, uint8_t>(reportTestCases),  test_tag, "fixpnt< 16, 8, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat< 32, 16, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 32,16, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat< 64, 32, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 64,32, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat<128, 64, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt<128,64, Modulo, uint8_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions<  8, 4, Modulo, uint8_t>(reportTestCases),  test_tag, "fixpnt<  8, 4, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 16, 8, Modulo, uint8_t>(reportTestCases),  test_tag, "fixpnt< 16, 8, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 32,16, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 64,32, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt<128,64, Modulo, uint8_t>");
+#endif
+
 #endif
 
 #if REGRESSION_LEVEL_2

@@ -1,10 +1,9 @@
 // pow.cpp: test suite runner for pow function
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// use default library configuration
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/cfloat_math_test_suite.hpp>
 

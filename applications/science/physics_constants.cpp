@@ -4,7 +4,7 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/common/arithmetic_traits.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/integer/integer.hpp>
 

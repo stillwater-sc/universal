@@ -17,11 +17,11 @@
 // enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
 template<typename blocksignificantConfiguration>
 int VerifyBlockSignificantMultiplication(bool reportTestCases) {
-	constexpr size_t nbits = blocksignificantConfiguration::nbits;
+	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
 	using BlockType = typename blocksignificantConfiguration::BlockType;
-	constexpr size_t fhbits = (nbits >> 1);
-	constexpr size_t fbits = fhbits - 1;
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	constexpr unsigned fhbits = (nbits >> 1);
+	constexpr unsigned fbits = fhbits - 1;
+	constexpr unsigned NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
 
 	//	cout << endl;

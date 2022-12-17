@@ -13,6 +13,7 @@
 #include <universal/utility/long_double.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
+#include <universal/native/bit_functions.hpp>
 
 namespace sw { namespace universal {
 
@@ -140,6 +141,7 @@ inline constexpr Real ipow(size_t exp) {
 	return result;
 }
 
+#ifdef DEPRECATED
 /// <summary>
 /// return the binary scale ( = 2^scale ) of a float
 /// </summary>
@@ -176,6 +178,84 @@ inline int scale(long double v) {
 	return exponent - 1;
 }
 #endif
+#endif // DEPRECATED
+
+template<typename DestinationType, typename SourceType>
+DestinationType BitCast(SourceType source) {
+	static_assert(sizeof(DestinationType) == sizeof(SourceType),
+			"source and destination type sizes do not match");
+	DestinationType dest;
+	memmove(&dest, &source, sizeof(DestinationType));
+	return dest;
+}
+
+// internal function to extract exponent
+template<typename Uint, typename Real>
+int _extractExponent(Real v) {
+	static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+	Uint raw{BitCast<Uint>(v)};
+	raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
+	Uint frac{ raw };
+	raw >>= ieee754_parameter<Real>::fbits;
+	// debias
+	int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
+	if (raw == 0) { // a subnormal encoding
+		int msb = findMostSignificantBit(frac);
+		e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
+	}
+	return e;
+}
+
+template<typename Real,
+	 typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+int scale(Real v) {
+	int _e{0};
+	if constexpr (sizeof(Real) == 2) { // half precision floating-point
+		_e = _extractExponent<std::uint16_t>(v);
+	}
+	if constexpr (sizeof(Real) == 4) { // single precision floating-point
+		_e = _extractExponent<std::uint32_t>(v);
+	}
+	else if constexpr (sizeof(Real) == 8) { // double precision floating-point
+		_e = _extractExponent<std::uint64_t>(v);
+	}
+	else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
+		long double frac = frexpl(v, &_e);
+		_e -= 1;
+	}
+	return _e;
+}
+
+// internal function to extract significant
+template<typename Uint, typename Real>
+Uint _extractSignificant(Real v) {
+	static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
+	Uint raw{ BitCast<Uint>(v) };
+	raw &= ieee754_parameter<Real>::fmask;
+	raw |= ieee754_parameter<Real>::hmask; // add the hidden bit
+	return raw;
+}
+
+template<typename Real,
+	     typename = typename std::enable_if<std::is_floating_point<Real>::value, Real>::type
+>
+std::uint64_t significant(Real v) {
+	std::uint64_t _f{ 0 };
+	if constexpr (sizeof(Real) == 2) { // half precision floating-point
+		_f = _extractSignificant<std::uint16_t>(v);
+	}
+	if constexpr (sizeof(Real) == 4) { // single precision floating-point
+		_f = _extractSignificant<std::uint32_t>(v);
+	}
+	else if constexpr (sizeof(Real) == 8) { // double precision floating-point
+		_f = _extractSignificant<std::uint64_t>(v);
+	}
+	else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
+		_f = 0;
+	}
+	return _f;
+}
 
 // print representations of an IEEE-754 floating-point
 template<typename Real>

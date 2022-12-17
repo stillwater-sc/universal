@@ -18,9 +18,7 @@ namespace sw { namespace universal {
 
 // forward references
 class eposit;
-inline eposit& convert(int64_t v, eposit& result);
-inline eposit& convert_unsigned(uint64_t v, eposit& result);
-bool parse(const std::string& number, eposit& v);
+bool parse(const std::string& number, eposit& v) noexcept;
 
 // eposit is an adaptive precision linear floating-point type
 class eposit {
@@ -50,19 +48,19 @@ public:
 	explicit eposit(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
-	eposit& operator=(const signed char rhs)        { return convert(rhs, *this); }
-	eposit& operator=(const short rhs)              { return convert(rhs, *this); }
-	eposit& operator=(const int rhs)                { return convert(rhs, *this); }
-	eposit& operator=(const long rhs)               { return convert(rhs, *this); }
-	eposit& operator=(const long long rhs)          { return convert(rhs, *this); }
-	eposit& operator=(const char rhs)               { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const unsigned short rhs)     { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const unsigned int rhs)       { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const unsigned long rhs)      { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const unsigned long long rhs) { return convert_unsigned(rhs, *this); }
-	eposit& operator=(const float rhs)              { return float_assign(rhs); }
-	eposit& operator=(const double rhs)             { return float_assign(rhs); }
-	eposit& operator=(const long double rhs)        { return float_assign(rhs); }
+	eposit& operator=(const signed char rhs)        { return convert(rhs); }
+	eposit& operator=(const short rhs)              { return convert(rhs); }
+	eposit& operator=(const int rhs)                { return convert(rhs); }
+	eposit& operator=(const long rhs)               { return convert(rhs); }
+	eposit& operator=(const long long rhs)          { return convert(rhs); }
+	eposit& operator=(const char rhs)               { return convert_unsigned(rhs); }
+	eposit& operator=(const unsigned short rhs)     { return convert_unsigned(rhs); }
+	eposit& operator=(const unsigned int rhs)       { return convert_unsigned(rhs); }
+	eposit& operator=(const unsigned long rhs)      { return convert_unsigned(rhs); }
+	eposit& operator=(const unsigned long long rhs) { return convert_unsigned(rhs); }
+	eposit& operator=(const float rhs)              { return convert_ieee754(rhs); }
+	eposit& operator=(const double rhs)             { return convert_ieee754(rhs); }
+	eposit& operator=(const long double rhs)        { return convert_ieee754(rhs); }
 
 #ifdef ADAPTER_POSIT_AND_EPOSIT
 	// POSIT_CONCEPT_GENERALIZATION
@@ -75,52 +73,50 @@ public:
 #endif // ADAPTER_POSIT_AND_EPOSIT
 
 	// prefix operators
-	eposit operator-() const {
+	eposit operator-() const noexcept {
 		eposit negated(*this);
 		return negated;
 	}
 
 	// conversion operators
-	explicit operator float() const { return float(toNativeFloatingPoint()); }
-	explicit operator double() const { return float(toNativeFloatingPoint()); }
-	explicit operator long double() const { return toNativeFloatingPoint(); }
+	explicit operator float() const noexcept { return convert_to_ieee754<float>(); }
+	explicit operator double() const noexcept { return convert_to_ieee754<double>(); }
+	explicit operator long double() const noexcept { return convert_to_ieee754<long double>(); }
 
 	// arithmetic operators
-	eposit& operator+=(const eposit& rhs) {
+	eposit& operator+=(const eposit& rhs) noexcept {
 		return *this;
 	}
-	eposit& operator-=(const eposit& rhs) {
+	eposit& operator-=(const eposit& rhs) noexcept {
 		return *this;
 	}
-	eposit& operator*=(const eposit& rhs) {
+	eposit& operator*=(const eposit& rhs) noexcept {
 		return *this;
 	}
-	eposit& operator/=(const eposit& rhs) {
+	eposit& operator/=(const eposit& rhs) noexcept {
 		return *this;
 	}
 
 	// modifiers
-	inline void clear() { sign = false; exp = 0; coef.clear(); }
-	inline void setzero() { clear(); }
+	inline void clear() noexcept { sign = false; exp = 0; coef.clear(); }
+	inline void setzero() noexcept { clear(); }
 	// use un-interpreted raw bits to set the bits of the eposit
-	inline void set_raw_bits(unsigned long long value) {
-		clear();
-	}
+	inline void setbits(unsigned long long value) noexcept { clear(); }
 	inline eposit& assign(const std::string& txt) {
 		return *this;
 	}
 
 	// selectors
-	inline bool iszero() const { return !sign && coef.size() == 0; }
-	inline bool isone() const  { return true; }
-	inline bool isodd() const  { return false; }
-	inline bool iseven() const { return !isodd(); }
-	inline bool ispos() const  { return !sign; }
-	inline bool ineg() const   { return sign; }
-	inline int64_t scale() const { return exp + int64_t(coef.size()); }
+	inline bool iszero() const noexcept { return !sign && coef.size() == 0; }
+	inline bool isone() const noexcept { return true; }
+	inline bool isodd() const noexcept { return false; }
+	inline bool iseven() const noexcept { return !isodd(); }
+	inline bool ispos() const noexcept { return !sign; }
+	inline bool isneg() const noexcept { return sign; }
+	inline int scale() const noexcept { return exp + int(coef.size()); }
 
 	// convert to string containing digits number of digits
-	std::string str(size_t nrDigits = 0) const {
+	std::string str(size_t nrDigits = 0) const noexcept {
 		if (iszero()) return std::string("0.0");
 
 		int64_t magnitude = scale();
@@ -158,7 +154,7 @@ public:
 		return std::string("bad");
 	}
 
-	void test(bool _sign, int _exp, std::vector<BlockType>& _coef) {
+	void test(bool _sign, int _exp, std::vector<BlockType>& _coef) noexcept {
 		sign = _sign;
 		coef = _coef;
 		exp = _exp;
@@ -170,14 +166,34 @@ protected:
 
 	// HELPER methods
 
-	// convert to native floating-point, use conversion rules to cast down to float and double
-	long double toNativeFloatingPoint() const {
-		long double ld = 0;
-		return ld;
+	// convert to native floating-point
+	template<typename Real>
+	Real convert_to_ieee754() const noexcept {
+		Real r = 0;
+		return r;
 	}
-
-	template<typename Ty>
-	eposit& float_assign(Ty& rhs) {
+	template<typename SignedInt>
+	eposit& convert(SignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
+		}
+		else {
+			// convert 
+		}
+		return *this;
+	}
+	template<typename UnsignedInt>
+	eposit& convert_unsigned(UnsignedInt v) noexcept {
+		if (0 == v) {
+			setzero();
+		}
+		else {
+			// convert 
+		}
+		return *this;
+	}
+	template<typename Real>
+	eposit& convert_ieee754(Real& rhs) noexcept {
 		clear();
 		long long base = (long long)rhs;
 		*this = base;
@@ -186,7 +202,7 @@ protected:
 
 	// convert to string with nrDigits of significant digits and return the scale
 	// value = str + "10^" + scale
-	int64_t trimmed(size_t nrDigits, std::string& number) const {
+	int64_t trimmed(size_t nrDigits, std::string& number) const noexcept {
 		if (coef.size() == 0) return 0;
 		int64_t exponent = exp;
 		size_t length = coef.size();
@@ -227,7 +243,7 @@ protected:
 		return exponent;
 	}
 
-	std::string sci_notation(size_t nrDigits) const {
+	std::string sci_notation(size_t nrDigits) const noexcept {
 		if (coef.size() == 0) return std::string("0.0");
 		std::string str;
 		int64_t exponent = trimmed(nrDigits, str);
@@ -258,38 +274,10 @@ private:
 	friend signed findMsb(const eposit& v);
 };
 
-inline eposit& convert(int64_t v, eposit& result) {
-	if (0 == v) {
-		result.setzero();
-	}
-	else {
-		// convert 
-	}
-	return result;
-}
-
-inline eposit& convert_unsigned(uint64_t v, eposit& result) {
-	if (0 == v) {
-		result.setzero();
-	}
-	else {
-		// convert 
-	}
-	return result;
-}
-
-////////////////////////    MPFLOAT functions   /////////////////////////////////
-
+////////////////////////    functions   /////////////////////////////////
 
 inline eposit abs(const eposit& a) {
-	return a; // (a < 0 ? -a : a);
-}
-
-
-// findMsb takes an eposit reference and returns the position of the most significant bit, -1 if v == 0
-
-inline signed findMsb(const eposit& v) {
-	return -1; // no significant bit found, all bits are zero
+	return (a.isneg() ? -a : a);
 }
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
@@ -301,16 +289,15 @@ void divide(const eposit& a, const eposit& b, eposit& quotient) {
 
 /// stream operators
 
-// read a eposit ASCII format and make a binary eposit out of it
-
-bool parse(const std::string& number, eposit& value) {
+// parse a eposit ASCII format and make a binary eposit out of it
+bool parse(const std::string& number, eposit& value) noexcept {
 	bool bSuccess = false;
 
 	return bSuccess;
 }
 
 // generate an eposit format ASCII format
-inline std::ostream& operator<<(std::ostream& ostr, const eposit& i) {
+inline std::ostream& operator<<(std::ostream& ostr, const eposit& i) noexcept {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the eposit into a string
 	std::stringstream ss;
@@ -326,7 +313,6 @@ inline std::ostream& operator<<(std::ostream& ostr, const eposit& i) {
 }
 
 // read an ASCII eposit format
-
 inline std::istream& operator>>(std::istream& istr, eposit& p) {
 	std::string txt;
 	istr >> txt;
@@ -343,7 +329,6 @@ inline std::istream& operator>>(std::istream& istr, eposit& p) {
 // eposit - eposit binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-
 inline bool operator==(const eposit& lhs, const eposit& rhs) {
 	return true;
 }

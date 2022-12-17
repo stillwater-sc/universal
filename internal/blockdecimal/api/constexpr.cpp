@@ -16,7 +16,7 @@ try {
 	std::string tag = "blockdecimal storage class constexpr compile-time testing";
 
 	{
-		constexpr blockdecimal<8> dec;
+//		constexpr blockdecimal<8> dec;
 
 //		std::cout << dec << '\n';
 	}

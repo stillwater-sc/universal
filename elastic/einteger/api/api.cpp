@@ -5,12 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// minimum set of include files to reflect source code dependencies
-// Configure the cfloat template environment
-// second: enable/disable arithmetic exceptions
-#define einteger_THROW_ARITHMETIC_EXCEPTION 0
-// third: enable trace conversion
-#define TRACE_CONVERSION 0
+#define EINTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/einteger/einteger.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -77,7 +72,7 @@ try {
 		}
 	}
 	{
-		using Integer = einteger<std::uint8_t>;
+		using Integer = einteger<std::uint16_t>;
 		for (int i = 1; i < 40; ++i) {
 			float target = -2.0f * pow(10.0f, float(i));
 			Integer a = target;
@@ -108,11 +103,12 @@ try {
 		a.setbits(0xAAAA);
 		std::cout << to_binary(a) << " : " << a << '\n';
 
-		a.assign(std::string("0b1'0101'1010'1010'10"));
-		std::cout << to_binary(a) << " : " << a << '\n';
+		a.assign(std::string("0b1'0101'1010'1010'1010"));
+		std::cout << to_binary(a) << " : " << a << " : " << to_hex(a) << '\n';
 
 		a.assign("1234567890123456789012345");
 		std::cout << a << '\n';
+		std::cout << to_binary(a) << " : " << a << " : " << to_hex(a) << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

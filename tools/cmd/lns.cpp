@@ -4,7 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/lns/lns.hpp>
-#include <universal/common/number_traits.hpp>
 
 template<typename LNS>
 void PrintLnsEncodings(float f) {

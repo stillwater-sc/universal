@@ -34,7 +34,7 @@ using FloatDP = double;
 using Posit32 = sw::universal::posit<32, 2>;
 using Posit48 = sw::universal::posit<48, 2>;
 using Posit64 = sw::universal::posit<64, 2>;
-using Fixed64 = sw::universal::fixpnt<64, 16>;
+using Fixed64 = sw::universal::fixpnt<64, 23>;  // nbits = 64 is necessary to cover dynamic range of b^2 - 4ac, and rbits = 23 is necessary to capture the the difference between b and SQRT(b^2 - 4ac)
 
 template<typename Scalar>
 std::pair<Scalar, Scalar> Quadratic(const Scalar& a, const Scalar& b, const Scalar& c) {
@@ -129,35 +129,47 @@ void CompareTypes(float a, float b, float c) {
 }
 
 void CompareRoots(float fa, float fb, float fc) {
+	std::cout << "a*x^2 + b*x + c = 0 : " << fa << ", " << fb << ", " << fc << '\n';
+	constexpr unsigned TAG_WIDTH = 80;
 	{
 		using Scalar = Float32;
 		Scalar a{ fa }, b{ fb }, c{ fc };
 		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
-		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+		std::cout << std::setw(TAG_WIDTH) << std::left << type_tag(Scalar()) << " roots: " << roots.first << ", " << roots.second << std::endl;
 	}
 	{
 		using Scalar = Posit32;
 		Scalar a{ fa }, b{ fb }, c{ fc };
 		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
-		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+		std::cout << std::setw(TAG_WIDTH) << std::left << type_tag(Scalar()) << " roots: " << roots.first << ", " << roots.second << std::endl;
 	}
 	{
-		using Scalar = sw::universal::fixpnt<32, 16>;
+		using Scalar = Fixed64; 
+		//using Scalar = sw::universal::fixpnt<32, 16, sw::universal::Saturate>;  // divide is TBD
 		Scalar a{ fa }, b{ fb }, c{ fc };
-		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
-		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+		try {
+			std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
+			std::cout << std::setw(TAG_WIDTH) << type_tag(Scalar()) << " roots: " << roots.first << ", " << roots.second << std::endl;
+		} 
+		catch (const sw::universal::universal_arithmetic_exception& err) {
+			std::cerr << "Caught unexpected universal arithmetic exception: " << err.what() << '\n';
+			std::cerr << "Likely culprit is that the dynamic range of the fixpnt is insufficient to capture the b^2 - 4ac term\n";
+			std::cerr << "b    : " << to_binary(b) << " : " << b << '\n';
+			std::cerr << "b^ 2 : " << b * b << '\n';
+			std::cerr << "4ac  : " << 4 * a * c << '\n';
+		}
 	}
 	{
 		using Scalar = Float64;
 		Scalar a{ fa }, b{ fb }, c{ fc };
 		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
-		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+		std::cout << std::setw(TAG_WIDTH) << type_tag(Scalar()) << " roots: " << roots.first << ", " << roots.second << std::endl;
 	}
 	{
 		using Scalar = Posit64;
 		Scalar a{ fa }, b{ fb }, c{ fc };
 		std::pair<Scalar, Scalar> roots = Quadratic(a, b, c);
-		std::cout << "roots: " << roots.first << ", " << roots.second << std::endl;
+		std::cout << std::setw(TAG_WIDTH) << type_tag(Scalar()) << " roots: " << roots.first << ", " << roots.second << std::endl;
 	}
 }
 int main()

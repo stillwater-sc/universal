@@ -7,9 +7,6 @@
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
 
-// standard library
-#include <limits>
-#include <universal/common/arithmetic_traits.hpp>
 // Configure the posit library to use arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1

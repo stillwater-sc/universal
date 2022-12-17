@@ -1,8 +1,7 @@
 #pragma once
-//  posit_test_randoms.hpp : posit verification functions based on random operand generation testing
-// Needs to be included after posit type is declared.
+// test_suite_random.hpp : verification functions based on random operand generation testing
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -139,6 +138,7 @@ namespace sw { namespace universal {
 		using std::atanh;
 
 		double reference = 0.0;
+		result = 0;
 		switch (opcode) {
  		case RandomsOp::OPCODE_ASSIGN:
 			result = da;
@@ -218,6 +218,7 @@ namespace sw { namespace universal {
 			break;
 		case RandomsOp::OPCODE_NOP:
 		default:
+			result = std::numeric_limits<float>::signaling_NaN();
 			std::cerr << "Unsupported unary operator: operation ignored\n";
 			break;
 		}
@@ -273,7 +274,7 @@ namespace sw { namespace universal {
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			TestType testa, testb, result, ref;
+			TestType testa, testb, result{0}, ref{0};
 			testa.setbits(distr(eng));
 			testb.setbits(distr(eng));
 			double da = double(testa);
