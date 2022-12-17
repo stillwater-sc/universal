@@ -1,6 +1,6 @@
 #
 # Dockerfile to create the builder container for compiling and testing Universal
-# docker build --target clang14builder -t stillwater/universal:clang14builder 
+# docker build --target clang13builder -t stillwater/universal:clang13builder 
 
 # BUILDER stage
 FROM silkeh/clang:13 as clang13builder
