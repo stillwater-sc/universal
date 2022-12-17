@@ -1,9 +1,9 @@
 #
 # Dockerfile to create the builder container for compiling and testing Universal
-# docker build --target clang12builder -t stillwater/universal:clang12builder 
+# docker build --target clang14builder -t stillwater/universal:clang11builder 
 
 # BUILDER stage
-FROM silkeh/clang:12 as clang12builder
+FROM silkeh/clang:11 as clang12builder
 LABEL Theodore Omtzigt
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
@@ -38,5 +38,5 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID "Universal Numbers Library Builder V3 Clang 12"
+ENV CONTAINER_ID "Universal Numbers Library Builder V3 Clang 11"
 CMD ["/usr/bin/env", "bash"]
