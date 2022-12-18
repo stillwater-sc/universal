@@ -1,13 +1,15 @@
+/** **********************************************************************
+ * forwsub.hpp: Forward substitution to solve Ax = b 
+ *              Input: Matrix A, Vector b, bool lower
+ *              Inplace forward sub. Uses only lower tri.
+ *
+ * @author:     James Quinlan
+ * @date:       2022-12-17
+ * @copyright:  Copyright (c) 2022 Stillwater Supercomputing, Inc.
+ * @license:    MIT Open Source license 
+ * ***********************************************************************
+ */
 #pragma once
-// forwsub.hpp: Forward substitution to solve Ax = b 
-//              Input: Matrix A, Vector b, bool lower
-//              Inplace forward sub. Uses only lower tri.
-//
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
-// James Quinlan 2022-11-05
-//
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/vector.hpp>
 
@@ -36,7 +38,6 @@ Vector forwsub(const Matrix& A, const Vector& b, bool lower = false) {
 
 template<unsigned nbits, unsigned es>
 vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b, bool lower = false) {
-	// using Scalar = typename Matrix::value_type;
 	size_t n = size(b);
     using Vector = vector<posit<nbits,es>>;
     constexpr unsigned capacity = 20;

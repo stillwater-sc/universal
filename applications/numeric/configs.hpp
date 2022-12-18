@@ -23,3 +23,19 @@
 
     // Table Column Width
     constexpr unsigned COLWIDTH = 25;
+
+    // Reporting Options
+    constexpr bool print          = false;
+    constexpr bool showCondest    = false;
+    constexpr bool showCond       = true;
+    constexpr bool showAmax       = true;
+    constexpr bool showSize       = false;
+    constexpr bool showAlgo       = true;
+    constexpr bool showNumProps   = true;
+
+    // Squeeze Selection 0, 21, 22, 24
+    // 0  No rounding
+    // 21 Round then replace infinities
+    // 22 Scale, then Round
+    // 24 Two-sided Equilibration
+    // size_t algo = 24; // See Higham 2019 Squeeze

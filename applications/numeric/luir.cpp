@@ -28,7 +28,6 @@
 #include <universal/blas/utes/nbe.hpp>      // Normwise Backward Error
 
 // Support Packages
-#include <universal/blas/solvers/luq.hpp>
 #include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
@@ -52,35 +51,13 @@ try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
-     // Reporting Options
-    constexpr bool print          = true;
-    constexpr bool showCondest    = false;
-    constexpr bool showAmax       = true;
-    constexpr bool showSize       = false;
-    constexpr bool showAlgo       = true;
-    constexpr bool showNumProps   = true;
     
     if (argc != 3) {
 		std::cerr << "Not enough input arguments.\n";
-		// std::cerr << "Show the sign/scale/fraction components of a fixed-point value.\n";
 		std::cerr << "Usage:   % ./numeric_luir algo testMatrix\n";
 		std::cerr << "Example: % ./numeric_luir 21 steam3\n";
-		//std::cerr << msg << '\n';
 		return EXIT_SUCCESS;  // signal successful completion for ctest
-        //int algo = 21;
-        //std::string testMatrix = "lu4";
-	// }else{
-       // int algo = atoi(argv[1]);
-       // if constexpr (showAlgo){std::cout << "Algo = " << algo << ".\n\n";}
-       // std::string testMatrix = std::string(argv[2]);
     }
-
-    // Squeeze Selection 0, 21, 22, 24
-    // 0  No rounding
-    // 21 Round then replace infinities
-    // 22 Scale, then Round
-    // 24 Two-sided Equilibration
-    // size_t algo = 24; // See Higham 2019 Squeeze
 
     // -----------------------------------------------------//
 	int algo = atoi(argv[1]);
@@ -142,16 +119,16 @@ try {
             std::cout << "Dynamic range posit<" << lbits << "," << les << "> = (" << m << ", " << M << ")" << std::endl;
         #endif
         // std::cout << "Dynamic range " << dynamic_range<LowPrecision>() << '\n';
+       
         // Unit Round-off
-        std::cout << "Eps Low Precision  = " << u_L << std::endl;
+        std::cout << "Eps Low Precision      = " << u_L << std::endl;
         std::cout << "Eps Working Precision  = " << u_W << std::endl;
-        std::cout << "Eps High Precision  = " << u_H << std::endl;
+        std::cout << "Eps High Precision     = " << u_H << std::endl;
+        std::cout << "Eps Test: 1 + u_L      = " << 1+u_L << " vs. " << 1 + u_L/2 << std::endl;
     } 
 
-    
-    
+    // Read Matrix
     Mw A = getTestMatrix(testMatrix);
-    std::cout << "Condition Number = " << kappa(testMatrix) << std::endl;
     
     Ml Al; // Declare low precision matrix to store A
     unsigned n = num_cols(A);
@@ -159,6 +136,7 @@ try {
     // A's Meta data
     if constexpr (showAmax){std::cout << "(min(A), max(A)) = (" << minelement(A) << ", " << maxelement(A) << ")" << std::endl;}
     if constexpr (print){std::cout << "A = \n" << A << std::endl;}
+    if constexpr (showCond){std::cout << "Condition Number = " << kappa(testMatrix) << std::endl;}
     if constexpr (showCondest){std::cout << "Condition estimate: " << condest(A) << std::endl;}
     if constexpr (showSize){std::cout << "Size: (" << n << ", " << n  << ")\n" << std::endl;}
 
@@ -227,8 +205,7 @@ try {
     // Store working
     Vw x(X);  
     Vw bw(b); // Note: also try b = P*mu*R*(AX), where A is original matrix.
-
-    // 1. Solve Ax = b in low-precision, then store x in working
+    
     auto xn = backsub(Uw,forwsub(Lw,bw));
 
     // Results Header
@@ -240,21 +217,18 @@ try {
     size_t niters = 0;
     bool diverge = false;
     while(((x - xn).norm() > 1e-7) &&  (niters < 25)  && !(diverge)){
-    //while(((x - xn).norm() > 1e-7) && (niters < 25)){
         niters += 1;
         // ----------------------------------------------------------- 
         // Residual Calculation (high precision)
         Vh xh(xn);
         r = b - Ah*xh;  // high precision calculation
-        Vw rn(r); // Store in working presicion
+        Vw rn(r);       // Store in working presicion
 
-        // Solve Ad = r where A = LU (low precision)
-        auto c = backsub(Uw,forwsub(Lw,rn));  // Stored d in working precision         
+        // Solve Ac = r where A = LU (low precision)
+        auto c = backsub(Uw,forwsub(Lw,rn));          
         xn += c;  // update solution vector with corrector
             
         // Print Results
-        // std::cout << "Normwise Backward Error = " << nbe(A,xn,bw) << std::endl;
-        // std::cout << niters << "\t"  << (x - xn).norm() << '\n';
         std::cout << std::setw(4) << niters   << std::setw(COLWIDTH) << (x - xn).norm() << std::setw(COLWIDTH)  << nbe(A,xn,bw) << '\n';
 
         if( ((x - xn).norm() > 1e+12) ){diverge = true;}
