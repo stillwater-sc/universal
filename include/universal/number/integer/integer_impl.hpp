@@ -1151,10 +1151,29 @@ protected:
 	constexpr Real to_real() const noexcept {
 		Real r = 0.0;
 		Real bitValue = static_cast<Real>(1.0);
-		for (unsigned i = 0; i < nbits; ++i) {
-			if (at(i)) r += bitValue;
-			bitValue *= static_cast<Real>(2.0);
+		if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
+			integer<nbits + 1, bt, NumberType> v{ *this }; // deal with maxneg in 2's complement
+			if (isneg()) v = -v;
+			for (unsigned i = 0; i < nbits; ++i) { // upper bound is nbits + 1 - 1 == nbits
+				if (v.at(i)) r += bitValue;
+				bitValue *= static_cast<Real>(2.0);
+			}
+			if (isneg()) r = -r;
 		}
+		else if constexpr (NumberType == IntegerNumberType::WholeNumber) {
+			for (unsigned i = 0; i < nbits; ++i) {
+				if (at(i)) r += bitValue;
+				bitValue *= static_cast<Real>(2.0);
+			}
+		}
+		else { // NaturalNumber
+			if (iszero()) std::cerr << "internal error: natural number is set to 0\n";
+			for (unsigned i = 0; i < nbits; ++i) {
+				if (at(i)) r += bitValue;
+				bitValue *= static_cast<Real>(2.0);
+			}
+		}
+
 		return r;
 	}
 

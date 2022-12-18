@@ -481,7 +481,7 @@ protected:
 			_block.setblock(i, bt(~_block[i]));
 		}
 		//_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
-		_block.setblock(MSU, _block[MSU] & MSU_MASK);
+		_block.setblock(MSU, bt(_block[MSU] & MSU_MASK));
 		return *this;
 	}
 
