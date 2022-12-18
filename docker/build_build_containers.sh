@@ -1,5 +1,7 @@
-# script file to generate the docker build containers with specific compilers installed
-# precondition: docker login success
+#!/usr/bin/env bash
+
+# script to generate the docker build containers with specific compilers installed
+# precondition: successful docker login so that the docker push can succeed
 
 # GCC compiler containers
 docker build --target gcc9builder -t stillwater/universal:gcc9builder -f Dockerfile.gcc9builder .
