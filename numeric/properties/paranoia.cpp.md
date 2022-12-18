@@ -1,12 +1,4 @@
-﻿// paranoia.cpp: 
-//
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
-//
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <cstring>
-
-#include "common.hpp"
-#include <universal/number/posit/posit.hpp> // the NUT: number system under test
+﻿#include <cstring>
 
 #define BATCHMODE 1
 
@@ -2304,6 +2296,8 @@ the system traps on overflow.\n");
 
 // goal is to make the paranoia diagnostics parameterized in type
 #ifdef PARAMETERIZED_PARANOIA
+#include <universal/number/posit/posit.hpp> // the NUT: number system under test
+
 int main_(int argc, char** argv)
 try {
 	using namespace sw::universal;

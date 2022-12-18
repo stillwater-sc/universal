@@ -12,7 +12,7 @@ template<typename LearningRateType = float>
 class dnn {
 public:
     dnn() : name("unknown"), learningRate(0.1f) {}
-    dnn(const std::string name, LearningRateType lr) : name(name), learningRate(lr) {}
+    dnn(const std::string& name, LearningRateType lr) : name(name), learningRate(lr) {}
 
     template<typename LayerType>
     void addLayer(LayerType& layer) noexcept {
@@ -36,7 +36,7 @@ private:
 template<typename LearningRateType>
 std::ostream& operator<<(std::ostream& ostr, const dnn< LearningRateType>& network) {
     ostr << "Deep Neural Network : " << network.name << '\n';
-    ostr << "learning Rate       : " << network.learningRate << '\n';
+    ostr << "Learning Rate       : " << network.learningRate << '\n';
     return ostr;
 }
 
