@@ -1,14 +1,17 @@
 #
 # Dockerfile to create the builder container for compiling and testing Universal
-# docker build --target gcc10builder -t stillwater/universal:gcc10builder 
+# docker build --target clang11builder -t stillwater/universal:clang11builder -f Dockerfile.clang11builder .
+# then push to docker hub
+# docker push stillwater/universal:clang11builder
 
 # BUILDER stage
-FROM gcc:11.3 as gcc11builder
+FROM silkeh/clang:11 as clang11builder
 LABEL Theodore Omtzigt
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
     apt-utils \
     build-essential \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -37,6 +40,5 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID "Universal Numbers Library Builder V3 GCC 11.3"
-
+ENV CONTAINER_ID "Universal Numbers Library Builder Clang 11"
 CMD ["/usr/bin/env", "bash"]
