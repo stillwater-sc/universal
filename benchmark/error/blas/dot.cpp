@@ -14,6 +14,29 @@
 #include <universal/number/lns/lns.hpp>
 #include <universal/blas/blas.hpp>
 
+template<typename Scalar>
+void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::universal::blas::vector<Scalar>& y) {
+	using std::abs;
+	auto nrSamples = size(x); 
+	Scalar minInput = abs(x[0]);
+	Scalar maxInput = minInput;
+	Scalar minOutput = minInput;
+	Scalar maxOutput = maxInput;
+	Scalar minProduct = abs(x[0] * y[0]);
+	Scalar maxProduct = minProduct;
+	for (unsigned i = 1; i < nrSamples; ++i) {
+		Scalar input = abs(x[i]);
+		if (minInput > input) minInput = input;
+		if (maxInput < input) maxInput = input;
+		Scalar product = abs(x[i] * y[i]);
+		if (minProduct > product) minProduct = product;
+		if (maxProduct < product) maxProduct = product;
+	}
+	std::cout << "input   range = [ " << minInput << ", " << maxInput << "]\n";
+	std::cout << "product range = [ " << minProduct << ", " << maxProduct << "]\n";
+	std::cout << sw::universal::symmetry<Scalar>() << '\n';
+}
+
 template<typename Scalar, bool verbose = false>
 void DotProductError(const sw::universal::blas::vector<double>& x, const sw::universal::blas::vector<double>& y) {
 	std::cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
@@ -28,6 +51,7 @@ void DotProductError(const sw::universal::blas::vector<double>& x, const sw::uni
 
 	double real = x * y;
 	double sample = double(xx * yy);
+	TraceProducts(xx, yy);
 	double dotError = log(real / sample);
 	constexpr unsigned COLWIDTH = 15;
 	if constexpr (verbose) std::cout << std::setw(10) << real << std::setw(COLWIDTH) << sample << std::setw(COLWIDTH) << (real / sample) << std::setw(COLWIDTH) << dotError << '\n';

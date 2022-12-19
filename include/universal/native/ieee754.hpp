@@ -61,8 +61,9 @@ namespace sw { namespace universal {
 #include <universal/native/nonconstexpr754.hpp>
 #endif
 
-namespace sw { namespace universal {
+#include <universal/traits/arithmetic_traits.hpp>
 
+namespace sw { namespace universal {
 
 	template<typename Real>
 	std::ostream& operator<<(std::ostream& ostr, const ieee754_parameter<Real>& v) {
