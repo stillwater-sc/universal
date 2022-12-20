@@ -23,11 +23,35 @@ namespace sw { namespace universal { namespace blas {
         std::random_device rd;
         std::mt19937 rng(rd());
         for (size_type i = 0; i < nrElements; ++i) {
-            std::normal_distribution<double> s(mean, stddev);
+            std::normal_distribution<double> s(mean, stddev); // std::uniform_real_distribution<double> distribution(a, b);
             omega[i] = value_type(s(rng));
         }
         return omega;
     }
+
+
+    // generate a uniform random N element vector
+    /* 
+    template<typename Scalar>
+    vector<Scalar> uniform_random_vector(unsigned N, double a = 0.0, double b = 1.0) {
+        vector<Scalar> v(N);
+        return uniform_random(v, a, b);
+    }
+
+    template<typename Scalar>
+    inline vector<Scalar>& uniform_random(vector<Scalar>& omega, double a = 0.0, double b = 1.0) {
+        using value_type = typename vector<Scalar>::value_type;
+        using size_type = typename vector<Scalar>::size_type;
+        const size_type nrElements = size(omega);
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        for (size_type i = 0; i < nrElements; ++i) {
+            std::uniform_real_distribution<double> s(a, b); // std::uniform_real_distribution<double> distribution(a, b);
+            omega[i] = value_type(s(rng));
+        }
+        return omega;
+    }
+    */
 
     // generate a gaussian random MxN matrix
     template<typename Scalar>

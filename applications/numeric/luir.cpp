@@ -82,14 +82,13 @@ try {
     */
 
     // Precision Templates
-    #define CFLOAT 0   // 0 = POSITS
+    #define CFLOAT 1   // 0 = POSITS
     // /** 
     #if CFLOAT 
         using WorkingPrecision  = cfloat<wbits,wes,uint32_t, true, false, false>;
         using LowPrecision      = cfloat<lbits,les,uint32_t, true, false, false>;
         using HighPrecision     =  cfloat<hbits,hes,uint32_t, true, false, false>;
     // */ 
-
     #else
         using WorkingPrecision  = posit<wbits,wes>;
         using LowPrecision      = posit<lbits,les>;
@@ -132,6 +131,9 @@ try {
     
     Ml Al; // Declare low precision matrix to store A
     unsigned n = num_cols(A);
+
+    // std::cout << "random uniform = " << uniform_random_vector<WorkingPrecision>(5,0,1) << std::endl;
+
 
     // A's Meta data
     if constexpr (showAmax){std::cout << "(min(A), max(A)) = (" << minelement(A) << ", " << maxelement(A) << ")" << std::endl;}

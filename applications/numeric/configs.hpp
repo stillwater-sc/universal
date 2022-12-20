@@ -10,15 +10,15 @@
 #pragma once
     // Working Precision
     constexpr unsigned wbits = 64;
-    constexpr unsigned wes   = 2;
+    constexpr unsigned wes   = 11;
 
     // Low Precision
-    constexpr unsigned lbits = 8;
-    constexpr unsigned les   = 2;
+    constexpr unsigned lbits = 16;
+    constexpr unsigned les   = 5;
     
     // High Precision (same as Working for posits - uses quire)
-    constexpr unsigned hbits = 64;  
-    constexpr unsigned hes   = 2;
+    constexpr unsigned hbits = 128;  
+    constexpr unsigned hes   = 15;
 
 
     // Table Column Width

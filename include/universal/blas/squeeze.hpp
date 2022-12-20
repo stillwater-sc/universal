@@ -86,8 +86,15 @@ void scaleRound(blas::matrix<Working>& A,
     Working Amax = maxelement(A);
     Low xmax(SpecificValue::maxpos);
     Working Xmax(xmax);
-    // mu =(T*Xmax) / Amax;  // use for cfloats
-    mu = T / Amax;  // use for posits
+    
+    #define CFLOAT 1   // 0 = POSITS
+    // /** 
+    #if CFLOAT 
+        mu =(T*Xmax) / Amax;  // use for cfloats
+    #else
+        mu = T / Amax;  // use for posits
+    #endif
+    
     A = mu*A;  //Scale A
     // std::cout << "A (after scaling)  = \n" << A << std::endl;
     Al = A;
