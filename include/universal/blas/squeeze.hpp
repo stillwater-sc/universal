@@ -12,9 +12,7 @@
  */
 
 #pragma once
-//#include <universal/blas/matrix.hpp>
-//#include <universal/blas/vector.hpp>
-#include <universal/blas/blas.hpp>  // this includes matrix/vector (are the above needed?)
+#include <universal/blas/blas.hpp>
  
 namespace sw{namespace universal{
 
@@ -22,7 +20,7 @@ namespace sw{namespace universal{
  * ***********************************************************************
  * Helper functions
  *  - row/column scaling
- *  - get the matrices R and S (see Higham) 
+ *  - generate matrices R and S (see Higham) 
  * ***********************************************************************
  */
 
