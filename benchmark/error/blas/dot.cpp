@@ -34,7 +34,9 @@ void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::unive
 	}
 	std::cout << "input   range = [ " << minInput << ", " << maxInput << "]\n";
 	std::cout << "product range = [ " << minProduct << ", " << maxProduct << "]\n";
-	std::cout << sw::universal::symmetry<Scalar>() << '\n';
+	std::cout << sw::universal::symmetry_range<Scalar>() << '\n';
+	// std::cout << sw::universal::dynamic_range<Scalar>() << '\n'; // not that interesting in this context
+	std::cout << sw::universal::minmax_range<Scalar>() << '\n';
 }
 
 template<typename Scalar, bool verbose = false>

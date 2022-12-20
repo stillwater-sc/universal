@@ -72,12 +72,12 @@ try {
 
 	{
 		std::cout << "Sampling ranges of the standard posit configurations\n";
-		std::cout << symmetry< posit<  8, 2> >() << '\n';
-		std::cout << symmetry< posit< 16, 2> >() << '\n';
-		std::cout << symmetry< posit< 32, 2> >() << '\n';
-		std::cout << symmetry< posit< 64, 2> >() << '\n';
-		std::cout << symmetry< posit<128, 2> >() << '\n';
-		std::cout << symmetry< posit<256, 2> >() << '\n';
+		std::cout << symmetry_range< posit<  8, 2> >() << '\n';
+		std::cout << symmetry_range< posit< 16, 2> >() << '\n';
+		std::cout << symmetry_range< posit< 32, 2> >() << '\n';
+		std::cout << symmetry_range< posit< 64, 2> >() << '\n';
+		std::cout << symmetry_range< posit<128, 2> >() << '\n';
+		std::cout << symmetry_range< posit<256, 2> >() << '\n';
 	}
 
 #ifdef LATER

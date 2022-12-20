@@ -69,10 +69,10 @@ try {
 	}
 	{
 		std::cout << "Dynamic ranges of different specializations of a 32-bit classic floating-point\n";
-		std::cout << symmetry< cfloat<32, 8, std::uint32_t, false, false, false> >() << '\n';
-		std::cout << symmetry< cfloat<32, 8, std::uint32_t, true, false, false> >() << '\n';
-		std::cout << symmetry< cfloat<32, 8, std::uint32_t, false, true, false> >() << '\n';
-		std::cout << symmetry< cfloat<32, 8, std::uint32_t, true, true, false> >() << '\n';
+		std::cout << symmetry_range< cfloat<32, 8, std::uint32_t, false, false, false> >() << '\n';
+		std::cout << symmetry_range< cfloat<32, 8, std::uint32_t, true, false, false> >() << '\n';
+		std::cout << symmetry_range< cfloat<32, 8, std::uint32_t, false, true, false> >() << '\n';
+		std::cout << symmetry_range< cfloat<32, 8, std::uint32_t, true, true, false> >() << '\n';
 	}
 
 	{

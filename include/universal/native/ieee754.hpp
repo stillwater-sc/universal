@@ -13,7 +13,9 @@
 #include <universal/utility/long_double.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
+#include <universal/native/attributes.hpp>
 #include <universal/native/bit_functions.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
 
 namespace sw { namespace universal {
 
@@ -60,8 +62,6 @@ namespace sw { namespace universal {
 #else
 #include <universal/native/nonconstexpr754.hpp>
 #endif
-
-#include <universal/traits/arithmetic_traits.hpp>
 
 namespace sw { namespace universal {
 
