@@ -15,9 +15,9 @@
 namespace sw { namespace universal { namespace blas {
 
 template<typename Matrix, typename Vector>
-Vector backsub(const Matrix& A, const Vector& b) {
+Vector backsub(const Matrix& A, const Vector& b, const size_t& n) {
 	using Scalar = typename Matrix::value_type;
-	size_t n = size(b);
+	// size_t n = size(b);
     Vector x(n);
     
 	for (int i = n-1; i >=0 ;--i){
@@ -33,9 +33,9 @@ Vector backsub(const Matrix& A, const Vector& b) {
 
 
 template<unsigned nbits, unsigned es>
-vector<posit<nbits,es>> backsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b) {
+vector<posit<nbits,es>> backsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b, const size_t& n) {
 	// using Scalar = typename Matrix::value_type;
-	size_t n = size(b);
+	// size_t n = size(b);
     using Vector = vector<posit<nbits,es>>;
     constexpr unsigned capacity = 10;
 

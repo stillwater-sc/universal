@@ -16,9 +16,9 @@
 namespace sw { namespace universal { namespace blas {
 
 template<typename Matrix, typename Vector>
-Vector forwsub(const Matrix& A, const Vector& b, bool lower = false) {
+Vector forwsub(const Matrix& A, const Vector& b, const size_t& n, bool lower = false) {
 	using Scalar = typename Matrix::value_type;
-	size_t n = size(b);
+	// size_t n = size(b);
     Vector x(n);
     Vector d(n,1);
     
@@ -30,15 +30,16 @@ Vector forwsub(const Matrix& A, const Vector& b, bool lower = false) {
         for (size_t j = 0; j < i; ++j){
             y += A(i,j)*x(j);
         }
-        x(i) = (b(i) - y)/d(i);
+        // x(i) = (b(i) - y)/d(i);
+        x(i) = (lower) ? (b(i) - y)/d(i) : (b(i) - y);
     }
 	return x;
 }
 
 
 template<unsigned nbits, unsigned es>
-vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b, bool lower = false) {
-	size_t n = size(b);
+vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b, const size_t& n, bool lower = false) {
+	// size_t n = size(b);
     using Vector = vector<posit<nbits,es>>;
     constexpr unsigned capacity = 20;
     
@@ -55,7 +56,8 @@ vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<
         }
         posit<nbits,es> y;
         convert(q.to_value(), y); 
-        x(i) = (b(i) - y)/d(i);
+        // x(i) = (b(i) - y)/d(i);
+        x(i) = (lower) ? (b(i) - y)/d(i) : (b(i) - y);
     }
 	return x;
 }

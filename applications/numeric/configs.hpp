@@ -27,12 +27,19 @@
     constexpr unsigned hbits = 64;  
     constexpr unsigned hes   = 2;
 
-    /** 
-     * Table Column Width
-     *  - format table width for results
-     */
-    constexpr unsigned COLWIDTH = 25;
+    /**
+     * Squeeze Selection 0, 21, 22, 24
+     * 0  No rounding
+     * 21 Round then replace infinities
+     * 22 Scale, then Round
+     * 24 Two-sided Equilibration
+     * size_t algo = 24; // See Higham 2019 Squeeze
+    */
 
+    /**
+     * Solution Vector = [1, 1,...,1]' or RANDOM 
+    */
+    bool randsol = true;
 
     /** 
      * Reporting Options
@@ -44,16 +51,14 @@
     constexpr bool showCondest    = false;
     constexpr bool showCond       = true;
     constexpr bool showAmax       = true;
-    constexpr bool showSize       = false;
+    constexpr bool showSize       = true;
     constexpr bool showSol        = false;
-    constexpr bool showAlgo       = true;
+    constexpr bool showAlgo       = false;
     constexpr bool showNumProps   = true;
+    constexpr bool showProcesses  = true;
 
-    /**
-     * Squeeze Selection 0, 21, 22, 24
-     * 0  No rounding
-     * 21 Round then replace infinities
-     * 22 Scale, then Round
-     * 24 Two-sided Equilibration
-     * size_t algo = 24; // See Higham 2019 Squeeze
-    */
+    /** 
+     * Table Column Width
+     *  - format table width for results
+     */
+    constexpr unsigned COLWIDTH = 25;
