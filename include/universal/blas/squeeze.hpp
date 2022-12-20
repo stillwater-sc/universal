@@ -1,20 +1,28 @@
-// Squeeze.hpp: Squeeze elements of a matrix for solving Ax = b
-//              using low-precision representations.
-//
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
-// Author: James Quinlan
-//
-// File is part of the universal numbers project. 
-// License: MIT Open Source license.
+/** **********************************************************************
+ * Squeeze.hpp: Squeeze elements of a matrix for solving Ax = b
+ *              using low-precision representations.
+ *
+ * @author:     James Quinlan
+ * @date:       2022-12-20
+ * @copyright:  Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+ * @license:    MIT Open Source license 
+ * ***********************************************************************
+ */
 
-// Modified: 2022-10-30
-// --------------------------------------------------------------- //
 #pragma once
-#include <universal/blas/matrix.hpp>
-#include <universal/blas/vector.hpp>
+//#include <universal/blas/matrix.hpp>
+//#include <universal/blas/vector.hpp>
 #include <universal/blas/blas.hpp>  // this includes matrix/vector (are the above needed?)
 
 namespace sw{namespace universal{
+
+/**
+ * ***********************************************************************
+ * Helper functions
+ *  - row/column scaling
+ *  - get the matrices R and S (see Higham) 
+ * ***********************************************************************
+ */
 
 template<typename Scalar>
 void getR(blas::matrix<Scalar>& A, blas::vector<Scalar>& R){
@@ -58,9 +66,15 @@ void colScale(blas::matrix<Scalar>& A, blas::vector<Scalar>& S){
 } // Scale Columns of A
 
 
-// -----------------------------------------------------------------------
-// Squeeze Methods
-// ----------------------------------------------------------------------- 
+
+/** 
+ * ***********************************************************************
+ * Squeeze Methods
+ *  - round and replace:  
+ *  - scale, then round:
+ *  - two-sided scaling (row/column equilabration), then round
+ * ***********************************************************************
+*/
 template<typename Working, typename Low>
 void roundReplace(blas::matrix<Working>& A, blas::matrix<Low>& Al){
     /* Algo 21: round then replace infinities */
@@ -87,7 +101,7 @@ void scaleRound(blas::matrix<Working>& A,
     Low xmax(SpecificValue::maxpos);
     Working Xmax(xmax);
     
-    #define CFLOAT 1   // 0 = POSITS
+    #define CFLOAT 0   // 0 = POSITS
     // /** 
     #if CFLOAT 
         mu =(T*Xmax) / Amax;  // use for cfloats
@@ -108,7 +122,6 @@ void scaleRound(blas::matrix<Working>& A,
     std::cout << Xmax << "\t" << Amax << "\t  \t" << T << "\t" << mu << "\n" << std::endl;
     */
 } // Scale and Round
-
 
 
 template<typename Working, typename Low>

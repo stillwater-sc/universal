@@ -82,7 +82,7 @@ try {
     */
 
     // Precision Templates
-    #define CFLOAT 1   // 0 = POSITS
+    #define CFLOAT 0   // 0 = POSITS (see also squeeze.hpp)
     // /** 
     #if CFLOAT 
         using WorkingPrecision  = cfloat<wbits,wes,uint32_t, true, false, false>;
@@ -218,7 +218,7 @@ try {
     Vh r; // High precision residual vector
     size_t niters = 0;
     bool diverge = false;
-    while(((x - xn).norm() > 1e-7) &&  (niters < 25)  && !(diverge)){
+    while(((x - xn).norm() > 1e-7) &&  (niters < 10)  && !(diverge)){
         niters += 1;
         // ----------------------------------------------------------- 
         // Residual Calculation (high precision)
@@ -248,6 +248,11 @@ try {
             std::cout << xn(i) << '\n';
         }
     }
+
+    if constexpr(showSol){
+        xn.disp();
+    }
+
     // ----------------------------------------------------------------------------
 
 	int nrOfFailedTestCases = 0;
