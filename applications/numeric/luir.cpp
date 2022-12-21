@@ -240,20 +240,25 @@ try {
     std::cout << "------------------------------------------------------------------"  << '\n';
     
     size_t niters = 0;
+    bool stop = false;
     bool diverge = false;
-    auto maxnorm = (x - xn).infnorm();
-    while((maxnorm > 1e-7) &&  (niters < 10)  && !(diverge)){
+    // auto maxnorm = (x - xn).infnorm();
+    while (!stop){ //  && !(diverge)){
         niters += 1;
         Vh xh(xn);
         r = b - Ah*xh;   
         Vw rn(r);        
         auto c = backsub(LU,forwsub(LU,rn,n),n);         
         xn += c;
-        auto maxnorm = (x - xn).infnorm();   
+        auto maxnorm = (x - xn).infnorm();
+        if ((maxnorm < 1e-7) || (niters > 20) || diverge) { //  && !(diverge)){ 
+            stop = true;  
+            //std::cout << "max norm > 1e-7 true"  << std::endl;
+        }
         
         // Print Results
         std::cout << std::setw(4) << niters << std::setw(COLWIDTH) << maxnorm << std::setw(COLWIDTH) << nbe(A,xn,bw) <<'\n';
-        if( (maxnorm > 1e+12) ){diverge = true;}
+        if ((maxnorm > 1e+5)){diverge = true;}
     } //wend
 
 
