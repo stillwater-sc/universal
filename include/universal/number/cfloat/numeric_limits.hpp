@@ -13,7 +13,10 @@ public:
 	using Cfloat = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	static constexpr bool is_specialized = true;
 	static constexpr Cfloat min() { // return minimum value
-		return Cfloat(sw::universal::SpecificValue::minpos);
+		Cfloat normal;
+		normal.clear();
+		normal.setexponent(Cfloat::MIN_EXP_NORMAL);
+		return normal;
 	} 
 	static constexpr Cfloat max() { // return maximum value
 		return Cfloat(sw::universal::SpecificValue::maxpos);
@@ -29,9 +32,7 @@ public:
 		return Cfloat(0.5f);
 	}
 	static constexpr Cfloat denorm_min() {  // return minimum denormalized value
-		Cfloat dmin{};
-		++dmin;
-		return dmin;
+		return Cfloat(sw::universal::SpecificValue::minpos);
 	}
 	static constexpr Cfloat infinity() { // return positive infinity
 		return Cfloat(sw::universal::SpecificValue::infpos);
@@ -45,7 +46,7 @@ public:
 
 	static constexpr int digits       = nbits - 1 - es + 1;
 	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
-	static constexpr int max_digits10 = digits10;
+	static constexpr int max_digits10 = digits10 + 1;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = false;
 	static constexpr bool is_exact    = false;
