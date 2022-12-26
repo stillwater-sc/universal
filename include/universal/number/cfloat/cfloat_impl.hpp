@@ -3072,7 +3072,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 	}
 	else {
 		std::stringstream ss;
-		ss << double(v);
+		ss << std::setprecision(precision) << double(v);  // TODO: make this native
 		representation = ss.str();
 //		representation = to_string(v, precision);
 	}
