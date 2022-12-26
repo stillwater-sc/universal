@@ -349,21 +349,17 @@ public:
 	// constructors
 	cfloat() = default;
 
-	// decorated/converting constructors
-	constexpr cfloat(const std::string& stringRep) {
-		assign(stringRep);
-	}
-
 	// construct a cfloat from another, block type bt must be the same
 	template<unsigned nnbits, unsigned ees>
-	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) noexcept : _block{} {
 //		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
 		*this = double(rhs);
 	}
 
+	// converting constructors
+	constexpr cfloat(const std::string& stringRep) : _block{} { assign(stringRep); }
 	// specific value constructor
-	constexpr cfloat(const SpecificValue code) noexcept
-		: _block{} {
+	constexpr cfloat(const SpecificValue code) noexcept : _block{} {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();
