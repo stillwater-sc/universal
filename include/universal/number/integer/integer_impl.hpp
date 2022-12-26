@@ -137,24 +137,22 @@ public:
 	}
 
 	// initializers for native types
-	constexpr integer(signed char initial_value)        { *this = initial_value; }
-	constexpr integer(short initial_value)              { *this = initial_value; }
-	constexpr integer(int initial_value)                { *this = initial_value; }
-	constexpr integer(long initial_value)               { *this = initial_value; }
-	constexpr integer(long long initial_value)          { *this = initial_value; }
-	constexpr integer(char initial_value)               { *this = initial_value; }
-	constexpr integer(unsigned short initial_value)     { *this = initial_value; }
-	constexpr integer(unsigned int initial_value)       { *this = initial_value; }
-	constexpr integer(unsigned long initial_value)      { *this = initial_value; }
-	constexpr integer(unsigned long long initial_value) { *this = initial_value; }
-	constexpr integer(float initial_value)              { *this = initial_value; }
-	constexpr integer(double initial_value)             { *this = initial_value; }
-	constexpr integer(long double initial_value)        { *this = initial_value; }
+	constexpr integer(signed char initial_value)        noexcept { *this = initial_value; }
+	constexpr integer(short initial_value)              noexcept { *this = initial_value; }
+	constexpr integer(int initial_value)                noexcept { *this = initial_value; }
+	constexpr integer(long initial_value)               noexcept { *this = initial_value; }
+	constexpr integer(long long initial_value)          noexcept { *this = initial_value; }
+	constexpr integer(char initial_value)               noexcept { *this = initial_value; }
+	constexpr integer(unsigned short initial_value)     noexcept { *this = initial_value; }
+	constexpr integer(unsigned int initial_value)       noexcept { *this = initial_value; }
+	constexpr integer(unsigned long initial_value)      noexcept { *this = initial_value; }
+	constexpr integer(unsigned long long initial_value) noexcept { *this = initial_value; }
+	constexpr integer(float initial_value)              noexcept { *this = initial_value; }
+	constexpr integer(double initial_value)             noexcept { *this = initial_value; }
+	constexpr integer(long double initial_value)        noexcept { *this = initial_value; }
 
 	// specific value constructors
-	integer(const std::string& s) noexcept {
-		assign(s);
-	}
+	constexpr integer(const std::string& s) noexcept { assign(s); }
 	constexpr integer(const SpecificValue code) noexcept
 		: _block{ 0 } {
 		switch (code) {
