@@ -1,4 +1,4 @@
-// double.cpp: components of a double: cli to show the sign/scale/fraction components of a double
+// single.cpp: components of a float: cli to show the sign/scale/fraction components of a single precision float 
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -11,9 +11,9 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/common/number_traits_reports.hpp>
 
-// ShowRepresentations prints the different output formats for the double type
+// ShowRepresentations prints the different output formats for the float type
 template<typename Scalar>
-void ShowRepresentations(std::ostream& ostr, double f) {
+void ShowRepresentations(std::ostream& ostr, float f) {
 	using namespace sw::universal;
 	auto oldprec = ostr.precision(); // save stream state
 
@@ -28,39 +28,38 @@ void ShowRepresentations(std::ostream& ostr, double f) {
 	ostr << std::setprecision(oldprec);
 }
 
-// receive a float and print the components of a double representation
+// receive a float and print its components
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-	using Scalar = double;
+	using Scalar = float;
 
 	if (argc != 2) {
-		std::cerr << "double : components of an IEEE double-precision float\n";
-		std::cerr << "Show the sign/scale/fraction components of an IEEE double.\n";
-		std::cerr << "Usage: double double_value\n";
-		std::cerr << "Example: double 0.03124999\n";
-		ShowRepresentations<Scalar>(std::cerr, 0.03124999);
+		std::cerr << "single : components of an IEEE-754 single-precision floating_point: 32 bits with 8 exponent bits\n";
+		std::cerr << "Show the sign/scale/fraction components of a single-precision IEEE-754 floating-point.\n";
+		std::cerr << "Usage: single value\n";
+		std::cerr << "Example: single 0.03124999\n";
+		ShowRepresentations<Scalar>(std::cerr, 0.03124999f);
 
-		std::cerr << "Number Traits of IEEE-754 double\n";
+		std::cerr << "\nNumber Traits of IEEE-754 float\n";
 		numberTraits<Scalar>(std::cout);
 
 		std::cerr << "smallest normal number\n";
-		std::cerr << to_binary(std::numeric_limits<Scalar>::min()) << '\n';
+		std::cerr << to_binary(std::numeric_limits<float>::min()) << " : " << std::numeric_limits<float>::min() << '\n';
 		std::cerr << "smallest denormalized number\n";
-		std::cerr << to_binary(std::numeric_limits<Scalar>::denorm_min()) << '\n';
+		std::cerr << to_binary(std::numeric_limits<float>::denorm_min()) << " : " << std::numeric_limits<float>::denorm_min() << '\n';
 
-		std::cout << '\n';
+		std::cerr << '\n';
 		std::cerr << "Universal parameterization of IEEE-754 fields\n";
 		std::cerr << ieee754_parameter<Scalar>() << '\n';
 		std::cerr.flush();
 
-		return EXIT_SUCCESS;   // signal successful completion for ctest
+		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 
-	double d = atof(argv[1]);
-	ShowRepresentations<Scalar>(std::cout, d);
+	float f = float(atof(argv[1]));
+	ShowRepresentations<Scalar>(std::cout, f);
 
-	std::cout.flush();
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {

@@ -10,25 +10,36 @@
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/native/ieee754.hpp>
 #include <universal/common/number_traits_reports.hpp>
-#include <universal/internal/value/value>
+
+// ShowRepresentations prints the different output formats for the long double type
+template<typename Scalar>
+void ShowRepresentations(std::ostream& ostr, long double f) {
+	using namespace sw::universal;
+	auto oldprec = ostr.precision(); // save stream state
+
+	constexpr int max_digits10 = std::numeric_limits<Scalar>::max_digits10; 	// floating-point attribute for printing scientific format
+
+	Scalar v(f); // convert to target cfloat
+	ostr << "scientific   : " << std::setprecision(max_digits10) << v << '\n';
+	ostr << "triple form  : " << to_triple(v) << '\n';
+	ostr << "binary form  : " << to_binary(v, true) << '\n';
+	ostr << "color coded  : " << color_print(v) << '\n';
+
+	ostr << std::setprecision(oldprec);
+}
 
 // receive a float and print the components of a long double representation
 int main(int argc, char** argv)
 try {
-	using namespace sw::universal::internal;
-
-	// long double attributes
-	constexpr int max_digits10 = std::numeric_limits<long double>::max_digits10;
-	constexpr int fbits = std::numeric_limits<long double>::digits - 1;
+	using namespace sw::universal;
+	using Scalar = long double;
 
 	if (argc != 2) {
 		std::cerr << "longdouble: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V\n";
 		std::cerr << "Show the sign/scale/fraction components of an IEEE long double.\n";
 		std::cerr << "Usage: longdouble long_double_value\n";
 		std::cerr << "Example: longdouble 0.03124999\n";
-		std::cerr << "long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)\n\n";
-		
-		using Scalar = long double;
+		ShowRepresentations<Scalar>(std::cerr, 0.03124999);
 
 		std::cout << "Number Traits of IEEE-754 long double\n";
 		numberTraits<Scalar>(std::cout);
@@ -44,14 +55,11 @@ try {
 		std::cout.flush();
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
+
 	long double q = strtold(argv[1], NULL);
-	value<fbits> v(q);
+	ShowRepresentations<Scalar>(std::cout, q);
 
-	std::cout << "long double: " << std::setprecision(max_digits10) << q << '\n';
-	std::cout << "triple form  : " << to_triple(q) << '\n';
-	std::cout << "binary form  : " << to_binary(q, true) << '\n';
-	std::cout << "color coded  : " << color_print(q) << '\n';
-
+	std::cout.flush();
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {
