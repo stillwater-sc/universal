@@ -13,7 +13,7 @@ public:
 	using Cfloat = sw::universal::cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>;
 	static constexpr bool is_specialized = true;
 	static constexpr Cfloat min() { // return minimum value
-		Cfloat normal;
+		Cfloat normal{};
 		normal.clear();
 		normal.setexponent(Cfloat::MIN_EXP_NORMAL);
 		return normal;
