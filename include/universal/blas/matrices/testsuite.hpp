@@ -42,7 +42,8 @@
 #include <universal/blas/matrices/bcsstk22.hpp>      // 138 x 138
 #include <universal/blas/matrices/lund_a.hpp>        //  
 #include <universal/blas/matrices/nos1.hpp>          //
-#include <universal/blas/matrices/arc130.hpp> 
+#include <universal/blas/matrices/arc130.hpp>
+#include <universal/blas/matrices/saylr1.hpp>        // 238 x 238 CFD
 #include <universal/blas/matrices/tumorAntiAngiogenesis_2.hpp>      // 
 
 
@@ -112,6 +113,8 @@ sw::universal::blas::matrix<double> getTestMatrix(const std::string &testMatrix)
         return nos1;
     }else if (testMatrix == "arc130"){
         return arc130;
+    }else if (testMatrix == "saylr1"){
+        return saylr1;
     }else if (testMatrix == "tumorAntiAngiogenesis_2"){
         return tumorAntiAngiogenesis_2;    
     }else{
@@ -168,6 +171,8 @@ double kappa(const std::string &testMatrix){
         return 1.812616e+06;
     }else if (testMatrix == "Stranke94"){
         return 5.173300e+01;
+    }else if (testMatrix == "saylr1"){
+        return 7.780581e+08;
     }else if (testMatrix == "Trefethen_20"){
         return 6.308860e+01;
     }else if (testMatrix == "bcsstk01"){

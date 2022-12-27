@@ -112,6 +112,7 @@ try {
         #else
             std::cout << "Dynamic range posit<" << lbits << "," << les << "> = (" << m << ", " << M << ")" << std::endl;
             // std::cout << "Dynamic range " << dynamic_range<LowPrecision>() << '\n';
+            // std::cout << "No underflow! Numbers smaller than min --> minelement p<16,2>" << LowPrecision(1.287779e-18) << std::endl;
         #endif
         
         // Unit Round-off
@@ -129,6 +130,7 @@ try {
     Mw A = getTestMatrix(testMatrix);
     Ml Al;
     unsigned n = num_cols(A);
+    // std::cout << "nu  = " << n*u_W << std::endl;
 
     if constexpr (showAmax){std::cout << "(min(A), max(A)) = (" << minelement(A) << ", " << maxelement(A) << ")" << std::endl;}
     if constexpr (print){std::cout << "A = \n" << A << std::endl;}
