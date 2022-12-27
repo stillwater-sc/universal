@@ -14,9 +14,6 @@ try {
 	using namespace sw::universal;
 	using Scalar = cfloat<8,4, std::uint8_t, false, false, false>;
 
-	// floating-point attributes
-	constexpr int max_digits10 = std::numeric_limits<Scalar>::max_digits10;
-
 	if (argc != 2) {
 		std::cerr << "cfloat8_4 : components of a cfloat<8,4> without subnormals\n";
 		std::cerr << "Show the sign/scale/fraction components of cfloat<8,4> without subnormals\n";

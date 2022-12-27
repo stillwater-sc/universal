@@ -14,9 +14,6 @@ try {
 	using namespace sw::universal;
 	using Scalar = quad;
 
-	// floating-point attributes
-	constexpr int max_digits10 = std::numeric_limits<Scalar>::max_digits10;
-
 	if (argc != 2) {
 		std::cerr << "quad : components of an IEEE-754 quad-precision float : 128 bits total with 15 exponent bits\n";
 		std::cerr << "Show the sign/scale/fraction components of a quad-precision IEEE-754 floating-point.\n";
