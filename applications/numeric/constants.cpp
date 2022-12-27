@@ -8,7 +8,6 @@
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
 #endif
-#include <universal/verification/performance_runner.hpp>
 
 // select the number systems we would like to compare
 #define FIXPNT_NATIVE_SQRT 1
@@ -18,10 +17,20 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 
-#include <cstddef>
-#include <stdexcept>
-#include <cstring>
-#include <ostream>
+/*
+	Generate irrational constants with high precision using native SQRT algorithms
+	in different number systems.
+
+	The irrational constants of interest are the square roots:
+	sqrt(2)
+	sqrt(3)
+	sqrt(5)
+	sqrt(7)
+ */
+
+#ifdef PERFORMANCE_TESTING
+
+#include <universal/verification/performance_runner.hpp>
 
 template<typename Scalar>
 void SqrtWorkload(size_t NR_OPS) {
@@ -38,6 +47,26 @@ void SqrtWorkload(size_t NR_OPS) {
 	if (a == c) std::cout << "amazing\n";
 }
 
+void PerformanceTest() {
+	using namespace sw::universal;
+	using Fixed = fixpnt<80, 75>;
+	//	using Posit = posit<64, 2>;
+	using HP = cfloat< 16, 5, uint32_t, true>;
+	using SP = cfloat< 32, 8, uint32_t, true>;
+	using DP = cfloat< 64, 11, uint32_t, true>;
+	//	using EP = cfloat< 80, 11, uint32_t, true>;
+	//	using QP = cfloat<128, 15, uint32_t, true>;
+
+	constexpr size_t NR_OPS = 1024;
+	PerformanceRunner(type_tag(Fixed()) + "::sqrt ", SqrtWorkload< Fixed >, NR_OPS);
+	PerformanceRunner(type_tag(HP()) + "::sqrt ", SqrtWorkload< HP >, NR_OPS);
+	PerformanceRunner(type_tag(SP()) + "::sqrt ", SqrtWorkload< SP >, NR_OPS);
+	PerformanceRunner(type_tag(DP()) + "::sqrt ", SqrtWorkload< DP >, NR_OPS);
+	//	PerformanceRunner(type_tag(EP()) + "::sqrt ", SqrtWorkload< EP >, NR_OPS);
+	//	PerformanceRunner(type_tag(QP()) + "::sqrt ", SqrtWorkload< QP >, NR_OPS);
+}
+#endif
+
 template<typename Scalar>
 void Sqrt(double v) {
 	Scalar s{ v };
@@ -46,7 +75,7 @@ void Sqrt(double v) {
 }
 
 template<typename Scalar>
-void Compare(double v) {
+void CompareBabylonianMethods(double v) {
 	std::cout << "sqrt(" << v << ")\n";
 	Sqrt<Scalar>(v);
 	Scalar a(v);
@@ -86,15 +115,7 @@ try {
 	std::cout << std::setprecision(std::numeric_limits<Native>::max_digits10);
 	std::cout << native << " digits of precision : " << std::numeric_limits<Native>::max_digits10 << '\n';
 
-	constexpr size_t NR_OPS = 1024;
-	PerformanceRunner(type_tag(Fixed()) + "::sqrt ", SqrtWorkload< Fixed >, NR_OPS);
-	PerformanceRunner(type_tag(HP()) + "::sqrt ", SqrtWorkload< HP >, NR_OPS);
-	PerformanceRunner(type_tag(SP()) + "::sqrt ", SqrtWorkload< SP >, NR_OPS);
-	PerformanceRunner(type_tag(DP()) + "::sqrt ", SqrtWorkload< DP >, NR_OPS);
-//	PerformanceRunner(type_tag(EP()) + "::sqrt ", SqrtWorkload< EP >, NR_OPS);
-//	PerformanceRunner(type_tag(QP()) + "::sqrt ", SqrtWorkload< QP >, NR_OPS);
-
-	Compare<Fixed>(2.0);
+//	CompareBabylonianMethods<Fixed>(2.0);
 
 	// MSVC doesn't support proper long double: this is guarded with a compile guard: LONG_DOUBLE_SUPPORT
 	{
@@ -102,6 +123,7 @@ try {
 		float f = 2.0f;
 		std::cout << sqrt(Native(f)) << " : " << type_tag(Native()) << '\n';
 		std::cout << sqrt(Fixed(f)) << " : " << type_tag(Fixed()) << '\n';
+
 		std::cout << sqrt(Posit(f)) << " : " << type_tag(Posit()) << '\n';
 		std::cout << sqrt(HP(f)) << " : " << type_tag(HP()) << '\n';
 		std::cout << sqrt(SP(f)) << " : " << type_tag(SP()) << '\n';

@@ -1,15 +1,19 @@
-// dotproduct.cpp: error measurement of the approximation of a number system encoding on dot products
+// sampling.cpp: error measurement of the approximation of a number system sampling real values
 //
 // Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
-// enable the following define to show the intermediate steps in the fused-dot product
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/fixpnt/fixpnt.hpp>
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/cfloat/cfloat.hpp>
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
+#define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
 #include <universal/blas/blas.hpp>
 
@@ -22,7 +26,7 @@ void SampleError(sw::universal::blas::vector<double>& reals) {
 	blas::vector<Scalar> samples(nrSamples);
 	samples = reals;
 
-	double avg{ 0 };
+	double avgError{ 0 }, maxError{ 0 };
 	constexpr unsigned COLWIDTH = 15;
 	for (unsigned i = 0; i < nrSamples; ++i) {
 		double real = reals[i];
@@ -30,23 +34,28 @@ void SampleError(sw::universal::blas::vector<double>& reals) {
 		if (sample == 0) sample = real;
 		double sampleError = log(real / sample);
 		if constexpr (verbose) std::cout << std::setw(4) << i << std::setw(10) << real << std::setw(COLWIDTH) << sample << std::setw(COLWIDTH) << (real/sample) << std::setw(COLWIDTH) << sampleError << '\n';
-		avg += sampleError;
+		avgError += sampleError;
+		double absError = abs(sampleError);
+		if (absError > maxError) maxError = absError;
 	}
-	avg /= nrSamples;
-	std::cout << "Average sampling error : " << avg << '\n';
+	avgError /= static_cast<double>(nrSamples);
+	std::cout << "Average sampling error : " << avgError << '\n';
+	std::cout << "Maximum sampling error : " << maxError << '\n';
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
 	auto reals = sw::universal::blas::gaussian_random_vector<double>(10, 0.0, 32.0);
 
-	constexpr bool Verbose = true;
+	constexpr bool Verbose = false;
 	SampleError< integer<8>, Verbose >(reals);
-	SampleError< fixpnt<16, 8>, Verbose >(reals);
-	SampleError< fixpnt<12, 6>, Verbose >(reals);
-	SampleError< fixpnt< 8, 4>, Verbose >(reals);
+	SampleError< fixpnt<16, 8, Saturate, std::uint16_t>, Verbose >(reals);
+	// with a stddev around 32.0, 5 bits are not sufficient to capture the outliers. The extreme value will saturate and thus NOT correctly calculate the sample difference as it cannot be represented in this number system
+	// there for fixpnt<12,6> and fixpnt<8,4> will not work
+	// SampleError< fixpnt<12, 6, Saturate, std::uint16_t>, Verbose >(reals); 
+	// SampleError< fixpnt< 8, 4, Saturate, std::uint16_t>, Verbose >(reals);
 	SampleError< float >(reals);
 	SampleError< single >(reals);
 	SampleError< half >(reals);

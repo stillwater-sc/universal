@@ -171,7 +171,7 @@ void FrankMatrixTest() {
 	Vector b(9);
 	b = A * x;
 	// now solve for b should yield a vector of 1's
-	sw::universal::blas::vector<std::uint64_t> p;
+	sw::universal::blas::vector<size_t> p;  // Clang fix that treats size_t and std::uint64_t as two different types
 	ludcmp(A, p);
 	auto xx = lubksb(A, p, b);
 	auto e = xx - x;

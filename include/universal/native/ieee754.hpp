@@ -13,7 +13,9 @@
 #include <universal/utility/long_double.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
+#include <universal/native/attributes.hpp>
 #include <universal/native/bit_functions.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
 
 namespace sw { namespace universal {
 
@@ -62,7 +64,6 @@ namespace sw { namespace universal {
 #endif
 
 namespace sw { namespace universal {
-
 
 	template<typename Real>
 	std::ostream& operator<<(std::ostream& ostr, const ieee754_parameter<Real>& v) {

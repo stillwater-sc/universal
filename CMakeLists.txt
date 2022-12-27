@@ -35,7 +35,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 64)
+  set(UNIVERSAL_VERSION_MINOR 65)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -817,6 +817,7 @@ endif(BUILD_MIXEDPRECISION_TENSOR)
 # error benchmarks
 if(BUILD_BENCHMARK_ERROR)
 add_subdirectory("benchmark/error/sampling")
+add_subdirectory("benchmark/error/blas")
 endif(BUILD_BENCHMARK_ERROR)
 
 # accuracy benchmarks

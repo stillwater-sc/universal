@@ -19,7 +19,7 @@ namespace sw { namespace universal {
 
 	// report the minimum and maximum of a type
 	template<typename Ty>
-	std::string minmax_range() {
+	std::string minmax_range(Ty = {}) {
 		std::stringstream str;
 		str << std::left << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty());
 		str << " : ";
@@ -30,7 +30,7 @@ namespace sw { namespace universal {
 
 	// report the negative bounds, zero, and positive bounds of the number system
 	template<typename Ty>
-	std::string symmetry() {
+	std::string symmetry_range(Ty = {}) {
 		std::stringstream str;
 		str << std::left << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty()) << " : ";
 		str << "[ "
@@ -46,7 +46,7 @@ namespace sw { namespace universal {
 
 	// report the dynamic range of a number system type
 	template<typename Ty>
-	std::string dynamic_range() {
+	std::string dynamic_range(Ty = {}) {
 		std::stringstream str;
 		str << std::left << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty());
 		str << " : ";

@@ -9,7 +9,6 @@
 #include <string>
 #include <cmath>
 #include <limits>
-#include <universal/verification/test_reporters.hpp>
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/integer/integer.hpp>
@@ -18,6 +17,8 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
+
+#include <universal/verification/test_reporters.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
