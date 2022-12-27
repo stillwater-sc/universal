@@ -1315,7 +1315,7 @@ public:
 			}
 		}
 		else {
-			blockbinary<es, bt> ebits;
+			blockbinary<es, bt> ebits{};
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormal scale is determined by fraction
@@ -1347,7 +1347,7 @@ public:
 			return iszeroencoding();
 		}
 		else { // all subnormals round to 0
-			blockbinary<es, bt> ebits;
+			blockbinary<es, bt> ebits{};
 			exponent(ebits);
 			if (ebits.iszero()) return true; else return false;
 		}
@@ -1356,7 +1356,7 @@ public:
 		// unbiased exponent = scale = 0, fraction = 0
 		int s = scale();
 		if (s == 0) {
-			blockbinary<fbits, bt> f;
+			blockbinary<fbits, bt> f{};
 			fraction(f);
 			return f.iszero();
 		}
