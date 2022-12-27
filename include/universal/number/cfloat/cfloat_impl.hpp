@@ -1522,25 +1522,22 @@ public:
 	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
 	
 	template<typename NativeReal>
-	constexpr bool inrange(NativeReal v) {
+	constexpr bool inrange(NativeReal v) const noexcept {
 		// the valid range for this cfloat includes the interval between 
 		// maxpos and the value that would round down to maxpos
 		bool bIsInRange = true;		
 		if (v > 0) {
 			cfloat c(SpecificValue::maxpos);
-			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d;
-			d = NativeReal(c);
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d(NativeReal(c));
 			++d;
 			if (v >= NativeReal(d)) bIsInRange = false;
 		}
 		else {
 			cfloat c(SpecificValue::maxneg);
-			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d;
-			d = NativeReal(c);
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d(NativeReal(c));
 			--d;
 			if (v <= NativeReal(d)) bIsInRange = false;
 		}
-
 		return bIsInRange;
 	}
 	constexpr bool test(unsigned bitIndex) const noexcept {
