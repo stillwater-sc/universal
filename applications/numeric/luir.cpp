@@ -63,19 +63,6 @@ try {
     std::streamsize new_precision = 7;
     std::cout << std::setprecision(new_precision);
     
-
-    // Write Configurations
-    /*
-    std::ofstream MyFile("configs_highamir.txt", std::ios_base::app); // Create and open a text file
-    MyFile << "-------------------------\n";
-    MyFile << "Algo = \t" << algo << "  \n";  // Write to the file
-    MyFile << "--------------------------\n\n";
-    MyFile << "(hbits, hes) = (" << hbits << ", " << hes << ") \n";
-    MyFile << "(wbits, wes) = (" << wbits << ", " << wes << ") \n";
-    MyFile << "(lbits, les) = (" << lbits << ", " << les << ") \n";
-    MyFile.close();                          // Close the file
-    */
-
     // Precision Templates
     #define CFLOAT 0   // 0 = POSITS (see also squeeze.hpp)
     // /** 
@@ -111,8 +98,6 @@ try {
             std::cout << "Dynamic range fp<" << lbits << "," << les << "> = (" << m << ", " << M << ")" << std::endl;
         #else
             std::cout << "Dynamic range posit<" << lbits << "," << les << "> = (" << m << ", " << M << ")" << std::endl;
-            // std::cout << "Dynamic range " << dynamic_range<LowPrecision>() << '\n';
-            // std::cout << "No underflow! Numbers smaller than min --> minelement p<16,2>" << LowPrecision(1.287779e-18) << std::endl;
         #endif
         
         // Unit Round-off
@@ -180,7 +165,7 @@ try {
     */
     sw::universal::blas::matrix<size_t> P(n-1,2);
     if constexpr (showProcesses){std::cout << "Process: Factoring (PLU)..." << std::endl;}
-    plu(Al, P, n);
+    plu(Al, P);
     Mw LU(Al);
     if constexpr (showProcesses){std::cout << "Complete!\n" << std::endl;}
 
@@ -221,6 +206,7 @@ try {
     Vw bw(b);   // Note: also try b = P*mu*R*(AX), where A is original matrix.
     Vh r;        
 
+    std::cout << typeid(n).name() << std::endl; 
 
     /**
      * ********************************************************************
@@ -235,7 +221,7 @@ try {
      * ********************************************************************
     */
     if constexpr (showProcesses){std::cout << "Process: computing initial solution..." << std::endl;}
-    auto xn = backsub(LU,forwsub(LU,bw,n),n);
+    auto xn = backsub(LU,forwsub(LU,bw));
     if constexpr (showProcesses){std::cout << "Complete!\n" << std::endl;}
 
     std::cout << "#   " << std::setw(COLWIDTH) << "||x - xn|| " << "\t" << std::setw(COLWIDTH)  << " Normwise Backward Error " << '\n'; 
@@ -250,12 +236,11 @@ try {
         Vh xh(xn);
         r = b - Ah*xh;   
         Vw rn(r);        
-        auto c = backsub(LU,forwsub(LU,rn,n),n);         
+        auto c = backsub(LU,forwsub(LU,rn));         
         xn += c;
         auto maxnorm = (x - xn).infnorm();
-        if ((maxnorm < 1e-7) || (niters > 20) || diverge) { //  && !(diverge)){ 
+        if ((maxnorm < 1e-7) || (niters > 20) || diverge) {
             stop = true;  
-            //std::cout << "max norm > 1e-7 true"  << std::endl;
         }
         
         // Print Results
@@ -286,8 +271,7 @@ try {
     std::cout << std::setprecision(old_precision);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
     
-} // try
-
+}   // try
     /**
      * Catch error messages
      */

@@ -12,7 +12,6 @@
     /** 
      * Numerical Precisions
      *  - adjust according to type (float/posit)
-     * 
      */
 
     // Working Precision
@@ -48,14 +47,14 @@
      */
 
     constexpr bool print          = false;
-    constexpr bool showCondest    = false;
+    constexpr bool showCondest    = false; // bug if true in condest.hpp.
     constexpr bool showCond       = true;
     constexpr bool showAmax       = true;
     constexpr bool showSize       = true;
     constexpr bool showSol        = false;
     constexpr bool showAlgo       = false;
     constexpr bool showNumProps   = true;
-    constexpr bool showProcesses  = true;
+    constexpr bool showProcesses  = false;
 
     /** 
      * Table Column Width

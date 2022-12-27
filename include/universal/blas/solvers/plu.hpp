@@ -19,8 +19,9 @@
 namespace sw { namespace universal { namespace blas {  
 
 template<typename Scalar>
-void plu(matrix<Scalar>& A, matrix<size_t>& P, size_t n){ 
+void plu(matrix<Scalar>& A, matrix<size_t>& P){ 
     Scalar x;
+    size_t n = num_rows(A);
     for (size_t i = 0; i < n-1; ++i){ // i-th row
         P(i,0) = i;
         P(i,1) = i;
