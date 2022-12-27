@@ -1503,19 +1503,19 @@ public:
 	}
 
 	constexpr bool isnormal() const noexcept {
-		blockbinary<es, bt> e;
+		blockbinary<es, bt> e{};
 		exponent(e);
 //		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
 		// isnormal returns true if exponent bits are not all zero or one, false otherwise
 		return !e.iszero() && !e.all();
 	}
 	constexpr bool isdenormal() const noexcept {
-		blockbinary<es, bt> e;
+		blockbinary<es, bt> e{};
 		exponent(e);
 		return e.iszero(); // isdenormal returns true if exponent bits are all zero, false otherwise
 	}
 	constexpr bool issupernormal() const noexcept {
-		blockbinary<es, bt> e;
+		blockbinary<es, bt> e{};
 		exponent(e);
 		return e.all();// issupernormal returns true if exponent bits are all one, false otherwise
 	}
