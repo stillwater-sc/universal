@@ -1528,16 +1528,19 @@ public:
 		bool bIsInRange = true;		
 		if (v > 0) {
 			cfloat c(SpecificValue::maxpos);
-			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d(NativeReal(c));
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d{};
+			d = NativeReal(c);
 			++d;
 			if (v >= NativeReal(d)) bIsInRange = false;
 		}
 		else {
 			cfloat c(SpecificValue::maxneg);
-			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d(NativeReal(c));
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d{};
+			d = NativeReal(c);
 			--d;
 			if (v <= NativeReal(d)) bIsInRange = false;
 		}
+
 		return bIsInRange;
 	}
 	constexpr bool test(unsigned bitIndex) const noexcept {
