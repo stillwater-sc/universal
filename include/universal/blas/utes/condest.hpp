@@ -13,11 +13,78 @@
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/vector.hpp>
 #include <universal/blas/blas.hpp>
-#include <universal/blas/solvers/plu.hpp>
+// #include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/lu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
 #include <universal/blas/utes/matnorm.hpp>
+#include <tuple>
+ 
+namespace sw { namespace universal { namespace blas {  
+template<typename Scalar>
+std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scalar>& A){ 
+
+    using Matrix = sw::universal::blas::matrix<Scalar>;
+    using namespace std;
+
+    Scalar x;
+    size_t n = num_rows(A);
+    Matrix P(n,n);
+    Matrix L(n,n);
+    Matrix U(n,n);
+
+    P = 1;
+    L = 1;
+    U = A;
+
+    // Elimination Process
+    for (size_t i = 0; i < n-1; ++i){ // i-th row
+        Scalar absmax = abs(U(i,i)); 
+        size_t argmax = i;
+
+        // Select k >= i to maximize |U(k,i)| 
+        for (size_t k = i + 1; k < n; ++k){ // subsequent row (ele. in column k)
+            if (abs(U(k,i)) > absmax){
+                absmax = abs(U(k,i));
+                argmax = k;
+            }
+        }
+        // Check for necessary swaps
+        if (argmax != i){
+            // Swap rows loop
+            for (size_t j = i; j < n;++j){
+                x = U(i,j);
+                U(i,j) = U(argmax,j);
+                U(argmax,j) = x;
+            }
+            for (size_t j = 0; j < n;++j){
+                x = P(i,j);
+                P(i,j) = P(argmax,j);
+                P(argmax,j) = x;
+            }
+                // Permuate entries in L to match P
+            for (size_t j = 0; j < i; ++j){
+                x = L(i,j);
+                L(i,j) = L(argmax,j);
+                L(argmax,j) = x;
+            }
+        }
+        // Continue with row reduction
+        for (size_t k = i + 1; k < n; ++k){  // objective row
+        
+            // Is there a minpos for Scalar?  including double etc.
+            L(k,i) = U(k,i) / U(i,i);
+            for (size_t j = i; j < n; ++j){
+                U(k,j) = U(k,j) - L(k,i)*U(i,j);
+            }
+        }
+    }
+    U = triu(U);
+    return std::make_tuple(P,L,U); 
+} // LU
+}}} // namespace sw::universal::blas
+
+
 
 template<typename Scalar>
 Scalar condest(const sw::universal::blas::matrix<Scalar> & A){
@@ -30,28 +97,12 @@ Scalar condest(const sw::universal::blas::matrix<Scalar> & A){
 
     Scalar Na  = matnorm(A,2);    // || A ||
     Scalar Ni  = 1;               // || A^{-1} ||
-    size_t n = num_cols(A);
-    sw::universal::blas::matrix<Scalar> LU(A);
-    sw::universal::blas::vector<Scalar> b(n,1);
-    sw::universal::blas::matrix<size_t> P(n-1,2);
-
-    plu(LU,P);
-    /*  
-    for (size_t ii = 0; ii < n; ++ii){
-        if(P(ii,0) != P(ii,1)){
-            for (size_t jj = 0; jj < n; ++jj){
-                auto aij = LU(P(ii,0),jj);
-                LU(P(ii,0),jj) = LU(P(ii,1),jj);
-                LU(P(ii,1),jj) = aij;
-            }
-        }
-    }
-    */
+    sw::universal::blas::vector<Scalar> b(num_cols(A),1);
     
-    // auto x = solve((LU).transpose(), b);  // x = (LU')^(-1)*b
-    auto x = backsub(LU.transpose(),forwsub(LU.transpose(),b));
-    auto z = forwsub(LU.transpose(),x);
-    auto y = backsub(LU.transpose(),z);
+    auto [P, L, U] = plu(A);
+    auto x = solve((L*U).transpose(), b);  // x = (LU')^(-1)*b
+    auto z = forwsub(L,x);
+    auto y = backsub(U,z);
 
     Ni = y.infnorm()/x.infnorm();
 
