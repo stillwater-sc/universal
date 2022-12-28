@@ -100,10 +100,10 @@ Scalar condest(const sw::universal::blas::matrix<Scalar> & A){
     sw::universal::blas::vector<Scalar> b(num_cols(A),1);
     
     auto [P, L, U] = plu(A);
-    auto x = solve((L*U).transpose(), b);  // x = (LU')^(-1)*b
-    auto z = forwsub(L,x);
-    auto y = backsub(U,z);
-
+    auto z = forwsub(U.transpose(),b);
+    auto x = backsub(L.transpose(),z);
+    auto y = solve((L*U), x);  // x = (LU')^(-1)*b
+    
     Ni = y.infnorm()/x.infnorm();
 
     return Ni*Na;
@@ -111,6 +111,7 @@ Scalar condest(const sw::universal::blas::matrix<Scalar> & A){
 } // end function
 
 // Reference 
+// Equations (4.3) and (4.4) p. 372 
 /**
 Cline, A. K., Moler, C. B., Stewart, G. W., & Wilkinson, J. H. (1979). 
 An estimate for the condition number of a matrix. SIAM Journal on 
