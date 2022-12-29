@@ -22,18 +22,18 @@
  
 namespace sw { namespace universal { namespace blas {  
 template<typename Scalar>
-std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scalar>& A){ 
+std::tuple<matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scalar>& A){ 
 
     using Matrix = sw::universal::blas::matrix<Scalar>;
     using namespace std;
 
     Scalar x;
     size_t n = num_rows(A);
-    Matrix P(n,n);
+    // Matrix P(n,n);
     Matrix L(n,n);
     Matrix U(n,n);
 
-    P = 1;
+    // P = 1;
     L = 1;
     U = A;
 
@@ -57,11 +57,11 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
                 U(i,j) = U(argmax,j);
                 U(argmax,j) = x;
             }
-            for (size_t j = 0; j < n;++j){
-                x = P(i,j);
-                P(i,j) = P(argmax,j);
-                P(argmax,j) = x;
-            }
+           // for (size_t j = 0; j < n;++j){
+           //     x = P(i,j);
+           //     P(i,j) = P(argmax,j);
+           //     P(argmax,j) = x;
+           // }
                 // Permuate entries in L to match P
             for (size_t j = 0; j < i; ++j){
                 x = L(i,j);
@@ -80,7 +80,7 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scal
         }
     }
     U = triu(U);
-    return std::make_tuple(P,L,U); 
+    return std::make_tuple(L,U); 
 } // LU
 }}} // namespace sw::universal::blas
 
@@ -94,17 +94,17 @@ Scalar condest(const sw::universal::blas::matrix<Scalar> & A){
  * showCondest = false; LUIR.cpp will run.   
  */
 
-
-    Scalar Na  = matnorm(A,2);    // || A ||
+    Scalar Na  = matnorm(A,1);    // || A ||
     Scalar Ni  = 1;               // || A^{-1} ||
     sw::universal::blas::vector<Scalar> b(num_cols(A),1);
     
-    auto [P, L, U] = plu(A);
+    auto [L, U] = plu(A);
     auto z = forwsub(U.transpose(),b);
     auto x = backsub(L.transpose(),z);
-    auto y = solve((L*U), x);  // x = (LU')^(-1)*b
-    
-    Ni = y.infnorm()/x.infnorm();
+    // auto y = solve((L*U), x);  // x = (LU')^(-1)*b
+    auto y = backsub(U,forwsub(L,x));
+    Ni = norm(y,1)/norm(x,1);
+    // Ni = y.infnorm()/x.infnorm();
 
     return Ni*Na;
 
