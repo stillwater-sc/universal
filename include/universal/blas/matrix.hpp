@@ -321,7 +321,7 @@ matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 template<typename Scalar>
 matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	// Hadamard Product A.*B.  Element-wise multiplication.
-	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "%").what());
 	unsigned rows = A.rows();
 	unsigned cols = A.cols();
 	 
