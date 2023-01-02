@@ -88,7 +88,7 @@ public:
 	template<typename tgtScalar>
 	vector& operator=(const vector<tgtScalar>& v) {
 		for (size_t i = 0; i < size(); ++i) {
-			data[i] = v[i]; // conversion must be handled by number system
+			data[i] = Scalar(v[i]); // conversion must be handled by number system
 		}
 		return *this;
 	}
@@ -315,7 +315,11 @@ template<typename Scalar> auto size(const vector<Scalar>& v) { return v.size(); 
 
 // this design does not work well for universal as we would need to create
 // enable_if() configurations for all possible type combinations
+//template<typename Scalar>
+// typename enable_if_posit<Scalar, Scalar> operator*(const vector<Scalar>& a, const vector<Scalar>& b) { // doesn't compile with gcc
+// typename std::enable_if<sw::universal::is_posit<Scalar>, Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
 
+#ifdef LATER
 // regular dot product for non-posits
 template<typename Scalar>
 typename std::enable_if<std::is_floating_point<Scalar>::value,Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
@@ -347,20 +351,34 @@ typename std::enable_if<std::is_integral<Scalar>::value, Scalar>::type operator*
 	}
 	return sum;
 }
+#endif
 
+template<typename Scalar>
+Scalar operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+	//	std::cout << "dot product for " << typeid(Scalar).name() << std::endl;
+	size_t N = size(a);
+	if (size(a) != size(b)) {
+		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
+		return Scalar{ 0 };
+	}
+	Scalar sum{ 0 };
+	for (size_t i = 0; i < N; ++i) {
+		sum += a(i) * b(i);
+//		std::cout << std::setw(15) << double(a(i)) << " * " << std::setw(15) << double(b(i)) << " cumulative sum: " << std::setw(15) << double(sum) << '\n';
+	}
+	return sum;
+}
 
 // fused dot product for posits
-template<typename Scalar>
-// typename enable_if_posit<Scalar, Scalar> operator*(const vector<Scalar>& a, const vector<Scalar>& b) { // doesn't compile with gcc
-typename std::enable_if<sw::universal::is_posit<Scalar>, Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+template<unsigned nbits, unsigned es>
+posit<nbits, es> operator*(const vector< posit<nbits, es> >& a, const vector< posit<nbits, es> >& b) {
+	using Scalar = posit<nbits, es>;
 //	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
 	size_t N = size(a);
 	if (size(a) != size(b)) {
 		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
 		return Scalar{ 0 };
 	}
-	constexpr unsigned nbits = Scalar::nbits;
-	constexpr unsigned es = Scalar::es;
 	constexpr unsigned capacity = 20;
 	sw::universal::quire<nbits, es, capacity> sum{ 0 };
 	for (size_t i = 0; i < N; ++i) {

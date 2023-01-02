@@ -76,12 +76,12 @@ try {
 		constexpr posit<nbits, es, BlockType> minneg(SpecificValue::minneg);
 		constexpr posit<nbits, es, BlockType> maxneg(SpecificValue::maxneg);
 		std::cout << "minpos patterns for full articulated standard posits\n";
-//		std::cout << "minpos : " << to_binary(minpos) << '\t' << minpos_scale<nbits, es>() << '\n';
-//		std::cout << "minneg : " << to_binary(minneg) << '\n';
+		std::cout << "minpos : " << to_binary(minpos) << '\t' << minpos_scale<nbits, es>() << '\n';
+		std::cout << "minneg : " << to_binary(minneg) << '\n';
 
 		std::cout << "maxpos patterns for full articulated standard posits\n";
-//		std::cout << "maxpos : " << to_binary(maxpos) << '\t' << maxpos_scale<nbits, es>() << '\n';
-//		std::cout << "maxneg : " << to_binary(maxneg) << '\n';
+		std::cout << "maxpos : " << to_binary(maxpos) << '\t' << maxpos_scale<nbits, es>() << '\n';
+		std::cout << "maxneg : " << to_binary(maxneg) << '\n';
 		std::cout << '\n';
 	}
 

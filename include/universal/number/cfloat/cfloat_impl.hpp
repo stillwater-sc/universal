@@ -349,21 +349,17 @@ public:
 	// constructors
 	cfloat() = default;
 
-	// decorated/converting constructors
-	constexpr cfloat(const std::string& stringRep) {
-		assign(stringRep);
-	}
-
 	// construct a cfloat from another, block type bt must be the same
 	template<unsigned nnbits, unsigned ees>
-	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) {
+	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) noexcept : _block{} {
 //		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
 		*this = double(rhs);
 	}
 
+	// converting constructors
+	constexpr cfloat(const std::string& stringRep) : _block{} { assign(stringRep); }
 	// specific value constructor
-	constexpr cfloat(const SpecificValue code) noexcept
-		: _block{} {
+	constexpr cfloat(const SpecificValue code) noexcept : _block{} {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();
@@ -1319,7 +1315,7 @@ public:
 			}
 		}
 		else {
-			blockbinary<es, bt> ebits;
+			blockbinary<es, bt> ebits{};
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormal scale is determined by fraction
@@ -1351,7 +1347,7 @@ public:
 			return iszeroencoding();
 		}
 		else { // all subnormals round to 0
-			blockbinary<es, bt> ebits;
+			blockbinary<es, bt> ebits{};
 			exponent(ebits);
 			if (ebits.iszero()) return true; else return false;
 		}
@@ -1360,7 +1356,7 @@ public:
 		// unbiased exponent = scale = 0, fraction = 0
 		int s = scale();
 		if (s == 0) {
-			blockbinary<fbits, bt> f;
+			blockbinary<fbits, bt> f{};
 			fraction(f);
 			return f.iszero();
 		}
@@ -1507,39 +1503,39 @@ public:
 	}
 
 	constexpr bool isnormal() const noexcept {
-		blockbinary<es, bt> e;
+		blockbinary<es, bt> e{};
 		exponent(e);
 //		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
 		// isnormal returns true if exponent bits are not all zero or one, false otherwise
 		return !e.iszero() && !e.all();
 	}
 	constexpr bool isdenormal() const noexcept {
-		blockbinary<es, bt> e;
+		blockbinary<es, bt> e{};
 		exponent(e);
 		return e.iszero(); // isdenormal returns true if exponent bits are all zero, false otherwise
 	}
 	constexpr bool issupernormal() const noexcept {
-		blockbinary<es, bt> e;
+		blockbinary<es, bt> e{};
 		exponent(e);
 		return e.all();// issupernormal returns true if exponent bits are all one, false otherwise
 	}
 	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
 	
 	template<typename NativeReal>
-	constexpr bool inrange(NativeReal v) {
+	constexpr bool inrange(NativeReal v) const noexcept {
 		// the valid range for this cfloat includes the interval between 
 		// maxpos and the value that would round down to maxpos
 		bool bIsInRange = true;		
 		if (v > 0) {
 			cfloat c(SpecificValue::maxpos);
-			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d;
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d{};
 			d = NativeReal(c);
 			++d;
 			if (v >= NativeReal(d)) bIsInRange = false;
 		}
 		else {
 			cfloat c(SpecificValue::maxneg);
-			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d;
+			cfloat<nbits + 1, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> d{};
 			d = NativeReal(c);
 			--d;
 			if (v <= NativeReal(d)) bIsInRange = false;
@@ -3072,7 +3068,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 	}
 	else {
 		std::stringstream ss;
-		ss << double(v);
+		ss << std::setprecision(precision) << double(v);  // TODO: make this native
 		representation = ss.str();
 //		representation = to_string(v, precision);
 	}

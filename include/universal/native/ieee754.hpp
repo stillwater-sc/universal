@@ -13,7 +13,9 @@
 #include <universal/utility/long_double.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
+#include <universal/native/attributes.hpp>
 #include <universal/native/bit_functions.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
 
 namespace sw { namespace universal {
 
@@ -62,7 +64,6 @@ namespace sw { namespace universal {
 #endif
 
 namespace sw { namespace universal {
-
 
 	template<typename Real>
 	std::ostream& operator<<(std::ostream& ostr, const ieee754_parameter<Real>& v) {
@@ -197,7 +198,7 @@ int _extractExponent(Real v) {
 	raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
 	Uint frac{ raw };
 	raw >>= ieee754_parameter<Real>::fbits;
-	// debias
+	// de-bias
 	int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
 	if (raw == 0) { // a subnormal encoding
 		int msb = findMostSignificantBit(frac);
@@ -221,7 +222,8 @@ int scale(Real v) {
 		_e = _extractExponent<std::uint64_t>(v);
 	}
 	else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
-		long double frac = frexpl(v, &_e);
+		//long double frac = frexpl(v, &_e);
+		frexpl(v, &_e);
 		_e -= 1;
 	}
 	return _e;

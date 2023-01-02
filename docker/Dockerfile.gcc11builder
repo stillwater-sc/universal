@@ -1,6 +1,8 @@
 #
 # Dockerfile to create the builder container for compiling and testing Universal
-# docker build --target gcc10builder -t stillwater/universal:gcc10builder 
+# docker build --target gcc11builder -t stillwater/universal:gcc11builder  -f Dockerfile.gcc11builder .
+# then push to docker hub
+# docker push stillwater/universal:gcc11builder
 
 # BUILDER stage
 FROM gcc:11.3 as gcc11builder
@@ -37,6 +39,6 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID "Universal Numbers Library Builder V3 GCC 11.3"
+ENV CONTAINER_ID "Universal Numbers Library Builder GCC 11.3"
 
 CMD ["/usr/bin/env", "bash"]

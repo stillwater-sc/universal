@@ -448,7 +448,7 @@ public:
 			bt nibblebits = static_cast<bt>(mask & word);
 			return static_cast<uint8_t>(nibblebits >> static_cast<bt>(nibbleIndexInWord*4));
 		}
-		throw "nibble index out of bounds";
+		return static_cast<uint8_t>(0);  // NOP when nibble index is out of bounds
 	}
 	constexpr bt block(unsigned b) const noexcept {
 		if (b >= nrBlocks) return bt{ 0 };

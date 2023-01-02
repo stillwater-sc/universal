@@ -97,6 +97,25 @@ using msfp8    = cfloat<8, 2, std::uint8_t, false, false, false>;
 using msfp9    = cfloat<9, 3, std::uint16_t, false, false, false>;
 using amd24    = cfloat<24, 8, std::uint32_t, false, false, false>;
 
+// helpers
+
+// ShowRepresentations prints the different output formats for the Scalar type
+// TODO: guard with cfloat trait
+template<typename Scalar>
+void ShowRepresentations(std::ostream& ostr, float f) {
+	auto oldprec = ostr.precision(); // save stream state
+
+	constexpr int max_digits10 = std::numeric_limits<Scalar>::max_digits10; 	// floating-point attribute for printing scientific format
+
+	Scalar v(f); // convert to target cfloat
+	ostr << "scientific   : " << std::setprecision(max_digits10) << v << '\n';
+	ostr << "triple form  : " << to_triple(v) << '\n';
+	ostr << "binary form  : " << to_binary(v, true) << '\n';
+	ostr << "color coded  : " << color_print(v) << '\n';
+
+	ostr << std::setprecision(oldprec);
+}
+
 }}  // namespace sw::universal
 
 

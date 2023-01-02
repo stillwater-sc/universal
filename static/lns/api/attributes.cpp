@@ -48,10 +48,10 @@ try {
 	
 	{
 		std::cout << "Dynamic ranges of different logarithmic floating-point\n";
-		std::cout << symmetry< lns< 8, 4> >() << '\n';
-		std::cout << symmetry< lns<16, 8> >() << '\n';
-		std::cout << symmetry< lns<24,12> >() << '\n';
-		std::cout << symmetry< lns<32,16> >() << '\n';
+		std::cout << symmetry_range< lns< 8, 4> >() << '\n';
+		std::cout << symmetry_range< lns<16, 8> >() << '\n';
+		std::cout << symmetry_range< lns<24,12> >() << '\n';
+		std::cout << symmetry_range< lns<32,16> >() << '\n';
 	}
 
 	{

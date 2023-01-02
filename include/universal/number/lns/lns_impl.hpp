@@ -20,10 +20,12 @@ namespace sw { namespace universal {
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 inline lns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, lns<nbits, rbits, bt, xtra...>& p) {
 	if (v.iszero()) {
-		return p.setnan();
+		p.setzero();
+		return p;
 	}
 	if (v.isnan() || v.isinf()) {
-		return p.setnan();
+		p.setnan();
+		return p;
 	}
 	return p;
 }
@@ -479,7 +481,7 @@ protected:
 			_block.setblock(i, bt(~_block[i]));
 		}
 		//_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
-		_block.setblock(MSU, _block[MSU] & MSU_MASK);
+		_block.setblock(MSU, bt(_block[MSU] & MSU_MASK));
 		return *this;
 	}
 

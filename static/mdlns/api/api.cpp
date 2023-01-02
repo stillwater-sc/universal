@@ -34,13 +34,12 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-//	ReportTestSuiteHeader(test_suite, reportTestCases);
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// important behavioral traits
-//	ReportTrivialityOfType<mdlns<8, 2>>();
+//	ReportTrivialityOfType<mdlns<8, 2>>();  // TODO: type_tag fails for mdlns
 
 	// default behavior
-
 	{
 		std::cout << "+---------    default mdmdlns bahavior   --------+\n";
 		using Real = mdlns<8, 3>;
@@ -53,13 +52,12 @@ try {
 	}
 
 	// configuration
-	
 	{
 		std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
-		using mdlns16 = mdlns<16, 5, std::uint16_t>;
+//		using mdlns16 = mdlns<16, 5, std::uint16_t>;
 //		ArithmeticOperators<mdlns16>(1.0f, 1.0f);
 
-		using mdlns24 = mdlns<24, 5, std::uint32_t>;
+//		using mdlns24 = mdlns<24, 5, std::uint32_t>;
 //		ArithmeticOperators<mdlns24>(1.0f, 1.0f);
 	}
 
@@ -78,8 +76,8 @@ try {
 		constexpr size_t rbits = 3;
 		using Real = mdlns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
 
-		CONSTEXPRESSION Real a{}; // zero constexpr
-//		std::cout << type_tag(a) << '\n';
+//		CONSTEXPRESSION Real a{}; // zero constexpr
+//		std::cout << type_tag<Real>(a) << '\n';  // TODO: type_tag doesn't work for mdlns
 
 		// TODO: needs a constexpr version of log2() function
 //		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion

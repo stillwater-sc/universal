@@ -103,14 +103,17 @@ void DescendingScales() {
 	std::cout << std::setprecision(oldPrecision);
 }
 
+template<typename RealType,
+	     typename = typename std::enable_if< std::is_floating_point<RealType>::value, RealType>::type>
 void InfinityAdditions() {
 	std::cout << "IEEE-754 addition with infinites\n";
-	constexpr float fa = std::numeric_limits<float>::infinity();
-	constexpr float fb = -fa;
-	std::cout << fa << " + " << fa << " = " << (fa + fa) << " : " << sw::universal::to_binary(fa + fa) << '\n';
-	std::cout << fa << " + " << fb << " = " << (fa + fb) << " : " << sw::universal::to_binary(fa + fb) << '\n';
-	std::cout << fb << " + " << fa << " = " << (fb + fa) << " : " << sw::universal::to_binary(fb + fa) << '\n';
-	std::cout << fb << " + " << fb << " = " << (fb + fb) << " : " << sw::universal::to_binary(fb + fb) << '\n';
+	constexpr RealType fa = std::numeric_limits<RealType>::infinity();
+	constexpr RealType fb = -fa;
+	constexpr unsigned COLWITH = 15;
+	std::cout << std::setw(COLWITH) << fa << " + " << std::setw(COLWITH) << fa << " = " << std::setw(COLWITH) << (fa + fa) << " : " << sw::universal::to_binary(fa + fa) << '\n';
+	std::cout << std::setw(COLWITH) << fa << " + " << std::setw(COLWITH) << fb << " = " << std::setw(COLWITH) << (fa + fb) << " : " << sw::universal::to_binary(fa + fb) << '\n';
+	std::cout << std::setw(COLWITH) << fb << " + " << std::setw(COLWITH) << fa << " = " << std::setw(COLWITH) << (fb + fa) << " : " << sw::universal::to_binary(fb + fa) << '\n';
+	std::cout << std::setw(COLWITH) << fb << " + " << std::setw(COLWITH) << fb << " = " << std::setw(COLWITH) << (fb + fb) << " : " << sw::universal::to_binary(fb + fb) << '\n';
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -133,8 +136,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "IEEE-754 floating-point bit manipulation verification";
-	std::string test_tag    = "bit manipulators";
+	std::string test_suite  = "IEEE-754 floating-point operators";
+	std::string test_tag    = "special cases";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
@@ -169,7 +172,7 @@ try {
 	DescendingScales<float>();
 
 	// show the results of addition with infinites
-	InfinityAdditions();
+	InfinityAdditions<float>();
 
 	int largestScale = std::numeric_limits<float>::max_exponent - 1;
 	float r = sw::universal::ipow<float>(static_cast<size_t>(largestScale));
@@ -185,6 +188,14 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	// show the results of addition with infinites
+	InfinityAdditions<float>();
+	InfinityAdditions<double>();
+
+	std::cout << float_range() << '\n';
+	std::cout << double_range() << '\n';
+	std::cout << longdouble_range() << '\n';
+
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<float>(reportTestCases), "float", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<double>(reportTestCases), "double", test_tag);
 #if LONG_DOUBLE_SUPPORT

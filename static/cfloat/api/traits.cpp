@@ -74,12 +74,12 @@ try {
 
 	{
 		std::cout << "Sampling ranges of the standard classic floating-point configurations\n";
-		std::cout << symmetry< quarter >() << '\n';
-		std::cout << symmetry< half >() << '\n';
-		std::cout << symmetry< single >() << '\n';
-		std::cout << symmetry< duble >() << '\n';
-		std::cout << symmetry< quad >() << '\n';
-		std::cout << symmetry< octo >() << '\n';
+		std::cout << symmetry_range< quarter >() << '\n';
+		std::cout << symmetry_range< half >() << '\n';
+		std::cout << symmetry_range< single >() << '\n';
+		std::cout << symmetry_range< duble >() << '\n';
+		std::cout << symmetry_range< quad >() << '\n';
+		std::cout << symmetry_range< octo >() << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -52,12 +52,12 @@ try {
 
 	{
 		std::cout << "Dynamic ranges of different fixpnt configurations\n";
-		std::cout << symmetry< fixpnt<  8,  4> >() << '\n';
-		std::cout << symmetry< fixpnt< 16,  8> >() << '\n';
-		std::cout << symmetry< fixpnt< 32, 16> >() << '\n';
-		std::cout << symmetry< fixpnt< 64, 32> >() << '\n';
-		std::cout << symmetry< fixpnt<128, 64> >() << '\n';
-		std::cout << symmetry< fixpnt<256,128> >() << '\n';
+		std::cout << symmetry_range< fixpnt<  8,  4> >() << '\n';
+		std::cout << symmetry_range< fixpnt< 16,  8> >() << '\n';
+		std::cout << symmetry_range< fixpnt< 32, 16> >() << '\n';
+		std::cout << symmetry_range< fixpnt< 64, 32> >() << '\n';
+		std::cout << symmetry_range< fixpnt<128, 64> >() << '\n';
+		std::cout << symmetry_range< fixpnt<256,128> >() << '\n';
 	}
 
 	{
