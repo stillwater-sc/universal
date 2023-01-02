@@ -425,27 +425,39 @@ Scalar minelement(const matrix<Scalar>&A) {
 }
 
 
-// getRow (jq 2022-11-19)
+// Gets the ith row of matrix A
 template<typename Scalar>
 vector<Scalar> getRow(unsigned i, const matrix<Scalar>&A) {
-	// Gets the ith row of matrix A
-	vector<Scalar> x(num_cols(A),0);
+	vector<Scalar> x(num_cols(A));
 	for (size_t j = 0; j < num_cols(A); ++j) {
 		x(j) = A(i,j);
 		}
 	return x;
 }
 
+// Gets the jth column of matrix A
+template<typename Scalar>
+vector<Scalar> getCol(unsigned j, const matrix<Scalar>&A) {
+	vector<Scalar> x(num_rows(A));
+	for (size_t i = 0; i < num_rows(A); ++i) {
+		x(i) = A(i,j);
+		}
+	return x;
+}
 
-// permat (jq 2022-11-19)
-//template<typename Scalar>
-//void permat(vector<Scalar>&P, matrix<Scalar>&A) {
-//	vector<Scalar> x(num_cols(A),0);
-//	for (size_t row = 0; row < num_rows(A); ++row) {
-//		x = getRow(row,A);
-//		something here
-//		}
-//}
+
+// Display Matrix
+template<typename Scalar>
+void disp(const matrix<Scalar>& A, const size_t COLWIDTH = 10){
+    for (size_t i = 0;i<num_rows(A);++i){
+        for (size_t j = 0; j<num_cols(A);++j){
+            // std::cout <<std::setw(COLWIDTH) << A(i,j) << std::setw(COLWIDTH) << "\t" << std::fixed;
+			std::cout << "\t" << A(i,j) << "\t"; // << std::fixed;
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n" << std::endl;
+}
 
 
 }}} // namespace sw::universal::blas
