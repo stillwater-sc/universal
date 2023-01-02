@@ -148,6 +148,9 @@ public:
 		return *this;
 	}
 
+	
+
+
 	// modifiers
 	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
 	inline void resize(unsigned m, unsigned n) { _m = m; _n = n; data.resize(m * n); }
@@ -264,6 +267,7 @@ matrix<Scalar> operator/(const matrix<Scalar>& A, const Scalar& b) {
 	return B /= b;
 }
 
+ 
 // matrix-vector multiply
 template<typename Scalar>
 vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
@@ -317,7 +321,7 @@ matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 template<typename Scalar>
 matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	// Hadamard Product A.*B.  Element-wise multiplication.
-	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "%").what());
 	unsigned rows = A.rows();
 	unsigned cols = A.cols();
 	 
@@ -352,6 +356,8 @@ matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 	}
 	return C;
 }
+
+
 
 // matrix equivalence tests
 template<typename Scalar>
@@ -393,4 +399,65 @@ matrix<Scalar> operator>(const matrix<Scalar>& A, const Scalar& x) {
 	return B;
 }
  
+
+// maxelement (jq 2022-10-15)
+template<typename Scalar>
+Scalar maxelement(const matrix<Scalar>&A) {
+	auto x = abs(A(0,0));
+	for (size_t i = 0; i < num_rows(A); ++i) {
+		for (size_t j = 0; j < num_cols(A); ++j) {
+			x = (abs(A(i, j)) > x) ? abs(A(i, j)) : x;
+		}
+	}
+	return x;
+}
+
+// minelement (jq 2022-10-15)
+template<typename Scalar>
+Scalar minelement(const matrix<Scalar>&A) {
+	auto x = maxelement(A);
+	for (size_t i = 0; i < num_rows(A); ++i) {
+		for (size_t j = 0; j < num_cols(A); ++j) {
+			x = ((abs(A(i, j)) < x) && (A(i,j)!=0)) ? abs(A(i, j)) : x;
+		}
+	}
+	return x;
+}
+
+
+// Gets the ith row of matrix A
+template<typename Scalar>
+vector<Scalar> getRow(unsigned i, const matrix<Scalar>&A) {
+	vector<Scalar> x(num_cols(A));
+	for (size_t j = 0; j < num_cols(A); ++j) {
+		x(j) = A(i,j);
+		}
+	return x;
+}
+
+// Gets the jth column of matrix A
+template<typename Scalar>
+vector<Scalar> getCol(unsigned j, const matrix<Scalar>&A) {
+	vector<Scalar> x(num_rows(A));
+	for (size_t i = 0; i < num_rows(A); ++i) {
+		x(i) = A(i,j);
+		}
+	return x;
+}
+
+
+// Display Matrix
+template<typename Scalar>
+void disp(const matrix<Scalar>& A, const size_t COLWIDTH = 10){
+    for (size_t i = 0;i<num_rows(A);++i){
+        for (size_t j = 0; j<num_cols(A);++j){
+            // std::cout <<std::setw(COLWIDTH) << A(i,j) << std::setw(COLWIDTH) << "\t" << std::fixed;
+			std::cout << "\t" << A(i,j) << "\t"; // << std::fixed;
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n" << std::endl;
+}
+
+
 }}} // namespace sw::universal::blas

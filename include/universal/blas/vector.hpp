@@ -73,6 +73,13 @@ public:
 	vector(size_t N) : data(N) {}
 	vector(size_t N, const Scalar& val) : data(N, val) {}
 	vector(std::initializer_list<Scalar> iList) : data(iList) {}
+	// Converting Constructor (SourceType A --> Scalar B)
+	template<typename SourceType>
+	vector(const vector<SourceType>& v) : data(v.size()) {
+		for (size_t i = 0; i < size(); ++i){
+			data[i] = Scalar(v(i));
+		}
+	}
 	vector(const vector& v) = default;
 	vector(vector&& v) = default;
 
@@ -168,7 +175,14 @@ public:
 		return sqrt(twoNorm);
 	}
 
-	// Print elements as a column
+	// inf-norm of a vector
+	Scalar infnorm() const {  // default is 2-norm
+		Scalar infNorm = 0;
+		for (auto v : data) infNorm = (abs(v)>infNorm) ? abs(v) : infNorm;
+		return infNorm;
+	}
+
+	// Print elements as a column (jquinlan)
 	void disp(){
 		for (auto v : data) {
 			std::cout << v << '\n';
@@ -272,6 +286,7 @@ vector<Scalar> operator*(const Scalar& alpha, const vector<Scalar>& x) {
 	vector<Scalar> scaled(x);
 	return scaled *= alpha;
 }
+ 
 
 // scale a vector through operator* overload
 template<typename Scalar>

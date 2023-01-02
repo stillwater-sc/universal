@@ -17,7 +17,6 @@ Easy to view 4 x 4 matrix.
 See also int3.hpp 
 */
 
-
 sw::universal::blas::matrix<double>  lu4 = {
      { 1.0,   1.0,   0.0,   3.0}, 
 	{ 0.0,  -1.0,  -1.0,  -5.0},

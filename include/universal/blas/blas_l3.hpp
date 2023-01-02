@@ -204,4 +204,19 @@ matrix< sw::universal::posit<nbits, es> > fmm(const matrix< sw::universal::posit
 	return C;
 }
 
+// xyt is outer product x*y'
+template<typename Scalar>
+matrix<Scalar> xyt(const vector<Scalar>& x, const vector<Scalar>& y) {
+	size_t m = size(x);
+	size_t n = size(y);
+	matrix<Scalar> A(m,n);
+	
+	for (size_t i = 0; i < m; i++) {
+		for (size_t j = 0; j < n; j++) {
+			A(i,j) = x(i)*x(j);
+		}
+	}
+	return A;
+}
+
 }}} // namespace sw::universal::blas

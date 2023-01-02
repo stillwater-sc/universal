@@ -31,6 +31,13 @@ int main(int argc, char* argv[])
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
+	using namespace sw::universal;
+	{
+		std::cout << "Fused DOT product BLAS when posits are used\n";
+		FdpTest<float>();
+		FdpTest<posit<16, 2> >();
+	}
+
 
 	{
 		std::cout << "Fused DOT product BLAS when posits are used\n";
