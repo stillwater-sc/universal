@@ -79,6 +79,7 @@ void houseqr(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R){
 // Householder method with column pivoting
 template<typename Scalar>
 void houseqrpivot(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R, matrix<Scalar>& P){
+    // See https://netlib.org/lapack/lug/node42.html
     size_t m = num_rows(A);
     size_t n = num_cols(A);
     
