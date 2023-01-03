@@ -43,8 +43,8 @@ try {
 
 	if (argc == 1) std::cout << argv[0] << '\n';
 
-//	RandsvdMatrixTest< float >();
-	RandsvdMatrixTest< posit<32, 2> >();
+	RandsvdMatrixTest< float >();
+//	RandsvdMatrixTest< posit<32, 2> >();
 
 	return EXIT_SUCCESS;
 }
