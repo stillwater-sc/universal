@@ -1,13 +1,15 @@
+/** **********************************************************************
+ * forwsub.hpp: Forward substitution to solve Ax = b 
+ *              Input: Matrix A, Vector b, bool lower
+ *              Inplace forward sub. Uses only lower tri.
+ *
+ * @author:     James Quinlan
+ * @date:       2022-12-17
+ * @copyright:  Copyright (c) 2022 Stillwater Supercomputing, Inc.
+ * @license:    MIT Open Source license 
+ * ***********************************************************************
+ */
 #pragma once
-// forwsub.hpp: Forward substitution to solve Ax = b 
-//              Input: Matrix A, Vector b, bool lower
-//              Inplace forward sub. Uses only lower tri.
-//
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
-// James Quinlan 2022-11-05
-//
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/vector.hpp>
 
@@ -23,12 +25,13 @@ Vector forwsub(const Matrix& A, const Vector& b, bool lower = false) {
     if (lower){d = diag(A);}  
     
     x(0) = b(0)/d(0);
-	for (int i = 1; i < n; ++i){
+	for (size_t i = 1; i < n; ++i){
         Scalar y = 0.0;
-        for (int j = 0; j < i; ++j){
+        for (size_t j = 0; j < i; ++j){
             y += A(i,j)*x(j);
         }
-        x(i) = (b(i) - y)/d(i);
+        
+        x(i) = (lower) ? (b(i) - y)/d(i) : (b(i) - y);
     }
 	return x;
 }
@@ -36,30 +39,27 @@ Vector forwsub(const Matrix& A, const Vector& b, bool lower = false) {
 
 template<unsigned nbits, unsigned es>
 vector<posit<nbits,es>> forwsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b, bool lower = false) {
-	// using Scalar = typename Matrix::value_type;
-	size_t n = size(b);
+    size_t n = size(b);
     using Vector = vector<posit<nbits,es>>;
     constexpr unsigned capacity = 20;
-
+    
     Vector x(n);
     Vector d(n,1);
     
     if (lower){d = diag(A);}  
     
     x(0) = b(0)/d(0);
-	for (int i = 1; i < n; ++i){
+	for (size_t i = 1; i < n; ++i){
         quire<nbits,es,capacity> q{0};
-        for (int j = 0; j < i; ++j){
+        for (size_t j = 0; j < i; ++j){
             q += quire_mul(A(i,j), x(j));
         }
         posit<nbits,es> y;
         convert(q.to_value(), y); 
-        x(i) = (b(i) - y)/d(i);
+        
+        x(i) = (lower) ? (b(i) - y)/d(i) : (b(i) - y);
     }
 	return x;
 }
-
-
-
 
 }}}

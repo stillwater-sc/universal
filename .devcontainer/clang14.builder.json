@@ -1,3 +1,3 @@
 {
-	"image": "stillwater/universal:clang14.builder"
+	"image": "stillwater/universal:clang14builder"
 }

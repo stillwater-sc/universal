@@ -73,7 +73,7 @@ try {
 	// 20 digits ->  66 bits
 	// 30 digits ->  99 bits
 	// 40 digits -> 132 bits
-	fixpnt<40, 33> phi10(5);
+	// fixpnt<40, 33> phi10(5);
 	std::cout << phi50 << '\n';
 	std::cout << goldenRatio<33>() << '\n';
 	std::cout << goldenRatio<66>() << '\n';

@@ -20,10 +20,12 @@ namespace sw { namespace universal {
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 inline mdlns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, mdlns<nbits, rbits, bt, xtra...>& p) {
 	if (v.iszero()) {
-		return p.setnan();
+		p.setzero();
+		return p;
 	}
 	if (v.isnan() || v.isinf()) {
-		return p.setnan();
+		p.setnan();
+		return p;
 	}
 	return p;
 }

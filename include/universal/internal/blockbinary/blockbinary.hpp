@@ -96,15 +96,15 @@ public:
 	typedef bt BlockType;
 	static constexpr BinaryNumberType NumberType = _NumberType;
 
-	static constexpr unsigned   bitsInByte = 8;
-	static constexpr unsigned   bitsInBlock = sizeof(bt) * bitsInByte;
-	static constexpr unsigned   nrBlocks = (0 == nbits ? 1 : (1ull + ((nbits - 1ull) / bitsInBlock)));
+	static constexpr unsigned bitsInByte = 8;
+	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
+	static constexpr unsigned nrBlocks = (0 == nbits ? 1 : (1ull + ((nbits - 1ull) / bitsInBlock)));
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock));
 	static constexpr bt       maxBlockValue = bt(-1);
 
-	static constexpr unsigned   MSU = nrBlocks - 1; // MSU == Most Significant Unit
+	static constexpr unsigned MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	static constexpr bt       ALL_ONES = bt(~0);
-	static constexpr unsigned   maxShift = (0 == nbits ? 0 : (nrBlocks* bitsInBlock - nbits)); // protect the shift that is >= sizeof(bt)
+	static constexpr unsigned maxShift = (0 == nbits ? 0 : (nrBlocks* bitsInBlock - nbits)); // protect the shift that is >= sizeof(bt)
 	static constexpr bt       MSU_MASK = (0 == nbits ? bt(0) : (ALL_ONES >> maxShift));      // the other side of this protection
 	static constexpr bt       SIGN_BIT_MASK = (0 == nbits ? bt(0) : (bt(bt(1) << ((nbits - 1ull) % bitsInBlock))));
 
@@ -116,9 +116,13 @@ public:
 
 	/// construct a blockbinary from another: bt must be the same
 	template<unsigned nnbits>
-	blockbinary(const blockbinary<nnbits, BlockType, NumberType>& rhs) { this->assign(rhs); }
+	blockbinary(const blockbinary<nnbits, BlockType, NumberType>& rhs) : _block{} { this->assign(rhs); }
 
-	// specific value constructor
+	// initializer for long long
+	constexpr blockbinary(long long initial_value) noexcept : _block{} { *this = initial_value; }
+
+	// specific value constructors
+	constexpr blockbinary(const std::string& s) noexcept : _block{} {  }  // TODO
 	constexpr blockbinary(const SpecificValue code) : _block{} {
 		switch (code) {
 		case SpecificValue::infpos:
@@ -144,9 +148,6 @@ public:
 			break;
 		}
 	}
-
-	// initializer for long long
-	constexpr blockbinary(long long initial_value) noexcept : _block{} { *this = initial_value; }
 
 	constexpr blockbinary& operator=(long long rhs) noexcept {
 		if constexpr (1 < nrBlocks) {

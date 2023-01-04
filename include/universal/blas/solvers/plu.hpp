@@ -1,93 +1,59 @@
-#pragma once
-// plu.hpp: dense matrix PLU decomposition (PA = LU)
-//          via DooLittle Method
-// auto [P, L, U] = plu(A); // Returns P(ermutation matrix)
-//                             L(ower) Triangular
-//                             U(pper) Triangular 
-//
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
-// James Quinlan
-//
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+/** **********************************************************************
+ * plu.hpp: dense matrix PLU decomposition (PA = LU)
+ *          via DooLittle Method (in place)
+ *
+ * @author:     James Quinlan
+ * @date:       2022-12-18
+ * @copyright:  Copyright (c) 2022 Stillwater Supercomputing, Inc.
+ * @license:    MIT Open Source license
+ * 
+ * This file is part of the Universal Number Library project.
+ * ***********************************************************************
+ */
 
-#include <universal/utility/directives.hpp>
-#include <iostream>
-#include <tuple>
-#include <universal/number/posit/posit_fwd.hpp>
-#include <universal/blas/matrix.hpp>
-#include <universal/blas/blas_l1.hpp>
+#pragma once
+#include<universal/utility/directives.hpp>
+#include<universal/number/posit/posit_fwd.hpp>
+#include<universal/blas/matrix.hpp>
 
 namespace sw { namespace universal { namespace blas {  
 
 template<typename Scalar>
-std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scalar>& A){ 
-
-    using Matrix = sw::universal::blas::matrix<Scalar>;
-    using namespace std;
-
+void plu(matrix<Scalar>& A, matrix<size_t>& P){ 
     Scalar x;
     size_t n = num_rows(A);
-    Matrix P(n,n);
-    Matrix L(n,n);
-    Matrix U(n,n);
-
-    P = 1;
-    L = 1;
-    U = A;
-
-    // Elimination Process
     for (size_t i = 0; i < n-1; ++i){ // i-th row
-        Scalar absmax = abs(U(i,i)); 
+        P(i,0) = i;
+        P(i,1) = i;
+
+        Scalar absmax = abs(A(i,i)); 
         size_t argmax = i;
 
         // Select k >= i to maximize |U(k,i)| 
-        for (size_t k = i + 1; k < n; ++k){ // subsequent row (ele. in column k)
-            if (abs(U(k,i)) > absmax){
-                absmax = abs(U(k,i));
+        for (size_t k = i + 1; k < n; ++k){
+            if (abs(A(k,i)) > absmax){
+                absmax = abs(A(k,i));
                 argmax = k;
             }
         }
+
         // Check for necessary swaps
         if (argmax != i){
-            // Swap rows loop
-            for (size_t j = i; j < n;++j){
-                x = U(i,j);
-                U(i,j) = U(argmax,j);
-                U(argmax,j) = x;
-            }
-            for (size_t j = 0; j < n;++j){
-                x = P(i,j);
-                P(i,j) = P(argmax,j);
-                P(argmax,j) = x;
-            }
-                // Permuate entries in L to match P
-            for (size_t j = 0; j < i; ++j){
-                x = L(i,j);
-                L(i,j) = L(argmax,j);
-                L(argmax,j) = x;
+            P(i,1) = argmax;
+            for (size_t j = 0; j < n;++j){  // j = i originally
+                x = A(i,j);
+                A(i,j) = A(argmax,j);
+                A(argmax,j) = x;
             }
         }
+
         // Continue with row reduction
         for (size_t k = i + 1; k < n; ++k){  // objective row
-            // if(U(i,i) == 0.0){U(i,i)= mp;}
-            // std::cout << mp << std::endl;
-
-            // Is there a minpos for Scalar?  including double etc.
-            L(k,i) = U(k,i) / U(i,i);
-            // std::cout << "L("<<k<<","<<i<<") = " << L(k,i) << '\n';
-            for (size_t j = i; j < n; ++j){
-                U(k,j) = U(k,j) - L(k,i)*U(i,j);
-                //std::cout << "U("<<k<<","<<i<<") = " << (U(i,j)/U(i,i))*L(k,j) << '\n';
+            A(k,i) = A(k,i) / A(i,i);
+            for (size_t j = i+1; j < n; ++j){
+                A(k,j) = A(k,j) - A(k,i)*A(i,j);
             }
-            // std::cout << "U = " << U << '\n';
-        }
+         } // update L
     }
-    U = triu(U);
-    return std::make_tuple(P,L,U); 
 } // LU
-
-
-
-
-
 }}} // namespace sw::universal::blas

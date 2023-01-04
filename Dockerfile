@@ -28,7 +28,7 @@ RUN cmake -DBUILD_ALL=ON .. && make
 # RELEASE stage
 #FROM alpine:latest as release    # hitting a segfault during startup of some playground programs
 #FROM debian:buster-slim as release
-FROM ubuntu:20.04 as release
+FROM ubuntu:22.04 as release
 LABEL Theodore Omtzigt
 
 #RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils
@@ -58,16 +58,22 @@ COPY --chown=stillwater:stillwater --from=builder /home/stillwater/universal/bui
 
 # copy the CLI tools to /usr/local/bin so they are immediately usable
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/areal /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/cfloat8_2 /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/cfloat8_3 /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/cfloat8_4 /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/double /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/fixpnt /usr/local/bin/
-COPY --from=builder /home/stillwater/universal/build/tools/cmd/float /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/single /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/float2posit /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/half /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/ieee /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/lns /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/longdouble /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/plimits /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/posit /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/prop* /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/quad /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/quarter /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/signedint /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/unsignedint /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/validation/hw/* /usr/local/bin/

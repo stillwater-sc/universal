@@ -57,10 +57,10 @@ try {
 	std::cout << dynamic_range<posit32>() << '\n';
 	std::cout << dynamic_range<lns32>() << '\n';
 
-	std::cout << symmetry<float>() << '\n';
-	std::cout << symmetry<cfloat32>() << '\n';
-	std::cout << symmetry<posit32>() << '\n';
-	std::cout << symmetry<lns32>() << '\n';
+	std::cout << symmetry_range<float>() << '\n';
+	std::cout << symmetry_range<cfloat32>() << '\n';
+	std::cout << symmetry_range<posit32>() << '\n';
+	std::cout << symmetry_range<lns32>() << '\n';
 
 	compareNumberTraits<float, areal32>(std::cout);
 	compareNumberTraits<float, cfloat32>(std::cout);

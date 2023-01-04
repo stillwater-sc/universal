@@ -27,15 +27,11 @@ try {
 		blockbinary<16> a;
 		a = -1;
 		std::cout << to_binary(a) << " : " << a << '\n';
-
-
 	}
 
 	{
 		constexpr blockbinary<8, uint8_t> b8(0x5555);
 		std::cout << to_binary(b8) << " : " << b8 << '\n';
-
-
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

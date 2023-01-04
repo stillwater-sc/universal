@@ -56,8 +56,8 @@ try {
 		std::cout << "Comparison of dynamic ranges of bfloat and the standard classic floating-point configuration\n";
 		std::cout << dynamic_range< single >() << '\n';
 		std::cout << dynamic_range< bfloat16 >() << '\n';
-		std::cout << symmetry< single >() << '\n';
-		std::cout << symmetry< bfloat16 >() << '\n';
+		std::cout << symmetry_range< single >() << '\n';
+		std::cout << symmetry_range< bfloat16 >() << '\n';
 	}
 	{
 		std::cout << "Comparison of min/max values of bfloat16 and the standard classic floating-point configurations\n";
@@ -71,12 +71,12 @@ try {
 
 	{
 		std::cout << "Comparison of sampling ranges of bfloat16 and the standard classic floating-point configurations\n";
-		std::cout << symmetry< quarter >() << '\n';
-		std::cout << symmetry< half >() << '\n';
-		std::cout << symmetry< single >() << '\n';
-		std::cout << symmetry< duble >() << '\n';
+		std::cout << symmetry_range< quarter >() << '\n';
+		std::cout << symmetry_range< half >() << '\n';
+		std::cout << symmetry_range< single >() << '\n';
+		std::cout << symmetry_range< duble >() << '\n';
 
-		std::cout << symmetry< bfloat16 >() << '\n';
+		std::cout << symmetry_range< bfloat16 >() << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

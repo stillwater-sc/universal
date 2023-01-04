@@ -28,8 +28,8 @@ try {
 	std::cout << dynamic_range<float>() << '\n';
 	std::cout << dynamic_range<posit<32, 2>>() << '\n';
 
-	std::cout << symmetry<float>() << '\n';
-	std::cout << symmetry<posit<32, 2>>() << '\n';
+	std::cout << symmetry_range<float>() << '\n';
+	std::cout << symmetry_range<posit<32, 2>>() << '\n';
 
 	using Float = float;
 	using Posit = sw::universal::posit<32, 2>;

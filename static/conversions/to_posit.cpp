@@ -103,22 +103,24 @@ try {
 
 	using int128_t = sw::universal::integer<128, uint32_t, IntegerNumberType::IntegerNumber>;
 	using int256_t = sw::universal::integer<256, uint32_t, IntegerNumberType::IntegerNumber>;
+
+	int128_t int128;
+	int256_t int256;
+
+/*
 	using posit8_t = sw::universal::posit<8,0>;
 	using posit16_t = sw::universal::posit<16,1>;
 	using posit32_t = sw::universal::posit<32,2>;
 	using posit64_t = sw::universal::posit<64,3>;
 	using posit128_t = sw::universal::posit<128,4>;
 	using posit256_t = sw::universal::posit<256,5>;
-
-
-	int128_t int128;
-	int256_t int256;
 	posit8_t p8;
 	posit16_t p16;
 	posit32_t p32;
 	posit64_t p64;
 	posit128_t p128;
 	posit256_t p256;
+*/
 
 	// decimal
 	int128.assign("1234567890");
