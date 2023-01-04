@@ -87,7 +87,7 @@ void houseqrpivot(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R,
     vector<Scalar> x(n);
     vector<Scalar> r(n);
     Scalar c;
-    size_t idx = 0;
+    
     for(size_t k = 0; k < n; ++k){
         x(k) = normL2(getCol(k,A));
         x(k) *= x(k); // Norm squared
