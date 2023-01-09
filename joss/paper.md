@@ -1,4 +1,3 @@
-
 ---
 title: 'Universal Numbers Library: Multi-format Variable Precision Arithmetic Library'
 tags:
@@ -19,13 +18,13 @@ authors:
     corresponding: true
     affiliation: 2
 affiliations:
- - name: Stillwater Supercomputing, USA
+ - name: Stillwater Supercomputing, Inc, USA
    index: 1
  - name: School of Mathematical and Physical Sciences, University of New England, USA
    index: 2
 date: 15 December 2022
 bibliography: references.bib
-
+---
 
 # Summary
 
@@ -62,27 +61,32 @@ $ docker run -it --rm stillwater/universal bash
 
 *Universal* started in 2017 as a bit-level arithmetic reference implementation of the evolving unum Type III (posit and valid) standard.  However, the demands for supporting various number systems, such as adaptive-precision integers to solve large factorials, adaptive-precision floats to act as Oracles, or comparing linear and tapered floats provided the opportunity to create a complete platform for numerical analysis and computational mathematics.  As a result, several projects have leveraged *Universal*, including Matrix Template Library (MTL4), Geometry + Simulation Modules (G+SMO), Bembel, a fast IGA BEM solver, and the Odeint ODE solver.
 
-The default build configuration will produce the command line tools, a playground, and educational and application examples.  It is also possible to construct the full regression suite across all the number systems.  For instance, the shortened output for the commands `double` and `double 1.23456789` are below.
+The default build configuration will produce the command line tools, a playground, and educational and application examples.  It is also possible to construct the full regression suite across all the number systems.  For instance, the shortened output for the commands `single` and `single 1.23456789` are below.
 
-```
-$ double 
-Universal parameterization of IEEE-754 fields
-Total number of bits      : 64
-number of exponent bits   : 11
-number of fraction bits   : 52
-exponent bias             : 1023
-smallest normal value     : 2.22507e-308
-                          : 0b0.00000000001.0000000000000000000000000000000000000000000000000000
-smallest subnormal value  : 4.94066e-324
-                          : 0b0.00000000000.0000000000000000000000000000000000000000000000000001
-exponent smallest normal  : -1022
-exponent smallest subnorm : -1074
+```bash
+$ single
+min exponent                                           -125
+max exponent                                            128
+radix                                                     2
+radix digits                                             24
+min                                             1.17549e-38
+max                                             3.40282e+38
+lowest                                         -3.40282e+38
+epsilon (1+1ULP-1)                              1.19209e-07
+round_error                                             0.5
+denorm_min                                       1.4013e-45
+infinity                                                inf
+quiet_NAN                                               nan
+signaling_NAN                                           nan
+...
 
 
-$ double 1.23456789
-double value : 1.2345678899999999
-triple form  : (+,0,0b0011'1100'0000'1100'1010'0100'0010'1000'0011'1101'1110'0001'1011)
-binary form  : 0b0.011'1111'1111.0011'1100'0000'1100'1010'0100'0010'1000'0011'1101'1110'0001'1011
+$ single 1.23456789
+scientific   : 1.2345679
+triple form  : (+,0,0b00111100000011001010010)
+binary form  : 0b0.0111'1111.001'1110'0000'0110'0101'0010
+color coded  : 0b0.0111'1111.001'1110'0000'0110'0101'0010
+
 ```
 
 
@@ -105,18 +109,31 @@ Each number system contained within *Universal* is supported by a comprehensive 
 
 
 Due to the size of the library, the build system for *Universal* allows for fine-grain control to subset the test environment for productive development and verification. There are twelve core build category flags defined: 
+
   - BUILD_APPLICATIONS
+  
   - BUILD_BENCHMARKS
+  
   - BUILD_CI
+  
   - BUILD_CMD_LINE_TOOLS
+  
   - BUILD_C_API
+  
   - BUILD_DEMONSTRATION
+  
   - BUILD_EDUCATION
+  
   - BUILD_LINEAR_ALGEBRA
+  
   - BUILD_MIXEDPRECISION_SDK
+  
   - BUILD_NUMBERS
+  
   - BUILD_NUMERICS
+  
   - BUILD_PLAYGROUND
+
 
 The flags, when set during cmake configuration, i.e. `cmake -DBUILD_CI=ON ..`, enable build targets specialized to the category. For example, the `BUILD_CI` flag turns on the continuous integration regression test suites for all number systems, and the `BUILD_APPLICATIONS` flag will build all the example applications that provide demonstrations of mixed-precision, high-accuracy, reproducible and/or interval arithmetic. 
 
