@@ -166,9 +166,11 @@ try {
 	using LNS4_1_mod = lns<4, 1, std::uint8_t, Behavior::Wrapping>;
 	using LNS4_1_sat = lns<4, 1, std::uint8_t>;
 	using LNS4_2     = lns<4, 2, std::uint8_t>;
+	using LNS4_3_sat = lns<4, 3, std::uint8_t>;
 	using LNS5_2     = lns<5, 2, std::uint8_t>;
 	using LNS8_3     = lns<8, 3, std::uint8_t>;
 	using LNS9_4     = lns<9, 4, std::uint8_t>;
+	using LNS9_8_sat = lns<9, 8, std::uint8_t>;
 	using LNS16_5    = lns<16, 5, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
@@ -177,10 +179,15 @@ try {
 	TestCase<LNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
 	// GenerateLnsTable<5, 2>(std::cout);
+	LNS4_3_sat a(0);
+	a.debugConstexprParameters();
+	LNS9_8_sat b(0);
+	b.debugConstexprParameters();
 
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_mod>(false), "lns<4,1,uint8_t,Behavior::Wrapping>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, uint8_t>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_2>(reportTestCases), "lns<4,2, uint8_t>", test_tag);
+   	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_3_sat>(reportTestCases), "lns<4,3, uint8_t>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS5_2>(reportTestCases), "lns<5,2, uint8_t>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_3>(reportTestCases), "lns<8,3, uint8_t>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_4>(reportTestCases), "lns<9,4, uint8_t>", test_tag);

@@ -15,8 +15,8 @@ struct is_mdlns_trait
 {
 };
 
-template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
-struct is_mdlns_trait< mdlns<nbits, rbits, BlockType, xtra...> >
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename BlockType, auto... xtra>
+struct is_mdlns_trait< mdlns<nbits, rbits, firstBase, secondBase, BlockType, xtra...> >
 	: true_type
 {
 };

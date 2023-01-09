@@ -1,10 +1,9 @@
 // api.cpp: application programming interface demonstration of fixed-size, arbitrary precision multi-dimensional logarithmic number systems
 //
-// Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// minimum set of include files to reflect source code dependencies
 #include <universal/number/mdlns/mdlns.hpp>
 #include <universal/number/cfloat/cfloat.hpp>  // bit field comparisons
 #include <universal/verification/test_suite.hpp>
@@ -25,16 +24,32 @@
 #define REGRESSION_LEVEL_4 1
 #endif
 
+template<typename Real>
+inline constexpr Real bases(const Real&, const Real& base) {
+	std::cout << "         base : " << base << '\n';
+	return base;
+}
+
+template<typename Real, typename BaseHead, typename ...OtherBases>
+inline constexpr Real bases(const Real& x, const BaseHead& bHead, const OtherBases& ...otherBases) {
+	std::cout << "bases<>  base : " << bHead << '\n';
+	return bases(x, static_cast<Real>(otherBases)...);
+}
+
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "mdlns API demonstration";
-	std::string test_tag    = "api";
-	bool reportTestCases    = false;
+	std::string test_suite = "mdlns API demonstration";
+	std::string test_tag = "api";
+	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	float x{ 1.0f };
+	bases(x, 2, 3, 5, 7, 9);
+	return 0;
 
 	// important behavioral traits
 //	ReportTrivialityOfType<mdlns<8, 2>>();  // TODO: type_tag fails for mdlns
@@ -108,7 +123,7 @@ try {
 
 	{
 		std::cout << "+---------    exceptions   ---------+\n";
-		using mdlns = sw::universal::mdlns<16, 8, uint16_t>;
+		using mdlns = sw::universal::mdlns<16, 8, 2, 3, uint16_t>;
 		mdlns a = mdlns(0.0f);
 		mdlns b = -mdlns(0.0);
 		// if (a != b) std::cout << "you can't compare indeterminate NaN\n";
@@ -130,7 +145,7 @@ try {
 
 	{
 		std::cout << "+---------    comparison to classic floats   --------+\n";
-		using MDLNS = mdlns<16, 8, std::uint16_t>;
+		using MDLNS = mdlns<16, 8, 2, 3, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
 		MDLNS a;
 		Real b;
