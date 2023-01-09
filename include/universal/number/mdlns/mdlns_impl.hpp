@@ -17,8 +17,8 @@
 namespace sw { namespace universal {
 		
 // convert a floating-point value to a specific mdlns configuration. Semantically, p = v, return reference to p
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-inline mdlns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, mdlns<nbits, rbits, bt, xtra...>& p) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+inline mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& convert(const triple<nbits, bt>& v, mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& p) {
 	if (v.iszero()) {
 		p.setzero();
 		return p;
@@ -30,25 +30,25 @@ inline mdlns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, mdl
 	return p;
 }
 
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-inline mdlns<nbits, rbits, bt, xtra...>& minpos(mdlns<nbits, rbits, bt, xtra...>& lminpos) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+inline mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& minpos(mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& lminpos) {
 	return lminpos;
 }
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-mdlns<nbits, rbits, bt, xtra...>& maxpos(mdlns<nbits, rbits, bt, xtra...>& lmaxpos) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& maxpos(mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& lmaxpos) {
 	return lmaxpos;
 }
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-mdlns<nbits, rbits, bt, xtra...>& minneg(mdlns<nbits, rbits, bt, xtra...>& lminneg) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& minneg(mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& lminneg) {
 	return lminneg;
 }
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-mdlns<nbits, rbits, bt, xtra...>& maxneg(mdlns<nbits, rbits, bt, xtra...>& lmaxneg) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& maxneg(mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& lmaxneg) {
 	return lmaxneg;
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<unsigned _nbits, unsigned _rbits, typename bt = uint8_t, auto... xtra>
+template<unsigned _nbits, unsigned _rbits, unsigned firstBase = 2, unsigned secondBase = 3, typename bt = uint8_t, auto... xtra>
 class mdlns {
 	static_assert(_nbits > _rbits, "configuration not supported: not enough integer bits");
 	static_assert( sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported" );
@@ -559,7 +559,7 @@ protected:
 				return *this = maxneg;
 			}
 			mdlns minpos(SpecificValue::minpos);
-			mdlns<nbits + 1, rbits + 1, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
+			mdlns<nbits + 1, rbits + 1, firstBase, secondBase, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
 			//std::cout << "minpos     : " << minpos << '\n';
 			//std::cout << "halfMinpos : " << halfMinpos << '\n';
 			if (absoluteValue <= Real(halfMinpos)) {
@@ -837,14 +837,14 @@ private:
 };
 
 // return the Unit in the Last Position
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-inline mdlns<nbits, rbits, bt, xtra...> ulp(const mdlns<nbits, rbits, bt, xtra...>& a) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+inline mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...> ulp(const mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& a) {
 	mdlns<nbits, rbits, bt, xtra...> b(a);
 	return ++b - a;
 }
 
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-std::string to_binary(const mdlns<nbits, rbits, bt, xtra...>& number, bool nibbleMarker = false) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+std::string to_binary(const mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
@@ -864,8 +864,8 @@ std::string to_binary(const mdlns<nbits, rbits, bt, xtra...>& number, bool nibbl
 	return s.str();
 }
 
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-std::string to_triple(const mdlns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+std::string to_triple(const mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& v, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	s << (v.sign() ? "(-, " : "(+, ");
@@ -874,8 +874,8 @@ std::string to_triple(const mdlns<nbits, rbits, bt, xtra...>& v, bool nibbleMark
 	return s.str();
 }
 
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-std::string components(const mdlns<nbits, rbits, bt, xtra...>& v) {
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+std::string components(const mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b" << std::setw(nbits) << v.fraction();
@@ -892,21 +892,21 @@ std::string components(const mdlns<nbits, rbits, bt, xtra...>& v) {
 // standard library functions for floating point
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-constexpr mdlns<nbits, rbits, bt, xtra...> abs(const mdlns<nbits, rbits, bt, xtra...>& v) {
-	mdlns<nbits, rbits, bt, xtra...> magnitude(v);
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+constexpr mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...> abs(const mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& v) {
+	mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...> magnitude(v);
 	magnitude.setsign(false);
 	return magnitude;
 }
 // ToDo constexpt frexp
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-mdlns<nbits, rbits, bt, xtra...> frexp(const mdlns<nbits, rbits, bt, xtra...>& x, int* exp) {
-	return mdlns<nbits, rbits, bt, xtra...>(std::frexp(double(x), exp));
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...> frexp(const mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& x, int* exp) {
+	return mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>(std::frexp(double(x), exp));
 }
 // ToDo constexpr ldexp
-template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-mdlns<nbits, rbits, bt, xtra...> ldexp(const mdlns<nbits, rbits, bt, xtra...>& x, int exp) {
-		return mdlns<nbits, rbits, bt, xtra...>(std::ldexp(double(x), exp));
+template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
+mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...> ldexp(const mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& x, int exp) {
+		return mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>(std::ldexp(double(x), exp));
 }
 
 }} // namespace sw::universal
