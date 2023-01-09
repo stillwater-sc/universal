@@ -839,7 +839,7 @@ private:
 // return the Unit in the Last Position
 template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto... xtra>
 inline mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...> ulp(const mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...>& a) {
-	mdlns<nbits, rbits, bt, xtra...> b(a);
+	mdlns<nbits, rbits, firstBase, secondBase, bt, xtra...> b(a);
 	return ++b - a;
 }
 
