@@ -1,5 +1,5 @@
 #pragma once
-// mdlns_fwd.hpp :  forward declarations of the logarithmic number system environment
+// lns2b_fwd.hpp :  forward declarations of the 2-base logarithmic number system environment
 //
 // Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
@@ -10,9 +10,9 @@
 namespace sw { namespace universal {
 
 // core mdlns types and functions
-template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto...x> class mdlns;
-template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto...x> constexpr mdlns<nbits, rbits, firstBase, secondBase, bt, x...> abs(const mdlns<nbits, rbits, firstBase, secondBase, bt, x...>&);
-template<unsigned nbits, unsigned rbits, unsigned firstBase, unsigned secondBase, typename bt, auto...x> mdlns<nbits, rbits, firstBase, secondBase, bt, x...> sqrt(const mdlns<nbits, rbits, firstBase, secondBase, bt, x...>&);
+template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> class lns2b;
+template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> constexpr lns2b<nbits, fbbits,, bt, x...> abs(const lns2b<nbits, fbbits,, bt, x...>&);
+template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> lns2b<nbits, fbbits,, bt, x...> sqrt(const lns2b<nbits, fbbits,, bt, x...>&);
 
 }} // namespace sw::universal
 

@@ -39,18 +39,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/mdlns/exceptions.hpp>
-#include <universal/number/mdlns/mdlns_fwd.hpp>
-#include <universal/number/mdlns/mdlns_impl.hpp>
-#include <universal/number/mdlns/mdlns_traits.hpp>
-//#include <universal/number/mdlns/numeric_limits.hpp>
+#include <universal/number/lns2b/exceptions.hpp>
+#include <universal/number/lns2b/lns2b_fwd.hpp>
+#include <universal/number/lns2b/lns2b_impl.hpp>
+#include <universal/number/lns2b/lns2b_traits.hpp>
+//#include <universal/number/lns2b/numeric_limits.hpp>
 
 // useful functions to work with logarithmic numbers
-//#include <universal/number/mdlns/manipulators.hpp>
-//#include <universal/number/mdlns/attributes.hpp>
+//#include <universal/number/lns2b/manipulators.hpp>
+//#include <universal/number/lns2b/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-//#include <universal/number/mdlns/mathlib.hpp>
+//#include <universal/number/lns2b/mathlib.hpp>
 
 #endif
