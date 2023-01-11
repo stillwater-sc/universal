@@ -1,7 +1,7 @@
 #pragma once
-// manipulators.hpp: definitions of helper functions for multi-dimensional logarithmic numbers manipulation
+// manipulators.hpp: definitions of helper functions for 2-base logarithmic numbers manipulation
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -14,23 +14,23 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for this lns
-	template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
-	inline std::string mdlnstype_tag(const mdlns<nbits, rbits, BlockType, xtra...>& = {}) {
+	template<unsigned nbits, unsigned fbbits, typename BlockType, auto... xtra>
+	inline std::string lns2btype_tag(const lns2b<nbits, fbbits, BlockType, xtra...>& = {}) {
 		std::stringstream s;
-		s << "mdlns<"
+		s << "lns2b<"
 			<< std::setw(3) << nbits << ", "
-			<< std::setw(3) << rbits << ", "
+			<< std::setw(3) << fbbits << ", "
 			<< typeid(BlockType).name() << ", "
 			<< std::setw(10) << type_tag(Behavior{xtra...}) << '>';
 		return s.str();
 	}
 
 	// report dynamic range of a type, specialized for lns
-	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-	inline std::string dynamic_range(const mdlns<nbits, rbits, bt, xtra...>& a) {
+	template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
+	inline std::string dynamic_range(const lns2b<nbits, fbbits, bt, xtra...>& a) {
 		std::stringstream s;
-		mdlns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-		s << type_tag(a) << ": ";
+		lns2b<nbits, fbbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		s << lns2btype_tag(a) << ": ";
 		s << "minpos scale " << std::setw(10) << d.scale() << "     ";
 		s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
 		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
@@ -38,27 +38,27 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
-	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
 	inline std::string range() {
 		std::stringstream s;
-		mdlns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		lns2b<nbits, fbbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
 		return s.str();
 	}
 
 	// report if a native floating-point value is within the dynamic range of the lns configuration
-	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
+	template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
 	inline bool isInRange(double v) {
-		using MDLNS = mdlns<nbits, rbits, bt, xtra...>;
-		MDLNS a{};
+		using LNS2B = lns2b<nbits, fbbits, bt, xtra...>;
+		LNS2B a{};
 
 		bool inRange = true;
 		if (v > double(a.maxpos()) || v < double(a.maxneg())) inRange = false;
 		return inRange;
 	}
 
-	template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
-	inline std::string color_print(const mdlns<nbits, rbits, BlockType, xtra...>& l, bool nibbleMarker = false) {
+	template<unsigned nbits, unsigned fbbits, typename BlockType, auto... xtra>
+	inline std::string color_print(const lns2b<nbits, fbbits, BlockType, xtra...>& l, bool nibbleMarker = false) {
 
 		std::stringstream s;
 
@@ -72,15 +72,15 @@ namespace sw { namespace universal {
 		s << red << (l.sign() ? "1" : "0");
 	
 		// integer bits
-		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
+		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(fbbits); --i) {
 			s << cyan << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
+			if ((i - fbbits) > 0 && ((i - fbbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 		}
 
 		// fraction bits
-		if constexpr (rbits > 0) {
+		if constexpr (fbbits > 0) {
 			s << magenta << '.';
-			for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+			for (int i = static_cast<int>(fbbits) - 1; i >= 0; --i) {
 				s << magenta << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
 				if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
 			}

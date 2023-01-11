@@ -1,24 +1,24 @@
 #pragma once
-// mathlib.hpp: definition of mathematical functions for the logarithmic number systems
+// mathlib.hpp: definition of mathematical functions for the 2-base logarithmic number systems
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/number/lns/math/classify.hpp>
-#include <universal/number/lns/math/complex.hpp>
-#include <universal/number/lns/math/error_and_gamma.hpp>
-#include <universal/number/lns/math/exponent.hpp>
-#include <universal/number/lns/math/fractional.hpp>
-#include <universal/number/lns/math/hyperbolic.hpp>
-#include <universal/number/lns/math/hypot.hpp>
-#include <universal/number/lns/math/logarithm.hpp>
-#include <universal/number/lns/math/minmax.hpp>
-#include <universal/number/lns/math/next.hpp>
-#include <universal/number/lns/math/pow.hpp>
-#include <universal/number/lns/math/sqrt.hpp>
-#include <universal/number/lns/math/trigonometry.hpp>
-#include <universal/number/lns/math/truncate.hpp>
+#include <universal/number/lns2b/math/classify.hpp>
+#include <universal/number/lns2b/math/complex.hpp>
+#include <universal/number/lns2b/math/error_and_gamma.hpp>
+#include <universal/number/lns2b/math/exponent.hpp>
+#include <universal/number/lns2b/math/fractional.hpp>
+#include <universal/number/lns2b/math/hyperbolic.hpp>
+#include <universal/number/lns2b/math/hypot.hpp>
+#include <universal/number/lns2b/math/logarithm.hpp>
+#include <universal/number/lns2b/math/minmax.hpp>
+#include <universal/number/lns2b/math/next.hpp>
+#include <universal/number/lns2b/math/pow.hpp>
+#include <universal/number/lns2b/math/sqrt.hpp>
+#include <universal/number/lns2b/math/trigonometry.hpp>
+#include <universal/number/lns2b/math/truncate.hpp>
 
 namespace sw {
     namespace universal {
@@ -26,10 +26,10 @@ namespace sw {
 
         // calculate the integer power a ^ b
         // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-        template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-        lns<nbits, rbits, bt, xtra...> ipow(const lns<nbits, rbits, bt, xtra...>& a, const lns<nbits, rbits, bt, xtra...>& b) {
+        template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
+        lns2b<nbits, fbbits, bt, xtra...> ipow(const lns2b<nbits, fbbits, bt, xtra...>& a, int b) {
             // precondition
-            if (!a.isinteger() || !b.isinteger()) return lns<nbits, rbits, bt, xtra...>(0);
+            if (!a.isinteger()) return lns2b<nbits, fbbits, bt, xtra...>(0);
 
             // TODO: using uint64_t as ipow constraints dynamic range
             uint64_t result(1);
@@ -41,7 +41,7 @@ namespace sw {
                 if (exp == 0) break;
                 base *= base;
             }
-            return lns<nbits, rbits, bt, xtra...>(result);
+            return lns<nbits, fbbits, bt, xtra...>(result);
         }
 
         // clang <complex> implementation is calling these functions so we need implementations for posit
@@ -54,9 +54,9 @@ namespace sw {
         //inline bool isinf(const posit<nbits, es>& p) { return p.isnar(); }
 
         // copysign returns a value with the magnitude of a, and the sign of b
-        template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-        inline lns<nbits, rbits, bt, xtra...> copysign(const lns<nbits, rbits, bt, xtra...>& a, const lns<nbits, rbits, bt, xtra...>& b) {
-            lns<nbits, rbits, bt, xtra...> c(a);
+        template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
+        inline lns2b<nbits, fbbits, bt, xtra...> copysign(const lns2b<nbits, fbbits, bt, xtra...>& a, const lns2b<nbits, fbbits, bt, xtra...>& b) {
+            lns2b<nbits, fbbits, bt, xtra...> c(a);
             if (a.sign() == b.sign()) return c;
             return -c;
         }

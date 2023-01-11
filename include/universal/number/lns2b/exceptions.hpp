@@ -1,38 +1,38 @@
 #pragma once
-// exceptions.hpp: definition of arbitrary configuration logarithmic number system exceptions
+// exceptions.hpp: definition of arbitrary configuration 2-base logarithmic number system exceptions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
 
 namespace sw { namespace universal {
 
-struct mdlns_arithmetic_exception : public universal_arithmetic_exception {
-	mdlns_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("mdlns arithmetic exception: ") + err) {}
+struct lns2b_arithmetic_exception : public universal_arithmetic_exception {
+	lns2b_arithmetic_exception(const std::string& err) : universal_arithmetic_exception(std::string("lns2b arithmetic exception: ") + err) {}
 };
 
 // divide by zero arithmetic exception for reals
-struct mdlns_divide_by_zero : public mdlns_arithmetic_exception {
-	mdlns_divide_by_zero() : mdlns_arithmetic_exception("division by zero") {}
+struct lns2b_divide_by_zero : public lns2b_arithmetic_exception {
+	lns2b_divide_by_zero() : lns2b_arithmetic_exception("division by zero") {}
 };
 
 // negative argument to sqrt
-struct mdlns_negative_sqrt_arg : public mdlns_arithmetic_exception {
-	mdlns_negative_sqrt_arg() : mdlns_arithmetic_exception("negative sqrt argument") {}
+struct lns2b_negative_sqrt_arg : public lns2b_arithmetic_exception {
+	lns2b_negative_sqrt_arg() : lns2b_arithmetic_exception("negative sqrt argument") {}
 };
 
 ///////////////////////////////////////////////////////////////
 // internal implementation exceptions
 
 // base class for internal exceptions
-struct mdlns_internal_exception : public universal_internal_exception {
-	mdlns_internal_exception(const std::string& error)
-		: universal_internal_exception(std::string("mdlns internal error: ") + error) {};
+struct lns2b_internal_exception : public universal_internal_exception {
+	lns2b_internal_exception(const std::string& error)
+		: universal_internal_exception(std::string("lns2b internal error: ") + error) {};
 };
 
-struct mdlns_index_out_of_bounds : public mdlns_internal_exception {
-	mdlns_index_out_of_bounds() : mdlns_internal_exception("index out of bounds") {}
+struct lns2b_index_out_of_bounds : public lns2b_internal_exception {
+	lns2b_index_out_of_bounds() : lns2b_internal_exception("index out of bounds") {}
 };
 
 }} // namespace sw::universal

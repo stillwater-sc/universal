@@ -1,7 +1,7 @@
 #pragma once
-// attributes.hpp: information functions for logarithmic number and value attributes
+// attributes.hpp: information functions for 2-base logarithmic number and value attributes
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath> // for std:pow()
@@ -16,18 +16,18 @@ namespace sw { namespace universal {
 // They should not be used for the core algorithms.
 
 	// free function sign
-template<unsigned nbits, unsigned rbits, typename bt, auto ...xtra>
-bool sign(const lns<nbits, rbits, bt, xtra...>& v) {
+template<unsigned nbits, unsigned fbbits, typename bt, auto ...xtra>
+bool sign(const lns2b<nbits, fbbits, bt, xtra...>& v) {
 	return v.sign();
 }
 
 // generate the maxneg through maxpos value range of a logarithmic number system configuration
 // the type of arithmetic, Modulo or Saturating, does not affect the range
-template<unsigned nbits, unsigned rbits, typename bt, auto ...xtra>
-std::string lns_range(const lns<nbits, rbits, bt, xtra...>& v) {
-	using LNS = lns<nbits, rbits, bt, xtra...>;
+template<unsigned nbits, unsigned fbbits, typename bt, auto ...xtra>
+std::string lns2b_range(const lns2b<nbits, fbbits, bt, xtra...>& v) {
+	using LNS2B = lns2b<nbits, fbbits, bt, xtra...>;
 	std::stringstream s;
-	LNS l;
+	LNS2B l;
 	s << std::setw(40) << type_tag(v) << " : [ "
 		<< l.maxneg() << " ... "
 		<< l.minneg() << " "
