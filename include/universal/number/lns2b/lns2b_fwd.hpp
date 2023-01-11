@@ -11,8 +11,8 @@ namespace sw { namespace universal {
 
 // core mdlns types and functions
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> class lns2b;
-template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> constexpr lns2b<nbits, fbbits,, bt, x...> abs(const lns2b<nbits, fbbits,, bt, x...>&);
-template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> lns2b<nbits, fbbits,, bt, x...> sqrt(const lns2b<nbits, fbbits,, bt, x...>&);
+template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> constexpr lns2b<nbits, fbbits, bt, xtra...> abs(const lns2b<nbits, fbbits, bt, xtra...>&);
+template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra> lns2b<nbits, fbbits, bt, xtra...> sqrt(const lns2b<nbits, fbbits, bt, xtra...>&);
 
 }} // namespace sw::universal
 

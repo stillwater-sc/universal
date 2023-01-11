@@ -48,20 +48,20 @@ lns2b<nbits, fbbits, bt, xtra...>& maxneg(lns2b<nbits, fbbits, bt, xtra...>& lma
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<unsigned _nbits, unsigned _rbits, unsigned firstBase = 2, unsigned secondBase = 3, typename bt = uint8_t, auto... xtra>
+template<unsigned _nbits, unsigned _fbbits, typename bt = uint8_t, auto... xtra>
 class lns2b {
-	static_assert(_nbits > _rbits, "configuration not supported: not enough integer bits");
+	static_assert(_nbits > _fbbits, "configuration not supported: not enough second base bits");
 	static_assert( sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported" );
-	static_assert(_nbits - _rbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
-	static_assert(_rbits < 64, "configuration not supported: scaling factor is > 2^64");
+	static_assert(_nbits - _fbbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
+	static_assert(_fbbits < 64, "configuration not supported: scaling factor is > 2^64");
 public:
 	typedef bt BlockType;
 
 	static constexpr unsigned nbits    = _nbits;
-	static constexpr unsigned rbits    = _rbits;
+	static constexpr unsigned fbbits   = _fbbits;
 	static constexpr Behavior behavior = {xtra...};
 
-	static constexpr double   scaling = double(1ull << rbits);
+	static constexpr double   scaling = double(1ull << fbbits);
 	static constexpr unsigned bitsInByte = 8ull;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	static constexpr unsigned nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
@@ -75,7 +75,7 @@ public:
 	static constexpr bool     SPECIAL_BITS_TOGETHER = (nbits > ((nrBlocks - 1) * bitsInBlock + 1));
 	static constexpr bt       MSU_ZERO = MSB_BIT_MASK;
 	static constexpr bt       MSU_NAN = SIGN_BIT_MASK | MSU_ZERO;  // only valid when special bits together is true
-	static constexpr int64_t  maxShift = nbits - rbits - 2;
+	static constexpr int64_t  maxShift = nbits - fbbits - 2;
 	static constexpr unsigned leftShift = (maxShift < 0) ? 0 : maxShift;
 	static constexpr int64_t  min_exponent = (maxShift > 0) ? (-(1ll << leftShift)) : 0;
 	static constexpr int64_t  max_exponent = (maxShift > 0) ? (1ll << leftShift) - 1 : 0;
@@ -422,7 +422,7 @@ public:
 	}
 	constexpr int  scale()  const noexcept {
 		ExponentBlockBinary exp(_block);
-		exp >>= rbits;
+		exp >>= fbbits;
 		return long(exp);
 	}
 	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
@@ -559,7 +559,7 @@ protected:
 				return *this = maxneg;
 			}
 			lns2b minpos(SpecificValue::minpos);
-			lns2b<nbits + 1, rbits + 1, firstBase, secondBase, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
+			lns2b<nbits + 1, fbbits + 1, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
 			//std::cout << "minpos     : " << minpos << '\n';
 			//std::cout << "halfMinpos : " << halfMinpos << '\n';
 			if (absoluteValue <= Real(halfMinpos)) {
@@ -587,8 +587,8 @@ protected:
 		if (unbiasedExponent > 0) rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
 		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
 
-		// our fixed-point has its radixPoint at rbits
-		int shiftRight = radixPoint - int(rbits);
+		// our fixed-point has its radixPoint at fbbits
+		int shiftRight = radixPoint - int(fbbits);
 		if (shiftRight > 0) {
 			if (shiftRight > 63) {
 				// this shift degree would be undefined behavior, but the intended transformation is that we have no bits
@@ -679,18 +679,18 @@ protected:
 		// pick up the absolute value of the minimum normal and subnormal exponents 
 		constexpr unsigned minNormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat > ::minNormalExp);
 		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
-		static_assert(rbits <= minSubnormalExponent, "lns2b::to_ieee754: fraction is too small to represent with requested floating-point type");
+		static_assert(fbbits <= minSubnormalExponent, "lns2b::to_ieee754: fraction is too small to represent with requested floating-point type");
 		TargetFloat multiplier = 0;
-		if constexpr (rbits > minNormalExponent) { // value is a subnormal number
+		if constexpr (fbbits > minNormalExponent) { // value is a subnormal number
 			multiplier = ieee754_parameter<TargetFloat>::minSubnormal;
-			for (unsigned i = 0; i < minSubnormalExponent - rbits; ++i) {
+			for (unsigned i = 0; i < minSubnormalExponent - fbbits; ++i) {
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
 		else {
 			// the value is a normal number
 			multiplier = ieee754_parameter<TargetFloat>::minNormal;
-			for (unsigned i = 0; i < minNormalExponent - rbits; ++i) {
+			for (unsigned i = 0; i < minNormalExponent - fbbits; ++i) {
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
@@ -722,16 +722,21 @@ private:
 
 	////////////////////// operators
 
-	// lns2b - logic operators
+	// stream operators
 
 	friend std::ostream& operator<< (std::ostream& ostr, const lns2b& r) {
 		ostr << double(r);
 		return ostr;
 	}
 	friend std::istream& operator>> (std::istream& istr, lns2b& r) {
-		istr >> r._fraction;
+		double d;
+		istr >> d;
+		r = d;
 		return istr;
 	}
+
+	// lns2b - logic operators
+
 	friend constexpr bool operator==(const lns2b& lhs, const lns2b& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
 		return lhs._block == rhs._block;
@@ -848,15 +853,15 @@ std::string to_binary(const lns2b<nbits, fbbits, bt, xtra...>& number, bool nibb
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
-	if constexpr (nbits - 2 >= rbits) {
-		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
+	if constexpr (nbits - 2 >= fbbits) {
+		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(fbbits); --i) {
 			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << '\'';
+			if ((i - fbbits) > 0 && ((i - fbbits) % 4) == 0 && nibbleMarker) s << '\'';
 		}
 	}
-	if constexpr (rbits > 0) {
+	if constexpr (fbbits > 0) {
 		s << '.';
-		for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+		for (int i = static_cast<int>(fbbits) - 1; i >= 0; --i) {
 			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 		}
