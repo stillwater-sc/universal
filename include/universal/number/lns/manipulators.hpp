@@ -22,7 +22,7 @@ namespace sw { namespace universal {
 		s << "lns<"
 			<< std::setw(3) << LnsType::nbits << ", "
 			<< std::setw(3) << LnsType::rbits << ", "
-			<< typeid(LnsType::BlockType).name() << ", "
+			<< typeid(typename LnsType::BlockType).name() << ", "
 		<< std::setw(10) << type_tag(Behavior{ LnsType::behavior }) << '>';
 		return s.str();
 	}
