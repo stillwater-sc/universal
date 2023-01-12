@@ -46,7 +46,7 @@
 //#include <universal/number/lns2b/numeric_limits.hpp>
 
 // useful functions to work with logarithmic numbers
-//#include <universal/number/lns2b/manipulators.hpp>
+#include <universal/number/lns2b/manipulators.hpp>
 //#include <universal/number/lns2b/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////

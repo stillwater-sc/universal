@@ -71,15 +71,14 @@ namespace sw { namespace universal {
 		Color def(ColorCode::FG_DEFAULT);
 		s << red << (l.sign() ? "1" : "0");
 	
-		// integer bits
+		// first base exponent bits
 		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(fbbits); --i) {
 			s << cyan << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
 			if ((i - fbbits) > 0 && ((i - fbbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 		}
 
-		// fraction bits
+		// second base exponent bits
 		if constexpr (fbbits > 0) {
-			s << magenta << '.';
 			for (int i = static_cast<int>(fbbits) - 1; i >= 0; --i) {
 				s << magenta << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
 				if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';

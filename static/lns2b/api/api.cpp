@@ -37,6 +37,14 @@ inline constexpr Real bases(const Real& x, const BaseHead& bHead, const OtherBas
 	return bases(x, static_cast<Real>(otherBases)...);
 }
 
+template<typename Real, unsigned nrBases>
+class lnsBases {
+public:
+
+private:
+	Real base[nrBases];
+};
+
 int main()
 try {
 	using namespace sw::universal;
@@ -49,12 +57,21 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	// float x{ 1.0f };
-	// bases(x, 2, 3, 5, 7, 9);
+	// bases(x, 2.5f, 3, 5, 7, 9);
 
 	// generate a value table for lns2b<5,2>
 	GenerateLns2bTable<5,2>(std::cout);
-//	lns2b<5, 2> l(1);
-//	std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
+
+	{
+		lns2b<8, 3> l(1);
+		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
+		l.debugConstexprParameters();
+
+		l.setbits(0xf5);
+		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
+		std::cout << to_binary(l.extractExponent(0), 4) << " : " << to_binary(l.extractExponent(1), 4) << '\n';
+
+	}
 
 	// important behavioral traits
 //	ReportTrivialityOfType<lns2b<8, 2>>();  // TODO: type_tag fails for lns2b

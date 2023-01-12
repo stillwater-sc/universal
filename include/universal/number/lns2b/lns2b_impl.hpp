@@ -79,9 +79,13 @@ public:
 	static constexpr unsigned leftShift = (maxShift < 0) ? 0 : maxShift;
 	static constexpr int64_t  min_exponent = (maxShift > 0) ? (-(1ll << leftShift)) : 0;
 	static constexpr int64_t  max_exponent = (maxShift > 0) ? (1ll << leftShift) - 1 : 0;
+	static constexpr uint64_t FB_MASK = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - fbbits));
+	static constexpr uint64_t SB_MASK = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - (nbits - fbbits - 1)));
 
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + lns2b exponent
 	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the lns2b exponent
+
+	static constexpr float    base[2] = { 0.5f, 3.0f };
 
 	/// trivial constructor
 	lns2b() = default;
@@ -425,22 +429,28 @@ public:
 		exp >>= fbbits;
 		return long(exp);
 	}
-	constexpr blockbinary<nbits+2, std::uint32_t, BinaryNumberType::Unsigned> fraction() const noexcept {
-		blockbinary<nbits + 2, std::uint32_t, BinaryNumberType::Unsigned> bb{ 0 };
-		// TODO: how? and what is the size of the blockbinary? it is much bigger than nbits+2
-		return bb;
-	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		bt word = _block[bitIndex / bitsInBlock];
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
-	inline constexpr bt block(unsigned b) const noexcept {
+	constexpr bt   block(unsigned b) const noexcept {
 		if (b < nrBlocks) return _block[b];
 		return bt(0); // return 0 when block index out of bounds
 	}
 
+	constexpr uint64_t extractExponent(int base) const noexcept {
+		uint64_t bits = uint64_t(_block);
+		if (base == 0) {
+			bits >>= (nbits - fbbits - 1); // normalize the value
+			bits &= FB_MASK; // null the sign bit
+		}
+		else if (base == 1) {
+			bits &= SB_MASK; // normalize the value
+		}
+		return bits;
+	}
 	explicit operator int()       const noexcept { return to_signed<int>(); }
 	explicit operator long()      const noexcept { return to_signed<long>(); }
 	explicit operator long long() const noexcept { return to_signed<long long>(); }
@@ -455,7 +465,7 @@ public:
 #endif
 
 	void debugConstexprParameters() {
-		std::cout << "constexpr parameters for " << type_tag(*this) << '\n';
+		std::cout << "constexpr parameters for " << lns2btype_tag(*this) << '\n';
 		std::cout << "scaling               " << scaling << '\n';
 		std::cout << "bitsInByte            " << bitsInByte << '\n';
 		std::cout << "bitsInBlock           " << bitsInBlock << '\n';
@@ -470,6 +480,12 @@ public:
 		std::cout << "BLOCK_MSB_MASK        " << to_binary(BLOCK_MSB_MASK, bitsInBlock) << '\n';
 		std::cout << "MSU_ZERO              " << to_binary(MSU_ZERO, bitsInBlock) << '\n';
 		std::cout << "MSU_NAN               " << to_binary(MSU_NAN, bitsInBlock) << '\n';
+		std::cout << "maxShift              " << maxShift << '\n';
+		std::cout << "leftShift             " << leftShift << '\n';
+		std::cout << "min_exponent          " << min_exponent << '\n';
+		std::cout << "max_exponent          " << max_exponent << '\n';
+		std::cout << "FB_MASK               " << to_binary(FB_MASK, bitsInBlock) << '\n';
+		std::cout << "SB_MASK               " << to_binary(SB_MASK, bitsInBlock) << '\n';
 	}
 
 protected:
@@ -660,6 +676,18 @@ protected:
 	//////////////////////////////////////////////////////
 	/// convertion routines to native types
 
+	template<typename Real>
+	Real ipow(Real base, uint64_t exp) const noexcept {
+		Real result(1.0f);
+		for (;;) {
+			if (exp & 0x1) result *= base;
+			exp >>= 1;
+			if (exp == 0) break;
+			base *= base;
+		}
+		return result;
+	}
+
 	template<typename SignedInt>
 	typename std::enable_if< std::is_integral<SignedInt>::value&& std::is_signed<SignedInt>::value, SignedInt>::type
 		to_signed() const {
@@ -680,41 +708,11 @@ protected:
 		constexpr unsigned minNormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat > ::minNormalExp);
 		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
 		static_assert(fbbits <= minSubnormalExponent, "lns2b::to_ieee754: fraction is too small to represent with requested floating-point type");
-		TargetFloat multiplier = 0;
-		if constexpr (fbbits > minNormalExponent) { // value is a subnormal number
-			multiplier = ieee754_parameter<TargetFloat>::minSubnormal;
-			for (unsigned i = 0; i < minSubnormalExponent - fbbits; ++i) {
-				multiplier *= 2.0f; // these are error free multiplies
-			}
-		}
-		else {
-			// the value is a normal number
-			multiplier = ieee754_parameter<TargetFloat>::minNormal;
-			for (unsigned i = 0; i < minNormalExponent - fbbits; ++i) {
-				multiplier *= 2.0f; // these are error free multiplies
-			}
-		}
-		// you pop out here with multiplier set to the weight of the starting bit
-		ExponentBlockBinary bb(_block);  // strip the sign bit
-		bool expNegative = bb.sign();
-		if (expNegative) bb.twosComplement();
-		// construct the value
-		TargetFloat value{ 0.0 };
-		unsigned bit = 0;
-		for (unsigned b = 0; b < bb.nrBlocks; ++b) {
-			BlockType mask = static_cast<BlockType>(1ull);
-			BlockType limb = bb[b];
-			for (unsigned i = 0; i < bitsInBlock; ++i) {
-				if (limb & mask) value += multiplier;
-				if (bit == nbits - 2) break; // skip the sign bit of the lns2b
-				++bit;
-				mask <<= 1;
-				multiplier *= 2.0;
-			}
-		}
-		value = (expNegative ? -value : value);
-		value = std::pow(TargetFloat(2.0f), value);
-		return (negative ? -value : value);
+
+		TargetFloat dim1, dim2;
+		dim1 = ipow(base[0], extractExponent(0));
+		dim2 = ipow(base[1], extractExponent(1));
+		return dim1 * dim2;
 	}
 
 private:

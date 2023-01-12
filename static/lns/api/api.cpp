@@ -39,6 +39,11 @@ try {
 	// important behavioral traits
 	ReportTrivialityOfType<lns<8, 2>>();
 
+	{
+		lns<5, 2> l(1);
+		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
+	}
+
 	// default behavior
 
 	{
