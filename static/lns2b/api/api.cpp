@@ -71,6 +71,7 @@ try {
 		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
 		std::cout << to_binary(l.extractExponent(0), 4) << " : " << to_binary(l.extractExponent(1), 4) << '\n';
 
+		std::cout << dynamic_range(l) << '\n';
 	}
 
 	// important behavioral traits
@@ -100,11 +101,11 @@ try {
 
 	{
 		std::cout << "+---------    Dynamic ranges of lns2b<> configurations   --------+\n";
-//		std::cout << dynamic_range(lns2b< 4, 2>()) << '\n';
-//		std::cout << dynamic_range(lns2b< 8, 3>()) << '\n';
-//		std::cout << dynamic_range(lns2b<12, 4>()) << '\n';
-//		std::cout << dynamic_range(lns2b<16, 5>()) << '\n';
-//		std::cout << dynamic_range(lns2b<20, 6>()) << '\n';
+		std::cout << dynamic_range(lns2b< 4, 2>()) << '\n';
+		std::cout << dynamic_range(lns2b< 8, 3>()) << '\n';
+		std::cout << dynamic_range(lns2b<12, 4>()) << '\n';
+		std::cout << dynamic_range(lns2b<16, 5>()) << '\n';
+		std::cout << dynamic_range(lns2b<20, 6>()) << '\n';
 	}
 
 	{

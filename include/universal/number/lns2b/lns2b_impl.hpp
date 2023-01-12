@@ -703,7 +703,7 @@ protected:
 		// special case handling
 		if (isnan()) return TargetFloat(NAN);
 		if (iszero()) return TargetFloat(0.0f);
-		bool negative = sign(); // cache for later decision
+		int signValue = (sign() ? -1 : 1); // cache for later decision
 		// pick up the absolute value of the minimum normal and subnormal exponents 
 		constexpr unsigned minNormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat > ::minNormalExp);
 		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
@@ -712,7 +712,7 @@ protected:
 		TargetFloat dim1, dim2;
 		dim1 = ipow(base[0], extractExponent(0));
 		dim2 = ipow(base[1], extractExponent(1));
-		return dim1 * dim2;
+		return signValue * dim1 * dim2;
 	}
 
 private:
