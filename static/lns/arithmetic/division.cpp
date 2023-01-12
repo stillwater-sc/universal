@@ -57,8 +57,8 @@ namespace sw { namespace universal {
 				c = a / b;
 				ref = da / db;
 #endif
-				if (reportTestCases && !isInRange<nbits, rbits, bt, behavior>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, bt, behavior>() << '\n';
+				if (reportTestCases && !isInRange<LnsType>(ref)) {
+					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
 				}
 				cref = ref;
 //				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';

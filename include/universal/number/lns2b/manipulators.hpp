@@ -13,52 +13,48 @@
 
 namespace sw { namespace universal {
 
-	// Generate a type tag for this lns
-	template<unsigned nbits, unsigned fbbits, typename BlockType, auto... xtra>
-	inline std::string lns2btype_tag(const lns2b<nbits, fbbits, BlockType, xtra...>& = {}) {
+	// Generate a type tag for this 2-base lns
+	template<typename Lns2bType,
+		std::enable_if_t< is_lns2b<Lns2bType>, bool> = true
+	>
+	inline std::string type_tag(const Lns2bType& = {}) {
 		std::stringstream s;
 		s << "lns2b<"
-			<< std::setw(3) << nbits << ", "
-			<< std::setw(3) << fbbits << ", "
-			<< typeid(BlockType).name() << ", "
-			<< std::setw(10) << type_tag(Behavior{xtra...}) << '>';
+			<< std::setw(3) << Lns2bType::nbits << ", "
+			<< std::setw(3) << Lns2bType::fbbits << ", "
+			<< typeid(Lns2bType::BlockType).name() << ", "
+			<< std::setw(10) << type_tag(Lns2bType::behavior) << '>';
 		return s.str();
 	}
 
-	// report dynamic range of a type, specialized for lns
-	template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-	inline std::string dynamic_range(const lns2b<nbits, fbbits, bt, xtra...>& a) {
+#ifdef DEPRECATED
+	template<typename Lns2bType,
+		std::enable_if_t< is_lns2b<Lns2bType>, bool> = true
+	>
+	inline std::string range(const Lns2bType & = {}) {
 		std::stringstream s;
-		lns2b<nbits, fbbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-		s << lns2btype_tag(a) << ": ";
-		s << "minpos scale " << std::setw(10) << d.scale() << "     ";
-		s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
-		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
-		s << "[" << to_binary(b) << " ... " << to_binary(c) << ", 0, " << to_binary(d) << " ... " << to_binary(e) << "]\n";
+		Lns2bType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << ']';
 		return s.str();
 	}
+#endif
 
-	template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-	inline std::string range() {
-		std::stringstream s;
-		lns2b<nbits, fbbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
-		return s.str();
-	}
-
-	// report if a native floating-point value is within the dynamic range of the lns configuration
-	template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
+	// report if a native floating-point value is within the dynamic range of the lns2b configuration
+	template<typename Lns2bType,
+		std::enable_if_t< is_lns2b<Lns2bType>, bool> = true
+	>
 	inline bool isInRange(double v) {
-		using LNS2B = lns2b<nbits, fbbits, bt, xtra...>;
-		LNS2B a{};
+		Lns2bType a{};
 
-		bool inRange = true;
-		if (v > double(a.maxpos()) || v < double(a.maxneg())) inRange = false;
-		return inRange;
+		bool inside = true;
+		if (v > double(a.maxpos()) || v < double(a.maxneg())) inside = false;
+		return inside;
 	}
 
-	template<unsigned nbits, unsigned fbbits, typename BlockType, auto... xtra>
-	inline std::string color_print(const lns2b<nbits, fbbits, BlockType, xtra...>& l, bool nibbleMarker = false) {
+	template<typename Lns2bType,
+		std::enable_if_t< is_lns2b<Lns2bType>, bool> = true
+	>
+	inline std::string color_print(const Lns2bType& l, bool nibbleMarker = false) {
 
 		std::stringstream s;
 
@@ -72,14 +68,15 @@ namespace sw { namespace universal {
 		s << red << (l.sign() ? "1" : "0");
 	
 		// first base exponent bits
-		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(fbbits); --i) {
+		constexpr int lsbFirstBase = static_cast<int>(Lns2bType::nbits - Lns2bType::fbbits - 1);
+		for (int i = static_cast<int>(Lns2bType::nbits) - 2; i >= lsbFirstBase; --i) {
 			s << cyan << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if ((i - fbbits) > 0 && ((i - fbbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
+			if ((i - Lns2bType::fbbits) > 0 && ((i - Lns2bType::fbbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 		}
 
 		// second base exponent bits
-		if constexpr (fbbits > 0) {
-			for (int i = static_cast<int>(fbbits) - 1; i >= 0; --i) {
+		if constexpr (lsbFirstBase > 0) {
+			for (int i = lsbFirstBase - 1; i >= 0; --i) {
 				s << magenta << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
 				if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
 			}

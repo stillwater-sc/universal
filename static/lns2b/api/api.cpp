@@ -89,6 +89,17 @@ try {
 //		ReportBinaryOperation(a, "+", b, c);
 	}
 
+	{
+		std::cout << "+---------    dynamic ranges of 8-bit lns2b<> configurations   --------+\n";
+//		std::cout << symmetry_range(lns2b<8, 0>()) << '\n';
+		std::cout << symmetry_range(lns2b<8, 1>()) << '\n';
+		std::cout << symmetry_range(lns2b<8, 2>()) << '\n';
+		std::cout << symmetry_range(lns2b<8, 3>()) << '\n';
+		std::cout << symmetry_range(lns2b<8, 4>()) << '\n';
+		std::cout << symmetry_range(lns2b<8, 5>()) << '\n';
+		std::cout << symmetry_range(lns2b<8, 6>()) << '\n';
+	}
+
 	// configuration
 	{
 		std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
@@ -153,17 +164,6 @@ try {
 		if (a.isnan() && b.isnan()) std::cout << "PASS: both +lns2b(0) and -lns2b(0) are indeterminate\n";
 		std::cout << "+lns2b(0.0f): " <<  lns2b(0.0f) << "\n";
 		std::cout << "-lns2b(0.0f): " << -lns2b(0.0f) << "\n";
-	}
-
-	{
-		std::cout << "+---------    dynamic ranges of 8-bit lns2b<> configurations   --------+\n";
-//		std::cout << dynamic_range(lns2b<8, 0>()) << '\n';
-//		std::cout << dynamic_range(lns2b<8, 1>()) << '\n';
-//		std::cout << dynamic_range(lns2b<8, 2>()) << '\n';
-//		std::cout << dynamic_range(lns2b<8, 3>()) << '\n';
-//		std::cout << dynamic_range(lns2b<8, 4>()) << '\n';
-//		std::cout << dynamic_range(lns2b<8, 5>()) << '\n';
-//		std::cout << dynamic_range(lns2b<8, 6>()) << '\n';
 	}
 
 	{

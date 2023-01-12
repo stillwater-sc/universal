@@ -14,51 +14,45 @@
 namespace sw { namespace universal {
 
 	// Generate a type tag for this lns
-	template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
-	inline std::string type_tag(const lns<nbits, rbits, BlockType, xtra...>& = {}) {
+	template<typename LnsType,
+		std::enable_if_t< is_lns<LnsType>, bool> = true
+	>
+	inline std::string type_tag(const LnsType & = {}) {
 		std::stringstream s;
 		s << "lns<"
-			<< std::setw(3) << nbits << ", "
-			<< std::setw(3) << rbits << ", "
-			<< std::setw(10) << type_tag(Behavior{xtra...}) << ", "
-			<< typeid(BlockType).name() << '>';
+			<< std::setw(3) << LnsType::nbits << ", "
+			<< std::setw(3) << LnsType::rbits << ", "
+			<< typeid(LnsType::BlockType).name() << ", "
+		<< std::setw(10) << type_tag(Behavior{ LnsType::behavior }) << '>';
 		return s.str();
 	}
 
-	// report dynamic range of a type, specialized for lns
-	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-	inline std::string dynamic_range(const lns<nbits, rbits, bt, xtra...>& a) {
+	template<typename LnsType,
+		std::enable_if_t< is_lns<LnsType>, bool> = true
+	>
+	inline std::string range(const LnsType & = {}) {
 		std::stringstream s;
-		lns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
-		s << type_tag(a) << ": ";
-		s << "minpos scale " << std::setw(10) << d.scale() << "     ";
-		s << "maxpos scale " << std::setw(10) << e.scale() << '\n';
-		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
-		s << "[" << to_binary(b) << " ... " << to_binary(c) << ", 0, " << to_binary(d) << " ... " << to_binary(e) << "]\n";
-		return s.str();
-	}
-
-	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-	inline std::string range() {
-		std::stringstream s;
-		lns<nbits, rbits, bt, xtra...> b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		LnsType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
 		return s.str();
 	}
 
 	// report if a native floating-point value is within the dynamic range of the lns configuration
-	template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
+	template<typename LnsType,
+		std::enable_if_t< is_lns<LnsType>, bool> = true
+	>
 	inline bool isInRange(double v) {
-		using LNS = lns<nbits, rbits, bt, xtra...>;
-		LNS a{};
+		LnsType a{};
 
-		bool inRange = true;
-		if (v > double(a.maxpos()) || v < double(a.maxneg())) inRange = false;
-		return inRange;
+		bool inside = true;
+		if (v > double(a.maxpos()) || v < double(a.maxneg())) inside = false;
+		return inside;
 	}
 
-	template<unsigned nbits, unsigned rbits, typename BlockType, auto... xtra>
-	inline std::string color_print(const lns<nbits, rbits, BlockType, xtra...>& l, bool nibbleMarker = false) {
+	template<typename LnsType,
+		std::enable_if_t< is_lns<LnsType>, bool> = true
+	>
+	inline std::string color_print(const LnsType& l, bool nibbleMarker = false) {
 
 		std::stringstream s;
 
@@ -72,15 +66,15 @@ namespace sw { namespace universal {
 		s << red << (l.sign() ? "1" : "0");
 	
 		// integer bits
-		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(rbits); --i) {
+		for (int i = static_cast<int>(LnsType::nbits) - 2; i >= static_cast<int>(LnsType::rbits); --i) {
 			s << cyan << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if ((i - rbits) > 0 && ((i - rbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
+			if ((i - LnsType::rbits) > 0 && ((i - LnsType::rbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 		}
 
 		// fraction bits
-		if constexpr (rbits > 0) {
+		if constexpr (LnsType::rbits > 0) {
 			s << magenta << '.';
-			for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
+			for (int i = static_cast<int>(LnsType::rbits) - 1; i >= 0; --i) {
 				s << magenta << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
 				if (i > 0 && (i % 4) == 0 && nibbleMarker) s << yellow << '\'';
 			}

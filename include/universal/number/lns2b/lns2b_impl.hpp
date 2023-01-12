@@ -79,7 +79,8 @@ public:
 	static constexpr unsigned leftShift = (maxShift < 0) ? 0 : maxShift;
 	static constexpr int64_t  min_exponent = (maxShift > 0) ? (-(1ll << leftShift)) : 0;
 	static constexpr int64_t  max_exponent = (maxShift > 0) ? (1ll << leftShift) - 1 : 0;
-	static constexpr uint64_t FB_MASK = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - fbbits));
+	static constexpr int      rightShift = (fbbits == 0 ? 0 : (64 - fbbits));
+	static constexpr uint64_t FB_MASK = (rightShift > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> rightShift) : 0ull);
 	static constexpr uint64_t SB_MASK = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - (nbits - fbbits - 1)));
 
 	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + lns2b exponent
@@ -425,9 +426,9 @@ public:
 		return (SIGN_BIT_MASK & _block[MSU]) != 0;
 	}
 	constexpr int  scale()  const noexcept {
-		ExponentBlockBinary exp(_block);
-		exp >>= fbbits;
-		return long(exp);
+		// this needs to work for all potential bases
+		double v = double(*this); // expensive, but necessary to be base invariant
+		return sw::universal::scale(v);
 	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
@@ -465,7 +466,7 @@ public:
 #endif
 
 	void debugConstexprParameters() {
-		std::cout << "constexpr parameters for " << lns2btype_tag(*this) << '\n';
+		std::cout << "constexpr parameters for " << type_tag(*this) << '\n';
 		std::cout << "scaling               " << scaling << '\n';
 		std::cout << "bitsInByte            " << bitsInByte << '\n';
 		std::cout << "bitsInBlock           " << bitsInBlock << '\n';
@@ -851,15 +852,17 @@ std::string to_binary(const lns2b<nbits, fbbits, bt, xtra...>& number, bool nibb
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
+	// first base exponent bits
+	constexpr int lsbFirstBase = static_cast<int>(nbits - fbbits - 1);
 	if constexpr (nbits - 2 >= fbbits) {
-		for (int i = static_cast<int>(nbits) - 2; i >= static_cast<int>(fbbits); --i) {
+		for (int i = static_cast<int>(nbits) - 2; i >= lsbFirstBase; --i) {
 			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
 			if ((i - fbbits) > 0 && ((i - fbbits) % 4) == 0 && nibbleMarker) s << '\'';
 		}
 	}
-	if constexpr (fbbits > 0) {
+	if constexpr (lsbFirstBase > 0) {
 		s << '.';
-		for (int i = static_cast<int>(fbbits) - 1; i >= 0; --i) {
+		for (int i = lsbFirstBase - 1; i >= 0; --i) {
 			s << (number.at(static_cast<unsigned>(i)) ? '1' : '0');
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 		}

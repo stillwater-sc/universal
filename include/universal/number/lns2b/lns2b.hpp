@@ -1,10 +1,10 @@
-// arbitrary configuration multi-dimensional logarithmic number arithmetic type standard header
+// arbitrary configuration 2-base logarithmic number arithmetic type standard header
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _LNS_STANDARD_HEADER_
-#define _LNS_STANDARD_HEADER_
+#ifndef _LNS2B_STANDARD_HEADER_
+#define _LNS2B_STANDARD_HEADER_
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
@@ -43,7 +43,7 @@
 #include <universal/number/lns2b/lns2b_fwd.hpp>
 #include <universal/number/lns2b/lns2b_impl.hpp>
 #include <universal/number/lns2b/lns2b_traits.hpp>
-//#include <universal/number/lns2b/numeric_limits.hpp>
+#include <universal/number/lns2b/numeric_limits.hpp>
 
 // useful functions to work with logarithmic numbers
 #include <universal/number/lns2b/manipulators.hpp>
@@ -53,4 +53,4 @@
 /// math functions
 //#include <universal/number/lns2b/mathlib.hpp>
 
-#endif
+#endif // _LNS2B_STANDARD_HEADER_
