@@ -1,6 +1,6 @@
-// cfloat.cpp: testbench for a classic float hardware ALU
+// bfloat16.cpp: testbench for a bfloat16 hardware ALU
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -15,16 +15,18 @@ try {
 	using namespace sw::universal;
 
 	if (argc != 4) {
-		std::cerr << "Usage: hw_cfloat [add | sub | mul | div | sqrt] a b\n";
-		std::cerr << "Example: hw_cfloat add 1.5 -1.5\n";
+		std::cerr << "Usage: hw_bfloat16 [add | sub | mul | div | sqrt] [a b]\n";
+		std::cerr << "Example: hw_bfloat16 add 1.5 -1.5\n";
 		return EXIT_SUCCESS;  // needed for regression test success
 	}
 	std::string op = argv[1];
 	float fa = atof(argv[2]);
 	float fb = atof(argv[3]);
-	std::cout << op << " " << fa << " and " << fb << '\n';
+	std::cout << op << " " << fa << ' ' << fb << '\n';
 
-	cfloat<8, 2> a, b, c;
+	using bfloat16 = cfloat<16, 8, std::uint16_t, false, false, false>;
+
+	bfloat16 a, b, c;
 	a = fa;
 	b = fb;
 
