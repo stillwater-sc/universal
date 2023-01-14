@@ -103,45 +103,46 @@ void GenerateUnaryOpTestVectors(std::ostream& ostr, const std::string& op) {
 template<typename NumberType>
 void GenerateBinaryOpTestVectors(std::ostream& ostr, const std::string& op) {
 	constexpr unsigned nbits = NumberType::nbits;
-	constexpr unsigned NR_ENCODINGS = (1u << nbits);
-
+	NumberType maxneg(SpecificValue::maxneg), maxpos(SpecificValue::maxpos);
 	NumberType a, b, c;
 
 	if (op == "add") {
-		for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
+		a = maxneg;
+		while (a <= maxpos) {
+			b = maxneg;
+			while (b <= maxpos) {
 				c = a + b;
-				ostr << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
+				ostr << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(c, true) << " : " << c << '\n';
+				++b;
 			}
+			++a;
 		}
 	}
 	else if (op == "sub") {
-		for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
+		a = maxneg;
+		while (a <= maxpos) {
+			b = maxneg;
+			while (b <= maxpos) {
 				c = a - b;
 				ostr << to_binary(a, true) << " - " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 			}
 		}
 	}
 	else if (op == "mul") {
-		for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
+		a = maxneg;
+		while (a <= maxpos) {
+			b = maxneg;
+			while (b <= maxpos) {
 				c = a * b;
 				ostr << to_binary(a, true) << " * " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 			}
 		}
 	}
 	else if (op == "add") {
-		for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			for (unsigned j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
+		a = maxneg;
+		while (a <= maxpos) {
+			b = maxneg;
+			while (b <= maxpos) {
 				c = a / b;
 				ostr << to_binary(a, true) << " / " << to_binary(b, true) << " = " << to_binary(c, true) << '\n';
 			}
@@ -158,7 +159,7 @@ void EnumerateValidEncodings(std::ostream& ostr, const std::string& op = "NOP") 
 	NumberType a;
 
 	a = maxneg;
-	while (a < maxpos) {
+	while (a <= maxpos) {
 		ostr << to_binary(a, true) << " : " << a << '\n';
 		++a;
 	}

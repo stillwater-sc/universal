@@ -682,8 +682,20 @@ public:
 				else {
 					--_block[MSU];
 				}
+				if constexpr (!hasSubnormals) {
+					if (isdenormal()) {
+						// special case, we need to jump past all the subnormal value encodings which puts us on 0
+						_block[MSU] = 0; // pattern: 0.00.000 = +0
+					}
+				}
 			}
 			else {
+				if constexpr (!hasSubnormals) {
+					if (_block[MSU] == 0) {
+						// special case, we need to jump past all the subnormal value encodings minus 1
+						setfraction(0xFFFF'FFFF'FFFF'FFFFull);
+					}
+				}
 				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
 					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan : wrap to the other side of the encoding
 				}
