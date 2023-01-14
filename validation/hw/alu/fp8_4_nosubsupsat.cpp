@@ -1,4 +1,4 @@
-// bfloat16.cpp: testbench for a bfloat16 hardware ALU
+// fp8_4_nosubsupsat.cpp: testbench for a fp<8, 4, no subnormals, no supernormals, non saturating> hardware ALU
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
@@ -9,23 +9,31 @@
 #include <universal/number/cfloat/cfloat.hpp>
 
 
+
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
+	// fp<8,4> without subnormals, supernormals or saturation
+	constexpr unsigned nbits = 8;
+	constexpr unsigned es = 4;
+	using fp8_4_nosubsupsat = cfloat<nbits, es, std::uint16_t, false, false, false>;
+
+	using Real = fp8_4_nosubsupsat;
+
+	EnumerateValidEncodings<Real>(std::cout);
+
+	return 0;
+
 	if (!(argc == 2 || argc == 4)) {
-		std::cerr << "Usage: hw_bfloat16 [add | sub | mul | div | sqrt] [a b]\n";
-		std::cerr << "Example: hw_bfloat16 add 1.5 -1.5\n";
+		std::cerr << "Usage: hw_fp8_4_nosubsupsat [add | sub | mul | div | sqrt] [a b]\n";
+		std::cerr << "Example: hw_fp8_4_nosubsupsat add 1.5 -1.5\n";
 		return EXIT_SUCCESS;  // needed for regression test success
 	}
 	std::string op = argv[1];
-	std::cout << "generating bfloat16 test vectors for " << op;
-	// bfloat16 does not have subnormals
-	constexpr unsigned nbits = 16;
-	constexpr unsigned es = 8;
-	using bfloat16 = cfloat<nbits, es, std::uint16_t, false, false, false>;
+	std::cout << "generating fp<8,4,nosub,nosup,nosat> test vectors for " << op;
 
-	using Real = bfloat16;
 
 	float fa, fb;
 	if (argc == 4) {
