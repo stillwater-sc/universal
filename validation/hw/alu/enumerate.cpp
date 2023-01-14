@@ -7,18 +7,19 @@
 #include <string>
 #include <universal/hw/alu.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
+#include <universal/common/enumerate_encodings.hpp>
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	constexpr unsigned nbits = 8;
-	constexpr unsigned es = 4;
-	using fp8_4_nosubsupsat = cfloat<nbits, es, std::uint16_t, false, false, false>;
+	constexpr unsigned nbits = 5;
+	constexpr unsigned es = 2;
+	using Real = cfloat<nbits, es, std::uint8_t, false, false, false>;
 
-	using Real = fp8_4_nosubsupsat;
+	EnumerateValidEncodingsViaIncrement<Real>(std::cout);
 
-	EnumerateValidEncodings<Real>(std::cout);
+	EnumerateValidEncodingsViaDecrement<cfloat<9, 2, std::uint8_t, false, false, false>>(std::cout, 1.0, -1.0);
 
 //	GenerateBinaryOpTestVectors<cfloat<5, 3, std::uint8_t, false, false, false> >(std::cout, "add");
 //	GenerateBinaryOpTestVectors<cfloat<5, 3, std::uint8_t, true, true, false> >(std::cout, "add");

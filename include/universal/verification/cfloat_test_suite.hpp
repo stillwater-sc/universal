@@ -1204,16 +1204,13 @@ namespace sw { namespace universal {
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		
 		std::vector< Cfloat > set;
 		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., minneg, +0, minpos, ..., maxpos, +inf, qnan]
 
 		/*
 		std::cout << "Ordered set of cfloat values\n";
-		for (typename std::vector< Cfloat >::iterator it = set.begin(); it != set.end(); ++it) {
-			Cfloat c = *it;
-			std::cout << to_binary(c) << " : " << c << '\n';
-		}
-		std::cout << "-------\n";
+		for (auto v : set) std::cout << v << ' '; std::cout << std::endl;
 		*/
 
 		int nrOfFailedTestCases = 0;
@@ -1227,11 +1224,12 @@ namespace sw { namespace universal {
 //			std::cout << to_binary(*it) << " > " << to_binary(ref) << " decrement " << to_binary(c) << " : " << c << '\n';
 			if (c != ref) {
 				// in the no supernormal case, we are decrementing the pattern, but
-				// any supernormal evaluates to nan, and that lands us in side the != check
+				// any supernormal evaluates to nan, and that lands us inside the != check
 				// We check explicity below to filter out all these nan cases.
 				// To see that pattern decrements, uncomment the following line
 				// std::cout << to_binary(*it) << " > " << to_binary(*(it - 1)) << " decremented value " << to_binary(c) << '\n';
 				if (c.isnan() && ref.isnan()) continue; // nan != nan, so the regular equivalance test fails
+				std::cout << to_binary(*it) << " > " << to_binary(*(it + 1)) << " decremented value " << to_binary(c) << '\n';
 				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}

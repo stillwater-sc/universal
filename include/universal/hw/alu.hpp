@@ -150,20 +150,4 @@ void GenerateBinaryOpTestVectors(std::ostream& ostr, const std::string& op) {
 	}
 }
 
-// enumerate the valid encodings of a number system
-template<typename NumberType>
-void EnumerateValidEncodings(std::ostream& ostr, const std::string& op = "NOP") {
-	constexpr unsigned nbits = NumberType::nbits;
-
-	NumberType maxneg(SpecificValue::maxneg), maxpos(SpecificValue::maxpos);
-	NumberType a;
-
-	a = maxneg;
-	while (a <= maxpos) {
-		ostr << to_binary(a, true) << " : " << a << '\n';
-		++a;
-	}
-
-}
-
 }} // namespace sw::universal

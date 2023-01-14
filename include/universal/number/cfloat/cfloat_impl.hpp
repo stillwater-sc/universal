@@ -745,7 +745,7 @@ public:
 				else {
 					if constexpr (!hasSubnormals) {
 						if (iszero()) {
-							// special case, we need to jump past all the subnormal value encodings minus 1
+							// special case, we need to jump past all the subnormal value encodings minus 1 so that the increment code below ends up on normal minpos
 							setfraction(0xFFFF'FFFF'FFFF'FFFFull);
 						}
 					}
@@ -786,10 +786,24 @@ public:
 			else {
 				// positive range
 				if (_block[MSU] == 0) { // pattern: 0.00.000 = 0
-					_block[MSU] |= SIGN_BIT_MASK | bt(1u); // pattern: 1.00.001 = minneg 
+					if constexpr (hasSubnormals) {
+						_block[MSU] |= SIGN_BIT_MASK | bt(1u); // pattern: 1.00.001 = minneg 
+					}
+					else {
+						// special case, we need to jump past all the subnormal value encodings
+						setfraction(0xFFFF'FFFF'FFFF'FFFFull); // set to 0.00.11...11
+						++_block[MSU]; // increment into 0.01.0000
+						_block[MSU] |= SIGN_BIT_MASK; // set to 1.01.0000
+					}
 				}
 				else {
 					--_block[MSU];
+				}
+				if constexpr (!hasSubnormals) {
+					if (isdenormal()) {
+						// special case, we need to jump past all the subnormal value encodings which puts us on 0
+						_block[MSU] = 0; // pattern: 0.00.000 = +0
+					}
 				}
 			}
 		}
@@ -815,8 +829,15 @@ public:
 			else {
 				// special case: pattern: 0.00.000 = +0 transitions to pattern: 1.00.001 = minneg
 				if (iszeroencoding()) {
-					setsign(true);
-					setbit(0, true);
+					if constexpr (hasSubnormals) {
+						setsign(true);
+						setbit(0, true);
+					}
+					else {
+						// special case, we need to jump past all the subnormal value encodings 1.01.0000 = minneg normal
+						setexponent(1ul - EXP_BIAS);
+						setsign(true);
+					}
 				}
 				else {
 					bool borrow = true;
@@ -834,6 +855,12 @@ public:
 					}
 					if (borrow) {
 						--_block[MSU];
+					}
+					if constexpr (!hasSubnormals) {
+						if (isdenormal()) {
+							// special case, we need to jump past all the subnormal value encodings which puts us on 0
+							setzero(); // pattern: 0.00.000 = +0
+						}
 					}
 				}
 			}
