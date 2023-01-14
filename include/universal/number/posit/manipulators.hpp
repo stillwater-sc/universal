@@ -57,7 +57,7 @@ std::string posit_range() {
 template<unsigned nbits, unsigned es>
 std::string type_tag(const posit<nbits, es>& = {}) {
 	std::stringstream str;
-	str << "sw::universal::posit<" 
+	str << "posit<" 
 		<< std::setw(3) << nbits << ", " 
 		<< std::setw(1) << es << '>';
 	return str.str();
