@@ -1,4 +1,4 @@
-// bfloat16.cpp: testbench for a bfloat16 hardware ALU
+// bfloat16.cpp: test vector generator for a bfloat16 hardware ALU
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
@@ -7,7 +7,6 @@
 #include <string>
 #include <universal/hw/alu.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
-
 
 int main(int argc, char** argv)
 try {

@@ -1,4 +1,4 @@
-// fp8_4_subsupnosat.cpp: testbench for a fp<8,4, subnormals, supernormals, non-saturating> hardware ALU
+// fp8_4_subsupnosat.cpp: test vector generator for a fp<8,4, subnormals, supernormals, non-saturating> hardware ALU
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
@@ -18,10 +18,6 @@ try {
 	using fp8_4_subsupnosat = cfloat<nbits, es, std::uint16_t, true, true, false>;
 
 	using Real = fp8_4_subsupnosat;
-
-	EnumerateValidEncodings<Real>(std::cout);
-
-	return 0;
 
 	if (!(argc == 2 || argc == 4)) {
 		std::cerr << "Usage: hw_fp8_4_subsupnosat [add | sub | mul | div | sqrt] [a b]\n";

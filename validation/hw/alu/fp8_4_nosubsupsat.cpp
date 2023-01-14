@@ -1,4 +1,4 @@
-// fp8_4_nosubsupsat.cpp: testbench for a fp<8, 4, no subnormals, no supernormals, non saturating> hardware ALU
+// fp8_4_nosubsupsat.cpp: test vector generator for a fp<8, 4, no subnormals, no supernormals, non saturating> hardware ALU
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
@@ -7,9 +7,6 @@
 #include <string>
 #include <universal/hw/alu.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
-
-
-
 
 int main(int argc, char** argv)
 try {
@@ -22,10 +19,6 @@ try {
 
 	using Real = fp8_4_nosubsupsat;
 
-	EnumerateValidEncodings<Real>(std::cout);
-
-	return 0;
-
 	if (!(argc == 2 || argc == 4)) {
 		std::cerr << "Usage: hw_fp8_4_nosubsupsat [add | sub | mul | div | sqrt] [a b]\n";
 		std::cerr << "Example: hw_fp8_4_nosubsupsat add 1.5 -1.5\n";
@@ -33,7 +26,6 @@ try {
 	}
 	std::string op = argv[1];
 	std::cout << "generating fp<8,4,nosub,nosup,nosat> test vectors for " << op;
-
 
 	float fa, fb;
 	if (argc == 4) {
