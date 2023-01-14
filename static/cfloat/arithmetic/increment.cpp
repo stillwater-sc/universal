@@ -60,7 +60,18 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+
+	cfloat<9, 2, uint8_t, false, false, false> a;
+	a.setbits(0x140);
+	std::cout << to_binary(a) << " : " << a << '\n';
+	a++;
+	std::cout << to_binary(a) << " : " << a << '\n';
+	a++;
+	std::cout << to_binary(a) << " : " << a << '\n';
+
 	// normal encoding only
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatIncrement < cfloat<4, 2, uint8_t, false, false, false> >(reportTestCases), type_tag(cfloat<4, 2, uint8_t, false, false, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatIncrement < cfloat<8, 2, uint8_t, false, false, false> >(reportTestCases), type_tag(cfloat<8, 2, uint8_t, false, false, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(

@@ -970,7 +970,7 @@ namespace sw { namespace universal {
 		return nrOfTestFailures;
 	}
 
-	// Generate ordered set in ascending order from [-NaN, -inf, -maxpos, ..., +maxpos, +inf, +NaN] for a particular posit config <nbits, es>
+	// Generate ordered set in ascending order from [-NaN, -inf, -maxpos, ..., +maxpos, +inf, +NaN] for a particular cfloat config <nbits, es>
 	template<typename TestType>
 	void GenerateOrderedCfloatSet(std::vector<TestType>& set) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
@@ -988,29 +988,57 @@ namespace sw { namespace universal {
 		// 1.11.110   -inf
 		// 1.11.101   -maxpos == maxneg
 		// ...
+		// 1.01.001
+		// 1.01.000
+		// 1.00.111   <--- subnormals, which we need to remove if the config doesn't have them
+		// ...
 		// 1.00.001   minneg
 		// 1.00.000   -0      ]
 		// 0.00.000   +0      ] we are collapsing -0/+0 as next values from 0 are minpos/minneg
-		// 0.00.001   minpos
+		// 0.00.001   mindenorm, minpos if subnormals
 		// ...
+		// 0.00.111   <-- subnormals
+		// 0.01.000   minpos if no subnormals
 		// 0.11.101   maxpos   <--- is maxpos for
 		// 0.11.110   inf
 		// 0.11.111   nan
 
-		std::vector< Cfloat > s(NR_OF_ENCODINGS - 1);
+		std::vector< Cfloat > s;
 		Cfloat c{}; // == TestType but marshalled
 		constexpr size_t NEGATIVE_ZERO = (1ull << (nbits - 1)); // pattern 1.00.000
 		constexpr size_t QUIET_NAN = (~0ull >> (64 - nbits + 1)); // pattern 0.11.111
 		size_t i = 0;
 		for (size_t pattern = NR_OF_ENCODINGS - 1; pattern > NEGATIVE_ZERO ; --pattern) {  // remove negative zero from the set
-//			std::cout << to_binary(pattern, nbits, true) << '\n';
 			c.setbits(pattern);
-			s[i++] = c;
+//			std::cout << to_binary(pattern, nbits, true) << " : " << to_binary(c, true) << '\n';
+			if constexpr (hasSubnormals) {
+				// s[i++] = c;
+				s.push_back(c);
+			}
+			else {
+				if (!c.isdenormal()) {
+					// s[i++] = c;
+					s.push_back(c);
+				}
+				// continue to the next pattern
+			}
+//			for (auto v : s) std::cout << v << ' '; std::cout << '\n';
 		}
 		for (size_t pattern = 0; pattern <= QUIET_NAN; ++pattern) {
-//			std::cout << to_binary(pattern, nbits, true) << '\n';
 			c.setbits(pattern);
-			s[i++] = c;
+//			std::cout << to_binary(pattern, nbits, true) << " : " << to_binary(c, true) << '\n';
+			if constexpr (hasSubnormals) {
+				// s[i++] = c;
+				s.push_back(c);
+			}
+			else {
+				if (!c.isdenormal()) {
+					// s[i++] = c;
+					s.push_back(c);
+				}
+				// continue to the next pattern
+			}
+//			for (auto v : s) std::cout << v << ' '; std::cout << '\n';
 		}
 		set = s;
 	}
@@ -1087,7 +1115,7 @@ namespace sw { namespace universal {
 		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
 		std::vector< Cfloat > set;
-		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, nan]
+		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., {-0 +0}, ..., maxpos, +inf, nan]
 
 		int nrOfFailedTestCases = 0;
 

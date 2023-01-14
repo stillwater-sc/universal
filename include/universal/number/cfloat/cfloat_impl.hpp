@@ -729,6 +729,12 @@ public:
 					if (borrow) {
 						--_block[MSU];
 					}
+					if constexpr (!hasSubnormals) {
+						if (isdenormal()) {
+							// special case, we need to jump past all the subnormal value encodings which puts us on 0
+							setzero(); // pattern: 0.00.000 = +0
+						}
+					}
 				}
 			}
 			else {
@@ -737,6 +743,12 @@ public:
 					setnan(NAN_TYPE_SIGNALLING);
 				}
 				else {
+					if constexpr (!hasSubnormals) {
+						if (iszero()) {
+							// special case, we need to jump past all the subnormal value encodings minus 1
+							setfraction(0xFFFF'FFFF'FFFF'FFFFull);
+						}
+					}
 					bool carry = true;
 					for (unsigned i = 0; i < MSU; ++i) {
 						if (carry) {
@@ -1355,6 +1367,8 @@ public:
 		return !sign(); 
 	}
 	constexpr bool iszero() const noexcept {
+		return iszeroencoding();
+		/*
 		if constexpr (hasSubnormals) {
 			return iszeroencoding();
 		}
@@ -1363,6 +1377,7 @@ public:
 			exponent(ebits);
 			if (ebits.iszero()) return true; else return false;
 		}
+		*/
 	}
 	constexpr bool isone() const noexcept {
 		// unbiased exponent = scale = 0, fraction = 0
@@ -1522,6 +1537,7 @@ public:
 		return !e.iszero() && !e.all();
 	}
 	constexpr bool isdenormal() const noexcept {
+		if (iszero()) return false;
 		blockbinary<es, bt> e{};
 		exponent(e);
 		return e.iszero(); // isdenormal returns true if exponent bits are all zero, false otherwise
