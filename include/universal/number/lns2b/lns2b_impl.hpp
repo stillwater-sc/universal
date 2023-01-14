@@ -328,18 +328,19 @@ public:
 	
 	// create specific number system values of interest
 	constexpr lns2b& maxpos() noexcept {
-		// maximum positive value has this bit pattern: 0-01..1-111...111, that is, sign = 0, integer = 01..11, fraction = 11..11
+		// maximum positive value has this bit pattern: 0-00..00-11...11, that is, sign = 0, first base = 00..00, second base = 11..11
 		clear();
-		flip();
-		setbit(nbits - 1ull, false); // sign = 0
-		setbit(nbits - 2ull, false); // msb  = 0
+		for (unsigned i = 0; i < nbits - fbbits - 1; ++i) {
+			setbit(i, true);
+		}
 		return *this;
 	}
 	constexpr lns2b& minpos() noexcept {
-		// minimum positive value has this bit pattern: 0-100-00...01, that is, sign = 0, integer = 10..00, fraction = 00..01
+		// minimum positive value has this bit pattern: 0-11...11-00...00, that is, sign = 0, first base = 11..11, second base = 00..00
 		clear();
-		setbit(nbits - 2, true);    // msb  = 1
-		setbit(0, true);            // lsb  = 1
+		for (unsigned i = nbits - fbbits - 1; i < nbits - 1; ++i) {
+			setbit(i, true);
+		}
 		return *this;
 	}
 	constexpr lns2b& zero() noexcept {
@@ -349,18 +350,20 @@ public:
 		return *this;
 	}
 	constexpr lns2b& minneg() noexcept {
-		// minimum negative value has this bit pattern: 1-100-00...01, that is, sign = 1, integer = 10..00, fraction = 00..01
+		// minimum negative value has this bit pattern: 1-11...11-00...00, that is, sign = 0, first base = 11..11, second base = 00..00
 		clear();
-		setbit(nbits - 1ull, true); // sign = 1
-		setbit(nbits - 2, true);    // msb  = 1
-		setbit(0, true);            // lsb  = 1
+		for (unsigned i = nbits - fbbits - 1; i < nbits; ++i) {
+			setbit(i, true);
+		}
 		return *this;
 	}
 	constexpr lns2b& maxneg() noexcept {
-		// maximum negative value has this bit pattern: 1-01..1-11..11, that is, sign = 1, integer = 01..1, fraction = 11..11
+		// maximum negative value has this bit pattern: 1-00..00-11...11, that is, sign = 0, first base = 00..00, second base = 11..11
 		clear();
-		flip();
-		setbit(nbits - 2ull, false); // msb  = 0
+		for (unsigned i = 0; i < nbits - fbbits - 1; ++i) {
+			setbit(i, true);
+		}
+		setbit(nbits - 1ull, true); // sign = 1
 		return *this;
 	}
 
