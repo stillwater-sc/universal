@@ -1394,8 +1394,9 @@ public:
 		return !sign(); 
 	}
 	constexpr bool iszero() const noexcept {
-		return iszeroencoding();
-		/*
+		// NOTE: this is a very specific design that makes the decsion that
+		// for subnormal encodings found in a configuration that doesn't
+		// support them, we assume that these values map to 0.
 		if constexpr (hasSubnormals) {
 			return iszeroencoding();
 		}
@@ -1404,7 +1405,6 @@ public:
 			exponent(ebits);
 			if (ebits.iszero()) return true; else return false;
 		}
-		*/
 	}
 	constexpr bool isone() const noexcept {
 		// unbiased exponent = scale = 0, fraction = 0
@@ -1477,6 +1477,7 @@ public:
 			}
 		}
 	}
+	// iszeroencoding returns true if it finds a pure -0 or +0 pattern and returns false otherwise
 	constexpr bool iszeroencoding() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return true;
@@ -1498,7 +1499,8 @@ public:
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
-	constexpr bool isminnegencoding() const noexcept {  // 1.00.00001
+	// isminnegencoding returns true if it find the pattern 1.00.00001 and returns false otherwise
+	constexpr bool isminnegencoding() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return false;
 		}
@@ -1555,25 +1557,27 @@ public:
 			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
 				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
-
+	// isnormal returns true if 0 or exponent bits are not all zero or one, false otherwise
 	constexpr bool isnormal() const noexcept {
+		if (iszeroencoding()) return true; // filter out the one special case
 		blockbinary<es, bt> e{};
 		exponent(e);
-//		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
-		// isnormal returns true if exponent bits are not all zero or one, false otherwise
 		return !e.iszero() && !e.all();
 	}
+	// isdenormal returns true if exponent bits are all zero, false otherwise
 	constexpr bool isdenormal() const noexcept {
-		if (iszero()) return false;
+		if (iszeroencoding()) return false; // filter out the one special case
 		blockbinary<es, bt> e{};
 		exponent(e);
-		return e.iszero(); // isdenormal returns true if exponent bits are all zero, false otherwise
+		return e.iszero(); 
 	}
+	// issupernormal returns true if exponent bits are all one, false otherwise
 	constexpr bool issupernormal() const noexcept {
 		blockbinary<es, bt> e{};
 		exponent(e);
-		return e.all();// issupernormal returns true if exponent bits are all one, false otherwise
+		return e.all();
 	}
+	// isinteger is TBD
 	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
 	
 	template<typename NativeReal>
