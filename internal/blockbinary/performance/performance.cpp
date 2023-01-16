@@ -1,6 +1,6 @@
 //  performance.cpp : performance benchmarking for block binary number arithmetic
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,9 +11,9 @@
 
 //#include <universal/integer/integer.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_suite.hpp> // ReportTestResult
 #include <universal/verification/blockbinary_test_status.hpp>
-#include <universal/verification/performance_runner.hpp>
+#include <universal/benchmark/performance_runner.hpp>
 
 namespace sw::universal::bb {
 

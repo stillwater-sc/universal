@@ -12,7 +12,7 @@
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/performance_runner.hpp>
+#include <universal/benchmark/performance_runner.hpp>
 
 /*
    The goal of logarithmic numbers is to provide a number system representation

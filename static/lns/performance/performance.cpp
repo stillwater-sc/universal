@@ -1,6 +1,6 @@
 // performance.cpp : baseline performance benchmarking of arithmetic operators on the lns arithmetic type
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,7 +12,7 @@
 
 #include <universal/number/lns/lns.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/verification/performance_runner.hpp>
+#include <universal/benchmark/performance_runner.hpp>
 
 namespace sw::universal::internal {
 
