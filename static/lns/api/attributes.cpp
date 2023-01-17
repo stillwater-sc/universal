@@ -44,6 +44,7 @@ try {
 		std::cout << minmax_range< lns<16, 8> >() << '\n';
 		std::cout << minmax_range< lns<24,12> >() << '\n';
 		std::cout << minmax_range< lns<32,16> >() << '\n';
+		std::cout << '\n';
 	}
 	
 	{
@@ -52,6 +53,7 @@ try {
 		std::cout << symmetry_range< lns<16, 8> >() << '\n';
 		std::cout << symmetry_range< lns<24,12> >() << '\n';
 		std::cout << symmetry_range< lns<32,16> >() << '\n';
+		std::cout << '\n';
 	}
 
 	{

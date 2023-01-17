@@ -75,7 +75,7 @@ try {
 	}
 
 	// important behavioral traits
-//	ReportTrivialityOfType<lns2b<8, 2>>();  // TODO: type_tag fails for lns2b
+	ReportTrivialityOfType<lns2b<8, 2>>();
 
 	// default behavior
 	{
