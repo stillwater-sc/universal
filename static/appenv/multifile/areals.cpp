@@ -9,7 +9,7 @@
 
 using Areal = sw::universal::areal<8, 2, uint8_t>;
 
-Areal arealPolynomial(const std::vector<int>& coef, const Areal& x) {
+Areal arealPolynomial(const std::vector<float>& coef, const Areal& x) {
 	using namespace sw::universal;
 	if (coef.size() < 2) {
 		std::cerr << "Coefficient set is too small to represent a polynomial\n";

@@ -9,7 +9,7 @@
 
 using fp8_4s = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
 
-fp8_4s fixpntPolynomial(const std::vector<int>& coef, const fp8_4s& x) {
+fp8_4s fixpntPolynomial(const std::vector<float>& coef, const fp8_4s& x) {
 	using namespace sw::universal;
 	if (coef.size() < 2) {
 		std::cerr << "Coefficient set is too small to represent a polynomial\n";

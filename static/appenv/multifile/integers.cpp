@@ -10,7 +10,7 @@
 
 using Integer = sw::universal::integer<8, uint8_t, sw::universal::IntegerNumberType::IntegerNumber>;
 
-Integer integerPolynomial(const std::vector<int>& coef, const Integer& x) {
+Integer integerPolynomial(const std::vector<float>& coef, const Integer& x) {
 	using namespace sw::universal;
 	if (coef.size() < 2) {
 		std::cerr << "Coefficient set is too small to represent a polynomial\n";

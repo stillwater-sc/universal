@@ -9,7 +9,7 @@
 
 using Posit = sw::universal::posit<8, 2>;
 
-Posit positPolynomial(const std::vector<int>& coef, const Posit& x) {
+Posit positPolynomial(const std::vector<float>& coef, const Posit& x) {
 	using namespace sw::universal;
 	if (coef.size() < 2) {
 		std::cerr << "Coefficient set is too small to represent a polynomial\n";

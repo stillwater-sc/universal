@@ -9,7 +9,7 @@
 
 using Unum = sw::universal::unum<8, 2>;
 
-Unum unumPolynomial(const std::vector<int>& coef, const Unum& x) {
+Unum unumPolynomial(const std::vector<float>& coef, const Unum& x) {
 	using namespace sw::universal;
 	if (coef.size() < 2) {
 		std::cerr << "Coefficient set is too small to represent a polynomial\n";
