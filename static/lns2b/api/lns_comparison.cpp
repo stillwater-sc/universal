@@ -51,7 +51,7 @@ try {
 	}
 
 	{
-		std::cout << "+---------    dynamic ranges of 8-bit lns<> configurations   --------+\n";
+		std::cout << "\n+---------    dynamic ranges of 8-bit lns<> configurations   --------+\n";
 		std::cout << symmetry_range(lns<8, 1>()) << '\n';
 		std::cout << symmetry_range(lns<8, 2>()) << '\n';
 		std::cout << symmetry_range(lns<8, 3>()) << '\n';
@@ -61,7 +61,7 @@ try {
 	}
 
 	{
-		std::cout << "+---------    dynamic ranges of 8-bit lns2b<> configurations   --------+\n";
+		std::cout << "\n+---------    dynamic ranges of 8-bit lns2b<> configurations   --------+\n";
 		std::cout << symmetry_range(lns2b<8, 1>()) << '\n';
 		std::cout << symmetry_range(lns2b<8, 2>()) << '\n';
 		std::cout << symmetry_range(lns2b<8, 3>()) << '\n';
@@ -71,7 +71,7 @@ try {
 	}
 
 	{
-		std::cout << "+---------    dynamic ranges of 8-bit cfloat<> configurations (with sub and supernormals)   --------+\n";
+		std::cout << "\n+---------    dynamic ranges of 8-bit cfloat<> configurations (with sub and supernormals)   --------+\n";
 		std::cout << symmetry_range(cfloat<8, 1, std::uint8_t, true, true, false>()) << '\n';
 		std::cout << symmetry_range(cfloat<8, 2, std::uint8_t, true, true, false>()) << '\n';
 		std::cout << symmetry_range(cfloat<8, 3, std::uint8_t, true, true, false>()) << '\n';
@@ -81,7 +81,27 @@ try {
 	}
 
 	{
-		std::cout << "+---------    comparison to classic floats   --------+\n";
+		std::cout << "\n+---------    specific type range function\n";
+		lns<7, 3> a{};
+		lns2b<7, 3> b{};
+		std::cout << lns_range(a) << '\n';
+		std::cout << lns2b_range(b) << '\n';
+	}
+
+	{
+		std::cout << "\n+---------    cross-lns sign() functions\n";
+		lns<7, 3> a;
+		lns2b<7, 3> b;
+
+		a.setbits(0x7f);
+		std::cout << std::setw(45) << type_tag(a) << " : " << to_binary(a) << " : " << a << " : " << (sign(a) ? "sign = 1" : "sign = 0") << '\n';
+
+		b.setbits(0x7f);
+		std::cout << std::setw(45) << type_tag(b) << " : " << to_binary(b) << " : " << b << " : " << (sign(b) ? "sign = 1" : "sign = 0") << '\n';
+	}
+
+	{
+		std::cout << "\n+---------    comparison to classic floats   --------+\n";
 		using lns2b = lns2b<16, 8, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
 		lns2b a;

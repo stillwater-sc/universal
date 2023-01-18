@@ -31,41 +31,49 @@ try {
 	//// lns2b attribute functions
 
 	{
-		std::cout << "Dynamic ranges of logarithmic floating-point arithmetic types\n";
+		std::cout << "\nDynamic ranges of 2-base logarithmic floating-point arithmetic types\n";
 		std::cout << dynamic_range< lns2b<  8, 6> >() << '\n';
 		std::cout << dynamic_range< lns2b< 16,10> >() << '\n';
 		std::cout << dynamic_range< lns2b< 32,22> >() << '\n';
-		std::cout << '\n';
 	}
 
 	{
-		std::cout << "Dynamic ranges of different logarithmic floating-point\n";
+		std::cout << "\nMinmax of 2-base logarithmic floating-point\n";
 		std::cout << minmax_range< lns2b< 8, 6> >() << '\n';
 		std::cout << minmax_range< lns2b<16,10> >() << '\n';
 		std::cout << minmax_range< lns2b<24,16> >() << '\n';
 		std::cout << minmax_range< lns2b<32,22> >() << '\n';
-		std::cout << '\n';
 	}
 	
 	{
-		std::cout << "Dynamic ranges of different logarithmic floating-point\n";
+		std::cout << "\nValue ranges of 2-base logarithmic floating-point\n";
 		std::cout << symmetry_range< lns2b< 8, 6> >() << '\n';
 		std::cout << symmetry_range< lns2b<16,10> >() << '\n';
 		std::cout << symmetry_range< lns2b<24,16> >() << '\n';
 		std::cout << symmetry_range< lns2b<32,22> >() << '\n';
-		std::cout << '\n';
 	}
 
 	{
-		std::cout << "Number traits\n";
+		std::cout << "\nSpecific 2-base logarithmic floating-point range function\n";
+		std::cout << lns2b_range(lns2b<7, 3>()) << '\n';
+	}
+
+	{
+		std::cout << "\n2-base lns sign() function\n";
+		lns2b<7, 3> a;
+
+		a.setbits(0x7f);
+		std::cout << std::setw(45) << type_tag(a) << " : " << to_binary(a) << " : " << a << " : " << (sign(a) ? "sign = 1" : "sign = 0") << '\n';
+	}
+
+	{
+		std::cout << "\nNumber traits\n";
 //		numberTraits< lns2b<32, 16> >(std::cout);
-		std::cout << '\n';
 	}
 
 	{
-		std::cout << "Comparitive Number traits\n";
+		std::cout << "\nComparitive Number traits\n";
 //		compareNumberTraits< lns2b<24, 12>, lns2b<32, 16> >(std::cout);
-		std::cout << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
