@@ -12,7 +12,6 @@
 #define LNS2B_THROW_ARITHMETIC_EXCEPTION 1
 // third: enable support for native literals in logic and arithmetic operations
 #define LNS2B_ENABLE_LITERALS 1
-// minimum set of include files to reflect source code dependencies
 #include <universal/number/lns2b/lns2b.hpp>
 #include <universal/verification/test_reporters.hpp>
 
@@ -32,25 +31,26 @@ try {
 
 	{
 		std::cout << "\nDynamic ranges of 2-base logarithmic floating-point arithmetic types\n";
-		std::cout << dynamic_range< lns2b<  8, 6> >() << '\n';
-		std::cout << dynamic_range< lns2b< 16,10> >() << '\n';
-		std::cout << dynamic_range< lns2b< 32,22> >() << '\n';
+		std::cout << dynamic_range< lns2b<  8, 5> >() << '\n';    //  8 - 1 -  5 = 2 scale exponent bits: 3^##
+		std::cout << dynamic_range< lns2b< 16,12> >() << '\n';    // 16 - 1 - 12 = 3 scale exponent bits: 3^###
+		std::cout << dynamic_range< lns2b< 24,19> >() << '\n';    // 24 - 1 - 19 = 4 scale exponent bits: 3^####
+		std::cout << dynamic_range< lns2b< 32,26> >() << '\n';    // 32 - 1 - 26 = 5 scale exponent bits: 3^#####
 	}
 
 	{
 		std::cout << "\nMinmax of 2-base logarithmic floating-point\n";
-		std::cout << minmax_range< lns2b< 8, 6> >() << '\n';
-		std::cout << minmax_range< lns2b<16,10> >() << '\n';
-		std::cout << minmax_range< lns2b<24,16> >() << '\n';
-		std::cout << minmax_range< lns2b<32,22> >() << '\n';
+		std::cout << minmax_range< lns2b< 8, 5> >() << '\n';
+		std::cout << minmax_range< lns2b<16,12> >() << '\n';
+		std::cout << minmax_range< lns2b<24,19> >() << '\n';
+		std::cout << minmax_range< lns2b<32,26> >() << '\n';
 	}
 	
 	{
 		std::cout << "\nValue ranges of 2-base logarithmic floating-point\n";
-		std::cout << symmetry_range< lns2b< 8, 6> >() << '\n';
-		std::cout << symmetry_range< lns2b<16,10> >() << '\n';
-		std::cout << symmetry_range< lns2b<24,16> >() << '\n';
-		std::cout << symmetry_range< lns2b<32,22> >() << '\n';
+		std::cout << symmetry_range< lns2b< 8, 5> >() << '\n';
+		std::cout << symmetry_range< lns2b<16,12> >() << '\n';
+		std::cout << symmetry_range< lns2b<24,19> >() << '\n';
+		std::cout << symmetry_range< lns2b<32,26> >() << '\n';
 	}
 
 	{
@@ -68,12 +68,13 @@ try {
 
 	{
 		std::cout << "\nNumber traits\n";
-//		numberTraits< lns2b<32, 16> >(std::cout);
+		numberTraits< lns2b<8, 4> >(std::cout);
 	}
 
 	{
 		std::cout << "\nComparitive Number traits\n";
-//		compareNumberTraits< lns2b<24, 12>, lns2b<32, 16> >(std::cout);
+		compareNumberTraits< lns2b<10, 6>, lns2b<12, 7> >(std::cout);
+		threeWayCompareNumberTraits< float, lns2b<10, 6>, lns2b<12, 7> >(std::cout);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -102,20 +103,63 @@ catch (...) {
 
 /*
 2-base logarithmic floating-point attribute functions: report test cases
-Dynamic ranges of logarithmic floating-point arithmetic types
-lns2b<  8,   6, unsigned char, Saturating>                                       : minexp scale 0              maxexp scale 0              minimum 1.0842e-19       maximum 3
-lns2b< 16,  10, unsigned char, Saturating>                                       : minexp scale -16            maxexp scale 15             minimum 0                maximum 6.17673e+14
-lns2b< 32,  22, unsigned char, Saturating>                                       : minexp scale -256           maxexp scale 255            minimum 0                maximum inf
 
-Dynamic ranges of different logarithmic floating-point
-lns2b<  8,   6, unsigned char, Saturating>                                       : min 1.0842e-19        max 3
-lns2b< 16,  10, unsigned char, Saturating>                                       : min 0                 max 6.17673e+14
-lns2b< 24,  16, unsigned char, Saturating>                                       : min 0                 max inf
-lns2b< 32,  22, unsigned char, Saturating>                                       : min 0                 max inf
+Dynamic ranges of 2-base logarithmic floating-point arithmetic types
+lns2b<  8,   5, unsigned char, Saturating>                                       : minexp scale -2             maxexp scale 1              minimum 4.65661e-10      maximum 27
+lns2b< 16,  12, unsigned char, Saturating>                                       : minexp scale -4             maxexp scale 3              minimum 0                maximum 2187
+lns2b< 24,  19, unsigned char, Saturating>                                       : minexp scale -8             maxexp scale 7              minimum 0                maximum 1.43489e+07
+lns2b< 32,  26, unsigned char, Saturating>                                       : minexp scale -16            maxexp scale 15             minimum 0                maximum 6.17673e+14
 
-Dynamic ranges of different logarithmic floating-point
-lns2b<  8,   6, unsigned char, Saturating>                                       : [ -3 ... -1.0842e-19  0  1.0842e-19 ... 3]
-lns2b< 16,  10, unsigned char, Saturating>                                       : [ -6.17673e+14 ... -0  0  0 ... 6.17673e+14]
-lns2b< 24,  16, unsigned char, Saturating>                                       : [ -inf ... -0  0  0 ... inf]
-lns2b< 32,  22, unsigned char, Saturating>                                       : [ -inf ... -0  0  0 ... inf]
+Minmax of 2-base logarithmic floating-point
+lns2b<  8,   5, unsigned char, Saturating>                                       : min 4.65661e-10       max 27
+lns2b< 16,  12, unsigned char, Saturating>                                       : min 0                 max 2187
+lns2b< 24,  19, unsigned char, Saturating>                                       : min 0                 max 1.43489e+07
+lns2b< 32,  26, unsigned char, Saturating>                                       : min 0                 max 6.17673e+14
+
+Value ranges of 2-base logarithmic floating-point
+lns2b<  8,   5, unsigned char, Saturating>                                       : [ -27 ... -4.65661e-10  0  4.65661e-10 ... 27]
+lns2b< 16,  12, unsigned char, Saturating>                                       : [ -2187 ... -0  0  0 ... 2187]
+lns2b< 24,  19, unsigned char, Saturating>                                       : [ -1.43489e+07 ... -0  0  0 ... 1.43489e+07]
+lns2b< 32,  26, unsigned char, Saturating>                                       : [ -6.17673e+14 ... -0  0  0 ... 6.17673e+14]
+
+Specific 2-base logarithmic floating-point range function
+   lns2b<  7,   3, unsigned char, Saturating> : [ -2187 ... -0.0078125 0 0.0078125 ... 2187 ]
+
+2-base lns sign() function
+   lns2b<  7,   3, unsigned char, Saturating> : 0b1.111.111 : -17.0859 : sign = 1
+
+Number traits
+std::numeric_limits< class sw::universal::lns2b<8,4,unsigned char> >
+min exponent                                             -4
+max exponent                                              3
+radix                                                     2
+radix digits                                              8
+min                                             3.05176e-05
+max                                                    2187
+lowest                                                -2187
+epsilon (1+1ULP-1)                                     0.25
+round_error                                     6.10352e-05
+smallest value                                  3.05176e-05
+infinity                                               2187
+quiet_NAN                                         -nan(ind)
+signaling_NAN                                     -nan(ind)
+
+
+Comparitive Number traits
+comparing numeric_limits between class sw::universal::lns2b<10,6,unsigned char> and class sw::universal::lns2b<12,7,unsigned char>
+				class sw::universal::lns2b<10,6,unsigned char> vs class sw::universal::lns2b<12,7,unsigned char>
+min exponent                                -4 vs                             -8
+max exponent                                 3 vs                              7
+radix                                        2 vs                              2
+radix digits                                10 vs                             15
+min                                 1.0842e-19 vs                    5.87747e-39
+max                                       2187 vs                    1.43489e+07
+lowest                                   -2187 vs                   -1.43489e+07
+epsilon                             0.00390625 vs                     0.00390625
+round_error                        1.38778e-17 vs                    7.52316e-37
+smallest value                      1.0842e-19 vs                    5.87747e-39
+infinity                                  2187 vs                    1.43489e+07
+quiet_NAN                            -nan(ind) vs                      -nan(ind)
+signaling_NAN                        -nan(ind) vs                      -nan(ind)
+
 */

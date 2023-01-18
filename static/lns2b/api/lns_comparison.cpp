@@ -113,6 +113,13 @@ try {
 		std::cout << std::setw(80) << type_tag(b) << " : " << to_binary(b, true) << " : " << color_print(b, true) << " : " << float(b) << '\n';
 	}
 	
+	{
+		std::cout << "\nComparitive Number traits\n";
+		compareNumberTraits< lns<10, 6>, lns2b<10, 6> >(std::cout);
+		threeWayCompareNumberTraits< float, lns<10, 6>, lns2b<10, 6> >(std::cout);
+		threeWayCompareNumberTraits< fp8, bfloat_t, lns2b<8, 4> >(std::cout);
+	}
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 }
