@@ -189,7 +189,7 @@ project("my-numerical-experiment")
 find_package(UNIVERSAL CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME} src/mymain.cpp)
-target_link_libraries(${PROJECT_NAME} UNIVERSAL::UNIVERSAL)
+target_link_libraries(${PROJECT_NAME} universal::universal)
 ```
 
 ## Controlling the build to include different components
