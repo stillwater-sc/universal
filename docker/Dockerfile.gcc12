@@ -4,7 +4,7 @@
 # docker build --target release -t stillwater/universal:release will just build a release container
 
 # BUILDER stage
-FROM stillwater/universal:gcc12.builder as builder
+FROM stillwater/universal:gcc12builder as builder
 LABEL Theodore Omtzigt
 ARG target=BUILD_ALL
 
