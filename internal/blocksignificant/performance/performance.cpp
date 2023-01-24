@@ -1,6 +1,6 @@
 //  performance.cpp : performance benchmarking for blocksignificant arithmetic
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,9 +10,8 @@
 #include <chrono>
 
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_status.hpp>
-#include <universal/verification/test_reporters.hpp>
-#include <universal/verification/performance_runner.hpp>
+#include <universal/verification/test_suite.hpp>
+#include <universal/benchmark/performance_runner.hpp>
 
 // test construction peformance
 void TestBlockPerformanceOnConstruction() {

@@ -1,6 +1,6 @@
 // multifile.cpp: compilation test to check arithmetic type usage in application environments
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,13 +10,13 @@
 #include <cmath>
 #include <limits>
 
-// minimum set of include files to reflect source code dependencies
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/einteger/einteger.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/lns2b/lns2b.hpp>
 
 #include <universal/verification/test_reporters.hpp>
 
@@ -32,8 +32,8 @@
 #undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
-#define REGRESSION_LEVEL_3 0
-#define REGRESSION_LEVEL_4 0
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
 #endif
 
 // forward references
@@ -42,12 +42,25 @@ using Fixpnt  = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
 using Cfloat  = sw::universal::half;
 using Posit   = sw::universal::posit<8,2>;
 using Lns     = sw::universal::lns<8, 2>;
+using Lns2b   = sw::universal::lns2b<8, 6>;
 
-Integer integerPolynomial(const std::vector<int>& coef, const Integer& x);
-Fixpnt  fixpntPolynomial(const std::vector<int>& coef, const Fixpnt& x);
-Cfloat  cfloatPolynomial(const std::vector<int>& coef, const Cfloat& x);
-Posit   positPolynomial(const std::vector<int>& coef, const Posit& x);
-Lns     lnsPolynomial(const std::vector<int>& coef, const Lns& x);
+Integer integerPolynomial(const std::vector<float>& coef, const Integer& x);
+Fixpnt  fixpntPolynomial(const std::vector<float>& coef, const Fixpnt& x);
+Cfloat  cfloatPolynomial(const std::vector<float>& coef, const Cfloat& x);
+Posit   positPolynomial(const std::vector<float>& coef, const Posit& x);
+Lns     lnsPolynomial(const std::vector<float>& coef, const Lns& x);
+Lns2b   lns2bPolynomial(const std::vector<float>& coef, const Lns2b& x);
+
+template<typename NumberType>
+void EvaluatePolynomial(const std::vector<float>& coefficients, const NumberType& x) {
+	std::cout << "x            : " << x << '\n';
+//	std::cout << "integer      : " << integerPolynomial(coefficients, Integer(x)) << '\n';
+	std::cout << "fixpnt       : " << fixpntPolynomial(coefficients, Fixpnt(x)) << '\n';
+	std::cout << "cfloat       : " << cfloatPolynomial(coefficients, Cfloat(x)) << '\n';
+	std::cout << "posit        : " << positPolynomial(coefficients, Posit(x)) << '\n';
+	std::cout << "lns          : " << lnsPolynomial(coefficients, Lns(x)) << '\n';
+	std::cout << "lns2b        : " << lns2bPolynomial(coefficients, Lns2b(x)) << '\n';
+}
 
 int main()
 try {
@@ -63,7 +76,7 @@ try {
 #if MANUAL_TESTING
 
 	// polynomial(x) = a + bx + cx^2 + dx^3 + ex^4 + fx^5;
-	std::vector<int> coefficients;
+	std::vector<float> coefficients;
 	coefficients.push_back(1);
 	coefficients.push_back(-1);
 	coefficients.push_back(1);
@@ -71,13 +84,12 @@ try {
 	coefficients.push_back(1);
 	coefficients.push_back(-1);
 
+	// Goal is to show the impact of rounding of different real number systems
 	float a(1.0f);
-	
-	std::cout << "integer      : " << integerPolynomial(coefficients, Integer(a)) << '\n';
-	std::cout << "fixpnt       : " << fixpntPolynomial(coefficients, Fixpnt(a)) << '\n';
-	std::cout << "cfloat       : " << cfloatPolynomial(coefficients, Cfloat(a)) << '\n';
-	std::cout << "posit        : " << positPolynomial(coefficients, Posit(a)) << '\n';
-	std::cout << "lns          : " << lnsPolynomial(coefficients, Lns(a)) << '\n';
+	for (unsigned i = 0; i < 20; ++i) {
+		EvaluatePolynomial(coefficients, a);
+		a *= 0.5f;
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

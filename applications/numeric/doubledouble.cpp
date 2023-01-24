@@ -1,6 +1,6 @@
 // doubledouble.cpp: experiments with double-double floating-point arithmetic
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -9,7 +9,7 @@
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
 #endif
-#include <universal/verification/performance_runner.hpp>
+#include <universal/benchmark/performance_runner.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // select the number systems we would like to compare

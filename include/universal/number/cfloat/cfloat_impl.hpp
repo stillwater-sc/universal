@@ -682,8 +682,20 @@ public:
 				else {
 					--_block[MSU];
 				}
+				if constexpr (!hasSubnormals) {
+					if (isdenormal()) {
+						// special case, we need to jump past all the subnormal value encodings which puts us on 0
+						_block[MSU] = 0; // pattern: 0.00.000 = +0
+					}
+				}
 			}
 			else {
+				if constexpr (!hasSubnormals) {
+					if (_block[MSU] == 0) {
+						// special case, we need to jump past all the subnormal value encodings minus 1
+						setfraction(0xFFFF'FFFF'FFFF'FFFFull);
+					}
+				}
 				if ((_block[MSU] & (MSU_MASK >> 1)) == (MSU_MASK >> 1)) { // pattern: 0.11.111 = nan
 					_block[MSU] |= SIGN_BIT_MASK; // pattern: 1.11.111 = snan : wrap to the other side of the encoding
 				}
@@ -717,6 +729,12 @@ public:
 					if (borrow) {
 						--_block[MSU];
 					}
+					if constexpr (!hasSubnormals) {
+						if (isdenormal()) {
+							// special case, we need to jump past all the subnormal value encodings which puts us on 0
+							setzero(); // pattern: 0.00.000 = +0
+						}
+					}
 				}
 			}
 			else {
@@ -725,6 +743,12 @@ public:
 					setnan(NAN_TYPE_SIGNALLING);
 				}
 				else {
+					if constexpr (!hasSubnormals) {
+						if (iszero()) {
+							// special case, we need to jump past all the subnormal value encodings minus 1 so that the increment code below ends up on normal minpos
+							setfraction(0xFFFF'FFFF'FFFF'FFFFull);
+						}
+					}
 					bool carry = true;
 					for (unsigned i = 0; i < MSU; ++i) {
 						if (carry) {
@@ -762,10 +786,24 @@ public:
 			else {
 				// positive range
 				if (_block[MSU] == 0) { // pattern: 0.00.000 = 0
-					_block[MSU] |= SIGN_BIT_MASK | bt(1u); // pattern: 1.00.001 = minneg 
+					if constexpr (hasSubnormals) {
+						_block[MSU] |= SIGN_BIT_MASK | bt(1u); // pattern: 1.00.001 = minneg 
+					}
+					else {
+						// special case, we need to jump past all the subnormal value encodings
+						setfraction(0xFFFF'FFFF'FFFF'FFFFull); // set to 0.00.11...11
+						++_block[MSU]; // increment into 0.01.0000
+						_block[MSU] |= SIGN_BIT_MASK; // set to 1.01.0000
+					}
 				}
 				else {
 					--_block[MSU];
+				}
+				if constexpr (!hasSubnormals) {
+					if (isdenormal()) {
+						// special case, we need to jump past all the subnormal value encodings which puts us on 0
+						_block[MSU] = 0; // pattern: 0.00.000 = +0
+					}
 				}
 			}
 		}
@@ -791,8 +829,15 @@ public:
 			else {
 				// special case: pattern: 0.00.000 = +0 transitions to pattern: 1.00.001 = minneg
 				if (iszeroencoding()) {
-					setsign(true);
-					setbit(0, true);
+					if constexpr (hasSubnormals) {
+						setsign(true);
+						setbit(0, true);
+					}
+					else {
+						// special case, we need to jump past all the subnormal value encodings 1.01.0000 = minneg normal
+						setexponent(1ul - EXP_BIAS);
+						setsign(true);
+					}
 				}
 				else {
 					bool borrow = true;
@@ -810,6 +855,12 @@ public:
 					}
 					if (borrow) {
 						--_block[MSU];
+					}
+					if constexpr (!hasSubnormals) {
+						if (isdenormal()) {
+							// special case, we need to jump past all the subnormal value encodings which puts us on 0
+							setzero(); // pattern: 0.00.000 = +0
+						}
 					}
 				}
 			}
@@ -1343,6 +1394,9 @@ public:
 		return !sign(); 
 	}
 	constexpr bool iszero() const noexcept {
+		// NOTE: this is a very specific design that makes the decsion that
+		// for subnormal encodings found in a configuration that doesn't
+		// support them, we assume that these values map to 0.
 		if constexpr (hasSubnormals) {
 			return iszeroencoding();
 		}
@@ -1423,6 +1477,7 @@ public:
 			}
 		}
 	}
+	// iszeroencoding returns true if it finds a pure -0 or +0 pattern and returns false otherwise
 	constexpr bool iszeroencoding() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return true;
@@ -1444,7 +1499,8 @@ public:
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
-	constexpr bool isminnegencoding() const noexcept {  // 1.00.00001
+	// isminnegencoding returns true if it find the pattern 1.00.00001 and returns false otherwise
+	constexpr bool isminnegencoding() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return false;
 		}
@@ -1501,24 +1557,27 @@ public:
 			(NaNType == NAN_TYPE_SIGNALLING ? isNegNaN :
 				(NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
-
+	// isnormal returns true if 0 or exponent bits are not all zero or one, false otherwise
 	constexpr bool isnormal() const noexcept {
+		if (iszeroencoding()) return true; // filter out the one special case
 		blockbinary<es, bt> e{};
 		exponent(e);
-//		return !e.iszero() && !isinf() && !isnan();  // old definition that included the supernormals but excluded the extreme encodings
-		// isnormal returns true if exponent bits are not all zero or one, false otherwise
 		return !e.iszero() && !e.all();
 	}
+	// isdenormal returns true if exponent bits are all zero, false otherwise
 	constexpr bool isdenormal() const noexcept {
+		if (iszeroencoding()) return false; // filter out the one special case
 		blockbinary<es, bt> e{};
 		exponent(e);
-		return e.iszero(); // isdenormal returns true if exponent bits are all zero, false otherwise
+		return e.iszero(); 
 	}
+	// issupernormal returns true if exponent bits are all one, false otherwise
 	constexpr bool issupernormal() const noexcept {
 		blockbinary<es, bt> e{};
 		exponent(e);
-		return e.all();// issupernormal returns true if exponent bits are all one, false otherwise
+		return e.all();
 	}
+	// isinteger is TBD
 	constexpr bool isinteger() const noexcept { return false; } // return (floor(*this) == *this) ? true : false; }
 	
 	template<typename NativeReal>

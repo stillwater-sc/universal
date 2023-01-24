@@ -111,6 +111,31 @@ namespace sw { namespace universal {
 		default:
 			std::cerr << "Unsupported unary operator: operation ignored\n";
 			break;
+		case RandomsOp::OPCODE_EXP:
+		case RandomsOp::OPCODE_EXP2:
+		case RandomsOp::OPCODE_LOG:
+		case RandomsOp::OPCODE_LOG2:
+		case RandomsOp::OPCODE_LOG10:
+		case RandomsOp::OPCODE_SIN:
+		case RandomsOp::OPCODE_COS:
+		case RandomsOp::OPCODE_TAN:
+		case RandomsOp::OPCODE_ASIN:
+		case RandomsOp::OPCODE_ACOS:
+		case RandomsOp::OPCODE_ATAN:
+		case RandomsOp::OPCODE_SINH:
+		case RandomsOp::OPCODE_COSH:
+		case RandomsOp::OPCODE_TANH:
+		case RandomsOp::OPCODE_ASINH:
+		case RandomsOp::OPCODE_ACOSH:
+		case RandomsOp::OPCODE_ATANH:
+		case RandomsOp::OPCODE_HYPOT:
+			std::cerr << "executeBinary does not support math function evaluation\n";
+			break;
+		case RandomsOp::OPCODE_SQRT:
+		case RandomsOp::OPCODE_RAN:
+		case RandomsOp::OPCODE_ASSIGN:
+			std::cerr << "executeBinary does not support unary operators\n";
+			break;
 		}
 		testref = reference;
 	}
@@ -261,8 +286,32 @@ namespace sw { namespace universal {
 		case RandomsOp::OPCODE_POW:
 			operation_string = "pow";
 			break;
+		case RandomsOp::OPCODE_EXP:
+		case RandomsOp::OPCODE_EXP2:
+		case RandomsOp::OPCODE_LOG:
+		case RandomsOp::OPCODE_LOG2:
+		case RandomsOp::OPCODE_LOG10:
+		case RandomsOp::OPCODE_SIN:
+		case RandomsOp::OPCODE_COS:
+		case RandomsOp::OPCODE_TAN:
+		case RandomsOp::OPCODE_ASIN:
+		case RandomsOp::OPCODE_ACOS:
+		case RandomsOp::OPCODE_ATAN:
+		case RandomsOp::OPCODE_SINH:
+		case RandomsOp::OPCODE_COSH:
+		case RandomsOp::OPCODE_TANH:
+		case RandomsOp::OPCODE_ASINH:
+		case RandomsOp::OPCODE_ACOSH:
+		case RandomsOp::OPCODE_ATANH:
+		case RandomsOp::OPCODE_HYPOT:
+			std::cerr << "VerifyBinaryOperatorThroughRandoms does not support math function evaluation\n";
+			return 1;
 		case RandomsOp::OPCODE_NOP:
+			std::cerr << "VerifyBinaryOperatorThroughRandoms NOP\n";
+			break;
+		case RandomsOp::OPCODE_RAN:
 		case RandomsOp::OPCODE_ASSIGN:
+		case RandomsOp::OPCODE_SQRT:
 		default:
 			std::cerr << "Unsupported unary operator, test cancelled\n";
 			return 1;

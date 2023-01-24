@@ -34,8 +34,8 @@ namespace sw { namespace universal {
 				double db = double(b);
 
 				double ref = da * db;
-				if (reportTestCases && !isInRange<nbits, rbits, bt, behavior>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range<nbits, rbits, bt, behavior>() << '\n';
+				if (reportTestCases && !isInRange<LnsType>(ref)) {
+					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
 				}
 				c = a * b;
 				cref = ref;

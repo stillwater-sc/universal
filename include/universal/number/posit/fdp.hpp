@@ -1,7 +1,7 @@
 #pragma once
 // fdp.hpp :  include file containing templated C++ interfaces to fused dot product
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -62,11 +62,8 @@ fdp(const Vector& x, const Vector& y) {
 	return sum;
 }
 #else
-template<typename Scalar>
-constexpr auto size(const std::vector<Scalar>& v) -> decltype(v.size())
-{
-	return (v.size());
-}
+
+// template<typename Scalar> constexpr auto size(const std::vector<Scalar>& v) -> decltype(v.size()) { return (v.size()); }
 
 // Specialized resolved fused dot product that assumes unit stride and a standard vector
 template<typename Vector>

@@ -83,6 +83,9 @@ using fp32     = single;
 // IEEE-754 double precision floating-point
 using duble    = cfloat< 64, 11, uint32_t, true, false, false>;
 using fp64     = duble;
+// IEEE-754 extended precision floating-point
+using xtndd    = cfloat< 80, 11, uint32_t, true, false, false>;
+using fp80     = xtndd;
 // IEEE-754 quad (128bit) precision floating-point
 using quad     = cfloat<128, 15, uint32_t, true, false, false>;
 using fp128    = quad;

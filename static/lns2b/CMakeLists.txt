@@ -1,0 +1,13 @@
+file (GLOB API_SRCS "./api/*.cpp")
+file (GLOB CONVERSION_SRCS "./conversion/*.cpp")
+file (GLOB ARITHMETIC_SRCS "./arithmetic/*.cpp")
+file (GLOB LOGIC_SRCS "./logic/*.cpp")
+file (GLOB MATHLIB_SRCS "./math/*.cpp")
+file (GLOB PERFORMANCE_SRCS "./performance/*.cpp")
+
+compile_all("true" "lns2b" "Number Systems/static/floating-point/logarithmic/lns2b/api" "${API_SRCS}")
+compile_all("true" "lns2b" "Number Systems/static/floating-point/logarithmic/lns2b/conversion" "${CONVERSION_SRCS}")
+compile_all("true" "lns2b" "Number Systems/static/floating-point/logarithmic/lns2b/arithmetic" "${ARITHMETIC_SRCS}")
+compile_all("true" "lns2b" "Number Systems/static/floating-point/logarithmic/lns2b/logic" "${LOGIC_SRCS}")
+compile_all("true" "lns2b" "Number Systems/static/floating-point/logarithmic/lns2b/mathlib" "${MATHLIB_SRCS}")
+compile_all("true" "lns2b" "Number Systems/static/floating-point/logarithmic/lns2b/performance" "${PERFORMANCE_SRCS}")

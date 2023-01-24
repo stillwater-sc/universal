@@ -13,7 +13,7 @@
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/performance_runner.hpp>
+#include <universal/benchmark/performance_runner.hpp>
 
 template<typename NativeFloat>
 void CopyWorkload(size_t NR_OPS) {
