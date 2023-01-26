@@ -842,6 +842,7 @@ private:
 	friend bool operator<=(const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs);
 	friend bool operator>=(const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs);
 
+	friend bool operator< (const posit<NBITS_IS_16, ES_IS_1>& lhs, double rhs);
 };
 
 // posit I/O operators
@@ -881,6 +882,22 @@ inline std::string to_string(const posit<NBITS_IS_16, ES_IS_1>& p, std::streamsi
 	std::stringstream ss;
 	ss << std::setprecision(precision) << float(p);
 	return ss.str();
+}
+
+inline bool twosComplementLessThan(std::uint16_t lhs, std::uint16_t rhs) {
+	// comparison of the sign bit
+	uint32_t mask = 0x8000;
+	if ((lhs & mask) == 0 && (rhs & mask) == mask)	return false;
+	if ((lhs & mask) == mask && (rhs & mask) == 0) return true;
+	// sign is equal, compare the remaining bits
+	mask >>= 1;
+	while (mask > 0) {
+		if ((lhs & mask) == 0 && (rhs & mask) == mask)	return true;
+		if ((lhs & mask) == mask && (rhs & mask) == 0) return false;
+		mask >>= 1;
+	}
+	// numbers are equal
+	return false;
 }
 
 // posit - posit binary logic operators
@@ -949,6 +966,10 @@ inline bool operator<=(int lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
 }
 inline bool operator>=(int lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
 	return !operator<(posit<NBITS_IS_16, ES_IS_1>(lhs), rhs);
+}
+
+inline bool operator< (const posit<NBITS_IS_16, ES_IS_1>& lhs, double rhs) {
+	return twosComplementLessThan(lhs._bits, posit<NBITS_IS_16, ES_IS_1>(rhs)._bits);
 }
 
 #endif // POSIT_ENABLE_LITERALS

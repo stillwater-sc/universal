@@ -9,7 +9,7 @@
 
 using LNS8 = sw::universal::lns<8, 2, std::uint8_t>;
 
-LNS8 lnsPolynomial(const std::vector<int>& coef, const LNS8& x) {
+LNS8 lnsPolynomial(const std::vector<float>& coef, const LNS8& x) {
 	using namespace sw::universal;
 	if (coef.size() < 2) {
 		std::cerr << "Coefficient set is too small to represent a polynomial\n";

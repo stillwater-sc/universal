@@ -1,6 +1,6 @@
 // assignment.cpp: functional tests for assignments of native types to cfloats
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -64,7 +64,7 @@ int VerifySubnormalReverseSampling(bool reportTestCases = false, bool verbose = 
 			if (ref.iszero() && result.iszero()) continue; // optimization may destroy sign on zero
 			nrOfFailedTestCases++;
 			//			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
-			if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			if (reportTestCases && nrOfFailedTestCases < 5) ReportAssignmentError("FAIL", "=", input, result, ref);
 		}
 		else {
 			if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
@@ -90,6 +90,7 @@ int VerifyReverseSampling(bool reportTestCases = false, bool verbose = false) {
 	std::cout << std::setw(40) << typeid(result).name() << "   : ";
 	for (size_t i = 0; i < NR_SAMPLES; ++i) {
 		ref.setbits(i);
+		if constexpr (!hasSubnormals) if (ref.isdenormal()) continue; // ignore the subnormal encodings
 		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
 		// special cases do not have consistent compiler behavior
@@ -97,7 +98,7 @@ int VerifyReverseSampling(bool reportTestCases = false, bool verbose = false) {
 			// optimization may destroy the sign on -0
 			if (input != 0) {
 				nrOfFailedTestCases++;
-				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases && nrOfFailedTestCases < 5) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
 				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
@@ -107,7 +108,7 @@ int VerifyReverseSampling(bool reportTestCases = false, bool verbose = false) {
 			// optimization may change signalling NaNs to quiet NaNs
 			if (std::fpclassify(input) != FP_NAN) {
 				nrOfFailedTestCases++;
-				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases && nrOfFailedTestCases < 5) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
 				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
@@ -117,7 +118,7 @@ int VerifyReverseSampling(bool reportTestCases = false, bool verbose = false) {
 			// optimization may destroy the sign on -0
 			if (std::fpclassify(input) != FP_INFINITE) {
 				nrOfFailedTestCases++;
-				if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+				if (reportTestCases && nrOfFailedTestCases < 5) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
 			else {
 				if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
@@ -127,7 +128,7 @@ int VerifyReverseSampling(bool reportTestCases = false, bool verbose = false) {
                           
 			nrOfFailedTestCases++;
 //			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
-			if (reportTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			if (reportTestCases && nrOfFailedTestCases < 5) ReportAssignmentError("FAIL", "=", input, result, ref);
 		}
 		else {
 			if (verbose && reportTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
@@ -529,7 +530,7 @@ try {
 
 	std::cout << "\ncfloat<> with only normal encodings\n";
 	std::cout << "Single block representations\n--------------------------------------------- es = 2 encodings\n";
-	nrOfFailedTestCases += TestSingleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);
+	nrOfFailedTestCases += TestSingleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, float>("=float", true, bVerbose);
 	nrOfFailedTestCases += TestSingleBlockRepresentations<2, noSubnormals, noSupernormals, notSaturating, double>("=double", reportTestCases, bVerbose);
 	std::cout << "--------------------------------------------- es = 3 encodings\n";
 	nrOfFailedTestCases += TestSingleBlockRepresentations<3, noSubnormals, noSupernormals, notSaturating, float>("=float", reportTestCases, bVerbose);

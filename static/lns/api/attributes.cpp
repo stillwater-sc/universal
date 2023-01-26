@@ -31,15 +31,14 @@ try {
 	//// lns attribute functions
 
 	{
-		std::cout << "Dynamic ranges of logarithmic floating-point arithmetic types\n";
+		std::cout << "\nDynamic ranges of logarithmic floating-point arithmetic types\n";
 		std::cout << dynamic_range< lns<  8, 2> >() << '\n';
 		std::cout << dynamic_range< lns< 16, 5> >() << '\n';
 		std::cout << dynamic_range< lns< 32, 8> >() << '\n';
-		std::cout << '\n';
 	}
 
 	{
-		std::cout << "Dynamic ranges of different logarithmic floating-point\n";
+		std::cout << "\nMinmax of logarithmic floating-point\n";
 		std::cout << minmax_range< lns< 8, 4> >() << '\n';
 		std::cout << minmax_range< lns<16, 8> >() << '\n';
 		std::cout << minmax_range< lns<24,12> >() << '\n';
@@ -47,7 +46,7 @@ try {
 	}
 	
 	{
-		std::cout << "Dynamic ranges of different logarithmic floating-point\n";
+		std::cout << "\nDynamic ranges of logarithmic floating-point\n";
 		std::cout << symmetry_range< lns< 8, 4> >() << '\n';
 		std::cout << symmetry_range< lns<16, 8> >() << '\n';
 		std::cout << symmetry_range< lns<24,12> >() << '\n';
@@ -55,15 +54,26 @@ try {
 	}
 
 	{
-		std::cout << "Number traits\n";
-		numberTraits< lns<32, 16> >(std::cout);
-		std::cout << '\n';
+		std::cout << "\nSpecific logarithmic floating-point range function\n";
+		std::cout << lns_range(lns<7, 3>()) << '\n';
 	}
 
 	{
-		std::cout << "Comparitive Number traits\n";
+		std::cout << "\nlns sign() function\n";
+		lns<7, 3> a;
+
+		a.setbits(0x7f);
+		std::cout << std::setw(45) << type_tag(a) << " : " << to_binary(a) << " : " << a << " : " << (sign(a) ? "sign = 1" : "sign = 0") << '\n';
+	}
+
+	{
+		std::cout << "\nNumber traits\n";
+		numberTraits< lns<32, 16> >(std::cout);
+	}
+
+	{
+		std::cout << "\nComparitive Number traits\n";
 		compareNumberTraits< lns<24, 12>, lns<32, 16> >(std::cout);
-		std::cout << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

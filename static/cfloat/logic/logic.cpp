@@ -96,20 +96,23 @@ namespace sw::universal {
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
 			a.setbits(i);
+			if constexpr (!TestType::hasSubnormals) if (a.isdenormal()) continue; // ignore subnormal encodings
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
 				b.setbits(j);
+				if constexpr (!TestType::hasSubnormals) if (b.isdenormal()) continue; // rignoreemove subnormal encodings
 
 				// set the golden reference
-
-				// since this function is only useful for small cfloat<>s, we can depend on the double conversion
+				// since this function is only useful for small cfloat<> configurations, we can depend on the double conversion
 				bool ref = (double(a) < double(b));
 
 				bool result = (a < b);
 				if (ref != result) {
 					nrOfFailedTestCases++;
-					std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
-					std::cout << to_binary(a) << " < " << to_binary(b) << '\n';
+					if (nrOfFailedTestCases < 5) {
+						std::cout << a << " < " << b << " fails: reference is " << (ref ? "false" : "true") << " actual is " << (result ? "false" : "true") << std::endl;
+						std::cout << to_binary(a) << " < " << to_binary(b) << '\n';
+					}
 				}
 				else {
 					// std::cout << a << " < " << b << " pass : reference is " << ref << " actual is " << result << std::endl;
@@ -375,6 +378,7 @@ try {
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
+#if REGRESSION_LEVEL_1
 
 	cfloat<16, 5> a{};
 
@@ -601,6 +605,16 @@ try {
 	else {
 		ReportTestResult(0, "cfloat<16,1> >= 0.0l", "== long double literal");
 	}
+#endif
+
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
 #endif
 
 #if REGRESSION_LEVEL_4

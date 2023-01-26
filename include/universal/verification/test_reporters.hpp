@@ -136,10 +136,10 @@ void ReportArithmeticShiftError(const std::string& test_case, const std::string&
 }
 
 template<typename TestType>
-void ReportArithmeticShiftSuccess(const std::string& test_case, const std::string& op, const TestType& a, const size_t divider, const TestType& result, int64_t ref) {
+void ReportArithmeticShiftSuccess(const std::string& label, const std::string& op, const TestType& a, const size_t divider, const TestType& result, int64_t ref) {
 	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
+	std::cerr << std::setprecision(20)
+		<< label << " "	
 		<< std::setw(NUMBER_COLUMN_WIDTH) << (long long)a
 		<< " " << op << " "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << divider
@@ -149,16 +149,16 @@ void ReportArithmeticShiftSuccess(const std::string& test_case, const std::strin
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref << ' ' << to_binary(ref, TestType::nbits)
 		<< " " << to_binary(result, true) << " vs " << to_binary(ref, TestType::nbits)
 		<< std::setprecision(old_precision)
-		<< std::endl;
+		<< '\n';
 }
 
 template<typename InputType, typename ResultType, typename RefType>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, 
+void ReportBinaryArithmeticError(const std::string& label, const std::string& op, 
 	const InputType& lhs, const InputType& rhs, const ResultType& result, const RefType& ref) {
 	using namespace sw::universal;
 	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
+	std::cerr << std::setprecision(20)
+		<< label << '\n'
 		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
 		<< " " << op << " "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
@@ -166,21 +166,23 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result 
 		<< " golden reference is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< "\n result " << to_binary(result) 
-		<< "\n vs ref " << to_binary(ref)
 		<< '\n'
-		<< to_binary(lhs)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(lhs)
 		<< " " << op << " "
-		<< to_binary(rhs)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(rhs)
+		<< " != "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(result)
+		<< " golden reference is "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(ref)
 		<< std::setprecision(old_precision)
 		<< '\n';
 }
 
 template<typename TestType, typename ResultType, typename RefType>
-void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const ResultType& result, const RefType& ref) {
+void ReportBinaryArithmeticSuccess(const std::string& label, const std::string& op, const TestType& lhs, const TestType& rhs, const ResultType& result, const RefType& ref) {
 	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
+	std::cerr << std::setprecision(20)
+		<< label << ' '
 		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
 		<< " " << op << " "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs

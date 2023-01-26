@@ -777,11 +777,11 @@ namespace sw { namespace universal {
 					fractionBits = 2 * fbits;
 					integerSet = 4;
 				}
-				size_t NR_VALUES = (1ull << fractionBits);
+				size_t NR_ENCODINGS = (1ull << fractionBits);
 				b.setscale(scale);
 				for (size_t i = 1; i < integerSet; ++i) {  // 01, 10, 11.fffff: state 00 is not part of the encoding as that would represent a denormal
 					size_t integerBits = (i << abits);
-					for (size_t f = 0; f < NR_VALUES; ++f) {
+					for (size_t f = 0; f < NR_ENCODINGS; ++f) {
 						size_t btbits = integerBits | (f << rbits);
 						b.setbits(btbits);
 //						b.setbits(integerBits + f);
@@ -892,7 +892,7 @@ namespace sw { namespace universal {
 		constexpr bool isSaturating = CfloatConfiguration::isSaturating;
 
 		int nrOfTestFailures{ 0 };
-		constexpr size_t NR_VALUES = (1u << nbits);
+		constexpr size_t NR_ENCODINGS = (1u << nbits);
 		cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> a{};
 
 		// ADD
@@ -900,7 +900,7 @@ namespace sw { namespace universal {
 			//constexpr size_t abits = CfloatConfiguration::abits;
 			constexpr size_t fbits = CfloatConfiguration::fbits;
 			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-			for (size_t i = 0; i < NR_VALUES; ++i) {
+			for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 				a.setbits(i);
 				a.normalizeAddition(b);
 				if (double(a) != double(b)) {
@@ -923,7 +923,7 @@ namespace sw { namespace universal {
 			constexpr size_t fbits = CfloatConfiguration::fbits;
 			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
 			blocktriple<2 * fbits, BlockTripleOperator::REP, bt> ref;
-			for (size_t i = 0; i < NR_VALUES; ++i) {
+			for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 				a.setbits(i);
 				a.normalizeMultiplication(b);
 				ref = double(b);
@@ -948,7 +948,7 @@ namespace sw { namespace universal {
 			constexpr size_t fbits = CfloatConfiguration::fbits;
 			blocktriple<fbits, op, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
 			blocktriple<2 * fbits, BlockTripleOperator::REP, bt> ref;
-			for (size_t i = 0; i < NR_VALUES; ++i) {
+			for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 				a.setbits(i);
 				a.normalizeDivision(b);
 				ref = double(b);
@@ -970,7 +970,7 @@ namespace sw { namespace universal {
 		return nrOfTestFailures;
 	}
 
-	// Generate ordered set in ascending order from [-NaN, -inf, -maxpos, ..., +maxpos, +inf, +NaN] for a particular posit config <nbits, es>
+	// Generate ordered set in ascending order from [-NaN, -inf, -maxpos, ..., +maxpos, +inf, +NaN] for a particular cfloat config <nbits, es>
 	template<typename TestType>
 	void GenerateOrderedCfloatSet(std::vector<TestType>& set) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
@@ -988,29 +988,57 @@ namespace sw { namespace universal {
 		// 1.11.110   -inf
 		// 1.11.101   -maxpos == maxneg
 		// ...
+		// 1.01.001
+		// 1.01.000
+		// 1.00.111   <--- subnormals, which we need to remove if the config doesn't have them
+		// ...
 		// 1.00.001   minneg
 		// 1.00.000   -0      ]
 		// 0.00.000   +0      ] we are collapsing -0/+0 as next values from 0 are minpos/minneg
-		// 0.00.001   minpos
+		// 0.00.001   mindenorm, minpos if subnormals
 		// ...
+		// 0.00.111   <-- subnormals
+		// 0.01.000   minpos if no subnormals
 		// 0.11.101   maxpos   <--- is maxpos for
 		// 0.11.110   inf
 		// 0.11.111   nan
 
-		std::vector< Cfloat > s(NR_OF_ENCODINGS - 1);
+		std::vector< Cfloat > s;
 		Cfloat c{}; // == TestType but marshalled
 		constexpr size_t NEGATIVE_ZERO = (1ull << (nbits - 1)); // pattern 1.00.000
 		constexpr size_t QUIET_NAN = (~0ull >> (64 - nbits + 1)); // pattern 0.11.111
 		size_t i = 0;
 		for (size_t pattern = NR_OF_ENCODINGS - 1; pattern > NEGATIVE_ZERO ; --pattern) {  // remove negative zero from the set
-//			std::cout << to_binary(pattern, nbits, true) << '\n';
 			c.setbits(pattern);
-			s[i++] = c;
+//			std::cout << to_binary(pattern, nbits, true) << " : " << to_binary(c, true) << '\n';
+			if constexpr (hasSubnormals) {
+				// s[i++] = c;
+				s.push_back(c);
+			}
+			else {
+				if (!c.isdenormal()) {
+					// s[i++] = c;
+					s.push_back(c);
+				}
+				// continue to the next pattern
+			}
+//			for (auto v : s) std::cout << v << ' '; std::cout << '\n';
 		}
 		for (size_t pattern = 0; pattern <= QUIET_NAN; ++pattern) {
-//			std::cout << to_binary(pattern, nbits, true) << '\n';
 			c.setbits(pattern);
-			s[i++] = c;
+//			std::cout << to_binary(pattern, nbits, true) << " : " << to_binary(c, true) << '\n';
+			if constexpr (hasSubnormals) {
+				// s[i++] = c;
+				s.push_back(c);
+			}
+			else {
+				if (!c.isdenormal()) {
+					// s[i++] = c;
+					s.push_back(c);
+				}
+				// continue to the next pattern
+			}
+//			for (auto v : s) std::cout << v << ' '; std::cout << '\n';
 		}
 		set = s;
 	}
@@ -1087,7 +1115,7 @@ namespace sw { namespace universal {
 		using Cfloat = cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
 		std::vector< Cfloat > set;
-		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., -0, +0, ..., maxpos, +inf, nan]
+		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., {-0 +0}, ..., maxpos, +inf, nan]
 
 		int nrOfFailedTestCases = 0;
 
@@ -1176,16 +1204,13 @@ namespace sw { namespace universal {
 		constexpr bool hasSupernormals = TestType::hasSupernormals;
 		constexpr bool isSaturating = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+		
 		std::vector< Cfloat > set;
 		GenerateOrderedCfloatSet(set); // [snan, -inf, maxneg, ..., minneg, +0, minpos, ..., maxpos, +inf, qnan]
 
 		/*
 		std::cout << "Ordered set of cfloat values\n";
-		for (typename std::vector< Cfloat >::iterator it = set.begin(); it != set.end(); ++it) {
-			Cfloat c = *it;
-			std::cout << to_binary(c) << " : " << c << '\n';
-		}
-		std::cout << "-------\n";
+		for (auto v : set) std::cout << v << ' '; std::cout << std::endl;
 		*/
 
 		int nrOfFailedTestCases = 0;
@@ -1199,11 +1224,12 @@ namespace sw { namespace universal {
 //			std::cout << to_binary(*it) << " > " << to_binary(ref) << " decrement " << to_binary(c) << " : " << c << '\n';
 			if (c != ref) {
 				// in the no supernormal case, we are decrementing the pattern, but
-				// any supernormal evaluates to nan, and that lands us in side the != check
+				// any supernormal evaluates to nan, and that lands us inside the != check
 				// We check explicity below to filter out all these nan cases.
 				// To see that pattern decrements, uncomment the following line
 				// std::cout << to_binary(*it) << " > " << to_binary(*(it - 1)) << " decremented value " << to_binary(c) << '\n';
 				if (c.isnan() && ref.isnan()) continue; // nan != nan, so the regular equivalance test fails
+				std::cout << to_binary(*it) << " > " << to_binary(*(it + 1)) << " decremented value " << to_binary(c) << '\n';
 				if (reportTestCases) std::cout << " FAIL " << c << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
@@ -1229,7 +1255,7 @@ namespace sw { namespace universal {
 		constexpr bool isSaturating    = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		constexpr size_t NR_VALUES = (size_t(1) << nbits);
+		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 
 		// set the saturation clamps
@@ -1237,11 +1263,13 @@ namespace sw { namespace universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a{}, b{}, nut{}, cref{};
-		for (size_t i = 0; i < NR_VALUES; ++i) {
+		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
+			if constexpr (hasSubnormals == false) if (a.isdenormal()) continue; // ignore subnormal encodings
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; ++j) {
+			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
 				b.setbits(j);
+				if constexpr (hasSubnormals == false) if (b.isdenormal()) continue; // ignore subnormal encodings
 				db = double(b);
 				ref = da + db;
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
@@ -1322,7 +1350,7 @@ namespace sw { namespace universal {
 
 				if (nut != cref) {
 					if (nut.isnan() && cref.isnan()) continue; // (s)nan != (s)nan, so the regular equivalance test fails
-					if (ref == 0 and nut.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
+					if (ref == 0 && nut.iszero()) continue;    // mismatched is ignored as compiler optimizes away negative zero
 					nrOfFailedTests++;
 					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, nut, cref);
 #ifdef TRACE_ROUNDING
@@ -1350,8 +1378,8 @@ namespace sw { namespace universal {
 				}
 #endif
 			}
-			if constexpr (NR_VALUES > 256 * 256) {
-				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+			if constexpr (NR_ENCODINGS > 256 * 256) {
+				if (i % (NR_ENCODINGS / 25) == 0) std::cout << '.';
 			}
 		}
 //		std::cout << std::endl;
@@ -1375,7 +1403,7 @@ namespace sw { namespace universal {
 		constexpr bool isSaturating = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		constexpr size_t NR_VALUES = (size_t(1) << nbits);
+		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 
 		// set the saturation clamps
@@ -1383,10 +1411,10 @@ namespace sw { namespace universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a{}, b{}, nut{}, cref{};
-		for (size_t i = 0; i < NR_VALUES; ++i) {
+		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; ++j) {
+			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
 				b.setbits(j);
 				db = double(b);
 				ref = da - db;
@@ -1497,8 +1525,8 @@ namespace sw { namespace universal {
 				}
 #endif
 			}
-			if constexpr (NR_VALUES > 256 * 256) {
-				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+			if constexpr (NR_ENCODINGS > 256 * 256) {
+				if (i % (NR_ENCODINGS / 25) == 0) std::cout << '.';
 			}
 		}
 		//		std::cout << std::endl;
@@ -1522,7 +1550,7 @@ namespace sw { namespace universal {
 		constexpr bool isSaturating = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		constexpr size_t NR_VALUES = (size_t(1) << nbits);
+		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 
 		// set the saturation clamps
@@ -1530,10 +1558,10 @@ namespace sw { namespace universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a{}, b{}, nut{}, cref{};
-		for (size_t i = 0; i < NR_VALUES; ++i) {
+		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; ++j) {
+			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
 				b.setbits(j);
 				db = double(b);
 				ref = da * db;
@@ -1636,8 +1664,8 @@ namespace sw { namespace universal {
 				}
 #endif
 			}
-			if constexpr (NR_VALUES > 256 * 256) {
-				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+			if constexpr (NR_ENCODINGS > 256 * 256) {
+				if (i % (NR_ENCODINGS / 25) == 0) std::cout << '.';
 			}
 		}
 		//		std::cout << std::endl;
@@ -1668,7 +1696,7 @@ namespace sw { namespace universal {
 		constexpr bool isSaturating    = TestType::isSaturating;
 		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
 
-		constexpr size_t NR_VALUES = (size_t(1) << nbits);
+		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 
 		// set the saturation clamps
@@ -1676,10 +1704,10 @@ namespace sw { namespace universal {
 
 		double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 		Cfloat a{}, b{}, nut{}, cref{};
-		for (size_t i = 0; i < NR_VALUES; ++i) {
+		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i); // number system concept requires a member function setbits()
 			da = double(a);
-			for (size_t j = 0; j < NR_VALUES; ++j) {
+			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
 				b.setbits(j);
 				db = double(b);
 				ref = da / db;
@@ -1789,8 +1817,8 @@ namespace sw { namespace universal {
 				}
 #endif
 			}
-			if constexpr (NR_VALUES > 256 * 256) {
-				if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+			if constexpr (NR_ENCODINGS > 256 * 256) {
+				if (i % (NR_ENCODINGS / 25) == 0) std::cout << '.';
 			}
 		}
 		//		std::cout << std::endl;

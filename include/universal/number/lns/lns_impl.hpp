@@ -75,7 +75,7 @@ public:
 	static constexpr bool     SPECIAL_BITS_TOGETHER = (nbits > ((nrBlocks - 1) * bitsInBlock + 1));
 	static constexpr bt       MSU_ZERO = MSB_BIT_MASK;
 	static constexpr bt       MSU_NAN = SIGN_BIT_MASK | MSU_ZERO;  // only valid when special bits together is true
-	static constexpr int64_t  maxShift = nbits - rbits - 2;
+	static constexpr int64_t  maxShift = static_cast<int64_t>(nbits) - static_cast<int64_t>(rbits) - 2;
 	static constexpr unsigned leftShift = (maxShift < 0) ? 0 : maxShift;
 	static constexpr int64_t  min_exponent = (maxShift > 0) ? (-(1ll << leftShift)) : 0;
 	static constexpr int64_t  max_exponent = (maxShift > 0) ? (1ll << leftShift) - 1 : 0;
@@ -467,6 +467,10 @@ public:
 		std::cout << "BLOCK_MSB_MASK        " << to_binary(BLOCK_MSB_MASK, bitsInBlock) << '\n';
 		std::cout << "MSU_ZERO              " << to_binary(MSU_ZERO, bitsInBlock) << '\n';
 		std::cout << "MSU_NAN               " << to_binary(MSU_NAN, bitsInBlock) << '\n';
+		std::cout << "maxShift              " << maxShift << '\n';
+		std::cout << "leftShift             " << leftShift << '\n';
+		std::cout << "min_exponent          " << min_exponent << '\n';
+		std::cout << "max_exponent          " << max_exponent << '\n';
 	}
 
 protected:

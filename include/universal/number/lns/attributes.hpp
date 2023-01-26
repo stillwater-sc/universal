@@ -28,7 +28,7 @@ std::string lns_range(const lns<nbits, rbits, bt, xtra...>& v) {
 	using LNS = lns<nbits, rbits, bt, xtra...>;
 	std::stringstream s;
 	LNS l;
-	s << std::setw(40) << type_tag(v) << " : [ "
+	s << std::setw(45) << type_tag(v) << " : [ "
 		<< l.maxneg() << " ... "
 		<< l.minneg() << " "
 		<< "0 "

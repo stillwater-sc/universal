@@ -1,6 +1,6 @@
 // decrement.cpp: test suite runner for decrement operator on classic floats
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -59,7 +59,10 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+
 	// normal encoding only
+	nrOfFailedTestCases += ReportTestResult(
+		VerifyCfloatDecrement < cfloat<5, 2, uint8_t, false, false, false> >(reportTestCases), type_tag(cfloat<5, 2, uint8_t, false, false, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(
 		VerifyCfloatDecrement < cfloat<8, 2, uint8_t, false, false, false> >(reportTestCases), type_tag(cfloat<8, 2, uint8_t, false, false, false>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(

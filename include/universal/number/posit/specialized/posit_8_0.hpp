@@ -231,6 +231,7 @@ public:
 		p.setbits(v);
 		return p;
 	}
+
 private:
 	uint8_t _bits;
 
@@ -278,7 +279,6 @@ private:
 	long double to_long_double() const {
 		return (long double)to_float();
 	}
-
 
 	// helper methods			
 	constexpr posit& integer_assign(int rhs) {
@@ -419,6 +419,8 @@ private:
 	friend bool operator<=(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
 	friend bool operator>=(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
 
+	friend bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, double rhs);
+	friend bool operator< (double lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
 };
 
 // posit I/O operators
@@ -458,6 +460,22 @@ inline std::string to_string(const posit<NBITS_IS_8, ES_IS_0>& p, std::streamsiz
 	std::stringstream ss;
 	ss << std::setprecision(precision) << float(p);
 	return ss.str();
+}
+
+inline bool twosComplementLessThan(std::uint8_t lhs, std::uint8_t rhs) {
+	// comparison of the sign bit
+	uint8_t mask = 0x80;
+	if ((lhs & mask) == 0 && (rhs & mask) == mask)	return false;
+	if ((lhs & mask) == mask && (rhs & mask) == 0) return true;
+	// sign is equal, compare the remaining bits
+	mask >>= 1;
+	while (mask > 0) {
+		if ((lhs & mask) == 0 && (rhs & mask) == mask)	return true;
+		if ((lhs & mask) == mask && (rhs & mask) == 0) return false;
+		mask >>= 1;
+	}
+	// numbers are equal
+	return false;
 }
 
 // posit - posit binary logic operators
@@ -533,6 +551,10 @@ inline bool operator<=(int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 }
 inline bool operator>=(int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 	return !operator<(posit<NBITS_IS_8, ES_IS_0>(lhs), rhs);
+}
+
+inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, double rhs) {
+	return twosComplementLessThan(lhs._bits, posit<NBITS_IS_8, ES_IS_0>(rhs)._bits);
 }
 
 #endif // POSIT_ENABLE_LITERALS

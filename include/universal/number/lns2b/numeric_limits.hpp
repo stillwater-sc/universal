@@ -1,16 +1,16 @@
 #pragma once
-// numeric_limits.hpp: definition of numeric_limits for logarithmic types
+// numeric_limits.hpp: definition of numeric_limits for 2-base logarithmic types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 namespace std {
 
-template <unsigned nbits, unsigned rbits, typename bt, auto... xtra>
-class numeric_limits< sw::universal::lns<nbits, rbits, bt, xtra...> > {
+template <unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
+class numeric_limits< sw::universal::lns2b<nbits, fbbits, bt, xtra...> > {
 public:
-	using LNS = sw::universal::lns<nbits, rbits, bt, xtra...>;
+	using LNS = sw::universal::lns2b<nbits, fbbits, bt, xtra...>;
 	static constexpr bool is_specialized = true;
 	static constexpr LNS  min() { // return minimum value
 		return LNS(sw::universal::SpecificValue::minpos);
@@ -42,7 +42,7 @@ public:
 		return LNS(NAN);
 	}
 
-	static constexpr int digits       = -LNS::min_exponent + rbits;
+	static constexpr int digits       = -LNS::min_exponent + fbbits;
 	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
 	static constexpr int max_digits10 = digits10;
 	static constexpr bool is_signed   = true;

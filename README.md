@@ -12,6 +12,7 @@
 | [Code Coverage](https://coveralls.io) | [![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master) | Code coverage scanner |
 | [Docker Pulls](https://hub.docker.com/r/stillwater/universal) | [![Docker Pulls](https://img.shields.io/docker/pulls/stillwater/universal.svg)](https://hub.docker.com/r/stillwater/universal) | Container pulls |
 | [Awesome C++](https://github.com/fffaraz/awesome-cpp) | [![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math) | Awesome C++ Libraries |
+| [JOSS Markdown](https://joss.theoj.org) | [![status](https://joss.theoj.org/papers/932fdfc2735a85422e4431f27ebfc0d0/status.svg)](https://joss.theoj.org/papers/932fdfc2735a85422e4431f27ebfc0d0)  | Journal of Open-Source Software paper |
 -------------------------------
 
 
@@ -44,7 +45,7 @@ int main() {
 }
 ```
 
-The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and adaptive-precision integers and floats. There are example number system skeletons to get you started quickly if you desire to add your own, which is highly encouraged.
+The library contains fast implementations of special IEEE-754 formats that do not have universal hardware implementations across x86, ARM, POWER, RISC-V, and GPUs. Special formats such as quarter precision, `quarter`, half precision, `half`, or quad precision, `quad`, are provided, as well as vendor specific extensions, such as NVIDIA `TensorFloat`, Google's Brain Float, `bfloat16`, or TI DSP fixed-points, `fixpnt`. In addition to these often used specializations, *Universal* supports static and elastic integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and adaptive-precision integers and floats. There are example number system skeletons to get you started quickly if you desire to add your own.
 
 ## Communication channels
 
@@ -188,7 +189,8 @@ project("my-numerical-experiment")
 find_package(UNIVERSAL CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME} src/mymain.cpp)
-target_link_libraries(${PROJECT_NAME} UNIVERSAL::UNIVERSAL)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+target_link_libraries(${PROJECT_NAME} universal::universal)
 ```
 
 ## Controlling the build to include different components

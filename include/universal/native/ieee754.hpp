@@ -142,45 +142,6 @@ inline constexpr Real ipow(size_t exp) {
 	return result;
 }
 
-#ifdef DEPRECATED
-/// <summary>
-/// return the binary scale ( = 2^scale ) of a float
-/// </summary>
-/// <param name="v">single precision value</param>
-/// <returns>binary scale</returns>
-inline int scale(float v) {
-	int exponent{ 0 };
-	float frac = frexpf(v, &exponent);
-	if (frac == 0.0f) exponent = 0;
-	return exponent - 1;
-}
-/// <summary>
-/// return the binary scale ( = 2^scale ) of a double
-/// </summary>
-/// <param name="v">double precision value</param>
-/// <returns>binary scale</returns>
-inline int scale(double v) {
-	int exponent{ 0 };
-	double frac = std::frexp(v, &exponent);
-	if (frac == 0.0) exponent = 0;
-	return exponent - 1;
-}
-
-#if LONG_DOUBLE_SUPPORT
-/// <summary>
-/// return the binary scale ( = 2^scale ) of a long double
-/// </summary>
-/// <param name="v">quad precision value</param>
-/// <returns>binary scale</returns>
-inline int scale(long double v) {
-	int exponent{ 0 };
-	long double frac = frexpl(v, &exponent);
-	if (frac == 0.0l) exponent = 0;
-	return exponent - 1;
-}
-#endif
-#endif // DEPRECATED
-
 template<typename DestinationType, typename SourceType>
 DestinationType BitCast(SourceType source) {
 	static_assert(sizeof(DestinationType) == sizeof(SourceType),

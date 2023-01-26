@@ -9,7 +9,7 @@
 
 using Half = sw::universal::half;
 
-Half cfloatPolynomial(const std::vector<int>& coef, const Half& x) {
+Half cfloatPolynomial(const std::vector<float>& coef, const Half& x) {
 	using namespace sw::universal;
 	if (coef.size() < 2) {
 		std::cerr << "Coefficient set is too small to represent a polynomial\n";
