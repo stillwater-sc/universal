@@ -192,10 +192,12 @@ try {
 	InfinityAdditions<float>();
 	InfinityAdditions<double>();
 
+	std::cout << "\nNative floating-point ranges\n";
 	std::cout << float_range() << '\n';
 	std::cout << double_range() << '\n';
 	std::cout << longdouble_range() << '\n';
 
+	std::cout << "\nTest cases\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<float>(reportTestCases), "float", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<double>(reportTestCases), "double", test_tag);
 #if LONG_DOUBLE_SUPPORT
