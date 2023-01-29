@@ -23,60 +23,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows-latest, macos-latest, ubuntu-latest ] 
-        # compiler: [ latest, gcc-9, gcc-10, g++-11, clang-9, clang-11, clang++-12 ]
-        # exclude:
-        #   - os: windows-latest
-        #     compiler: gcc-9
-        #   - os: windows-latest
-        #     compiler: gcc-10
-        #   - os: windows-latest
-        #     compiler: g++-11
-        #   - os: windows-latest
-        #     compiler: clang-9
-        #   - os: windows-latest
-        #     compiler: clang-11
-        #   - os: windows-latest
-        #     compiler: clang++-12
-        #   - os: macos-latest
-        #     compiler: gcc-9
-        #   - os: macos-latest
-        #     compiler: gcc-10
-        #   - os: macos-latest
-        #     compiler: g++-11
-        #   - os: macos-latest
-        #     compiler: clang-9
-        #   - os: macos-latest
-        #     compiler: clang-11
-        #   - os: macos-latest
-        #     compiler: clang++-12
-        #  - os: ubuntu-latest
-        #     compiler: latest
-        #   - os: ubuntu-latest
-        #     compiler: clang-9
-        #   - os: ubuntu-latest
-        #     compiler: clang-11
-        #   - os: ubuntu-latest
-        #     compiler: clang++-12
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       
-        #      - name: Install compiler
-        #        id: install_cc
-        #        uses: rlalik/setup-cpp-compiler@v1.1
-        #        with:
-        #          compiler: ${{ matrix.compiler }}
-      
-        #      - name: Check compiler
-        #        shell: bash
-        #        env:
-        #          CC: ${{ steps.install_cc.outputs.cc }}
-        #          CXX: ${{ steps.install_cc.outputs.cxx }}
-        #        run: |
-        #          $CC --version
-        #          $CXX --version
-
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
