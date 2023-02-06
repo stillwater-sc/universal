@@ -107,14 +107,14 @@ For Ubuntu, snap will install the latest cmake, and would be the preferred metho
 > sudo snap install cmake --classic
 ```
 
-The Universal Library is a pure C++ template library without any further dependencies, even for the regression test suites,
-to enable hassle-free installation and use.
+The Universal Library is a pure C++ template library without any further dependencies, 
+even for the regression test suites, to enable hassle-free installation and use.
 
 Clone the GitHub repo, and you are ready to build the different components of the Universal library.  
 The library contains tools for using integers, decimals, fixed-points, floats, posits, valids, and logarithmic
 number systems. It includes educational programs that showcase simple use cases to familiarize yourself with
 different number systems and application examples to highlight the use of other number systems to gain performance
-or numerical accuracy. Finally, each number system offers its verification suite. 
+or numerical accuracy. Finally, each number system offers its own verification suite. 
 
 The easiest way to become familiar with all the options in the build process is to fire up the CMake GUI (or ccmake if you are on a headless server). The CMake output will summarize which options have been set.  
 The output will look something like this:
@@ -125,13 +125,170 @@ $ cd universal
 $ mkdir build
 $ cd build
 $ cmake ..
+
+ _____  _____  ____  _____  _____  ____   ____  ________  _______     ______        _       _____
+|_   _||_   _||_   \|_   _||_   _||_  _| |_  _||_   __  ||_   __ \  .' ____ \      / \     |_   _|
+  | |    | |    |   \ | |    | |    \ \   / /    | |_ \_|  | |__) | | (___ \_|    / _ \      | |
+  | '    ' |    | |\ \| |    | |     \ \ / /     |  _| _   |  __ /   _.____`.    / ___ \     | |   _
+   \ \__/ /    _| |_\   |_  _| |_     \ ' /     _| |__/ | _| |  \ \_| \____) | _/ /   \ \_  _| |__/ |
+    `.__.'    |_____|\____||_____|     \_/     |________||____| |___|\______.'|____| |____||________|
+
+-- The C compiler identification is GNU 9.4.0
+-- The CXX compiler identification is GNU 9.4.0
+-- The ASM compiler identification is GNU
+-- Found assembler: /usr/bin/cc
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- No default build type specified: setting CMAKE_BUILD_TYPE=Release
+-- C++20 has been enabled by default
+-- Performing Test COMPILER_HAS_SSE3_FLAG
+-- Performing Test COMPILER_HAS_SSE3_FLAG - Success
+-- Performing Test COMPILER_HAS_AVX_FLAG
+-- Performing Test COMPILER_HAS_AVX_FLAG - Success
+-- Performing Test COMPILER_HAS_AVX2_FLAG
+-- Performing Test COMPILER_HAS_AVX2_FLAG - Success
+--
+-- PROJECT_NAME                = universal
+-- PROJECT_NAME_NOSPACES       = universal
+-- PROJECT_SOURCE_DIR          = /home/stillwater/dev/clones/universal
+-- PROJECT_VERSION             = 3.68.1.80df9073
+-- CMAKE_C_COMPILER            = /usr/bin/cc
+-- CMAKE_CXX_COMPILER          = /usr/bin/c++
+-- CMAKE_CURRENT_SOURCE_DIR    = /home/stillwater/dev/clones/universal
+-- CMAKE_CURRENT_BINARY_DIR    = /home/stillwater/dev/clones/universal/build_gcc
+-- GIT_COMMIT_HASH             = 80df9073
+-- GIT_BRANCH                  = v3.68
+-- include_install_dir         = include
+-- include_install_dir_full    = include/universal
+-- config_install_dir          = share/universal
+-- include_install_dir_postfix = universal
+--
+-- ******************* Universal Arithmetic Library Configuration Summary *******************
+-- General:
+--   Version                          :   3.68.1.80df9073
+--   System                           :   Linux
+--   C++ Language Requirement         :   C++20
+--   C compiler                       :   /usr/bin/cc
+--   Release C flags                  :   -O3 -DNDEBUG -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Debug C flags                    :   -g -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   C++ compiler                     :   /usr/bin/c++
+--   Release CXX flags                :   -O3 -DNDEBUG   -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Debug CXX flags                  :   -g   -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Build type                       :   Release
+--
+--   BUILD_ALL                        :   OFF
+--   BUILD_CI                         :   OFF
+--
+--   BUILD_DEMONSTRATION              :   ON
+--   BUILD_NUMBERS                    :   OFF
+--   BUILD_NUMERICS                   :   OFF
+--   BUILD_BENCHMARKS                 :   OFF
+--   BUILD_MIXEDPRECISION_SDK         :   OFF
+--
+--   BUILD_CMD_LINE_TOOLS             :   ON
+--   BUILD_EDUCATION                  :   ON
+--   BUILD_APPLICATIONS               :   ON
+--   BUILD_PLAYGROUND                 :   ON
+--
+--   BUILD_NUMBER_INTERNALS           :   OFF
+--   BUILD_NUMBER_NATIVE_TYPES        :   OFF
+--   BUILD_NUMBER_ELASTICS            :   OFF
+--   BUILD_NUMBER_STATICS             :   OFF
+--   BUILD_NUMBER_CONVERSIONS         :   OFF
+--
+--   BUILD_NUMBER_EINTEGERS           :   OFF
+--   BUILD_NUMBER_DECIMALS            :   OFF
+--   BUILD_NUMBER_RATIONALS           :   OFF
+--   BUILD_NUMBER_EFLOATS             :   OFF
+--   BUILD_NUMBER_EPOSITS             :   OFF
+--
+--   BUILD_NUMBER_INTEGERS            :   OFF
+--   BUILD_NUMBER_FIXPNTS             :   OFF
+--   BUILD_NUMBER_BFLOATS             :   OFF
+--   BUILD_NUMBER_CFLOATS             :   OFF
+--   BUILD_NUMBER_DFLOATS             :   OFF
+--   BUILD_NUMBER_AREALS              :   OFF
+--   BUILD_NUMBER_UNUM1S              :   OFF
+--   BUILD_NUMBER_UNUM2S              :   OFF
+--   BUILD_NUMBER_POSITS              :   OFF
+--   BUILD_NUMBER_VALIDS              :   OFF
+--   BUILD_NUMBER_LNS                 :   OFF
+--   BUILD_NUMBER_LNS2B               :   OFF
+--   BUILD_NUMBER_SORNS               :   OFF
+--
+--   BUILD_NUMERIC_FUNCTIONS          :   OFF
+--   BUILD_NUMERIC_QUIRES             :   OFF
+--   BUILD_NUMERIC_CHALLENGES         :   OFF
+--   BUILD_NUMERIC_UTILS              :   OFF
+--   BUILD_NUMERIC_FPBENCH            :   OFF
+--
+--   BUILD_BENCHMARK_ERROR            :   OFF
+--   BUILD_BENCHMARK_ACCURACY         :   OFF
+--   BUILD_BENCHMARK_REPRODUCIBILITY  :   OFF
+--   BUILD_BENCHMARK_PERFORMANCE      :   OFF
+--   BUILD_BENCHMARK_ENERGY           :   OFF
+--
+--   BUILD_MIXEDPRECISION_ROOTS       :   OFF
+--   BUILD_MIXEDPRECISION_APPROXIMATE :   OFF
+--   BUILD_MIXEDPRECISION_INTEGRATE   :   OFF
+--   BUILD_MIXEDPRECISION_INTERPOLATE :   OFF
+--   BUILD_MIXEDPRECISION_OPTIMIZE    :   OFF
+--   BUILD_MIXEDPRECISION_TENSOR      :   OFF
+--
+--   BUILD_LINEAR_ALGEBRA_BLAS        :   OFF
+--   BUILD_LINEAR_ALGEBRA_VMATH       :   OFF
+--
+--
+--   BUILD_C_API_PURE_LIB             :   OFF
+--   BUILD_C_API_SHIM_LIB             :   OFF
+--   BUILD_C_API_LIB_PIC              :   OFF
+--   BUILD_DOCS                       :   OFF
+--
+-- Regression Testing Level:
+--   BUILD_REGRESSION_SANITY          :   ON
+--
+-- Dependencies:
+--   SSE3                             :   NO
+--   AVX                              :   NO
+--   AVX2                             :   NO
+--   Pthread                          :   NO
+--   TBB                              :   NO
+--   OMP                              :   NO
+--
+-- Utilities:
+--   Serializer                       :   NO
+--
+-- Install:
+--   Install path                     :   /usr/local
+--
+
+ _____  _____  ____  _____  _____  ____   ____  ________  _______     ______        _       _____
+|_   _||_   _||_   \|_   _||_   _||_  _| |_  _||_   __  ||_   __ \  .' ____ \      / \     |_   _|
+  | |    | |    |   \ | |    | |    \ \   / /    | |_ \_|  | |__) | | (___ \_|    / _ \      | |
+  | '    ' |    | |\ \| |    | |     \ \ / /     |  _| _   |  __ /   _.____`.    / ___ \     | |   _
+   \ \__/ /    _| |_\   |_  _| |_     \ ' /     _| |__/ | _| |  \ \_| \____) | _/ /   \ \_  _| |__/ |
+    `.__.'    |_____|\____||_____|     \_/     |________||____| |___|\______.'|____| |____||________|
+
+-- Configuring done
+-- Generating done
 ```
+
+As you can see in the cmake output there are many build targets. Each build target is designed to provide
+focus and fast build turnarounds when working with different number systems. Each number system has its
+own build target allowing fast and efficient regression testing.
 
 The build options are enabled/disabled as follows:
 
 ```text
 > cmake -DBUILD_EDUCATION=OFF -DBUILD_NUMBER_POSITS=ON ..
-
 ```
 
 After building, issue the command _make test_ to run the complete test suite of all the enabled components, 
@@ -155,7 +312,15 @@ For Windows and Visual Studio, there are `CMakePredefinedTargets` that accomplis
     - RUN_TESTS will run all tests
 ```
 
+Here is the layout of all the projects contained in V3.68 of Universal:
+
 ![visual-studio-project](docs/img/visual-studio-project.png)
+
+In the _Applications_ section, you will find application examples to demonstrate the use of Universal 
+arithmetic types to accomplish different numerical goals, such as reproducibility, accuracy, performance,
+or precision. These examples are great starting points for your own application requirements.
+
+![example-applications](docs/img/example-applications.png)
 
 # Installation and usage
 
@@ -173,7 +338,7 @@ or manually via the Makefile target in the build directory:
 > make -j $(nproc) install
 ```
 
-The default install directory is `/usr/local` under Linux.  There is also an uninstall
+The default install directory is `/usr/local` under Linux.  There is also an _uninstall_ command:
 
 ```text
 > make uninstall
@@ -194,32 +359,40 @@ target_link_libraries(${PROJECT_NAME} universal::universal)
 
 ## Controlling the build to include different components
 
-The default build configuration will build the command line tools, a playground, educational and application examples.
-If you want to build the full regression suite across all the number systems, use the following cmake command:
+The default build configuration will build the command line tools, a playground, educational and 
+application examples. If you want to build the full regression suite across all the number systems, 
+use the following cmake command:
 
 ```text
 cmake -DBUILD_ALL=ON ..
 ```
 
-For performance, the build configuration can enable specific x86 instruction sets (SSE/AVX/AVX2). For example, if your processor supports the AVX2 instruction set, you can build the test suites and educational examples with the AVX2 flag turned on. This typically yields a 20% performance boost.
+For performance, the build configuration can enable specific x86 instruction sets (SSE/AVX/AVX2). 
+For example, if your processor supports the AVX2 instruction set, you can build the test suites 
+and educational examples with the AVX2 flag turned on. This typically yields a 20% performance boost.
 
 ```text
 cmake -DBUILD_ALL=on -DUSE_AVX2=ON ..
 ```
 
-The library builds a set of useful command utilities to inspect native IEEE float/double/long double numbers as well as
-the custom number systems provided by Universal. Assuming you have build and installed the library, the commands are
+The library builds a set of useful command utilities to inspect native IEEE float/double/long double 
+types, as well as the custom number systems provided by Universal. Assuming you have build and 
+installed the library, the inspection commands available are:
 
 ```text
-    ieee           -- show the components (sign, scale, fraction) of the full set of IEEE floating point values
-    signedint      -- show the components (sign, scale, fraction) of a signed integer value
-    unsignedint    -- show the components (sign, scale, fraction) of an unsigned integer value
-    float          -- show the components (sign, scale, fraction) of a float value
-    double         -- show the components (sign, scale, fraction) of a double value
-    longdouble     -- show the components (sign, scale, fraction) of a long double value
-    fixpnt         -- show the components (sign, scale, fraction) of a fixed-point value
-    posit          -- show the components (sign, scale, fraction) of a posit value
-    lns            -- show the components (sign, scale, fraction) of a logarithmic number system value
+    ieee           -- show the components of the full set of IEEE floating point values
+    quarter        -- show the components and traits of a quarter precision floating-point value (FP8)
+    half           -- show the components and traits of a half precision IEEE-754 value (FP16)
+    single         -- show the components and traits of a single precision IEEE-754 value (FP32)
+    double         -- show the components and traits of a double precision IEEE-754 value (FP64)
+    longdouble     -- show the components and traits of a native long double IEEE-754 value
+    quad           -- show the components and traits of a quad precision IEEE-754 value (FP128)
+
+    signedint      -- show the components and traits of a signed integer value
+    unsignedint    -- show the components and traits of an unsigned integer value
+    fixpnt         -- show the components and traits of a fixed-point value
+    posit          -- show the components and traits of a posit value
+    lns            -- show the components and traits of a logarithmic number system value
 
     float2posit    -- show the conversion process of a Real value to a posit
 
@@ -269,7 +442,7 @@ long double:    1.23456789011999999999    triple: (+,0,0011110000001100101001000
 
 This _ieee_ command is very handy to quickly determine how your development environment represents (truncates) a specific value. 
 
-The specific commands _float_, _double_, and _longdouble_ focus on float, double, and long double representations respectively.
+The specific commands _single_, _double_, and _longdouble_ focus on float, double, and long double representations respectively.
 
 There is also a command _posit_ to help you visualize and compare the posit component fields for a given value, for example:
 
@@ -311,12 +484,25 @@ The positive regime for a posit shows a very specific structure, as can be seen 
 
 ## Motivation
 
-Modern AI applications have demonstrated the inefficiencies of the 64-bit format. Both Google and Microsoft have jettisoned IEEE floating point for their AI cloud services to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded applications are shifting away from the IEEE floating point as well. But, AI applications are only some of the applications that expose the limitations of floating points.  Inefficiencies in numeric storage and operations can also limit cloud scale, IoT, embedded control, and HPC applications. A simple change to a new number system may improve the scale and cost of these applications by orders of magnitude.
+Modern Deep Learning AI applications are very demanding high-performance applications. Runtimes to train
+models are measured in terms of weeks, and target latencies for inference are 10-100msec. Standard
+double, and even single, precision IEEE-754 floating-point have been too expensive to use in addressing the 
+performance and power requirements of AI applications in both the cloud and the edge.
+Both Google and Microsoft have jettisoned traditional floating-point formats for their AI cloud services 
+to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded 
+applications are requantized to small integers to fit their very stringent power budgets. The AI domain
+has been researching for better number systems to address both power and performance requirements,
+but all these efforts have worked in isolation, with results being difficult to reproduce.
 
-For example, when performance and power efficiency are the differentiating attributes for a use case, number systems that are tailored to the needs of the application are desired.
+AI applications are only some of the applications that expose the limitations of traditional hardware.  
+Inefficiencies in numeric storage and operations also limit cloud scale, IoT, embedded, 
+and HPC applications. A simple change to a new number system may improve the scale and cost of these 
+applications by orders of magnitude.
 
+When performance and power efficiency are the differentiating attributes for a use case, 
+arithmetic systems that are tailored to the needs of the application are desired.
 
-In particular, there are two primary concerns of the IEEE floating point formats: 
+In particular, there are two concerns when using the IEEE-754 floating-point formats: 
 
 -   inefficient representation of the reals
 -   irreproducibility in the context of concurrency
@@ -333,13 +519,11 @@ More specifically,
 4.   **Unused dynamic range** 
     -   The dynamic range of double precision floats is a whopping 2^2047, whereas most numerical software is architected to operate around 1.0.
 5.   **Complicated Circuitry** 
-    -   Denormalized floating point numbers have a hidden bit of 0 instead of 1.  This creates
-a host of special handling requirements that complicate compliant hardware implementations.
+    -   Denormalized floating point numbers have a hidden bit of 0 instead of 1.  This creates a host of special handling requirements that complicate compliant hardware implementations.
 6.   **No Gradual Overflow and Fixed Accuracy** 
-    -   If accuracy is defined as the number of significand bits, the IEEE floating point has fixed accuracy for all numbers except denormalized numbers because the number of signficand digits is fixed.  Denormalized numbers are characterized by decreased significand digits when the value approaches zero due to having a zero hidden bit.  Denormalized numbers fill the underflow gap (i.e., between zero and the least non-zero values).  The counterpart for gradual underflow is gradual overflow which does not exist in IEEE floating points.
+    -   If accuracy is defined as the number of significand bits, IEEE floating-point has fixed accuracy for all numbers except denormalized numbers because the number of signficand digits is fixed.  Denormalized numbers are characterized by decreased significand digits when the value approaches zero due to having a zero hidden bit.  Denormalized numbers fill the underflow gap (i.e., between zero and the least non-zero values).  The counterpart for gradual underflow is gradual overflow which does not exist in IEEE floating points.
 
-In contrast, for example, the _posit_ number system has the following features: 
-
+In contrast, the _posit_ number system was designed to overcome these negatives: 
 
 1.   **Economical** 
     -   No bit patterns are redundant.  There is one representation for infinity denoted as ± inf and zero.  All other bit patterns are valid distinct non-zero real numbers. ± inf serves as a replacement for NaN.
@@ -352,25 +536,27 @@ In contrast, for example, the _posit_ number system has the following features:
 5.   **Simpler Circuitry** 
     -   There are only two exceptional cases, Not a Real and Zero.  No denormalized numbers, overflow, or underflow. 
 
-
-
+But as Deep Learning has demonstrated, there are many different requirements to optimize an arithmetic and
+tailor it to the needs of the application. Universal brings all the machinery together to experiment to 
+facilitate efficient contrast and compare different arithmetic number system designs, before committing them
+to hardware.
 
 ## Goals of the library
 
-The _Universal_ library started as a bit-level arithmetic reference implementation of the evolving unum Type III (posit and valid) standard.
-However, the demands for supporting number systems, such as adaptive-precision integers to solve large factorials, adaptive-precision 
-floats to act as Oracles, or comparing linear and tapered floats provided the opportunity to create a complete platform for
-numerical analysis and computational mathematics. With this _Universal_ platform, we enable a new direction for optimizing algorithms 
-to take advantage of mixed precision to maximize performance and minimize energy demands. Energy efficiency is going to be the
+The _Universal_ library started as a bit-level arithmetic reference implementation of the evolving unum Type III 
+(posit and valid) standard. However, the demands for supporting number systems, such as adaptive-precision integers 
+to solve large factorials, adaptive-precision floats to act as Oracles, or comparing linear and tapered floats 
+provided the opportunity to create a complete platform for numerical analysis and computational mathematics. 
+With this _Universal_ platform, we enable a new direction for optimizing algorithms to take advantage of mixed-precision 
+computation to maximize performance and minimize energy demands. Energy efficiency is going to be the
 key differentiator for embedded intelligence applications.
 
-As a reference library, _Universal_ offers an extensive test infrastructure to validate number system arithmetic operations, and there is 
-a host of utilities to inspect the internal encodings and operations of the different number systems.
+As a reference library, _Universal_ offers an extensive test infrastructure to validate number system 
+arithmetic operations, and there is a host of utilities to inspect the internal encodings and operations 
+of the different number systems.
 
-The design space for custom arithmetic is vast, and any contribution to expanding the capability of the _Universal_ library is encouraged. 
-
-
-
+The design space for custom arithmetic is vast, and any contribution to expanding the capability of 
+the _Universal_ library is encouraged. 
 
 
 ## Contributing to universal
@@ -386,30 +572,51 @@ Typically, the verification suite is run as part of the build directory's _make 
 Here is an example:
 
 ```text
->:~/dev/universal/build$ make posit_32bit_posit
-Scanning dependencies of target posit_32bit_posit
-[100%] Building CXX object tests/posit/CMakeFiles/posit_32bit_posit.dir/32bit_posit.cpp.o
-[100%] Linking CXX executable posit_32bit_posit
-[100%] Built target posit_32bit_posit
->:~/dev/universal/build$ tests/posit/posit_32bit_posit
-Standard posit<32,2> configuration tests
- posit< 32,2> useed scale     4     minpos scale       -120     maxpos scale        120
+>:~/dev/universal/build$  make posit_logarithm
+[ 50%] Building CXX object static/posit/CMakeFiles/posit_logarithm.dir/math/logarithm.cpp.o
+[100%] Linking CXX executable posit_logarithm
+[100%] Built target posit_logarithm
+>:~/dev/universal/build$ static/posit/posit_logarithm
+posit logarithm function validation: results only
+               4 -> log(4) =  1.3862943649292
+0110000000000000 -> log(4) = 0100011000101110 (reference: 0100011000101110)   PASS
 
-Arithmetic tests 200000 randoms each
- posit<32,2> addition       PASS
- posit<32,2> subtraction    PASS
- posit<32,2> multiplication PASS
- posit<32,2> division       PASS
+posit<2,0>                                                   log PASS
+posit<3,0>                                                   log PASS
+posit<3,1>                                                   log PASS
+posit<4,0>                                                   log PASS
+posit<4,1>                                                   log PASS
+posit<5,0>                                                   log PASS
+posit<5,1>                                                   log PASS
+posit<5,2>                                                   log PASS
+posit<8,4>                                                   log PASS
+posit<8,4>                                                   log2 PASS
+posit<8,4>                                                   log10 PASS
+posit logarithm function validation: PASS
 ```
 
 ## Structure of the tree
 
-The universal library contains a set of functional groups to organize the development and validation of different number systems. 
-In the examples shown above, we have seen the ".../universal/include/universal/number/posit/posit.hpp" group and its test suite, ".../universal/tests/posit". 
+The universal library contains a set of functional groups to organize the development and validation of 
+different number systems. Each number system type has a single include file that brings together
+the arithmetic number type type and all the extensions that _Universal_ has standardized so that
+working with numeric types is more productive. For example, facilities for number traits, an 
+arithmetic exception hierarchy, number system attributes, manipulators,
+and finally, a math library specialized for the type.
+
+The number system types are categorized as _static_ or _elastic_. Static types are arithmetic types
+that have a constant, that is _static_ size, and thus can be used for sharing composite data structures, 
+such as matrices and tensors, between general purpose CPUs and special purpose hardware accelerators.
+Elastic types are arithmetic types that can grow and shrink during computation, typically to accomodate
+error-free, or closed, computations.
+
+In addition to the _static_ and _elastic_ classification, we also recognize that the base of the number
+system is a key parameter in the arithmetic and numerical traits of the type. In particular, the tree
+will specialize for binary and decimal forms of the arithmetic.
 
 Here is a complete list:
 
-### fixed-sized configurations
+### _static_ fixed-sized configurations
 
 - *universal/number/integer* - arbitrary configuration fixed-size integer
 - *universal/number/fixpnt* - arbitrary configuration fixed-size fixed-point number system
@@ -417,23 +624,26 @@ Here is a complete list:
 - *universal/number/cfloat* - arbitrary configuration fixed-size classic floating-point number system
 - *universal/number/posit* - arbitrary configuration fixed-size posit number system, a tapered floating-point
 - *universal/number/valid* - arbitrary configuration fixed-size valid number system, a tapered floating-point interval number system
+- *universal/number/unum* - arbitrary configuration unum Type 1 number system
+- *universal/number/unum2* - arbitrary configuration unum Type 2 number system
+- *universal/number/lns* - arbitrary configuration logarithmic number system with fixed-point exponent
+- *universal/number/lns2b* - two-base logarithmic number system with integer exponents
+- *universal/number/sorn* - set of real numbers 
+
+### _elastic_ adaptive-precision configurations
+
+- *universal/number/decimal* - adaptive-precision decimal integer
+- *universal/number/einteger* - adaptive-precision binary integer
+- *universal/number/rational* - adaptive-precision rational number system
+- *universal/number/efloat* - adaptive-precision linear floating-point
+- *universal/number/eposit* - adaptive-precision tapered floating-point
+
+### super-accumulator facilities
+
 - *universal/number/quire* - arbitrary configuration fixed-size super accumulator number system (add/sub/abs/sqrt)
-- *universal/number/unum* - flexible configuration unum Type 1 number system
-- *universal/number/unum2* - flexible configuration unum Type 2 number system
-- *universal/number/lns* - logarithmic number system
 - *universal/number/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
 
-### adaptive precision configurations
-
-- *universal/number/decimal* - adaptive-precision decimal
-- *universal/number/rational* - adaptive-precision rational number system
-- *universal/number/adaptiveint* - adaptive-precision binary integer
-- *universal/number/adaptivefloat* - adaptive-precision linear floating-point
-- *universal/number/adaptiveposit* - adaptive-precision tapered floating-point
-
 And each of these functionality groups have an associated test suite located in ".../universal/tests/..."
-
-
 
 
 ## Background information
