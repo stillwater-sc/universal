@@ -60,21 +60,34 @@ Please cite [our work](https://arxiv.org/abs/2012.11011) if you use _Universal_.
 
 ```bib
 @inproceedings{Omtzigt:2022,
-  title={Universal: Reliable, Reproducible, and Energy-Efficient Numerics},
-  author={E. Theodore L. Omtzigt and James Quinlan},
-  booktitle={Conference on Next Generation Arithmetic},
-  pages={100--116},
-  year={2022},
-  organization={Springer}
+  title        = {Universal: Reliable, Reproducible, and Energy-Efficient Numerics},
+  author       = {E. Theodore L. Omtzigt and James Quinlan},
+  booktitle    = {Conference on Next Generation Arithmetic},
+  pages        = {100--116},
+  year         = {2022},
+  organization = {Springer}
 }
 
 @article{Omtzigt2020,
-    author    = {E. Theodore L. Omtzigt and Peter Gottschling and Mark Seligman and William Zorn},
-    title     = {{Universal Numbers Library}: design and implementation of a high-performance reproducible number systems library},
-    journal   = {arXiv:2012.11011},
-    year      = {2020},
+    author     = {E. Theodore L. Omtzigt and Peter Gottschling and Mark Seligman and William Zorn},
+    title      = {{Universal Numbers Library}: design and implementation of a high-performance reproducible number systems library},
+    journal    = {arXiv:2012.11011},
+    year       = {2020},
 }
 ```
+
+## Talks and Presentations
+
+The following presentations describe _Universal_ and the number systems it contained as of the time of publication.
+
+Slides of a presentation at [FPTalks'21](https://fpbench.org/talks/fptalks21.html)
+
+[Presentation: Application-Driven Custom Number Systems](https://drive.google.com/file/d/1fPvJ5kjjNKY9TiVCBX8xwb5czGNd87Dr/view)
+
+Slides of the presentation at [CoNGA'22](https://link.springer.com/book/10.1007/978-3-031-09779-9)
+
+[Presentation: Universal: Reliable, Reproducible, and Energy-Efficient Numerics](docs/presentations/conga22-universal-arithmetic-library.pdf)
+
 
 ## Quick start
 
