@@ -1,17 +1,12 @@
 #pragma once
 // manipulators.hpp: definitions of helper functions for posit type manipulation
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <iostream>
 #include <iomanip>
-#include <cmath>  // for frexp/frexpf
-#include <typeinfo>  // for typeid()
-
-// pull in the color printing for shells utility
-#include <universal/utility/color_print.hpp>
+#include <universal/utility/color_print.hpp>  // base class for color printing in shells
 
 // This file contains functions that manipulate a posit type
 // using posit number system knowledge.
@@ -212,11 +207,11 @@ std::string color_print(const posit<nbits, es>& p) {
 		}
 	}
 
-	bitblock<es> e = _exponent.get();
 	int exponentBits = (int)_exponent.nrBits();
 	int nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
 		for (unsigned i = 0; i < es; ++i) {
+			bitblock<es> e = _exponent.get();
 			unsigned bitIndex = es - 1u - i;
 			if (exponentBits > nrOfExponentBitsProcessed++) {
 				str << cyan << (_sign ? (e[bitIndex] ? '0' : '1') : (e[bitIndex] ? '1' : '0'));
