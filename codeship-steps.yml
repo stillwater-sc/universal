@@ -1,4 +1,0 @@
-universal-test-suite:
-  build: .
-  environment:
-    TEST_VAR: today
