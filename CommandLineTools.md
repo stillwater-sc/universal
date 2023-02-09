@@ -1,17 +1,19 @@
 # Universal number system Command Line Tools
 
-The universal library contains a collection of command line tools that help investigate bit-level attributes of the number systems and the values they encode. These command line tools get installed with the `make install` build target.
+The universal library contains a collection of command line tools that help investigate 
+bit-level attributes of the number systems and the values they encode. These command line 
+tools get installed with the `make install` build target.
 
 The following segments presents short description of their use.
 
-## compieee
+## ieee
 
 Compare the three IEEE formats on a given real number value:
 
 ```text
-λ ./ieee.exe
+$ ieee
 Show the truncated value and (sign/scale/fraction) components of different floating point types.
-Usage: compieee floating_point_value
+Usage: ieee floating_point_value
 Example: ieee 0.03124999
 input value:                0.03124999
       float:              0.0312499907 (+,-6,11111111111111111111011)
@@ -19,135 +21,373 @@ input value:                0.03124999
 long double:  0.0312499899999999983247 (+,-6,111111111111111111101001011110100011111111111110001111111001111)
 ```
 
-## compf
+## quarter
 
-Show the sign/scale/fraction components of an IEEE float.
+Show the sign/scale/fraction components of an IEEE-754 quarter-precision floating-point.
 
 ```text
-λ ./float.exe
-compf : components of an IEEE single-precision float
-Show the sign/scale/fraction components of an IEEE float.
-Usage: float float_value
-Example: float 0.03124999
-float: 0.031249990686774254 (+,-6,11111111111111111111011)
+$ quarter
+quarter : components of an IEEE-754 quarter-precision float : 8 bits with 2 exponent bits
+Show the sign/scale/fraction components of a quarter-precision IEEE-754 floating-point.
+Usage: quarter value
+Example: quarter 0.03124999
+scientific   : 0.031
+triple form  : (+,  -5, 0b01.0'0000)
+binary form  : 0b0.00.0'0001
+color coded  : 00000001
+
+Number Traits of quarter-precision IEEE-754 floating-point
+std::numeric_limits< N2sw9universal6cfloatILj8ELj2EhLb1ELb0ELb0EEE >
+min exponent                                             -2
+max exponent                                              2
+radix                                                     2
+radix digits                                              6
+min                                                       1
+max                                                  3.9375
+lowest                                              -3.9375
+epsilon (1+1ULP-1)                                  0.03125
+round_error                                             0.5
+smallest value                                      0.03125
+infinity                                                inf
+quiet_NAN                                               nan
+signaling_NAN                                           nan
+
+smallest normal number
+0b0.01.00000 : 1
+smallest denormalized number
+0b0.00.00001 : 0.03125
 ```
 
-## compd
+## half
 
-Show the sign/scale/fraction components of an IEEE double.
+Show the sign/scale/fraction components of an IEEE-754 half-precision floating-point.
 
 ```text
-λ ./double.exe
-compd : components of an IEEE double-precision float
+$ half
+half : components of an IEEE-754 half-precision floating-point: 16 bits with 5 exponent bits
+Show the sign/scale/fraction components of a half-precision IEEE-754 floating-point.
+Usage: half value
+Example: half 0.03124999
+scientific   : 0.03125
+triple form  : (+,  -5, 0b01.00'0000'0000)
+binary form  : 0b0.0'1010.00'0000'0000
+color coded  : 0010100000000000
+
+Number Traits of half-precision IEEE-754 floating-point
+std::numeric_limits< N2sw9universal6cfloatILj16ELj5EtLb1ELb0ELb0EEE >
+min exponent                                            -16
+max exponent                                             16
+radix                                                     2
+radix digits                                             11
+min                                             6.10352e-05
+max                                                   65504
+lowest                                               -65504
+epsilon (1+1ULP-1)                              0.000976562
+round_error                                             0.5
+smallest value                                  5.96046e-08
+infinity                                                inf
+quiet_NAN                                               nan
+signaling_NAN                                           nan
+
+smallest normal number
+0b0.00001.0000000000 : 6.10352e-05
+smallest denormalized number
+0b0.00000.0000000001 : 5.96046e-08
+```
+
+## single
+
+Show the sign/scale/fraction components of an IEEE-754 single-precision floating-point.
+
+```text
+$ single
+single : components of an IEEE-754 single-precision floating_point: 32 bits with 8 exponent bits
+Show the sign/scale/fraction components of a single-precision IEEE-754 floating-point.
+Usage: single value
+Example: single 0.03124999
+scientific   : 0.0312499907
+triple form  : (+,-6,0b11111111111111111111011)
+binary form  : 0b0.0111'1001.111'1111'1111'1111'1111'1011
+color coded  : 0b0.0111'1001.111'1111'1111'1111'1111'1011
+
+Number Traits of IEEE-754 float
+std::numeric_limits< f >
+min exponent                                           -125
+max exponent                                            128
+radix                                                     2
+radix digits                                             24
+min                                             1.17549e-38
+max                                             3.40282e+38
+lowest                                         -3.40282e+38
+epsilon (1+1ULP-1)                              1.19209e-07
+round_error                                             0.5
+smallest value                                   1.4013e-45
+infinity                                                inf
+quiet_NAN                                               nan
+signaling_NAN                                           nan
+
+smallest normal number
+0b0.00000001.00000000000000000000000 : 1.17549e-38
+smallest denormalized number
+0b0.00000000.00000000000000000000001 : 1.4013e-45
+
+Universal parameterization of IEEE-754 fields
+Total number of bits        : 32
+number of exponent bits     : 8
+number of fraction bits     : 23
+exponent bias               : 127
+sign field mask             : 0b1000'0000'0000'0000'0000'0000'0000'0000
+exponent field mask         : 0b0111'1111'1000'0000'0000'0000'0000'0000
+mask of exponent value      : 0b1111'1111
+mask of hidden bit          : 0b0000'0000'1000'0000'0000'0000'0000'0000
+fraction field mask         : 0b0000'0000'0111'1111'1111'1111'1111'1111
+significant field mask      : 0b0000'0000'1111'1111'1111'1111'1111'1111
+MSB fraction bit mask       : 0b0000'0000'0100'0000'0000'0000'0000'0000
+qNaN pattern                : 0b0111'1111'1100'0000'0000'0000'0000'0000
+sNaN pattern                : 0b0111'1111'1010'0000'0000'0000'0000'0000
+smallest normal value       : 1.17549e-38
+                            : 0b0.00000001.00000000000000000000000
+smallest subnormal value    : 1.4013e-45
+                            : 0b0.00000000.00000000000000000000001
+exponent smallest normal    : -126
+exponent smallest subnormal : -149
+```
+
+## double
+
+Show the sign/scale/fraction components of an IEEE-754 double-precision floating-point.
+
+```text
+$ double
+double : components of an IEEE double-precision float
 Show the sign/scale/fraction components of an IEEE double.
 Usage: double double_value
 Example: double 0.03124999
-double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)
+scientific   : 0.031249989999999998
+triple form  : (+,-6,1111111111111111111101010100001100111000100011101110)
+binary form  : 0b0.011'1111'1001.1111'1111'1111'1111'1111'0101'0100'0011'0011'1000'1000'1110'1110
+color coded  : 0b0.011'1111'1001.1111'1111'1111'1111'1111'0101'0100'0011'0011'1000'1000'1110'1110
+Number Traits of IEEE-754 double
+std::numeric_limits< d >
+min exponent                                          -1021
+max exponent                                           1024
+radix                                                     2
+radix digits                                             53
+min                                            2.22507e-308
+max                                            1.79769e+308
+lowest                                        -1.79769e+308
+epsilon (1+1ULP-1)                              2.22045e-16
+round_error                                             0.5
+smallest value                                 4.94066e-324
+infinity                                                inf
+quiet_NAN                                               nan
+signaling_NAN                                           nan
+
+smallest normal number
+0b0.00000000001.0000000000000000000000000000000000000000000000000000
+smallest denormalized number
+0b0.00000000000.0000000000000000000000000000000000000000000000000001
+
+Universal parameterization of IEEE-754 fields
+Total number of bits        : 64
+number of exponent bits     : 11
+number of fraction bits     : 52
+exponent bias               : 1023
+sign field mask             : 0b1000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+exponent field mask         : 0b0111'1111'1111'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+mask of exponent value      : 0b111'1111'1111
+mask of hidden bit          : 0b0000'0000'0001'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+fraction field mask         : 0b0000'0000'0000'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111
+significant field mask      : 0b0000'0000'0001'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111
+MSB fraction bit mask       : 0b0000'0000'0000'1000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+qNaN pattern                : 0b0111'1111'1111'1000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+sNaN pattern                : 0b0111'1111'1111'0100'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+smallest normal value       : 2.22507e-308
+                            : 0b0.00000000001.0000000000000000000000000000000000000000000000000000
+smallest subnormal value    : 4.94066e-324
+                            : 0b0.00000000000.0000000000000000000000000000000000000000000000000001
+exponent smallest normal    : -1022
+exponent smallest subnormal : -1074
 ```
 
-## compld
+## longdouble
 
-Show the sign/scale/fraction components of an IEEE long double. On Windows using the Microsoft Visual Studio environment, the `long double` is aliased to `double`.
+Show the sign/scale/fraction components of an IEEE-754 long double. 
+
+On Windows using the Microsoft Visual Studio environment, the `long double` is aliased to `double`.
 
 ```text
-λ ./longdouble.exe
-compld: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V
+$ longdouble
+longdouble: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V
 Show the sign/scale/fraction components of an IEEE long double.
 Usage: longdouble long_double_value
 Example: longdouble 0.03124999
-long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)
+scientific   : 0.0312499899999999983247
+triple form  : (+,-6,111111111111111111110101010000110011100010001110111000000000000)
+binary form  : 0b0.011'1111'1111'1001.1111'1111'1111'1111'1111'1010'1010'0001'1001'1100'0100'0111'0111'0000'0000'0000
+color coded  : 0b0.0011'1111'1111'1001.111'1111'1111'1111'1111'1010'1010'0001'1001'1100'0100'0111'0111'0000'0000'0000
+Number Traits of IEEE-754 long double
+std::numeric_limits< e >
+min exponent                                         -16381
+max exponent                                          16384
+radix                                                     2
+radix digits                                             64
+min                                            3.3621e-4932
+max                                           1.18973e+4932
+lowest                                       -1.18973e+4932
+epsilon (1+1ULP-1)                               1.0842e-19
+round_error                                             0.5
+smallest value                                 3.6452e-4951
+infinity                                                inf
+quiet_NAN                                               nan
+signaling_NAN                                           nan
+
+smallest normal number
+0b0.000000000000001.1000000000000000000000000000000000000000000000000000000000000000
+smallest denormalized number
+0b0.000000000000000.0000000000000000000000000000000000000000000000000000000000000001
+
+Universal parameterization of IEEE-754 fields
+Total number of bits        : 80
+number of exponent bits     : 15
+number of fraction bits     : 63
+exponent bias               : 16383
+sign field mask             : 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+exponent field mask         : 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+mask of exponent value      : 0b111'1111'1111'1111
+mask of hidden bit          : 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+fraction field mask         : 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+significant field mask      : 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+MSB fraction bit mask       : 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+qNaN pattern                : 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+sNaN pattern                : 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+smallest normal value       : 3.3621e-4932
+                            : 0b0.000000000000001.1000000000000000000000000000000000000000000000000000000000000000
+smallest subnormal value    : 3.6452e-4951
+                            : 0b0.000000000000000.0000000000000000000000000000000000000000000000000000000000000001
+exponent smallest normal    : -16382
+exponent smallest subnormal : -16445
 ```
 
-## compfp
+## quad
+
+Show the sign/scale/fraction components of an IEEE-754 quad-precision floating-point.
+
+```text
+$ quad
+quad : components of an IEEE-754 quad-precision float : 128 bits total with 15 exponent bits
+Show the sign/scale/fraction components of a quad-precision IEEE-754 floating-point.
+Usage: quad value
+Example: quad 0.03124999
+scientific   : 0.03124999068677425384521484375
+triple form  : (+,  -6, 0b01'1111'1111'1111'1111'1111'0110'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000)
+binary form  : 0b0.011'1111'1111'1001.1111'1111'1111'1111'1111'0110'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+color coded  : 00111111111110011111111111111111111101100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+Number Traits of quad-precision IEEE-754 floating-point
+std::numeric_limits< N2sw9universal6cfloatILj128ELj15EjLb1ELb0ELb0EEE >
+min exponent                                         -16384
+max exponent                                          16384
+radix                                                     2
+radix digits                                            113
+min                                                       0
+max                                                     inf
+lowest                                                 -inf
+epsilon (1+1ULP-1)                              1.92593e-34
+round_error                                             0.5
+smallest value                                            0
+infinity                                                inf
+quiet_NAN                                               nan
+signaling_NAN                                           nan
+
+smallest normal number
+0b0.000000000000001.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 : 0
+smallest denormalized number
+0b0.000000000000000.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 : 0
+```
+
+## fixpnt
 
 Show the sign/scale/fraction components of a fixed-point value.
 
 ```text
-λ ./fixpnt.exe
-compfp : components of a fixed-point value
+$ fixpnt
+fixpnt : components of a fixed-point value
 Show the sign/scale/fraction components of a fixed-point value.
 Usage: fixpnt float_value
 Example: fixpnt 1.0625
-class sw::unum::fixpnt<32,16,1,unsigned char>: 1.0625000000000000 b0000000000000001.0001000000000000
+
+                                                              class sw::universal::fixpnt < 8, 4, 1, unsigned char>
+1.0625
+b0001.0001
+                                                              class sw::universal::fixpnt < 12, 4, 1, unsigned char>
+1.0625
+b0000'0001.0001
+                                                              class sw::universal::fixpnt < 16, 8, 1, unsigned char>
+1.06250000
+b0000'0001.0001'0000
+                                                              class sw::universal::fixpnt < 32, 16, 1, unsigned char>
+1.0625000000000000
+b0000'0000'0000'0001.0001'0000'0000'0000
+                                                              class sw::universal::fixpnt < 64, 32, 1, unsigned char>
+1.06250000000000000000000000000000
+b0000'0000'0000'0000'0000'0000'0000'0001.0001'0000'0000'0000'0000'0000'0000'0000
 ```
 
-## propp
-
-Show the arithmetic properties of a posit environment, including its quire.
-
-```text
-λ ./propp.exe
-Show the arithmetic properties of a posit.
-Usage: propp [nbits es capacity]
-Example: propp 16 1 8
-arithmetic properties of a posit<16, 1> environment
- posit< 16, 1> useed scale     2     minpos scale - 28     maxpos scale         28
-  minpos                     : 16.1x0001p + 3.72529e-09
-  maxpos                     : 16.1x7fffp + 2.68435e+08
-Properties of a quire<16, 1, 8>
-  dynamic range of product   : 112
-  radix point of accumulator :  56
-  full  quire size in bits   : 120
-  lower quire size in bits   :  56
-  upper quire size in bits   :  57
-  capacity bits              :   8
-Quire segments
-+ : 00000000_000000000000000000000000000000000000000000000000000000000.00000000000000000000000000000000000000000000000000000000
-```
-
-## compsi
+## signedint
 
 Show the sign/scale/fraction components of a signed integer.
 
 ```text
-λ ./signedint.exe
-compsi : components of a signed integer
+$ signedint
+signedint : components of a signed integer
 Show the sign/scale/fraction components of a signed integer.
-Usage: signedint integer_value
+Usage: signedint value
 Example: signedint 1234567890123456789012345
-class sw::unum::integer<128,unsigned int>         : 1234567890123456789012345 (+,80,00000101011011100000111100110110101001100100010000111101111000101101111101111001)
+class sw::universal::integer<128,unsigned int>         : 1234567890123456789012345 (+,80,00000101011011100000111100110110101001100100010000111101111000101101111101111001)
 ```
 
-## compui
+## unsignedint
 
 Show the sign/scale/fraction components of an unsigned integer.
 
 ```text
-λ ./unsignedint.exe
-compui : components of an unsigned integer
-Show the sign/scale/fraction components of an unsigned integer.
-Usage: unsignedint integer_value
-Example: unsignedint 123456789012345670
-TBD:
+$ unsignedint
+
 ```
 
-## compp
+## posit
 
 Show the sign/scale/regime/exponent/fraction components of a posit.
 
 ```text
-λ ./posit.exe
-pc : posit components
+$ posit
+posit : posit components
 Show the sign/scale/regime/exponent/fraction components of a posit.
-Usage: posit float_value
-Example: posit -1.123456789e17
-posit< 8, 0> = s1 r1111111 e f qNW v-64
-posit< 8, 1> = s1 r1111111 e f qNW v-4096
-posit< 8, 2> = s1 r1111111 e f qNW v-16777216
-posit< 8, 3> = s1 r1111111 e f qNW v-281474976710656
-posit<16, 1> = s1 r111111111111111 e f qNW v-268435456
-posit<16, 2> = s1 r111111111111111 e f qNW v-72057594037927936
-posit<16, 3> = s1 r111111110 e000 f100 qNW v-1.080863910568919e+17
-posit<32, 1> = s1 r111111111111111111111111111110 e1 f qNW v-1.4411518807585587e+17
-posit<32, 2> = s1 r1111111111111110 e00 f1000111100100 qNW v-1.1234370007964058e+17
-posit<32, 3> = s1 r111111110 e000 f1000111100100001110 qNW v-1.1234562422498918e+17
-posit<48, 1> = s1 r111111111111111111111111111110 e0 f1000111100100010 qNW v-1.1234589910289613e+17
-posit<48, 2> = s1 r1111111111111110 e00 f10001111001000011100110010111 qNW v-1.1234567885160448e+17
-posit<48, 3> = s1 r111111110 e000 f10001111001000011100110010111010111 qNW v-1.1234567889983898e+17
-posit<64, 1> = s1 r111111111111111111111111111110 e0 f10001111001000011100110010111011 qNW v-1.1234567890193613e+17
-posit<64, 2> = s1 r1111111111111110 e00 f100011110010000111001100101110101110001001111 qNW v-1.1234567890000077e+17
-posit<64, 3> = s1 r111111110 e000 f100011110010000111001100101110101110001001110101000 qNW v-1.123456789e+17
-posit<64, 4> = s1 r11110 e1000 f100011110010000111001100101110101110001001110101000000 qNW v-1.123456789e+17
+Usage: posit value
+
+Example: posit 3.1415926535897932384626433832795028841971
+posit< 8,0>  = 01101001 : 3.125
+posit< 8, 1> = 01011001 : 3.125
+posit< 8, 2> = 01001101 : 3.25
+posit< 8, 3> = 01000110 : 3
+posit<16, 1> = 0101100100100010 : 3.1416
+posit<16, 2> = 0100110010010001 : 3.1416
+posit<16, 3> = 0100011001001000 : 3.1406
+posit<24, 1> = 010110010010000111111011 : 3.141592
+posit<24, 2> = 010011001001000011111110 : 3.141594
+posit<24, 3> = 010001100100100001111111 : 3.141594
+posit<32, 1> = 01011001001000011111101101010100 : 3.14159265
+posit<32, 2> = 01001100100100001111110110101010 : 3.14159265
+posit<32, 3> = 01000110010010000111111011010101 : 3.14159265
+posit<48, 1> = 010110010010000111111011010101000100010000101101 : 3.1415926535898
+posit<48, 2> = 010011001001000011111101101010100010001000010111 : 3.1415926535899
+posit<48, 3> = 010001100100100001111110110101010001000100001011 : 3.1415926535897
+posit<64, 1> = 0101100100100001111110110101010001000100001011010001100000000000 : 3.14159265358979312
+posit<64, 2> = 0100110010010000111111011010101000100010000101101000110000000000 : 3.14159265358979312
+posit<64, 3> = 0100011001001000011111101101010100010001000010110100011000000000 : 3.14159265358979312
+posit<64, 4> = 0100001100100100001111110110101010001000100001011010001100000000 : 3.14159265358979312
+
 ```
 
 ## float2posit
@@ -155,11 +395,12 @@ posit<64, 4> = s1 r11110 e1000 f100011110010000111001100101110101110001001110101
 Show the conversion of a float to a posit step-by-step.
 
 ```text
-λ ./float2posit.exe
+$ float2posit
 Show the conversion of a float to a posit step-by-step.
 Usage: float2posit floating_point_value posit_size_in_bits[one of 8|16|32|48|64|80|96|128|256]
 Example: convert -1.123456789e17 32
-$ ./float2posit.exe 1.234567890 32
+
+$ float2posit 1.234567890 32
 1.23456789   input value
 Test for ZERO
 (+, 0, 0011110000001100101001000010100000111101111000011011) input value is NOT zero
@@ -182,6 +423,7 @@ rounding decision(blast & bafter) | (bafter & bsticky) : round down
 0100'0001'1110'0000'0110'0101'0010'0001  truncated posit
 0100'0001'1110'0000'0110'0101'0010'0001  rounded posit
 0100'0001'1110'0000'0110'0101'0010'0001  final posit
+
 ```
 
 ## propenv
@@ -189,7 +431,7 @@ rounding decision(blast & bafter) | (bafter & bsticky) : round down
 Show the storage properties of the native, standard, and extended posits.
 
 ```text
-λ ./propenv.exe
+$ propenv
 Bit sizes for native types
 unsigned char           8 bits
 unsigned short         16 bits
@@ -242,171 +484,196 @@ scale    1
 fraction 1056399862553083
 ```
 
+## propp
+
+Show the arithmetic properties of a posit environment, including its quire.
+
+```text
+$ propp
+Show the arithmetic properties of a posit.
+Usage: propp [nbits es capacity]
+Example: propp 16 1 8
+arithmetic properties of a posit<16, 1> environment
+ posit< 16, 1> useed scale     2     minpos scale - 28     maxpos scale         28
+  minpos                     : 16.1x0001p + 3.72529e-09
+  maxpos                     : 16.1x7fffp + 2.68435e+08
+Properties of a quire<16, 1, 8>
+  dynamic range of product   : 112
+  radix point of accumulator :  56
+  full  quire size in bits   : 120
+  lower quire size in bits   :  56
+  upper quire size in bits   :  57
+  capacity bits              :   8
+Quire segments
++ : 00000000_000000000000000000000000000000000000000000000000000000000.00000000000000000000000000000000000000000000000000000000
+```
+
+
 ## plimits
 
 Show the numeric_limits<> of the standard posits.
 
 ```text
-λ ./plimits.exe
-C:\Users\tomtz\Documents\dev\clones\universal\build\tools\cmd\Release\plimits.exe: numeric_limits<> of standard posits
+$ plimits
+plimits: numeric_limits<> of standard posits
 Numeric limits for posit< 8, 0>
-numeric_limits< sw::unum::posit<8, 0> >::min()             : 0.015625
-numeric_limits< sw::unum::posit<8, 0> >::max()             : 64
-numeric_limits< sw::unum::posit<8, 0> >::lowest()          : -64
-numeric_limits< sw::unum::posit<8, 0> >::epsilon()         : 0.03125
-numeric_limits< sw::unum::posit<8, 0> >::digits            : 6
-numeric_limits< sw::unum::posit<8, 0> >::digits10          : 1
-numeric_limits< sw::unum::posit<8, 0> >::max_digits10      : 2
-numeric_limits< sw::unum::posit<8, 0> >::is_signed         : 1
-numeric_limits< sw::unum::posit<8, 0> >::is_integer        : 0
-numeric_limits< sw::unum::posit<8, 0> >::is_exact          : 0
-numeric_limits< sw::unum::posit<8, 0> >::min_exponent      : -6
-numeric_limits< sw::unum::posit<8, 0> >::min_exponent10    : -1
-numeric_limits< sw::unum::posit<8, 0> >::max_exponent      : 6
-numeric_limits< sw::unum::posit<8, 0> >::max_exponent10    : 1
-numeric_limits< sw::unum::posit<8, 0> >::has_infinity      : 1
-numeric_limits< sw::unum::posit<8, 0> >::has_quiet_NaN     : 1
-numeric_limits< sw::unum::posit<8, 0> >::has_signaling_NaN : 1
-numeric_limits< sw::unum::posit<8, 0> >::has_denorm        : 0
-numeric_limits< sw::unum::posit<8, 0> >::has_denorm_loss   : 0
-numeric_limits< sw::unum::posit<8, 0> >::is_iec559         : 0
-numeric_limits< sw::unum::posit<8, 0> >::is_bounded        : 0
-numeric_limits< sw::unum::posit<8, 0> >::is_modulo         : 0
-numeric_limits< sw::unum::posit<8, 0> >::traps             : 0
-numeric_limits< sw::unum::posit<8, 0> >::tinyness_before   : 0
-numeric_limits< sw::unum::posit<8, 0> >::round_style       : 1
+numeric_limits< sw::universal::posit<8, 0> >::min()             : 0.015625
+numeric_limits< sw::universal::posit<8, 0> >::max()             : 64
+numeric_limits< sw::universal::posit<8, 0> >::lowest()          : -64
+numeric_limits< sw::universal::posit<8, 0> >::epsilon()         : 0.03125
+numeric_limits< sw::universal::posit<8, 0> >::digits            : 6
+numeric_limits< sw::universal::posit<8, 0> >::digits10          : 1
+numeric_limits< sw::universal::posit<8, 0> >::max_digits10      : 2
+numeric_limits< sw::universal::posit<8, 0> >::is_signed         : 1
+numeric_limits< sw::universal::posit<8, 0> >::is_integer        : 0
+numeric_limits< sw::universal::posit<8, 0> >::is_exact          : 0
+numeric_limits< sw::universal::posit<8, 0> >::min_exponent      : -6
+numeric_limits< sw::universal::posit<8, 0> >::min_exponent10    : -1
+numeric_limits< sw::universal::posit<8, 0> >::max_exponent      : 6
+numeric_limits< sw::universal::posit<8, 0> >::max_exponent10    : 1
+numeric_limits< sw::universal::posit<8, 0> >::has_infinity      : 1
+numeric_limits< sw::universal::posit<8, 0> >::has_quiet_NaN     : 1
+numeric_limits< sw::universal::posit<8, 0> >::has_signaling_NaN : 1
+numeric_limits< sw::universal::posit<8, 0> >::has_denorm        : 0
+numeric_limits< sw::universal::posit<8, 0> >::has_denorm_loss   : 0
+numeric_limits< sw::universal::posit<8, 0> >::is_iec559         : 0
+numeric_limits< sw::universal::posit<8, 0> >::is_bounded        : 0
+numeric_limits< sw::universal::posit<8, 0> >::is_modulo         : 0
+numeric_limits< sw::universal::posit<8, 0> >::traps             : 0
+numeric_limits< sw::universal::posit<8, 0> >::tinyness_before   : 0
+numeric_limits< sw::universal::posit<8, 0> >::round_style       : 1
 Numeric limits for posit< 16, 1>
-numeric_limits< sw::unum::posit<16, 1> >::min()             : 3.72529e-09
-numeric_limits< sw::unum::posit<16, 1> >::max()             : 2.68435e+08
-numeric_limits< sw::unum::posit<16, 1> >::lowest()          : -2.68435e+08
-numeric_limits< sw::unum::posit<16, 1> >::epsilon()         : 0.000244141
-numeric_limits< sw::unum::posit<16, 1> >::digits            : 13
-numeric_limits< sw::unum::posit<16, 1> >::digits10          : 3
-numeric_limits< sw::unum::posit<16, 1> >::max_digits10      : 4
-numeric_limits< sw::unum::posit<16, 1> >::is_signed         : 1
-numeric_limits< sw::unum::posit<16, 1> >::is_integer        : 0
-numeric_limits< sw::unum::posit<16, 1> >::is_exact          : 0
-numeric_limits< sw::unum::posit<16, 1> >::min_exponent      : -28
-numeric_limits< sw::unum::posit<16, 1> >::min_exponent10    : -8
-numeric_limits< sw::unum::posit<16, 1> >::max_exponent      : 28
-numeric_limits< sw::unum::posit<16, 1> >::max_exponent10    : 8
-numeric_limits< sw::unum::posit<16, 1> >::has_infinity      : 1
-numeric_limits< sw::unum::posit<16, 1> >::has_quiet_NaN     : 1
-numeric_limits< sw::unum::posit<16, 1> >::has_signaling_NaN : 1
-numeric_limits< sw::unum::posit<16, 1> >::has_denorm        : 0
-numeric_limits< sw::unum::posit<16, 1> >::has_denorm_loss   : 0
-numeric_limits< sw::unum::posit<16, 1> >::is_iec559         : 0
-numeric_limits< sw::unum::posit<16, 1> >::is_bounded        : 0
-numeric_limits< sw::unum::posit<16, 1> >::is_modulo         : 0
-numeric_limits< sw::unum::posit<16, 1> >::traps             : 0
-numeric_limits< sw::unum::posit<16, 1> >::tinyness_before   : 0
-numeric_limits< sw::unum::posit<16, 1> >::round_style       : 1
+numeric_limits< sw::universal::posit<16, 1> >::min()             : 3.72529e-09
+numeric_limits< sw::universal::posit<16, 1> >::max()             : 2.68435e+08
+numeric_limits< sw::universal::posit<16, 1> >::lowest()          : -2.68435e+08
+numeric_limits< sw::universal::posit<16, 1> >::epsilon()         : 0.000244141
+numeric_limits< sw::universal::posit<16, 1> >::digits            : 13
+numeric_limits< sw::universal::posit<16, 1> >::digits10          : 3
+numeric_limits< sw::universal::posit<16, 1> >::max_digits10      : 4
+numeric_limits< sw::universal::posit<16, 1> >::is_signed         : 1
+numeric_limits< sw::universal::posit<16, 1> >::is_integer        : 0
+numeric_limits< sw::universal::posit<16, 1> >::is_exact          : 0
+numeric_limits< sw::universal::posit<16, 1> >::min_exponent      : -28
+numeric_limits< sw::universal::posit<16, 1> >::min_exponent10    : -8
+numeric_limits< sw::universal::posit<16, 1> >::max_exponent      : 28
+numeric_limits< sw::universal::posit<16, 1> >::max_exponent10    : 8
+numeric_limits< sw::universal::posit<16, 1> >::has_infinity      : 1
+numeric_limits< sw::universal::posit<16, 1> >::has_quiet_NaN     : 1
+numeric_limits< sw::universal::posit<16, 1> >::has_signaling_NaN : 1
+numeric_limits< sw::universal::posit<16, 1> >::has_denorm        : 0
+numeric_limits< sw::universal::posit<16, 1> >::has_denorm_loss   : 0
+numeric_limits< sw::universal::posit<16, 1> >::is_iec559         : 0
+numeric_limits< sw::universal::posit<16, 1> >::is_bounded        : 0
+numeric_limits< sw::universal::posit<16, 1> >::is_modulo         : 0
+numeric_limits< sw::universal::posit<16, 1> >::traps             : 0
+numeric_limits< sw::universal::posit<16, 1> >::tinyness_before   : 0
+numeric_limits< sw::universal::posit<16, 1> >::round_style       : 1
 Numeric limits for posit< 32, 2>
-numeric_limits< sw::unum::posit<32, 2> >::min()             : 7.52316e-37
-numeric_limits< sw::unum::posit<32, 2> >::max()             : 1.32923e+36
-numeric_limits< sw::unum::posit<32, 2> >::lowest()          : -1.32923e+36
-numeric_limits< sw::unum::posit<32, 2> >::epsilon()         : 7.45058e-09
-numeric_limits< sw::unum::posit<32, 2> >::digits            : 28
-numeric_limits< sw::unum::posit<32, 2> >::digits10          : 8
-numeric_limits< sw::unum::posit<32, 2> >::max_digits10      : 9
-numeric_limits< sw::unum::posit<32, 2> >::is_signed         : 1
-numeric_limits< sw::unum::posit<32, 2> >::is_integer        : 0
-numeric_limits< sw::unum::posit<32, 2> >::is_exact          : 0
-numeric_limits< sw::unum::posit<32, 2> >::min_exponent      : -120
-numeric_limits< sw::unum::posit<32, 2> >::min_exponent10    : -36
-numeric_limits< sw::unum::posit<32, 2> >::max_exponent      : 120
-numeric_limits< sw::unum::posit<32, 2> >::max_exponent10    : 36
-numeric_limits< sw::unum::posit<32, 2> >::has_infinity      : 1
-numeric_limits< sw::unum::posit<32, 2> >::has_quiet_NaN     : 1
-numeric_limits< sw::unum::posit<32, 2> >::has_signaling_NaN : 1
-numeric_limits< sw::unum::posit<32, 2> >::has_denorm        : 0
-numeric_limits< sw::unum::posit<32, 2> >::has_denorm_loss   : 0
-numeric_limits< sw::unum::posit<32, 2> >::is_iec559         : 0
-numeric_limits< sw::unum::posit<32, 2> >::is_bounded        : 0
-numeric_limits< sw::unum::posit<32, 2> >::is_modulo         : 0
-numeric_limits< sw::unum::posit<32, 2> >::traps             : 0
-numeric_limits< sw::unum::posit<32, 2> >::tinyness_before   : 0
-numeric_limits< sw::unum::posit<32, 2> >::round_style       : 1
+numeric_limits< sw::universal::posit<32, 2> >::min()             : 7.52316e-37
+numeric_limits< sw::universal::posit<32, 2> >::max()             : 1.32923e+36
+numeric_limits< sw::universal::posit<32, 2> >::lowest()          : -1.32923e+36
+numeric_limits< sw::universal::posit<32, 2> >::epsilon()         : 7.45058e-09
+numeric_limits< sw::universal::posit<32, 2> >::digits            : 28
+numeric_limits< sw::universal::posit<32, 2> >::digits10          : 8
+numeric_limits< sw::universal::posit<32, 2> >::max_digits10      : 9
+numeric_limits< sw::universal::posit<32, 2> >::is_signed         : 1
+numeric_limits< sw::universal::posit<32, 2> >::is_integer        : 0
+numeric_limits< sw::universal::posit<32, 2> >::is_exact          : 0
+numeric_limits< sw::universal::posit<32, 2> >::min_exponent      : -120
+numeric_limits< sw::universal::posit<32, 2> >::min_exponent10    : -36
+numeric_limits< sw::universal::posit<32, 2> >::max_exponent      : 120
+numeric_limits< sw::universal::posit<32, 2> >::max_exponent10    : 36
+numeric_limits< sw::universal::posit<32, 2> >::has_infinity      : 1
+numeric_limits< sw::universal::posit<32, 2> >::has_quiet_NaN     : 1
+numeric_limits< sw::universal::posit<32, 2> >::has_signaling_NaN : 1
+numeric_limits< sw::universal::posit<32, 2> >::has_denorm        : 0
+numeric_limits< sw::universal::posit<32, 2> >::has_denorm_loss   : 0
+numeric_limits< sw::universal::posit<32, 2> >::is_iec559         : 0
+numeric_limits< sw::universal::posit<32, 2> >::is_bounded        : 0
+numeric_limits< sw::universal::posit<32, 2> >::is_modulo         : 0
+numeric_limits< sw::universal::posit<32, 2> >::traps             : 0
+numeric_limits< sw::universal::posit<32, 2> >::tinyness_before   : 0
+numeric_limits< sw::universal::posit<32, 2> >::round_style       : 1
 Numeric limits for posit< 64, 3>
-numeric_limits< sw::unum::posit<64, 3> >::min()             : 4.8879e-150
-numeric_limits< sw::unum::posit<64, 3> >::max()             : 2.04587e+149
-numeric_limits< sw::unum::posit<64, 3> >::lowest()          : -2.04587e+149
-numeric_limits< sw::unum::posit<64, 3> >::epsilon()         : 3.46945e-18
-numeric_limits< sw::unum::posit<64, 3> >::digits            : 59
-numeric_limits< sw::unum::posit<64, 3> >::digits10          : 17
-numeric_limits< sw::unum::posit<64, 3> >::max_digits10      : 18
-numeric_limits< sw::unum::posit<64, 3> >::is_signed         : 1
-numeric_limits< sw::unum::posit<64, 3> >::is_integer        : 0
-numeric_limits< sw::unum::posit<64, 3> >::is_exact          : 0
-numeric_limits< sw::unum::posit<64, 3> >::min_exponent      : -496
-numeric_limits< sw::unum::posit<64, 3> >::min_exponent10    : -150
-numeric_limits< sw::unum::posit<64, 3> >::max_exponent      : 496
-numeric_limits< sw::unum::posit<64, 3> >::max_exponent10    : 150
-numeric_limits< sw::unum::posit<64, 3> >::has_infinity      : 1
-numeric_limits< sw::unum::posit<64, 3> >::has_quiet_NaN     : 1
-numeric_limits< sw::unum::posit<64, 3> >::has_signaling_NaN : 1
-numeric_limits< sw::unum::posit<64, 3> >::has_denorm        : 0
-numeric_limits< sw::unum::posit<64, 3> >::has_denorm_loss   : 0
-numeric_limits< sw::unum::posit<64, 3> >::is_iec559         : 0
-numeric_limits< sw::unum::posit<64, 3> >::is_bounded        : 0
-numeric_limits< sw::unum::posit<64, 3> >::is_modulo         : 0
-numeric_limits< sw::unum::posit<64, 3> >::traps             : 0
-numeric_limits< sw::unum::posit<64, 3> >::tinyness_before   : 0
-numeric_limits< sw::unum::posit<64, 3> >::round_style       : 1
+numeric_limits< sw::universal::posit<64, 3> >::min()             : 4.8879e-150
+numeric_limits< sw::universal::posit<64, 3> >::max()             : 2.04587e+149
+numeric_limits< sw::universal::posit<64, 3> >::lowest()          : -2.04587e+149
+numeric_limits< sw::universal::posit<64, 3> >::epsilon()         : 3.46945e-18
+numeric_limits< sw::universal::posit<64, 3> >::digits            : 59
+numeric_limits< sw::universal::posit<64, 3> >::digits10          : 17
+numeric_limits< sw::universal::posit<64, 3> >::max_digits10      : 18
+numeric_limits< sw::universal::posit<64, 3> >::is_signed         : 1
+numeric_limits< sw::universal::posit<64, 3> >::is_integer        : 0
+numeric_limits< sw::universal::posit<64, 3> >::is_exact          : 0
+numeric_limits< sw::universal::posit<64, 3> >::min_exponent      : -496
+numeric_limits< sw::universal::posit<64, 3> >::min_exponent10    : -150
+numeric_limits< sw::universal::posit<64, 3> >::max_exponent      : 496
+numeric_limits< sw::universal::posit<64, 3> >::max_exponent10    : 150
+numeric_limits< sw::universal::posit<64, 3> >::has_infinity      : 1
+numeric_limits< sw::universal::posit<64, 3> >::has_quiet_NaN     : 1
+numeric_limits< sw::universal::posit<64, 3> >::has_signaling_NaN : 1
+numeric_limits< sw::universal::posit<64, 3> >::has_denorm        : 0
+numeric_limits< sw::universal::posit<64, 3> >::has_denorm_loss   : 0
+numeric_limits< sw::universal::posit<64, 3> >::is_iec559         : 0
+numeric_limits< sw::universal::posit<64, 3> >::is_bounded        : 0
+numeric_limits< sw::universal::posit<64, 3> >::is_modulo         : 0
+numeric_limits< sw::universal::posit<64, 3> >::traps             : 0
+numeric_limits< sw::universal::posit<64, 3> >::tinyness_before   : 0
+numeric_limits< sw::universal::posit<64, 3> >::round_style       : 1
 >>>>>>>>>>>>>>>>>> posit<128,4> does not render correctly due to limits of native floating point types
 Numeric limits for posit< 128, 4>
-numeric_limits< sw::unum::posit<128, 4> >::min()             : 0
-numeric_limits< sw::unum::posit<128, 4> >::max()             : inf
-numeric_limits< sw::unum::posit<128, 4> >::lowest()          : -inf
-numeric_limits< sw::unum::posit<128, 4> >::epsilon()         : 3.76158e-37
-numeric_limits< sw::unum::posit<128, 4> >::digits            : 122
-numeric_limits< sw::unum::posit<128, 4> >::digits10          : 36
-numeric_limits< sw::unum::posit<128, 4> >::max_digits10      : 37
-numeric_limits< sw::unum::posit<128, 4> >::is_signed         : 1
-numeric_limits< sw::unum::posit<128, 4> >::is_integer        : 0
-numeric_limits< sw::unum::posit<128, 4> >::is_exact          : 0
-numeric_limits< sw::unum::posit<128, 4> >::min_exponent      : -2016
-numeric_limits< sw::unum::posit<128, 4> >::min_exponent10    : -610
-numeric_limits< sw::unum::posit<128, 4> >::max_exponent      : 2016
-numeric_limits< sw::unum::posit<128, 4> >::max_exponent10    : 610
-numeric_limits< sw::unum::posit<128, 4> >::has_infinity      : 1
-numeric_limits< sw::unum::posit<128, 4> >::has_quiet_NaN     : 1
-numeric_limits< sw::unum::posit<128, 4> >::has_signaling_NaN : 1
-numeric_limits< sw::unum::posit<128, 4> >::has_denorm        : 0
-numeric_limits< sw::unum::posit<128, 4> >::has_denorm_loss   : 0
-numeric_limits< sw::unum::posit<128, 4> >::is_iec559         : 0
-numeric_limits< sw::unum::posit<128, 4> >::is_bounded        : 0
-numeric_limits< sw::unum::posit<128, 4> >::is_modulo         : 0
-numeric_limits< sw::unum::posit<128, 4> >::traps             : 0
-numeric_limits< sw::unum::posit<128, 4> >::tinyness_before   : 0
-numeric_limits< sw::unum::posit<128, 4> >::round_style       : 1
+numeric_limits< sw::universal::posit<128, 4> >::min()             : 1.32901e-607
+numeric_limits< sw::universal::posit<128, 4> >::max()             : 7.52439e+606
+numeric_limits< sw::universal::posit<128, 4> >::lowest()          : -7.52439e+606
+numeric_limits< sw::universal::posit<128, 4> >::epsilon()         : 3.76158e-37
+numeric_limits< sw::universal::posit<128, 4> >::digits            : 122
+numeric_limits< sw::universal::posit<128, 4> >::digits10          : 36
+numeric_limits< sw::universal::posit<128, 4> >::max_digits10      : 37
+numeric_limits< sw::universal::posit<128, 4> >::is_signed         : 1
+numeric_limits< sw::universal::posit<128, 4> >::is_integer        : 0
+numeric_limits< sw::universal::posit<128, 4> >::is_exact          : 0
+numeric_limits< sw::universal::posit<128, 4> >::min_exponent      : -2016
+numeric_limits< sw::universal::posit<128, 4> >::min_exponent10    : -610
+numeric_limits< sw::universal::posit<128, 4> >::max_exponent      : 2016
+numeric_limits< sw::universal::posit<128, 4> >::max_exponent10    : 610
+numeric_limits< sw::universal::posit<128, 4> >::has_infinity      : 1
+numeric_limits< sw::universal::posit<128, 4> >::has_quiet_NaN     : 1
+numeric_limits< sw::universal::posit<128, 4> >::has_signaling_NaN : 1
+numeric_limits< sw::universal::posit<128, 4> >::has_denorm        : 0
+numeric_limits< sw::universal::posit<128, 4> >::has_denorm_loss   : 0
+numeric_limits< sw::universal::posit<128, 4> >::is_iec559         : 0
+numeric_limits< sw::universal::posit<128, 4> >::is_bounded        : 0
+numeric_limits< sw::universal::posit<128, 4> >::is_modulo         : 0
+numeric_limits< sw::universal::posit<128, 4> >::traps             : 0
+numeric_limits< sw::universal::posit<128, 4> >::tinyness_before   : 0
+numeric_limits< sw::universal::posit<128, 4> >::round_style       : 1
 >>>>>>>>>>>>>>>>>> posit<256,5> does not render correctly due to limits of native floating point types
 Numeric limits for posit< 256, 5>
-numeric_limits< sw::unum::posit<256, 5> >::min()             : 0
-numeric_limits< sw::unum::posit<256, 5> >::max()             : inf
-numeric_limits< sw::unum::posit<256, 5> >::lowest()          : -inf
-numeric_limits< sw::unum::posit<256, 5> >::epsilon()         : 2.21086e-75
-numeric_limits< sw::unum::posit<256, 5> >::digits            : 249
-numeric_limits< sw::unum::posit<256, 5> >::digits10          : 75
-numeric_limits< sw::unum::posit<256, 5> >::max_digits10      : 76
-numeric_limits< sw::unum::posit<256, 5> >::is_signed         : 1
-numeric_limits< sw::unum::posit<256, 5> >::is_integer        : 0
-numeric_limits< sw::unum::posit<256, 5> >::is_exact          : 0
-numeric_limits< sw::unum::posit<256, 5> >::min_exponent      : -8128
-numeric_limits< sw::unum::posit<256, 5> >::min_exponent10    : -2463
-numeric_limits< sw::unum::posit<256, 5> >::max_exponent      : 8128
-numeric_limits< sw::unum::posit<256, 5> >::max_exponent10    : 2463
-numeric_limits< sw::unum::posit<256, 5> >::has_infinity      : 1
-numeric_limits< sw::unum::posit<256, 5> >::has_quiet_NaN     : 1
-numeric_limits< sw::unum::posit<256, 5> >::has_signaling_NaN : 1
-numeric_limits< sw::unum::posit<256, 5> >::has_denorm        : 0
-numeric_limits< sw::unum::posit<256, 5> >::has_denorm_loss   : 0
-numeric_limits< sw::unum::posit<256, 5> >::is_iec559         : 0
-numeric_limits< sw::unum::posit<256, 5> >::is_bounded        : 0
-numeric_limits< sw::unum::posit<256, 5> >::is_modulo         : 0
-numeric_limits< sw::unum::posit<256, 5> >::traps             : 0
-numeric_limits< sw::unum::posit<256, 5> >::tinyness_before   : 0
-numeric_limits< sw::unum::posit<256, 5> >::round_style       : 1
+numeric_limits< sw::universal::posit<256, 5> >::min()             : 1.6912e-2447
+numeric_limits< sw::universal::posit<256, 5> >::max()             : 5.91296e+2446
+numeric_limits< sw::universal::posit<256, 5> >::lowest()          : -5.91296e+2446
+numeric_limits< sw::universal::posit<256, 5> >::epsilon()         : 2.21086e-75
+numeric_limits< sw::universal::posit<256, 5> >::digits            : 249
+numeric_limits< sw::universal::posit<256, 5> >::digits10          : 75
+numeric_limits< sw::universal::posit<256, 5> >::max_digits10      : 76
+numeric_limits< sw::universal::posit<256, 5> >::is_signed         : 1
+numeric_limits< sw::universal::posit<256, 5> >::is_integer        : 0
+numeric_limits< sw::universal::posit<256, 5> >::is_exact          : 0
+numeric_limits< sw::universal::posit<256, 5> >::min_exponent      : -8128
+numeric_limits< sw::universal::posit<256, 5> >::min_exponent10    : -2463
+numeric_limits< sw::universal::posit<256, 5> >::max_exponent      : 8128
+numeric_limits< sw::universal::posit<256, 5> >::max_exponent10    : 2463
+numeric_limits< sw::universal::posit<256, 5> >::has_infinity      : 1
+numeric_limits< sw::universal::posit<256, 5> >::has_quiet_NaN     : 1
+numeric_limits< sw::universal::posit<256, 5> >::has_signaling_NaN : 1
+numeric_limits< sw::universal::posit<256, 5> >::has_denorm        : 0
+numeric_limits< sw::universal::posit<256, 5> >::has_denorm_loss   : 0
+numeric_limits< sw::universal::posit<256, 5> >::is_iec559         : 0
+numeric_limits< sw::universal::posit<256, 5> >::is_bounded        : 0
+numeric_limits< sw::universal::posit<256, 5> >::is_modulo         : 0
+numeric_limits< sw::universal::posit<256, 5> >::traps             : 0
+numeric_limits< sw::universal::posit<256, 5> >::tinyness_before   : 0
+numeric_limits< sw::universal::posit<256, 5> >::round_style       : 1
 ```
 
 ## propq
@@ -414,7 +681,7 @@ numeric_limits< sw::unum::posit<256, 5> >::round_style       : 1
 Show size tables of quires.
 
 ```text
-λ ./propq.exe
+$ propq
 print quire size tables
 Quire size table as a function of <nbits, es, capacity = 10>
 Capacity is 2^10 accumulations of max_pos^2
