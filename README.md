@@ -15,18 +15,16 @@
 -------------------------------
 
 
-The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point for experimentation and development. In addition, tailoring the arithmetic types to the application's precision and dynamic range requirements enables a new level of mixed-precision algorithm development and optimization, particularly valuable for embedded applications that require high computational density and efficiency.
-Deep Learning provides another example where alternative formats and precisions, such as half-floats and bfloats yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
+The goal of the Universal Numbers Library is to offer applications alternatives to native integer and floating-point for mixed-precision algorithm development and optimization. Tailoring the arithmetic types to the application's precision and dynamic range requirements enables a new level of performance and energy efficiency, valuable for embedded applications that require high computational density and efficiency.
 
+Deep Learning algorithms in particular provide a core application vertical where alternative formats and precisions, such as half-precision floating-point and bfloat16s yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
 
-
-
-The Universal Library is a ready-to-use header-only library that provides a plug-in replacement for native types and a low-friction environment to explore alternatives to IEEE floating-point in algorithms.
+The Universal Library is a ready-to-use header-only library that provides a plug-in replacement for native types and a low-friction environment to explore alternatives to IEEE-754 floating-point in algorithms.
 
 The basic use pattern is as simple as:
 
 ```code
-#include <universal/number/posit/posit.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 
 template<typename Real>
 Real MyKernel(const Real& a, const Real& b) {
@@ -36,7 +34,7 @@ Real MyKernel(const Real& a, const Real& b) {
 constexpr double pi = 3.14159265358979323846;
 
 int main() {
-    using Real = sw::universal::posit<32,2>;  
+    using Real = sw::universal::half; // half-precision IEEE-754 floating-point  
 
     Real a = sqrt(2);
     Real b = pi;
@@ -88,6 +86,7 @@ Slides of the presentation at [CoNGA'22](https://link.springer.com/book/10.1007/
 
 [Presentation: Universal: Reliable, Reproducible, and Energy-Efficient Numerics](docs/presentations/conga22-universal-arithmetic-library.pdf)
 
+A quick description of the structure of the number system parameterization can be found [here](docs/number-system-type-parameterization.md).
 
 ## Quick start
 
@@ -101,6 +100,8 @@ CMakeCache.txt       Makefile      cmake-uninstall.cmake  playground  universal-
 CMakeFiles           applications  cmake_install.cmake    tests       universal-config.cmake
 CTestTestfile.cmake  c_api         education              tools       universal-targets.cmake
 ```
+
+[Here](docs/CommandLineTools.md) is a quick reference of what the command line tools have to offer.
 
 ## How to build
 
@@ -334,6 +335,16 @@ arithmetic types to accomplish different numerical goals, such as reproducibilit
 or precision. These examples are great starting points for your own application requirements.
 
 ![example-applications](docs/img/example-applications.png)
+
+## How to develop and extend _Universal_
+
+The _Universal_ library contains hundreds of example programs to demonstrate the use of the arithmetic types and the enable new developers to get up to speed. In each number system type's regression suite there is an `api/api.cpp` that chronicles all the invokation and use cases to provide an executable example of how to use the type. In general, the api section of the regression tests has code examples how to use the different library components, such as manipulators, attributes, number traits, exceptions, and special cases. 
+
+In the `education` build target (BUILD_EDUCATION), there are individual test programs that demonstrate how to use the different types.
+
+Each number system comes with a complete regression suite to verify functionality of assignment, conversion, arithmetic, logic, exceptions, number traits, and special cases. These regression suites are run for each PR or push to the version branch. _Universal_ uses standard GitHub Actions for this, so add your branch to the workflow cmake yaml to trigger CI for your own branch.
+
+Easiest way to get started is to pick up and copy the directory structure under `ROOT/include/universal/number/skeleton_1param` or `ROOT/include/universal/number/skeleton_2params`. They are configured to get you all the constituent pieces of a number system _Universal_-style.
 
 # Installation and usage
 
