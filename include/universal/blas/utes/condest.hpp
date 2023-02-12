@@ -2,7 +2,7 @@
  * Estimated Condition number of matrix 
  *
  * @author:     James Quinlan
- * @date:       2022-12-13
+ * @date:       2023-02-11
  * @copyright:  Copyright (c) 2022 Stillwater Supercomputing, Inc.
  * @license:    MIT Open Source license 
  * 
@@ -13,7 +13,6 @@
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/vector.hpp>
 #include <universal/blas/blas.hpp>
-// #include <universal/blas/solvers/plu.hpp>
 #include <universal/blas/solvers/lu.hpp>
 #include <universal/blas/solvers/backsub.hpp>
 #include <universal/blas/solvers/forwsub.hpp>
@@ -29,11 +28,10 @@ std::tuple<matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scalar>& A){
 
     Scalar x;
     size_t n = num_rows(A);
-    // Matrix P(n,n);
+
     Matrix L(n,n);
     Matrix U(n,n);
 
-    // P = 1;
     L = 1;
     U = A;
 
@@ -57,12 +55,8 @@ std::tuple<matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scalar>& A){
                 U(i,j) = U(argmax,j);
                 U(argmax,j) = x;
             }
-           // for (size_t j = 0; j < n;++j){
-           //     x = P(i,j);
-           //     P(i,j) = P(argmax,j);
-           //     P(argmax,j) = x;
-           // }
-                // Permuate entries in L to match P
+           
+            // Permuate entries in L to match P
             for (size_t j = 0; j < i; ++j){
                 x = L(i,j);
                 L(i,j) = L(argmax,j);
@@ -71,9 +65,7 @@ std::tuple<matrix<Scalar>, matrix<Scalar>> plu(const matrix<Scalar>& A){
         }
         // Continue with row reduction
         for (size_t k = i + 1; k < n; ++k){  // objective row
-        
-            // Is there a minpos for Scalar?  including double etc.
-            L(k,i) = U(k,i) / U(i,i);
+                    L(k,i) = U(k,i) / U(i,i);
             for (size_t j = i; j < n; ++j){
                 U(k,j) = U(k,j) - L(k,i)*U(i,j);
             }
@@ -94,17 +86,22 @@ Scalar condest(const sw::universal::blas::matrix<Scalar> & A){
  * showCondest = false; LUIR.cpp will run.   
  */
 
-    Scalar Na  = matnorm(A,1);    // || A ||
+    Scalar Na  = matnorm(A,2);    // || A ||
     Scalar Ni  = 1;               // || A^{-1} ||
     sw::universal::blas::vector<Scalar> b(num_cols(A),1);
     
     auto [L, U] = plu(A);
-    auto z = forwsub(U.transpose(),b);
-    auto x = backsub(L.transpose(),z);
-    // auto y = solve((L*U), x);  // x = (LU')^(-1)*b
+    auto Ut = U;
+    auto Lt = L;
+    auto z = forwsub(Ut.transpose(),b);
+    auto x = backsub(Lt.transpose(),z);
     auto y = backsub(U,forwsub(L,x));
-    Ni = norm(y,1)/norm(x,1);
-    // Ni = y.infnorm()/x.infnorm();
+
+    Scalar infNormY = 0;
+	for (size_t k = 0; k < num_cols(A); k++) infNormY = (abs(y(k))>infNormY) ? abs(y(k)) : infNormY;
+    Scalar infNormX = 0;
+	for (size_t k = 0; k < num_cols(A); k++) infNormX = (abs(x(k))>infNormX) ? abs(x(k)) : infNormX;
+    Ni = infNormY/infNormX;
 
     return Ni*Na;
 
