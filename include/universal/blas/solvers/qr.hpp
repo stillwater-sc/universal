@@ -95,7 +95,6 @@ void houseqrpivot(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R,
 
     vector<Scalar> v(m);
     for(size_t j=0; j<n;++j){
-        //std::cout << "\n--------------------- " << std::endl;
 
         // Which is largest?
         size_t argmax = j;
@@ -245,43 +244,6 @@ void givensqr(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R){
             R = G.transpose()*R;   
         }
     }
-}
-
-// qr without matrix copies
-template<typename Scalar>
-void qr(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R) {
-    /*
-    using value_type = typename matrix<Scalar>::value_type;
-    using size_type = typename matrix<Scalar>::size_type;
-
-    size_type ncols = num_cols(A), nrows = num_rows(A);
-//                static_assert(nrows < ncols, "Required Columns <= Rows");
-    matrix<Scalar> A_tmp(A),tmp;
-    vector<matrix<Scalar>> qi(nrows);
-    for(size_t i=0;i<ncols && i<nrows-1; ++i){
-        vector<Scalar> e(nrows),x(nrows);
-        Scalar a;
-        tmp=minor(A_tmp, i);
-        get_col(tmp, x, i);
-        a=norm(x, 2);
-        if(A[nrows][nrows]>0) a-=a;
-        for(size_t j=0; j<e.size();++j){
-            e[j]=(j==nrows) ? 1:0;
-        }
-        for(size_t j=0;j<e.size();++j) e[j]=x[j]+a*e[j];
-        Scalar f=norm(e);
-        for(size_t j=0;j<e.size();++j) e[j]/=f;
-        householder_factors(qi[i], e);
-        A_tmp=qi[i]*tmp;
-    }
-    Q=qi[0];
-    for(size_t i=1;i<ncols && i<nrows-1;++i){
-        tmp=qi[i]*Q;
-        Q=tmp;
-    }
-    R=Q*A;
-    Q.transpose();
-    */
 }
 
 // MAIN QR method (calls specific method within)
