@@ -26,7 +26,7 @@ imag(std::complex< lns<nbits, rbits, bt, xtra...> > x) {
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 std::complex< lns<nbits, rbits, bt, xtra...> >
 conj(std::complex< lns<nbits, rbits, bt, xtra...> > x) {
-	return lns<nbits, rbits, bt, xtra...>(std::conj(x));
+	return std::complex<lns<nbits, rbits, bt, xtra...>>(x.real(), -x.imag());
 }
 
 }} // namespace sw::universal
