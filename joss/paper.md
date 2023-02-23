@@ -160,4 +160,23 @@ The repository's README file has all the details about the build and regression 
 
 We want to acknowledge all code contributions, bug reports, and feedback from numerous other developers and users.
 
+Matthias Möller,
+Peter Gottschling,
+Caleb James DeLisle,
+Mark Seligman,
+rainmaker6,
+Jake Todd,
+Bill Zorn,
+Andrew Liu,
+Allan Leal,
+Flo Edelmann,
+ShinYee,
+Will Wray,
+lvandam,
+David Summers,
+Gus Smith,
+Scott Pakin,
+Silvan Kuttimalai,
+Simon Barton
+
 # References

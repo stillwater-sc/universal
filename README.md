@@ -15,17 +15,20 @@
 -------------------------------
 
 
-The goal of the Universal Numbers Library is to offer applications alternatives to native integer and floating-point for mixed-precision algorithm development and optimization. Tailoring the arithmetic types to the application's precision and dynamic range requirements enables a new level of performance and energy efficiency, valuable for embedded applications that require high computational density and efficiency.
+The goal of the Universal Numbers Library is to offer alternatives to native integer and floating-point for mixed-precision algorithm development and optimization. Tailoring the arithmetic types to the application's precision and dynamic range enables a new level of application performance and energy efficiency, particularly valuable for embedded applications that need autonomy through intelligent behavior.
 
-Deep Learning algorithms in particular provide a core application vertical where alternative formats and precisions, such as half-precision floating-point and bfloat16s yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
+Deep Learning algorithms in particular provide a core application vertical where alternative formats and precisions, such as half-precision floating-point and bfloat16, yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
 
-The Universal Library is a ready-to-use header-only library that provides a plug-in replacement for native types and a low-friction environment to explore alternatives to IEEE-754 floating-point in algorithms.
+The Universal Library is a ready-to-use header-only library that provides a plug-in replacement for native types and offers a low-friction environment to explore alternatives to IEEE-754 floating-point in AI, DSP, HPC, and HFT algorithms.
 
 The basic use pattern is as simple as:
 
 ```code
+// bring in the parameterized type of interest, in this case
+// a fixed-sized, arbitrary configuration classic floating-point
 #include <universal/number/cfloat/cfloat.hpp>
 
+// define your computational kernel parameterized by arithmitic type
 template<typename Real>
 Real MyKernel(const Real& a, const Real& b) {
     return a * b;  // replace this with your kernel computation
@@ -34,10 +37,12 @@ Real MyKernel(const Real& a, const Real& b) {
 constexpr double pi = 3.14159265358979323846;
 
 int main() {
+    // if desired, create an application type alias to avoid errors
     using Real = sw::universal::half; // half-precision IEEE-754 floating-point  
 
     Real a = sqrt(2);
     Real b = pi;
+    // finally, call your kernel with your desired arithmetic type
     std::cout << "Result: " << MyKernel(a, b) << std::endl;  
 }
 ```
@@ -54,7 +59,7 @@ The library contains fast implementations of special IEEE-754 formats that do no
 
 ## Citation
 
-Please cite [our work](https://arxiv.org/abs/2012.11011) if you use _Universal_.
+Please cite [our work](https://arxiv.org/abs/2012.11011) if you use *Universal*.
 
 ```bib
 @inproceedings{Omtzigt:2022,
@@ -76,7 +81,7 @@ Please cite [our work](https://arxiv.org/abs/2012.11011) if you use _Universal_.
 
 ## Talks and Presentations
 
-The following presentations describe _Universal_ and the number systems it contained as of the time of publication.
+The following presentations describe *Universal* and the number systems it contained as of the time of publication.
 
 Slides of a presentation at [FPTalks'21](https://fpbench.org/talks/fptalks21.html)
 
@@ -101,7 +106,7 @@ CMakeFiles           applications  cmake_install.cmake    tests       universal-
 CTestTestfile.cmake  c_api         education              tools       universal-targets.cmake
 ```
 
-[Here](docs/CommandLineTools.md) is a quick reference of what the command line tools have to offer.
+[Here](docs/command-line-tools.md) is a quick reference of what the command line tools have to offer.
 
 ## How to build
 
@@ -330,21 +335,23 @@ Here is the layout of all the projects contained in V3.68 of Universal:
 
 ![visual-studio-project](docs/img/visual-studio-project.png)
 
-In the _Applications_ section, you will find application examples to demonstrate the use of Universal 
+In the *Applications* section, you will find application examples to demonstrate the use of Universal 
 arithmetic types to accomplish different numerical goals, such as reproducibility, accuracy, performance,
 or precision. These examples are great starting points for your own application requirements.
 
 ![example-applications](docs/img/example-applications.png)
 
-## How to develop and extend _Universal_
+## How to develop and extend *Universal*
 
-The _Universal_ library contains hundreds of example programs to demonstrate the use of the arithmetic types and the enable new developers to get up to speed. In each number system type's regression suite there is an `api/api.cpp` that chronicles all the invokation and use cases to provide an executable example of how to use the type. In general, the api section of the regression tests has code examples how to use the different library components, such as manipulators, attributes, number traits, exceptions, and special cases. 
+The *Universal* library contains hundreds of example programs to demonstrate the use of the arithmetic types and the enable new developers to get up to speed. In each number system type's regression suite there is an `api/api.cpp` that chronicles all the invokation and use cases to provide an executable example of how to use the type. In general, the api section of the regression tests has code examples how to use the different library components, such as manipulators, attributes, number traits, exceptions, and special cases. 
 
 In the `education` build target (BUILD_EDUCATION), there are individual test programs that demonstrate how to use the different types.
 
-Each number system comes with a complete regression suite to verify functionality of assignment, conversion, arithmetic, logic, exceptions, number traits, and special cases. These regression suites are run for each PR or push to the version branch. _Universal_ uses standard GitHub Actions for this, so add your branch to the workflow cmake yaml to trigger CI for your own branch.
+The `docs` directory contains the descriptions of the [command line tools](docs/command-line-tools.md), a [tutorial](docs/number-system-type-parameterization.md) explaining the parameterization design of the arithmetic types in *Universal*, several conference presentations, [FPTalks](docs/presentations/fptalks-custom-number-systems.pdf) and [CoNGA22](docs/presentations/conga22-universal-arithmetic-library.pdf), describing the arithmetic types. The `docs` directory also contains ready to use value tables, and dynamic range comparisons of many key small arithmetic types of interest in AI and DSP applications.
 
-Easiest way to get started is to pick up and copy the directory structure under `ROOT/include/universal/number/skeleton_1param` or `ROOT/include/universal/number/skeleton_2params`. They are configured to get you all the constituent pieces of a number system _Universal_-style.
+Each number system comes with a complete regression suite to verify functionality of assignment, conversion, arithmetic, logic, exceptions, number traits, and special cases. These regression suites are run for each PR or push to the version branch. *Universal* uses standard GitHub Actions for this, so add your branch to the workflow cmake yaml to trigger CI for your own branch.
+
+Easiest way to get started is to pick up and copy the directory structure under `ROOT/include/universal/number/skeleton_1param` or `ROOT/include/universal/number/skeleton_2params`. They are configured to get you all the constituent pieces of a number system *Universal*-style.
 
 # Installation and usage
 
@@ -567,20 +574,20 @@ to hardware.
 
 ## Goals of the library
 
-The _Universal_ library started as a bit-level arithmetic reference implementation of the evolving unum Type III 
+The *Universal* library started as a bit-level arithmetic reference implementation of the evolving unum Type III 
 (posit and valid) standard. However, the demands for supporting number systems, such as adaptive-precision integers 
 to solve large factorials, adaptive-precision floats to act as Oracles, or comparing linear and tapered floats 
 provided the opportunity to create a complete platform for numerical analysis and computational mathematics. 
-With this _Universal_ platform, we enable a new direction for optimizing algorithms to take advantage of mixed-precision 
+With this *Universal* platform, we enable a new direction for optimizing algorithms to take advantage of mixed-precision 
 computation to maximize performance and minimize energy demands. Energy efficiency is going to be the
 key differentiator for embedded intelligence applications.
 
-As a reference library, _Universal_ offers an extensive test infrastructure to validate number system 
+As a reference library, *Universal* offers an extensive test infrastructure to validate number system 
 arithmetic operations, and there is a host of utilities to inspect the internal encodings and operations 
 of the different number systems.
 
 The design space for custom arithmetic is vast, and any contribution to expanding the capability of 
-the _Universal_ library is encouraged. 
+the *Universal* library is encouraged. 
 
 
 ## Contributing to universal
@@ -623,7 +630,7 @@ posit logarithm function validation: PASS
 
 The universal library contains a set of functional groups to organize the development and validation of 
 different number systems. Each number system type has a single include file that brings together
-the arithmetic number type type and all the extensions that _Universal_ has standardized so that
+the arithmetic number type type and all the extensions that *Universal* has standardized so that
 working with numeric types is more productive. For example, facilities for number traits, an 
 arithmetic exception hierarchy, number system attributes, manipulators,
 and finally, a math library specialized for the type.
