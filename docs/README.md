@@ -3,6 +3,7 @@
 Tutorials: 
 1. [command line tools description](command-line-tools.md)
 2. [number type parameterization](number-system-type-parameterization.md)
+3. [posit refinement](posit-refinement-viz.md)
 
 ## deep_learning
 
