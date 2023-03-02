@@ -13,6 +13,7 @@ namespace std {
     make_std_fun(exp)
     make_std_fun(log)
     make_std_fun(atan)
+    make_std_fun(tan)
 
     // TODO: missing to_string implemantation
     /*

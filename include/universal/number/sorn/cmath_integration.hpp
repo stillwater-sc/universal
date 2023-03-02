@@ -13,6 +13,7 @@ namespace std {
     make_std_fun(exp)
     make_std_fun(log)
     make_std_fun(atan)
+    make_std_fun(tan)
 
     template <typename T>
     sw::universal::enable_if_sorn<T, std::string> to_string(const T &t) {
