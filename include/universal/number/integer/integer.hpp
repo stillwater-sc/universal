@@ -54,4 +54,7 @@
 /// math library specialized for integer<>
 #include <universal/number/integer/mathlib.hpp>
 
+// no enable_if_integer
+// #include <universal/number/integer/cmath_integration.hpp>
+
 #endif

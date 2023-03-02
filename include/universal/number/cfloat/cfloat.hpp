@@ -66,6 +66,8 @@
 /// elementary math functions library
 #include <universal/number/cfloat/mathlib.hpp>
 
+#include <universal/number/cfloat/cmath_integration.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////////////
 /// aliases for industry standard floating point configurations
 namespace sw { namespace universal {

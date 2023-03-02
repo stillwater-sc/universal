@@ -34,4 +34,7 @@
 /// math functions
 #include <universal/number/unum/math_functions.hpp>
 
+// no enable_if_unum
+// #include <universal/number/unum/cmath_integration.hpp>
+
 #endif

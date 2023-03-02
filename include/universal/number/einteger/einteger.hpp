@@ -38,4 +38,7 @@
 /// math functions
 //#include <universal/number/einteger/math_functions.hpp>
 
+// no enable_if_einteger
+// #include <universal/number/einteger/cmath_integration.hpp>
+
 #endif

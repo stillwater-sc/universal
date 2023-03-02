@@ -93,4 +93,6 @@
 /// numerical functions
 #include <universal/number/posit/twoSum.hpp>
 
+#include <universal/number/posit/cmath_integration.hpp>
+
 #endif

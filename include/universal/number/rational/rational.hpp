@@ -52,4 +52,6 @@
 /// math functions
 #include <universal/number/rational/mathlib.hpp>
 
+#include <universal/number/rational/cmath_integration.hpp>
+
 #endif

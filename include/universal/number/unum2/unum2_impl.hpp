@@ -318,3 +318,6 @@ unum2<esizesize,fsizesize> abs(const unum2<esizesize,fsizesize,bt>& v) {
 
 
 }} // namespace sw::universal
+
+// no enable_if_unum2
+// #include <universal/number/unum2/cmath_integration.hpp>

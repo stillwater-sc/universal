@@ -35,4 +35,7 @@
 /// math functions
 //#include <universal/number/eposit/math_functions.hpp>
 
+// no enable_if_eposit
+// #include <universal/number/eposit/cmath_integration.hpp>
+
 #endif

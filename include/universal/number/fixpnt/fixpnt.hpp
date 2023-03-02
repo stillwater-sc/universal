@@ -66,4 +66,6 @@
 /// math functions
 #include <universal/number/fixpnt/mathlib.hpp>
 
+#include <universal/number/fixpnt/cmath_integration.hpp>
+
 #endif

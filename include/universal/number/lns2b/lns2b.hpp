@@ -59,4 +59,7 @@
 /// math functions
 //#include <universal/number/lns2b/mathlib.hpp>
 
+// no enable_if_lns2b
+// #include <universal/number/lns2b/cmath_integration.hpp>
+
 #endif // _LNS2B_STANDARD_HEADER_
