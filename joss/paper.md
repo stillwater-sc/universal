@@ -153,7 +153,7 @@ The repository's README file has all the details about the build and regression 
 
 
 # Availability and Documentation
-*Universal Number Library* is available under the [MIT License](https://choosealicense.com/licenses/mit/). The package may be cloned or forked from the [GitHub repository](https://github.com/stillwater-sc/universal.git).   Documentation is provided via  `Docs`, including a tutorial introducing primary functionality and detailed reference and communication networks.  The library employs extensive unit testing.  
+*Universal Number Library* is available under the [MIT License](https://choosealicense.com/licenses/mit/). The package may be cloned or forked from the [GitHub repository](https://github.com/stillwater-sc/universal.git).   Documentation is provided via  `docs`, including a tutorial introducing primary functionality and detailed reference and communication networks.  The library employs extensive unit testing.  
 
 
 # Acknowledgements
