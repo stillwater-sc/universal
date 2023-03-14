@@ -28,7 +28,7 @@ bibliography: references.bib
 
 # Summary
 
-*Universal Numbers Library*, or *Universal* for short, is a self-contained C++ header-only template library that contains implementations of many number representations and standard arithmetic on arbitrary configuration integer and real numbers [@omtzigt:2020].  In particular, the library includes integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, SORNs, interval, level-index, and adaptive-precision binary and decimal integers and floats, each offering a verification suite.  
+*Universal Numbers Library*, or simply *Universal*, is a comprehensive, self-contained C++ header-only template library that provides implementations of various number representations and standard arithmetic operations on arbitrary configurations of integer and real numbers [@omtzigt:2020]. With its extensive collection of number systems, including integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, SORNs, interval, level-index, and adaptive-precision binary and decimal integers and floats, Universal offers a robust verification suite for each system.
 
 The primary pattern using a posit number type as example, is:
 
@@ -51,17 +51,20 @@ int main() {
 }
 ```
 
-
 *Universal* delivers software and hardware co-design capabilities to develop low and mixed-precision algorithms for reducing energy consumption in signal processing, Industry 4.0, machine learning, robotics, and high-performance computing applications [@omtzigt:2022].  The package includes command-line tools for visualizing and interrogating numeric encodings, an interface for setting and querying bits, and educational examples showcasing performance gain and numerical accuracy with the different number systems.  In addition, a Docker container is available to experiment without cloning and building from the source code.
+
 
 ```
 $ docker pull stillwater/universal
 $ docker run -it --rm stillwater/universal bash
 ```
 
-*Universal* started in 2017 as a bit-level arithmetic reference implementation of the evolving unum Type III (posit and valid) standard.  However, the demands for supporting various number systems, such as adaptive-precision integers to solve large factorials, adaptive-precision floats to act as Oracles, or comparing linear and tapered floats provided the opportunity to create a complete platform for numerical analysis and computational mathematics.  As a result, several projects have leveraged *Universal*, including Matrix Template Library (MTL4), Geometry + Simulation Modules (G+SMO), Bembel, a fast IGA BEM solver, and the Odeint ODE solver.
+
+*Universal* was originally established in 2017 as a reference implementation of the evolving unum Type III (posit and valid) standard for bit-level arithmetic. However, as the demand for supporting a diverse range of number systems grew, *Universal* evolved into a complete platform for numerical analysis and computational mathematics, capable of solving problems such as large factorials using adaptive-precision integers and serving as Oracles using adaptive-precision floats. Many projects have leveraged *Universal*, including the Matrix Template Library (MTL4), Geometry + Simulation Modules (G+SMO), Bembel (a fast IGA BEM solver), and the Odeint ODE solver.
+
 
 The default build configuration will produce the command line tools, a playground, and educational and application examples.  It is also possible to construct the full regression suite across all the number systems.  For instance, the shortened output for the commands `single` and `single 1.23456789` are below.
+
 
 ```bash
 $ single
@@ -94,13 +97,14 @@ color coded  : 0b0.0111'1111.001'1110'0000'0110'0101'0010
 
 # Statement of need
 
-High-performance computing (HPC), machine learning, and deep learning tasks [e.g., @carmichael:2019; @cococcioni2022small;@desrentes:2022posit8] have increased environmental impacts and financial costs due to massive energy consumption [@haidar:2018b].  These both result from growth requirements in processing and storage.  In addition to redesigning algorithms to minimize data movement and processing,  modern systems increasingly support multi-precision arithmetic in hardware [@haidar:2018a].  Recently, NVIDIA added support for low-precision formats to its top-level GPUs to perform tensor operations [@choquette2021nvidia], including a 19-bit format having an exponent of 8 bits and a mantissa of 10 bits (see also [@intel:2018; kharya:2020].  In addition, the "Brain Floating Point Format," commonly referred to as "bfloat16," is a format developed by Google that enables the training and operation of deep neural networks using specialized processors called Tensor Processing Units, or TPUs, at higher performance and cheaper cost [@wang2019bfloat16].  As a result, we see a trend to redesign many standard algorithms.  In particular, designing fast and energy-efficient linear solvers is an active area of research where low-precision numerics plays a fundamental role [@carson:2018; @haidar:2017; @haidar:2018a; @haidar:2018b; @higham:2019].
+The demand for high-performance computing (HPC), machine learning, and deep learning has grown significantly in recent years [e.g., @carmichael:2019; @cococcioni2022small;@desrentes:2022posit8], leading to increased environmental impact and financial cost due to their high energy consumption for storage and processing [@haidar:2018b]. To address these challenges, researchers are exploring ways to reduce energy consumption through redesigning algorithms and minimizing data movement and processing. The use of multi-precision arithmetic in hardware is also becoming more prevalent [@haidar:2018a]. NVIDIA has added support for low-precision formats in its GPUs to perform tensor operations [@choquette2021nvidia], including a 19-bit format with an 8-bit exponent and 10-bit mantissa (see also [@intel:2018; @kharya:2020]. Additionally, Google has developed the "Brain Floating Point Format," known as "bfloat16," which enables the training and operation of deep neural networks using Tensor Processing Units (TPUs) at higher performance and lower cost [@wang2019bfloat16]. This trend towards low-precision numerics is driving the redesign of many standard algorithms, particularly in the field of energy-efficient linear solvers, which is a rapidly growing area of research [@carson:2018; @haidar:2017; @haidar:2018a; @haidar:2018b; @higham:2019].
 
 
-While the primary motivation for low-precision arithmetic is its high performance and energy efficiency, mixed-precision algorithm designs aim to identify and exploit opportunities to right-scale the number of systems used for critical computational paths representing the execution bottleneck. Furthermore, when these algorithms are incorporated into embedded devices and custom hardware engines, we approach optimal performance and power efficiency. Therefore, investigations into computational mathematics and measuring mixed-precision algorithms' accuracy, efficiency, robustness, and stability are needed.
+While the primary motivation for low-precision arithmetic is its high performance and energy efficiency, mixed-precision algorithm designs aim to identify and exploit opportunities to rightsize the number system used for critical computational paths representing the execution bottleneck. Furthermore, when these algorithms are incorporated into embedded devices and custom hardware engines, we approach optimal performance and power efficiency. Therefore, investigations into computational mathematics and measuring mixed-precision algorithms' accuracy, efficiency, robustness, and stability are needed.
 
 
-Custom number systems that optimize the entire system's performance per watt (W) are crucial components with the rise of embedded devices demanding intelligent behavior.  Likewise, energy efficiency is an essential differentiator for embedded intelligence applications.  Using the distinct arithmetic requirements of the control and data flow can result in considerable performance and power efficiency gains when creating unique compute solutions.  Even within the data flow, we observe many requirements for precision and the required dynamic range of the arithmetic operations. 
+Custom number systems that optimize the entire system's performance are crucial components to imbue embedded systems with more autonomy.  Likewise, energy efficiency is an essential differentiator for embedded intelligence applications.  By observing distinct arithmetic requirements of the control and data flow, many performance and power efficiency gains can be achieved when developing unique compute solutions. It is essential to consider the precision requirements and the necessary dynamic range of arithmetic operations when optimizing these compute engines. 
+
 
 
 ## Verification Suite
@@ -155,5 +159,24 @@ The repository's README file has all the details about the build and regression 
 # Acknowledgements
 
 We want to acknowledge all code contributions, bug reports, and feedback from numerous other developers and users.
+
+Matthias Möller,
+Peter Gottschling,
+Caleb James DeLisle,
+Mark Seligman,
+rainmaker6,
+Jake Todd,
+Bill Zorn,
+Andrew Liu,
+Allan Leal,
+Flo Edelmann,
+ShinYee,
+Will Wray,
+lvandam,
+David Summers,
+Gus Smith,
+Scott Pakin,
+Silvan Kuttimalai,
+Simon Barton
 
 # References

@@ -178,10 +178,21 @@ inline std::string color_print(long double number) {
 
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
 	// RISC-V ABI defines long double as a 128-bit quadprecision floating point
-	static_assert(sizeof(double) == 16, "This function only works when long double is 128 bits.");
-	_sign = fp < 0.0 ? true : false;
-	_fr = frexpl(fp, &_exponent);
-	_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	if (std::numeric_limits<long double>::digits <= 64) {
+		if (sizeof(long double) == 8) { // it is just a double
+			_sign = fp < 0.0 ? true : false;
+			_fr = frexp(double(fp), &_exponent);
+			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+		}
+		else if (sizeof(long double) == 16) {
+			_sign = fp < 0.0 ? true : false;
+			_fr = frexpl(fp, &_exponent);
+			_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+		}
+	}
+	else {
+		std::cerr << "numeric_limits<long double>::digits = " << std::numeric_limits<long double>::digits << " currently unsupported\n";
+	}
 }
 
 

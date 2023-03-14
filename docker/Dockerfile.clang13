@@ -4,7 +4,7 @@
 # docker build --target release -t stillwater/universal:release will just build a release container
 
 # BUILDER stage
-FROM stillwater/universal:gcc10.builder as builder
+FROM stillwater/universal:clang13builder as builder
 LABEL Theodore Omtzigt
 ARG target=BUILD_ALL
 
@@ -16,10 +16,10 @@ RUN ls -la /home/stillwater/universal && cmake -version
 # set up the cmake/make environment to issue the build commands
 RUN mkdir -p /home/stillwater/universal/build 
 WORKDIR /home/stillwater/universal/build
-# test RUN statement to drive  CI testing. ARG target provides override.
+# test RUN statement to speed-up CI testing
 # default is SANITY regression level: -DBUILD_REGRESSION_LEVEL_[1,2,3,4]=ON 
 # or -DBUILD_REGRESSION_STRESS=ON for stress testing
-RUN cmake -D$target=ON  -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
+RUN cmake -D$target=ON -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_DEMONSTRATION=OFF .. && make
 
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
@@ -55,9 +55,6 @@ COPY --chown=stillwater:stillwater --from=builder /home/stillwater/universal/doc
 # This way we can execute _make test_ in the test stage of the CI/CD pipeline as well as part of an interactive invocation
 COPY --chown=stillwater:stillwater --from=builder /home/stillwater/universal/build /home/stillwater/universal/build
 
-# reenable when you figure out how to make this dependent on the BUILD target
-#COPY --from=builder /home/stillwater/universal/build/validation/hw/* /usr/local/bin/
-
 # double check we have all the executables of interest
 #RUN find /home/stillwater/universal/build
 
@@ -66,4 +63,4 @@ WORKDIR /home/stillwater/universal/build
 
 # the command 'make test' is run as part of the CI test pipeline of this release container
 
-CMD ["echo", "Universal Numbers GCC10 Test Container"]
+CMD ["echo", "Universal Numbers Clang13 Test Container"]

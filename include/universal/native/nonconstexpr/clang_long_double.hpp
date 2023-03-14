@@ -13,17 +13,33 @@ namespace sw { namespace universal {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // compiler specific long double IEEE floating point
 
-union long_double_decoder {
-	long_double_decoder() : ld{0.0l} {}
-	long_double_decoder(long double _ld) : ld{_ld} {}
-	long double ld;
-	struct {
-		uint64_t fraction : 63;
-		uint64_t bit63 : 1;
-		uint64_t exponent : 15;
-		uint64_t sign : 1;
-	} parts;
-};
+// __arm__ which is defined for 32bit arm, and 32bit arm only.
+// __aarch64__ which is defined for 64bit arm, and 64bit arm only.
+
+#if defined(__aarch64__)
+	union long_double_decoder {
+		long_double_decoder() : ld{ 0.0l } {}
+		long_double_decoder(long double _ld) : ld{ _ld } {}
+		long double ld;
+		struct {
+			uint64_t fraction : 112;
+			uint64_t exponent : 15;
+			uint64_t sign : 1;
+		} parts;
+	};
+#else
+	union long_double_decoder {
+		long_double_decoder() : ld{ 0.0l } {}
+		long_double_decoder(long double _ld) : ld{ _ld } {}
+		long double ld;
+		struct {
+			uint64_t fraction : 63;
+			uint64_t bit63 : 1;
+			uint64_t exponent : 15;
+			uint64_t sign : 1;
+		} parts;
+	};
+#endif  // __aarch64__
 
 // extract the fields of a native C++ long double
 inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
@@ -188,30 +204,38 @@ inline std::string color_print(long double number) {
 
 #ifdef CPLUSPLUS_17
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
-	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
-	if constexpr (sizeof(long double) == 8) { // it is just a double
-		_sign = fp < 0.0 ? true : false;
-		_fr = frexp(double(fp), &_exponent);
-		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	if constexpr (std::numeric_limits<long double>::digits <= 64) {
+		if constexpr (sizeof(long double) == 8) { // it is just a double
+			_sign = fp < 0.0 ? true : false;
+			_fr = frexp(double(fp), &_exponent);
+			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+		}
+		else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+			_sign = fp < 0.0 ? true : false;
+			_fr = frexpl(fp, &_exponent);
+			_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+		}
 	}
-	else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
-		_sign = fp < 0.0 ? true : false;
-		_fr = frexpl(fp, &_exponent);
-		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	else if constexpr (std::numeric_limits<long double>::digits == 113) {
+		std::cerr << "numeric_limits<long double>::digits = " << std::numeric_limits<long double>::digits << " currently unsupported\n";
 	}
 }
 #else
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
-	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
-	if (sizeof(long double) == 8) { // it is just a double
-		_sign = fp < 0.0 ? true : false;
-		_fr = frexp(double(fp), &_exponent);
-		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	if (std::numeric_limits<long double>::digits <= 64) {
+		if (sizeof(long double) == 8) { // it is just a double
+			_sign = fp < 0.0 ? true : false;
+			_fr = frexp(double(fp), &_exponent);
+			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+		}
+		else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+			_sign = fp < 0.0 ? true : false;
+			_fr = frexpl(fp, &_exponent);
+			_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+		}
 	}
-	else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
-		_sign = fp < 0.0 ? true : false;
-		_fr = frexpl(fp, &_exponent);
-		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	else {
+		std::cerr << "numeric_limits<long double>::digits = " << std::numeric_limits<long double>::digits << " currently unsupported\n";
 	}
 }
 #endif

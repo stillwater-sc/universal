@@ -52,4 +52,18 @@ namespace sw { namespace universal { namespace blas {
         return omega;
     }
 
+
+template<typename Scalar>
+inline void gaussian_random(vector<Scalar>& omega, double mean = 100.00, double stddev = 6.00){
+    using value_type = typename vector<Scalar>::value_type;
+    // using unsigned = typename vector<Scalar>::size_type;
+    const unsigned nelements = size(omega);                
+    std::random_device rd;
+    std::mt19937 rng(rd());                
+    for(unsigned j=0; j<nelements; ++j) {
+        std::normal_distribution<double> s(mean, stddev);
+        omega[j]=value_type(s(rng));
+    }
+}
+
 }}} // namespace sw::universal::blas
