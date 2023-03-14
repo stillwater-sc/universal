@@ -12,6 +12,7 @@
 | [Docker Pulls](https://hub.docker.com/r/stillwater/universal) | [![Docker Pulls](https://img.shields.io/docker/pulls/stillwater/universal.svg)](https://hub.docker.com/r/stillwater/universal) | Container pulls |
 | [Awesome C++](https://github.com/fffaraz/awesome-cpp) | [![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math) | Awesome C++ Libraries |
 | [JOSS Markdown](https://joss.theoj.org) | [![status](https://joss.theoj.org/papers/932fdfc2735a85422e4431f27ebfc0d0/status.svg)](https://joss.theoj.org/papers/932fdfc2735a85422e4431f27ebfc0d0)  | Journal of Open-Source Software paper |
+| [Zenodo](https://zenodo.org/record/7735084) | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7735084.svg)](https://doi.org/10.5281/zenodo.7735084) | Zenodo DOI Badge |
 -------------------------------
 
 
