@@ -29,7 +29,7 @@ imag(std::complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSatur
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > 
 conj(std::complex< cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> > x) {
-	return cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(std::conj(x));
+	return std::complex<cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>>(x.real(), -x.imag());
 }
 
 }} // namespace sw::universal
