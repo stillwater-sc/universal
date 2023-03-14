@@ -30,7 +30,7 @@ bibliography: references.bib
 
 *Universal Numbers Library*, or simply *Universal*, is a comprehensive, self-contained C++ header-only template library that provides implementations of various number representations and standard arithmetic operations on arbitrary configurations of integer and real numbers [@omtzigt:2020]. With its extensive collection of number systems, including integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, SORNs, interval, level-index, and adaptive-precision binary and decimal integers and floats, Universal offers a robust verification suite for each system.
 
-The primary pattern using a posit number type as example, is:
+Using a posit number as example, the basic pattern to use a custom *Universal* type is:
 
 ```cpp
 #include <universal/number/posit/posit.hpp>
@@ -51,7 +51,7 @@ int main() {
 }
 ```
 
-*Universal* delivers software and hardware co-design capabilities to develop low and mixed-precision algorithms for reducing energy consumption in signal processing, Industry 4.0, machine learning, robotics, and high-performance computing applications [@omtzigt:2022].  The package includes command-line tools for visualizing and interrogating numeric encodings, an interface for setting and querying bits, and educational examples showcasing performance gain and numerical accuracy with the different number systems.  In addition, a Docker container is available to experiment without cloning and building from the source code.
+*Universal* delivers software and hardware co-design capabilities to develop low and mixed-precision algorithms for reducing energy consumption in signal processing, Industry 4.0, machine learning, robotics, and high-performance computing applications [@omtzigt:2022].  The package includes command-line tools for visualizing and interrogating numeric encodings, an interface for setting and querying bits, and educational examples showcasing performance gain and numerical accuracy with the different number systems.  Finally, Docker containers are available to experiment with the library without cloning the repo and building the source code.
 
 
 ```
@@ -139,7 +139,7 @@ Due to the size of the library, the build system for *Universal* allows for fine
   - BUILD_PLAYGROUND
 
 
-The flags, when set during cmake configuration, i.e. `cmake -DBUILD_CI=ON ..`, enable build targets specialized to the category. For example, the `BUILD_CI` flag turns on the continuous integration regression test suites for all number systems, and the `BUILD_APPLICATIONS` flag will build all the example applications that provide demonstrations of mixed-precision, high-accuracy, reproducible and/or interval arithmetic. 
+The flags, when set during cmake configuration, i.e., `cmake -DBUILD_CI=ON ..`, enable build targets specialized to the category. For example, the `BUILD_CI` flag turns on the continuous integration regression test suites for all number systems, and the `BUILD_APPLICATIONS` flag will build all the example applications that provide demonstrations of mixed-precision, high-accuracy, reproducible and/or interval arithmetic. 
 
 Each build category contains individual targets that further refine the build targets. For example, `cmake -DBUILD_NUMBER_POSIT=ON -DBUILD_DEMONSTRATION=OFF ..` will build just the fixed-size, arbitrary configuration posit number system regression environment.
 
