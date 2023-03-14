@@ -30,7 +30,7 @@ bibliography: references.bib
 
 *Universal Numbers Library*, or simply *Universal*, is a comprehensive, self-contained C++ header-only template library that provides implementations of various number representations and standard arithmetic operations on arbitrary configurations of integer and real numbers [@omtzigt:2020]. With its extensive collection of number systems, including integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, SORNs, interval, level-index, and adaptive-precision binary and decimal integers and floats, Universal offers a robust verification suite for each system.
 
-Using a posit number as example, the basic pattern to use a custom *Universal* type is:
+Using a posit number as an example, the basic pattern to use a custom *Universal* type is:
 
 ```cpp
 #include <universal/number/posit/posit.hpp>
