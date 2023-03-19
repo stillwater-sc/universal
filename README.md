@@ -514,6 +514,12 @@ The field values are followed by a quadrant descriptor and a value representatio
 The positive regime for a posit shows a very specific structure, as can be seen in the image blow:
 ![regime structure](docs/img/positive_regimes.png)
 
+## Leveraging the *Universal* library in your own mixed-precision algorithm research
+
+To bootstrap any new mixed-precision algorithm development and optimization project quickly and robustly, there is a github template repo available that will set up a complete working development environment with dependent libraries, development containers, VS Code integration, and a Github CI workflow. The template repo can be found at [mpadao-template](https://github.com/stillwater-sc/mpadao-template). 
+
+The template repo is the easiest way to get started with mixed-precision algorithm development using *Universal*.
+
 ## Motivation
 
 Modern Deep Learning AI applications are very demanding high-performance applications. Runtimes to train
