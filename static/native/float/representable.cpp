@@ -1,13 +1,11 @@
-//  representable.cpp : check if a ratio is representable
+//  representable.cpp : check if a ratio is representable without error as a floating-point value
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
-#include <string>
-#include <limits>
-// is representable
+#include <universal/utility/directives.hpp>
 #include <universal/functions/isrepresentable.hpp>
+#include <universal/verification/test_suite.hpp>
 
 // enumerate a couple ratios to test representability
 void ReproducibilityTestSuite() {
@@ -18,15 +16,32 @@ void ReproducibilityTestSuite() {
 	}
 }
 
-// conditional compile flags
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "failed";
+	std::string test_suite  = "float representability test";
+	std::string test_tag    = "representable";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	ReproducibilityTestSuite();
 
@@ -38,8 +53,8 @@ try {
 	std::cout << "smallest long double: " << denorm_min << '\n';
 	std::cout << "done" << std::endl;
 
-	return EXIT_SUCCESS;
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

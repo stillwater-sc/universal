@@ -28,7 +28,7 @@ inline constexpr void extractFields(Real value, bool& s, uint64_t& rawExponentBi
 // specialization to extract fields from a float
 template<>
 inline constexpr void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
-	uint64_t bc = std::bit_cast<uint32_t, float>(value);
+	uint32_t bc = std::bit_cast<uint32_t, float>(value);
 	s = (ieee754_parameter<float>::smask & bc);
 	rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
 	rawFractionBits = (ieee754_parameter<float>::fmask & bc);
@@ -47,10 +47,22 @@ inline constexpr void extractFields(double value, bool& s, uint64_t& rawExponent
 template<>
 inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
 	uint64_t bc = std::bit_cast<uint64_t, long double>(value);
+	s = (ieee754_parameter<long double>::smask & bc);
+	rawExponentBits = (ieee754_parameter<long double>::emask & bc) >> ieee754_parameter<long double>::fbits;
+	rawFractionBits = (ieee754_parameter<long double>::fmask & bc);
+}
+#else
+#define LONG_DOUBLE_DOWNCAST
+#ifdef LONG_DOUBLE_DOWNCAST
+template<>
+inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
+	double d = static_cast<long double>(value);
+	uint64_t bc = std::bit_cast<uint64_t, double>(d);
 	s = (ieee754_parameter<double>::smask & bc);
 	rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
 	rawFractionBits = (ieee754_parameter<double>::fmask & bc);
 }
+#endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
 
 // generate a hex formatted string for a native IEEE floating point
@@ -127,10 +139,10 @@ inline std::string to_triple(Real number, bool bNibbleMarker = false) {
 	// (i.e. for 2^(e - 127) to be one, e must be 127). 
 	// Exponents range from -126 to +127 because exponents of -127 (all 0s) and 128 (all 1s) are reserved for special numbers.
 	if (rawExponent == 0) {
-		s << "exp=0, ";
+		s << "denorm, ";
 	}
 	else if (rawExponent == ieee754_parameter<Real>::eallset) {
-		s << "exp=1, ";
+		s << "super, ";
 	}
 	else {
 		int scale = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
@@ -172,7 +184,7 @@ inline std::string to_base2_scientific(Real number) {
 	return s.str();
 }
 
-// generate a color coded binary string for a native single precision IEEE floating point
+// generate a color coded binary string for a native single/double/long double IEEE floating point
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 >

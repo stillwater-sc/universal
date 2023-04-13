@@ -1,7 +1,7 @@
 #pragma once
 // ieee754.hpp: manipulation functions for IEEE-754 native types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
@@ -9,8 +9,10 @@
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 #include <limits>
 #include <tuple>
+// configure the low level compiler interface to deal with floating-point bit manipulation
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>
+// support functions
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
 #include <universal/native/attributes.hpp>
@@ -162,7 +164,7 @@ int _extractExponent(Real v) {
 	// de-bias
 	int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
 	if (raw == 0) { // a subnormal encoding
-		int msb = findMostSignificantBit(frac);
+		int msb = static_cast<int>(findMostSignificantBit(frac));
 		e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
 	}
 	return e;

@@ -1,20 +1,15 @@
 // amd_fp24.cpp: test suite runner for standard AMD fp24 format, which is equivalent to cfloat<24,7>
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <iomanip>
-
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
 
 	// map the AMD FP24 onto the classic cfloats
 	constexpr size_t nbits = 24;
