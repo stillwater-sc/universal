@@ -12,7 +12,7 @@
 // 80bit IEEE-754 extended precision floats
 // true 128bit quad precision floats
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -291,7 +291,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
 /// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
 /// <typeparam name="hasSubnormals">configure gradual underflow (==subnormals)</typeparam>
-/// <typeparam name="hasSupernormals">configure graudal overflow (==supernormals)</typeparam>
+/// <typeparam name="hasSupernormals">configure gradual overflow (==supernormals)</typeparam>
 /// <typeparam name="isSaturating">configure saturation arithmetic</typeparam>
 template<unsigned _nbits, unsigned _es, typename bt = uint8_t,
 	bool _hasSubnormals = false, bool _hasSupernormals = false, bool _isSaturating = false>

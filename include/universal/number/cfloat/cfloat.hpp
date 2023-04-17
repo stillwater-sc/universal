@@ -1,6 +1,6 @@
 // arbitrary configuration classic floating-point arithmetic standard header
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _CFLOAT_STANDARD_HEADER_
@@ -99,6 +99,14 @@ using bfloat_t = cfloat<16, 8, std::uint16_t, false, false, false>;
 using msfp8    = cfloat<8, 2, std::uint8_t, false, false, false>;
 using msfp9    = cfloat<9, 3, std::uint16_t, false, false, false>;
 using amd24    = cfloat<24, 8, std::uint32_t, false, false, false>;
+
+// FP8 formats for DL
+// By default we enable both subnormals and supernormals
+// as the number of encodings is severely limited (128 vs 256 samples)
+using fp8e2m5  = cfloat<8, 2, std::uint8_t, true, true, false>;
+using fp8e3m2  = cfloat<8, 3, std::uint8_t, true, true, false>;
+using fp8e4m3  = cfloat<8, 4, std::uint8_t, true, true, false>;
+using fp8e5m2  = cfloat<8, 5, std::uint8_t, true, true, false>;
 
 // helpers
 
