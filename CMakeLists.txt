@@ -582,7 +582,7 @@ if(BUILD_ALL)
 	set(BUILD_LINEAR_ALGEBRA_VMATH ON)
 
 	# build the C API library
-	set(BUILD_C_API_PURE_LIB ON)
+	#set(BUILD_C_API_PURE_LIB ON)
 	set(BUILD_C_API_SHIM_LIB ON)
 
 	# build the HW validation environment
