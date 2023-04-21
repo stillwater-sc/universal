@@ -75,8 +75,10 @@ public:
 	static constexpr uint64_t fmsb     = 0x8000'0000'0000'0000ull;
 	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0000ull;
 	static constexpr uint64_t snanmask = 0x7FF4'0000'0000'0000ull;
-	static constexpr long double minNormal       = 3.3621031431120935062626778173218e-4932l; // == 2^-16382
-	static constexpr long double minSubnormal    = 3.6451995318824746025284059336194e-4951l; // == 2^-16445
+	static constexpr long double minNormal       = 4.9406564584124654E-324;
+	static constexpr long double minSubnormal    = 4.9406564584124654E-324;
+	//static constexpr long double minNormal       = 3.3621031431120935062626778173218e-4932l; // == 2^-16382
+	//static constexpr long double minSubnormal    = 3.6451995318824746025284059336194e-4951l; // == 2^-16445
 	static constexpr int         minNormalExp    = -16382;
 	static constexpr int         minSubnormalExp = -16445;
 };

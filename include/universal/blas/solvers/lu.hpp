@@ -213,7 +213,7 @@ int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 		}
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
-	int nrOfRowExchanges = 0;
+	//int nrOfRowExchanges = 0;
 	size_t imax = 0;
 	for (size_t j = 0; j < N; ++j) { // loop over columns of Crout's method
 		Scalar sum = 0;
@@ -235,7 +235,7 @@ int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 		}
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
-			++nrOfRowExchanges;
+			//++nrOfRowExchanges;
 			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
 //		std::cout << "scaling\n" << implicitScale << std::endl;
@@ -316,7 +316,7 @@ int ludcmp(matrix< posit<nbits, es> >& A, vector<size_t>& indx) {
 		}
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
-	int nrOfRowExchanges = 0;
+	//int nrOfRowExchanges = 0;
 	size_t imax = 0;
 	for (size_t j = 0; j < N; ++j) { // loop over columns of Crout's method
 		Scalar sum = 0;
@@ -340,7 +340,7 @@ int ludcmp(matrix< posit<nbits, es> >& A, vector<size_t>& indx) {
 		}
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
-			++nrOfRowExchanges;
+			//++nrOfRowExchanges;
 			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
 		indx[j] = imax;
@@ -483,7 +483,7 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 		}
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
-	int nrOfRowExchanges = 0;
+	//int nrOfRowExchanges = 0;
 	size_t imax = 0;
 	for (size_t j = 0; j < N; ++j) { // loop over columns of Crout's method
 		Scalar sum = 0;
@@ -505,7 +505,7 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 		}
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
-			++nrOfRowExchanges;
+			//++nrOfRowExchanges;
 			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
 //		cout << "indx: " << indx << endl;
@@ -578,7 +578,7 @@ vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit
 		}
 		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
 	}
-	int nrOfRowExchanges = 0;
+	//int nrOfRowExchanges = 0;
 	size_t imax = 0;
 	for (size_t j = 0; j < N; ++j) { // loop over columns of Crout's method
 		Scalar sum = 0;
@@ -602,7 +602,7 @@ vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit
 		}
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
-			++nrOfRowExchanges;
+			//++nrOfRowExchanges;
 			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
 		//		cout << "indx: " << indx << endl;

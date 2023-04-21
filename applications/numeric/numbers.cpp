@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/utility/compiler_environment.hpp>
+#include <universal/utility/compiler.hpp>
 #include <cstddef>
 #include <stdexcept>
 #include <cstring>
@@ -121,7 +121,7 @@ try {
 
 	std::cout << "high-precision constants\n";
 
-	report_compiler_environment();
+	report_compiler();
 
 	using int32 = integer<32, std::uint32_t>;
 	using fixpnt32 = fixpnt<32, 16, Modulo, std::uint32_t>;

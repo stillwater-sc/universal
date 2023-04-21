@@ -4,7 +4,7 @@
 
 namespace sw { namespace universal {
 
-	void report_compiler_environment() {
+	void report_compiler() {
 #if defined(_MSC_VER) && (_MSC_VER >= 1300)
 		std::cout << "Microsoft Visual C++: " << _MSC_VER << '\n';
 		if constexpr (_MSC_VER == 1600) std::cout << "(Visual Studio 2010 version 10.0)\n";

@@ -1,7 +1,7 @@
 #pragma once
 // clang_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -22,7 +22,8 @@ namespace sw { namespace universal {
 		long_double_decoder(long double _ld) : ld{ _ld } {}
 		long double ld;
 		struct {
-			uint64_t fraction : 112;
+			uint64_t fraction : 64;
+			uint64_t upper : 48;
 			uint64_t exponent : 15;
 			uint64_t sign : 1;
 		} parts;
@@ -52,9 +53,9 @@ inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits,
 
 // ieee_components returns a tuple of sign, exponent, and fraction.
 inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
-	static_assert(std::numeric_limits<double>::is_iec559,
-		"This function only works when double complies with IEC 559 (IEEE 754)");
-	static_assert(sizeof(long double) == 16, "This function only works when double is 80 bit.");
+	static_assert(std::numeric_limits<long double>::is_iec559,
+		"This function only works when long double complies with IEC 559 (IEEE 754)");
+	//static_assert(sizeof(long double) == 16, "This function only works when double is 80 bit.");
 
 	long_double_decoder dd{ fp }; // initializes the first member of the union
 	// Reading inactive union parts is forbidden in constexpr :-(
@@ -146,7 +147,6 @@ inline std::string to_triple(long double number) {
 	s << scale << ',';
 
 	// print fraction bits
-	s << (decoder.parts.bit63 ? '1' : '0');
 	uint64_t mask = (uint64_t(1) << 62);
 	for (int i = 62; i >= 0; --i) {
 		s << ((decoder.parts.fraction & mask) ? '1' : '0');
@@ -190,7 +190,6 @@ inline std::string color_print(long double number) {
 	s << '.';
 
 	// print fraction bits
-	s << magenta << (decoder.parts.bit63 ? '1' : '0');
 	uint64_t mask = (uint64_t(1) << 61);
 	for (int i = 61; i >= 0; --i) {
 		s << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');

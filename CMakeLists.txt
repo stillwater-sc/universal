@@ -197,7 +197,7 @@ endmacro()
 
 
 # Use cmake scripts and modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ools/cmake")
 trace_variable(CMAKE_MODULE_PATH)
 
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
@@ -848,6 +848,7 @@ endif(BUILD_BENCHMARK_ENERGY)
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
+add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
 # educational examples
