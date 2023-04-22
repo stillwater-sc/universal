@@ -1,6 +1,6 @@
 // traits.cpp: tests for type and number traits for arbitrary configuration classic floating-point types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -88,7 +88,7 @@ try {
 		std::cout << "Number traits Universal classic floating-point\n";
 		numberTraits<single>(std::cout);
 
-		std::cout << "First principles to derive the C++ numeric_limits<>::max_exponent value\n";
+		std::cout << "First principles to derive the C++ numeric_limits<>::[min|max]_exponent value\n";
 		// the C++ library specification of numeric::limits<> has a non-intuitive
 		// interpretation of min_exponent and max_exponent.
 		// Link: https://en.cppreference.com/w/cpp/types/numeric_limits
@@ -96,14 +96,27 @@ try {
 		// one more than the smallest negative power of the radix that is a valid normalized floating-point value
 		// max_exponent
 		// one more than the largest integer power of the radix that is a valid finite floating-point value
-		sw::universal::single largestValue;
+		sw::universal::single sp;
+		std::cout << "Smallest negative power of a single precision floating-point\n";
+		std::cout << "C++ std::numeric_limits<float>::min_exponent : " << std::numeric_limits<float>::min_exponent << '\n';
+		// 0b0.0000'0001.000'0000'0000'0000'0000'0000  smallest normal value of a single precision floating-point
+		sp.setbits(0x00800000);
+		std::cout << "binary pattern                               = " << to_binary(sp) << '\n';
+		std::cout << "smallest normal value                        = " << sp << std::endl;
+		std::cout << "scale of smallest normal value               = " << scale(sp) << '\n';
+		std::cout << "one more than that                           = " << scale(sp) + 1 << '\n';
+		std::cout << "std::numeric_limits<single>::min_exponent    = " << std::numeric_limits<single>::min_exponent << '\n';
+
+		std::cout << '\n';
 		std::cout << "Largest finite value of a single precision floating-point\n";
+		std::cout << "C++ std::numeric_limits<float>::max_exponent = " << std::numeric_limits<float>::max_exponent << '\n';
 		// 0b0.1111'1110.1111'1111'1111'1111'1111'1111  largest finite value of a single precision floating-point
-		largestValue.setbits(0x7F7FFFFF);
-		std::cout << to_binary(largestValue) << " : " << largestValue << std::endl;
-		std::cout << "scale of largest finite value             = " << scale(largestValue) << std::endl;
-		std::cout << "one more than the largest integer power   = " << scale(largestValue) + 1 << std::endl;
-		std::cout << "std::numeric_limits<single>::max_exponent = " << std::numeric_limits<single>::max_exponent << std::endl;
+		sp.setbits(0x7F7FFFFF);
+		std::cout << "binary pattern                               = " << to_binary(sp) << '\n';
+		std::cout << "largest finite value                         = " << sp << std::endl;
+		std::cout << "scale of largest finite value                = " << scale(sp) << '\n';
+		std::cout << "one more than that                           = " << scale(sp) + 1 << '\n';
+		std::cout << "std::numeric_limits<single>::max_exponent    = " << std::numeric_limits<single>::max_exponent << '\n';
 	}
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
