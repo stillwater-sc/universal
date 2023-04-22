@@ -82,6 +82,29 @@ try {
 		std::cout << symmetry_range< octo >() << '\n';
 	}
 
+	{
+		std::cout << "Number traits native floating-point\n";
+		numberTraits<float>(std::cout);
+		std::cout << "Number traits Universal classic floating-point\n";
+		numberTraits<single>(std::cout);
+
+		std::cout << "First principles to derive the C++ numeric_limits<>::max_exponent value\n";
+		// the C++ library specification of numeric::limits<> has a non-intuitive
+		// interpretation of min_exponent and max_exponent.
+		// Link: https://en.cppreference.com/w/cpp/types/numeric_limits
+		// min_exponent:
+		// one more than the smallest negative power of the radix that is a valid normalized floating-point value
+		// max_exponent
+		// one more than the largest integer power of the radix that is a valid finite floating-point value
+		sw::universal::single largestValue;
+		std::cout << "Largest finite value of a single precision floating-point\n";
+		// 0b0.1111'1110.1111'1111'1111'1111'1111'1111  largest finite value of a single precision floating-point
+		largestValue.setbits(0x7F7FFFFF);
+		std::cout << to_binary(largestValue) << " : " << largestValue << std::endl;
+		std::cout << "scale of largest finite value             = " << scale(largestValue) << std::endl;
+		std::cout << "one more than the largest integer power   = " << scale(largestValue) + 1 << std::endl;
+		std::cout << "std::numeric_limits<single>::max_exponent = " << std::numeric_limits<single>::max_exponent << std::endl;
+	}
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
