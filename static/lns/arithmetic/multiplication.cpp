@@ -1,6 +1,6 @@
 // multiplication.cpp: test suite runner for multiplication arithmetic of fixed-sized, arbitrary precision logarithmic number system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -18,9 +18,9 @@ namespace sw { namespace universal {
 	template<typename LnsType>
 	int VerifyMultiplication(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
-		constexpr size_t rbits = LnsType::rbits;
-		constexpr Behavior behavior = LnsType::behavior;
-		using bt = typename LnsType::BlockType;
+		//constexpr size_t rbits = LnsType::rbits;
+		//constexpr Behavior behavior = LnsType::behavior;
+		//using bt = typename LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;
