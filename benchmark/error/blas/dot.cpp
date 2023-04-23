@@ -20,8 +20,8 @@ void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::unive
 	auto nrSamples = size(x); 
 	Scalar minInput = abs(x[0]);
 	Scalar maxInput = minInput;
-	Scalar minOutput = minInput;
-	Scalar maxOutput = maxInput;
+//	Scalar minOutput = minInput;
+//	Scalar maxOutput = maxInput;
 	Scalar minProduct = abs(x[0] * y[0]);
 	Scalar maxProduct = minProduct;
 	for (unsigned i = 1; i < nrSamples; ++i) {
@@ -41,9 +41,9 @@ void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::unive
 
 template<typename Scalar, bool verbose = false>
 void DotProductError(const sw::universal::blas::vector<double>& x, const sw::universal::blas::vector<double>& y) {
-	std::cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
 	using std::log;
 	using namespace sw::universal; 
+	std::cout << "\nScalar type : " << type_tag(Scalar()) << '\n';
 
 	auto nrSamples = size(x);
 	blas::vector<Scalar> xx(nrSamples);
