@@ -1,8 +1,8 @@
 #
 # Dockerfile to create the builder container for compiling and testing Universal
-# docker build --target clang15builder -t stillwater/universal:clang15builder  -f Dockerfile.clang15builder .
+# docker build --target clang16builder -t stillwater/universal:clang16builder  -f Dockerfile.clang16builder .
 # then push to docker hub
-# docker push stillwater/universal:clang15builder
+# docker push stillwater/universal:clang16builder
 
 # BUILDER stage
 FROM silkeh/clang:16 as clang16builder
@@ -40,5 +40,5 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID "Universal Numbers Library Builder Clang 15"
+ENV CONTAINER_ID "Universal Numbers Library Builder Clang 16"
 CMD ["/usr/bin/env", "bash"]
