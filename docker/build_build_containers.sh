@@ -22,5 +22,7 @@ docker build --target clang13builder -t stillwater/universal:clang13builder -f D
 docker push stillwater/universal:clang13builder
 docker build --target clang14builder -t stillwater/universal:clang14builder -f Dockerfile.clang14builder .
 docker push stillwater/universal:clang14builder
-#docker build --target clang15builder -t stillwater/universal:clang15builder -f Dockerfile.clang15builder .
-#docker push stillwater/universal:clang15builder
+docker build --target clang15builder -t stillwater/universal:clang15builder -f Dockerfile.clang15builder .
+docker push stillwater/universal:clang15builder
+docker build --target clang16builder -t stillwater/universal:clang16builder -f Dockerfile.clang16builder .
+docker push stillwater/universal:clang16builder
