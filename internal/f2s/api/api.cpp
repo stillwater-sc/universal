@@ -71,15 +71,15 @@ namespace sw {
 			// In fact: scaled_w - w*10^k < 1ulp (unit in the last place) of scaled_w.
 			// In other words: let f = scaled_w.f() and e = scaled_w.e(), then
 			//           (f-1) * 2^e < w*10^k < (f+1) * 2^e
-			F2S scaled_w = (w * ten_mk);
+			//F2S scaled_w = (w * ten_mk);
 			assert(scaled_w.e() == boundary_plus.e() + ten_mk.e() + precision);
 			// In theory it would be possible to avoid some recomputations by computing
 			// the difference between w and boundary_minus/plus (a power of 2) and to
 			// compute scaled_boundary_minus/plus by subtracting/adding from
 			// scaled_w. However the code becomes much less readable and the speed
 			// enhancements are not terrific.
-			F2S scaled_boundary_minus = boundary_minus * ten_mk;
-			F2S scaled_boundary_plus = boundary_plus * ten_mk;
+			//F2S scaled_boundary_minus = boundary_minus * ten_mk;
+			//F2S scaled_boundary_plus = boundary_plus * ten_mk;
 
 			// DigitGen will generate the digits of scaled_w. Therefore we have
 			// v == (double) (scaled_w * 10^-mk).
@@ -188,7 +188,7 @@ try {
 		char buffer[128];
 		int nrOfDigits{ 0 };
 		int decimalExponent{ 0 };
-		bool success = Grisu3(1.0, buffer, nrOfDigits, decimalExponent) << '\n';
+		bool success = Grisu3(1.0, buffer, nrOfDigits, decimalExponent);
 		if (success) {
 			std::cout << std::string(buffer) << '\n';
 		}
