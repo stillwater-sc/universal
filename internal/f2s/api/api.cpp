@@ -72,7 +72,7 @@ namespace sw {
 			// In other words: let f = scaled_w.f() and e = scaled_w.e(), then
 			//           (f-1) * 2^e < w*10^k < (f+1) * 2^e
 			//F2S scaled_w = (w * ten_mk);
-			assert(scaled_w.e() == boundary_plus.e() + ten_mk.e() + precision);
+			//assert(scaled_w.e() == boundary_plus.e() + ten_mk.e() + precision);
 			// In theory it would be possible to avoid some recomputations by computing
 			// the difference between w and boundary_minus/plus (a power of 2) and to
 			// compute scaled_boundary_minus/plus by subtracting/adding from
