@@ -82,9 +82,9 @@ public:
 	static constexpr int         minSubnormalExp = -16445;
 };
 
-#elif defined(UNIVERAL_ARCH_ARM)
+#elif defined(UNIVERSAL_ARCH_ARM)
 template<>
-class ieee754_parameter<double> {
+class ieee754_parameter<long double> {
 public:
 	static constexpr int      nbits    = 64;
 	static constexpr uint64_t smask    = 0x8000'0000'0000'0000ull;

@@ -23,6 +23,13 @@ namespace sw { namespace universal {
 
 		int nrOfFailedTests = 0;
 
+#if defined(UNIVERAL_ARCH_X86_64)
+std::cout << "Architecture is x86_64\n";
+#elif defined(UNIVERAL_ARCH_ARM)
+std::cout << "Architecture is ARM\n";
+#else
+std::cout << "Architecture is unknown\n";
+#endif
 		bool sign{ false };
 		std::uint64_t rawExponent{ 0 };
 		int exponent{ 0 };
@@ -35,6 +42,9 @@ namespace sw { namespace universal {
 
 		extractFields(a, sign, rawExponent, rawFraction);
 		exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
+		std::cout << "rawExponent       : " << rawExponent << '\n';
+		std::cout << "exponent bias     : " << ieee754_parameter<Real>::bias << '\n';
+		std::cout << "unbiased exponent : " << exponent << '\n';
 		if (sign != false || exponent != 0 || rawFraction != 0) {
 			++nrOfFailedTests;
 			if (reportTestCases) std::cerr << "fp components: " << (sign ? '1' : '0') << " exp: " << exponent << " frac: " << to_binary(rawFraction, fbits, true) << '\n';
@@ -46,7 +56,7 @@ namespace sw { namespace universal {
 } } // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -97,6 +107,7 @@ try {
 		ReportValue(ld);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<float>(reportTestCases), "float", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<long double>(reportTestCases), "long double", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
