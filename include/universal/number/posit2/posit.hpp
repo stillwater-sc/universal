@@ -1,6 +1,6 @@
 // <universal/posit/posit.hpp>: arbitrary configuration fixed-size posit standard header
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _POSIT_STANDARD_HEADER_
@@ -8,9 +8,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+#include <universal/utility/compiler.hpp>
+#include <universal/utility/architecture.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>
-#include <universal/native/nonconstexpr754.hpp>  // temporary until we can make posit constexpr
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES

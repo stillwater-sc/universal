@@ -65,7 +65,7 @@ try {
 
 	VerifyFloatingPointScales<double>(reportTestCases);
 
-	double d;
+	double d{ 1.0 };
 	std::cout << color_print(d) << '\n';
 	
 	return EXIT_SUCCESS;
@@ -80,7 +80,7 @@ catch (...) {
 }
 
 /*
-  Clang on Apple M1 does not support long double
+  Clang on Apple M1 does not support long double: long double is mapped to double
  std::numeric_limits< f >
 min exponent                                           -125
 max exponent                                            128

@@ -64,7 +64,11 @@ namespace sw { namespace universal {
 #if BIT_CAST_SUPPORT
 #include <universal/native/constexpr754.hpp>
 #else
-#include <universal/native/nonconstexpr754.hpp>
+#include <universal/native/ieee754_float.hpp>
+#include <universal/native/ieee754_double.hpp>
+#include <universal/native/ieee754_longdouble.hpp>
+// above includes are a refactoring of this old include
+//#include <universal/native/nonconstexpr754.hpp>
 #endif
 
 namespace sw { namespace universal {

@@ -10,6 +10,8 @@
 #include <iostream>
 #include <sstream>
 #include <universal/native/ieee754.hpp>
+#include <universal/native/ieee754_float.hpp>
+#include <universal/native/ieee754_double.hpp>
 #include <universal/verification/test_suite.hpp>
 
 namespace sw { namespace universal {
@@ -23,9 +25,9 @@ namespace sw { namespace universal {
 
 		int nrOfFailedTests = 0;
 
-#if defined(UNIVERAL_ARCH_X86_64)
+#if defined(UNIVERSAL_ARCH_X86_64)
 std::cout << "Architecture is x86_64\n";
-#elif defined(UNIVERAL_ARCH_ARM)
+#elif defined(UNIVERSAL_ARCH_ARM)
 std::cout << "Architecture is ARM\n";
 #else
 std::cout << "Architecture is unknown\n";
@@ -56,7 +58,7 @@ std::cout << "Architecture is unknown\n";
 } } // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -87,16 +89,25 @@ try {
 	// create a float with the following layout
 	// b1.00001111.00011001011010001001001"
 	float_decoder decoder;
-	decoder.parts.fraction = 0b00011001011010001001001;
-	decoder.parts.exponent = 0b0000'0001;
-	decoder.parts.sign = 0b1;
+	uint64_t fraction = 0b00011001011010001001001;
+	uint64_t exponent = 0b0000'0001;
+	bool     sign     = 0b1;
+	decoder.parts.fraction = fraction;
+	decoder.parts.exponent = exponent;
+	decoder.parts.sign     = sign;
+	float f = decoder.f;
+	std::cout << to_binary(f) << " : " << f << '\n';
 
-	std::cout << decoder.f << '\n';
+	// using the Universal non-const functions
+	double value{ 0.0 };
+	setFields(value, sign, exponent, fraction);
+	std::cout << to_binary(value) << " : " << value << '\n';
 
-	uint32_t bc = sw::bit_cast<uint32_t, float>(decoder.f);
+	// do the reverse
+	uint32_t bc = sw::bit_cast<uint32_t, float>(f);
 	std::cout << to_binary(bc, 32) << '\n';
 
-	float f{1.0f};	
+	f = 1.0f;	
 	std::cout << "size of float       : " << sizeof(f) << '\n';
 		ReportValue(f);
 	double d{1.0};	
@@ -107,6 +118,7 @@ try {
 		ReportValue(ld);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<float>(reportTestCases), "float", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<double>(reportTestCases), "double", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyRealFieldExtraction<long double>(reportTestCases), "long double", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
