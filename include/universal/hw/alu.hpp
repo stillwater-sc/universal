@@ -89,7 +89,7 @@ void GenerateUnaryOpTestVectors(std::ostream& ostr, const std::string& op) {
 	constexpr unsigned nbits = NumberType::nbits;
 	constexpr unsigned NR_ENCODINGS = (1u << nbits);
 
-	NumberType a, b, c;
+	NumberType a, c;
 
 	if (op == "sqrt") {
 		for (unsigned i = 0; i < NR_ENCODINGS; ++i) {
@@ -102,7 +102,7 @@ void GenerateUnaryOpTestVectors(std::ostream& ostr, const std::string& op) {
 
 template<typename NumberType>
 void GenerateBinaryOpTestVectors(std::ostream& ostr, const std::string& op) {
-	constexpr unsigned nbits = NumberType::nbits;
+	//constexpr unsigned nbits = NumberType::nbits;
 	NumberType maxneg(SpecificValue::maxneg), maxpos(SpecificValue::maxpos);
 	NumberType a, b, c;
 

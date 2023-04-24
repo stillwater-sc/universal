@@ -13,7 +13,7 @@
 namespace sw {
 	namespace universal {
 
-#define NOW
+#define NOW_
 #ifdef NOW
 
 		// Provides a decimal representation of v.
@@ -37,10 +37,11 @@ namespace sw {
 			// Grisu3 will never output representations that lie exactly on a boundary.
 			F2S boundary_minus, boundary_plus;
 			w.normalizedBoundaries(boundary_minus, boundary_plus);
-			assert(boundary_plus.e() == w.e());
-
 			std::cout << to_triple(boundary_minus) << '\n';
 			std::cout << to_triple(boundary_plus) << '\n';
+			std::cout << to_triple(w) << '\n';			
+			assert(boundary_plus.e() == w.e());
+
 			buffer[0] = 0;
 			length = 0;
 			decimal_exponent = 0;
@@ -71,15 +72,15 @@ namespace sw {
 			// In fact: scaled_w - w*10^k < 1ulp (unit in the last place) of scaled_w.
 			// In other words: let f = scaled_w.f() and e = scaled_w.e(), then
 			//           (f-1) * 2^e < w*10^k < (f+1) * 2^e
-			F2S scaled_w = (w * ten_mk);
-			assert(scaled_w.e() == boundary_plus.e() + ten_mk.e() + precision);
+			//F2S scaled_w = (w * ten_mk);
+			//assert(scaled_w.e() == boundary_plus.e() + ten_mk.e() + precision);
 			// In theory it would be possible to avoid some recomputations by computing
 			// the difference between w and boundary_minus/plus (a power of 2) and to
 			// compute scaled_boundary_minus/plus by subtracting/adding from
 			// scaled_w. However the code becomes much less readable and the speed
 			// enhancements are not terrific.
-			F2S scaled_boundary_minus = boundary_minus * ten_mk;
-			F2S scaled_boundary_plus = boundary_plus * ten_mk;
+			//F2S scaled_boundary_minus = boundary_minus * ten_mk;
+			//F2S scaled_boundary_plus = boundary_plus * ten_mk;
 
 			// DigitGen will generate the digits of scaled_w. Therefore we have
 			// v == (double) (scaled_w * 10^-mk).
@@ -95,10 +96,11 @@ namespace sw {
 #endif
 			return result;
 		}
-
+#else
+bool Grisu3(double v, char buffer[], int& length, int& decimal_exponent) { return false; }
 #endif
-	}
-}
+	} // namespace universal
+} // namespace sw
 
 int main()
 try {
@@ -188,7 +190,7 @@ try {
 		char buffer[128];
 		int nrOfDigits{ 0 };
 		int decimalExponent{ 0 };
-		bool success = Grisu3(1.0, buffer, nrOfDigits, decimalExponent) << '\n';
+		bool success = Grisu3(1.0, buffer, nrOfDigits, decimalExponent);
 		if (success) {
 			std::cout << std::string(buffer) << '\n';
 		}

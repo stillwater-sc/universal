@@ -9,11 +9,12 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/native/ieee754.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/common/number_traits_reports.hpp>
 
 // ShowRepresentations prints the different output formats for the float type
 template<typename Scalar>
-void ShowRepresentations(std::ostream& ostr, float f) {
+void ShowRepresentations_(std::ostream& ostr, float f) {
 	using namespace sw::universal;
 	auto oldprec = ostr.precision(); // save stream state
 
@@ -42,6 +43,7 @@ try {
 		ShowRepresentations<Scalar>(std::cerr, 0.03124999f);
 
 		std::cerr << "\nNumber Traits of IEEE-754 float\n";
+		std::cerr << "min exponent       " << int(std::numeric_limits<float>::min_exponent) << '\n';
 		numberTraits<Scalar>(std::cout);
 
 		std::cerr << "smallest normal number\n";

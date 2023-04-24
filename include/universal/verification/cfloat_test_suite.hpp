@@ -1007,7 +1007,6 @@ namespace sw { namespace universal {
 		Cfloat c{}; // == TestType but marshalled
 		constexpr size_t NEGATIVE_ZERO = (1ull << (nbits - 1)); // pattern 1.00.000
 		constexpr size_t QUIET_NAN = (~0ull >> (64 - nbits + 1)); // pattern 0.11.111
-		size_t i = 0;
 		for (size_t pattern = NR_OF_ENCODINGS - 1; pattern > NEGATIVE_ZERO ; --pattern) {  // remove negative zero from the set
 			c.setbits(pattern);
 //			std::cout << to_binary(pattern, nbits, true) << " : " << to_binary(c, true) << '\n';

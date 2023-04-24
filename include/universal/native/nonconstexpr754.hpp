@@ -154,6 +154,22 @@ inline std::string to_base2_scientific(float number) {
 	return s.str();
 }
 
+// ieee_components returns a tuple of sign, exponent, and fraction
+inline std::tuple<bool, int, std::uint32_t> ieee_components(float fp)
+{
+	static_assert(std::numeric_limits<float>::is_iec559,
+		"This function only works when float complies with IEC 559 (IEEE 754)");
+	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
+
+	float_decoder fd{ fp }; // initializes the first member of the union
+	// Reading inactive union parts is forbidden in constexpr :-(
+	return std::make_tuple<bool, int, std::uint32_t>(
+		static_cast<bool>(fd.parts.sign), 
+		static_cast<int>(fd.parts.exponent),
+		static_cast<std::uint32_t>(fd.parts.fraction) 
+	);
+}
+
 // generate a color coded binary string for a native single precision IEEE floating point
 inline std::string color_print(float number) {
 	std::stringstream s;
@@ -194,50 +210,6 @@ inline std::string color_print(float number) {
 		mask >>= 1;
 	}
 	
-	s << def;
-	return s.str();
-}
-
-// generate a color coded binary string for a native double precision IEEE floating point
-inline std::string color_print(double number) {
-	std::stringstream s;
-	double_decoder decoder;
-	decoder.d = number;
-
-	Color red(ColorCode::FG_RED);
-	Color yellow(ColorCode::FG_YELLOW);
-	Color blue(ColorCode::FG_BLUE);
-	Color magenta(ColorCode::FG_MAGENTA);
-	Color cyan(ColorCode::FG_CYAN);
-	Color white(ColorCode::FG_WHITE);
-	Color def(ColorCode::FG_DEFAULT);
-
-	// print prefix
-	s << yellow << "0b";
-	
-	// print sign bit
-	s << red << (decoder.parts.sign ? '1' : '0') << '.';
-
-	// print exponent bits
-	{
-		uint64_t mask = 0x400;
-		for (int i = 10; i >= 0; --i) {
-			s << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
-			if (i > 0 && i % 4 == 0) s << cyan << '\'';
-			mask >>= 1;
-		}
-	}
-
-	s << '.';
-
-	// print fraction bits
-	uint64_t mask = (uint64_t(1) << 51);
-	for (int i = 51; i >= 0; --i) {
-		s << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
-		if (i > 0 && i % 4 == 0) s << magenta << '\'';
-		mask >>= 1;
-	}
-
 	s << def;
 	return s.str();
 }
@@ -336,21 +308,6 @@ inline std::string to_base2_scientific(double number) {
 	return s.str();
 }
 
-// ieee_components returns a tuple of sign, exponent, and fraction
-inline std::tuple<bool, int, std::uint32_t> ieee_components(float fp)
-{
-	static_assert(std::numeric_limits<float>::is_iec559,
-		"This function only works when float complies with IEC 559 (IEEE 754)");
-	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
-
-	float_decoder fd{ fp }; // initializes the first member of the union
-	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple<bool, int, std::uint32_t>(
-		static_cast<bool>(fd.parts.sign), 
-		static_cast<int>(fd.parts.exponent),
-		static_cast<std::uint32_t>(fd.parts.fraction) 
-	);
-}
 
 // ieee_components returns a tuple of sign, exponent, and fraction
 inline std::tuple<bool, int, std::uint64_t> ieee_components(double fp)
@@ -366,6 +323,50 @@ inline std::tuple<bool, int, std::uint64_t> ieee_components(double fp)
 		static_cast<int>(dd.parts.exponent),
 		static_cast<std::uint64_t>(dd.parts.fraction) 
 	);
+}
+
+// generate a color coded binary string for a native double precision IEEE floating point
+inline std::string color_print(double number) {
+	std::stringstream s;
+	double_decoder decoder;
+	decoder.d = number;
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color blue(ColorCode::FG_BLUE);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color cyan(ColorCode::FG_CYAN);
+	Color white(ColorCode::FG_WHITE);
+	Color def(ColorCode::FG_DEFAULT);
+
+	// print prefix
+	s << yellow << "0b";
+	
+	// print sign bit
+	s << red << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x400;
+		for (int i = 10; i >= 0; --i) {
+			s << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) s << cyan << '\'';
+			mask >>= 1;
+		}
+	}
+
+	s << '.';
+
+	// print fraction bits
+	uint64_t mask = (uint64_t(1) << 51);
+	for (int i = 51; i >= 0; --i) {
+		s << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (i > 0 && i % 4 == 0) s << magenta << '\'';
+		mask >>= 1;
+	}
+
+	s << def;
+	return s.str();
 }
 
 }} // namespace sw::universal

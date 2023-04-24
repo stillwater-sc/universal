@@ -10,7 +10,7 @@ namespace sw { namespace universal {
 // enumerate the valid encodings of a number system
 template<typename NumberType>
 void EnumerateValidEncodingsViaIncrement(std::ostream& ostr, double lowerbound = 0.0f, double upperbound = 0.0f) {
-	constexpr unsigned nbits = NumberType::nbits;
+	//constexpr unsigned nbits = NumberType::nbits;
 
 	NumberType maxneg(SpecificValue::maxneg), maxpos(SpecificValue::maxpos);
 	NumberType a, ub;
@@ -31,7 +31,7 @@ void EnumerateValidEncodingsViaIncrement(std::ostream& ostr, double lowerbound =
 
 template<typename NumberType>
 void EnumerateValidEncodingsViaDecrement(std::ostream& ostr, double upperbound = 0.0f, double lowerbound = 0.0f) {
-	constexpr unsigned nbits = NumberType::nbits;
+	//constexpr unsigned nbits = NumberType::nbits;
 
 	NumberType maxneg(SpecificValue::maxneg), maxpos(SpecificValue::maxpos);
 	NumberType a, lb;
