@@ -28,7 +28,8 @@ RUN cmake -DBUILD_ALL=ON .. && make
 # RELEASE stage
 #FROM alpine:latest as release    # hitting a segfault during startup of some playground programs
 #FROM debian:buster-slim as release
-FROM ubuntu:22.10 as release
+#FROM ubuntu:22.10 as release
+FROM ubuntu:kinetic as release
 LABEL Theodore Omtzigt
 
 #RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils
