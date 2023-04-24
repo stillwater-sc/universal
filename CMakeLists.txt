@@ -197,7 +197,7 @@ endmacro()
 
 
 # Use cmake scripts and modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ools/cmake")
 trace_variable(CMAKE_MODULE_PATH)
 
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
@@ -582,7 +582,7 @@ if(BUILD_ALL)
 	set(BUILD_LINEAR_ALGEBRA_VMATH ON)
 
 	# build the C API library
-	set(BUILD_C_API_PURE_LIB ON)
+	#set(BUILD_C_API_PURE_LIB ON)
 	set(BUILD_C_API_SHIM_LIB ON)
 
 	# build the HW validation environment
@@ -848,6 +848,7 @@ endif(BUILD_BENCHMARK_ENERGY)
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
+add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
 # educational examples

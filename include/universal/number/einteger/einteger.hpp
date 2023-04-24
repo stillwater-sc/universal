@@ -1,10 +1,17 @@
 // einteger arithmetic type standard header
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _EINTEGER_STANDARD_HEADER_
 #define _EINTEGER_STANDARD_HEADER_
+
+////////////////////////////////////////////////////////////////////////////////////////
+///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
+#include <universal/utility/compiler.hpp>
+#include <universal/utility/architecture.hpp>
+#include <universal/utility/bit_cast.hpp>
+#include <universal/utility/long_double.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
@@ -23,9 +30,6 @@
 // default is to use std::cerr for signalling an error
 #define EINTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #endif
-
-#include <universal/utility/bit_cast.hpp>
-#include <universal/utility/long_double.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library

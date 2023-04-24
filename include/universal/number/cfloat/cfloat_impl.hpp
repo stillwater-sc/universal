@@ -835,7 +835,7 @@ public:
 					}
 					else {
 						// special case, we need to jump past all the subnormal value encodings 1.01.0000 = minneg normal
-						setexponent(1ul - EXP_BIAS);
+						setexponent(1 - EXP_BIAS);
 						setsign(true);
 					}
 				}
