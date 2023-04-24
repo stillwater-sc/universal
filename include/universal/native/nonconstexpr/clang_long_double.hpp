@@ -28,6 +28,7 @@ namespace sw { namespace universal {
 			uint64_t sign : 1;
 		} parts;
 	};
+
 #elif defined(UNIVERSAL_ARCH_X86_64)
 	union long_double_decoder {
 		long_double_decoder() : ld{ 0.0l } {}
@@ -371,44 +372,6 @@ namespace sw { namespace universal {
 		s << def;
 		return s.str();
 	}	
-#endif
-
-#ifdef CPLUSPLUS_17
-inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
-	if constexpr (std::numeric_limits<long double>::digits <= 64) {
-		if constexpr (sizeof(long double) == 8) { // it is just a double
-			_sign = fp < 0.0 ? true : false;
-			_fr = frexp(double(fp), &_exponent);
-			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
-		}
-		else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
-			_sign = fp < 0.0 ? true : false;
-			_fr = frexpl(fp, &_exponent);
-			_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
-		}
-	}
-	else if constexpr (std::numeric_limits<long double>::digits == 113) {
-		std::cerr << "numeric_limits<long double>::digits = " << std::numeric_limits<long double>::digits << " currently unsupported\n";
-	}
-}
-#else
-inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
-	if (::std::numeric_limits<long double>::digits <= 64) {
-		if (sizeof(long double) == 8) { // it is just a double
-			_sign = fp < 0.0 ? true : false;
-			_fr = ::std::frexp(double(fp), &_exponent);
-			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
-		}
-		else if (sizeof(long double) == 16 && ::std::numeric_limits<long double>::digits <= 64) {
-			_sign = fp < 0.0 ? true : false;
-			_fr = frexpl(fp, &_exponent);
-			_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
-		}
-	}
-	else {
-		::std::cerr << "numeric_limits<long double>::digits = " << ::std::numeric_limits<long double>::digits << " currently unsupported\n";
-	}
-}
 #endif
 
 }} // namespace sw::universal
