@@ -13,7 +13,7 @@
 namespace sw {
 	namespace universal {
 
-#define NOW
+#define NOW_
 #ifdef NOW
 
 		// Provides a decimal representation of v.
@@ -37,10 +37,11 @@ namespace sw {
 			// Grisu3 will never output representations that lie exactly on a boundary.
 			F2S boundary_minus, boundary_plus;
 			w.normalizedBoundaries(boundary_minus, boundary_plus);
-			assert(boundary_plus.e() == w.e());
-
 			std::cout << to_triple(boundary_minus) << '\n';
 			std::cout << to_triple(boundary_plus) << '\n';
+			std::cout << to_triple(w) << '\n';			
+			assert(boundary_plus.e() == w.e());
+
 			buffer[0] = 0;
 			length = 0;
 			decimal_exponent = 0;
@@ -95,10 +96,11 @@ namespace sw {
 #endif
 			return result;
 		}
-
+#else
+bool Grisu3(double v, char buffer[], int& length, int& decimal_exponent) { return false; }
 #endif
-	}
-}
+	} // namespace universal
+} // namespace sw
 
 int main()
 try {
