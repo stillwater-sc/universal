@@ -1,12 +1,10 @@
 // dot.cpp: error measurement of the approximation of a number system computing a dot product
 //
-// Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// enable the following define to show the intermediate steps in the fused-dot product
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
@@ -39,12 +37,15 @@ void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::unive
 	std::cout << sw::universal::minmax_range<Scalar>() << '\n';
 }
 
-template<typename Scalar, bool verbose = false>
-void DotProductError(const sw::universal::blas::vector<double>& x, const sw::universal::blas::vector<double>& y) {
+template<typename Scalar, bool verbose = true>
+void DotProductError(const sw::universal::blas::vector<double>& x, double minx, double maxx, const sw::universal::blas::vector<double>& y, double miny, double maxy) {
 	using std::log;
 	using namespace sw::universal; 
 	std::cout << "\nScalar type : " << type_tag(Scalar()) << '\n';
 
+	auto min = std::numeric_limits<Scalar>::min();
+	auto max = std::numeric_limits<Scalar>::max();
+	auto scale = (max * 0.5) / maxx;
 	auto nrSamples = size(x);
 	blas::vector<Scalar> xx(nrSamples);
 	xx = x;
@@ -57,30 +58,48 @@ void DotProductError(const sw::universal::blas::vector<double>& x, const sw::uni
 	double dotError = log(real / sample);
 	constexpr unsigned COLWIDTH = 15;
 	if constexpr (verbose) std::cout << std::setw(10) << real << std::setw(COLWIDTH) << sample << std::setw(COLWIDTH) << (real / sample) << std::setw(COLWIDTH) << dotError << '\n';
-	std::cout << "DOT product sampling error : " << dotError << '\n';
+	else std::cout << "DOT product sampling error : " << dotError << '\n';
 }
 
-int main(int argc, char** argv)
+void SampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0) {
+	using namespace sw::universal;
+
+	auto x = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+	auto y = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+
+	double minx = x[blas::amin(N, x, 1)];
+	double maxx = x[blas::amax(N, x, 1)];
+	double miny = y[blas::amin(N, y, 1)];
+	double maxy = y[blas::amax(N, y, 1)];
+	constexpr bool Verbose = true;
+	DotProductError< double >(x, minx, maxx, y, miny, maxy);
+	DotProductError< float >(x, minx, maxx, y, miny, maxy);
+	DotProductError< single >(x, minx, maxx, y, miny, maxy);
+	DotProductError< half >(x, minx, maxx, y, miny, maxy);
+	DotProductError< fixpnt<16, 8>, Verbose >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 2> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 2, uint8_t, true> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 3> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 3, uint8_t, true> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 4> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 4, uint8_t, true> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< posit<16, 2> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< posit< 8, 2> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< lns<8, 3> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< lns<8, 4> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< lns<8, 5> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< lns<8, 5> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< integer<8> >(x, minx, maxx, y, miny, maxy);
+}
+
+int main()
 try {
 	using namespace sw::universal;
 
-	auto x = sw::universal::blas::gaussian_random_vector<double>(10, 0.0, 2.0);
-	auto y = sw::universal::blas::gaussian_random_vector<double>(10, 0.0, 2.0);
-
-	constexpr bool Verbose = false;
-	DotProductError< double, Verbose >(x, y);
-	DotProductError< float, Verbose >(x, y);
-	DotProductError< single >(x, y);
-	DotProductError< half >(x, y);
-	DotProductError< integer<8>, Verbose >(x, y);
-	DotProductError< fixpnt<16, 8>, Verbose >(x, y);
-	DotProductError< cfloat<8, 3> >(x, y);
-	DotProductError< cfloat<8, 4> >(x, y);
-	DotProductError< posit<16, 2> >(x, y);
-	DotProductError< posit< 8, 2> >(x, y);
-	DotProductError< lns<8, 3> >(x, y);
-	DotProductError< lns<8, 4> >(x, y);
-	DotProductError< lns<8, 5> >(x, y);
+	unsigned N{ 10000 };
+	SampleError(N, 0.0, 1.0);
+	SampleError(N, 0.0, 2.0);
+	SampleError(N, 0.0, 5.0);
 
 	return EXIT_SUCCESS;
 }
