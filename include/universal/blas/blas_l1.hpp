@@ -124,13 +124,14 @@ void swap(size_t n, Vector& x, size_t incx, Vector& y, size_t incy) {
 
 // find the index of the element with maximum absolute value
 template<typename Vector>
-size_t amax(size_t n, const Vector& x, size_t incx) {
-	typename Vector::value_type running_max = -INFINITY;
-	size_t ix, index;
-	for (ix = 0; ix < size(x); ix += incx) {
-		if (x[ix] > running_max) {
+size_t amax(size_t n, const Vector& x, size_t incx = 1) {
+	size_t ix{ 0 }, index{ 0 };
+	auto running_max = abs(x[ix]);
+	for (ix = 1; ix < size(x); ix += incx) {
+		auto absolute = abs(x[ix]);
+		if (absolute > running_max) {
 			index = ix;
-			running_max = x[ix];
+			running_max = absolute;
 		}
 	}
 	return index;
@@ -138,13 +139,14 @@ size_t amax(size_t n, const Vector& x, size_t incx) {
 
 // find the index of the element with minimum absolute value
 template<typename Vector>
-size_t amin(size_t n, const Vector& x, size_t incx) {
-	typename Vector::value_type running_min = INFINITY;
-	size_t ix, index;
-	for (ix = 0; ix < size(x); ix += incx) {
-		if (x[ix] < running_min) {
+size_t amin(size_t n, const Vector& x, size_t incx = 1) {
+	size_t ix{ 0 }, index{ 0 };
+	auto running_min = abs(x[ix]);
+	for (ix = 1; ix < size(x); ix += incx) {
+		auto absolute = abs(x[ix]);
+		if (absolute < running_min) {
 			index = ix;
-			running_min = x[ix];
+			running_min = absolute;
 		}
 	}
 	return index;

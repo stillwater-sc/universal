@@ -75,6 +75,7 @@ bool parse(const std::string& number, integer<nbits, BlockType, NumberType>& v);
 // idiv_t for integer<nbits, BlockType, NumberType> to capture quotient and remainder during long division
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 struct idiv_t {
+	idiv_t() : quot{ 0 }, rem{ 0 } {};
 	integer<nbits, BlockType, NumberType> quot; // quotient
 	integer<nbits, BlockType, NumberType> rem;  // remainder
 };

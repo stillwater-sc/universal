@@ -43,22 +43,64 @@ void DotProductError(const sw::universal::blas::vector<double>& x, double minx, 
 	using namespace sw::universal; 
 	std::cout << "\nScalar type : " << type_tag(Scalar()) << '\n';
 
-	auto min = std::numeric_limits<Scalar>::min();
-	auto max = std::numeric_limits<Scalar>::max();
-	auto scale = (max * 0.5) / maxx;
+	auto minpos = double(std::numeric_limits<Scalar>::min());
+	auto maxpos = double(std::numeric_limits<Scalar>::max());
+	auto maxxy = std::max(maxx, maxy);
+	auto focus{ 1.0 }, expand{ 1.0 };
+	if (maxxy*maxxy > maxpos) { // need to scale the vectors
+		double upperbound = sqrt(maxpos);
+		focus = upperbound / maxxy;
+		expand = maxxy / upperbound;  // is this a more precise calculation than (1.0 / scale)? 
+		                              // Yes, but how much more precise? The trouble spots are at the extremes of the range
+
+		// check for underflow
+		auto smallestScaledx = focus * minx;
+		auto smallestScaledy = focus * miny;
+		auto smallestScaledElement = std::min(smallestScaledx, smallestScaledy);
+		if (focus * minx < minpos || focus * miny < minpos) {
+			std::cout << "Scaling is causing underflow: " << smallestScaledElement << " < " << minpos << '\n';
+		}
+	}
 	auto nrSamples = size(x);
 	blas::vector<Scalar> xx(nrSamples);
-	xx = x;
+	xx = focus * x;
 	blas::vector<Scalar> yy(nrSamples);
-	yy = y;
+	yy = focus * y;
 
 	double real = x * y;
-	double sample = double(xx * yy);
+	double sample = double(xx * yy) * expand;
 	TraceProducts(xx, yy);
 	double dotError = log(real / sample);
 	constexpr unsigned COLWIDTH = 15;
-	if constexpr (verbose) std::cout << std::setw(10) << real << std::setw(COLWIDTH) << sample << std::setw(COLWIDTH) << (real / sample) << std::setw(COLWIDTH) << dotError << '\n';
+	if constexpr (verbose) {
+		std::cout << std::setw(10) << "Reference" << std::setw(COLWIDTH) << "Target Type" << std::setw(COLWIDTH) << "Ratio" << std::setw(COLWIDTH) << "ln(ratio)" << '\n';
+		std::cout << std::setw(10) << real << std::setw(COLWIDTH) << sample << std::setw(COLWIDTH) << (real / sample) << std::setw(COLWIDTH) << dotError << '\n';
+	}
 	else std::cout << "DOT product sampling error : " << dotError << '\n';
+}
+
+void TestSampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0) {
+	using namespace sw::universal;
+
+	auto x = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+	auto y = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+
+	double minx = x[blas::amin(N, x, 1)];
+	double maxx = x[blas::amax(N, x, 1)];
+	double miny = y[blas::amin(N, y, 1)];
+	double maxy = y[blas::amax(N, y, 1)];
+	constexpr bool Verbose = true;
+	DotProductError< duble >(x, minx, maxx, y, miny, maxy);
+	DotProductError< single >(x, minx, maxx, y, miny, maxy);
+	DotProductError< half >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 2, uint8_t, true, false> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 3, uint8_t, true, false> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 4, uint8_t, true, false> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 5, uint8_t, true, false> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 2, uint8_t, true, true> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 3, uint8_t, true, true> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 4, uint8_t, true, true> >(x, minx, maxx, y, miny, maxy);
+	DotProductError< cfloat<8, 5, uint8_t, true, true> >(x, minx, maxx, y, miny, maxy);
 }
 
 void SampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0) {
@@ -97,6 +139,8 @@ try {
 	using namespace sw::universal;
 
 	unsigned N{ 10000 };
+	TestSampleError(N, 0.0, 1.0);
+	return 0;
 	SampleError(N, 0.0, 1.0);
 	SampleError(N, 0.0, 2.0);
 	SampleError(N, 0.0, 5.0);
