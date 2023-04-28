@@ -146,19 +146,36 @@ try {
 	bool        sign  	    = false;
 	int         scale 	    = 0;
 	long double fr    	    = 0;
-	unsigned long long fraction = 0;
-	sw::universal::extract_fp_components(ld.da, sign, scale, fr, fraction);
+	if constexpr (std::numeric_limits<long double>::digits <= 64) {
+		std::uint64_t fraction = 0;
+		sw::universal::extract_fp_components(ld.da, sign, scale, fr, fraction);
 
-	std::cout << "value    " << std::setprecision(q_prec) << ld.da << std::setprecision(f_prec) << '\n';
-	std::cout << "hex      ";
-	std::cout << std::hex << std::setfill('0');
-	for (int i = 15; i >= 0; i--) {
-		std::cout << std::setw(2) << (int)(uint8_t)ld.bytes[i] << " ";
+		std::cout << "value    " << std::setprecision(q_prec) << ld.da << std::setprecision(f_prec) << '\n';
+		std::cout << "hex      ";
+		std::cout << std::hex << std::setfill('0');
+		for (int i = 15; i >= 0; i--) {
+			std::cout << std::setw(2) << (int)(uint8_t)ld.bytes[i] << " ";
+		}
+		std::cout << std::dec << std::setfill(' ') << '\n';
+		std::cout << "sign     " << (sign ? "-" : "+") << '\n';
+		std::cout << "scale    " << scale << '\n';
+		std::cout << "fraction " << fraction << '\n';
+	} else {
+		sw::universal::internal::uint128 fraction{0};
+		sw::universal::extract_fp_components(ld.da, sign, scale, fr, fraction);
+
+		std::cout << "value         " << std::setprecision(q_prec) << ld.da << std::setprecision(f_prec) << '\n';
+		std::cout << "hex           ";
+		std::cout << std::hex << std::setfill('0');
+		for (int i = 15; i >= 0; i--) {
+			std::cout << std::setw(2) << (int)(uint8_t)ld.bytes[i] << " ";
+		}
+		std::cout << std::dec << std::setfill(' ') << '\n';
+		std::cout << "sign          " << (sign ? "-" : "+") << '\n';
+		std::cout << "scale         " << scale << '\n';
+		std::cout << "fraction upper" << fraction.upper << '\n';
+		std::cout << "fraction lower" << fraction.lower << '\n';
 	}
-	std::cout << std::dec << std::setfill(' ') << '\n';
-	std::cout << "sign     " << (sign ? "-" : "+") << '\n';
-	std::cout << "scale    " << scale << '\n';
-	std::cout << "fraction " << fraction << '\n';
 
 	std::cout << std::endl;
 
