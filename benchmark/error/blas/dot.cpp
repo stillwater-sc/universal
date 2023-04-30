@@ -134,6 +134,30 @@ void SampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0) {
 	DotProductError< integer<8> >(x, minx, maxx, y, miny, maxy);
 }
 
+namespace sw {
+	namespace universal {
+		// data normalization
+
+		// MinMaxScaler rescales the elements of a vector from their original 
+		// range [min, max] to a new range [lb, ub]
+		template<typename Scalar>
+		blas::vector<Scalar> minmaxScaler(const blas::vector<Scalar>& v, Scalar lb = 0, Scalar ub = 1) {
+			if (lb < ub) {
+				std::cerr << "target range is inconsistent\n";
+			}
+			auto min = abs(v[blas::amin(v.size(), v)]);
+			auto max = abs(v[blas::amax(v.size(), v)]);
+			auto mapto = (ub - lb) / (max - min);
+			blas::vector<Scalar> t;
+			for (auto e : v) {
+				t.push_back( (e - min) * mapto );
+			}
+			return t;
+		}
+
+	}
+}
+
 /*
  * When we want to take arbitrary vectors and want to faithfully calculate a 
  * dot product using lower precision types, we need to 'squeeze' the values
@@ -206,11 +230,12 @@ int main()
 try {
 	using namespace sw::universal;
 
-	unsigned N{ 1000 };
+	unsigned N{ 14 };
 	double mean{ 0.0 }, stddev{ 1.0 };
 
 	auto dv = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
 	auto dminmax = minmax(dv);
+	auto dminmaxScaled = minmaxScaler(dv);
 
 	auto sv = squeeze<float>(dv);
 	auto sminmax = minmax(sv);
@@ -223,6 +248,7 @@ try {
 
 	if (N < 15) {
 		std::cout << dv << '\n';
+		std::cout << dminmaxScaled << '\n';
 		std::cout << sv << '\n';
 		std::cout << hv << '\n';
 		std::cout << qv << '\n';
