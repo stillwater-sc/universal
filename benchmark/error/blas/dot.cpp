@@ -138,20 +138,41 @@ namespace sw {
 	namespace universal {
 		// data normalization
 
-		// MinMaxScaler rescales the elements of a vector from their original 
+		// minmaxscaler rescales the elements of a vector from their original 
 		// range [min, max] to a new range [lb, ub]
 		template<typename Scalar>
-		blas::vector<Scalar> minmaxScaler(const blas::vector<Scalar>& v, Scalar lb = 0, Scalar ub = 1) {
-			if (lb < ub) {
+		blas::vector<Scalar> minmaxscaler(const blas::vector<Scalar>& v, Scalar lb = 0, Scalar ub = 1) {
+			blas::vector<Scalar> t; 
+			if (lb >= ub) {
 				std::cerr << "target range is inconsistent\n";
+				return t;
 			}
-			auto min = abs(v[blas::amin(v.size(), v)]);
-			auto max = abs(v[blas::amax(v.size(), v)]);
-			auto mapto = (ub - lb) / (max - min);
-			blas::vector<Scalar> t;
+			std::pair< Scalar, Scalar> mm = blas::range(v);
+			Scalar min = mm.first;
+			Scalar max = mm.second;
+			auto scale = (ub - lb) / (max - min);
+			auto offset = lb - min * scale;
+			std::cout << min << ", " << max << ", " << lb << ", " << ub << ", " << scale << ", " << offset << '\n';
 			for (auto e : v) {
-				t.push_back( (e - min) * mapto );
+				t.push_back( e * scale + offset );
 			}
+			return t;
+		}
+
+		template<typename Target>
+		blas::vector<Target> compress(const blas::vector<double>& v) {
+			auto maxpos = double(std::numeric_limits<Target>::max());
+
+			auto vminmax = arange(v);
+			auto minValue = vminmax.first;
+			auto maxValue = vminmax.second;
+
+			sw::universal::blas::vector<Target> t(v.size());
+			auto sqrtMaxpos = sqrt(maxpos);
+			double maxScale = 1.0;
+			if (abs(maxValue) > sqrtMaxpos) maxScale = sqrtMaxpos / maxValue;
+			t = maxScale * v;
+
 			return t;
 		}
 
@@ -168,94 +189,19 @@ namespace sw {
  * the risk of overflow and underflow of the products is the first problem
  * to solve. Secondly, for long vectors overflow and catastrophic cancellation
  * are also risks.
- * 
- * Assume we have a vector x like this
- * 
- *                  *
- *                 ***
- *             ***********
- *       *********************** 
- * -----------------+--------------------
- * |     ^          0^         ^        |
- * |  minneg        min       max       |
- * minneg                             maxpos
- *          |-------------|
- *       minneg        maxpos of target number system
- * 
- * we need to 'squeeze' 
- *    max to sqrt(maxpos) of target system
- *    min to sqrt(minpos) of target system
- * which ever is more constraining;
- * 
- * maxScale = sqrt(maxpos) / max
- * minScale = sqrt(minpos) / min
- *                  
+ *                 
  */
 
-template<typename Real>
-std::pair<Real, Real> minmax(const sw::universal::blas::vector<Real>& v) {
-	auto minValue = abs(v[sw::universal::blas::amin(v.size(), v)]);
-	auto maxValue = abs(v[sw::universal::blas::amax(v.size(), v)]);
-	std::cout << "minValue  : " << minValue << '\n';
-	std::cout << "maxValue  : " << maxValue << '\n';
-	return std::pair(minValue, maxValue);
-}
-
-template<typename Target>
-sw::universal::blas::vector<Target> squeeze(const sw::universal::blas::vector<double>& v) {
-	auto minpos = double(std::numeric_limits<Target>::min());
-	auto maxpos = double(std::numeric_limits<Target>::max());
-
-	auto vminmax = minmax(v);
-	auto minValue = vminmax.first;
-	auto maxValue = vminmax.second;
-	
-	auto sqrtMinpos = sqrt(minpos);
-	auto sqrtMaxpos = sqrt(maxpos);
-
-	auto minScale = sqrtMinpos / minValue;
-	auto maxScale = sqrtMaxpos / maxValue;
-
-	std::cout << "minScale  : " << minScale << '\n';
-	std::cout << "maxScale  : " << maxScale << '\n';
-
-	sw::universal::blas::vector<Target> t(v.size());
-	if (abs(maxValue) < sqrtMaxpos) maxScale = 1.0; // no need to scale
-	t = maxScale * v;
-
-	return t;
-}
 
 int main()
 try {
 	using namespace sw::universal;
 
-	unsigned N{ 14 };
+	unsigned N{ 10000 };
 	double mean{ 0.0 }, stddev{ 1.0 };
 
-	auto dv = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
-	auto dminmax = minmax(dv);
-	auto dminmaxScaled = minmaxScaler(dv);
+	TestSampleError(N, 0.0, 1.0);
 
-	auto sv = squeeze<float>(dv);
-	auto sminmax = minmax(sv);
-
-	auto hv = squeeze<half>(dv);
-	auto hminmax = minmax(hv);
-
-	auto qv = squeeze<quarter>(dv);
-	auto qminmax = minmax(qv);
-
-	if (N < 15) {
-		std::cout << dv << '\n';
-		std::cout << dminmaxScaled << '\n';
-		std::cout << sv << '\n';
-		std::cout << hv << '\n';
-		std::cout << qv << '\n';
-	}
-
-	//TestSampleError(N, 0.0, 1.0);
-	return 0;
 	SampleError(N, 0.0, 1.0);
 	SampleError(N, 0.0, 2.0);
 	SampleError(N, 0.0, 5.0);

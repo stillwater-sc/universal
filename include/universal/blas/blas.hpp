@@ -3,7 +3,7 @@
 // Super-simple BLAS implementation to aid the application,
 // numerical, and reproducibility examples.
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _UNIVERSAL_BLAS_LIBRARY
@@ -66,6 +66,7 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/generators.hpp>
 
 // Utilities
+#include <universal/blas/scaling.hpp>
 #include <universal/blas/linspace.hpp>
 
 // MATLAB-style elementary vector functions
