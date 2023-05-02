@@ -49,7 +49,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 	_sign = fp < 0.0;
 	_fr = ::std::frexp(fp, &_exponent);
 
-	std::memcpy(&_fr, &_fraction, sizeof(internal::uint128)); // _fraction = reinterpret_cast<uint128>(_fr);
+	std::memcpy(&_fraction, &_fr, sizeof(internal::uint128)); // _fraction = reinterpret_cast<uint128>(_fr);
 
 	// we need to remove the upper bits that are not part of the mantissa. (all bits - mantissa bits - 1). -1 because the first bit is not stored
 	// we only need to do this on the upper part of the uint128, as we asserted that the mantissa has more than 64 bits.
