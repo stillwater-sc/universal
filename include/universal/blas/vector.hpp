@@ -36,7 +36,7 @@
 
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
-// already defineds _NODISCARD
+// already defines _NODISCARD
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -387,6 +387,20 @@ posit<nbits, es> operator*(const vector< posit<nbits, es> >& a, const vector< po
 	Scalar p;
 	convert(sum.to_value(), p);
 	return p;
+}
+
+template<typename Scalar>
+bool operator==(const vector<Scalar>& lhs, const vector<Scalar>& rhs) {
+	if (lhs.size() != rhs.size()) return false;
+	for (unsigned i = 0; i < lhs.size(); ++i) {
+		if (lhs[i] != rhs[i]) return false;
+	}
+	return true;
+}
+
+template<typename Scalar>
+bool operator!=(const vector<Scalar>& lhs, const vector<Scalar>& rhs) {
+	return !(lhs == rhs);
 }
 
 }}} // namespace sw::universal::blas

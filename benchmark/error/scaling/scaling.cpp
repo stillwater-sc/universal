@@ -11,51 +11,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/blas/blas.hpp>
-
-namespace sw {
-	namespace universal {
-		// data normalization
-
-		// minmaxscaler rescales the elements of a vector from their original 
-		// range [min, max] to a new range [lb, ub]
-		template<typename Scalar>
-		blas::vector<Scalar> minmaxscaler(const blas::vector<Scalar>& v, Scalar lb = 0, Scalar ub = 1) {
-			blas::vector<Scalar> t; 
-			if (lb >= ub) {
-				std::cerr << "target range is inconsistent\n";
-				return t;
-			}
-			std::pair< Scalar, Scalar> mm = blas::range(v);
-			Scalar min = mm.first;
-			Scalar max = mm.second;
-			auto scale = (ub - lb) / (max - min);
-			auto offset = lb - min * scale;
-			std::cout << min << ", " << max << ", " << lb << ", " << ub << ", " << scale << ", " << offset << '\n';
-			for (auto e : v) {
-				t.push_back( e * scale + offset );
-			}
-			return t;
-		}
-
-		template<typename Target>
-		blas::vector<Target> compress(const blas::vector<double>& v) {
-			auto maxpos = double(std::numeric_limits<Target>::max());
-
-			auto vminmax = arange(v);
-			auto minValue = vminmax.first;
-			auto maxValue = vminmax.second;
-
-			sw::universal::blas::vector<Target> t(v.size());
-			auto sqrtMaxpos = sqrt(maxpos);
-			double maxScale = 1.0;
-			if (abs(maxValue) > sqrtMaxpos) maxScale = sqrtMaxpos / maxValue;
-			t = maxScale * v;
-
-			return t;
-		}
-
-	}
-}
+#include <universal/verification/test_suite.hpp>
 
 /*
  * When we want to take arbitrary vectors and want to faithfully calculate a 
@@ -70,11 +26,33 @@ namespace sw {
  *                 
  */
 
+ // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
+	std::string test_suite  = "benchmark error in scaling operations";
+	std::string test_tag    = "data distribution scaling";
+	bool reportTestCases    = true;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 	unsigned N{ 10000 };
 	double mean{ 0.0 }, stddev{ 1.0 };
 

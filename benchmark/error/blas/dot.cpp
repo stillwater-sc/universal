@@ -134,51 +134,6 @@ void SampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0) {
 	DotProductError< integer<8> >(x, minx, maxx, y, miny, maxy);
 }
 
-namespace sw {
-	namespace universal {
-		// data normalization
-
-		// minmaxscaler rescales the elements of a vector from their original 
-		// range [min, max] to a new range [lb, ub]
-		template<typename Scalar>
-		blas::vector<Scalar> minmaxscaler(const blas::vector<Scalar>& v, Scalar lb = 0, Scalar ub = 1) {
-			blas::vector<Scalar> t; 
-			if (lb >= ub) {
-				std::cerr << "target range is inconsistent\n";
-				return t;
-			}
-			std::pair< Scalar, Scalar> mm = blas::range(v);
-			Scalar min = mm.first;
-			Scalar max = mm.second;
-			auto scale = (ub - lb) / (max - min);
-			auto offset = lb - min * scale;
-			std::cout << min << ", " << max << ", " << lb << ", " << ub << ", " << scale << ", " << offset << '\n';
-			for (auto e : v) {
-				t.push_back( e * scale + offset );
-			}
-			return t;
-		}
-
-		template<typename Target>
-		blas::vector<Target> compress(const blas::vector<double>& v) {
-			auto maxpos = double(std::numeric_limits<Target>::max());
-
-			auto vminmax = arange(v);
-			auto minValue = vminmax.first;
-			auto maxValue = vminmax.second;
-
-			sw::universal::blas::vector<Target> t(v.size());
-			auto sqrtMaxpos = sqrt(maxpos);
-			double maxScale = 1.0;
-			if (abs(maxValue) > sqrtMaxpos) maxScale = sqrtMaxpos / maxValue;
-			t = maxScale * v;
-
-			return t;
-		}
-
-	}
-}
-
 /*
  * When we want to take arbitrary vectors and want to faithfully calculate a 
  * dot product using lower precision types, we need to 'squeeze' the values

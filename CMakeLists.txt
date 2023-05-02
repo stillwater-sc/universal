@@ -138,7 +138,8 @@ option(BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test sui
 
 # Basic Linear Algebra tests
 option(BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"                   OFF)
-option(BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the BLAS vector math lib"         OFF)
+option(BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the vector math lib"              OFF)
+option(BUILD_LINEAR_ALGEBRA_DATA         "Set to ON to build the data prep math lib"           OFF)
 
 # benchmarking
 option(BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
@@ -580,6 +581,7 @@ if(BUILD_ALL)
 	# build the BLAS test/verification suites
 	set(BUILD_LINEAR_ALGEBRA_BLAS ON)
 	set(BUILD_LINEAR_ALGEBRA_VMATH ON)
+	set(BUILD_LINEAR_ALGEBRA_DATA ON)
 
 	# build the C API library
 	#set(BUILD_C_API_PURE_LIB ON)
@@ -949,6 +951,9 @@ endif(BUILD_LINEAR_ALGEBRA_BLAS)
 if(BUILD_LINEAR_ALGEBRA_VMATH)
 add_subdirectory("linalg/vmath")
 endif(BUILD_LINEAR_ALGEBRA_VMATH)
+if(BUILD_LINEAR_ALGEBRA_DATA)
+add_subdirectory("linalg/data")
+endif(BUILD_LINEAR_ALGEBRA_DATA)
 
 ####
 # Configuration summary
