@@ -16,6 +16,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
+#include <universal/verification/test_suite.hpp>
 
 template<unsigned nbits, unsigned es>
 void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& a, 
@@ -32,16 +33,22 @@ void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,
 }
 
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
 	// set up the properties of the arithmetic system
-	constexpr unsigned nbits = 32;
+	constexpr unsigned nbits = 16;
 	constexpr unsigned es = 2;
 	using Scalar = posit<nbits, es>;
 	using Vector = blas::vector<Scalar>;
 
+	// Setting up a dot product with catastrophic cancellation
+	// 	   a:   maxpos     1       1    ...    1     maxpos
+	// 	   b:    -1     epsilon epsilon ... epsilon    1
+	// 	The two maxpos values will cancel out leaving the 32k epsilon's accumulated
+	// 	The dot product will experience catastrophic cancellation, 
+	//  fdp will calculate the sum of products correctly
 	constexpr unsigned vectorSize = SIZE_32K + 2;
 	Vector a(vectorSize), b(vectorSize);
 	Scalar epsilon = std::numeric_limits<Scalar>::epsilon();
@@ -51,18 +58,14 @@ try {
 	}
 	a[0] = a[vectorSize - 1] = posit<nbits, es>(SpecificValue::maxpos);
 	b[0] = -1;  b[vectorSize - 1] = 1;
-	if (vectorSize < 10) {
-		std::cout << a << '\n';
-		std::cout << b << '\n';
-		PrintProducts(a, b);
-	}
-	
-	// accumulation of 32K epsilons for a posit<32,2> yields
-	// 	   a:   maxpos     1       1    ...    1     maxpos
-	// 	   b:    -1     epsilon epsilon ... epsilon    1
-	// 	   the two maxpos values will cancel out leaving the 32k epsilon's accumulated
-	// 	the dot product will experience catastrophic cancellation, 
-	//  fdp will calculate the sum of products correctly
+	std::cout << "a:   maxpos     1       1    ...    1     maxpos\n";
+	std::cout << "b:    -1     epsilon epsilon ... epsilon    1\n";
+	std::cout << "a[0] = " << to_binary(a[0]) << " : " << a[0] << '\n';
+	ReportValue(a[0], "a[0]");
+	ReportValue(a[1], "a[1]");
+	ReportValue(b[0], "b[0]");
+	ReportValue(b[1], "b[1]");
+
 	// dot: 0
 	// fdp: 0.000244141
 	std::cout << "\naccumulation of 32k epsilons (" << epsilon << ") for a " << type_tag(Scalar()) << " yields:\n";
