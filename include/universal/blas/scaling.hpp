@@ -78,14 +78,17 @@ blas::vector<Target> compress(const blas::vector<double>& v) {
 	auto maxpos = double(std::numeric_limits<Target>::max());
 
 	auto vminmax = arange(v);
-	auto minValue = vminmax.first;
+//	auto minValue = vminmax.first;
 	auto maxValue = vminmax.second;
 
 	sw::universal::blas::vector<Target> t(v.size());
 	auto sqrtMaxpos = sqrt(maxpos);
+	//std::cout << "maxValue : " << maxValue << " sqrt(maxpos) : " << sqrtMaxpos << '\n';
 	double maxScale = 1.0;
-	if (abs(maxValue) > sqrtMaxpos) maxScale = sqrtMaxpos / maxValue;
+	if (abs(maxValue) >= sqrtMaxpos) maxScale = sqrtMaxpos / maxValue;
+	//std::cout << "scale factor      : " << maxScale << '\n';
 	t = maxScale * v;
+	//std::cout << "compressed vector : " << t << '\n';
 
 	return t;
 }

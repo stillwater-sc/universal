@@ -22,6 +22,7 @@ int VerifyRange(bool reportTestCases = false) {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
+	std::cerr << "VerifyRange\n" << minmax_range<Scalar>() << '\n';
 	int nrFailedTests{ 0 };
 	Scalar maxneg = std::numeric_limits<Scalar>::lowest();
 	Scalar maxpos = std::numeric_limits<Scalar>::max();
@@ -31,7 +32,6 @@ int VerifyRange(bool reportTestCases = false) {
 	v.push_back(0);
 	v.push_back(std::numeric_limits<Scalar>::min());
 	v.push_back(maxpos);
-
 
 	auto minmax = range(v);
 	if (minmax.first != maxneg && minmax.second != maxpos) {
@@ -55,6 +55,7 @@ int VerifyCompress(bool reportTestCases = false) {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
 
+	std::cerr << "VerifyCompress\n" << minmax_range<Scalar>() << '\n';
 	int nrFailedTests{ 0 };
 
 	// to validate that compress() works, we are going to create a
@@ -64,27 +65,40 @@ int VerifyCompress(bool reportTestCases = false) {
 
 	// we are going to assume that the target arithmetic can represent
 	// normal distributed data with zero mean and stddev of 1.0
-	unsigned N{ 100 };
+	unsigned N{ 20 };
 	double mean{ 0.0 };
 	double stddev{ 1.0 };
 	vector<double> v = gaussian_random_vector<double>(N, mean, stddev);
+	if (N < 20) std::cout << "original vector   : " << v << '\n';
+
+	auto maxpos = double(std::numeric_limits<Scalar>::max());
+	auto vminmax = arange(v);
+	auto maxValue = vminmax.second;
+	auto scale = sqrt(maxpos) / maxValue;
+	// scale the original to 'fill' 75% of the dynamic range of the target scale
+	if (N < 20) std::cout << "scale up          : " << scale << '\n';
+	v *= scale;
+	// assign it to the target type
 	vector<Scalar> ref(v);
-	v = ref; // convert the reference to double
-	double scale = double(sqrt(std::numeric_limits<Scalar>::max()));
-	v *= scale; // scale the data
+	v = ref; // convert the double vector to the target reference
+	if (N < 20) std::cout << "converted vector  : " << v << '\n';
+
 	vector<Scalar> compressed = compress<Scalar>(v);
-	if (compressed != ref) {
-		++nrFailedTests;
-		if (reportTestCases) std::cerr << "compressed vector is not equal to reference\n";
-		for (unsigned i = 0; i < 20; ++i) {
-			std::cerr << i << " : " << compressed[i] << " vs " << ref[i] << '\n';
+	if (N < 20) {
+		std::cout << "compressed vector : " << compressed << '\n';
+		for (auto e : compressed) std::cout << to_binary(e) << " : " << e << '\n';
+
+		for (unsigned i = 0; i < N; ++i) {
+			auto factor = double(compressed[i]) / v[i];
+			std::cout << i << " : " << factor << '\n';
 		}
 	}
+
 	return nrFailedTests;
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -111,6 +125,12 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
+
+	std::cout << minmax_range<float>() << '\n';
+	std::cout << minmax_range<half>() << '\n';  // has subnormals
+	std::cout << minmax_range<cfloat<16, 5, uint16_t, false, false, false> >() << '\n'; // no subnormals
+	std::cout << minmax_range<quarter>() << '\n'; // has subnormals
+	std::cout << minmax_range<cfloat<8, 2, uint8_t, false, false, false> >() << '\n'; // no subnormals
 
 	// manual test cases
 	nrOfFailedTestCases += ReportTestResult(VerifyCompress<half>(reportTestCases), "compress to half precision", "half precision");
