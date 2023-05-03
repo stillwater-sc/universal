@@ -16,6 +16,7 @@
 #define POSIT_ERROR_FREE_IO_FORMAT 0
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/posit/posit.hpp>
+#include <universal/verification/test_suite.hpp>
 
 int main()
 try {
@@ -55,6 +56,30 @@ try {
 		std::cout << "standard posit  : " << type_tag(posit< 64, 2>()) << '\n';
 		std::cout << "standard posit  : " << type_tag(posit<128, 2>()) << '\n';
 		std::cout << "standard posit  : " << type_tag(posit<256, 2>()) << '\n';
+	}
+
+	// special cases
+	{
+		using Posit = posit<8, 0>;
+		Posit a;
+		a.setnar();  ReportValue(a, "NaR    : ");
+		a.maxpos();  ReportValue(a, "maxpos : ");
+		a = 1;       ReportValue(a, "  1    : ");
+		a.minpos();  ReportValue(a, "minpos : ");
+		a.setzero(); ReportValue(a, "zero   : ");
+		a.minneg();  ReportValue(a, "minneg : ");
+		a = -1;      ReportValue(a, " -1    : ");
+		a.maxneg();  ReportValue(a, "maxneg : ");
+	}
+
+	// color printing
+	{
+		using Posit = posit<5, 1>;
+		Posit a;
+		for (unsigned i = 0; i < 32; ++i) {
+			a.setbits(i);
+			std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////

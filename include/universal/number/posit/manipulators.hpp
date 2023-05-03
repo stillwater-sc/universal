@@ -186,7 +186,7 @@ std::string color_print(const posit<nbits, es>& p) {
 	regime<nbits, es>    _regime;
 	exponent<nbits, es>  _exponent;
 	fraction<fbits>      _fraction;
-	decode(p.get(), _sign, _regime, _exponent, _fraction);
+	extract_fields(p.get(), _sign, _regime, _exponent, _fraction);
 
 	Color red(ColorCode::FG_RED);
 	Color yellow(ColorCode::FG_YELLOW);
@@ -197,13 +197,18 @@ std::string color_print(const posit<nbits, es>& p) {
 	Color def(ColorCode::FG_DEFAULT);
 	str << red << (p.isneg() ? "1" : "0");
 
-	bitblock<nbits - 1> r = _regime.get();
-	int regimeBits = (int)_regime.nrBits();
-	int nrOfRegimeBitsProcessed = 0;
-	for (unsigned i = 0; i < nbits - 1; ++i) {
-		unsigned bitIndex = nbits - 2u - i;
-		if (regimeBits > nrOfRegimeBitsProcessed++) {
-			str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
+	if (p.isnar()) {
+		for (unsigned i = 0; i < nbits - 1; ++i) str << yellow << '0';
+	}
+	else {
+		bitblock<nbits - 1> r = _regime.get();
+		int regimeBits = (int)_regime.nrBits();
+		int nrOfRegimeBitsProcessed = 0;
+		for (unsigned i = 0; i < nbits - 1; ++i) {
+			unsigned bitIndex = nbits - 2u - i;
+			if (regimeBits > nrOfRegimeBitsProcessed++) {
+				str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
+			}
 		}
 	}
 
