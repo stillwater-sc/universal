@@ -167,9 +167,9 @@ std::string info_print(const posit<nbits, es>& p, int printPrecision = 17) {
 	fraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 
-	str << "raw: " << p.get() << " decoded: " << decoded(p) << " "
+	str << "raw: " << p.get() << " " // << " decoded: " << decoded(p) << " "
 		<< quadrant(p) << " "
-		<< (_sign ? "negative r" : "positive r")
+		<< (_sign ? "s1 r" : "s0 r")
 		<< _regime << " e"
 		<< _exponent << " f"
 		<< _fraction << " : value "
@@ -207,7 +207,7 @@ std::string color_print(const posit<nbits, es>& p) {
 		for (unsigned i = 0; i < nbits - 1; ++i) {
 			unsigned bitIndex = nbits - 2u - i;
 			if (regimeBits > nrOfRegimeBitsProcessed++) {
-				str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
+				str << yellow << (r[bitIndex] ? '1' : '0');
 			}
 		}
 	}
@@ -219,7 +219,7 @@ std::string color_print(const posit<nbits, es>& p) {
 			bitblock<es> e = _exponent.get();
 			unsigned bitIndex = es - 1u - i;
 			if (exponentBits > nrOfExponentBitsProcessed++) {
-				str << cyan << (_sign ? (e[bitIndex] ? '0' : '1') : (e[bitIndex] ? '1' : '0'));
+				str << cyan << (e[bitIndex] ? '1' : '0');
 			}
 		}
 	}
