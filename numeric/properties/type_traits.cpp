@@ -1,17 +1,13 @@
-﻿// type_traits.cpp: experiments with type traits of posit number types
+﻿// type_traits.cpp: experiments with type traits of native floats, integers, fixpnts, and posit number types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
-// pull in the native tools
+#include <universal/utility/directives.hpp>
 #include <universal/native/native.hpp>
-// pull in the posit number system
-#include <universal/number/posit/posit.hpp>
-// pull in the arbitrary integer number system
 #include <universal/number/integer/integer.hpp>
-// pull in the fixed-point systems
 #include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/posit/posit.hpp>
 
 template<typename Scalar>
 bool TestPosit() {

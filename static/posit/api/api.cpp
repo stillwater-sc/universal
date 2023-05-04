@@ -31,7 +31,6 @@ try {
 
 	std::cout << "*** posit construction, initialization, assignment, and comparisons\n";
 	{
-		int start = nrOfFailedTestCases;
 		// maxpos of a posit<8,0> = 64
 		posit<8, 0> a(-64), b(128), c(64), d(-64);
 		// b initialized to -128 in saturating arithmetic becomes -64

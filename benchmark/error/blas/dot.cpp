@@ -89,8 +89,8 @@ void TestSampleError(unsigned N = 10000, double mean = 0.0, double stddev = 2.0)
 	double maxx = x[blas::amax(N, x, 1)];
 	double miny = y[blas::amin(N, y, 1)];
 	double maxy = y[blas::amax(N, y, 1)];
-	constexpr bool Verbose = true;
-	DotProductError< duble >(x, minx, maxx, y, miny, maxy);
+	constexpr bool verbose = true;
+	DotProductError< duble, verbose >(x, minx, maxx, y, miny, maxy);
 	DotProductError< single >(x, minx, maxx, y, miny, maxy);
 	DotProductError< half >(x, minx, maxx, y, miny, maxy);
 	DotProductError< cfloat<8, 2, uint8_t, true, false> >(x, minx, maxx, y, miny, maxy);
@@ -155,7 +155,7 @@ try {
 	unsigned N{ 10000 };
 	double mean{ 0.0 }, stddev{ 1.0 };
 
-	TestSampleError(N, 0.0, 1.0);
+	TestSampleError(N, mean, stddev);
 
 	SampleError(N, 0.0, 1.0);
 	SampleError(N, 0.0, 2.0);

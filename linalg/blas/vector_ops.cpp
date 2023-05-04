@@ -121,12 +121,6 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// set up the properties of the arithmetic system
-	constexpr unsigned nbits = 32;
-	constexpr unsigned es = 2;
-	using Scalar = posit<nbits, es>;
-	using Vector = blas::vector<Scalar>;
-
 	std::cout << "error full and error free dot products\n";
 	// posit<8,0> is failing on 32k sums of epsilon
 	nrOfFailedTestCases += ReportTestResult(VerifyErrorFreeFusedDotProduct(std::numeric_limits<posit<8, 2> >::max()), test_tag, "error free posit<8,2> dot");
