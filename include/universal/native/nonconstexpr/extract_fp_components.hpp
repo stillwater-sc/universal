@@ -5,6 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
+#include <universal/internal/bitblock/bitblock.hpp>
 
 /*
  * The frexpf/frexp/frexpl functions have become constexpr in C++23. Universal is using the <bit> library
@@ -30,6 +31,7 @@ inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double
 // this implementation assumes an 80bit extended precision representation
 // TODO: support a full quad precision long double
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, std::uint64_t& _fraction) {
+	assert(sizeof(long double) == 8 || sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64);
 	if constexpr (sizeof(long double) == 8) { // check if (long double) is aliased to be just a double
 		_sign = fp < 0.0;
 		_fr = (long double)(::std::frexp(double(fp), &_exponent));
@@ -40,6 +42,20 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 		_fr = ::std::frexp(fp, &_exponent);
 		_fraction = 0x7FFF'FFFF'FFFF'FFFFull & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
 	}
+}
+
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, internal::uint128& _fraction) {
+	assert(sizeof(long double) == 16 && std::numeric_limits<long double>::digits > 64);
+	_sign = fp < 0.0;
+	_fr = ::std::frexp(fp, &_exponent);
+
+	std::memcpy(&_fraction, &_fr, sizeof(internal::uint128)); // _fraction = reinterpret_cast<uint128>(_fr);
+
+	// we need to remove the upper bits that are not part of the mantissa. (all bits - mantissa bits - 1). -1 because the first bit is not stored
+	// we only need to do this on the upper part of the uint128, as we asserted that the mantissa has more than 64 bits.
+	constexpr int shift = 8 * sizeof(long double) - (std::numeric_limits<long double>::digits - 1);
+	_fraction.upper <<= shift;
+	_fraction.upper >>= shift;
 }
 
 }} // namespace sw::universal
