@@ -214,12 +214,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 
 		// get the rounding direction and the LSB right shift: 
 		std::pair<bool, unsigned> alignment = src.roundingDecision(adjustment);
-		bool roundup = alignment.first;
 		unsigned rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
-		//std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
 		//std::cout << "rightShift       " << rightShift << '\n';
 
 		if constexpr (btType::bfbits < 65) {
+			bool roundup = alignment.first;
+			//std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
 			// we can use a uint64_t to construct the cfloat
 			uint64_t raw = (src.sign() ? 1ull : 0ull); // process sign
 			//std::cout << "raw bits (sign)  " << to_binary(raw) << '\n';
