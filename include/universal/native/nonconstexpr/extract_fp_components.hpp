@@ -53,9 +53,15 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 
 	// we need to remove the upper bits that are not part of the mantissa. (all bits - mantissa bits - 1). -1 because the first bit is not stored
 	// we only need to do this on the upper part of the uint128, as we asserted that the mantissa has more than 64 bits.
-	constexpr int shift = 8 * sizeof(long double) - (std::numeric_limits<long double>::digits - 1);
-	_fraction.upper <<= shift;
-	_fraction.upper >>= shift;
+	constexpr int nrUpperBits = 8 * sizeof(long double) - (std::numeric_limits<long double>::digits - 1);
+	constexpr int shift = (nrUpperBits < 64 ? nrUpperBits : 0);
+	if constexpr (shift < 64) {
+		_fraction.upper <<= shift;
+		_fraction.upper >>= shift;
+	}
+	else {
+		_fraction.upper = 0;
+	}
 }
 
 }} // namespace sw::universal
