@@ -647,7 +647,7 @@ protected:
 
 	// convert arithmetic types into a fixpnt
 	template<typename Arith>
-	static constexpr fixpnt convert(Arith v) {
+	constexpr fixpnt convert(Arith v) {
 		static_assert(std::is_arithmetic_v<Arith>);
 		fixpnt f;
 		f.clear();

@@ -4,9 +4,9 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>
 #include <sstream>
 #include <iomanip>
-
 #include <universal/utility/color_print.hpp>
 
 namespace sw { namespace universal {
@@ -140,7 +140,7 @@ inline std::string to_base2_scientific(float number) {
 }
 
 // ieee_components returns a tuple of sign, exponent, and fraction
-inline std::tuple<bool, int, std::uint32_t> ieee_components(float fp)
+inline std::tuple<bool, int, uint32_t> ieee_components(float fp)
 {
 	static_assert(std::numeric_limits<float>::is_iec559,
 		"This function only works when float complies with IEC 559 (IEEE 754)");
@@ -148,10 +148,10 @@ inline std::tuple<bool, int, std::uint32_t> ieee_components(float fp)
 
 	float_decoder fd{ fp }; // initializes the first member of the union
 	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple<bool, int, std::uint32_t>(
+	return std::make_tuple<bool, int, uint32_t>(
 		static_cast<bool>(fd.parts.sign), 
 		static_cast<int>(fd.parts.exponent),
-		static_cast<std::uint32_t>(fd.parts.fraction) 
+		static_cast<uint32_t>(fd.parts.fraction) 
 	);
 }
 

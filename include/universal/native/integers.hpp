@@ -1,9 +1,10 @@
 #pragma once
 // integers.hpp: manipulators for native integer types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>
 #include <sstream>
 #include <string>
 #include <type_traits>

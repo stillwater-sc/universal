@@ -1,9 +1,10 @@
 #pragma once 
 // attributes.hpp: functions to query number system attributes 
 //
-// Copyright (C) 2022-2022 Stillwater Supercomputing, Inc. 
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc. 
 //
-// This file is part of the universal numbers project, which is released under an MIT Open Source license.  
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>  
 #include <string>
 #include <sstream>
 
@@ -19,7 +20,7 @@ namespace sw { namespace universal {
 		return bf.scale();
 	}
 	
-	inline std::uint32_t significant(bfloat16 bf) {
+	inline uint32_t significant(bfloat16 bf) {
 		return ((bf.bits() & 0x007Fu) | 0x0080u);
 	}
 
