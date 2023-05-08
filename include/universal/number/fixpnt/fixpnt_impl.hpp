@@ -650,7 +650,6 @@ protected:
 	static constexpr fixpnt convert(Arith v) {
 		static_assert(std::is_arithmetic_v<Arith>);
 		fixpnt f;
-		/*
 		f.clear();
 		if constexpr (std::is_integral_v<Arith> && std::is_signed_v<Arith>) {
 			if (0 == v) return f;
@@ -768,7 +767,6 @@ protected:
 				}
 			}
 		}
-		*/
 		return f;
 	}
 
