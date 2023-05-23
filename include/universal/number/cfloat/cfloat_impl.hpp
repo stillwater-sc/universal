@@ -3148,10 +3148,12 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 	return ostr << representation;
 }
 
-// istream input: TBD
+// istream input: currently marshalling through native double
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::istream& operator>>(std::istream& istr, const cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
-	istr >> v._fraction;
+inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
+	double d(0.0);
+	istr >> d;
+	v = d;
 	return istr;
 }
 
