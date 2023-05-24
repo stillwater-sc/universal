@@ -155,7 +155,7 @@ namespace sw { namespace universal {
 		if (_trace_sqrt) std::cout << "y adjusted " << y << std::endl;
 
 		internal::value<fbits> vsqrt = y.to_value();
-		vsqrt.setExponent((e >> 1) - 1);
+		vsqrt.setscale((e >> 1) - 1);
 		if (_trace_sqrt) std::cout << "vsqrt      " << vsqrt << std::endl;
 		return vsqrt;
 	}

@@ -13,6 +13,8 @@
 // when you define POSIT_VERBOSE_OUTPUT executing an SQRT the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_SQRT
+// select a native posit sqrt: default is to cheat and marshall through native double precision to pass through regression tests that compare to std::sqrt references
+// #define POSIT_NATIVE_SQRT 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_random.hpp>
@@ -30,11 +32,15 @@ void GenerateTestCase(Ty a) {
 	ref = std::sqrt(a);
 	pref = ref;
 	psqrt = sw::universal::sqrt(pa);
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " -> sqrt(" << a << ") = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " -> sqrt( " << pa << ") = " << psqrt.get() << " (reference: " << pref.get() << ")   " ;
-	std::cout << (pref == psqrt ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(5);
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(17);
+	std::cout << std::setw(nbits) <<  a << " -> sqrt("  << a << ") = " << std::setw(nbits) << ref << '\n';
+	std::cout << std::setw(nbits) << pa << " -> sqrt(" << pa << ") = " << std::setw(nbits) << psqrt << '\n';
+	std::cout << pa.get() << " -> sqrt(" << pa << ") = " << psqrt.get() << '\n';
+	std::cout << std::setw(nbits + 35) << " reference = " << pref.get() << " : ";
+	std::cout << (pref == psqrt ? "PASS" : "FAIL") << "\n\n";
+	std::cout << color_print(psqrt) << '\n';
+	std::cout << std::setprecision(precision);
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -65,12 +71,42 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
-	// generate individual testcases to hand trace/debug
+
 	//GenerateTestCase<6, 3, double>(INFINITY);
 	my_test_sqrt(0.25f);
 	GenerateTestCase<3, 1, float>(4.0f);
 	posit<3, 1> p(2.0000000001f);
 	std::cout << p.get() << '\n';
+
+	posit<16, 2> minpos(SpecificValue::minpos);
+	double v = sqrt(double(minpos)); // so that we have representable value
+	GenerateTestCase < 16, 2, double>(v);
+	GenerateTestCase < 32, 2, double>(v);
+	GenerateTestCase < 64, 2, double>(v);
+	GenerateTestCase <128, 2, double>(v);
+	GenerateTestCase <256, 2, double>(v);
+	/*
+	* 	The posit native fast sqrt algorithm uses double constants which causes approximation error in precise posit configurations
+	* 
+	* 
+	3.7252902984619141e-09 -> sqrt(3.7252902984619141e-09) =  6.103515625e-05
+	3.7252902984619141e-09 -> sqrt(3.7252902984619141e-09) =  6.103515625e-05
+	0000000010000000 -> sqrt(3.7252902984619141e-09) = 0000011000000000
+                                           reference = 0000011000000000 : PASS
+
+
+    3.7252902984619141e-09 -> sqrt(3.7252902984619141e-09) =                  6.103515625e-05
+    3.7252902984619141e-09 -> sqrt(3.7252902984619141e-09) =                  6.103515625e-05
+	00000000100000000000000000000000 -> sqrt(3.7252902984619141e-09) = 00000110000000000000000000000000
+                                                           reference = 00000110000000000000000000000000 : PASS
+
+
+     3.7252902984619141e-09 -> sqrt(3.7252902984619141e-09) =                                                  6.103515625e-05
+     3.7252902984619141e-09 -> sqrt(3.7252902984619141e-09) =                                           6.1035156273424418e-05
+	0000000010000000000000000000000000000000000000000000000000000000 -> sqrt(3.7252902984619141e-09) = 0000011000000000000000000000000000000001101001011111101000001001
+                                                                                           reference = 0000011000000000000000000000000000000000000000000000000000000000 : FAIL
+	
+	*/
 
 	return 0;
 
@@ -103,17 +139,17 @@ try {
 #endif
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<2, 0>("Manual Testing", true), "posit<2,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<2, 0>(true), "posit<2,0>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 0>("Manual Testing", true), "posit<3,0>", "sqrt");
-//	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 1>("Manual Testing", true), "posit<3,1>", "sqrt");   // TODO: these configs where nbits < es+sign+regime don't work
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 0>(true), "posit<3,0>", "sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 1>(true), "posit<3,1>", "sqrt");   // TODO: these configs where nbits < es+sign+regime don't work
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 0>("Manual Testing", true), "posit<4,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 1>("Manual Testing", true), "posit<4,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 0>(true), "posit<4,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 1>(true), "posit<4,1>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 0>("Manual Testing", true), "posit<5,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 1>("Manual Testing", true), "posit<5,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 2>("Manual Testing", true), "posit<5,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 0>(true), "posit<5,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 1>(true), "posit<5,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 2>(true), "posit<5,2>", "sqrt");
 
 	//nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 4>("Manual Testing", true), "posit<8,4>", "sqrt");
 
