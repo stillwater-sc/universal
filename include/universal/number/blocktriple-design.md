@@ -1,11 +1,18 @@
+# blocktriple
 
-blocktriple
+The blocktriple is a parameterized (sign, scale, significant) triple to represent
+floating-point values.
+
+A blocktriple is composed of the three information segments, plus decoded state
+variables that label special state, such as, NaN, Inf, or Zero.
 
     sign         int exp       blockfraction
     nan/inf/zero
 
-goal is to have an efficient representation of the fraction bits to serve as the ready-to-use inputs to add/sub/mul/div/sqrt
-let's call this representation: blockfraction, to indicate that it is implemented using a scalable block segmented representation and algorithm
+The goal is to have an efficient representation of the fraction bits to serve 
+as the ready-to-use inputs to add/sub/mul/div/sqrt
+Let's call this representation: blockfraction, to indicate that it is implemented 
+using a scalable block segmented representation and associated algorithms
 
 blockfraction API needs to be able to 
   - efficiently receive bits from source number systems: areal, cfloat, posit, lns    <---- ESSENTIAL for performance
@@ -23,17 +30,19 @@ blockfraction API needs to be able to
   - for add/sub, need an extra bit to encode largest negative result (-1.0 + 1.0 = -2.0 = b110.00000
 
 
-when generating test cases for triples, we have sign, exponent, and fraction bit enumerations
-when the number is negative, and we need to add, the ALU will benefit from being in 2's complement mode.
-is there a form in which the triple is in tuple form (exp, 2's complement fraction)?
-   how do you normalize a 2's complement number? if positive, simply shift, if negative, first take 2's complement and then shift
+When generating test cases for triples, we have sign, exponent, and fraction bit enumerations.
+When the number is negative, and we need to add, the ALU will benefit from being in 2's complement mode.
+Is there a form in which the triple is in tuple form (exp, 2's complement fraction)?
+How do you normalize a 2's complement number? 
+   if positive, simply shift. 
+   if negative, first take 2's complement, then shift.
 
 1.110011 = 1 + 0.5 + 0.25 + 0.03125 + 0.015625 = 1.796875
 (-1, 5, 1.110011)  -1 * 2^5 * 1.796875 =  -57.5
 ( 1, 7, 1.110011)   1 * 2^7 * 1.796875 =  230.0
 
 
-
+```
 sign for addition is dependent on the quadrant
        y
  - +   |   + +
@@ -206,11 +215,12 @@ for multiplication, we can directly operate on the fraction bits without having 
                                     -------------
                                       11.100+001  -> MSB == 1 -> normalize -> (0, 1, 01.110) -> 3.5
 
-
 The radix point moves to double the fraction bits.
 
+```
 ------------------------------------------------  DIVISION ---------------------------------------------------------
 
+```
 operator+=()
   // test special cases
 
@@ -243,7 +253,7 @@ operator*=()
   return *this 
 }
 
-
+```
 
 LIBRARY ARCHITECTURE
 
