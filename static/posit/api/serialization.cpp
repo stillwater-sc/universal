@@ -14,8 +14,8 @@
 // fourth: enable/disable error-free serialization I/O
 #define POSIT_ERROR_FREE_IO_FORMAT 0
 // fifth: potentiall trace conversions or arithmetic
-#define NUMBER_VERBOSE_OUTPUT
-#define NUMBER_TRACE_CONVERSION
+#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_CONVERSION
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 

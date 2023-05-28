@@ -6,9 +6,9 @@
 #include <iostream>
 #include <string>
 
-// when you define NUMBER_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define NUMBER_VERBOSE_OUTPUT
-#define NUMBER_TRACE_POW
+// when you define ALGORITHM_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_POW
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/valid/valid_impl.hpp>

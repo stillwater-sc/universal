@@ -5,8 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // enable the following define to show the intermediate steps in the fused-dot product
-// #define NUMBER_VERBOSE_OUTPUT
-#define NUMBER_TRACE_MUL
+// #define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_MUL
 #define QUIRE_TRACE_ADD
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1

@@ -5,9 +5,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// when you define NUMBER_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define NUMBER_VERBOSE_OUTPUT
-#define NUMBER_TRACE_POW
+// when you define ALGORITHM_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_POW
 
 // use default number system library configuration
 #include <universal/number/posit/posit.hpp>

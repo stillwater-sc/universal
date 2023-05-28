@@ -10,9 +10,9 @@
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable tracing 
-// when you define NUMBER_VERBOSE_OUTPUT executing an SQRT the code will print intermediate results
-//#define NUMBER_VERBOSE_OUTPUT
-#define NUMBER_TRACE_SQRT
+// when you define ALGORITHM_VERBOSE_OUTPUT executing an SQRT the code will print intermediate results
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_SQRT
 // select a native posit sqrt: default is to cheat and marshall through native double precision to pass through regression tests that compare to std::sqrt references
 // #define POSIT_NATIVE_SQRT 1
 #include <universal/number/posit/posit.hpp>

@@ -4,8 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// when you define NUMBER_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define NUMBER_VERBOSE_OUTPUT
+// when you define ALGORITHM_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
+//#define ALGORITHM_VERBOSE_OUTPUT
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 

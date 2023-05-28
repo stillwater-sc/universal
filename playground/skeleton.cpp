@@ -4,9 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
-// when you define NUMBER_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define NUMBER_VERBOSE_OUTPUT
-#define NUMBER_TRACE_CONVERSION
+// when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_CONVERSION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>

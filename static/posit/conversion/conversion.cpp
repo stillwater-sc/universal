@@ -5,8 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // if you want to trace the posit intermediate results
-// #define NUMBER_VERBOSE_OUTPUT
-#define NUMBER_TRACE_CONVERT
+// #define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_CONVERT
 // enable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 #include <universal/number/posit/posit.hpp>
