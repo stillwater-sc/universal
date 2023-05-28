@@ -86,7 +86,7 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	constexpr bool hasSubnormals   = false;
+	constexpr bool hasSubnormals   = true;
 	constexpr bool hasSupernormals = false;
 	constexpr bool isSaturating    = false;
 

@@ -1,4 +1,4 @@
-// sqrt.cpp: test suite runner for native cfloat square root algorithm
+// sqrt_algorithm_reference.cpp: test suite runner for native floating-point square root algorithm
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
@@ -13,31 +13,50 @@
 #include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in posit.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<typename Cfloat, typename Ty>
-void GenerateTestCase(Ty a) {
-	constexpr unsigned nbits       = Cfloat::nbits;
-	constexpr unsigned es          = Cfloat::es;
-	using BlockType                = typename Cfloat::BlockType;
-	constexpr bool hasSubnormals   = Cfloat::hasSubnormals;
-	constexpr bool hasSupernormals = Cfloat::hasSupernormals;
-	constexpr bool isSaturating    = Cfloat::isSaturating;
-	Ty ref;
-	sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating> ca, cref, csqrt;
-	ca = a;
-	ref = std::sqrt(a);
-	cref = ref;
-	csqrt = sw::universal::sqrt(ca);
+template<typename Real = float>
+void CheckNewtonsIterationAcrossNormals() {
+	std::cout << "Iterate into max normals\n";
+	// std::sqrt(negative) returns a -NaN(ind)
 	auto precision = std::cout.precision();
-	std::cout << std::setprecision(17);
-	std::cout << std::setw(nbits) <<  a << " -> sqrt("  << a << ") = " << std::setw(nbits) << ref << '\n';
-	std::cout << std::setw(nbits) << ca << " -> sqrt(" << ca << ") = " << std::setw(nbits) << csqrt << '\n';
-	std::cout << to_binary(ca) << " -> sqrt(" << ca << ") = " << to_binary(csqrt) << '\n';
-	std::cout << std::setw(nbits + 35) << " reference = " << to_binary(cref) << " : ";
-	std::cout << (cref == csqrt ? "PASS" : "FAIL") << "\n\n";
-	std::cout << color_print(csqrt) << '\n';
-	std::cout << std::setprecision(precision);
+	unsigned COLUMN_WIDTH = std::numeric_limits<Real>::max_digits10 + 3;
+	std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
+	bool printHeader = true;
+	Real base = sqrt(std::numeric_limits<Real>::max());
+	std::cout << "starting base : " << base << '\n';
+	for (int i = 0; i < 4; i++) {
+		Real square = base * base;
+		Real root = sw::universal::newtons_iteration(square);
+		std::cout << "square "     << std::setw(COLUMN_WIDTH) << square
+			      << " root "      << std::setw(COLUMN_WIDTH) << root
+			      << " reference " << std::setw(COLUMN_WIDTH) << base
+			      << " diff "      << std::setw(COLUMN_WIDTH) << (std::abs(root - base)) << '\n';
+		base *= 2.0f;
+	}
+}
+
+template<typename Real = float>
+void CheckNewtonsIterationAcrossSubnormals() {
+	std::cout << "Iterate into subnormals\n";
+	// std::sqrt(negative) returns a -NaN(ind)
+	auto precision = std::cout.precision();
+	unsigned COLUMN_WIDTH = std::numeric_limits<Real>::max_digits10 + 3;
+	std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
+	bool printHeader = true;
+	Real base = sqrt(std::numeric_limits<Real>::min());
+	std::cout << "starting base : " << base << '\n';
+	for (int i = 0; i < 4; i++) {
+		Real square = base * base;
+		Real root = sw::universal::newtons_iteration(square);
+		if (printHeader && !std::isnormal(square)) {
+			std::cout << "Subnormal range\n";
+			printHeader = false;
+		}
+		std::cout	<< "square "     << std::setw(COLUMN_WIDTH) << square 
+					<< " root "	     << std::setw(COLUMN_WIDTH) << root
+					<< " reference " << std::setw(COLUMN_WIDTH) << base
+					<< " diff "      << std::setw(COLUMN_WIDTH) << (std::abs(root - base)) << '\n';
+		base *= 0.5f;
+	}
 }
 
 template<typename Real>
@@ -81,7 +100,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "cfloat square root validation";
+	std::string test_suite  = "float square root experiment";
 	std::string test_tag    = "sqrt";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -94,19 +113,9 @@ try {
 
 #if MANUAL_TESTING
 
-	double v = 2.25;  // sqrt(2.25) = 1.5
-	/* quarter  precision */ GenerateTestCase < cfloat<  8,  2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* half     precision */ GenerateTestCase < cfloat< 16,  5, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* single   precision */ GenerateTestCase < cfloat< 32,  8, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* double   precision */ GenerateTestCase < cfloat< 64, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* extended precision */ GenerateTestCase < cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-	/* quad     precision */ GenerateTestCase < cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
-
+	CheckNewtonsIterationAcrossNormals();
+	CheckNewtonsIterationAcrossSubnormals();
 	CheckNewtonsIteration(2.0f);
-
-epilog:
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,4>", "sqrt");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -125,9 +134,6 @@ epilog:
 #endif
 
 #if REGRESSION_LEVEL_4
-	using Cfloat64_fff = cfloat<64, 11, uint64_t, hasSubnormals, hasSupernormals, isSaturating>;
-
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Cfloat64_fff(SpecificValue::minpos))), type_tag(Cfloat64_fff()), "sqrt");
 
 #endif // REGRESSION_LEVEL_4
 

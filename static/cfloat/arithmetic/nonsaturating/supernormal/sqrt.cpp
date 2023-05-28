@@ -87,7 +87,7 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	constexpr bool hasSubnormals   = false;
-	constexpr bool hasSupernormals = false;
+	constexpr bool hasSupernormals = true;
 	constexpr bool isSaturating    = false;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
