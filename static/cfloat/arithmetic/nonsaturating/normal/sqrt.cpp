@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/number/algorithm/newtons_iteration.hpp>
 // #define CFLOAT_NATIVE_SQRT 1
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -34,6 +35,73 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setw(nbits + 35) << " reference = " << to_binary(cref) << " : ";
 	std::cout << (cref == csqrt ? "PASS" : "FAIL") << "\n\n";
 	std::cout << color_print(csqrt) << '\n';
+	std::cout << std::setprecision(precision);
+}
+
+template<typename Real = float>
+void CheckNewtonsIterationAcrossNormals() {
+	std::cout << "Iterate into max normals\n";
+	// std::sqrt(negative) returns a -NaN(ind)
+	auto precision = std::cout.precision();
+	unsigned COLUMN_WIDTH = std::numeric_limits<Real>::max_digits10 + 3;
+	std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
+	bool printHeader = true;
+	Real base = sqrt(std::numeric_limits<Real>::max());
+	std::cout << "starting base : " << base << '\n';
+	for (int i = 0; i < 4; i++) {
+		Real square = base * base;
+		Real root = sw::universal::newtons_iteration(square);
+		std::cout << "square "     << std::setw(COLUMN_WIDTH) << square
+			      << " root "      << std::setw(COLUMN_WIDTH) << root
+			      << " reference " << std::setw(COLUMN_WIDTH) << base
+			      << " diff "      << std::setw(COLUMN_WIDTH) << (std::abs(root - base)) << '\n';
+		base *= 2.0f;
+	}
+}
+
+template<typename Real = float>
+void CheckNewtonsIterationAcrossSubnormals() {
+	std::cout << "Iterate into subnormals\n";
+	// std::sqrt(negative) returns a -NaN(ind)
+	auto precision = std::cout.precision();
+	unsigned COLUMN_WIDTH = std::numeric_limits<Real>::max_digits10 + 3;
+	std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
+	bool printHeader = true;
+	Real base = sqrt(std::numeric_limits<Real>::min());
+	std::cout << "starting base : " << base << '\n';
+	for (int i = 0; i < 4; i++) {
+		Real square = base * base;
+		Real root = sw::universal::newtons_iteration(square);
+		if (printHeader && !std::isnormal(square)) {
+			std::cout << "Subnormal range\n";
+			printHeader = false;
+		}
+		std::cout	<< "square "     << std::setw(COLUMN_WIDTH) << square 
+					<< " root "	     << std::setw(COLUMN_WIDTH) << root
+					<< " reference " << std::setw(COLUMN_WIDTH) << base
+					<< " diff "      << std::setw(COLUMN_WIDTH) << (std::abs(root - base)) << '\n';
+		base *= 0.5f;
+	}
+}
+
+template<typename Real>
+void CheckNewtonsIteration(Real value) {
+	auto precision = std::cout.precision();
+	std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
+
+	Real reference = sqrt(value);
+	Real root = sw::universal::newtons_iteration(value);
+
+	bool printHeader = true;
+	if (printHeader && !std::isnormal(value)) {
+		std::cout << "Subnormal range\n";
+		printHeader = false;
+	}
+	std::cout << "sqrt( " << value << ")\n";
+	std::cout << "Standard Library   : " << reference << '\n';
+	std::cout << "Newton's Iteration : " << root << '\n';
+	std::cout << "Absolute Error     : " << std::abs(root - reference) << '\n';
+
 	std::cout << std::setprecision(precision);
 }
 
@@ -78,21 +146,11 @@ try {
 	/* extended precision */ GenerateTestCase < cfloat< 80, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
 	/* quad     precision */ GenerateTestCase < cfloat<128, 15, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, double>(v);
 
-#if CHECK_REFERENCE_SQRT_ALGORITHM
-	// std::sqrt(negative) returns a -NaN(ind)
-	cout << setprecision(17);
-	float base = 0.5f;
-	for (int i = 0; i < 32; i++) {
-		float square = base*base;
-		float root = sw::universal::my_test_sqrt(square);
-		cout << "base " << base << " root " << root << endl;
-		base *= 2.0f;
-	}
-	std::cout << "sqrt(2.0) " << sw::universal::my_test_sqrt(2.0f) << '\n';
+	CheckNewtonsIterationAcrossNormals();
+	CheckNewtonsIterationAcrossSubnormals();
+	CheckNewtonsIteration(2.0f);
 
-#endif
-
-next:
+epilog:
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,4>", "sqrt");
 

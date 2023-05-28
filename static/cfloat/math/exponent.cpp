@@ -1,13 +1,13 @@
 // exponent.cpp: test suite runner for exponent (exp, exp2, exp10) functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// when you define cfloat_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define CFLOAT_VERBOSE_OUTPUT
-#define CFLOAT_TRACE_POW
+// when you define NUMBER_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
+//#define NUMBER_VERBOSE_OUTPUT
+#define NUMBER_TRACE_POW
 
 // use default number system library configuration
 #include <universal/number/cfloat/cfloat.hpp>

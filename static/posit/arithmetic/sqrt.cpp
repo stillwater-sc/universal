@@ -10,9 +10,9 @@
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable tracing 
-// when you define POSIT_VERBOSE_OUTPUT executing an SQRT the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_SQRT
+// when you define NUMBER_VERBOSE_OUTPUT executing an SQRT the code will print intermediate results
+//#define NUMBER_VERBOSE_OUTPUT
+#define NUMBER_TRACE_SQRT
 // select a native posit sqrt: default is to cheat and marshall through native double precision to pass through regression tests that compare to std::sqrt references
 // #define POSIT_NATIVE_SQRT 1
 #include <universal/number/posit/posit.hpp>
@@ -122,20 +122,6 @@ try {
 	GenerateSqrtTable<6, 2>();
 	GenerateSqrtTable<6, 3>();
 	GenerateSqrtTable<7, 0>();
-#endif
-
-#if CHECK_REFERENCE_SQRT_ALGORITHM
-	// std::sqrt(negative) returns a -NaN(ind)
-	cout << setprecision(17);
-	float base = 0.5f;
-	for (int i = 0; i < 32; i++) {
-		float square = base*base;
-		float root = sw::universal::my_test_sqrt(square);
-		cout << "base " << base << " root " << root << endl;
-		base *= 2.0f;
-	}
-	std::cout << "sqrt(2.0) " << sw::universal::my_test_sqrt(2.0f) << '\n';
-
 #endif
 
 	// manual exhaustive test

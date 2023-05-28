@@ -26,10 +26,10 @@
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+// arithmetic tracing options
+#include <universal/number/algorithm/trace_constants.hpp>
 // cfloat exception structure
 #include <universal/number/cfloat/exceptions.hpp>
-// cfloat tracing options
-#include <universal/number/cfloat/trace_constants.hpp>
 // composition types used by cfloat
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
@@ -442,7 +442,7 @@ public:
 	}
 
 	cfloat& operator+=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -506,7 +506,7 @@ public:
 		return *this += cfloat(rhs);
 	}
 	cfloat& operator-=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
+		if constexpr (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 		if (rhs.isnan()) 
 			return *this += rhs;
 		else 
@@ -516,7 +516,7 @@ public:
 		return *this -= cfloat(rhs);
 	}
 	cfloat& operator*=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_mul) std::cout << "---------------------- MUL -------------------\n";
+		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------\n";
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -574,7 +574,7 @@ public:
 		product.mul(a, b);
 		convert(product, *this);
 
-		if constexpr (cfloat_trace_mul) std::cout << to_binary(a) << " : " << a << " *\n" << to_binary(b) << " : " << b << " =\n" << to_binary(product) << " : " << product << '\n';
+		if constexpr (_trace_mul) std::cout << to_binary(a) << " : " << a << " *\n" << to_binary(b) << " : " << b << " =\n" << to_binary(product) << " : " << product << '\n';
 
 		return *this;
 	}
@@ -582,7 +582,7 @@ public:
 		return *this *= cfloat(rhs);
 	}
 	cfloat& operator/=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 
 		// special case handling of the inputs
 		// qnan / qnan = qnan
@@ -659,7 +659,7 @@ public:
 		quotient.setradix(BlockTriple::radix);
 		convert(quotient, *this);
 
-		if constexpr (cfloat_trace_div) std::cout << to_binary(a) << " : " << a << " /\n" << to_binary(b) << " : " << b << " =\n" << to_binary(quotient) << " : " << quotient << '\n';
+		if constexpr (_trace_div) std::cout << to_binary(a) << " : " << a << " /\n" << to_binary(b) << " : " << b << " =\n" << to_binary(quotient) << " : " << quotient << '\n';
 
 		return *this;
 	}

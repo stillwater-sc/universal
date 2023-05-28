@@ -5,9 +5,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
 
-// when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_CONVERSION
+// when you define NUMBER_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
+//#define NUMBER_VERBOSE_OUTPUT
+#define NUMBER_TRACE_CONVERSION
 
 #include <string>
 #include <iostream>

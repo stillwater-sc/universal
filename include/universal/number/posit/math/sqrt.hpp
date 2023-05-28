@@ -14,16 +14,6 @@
 namespace sw { namespace universal {
 
 	// straight Babylonian
-	inline double babylonian(double v) {
-		double x_n = 0.5 * v; // initial guess
-		const double eps = 1.0e-7;   // 
-		do {
-			x_n = (x_n + v / x_n) / 2.0;
-		} while (std::abs(x_n * x_n - v) > eps);
-
-		return x_n;
-	}
-
 	template<unsigned nbits, unsigned es>
 	inline posit<nbits, es> BabylonianMethod(const posit<nbits, es>& v) {
 		const double eps = 1.0e-5;
@@ -54,10 +44,10 @@ namespace sw { namespace universal {
 	y0, of the function on the small interval. Such an estimate may
 	be good to perhaps 5 to 10 bits.
 
-	- Apply Newton iteration to refine the result. This takes the form yk =
-	yk?1/2 + (f /2)/yk?1. In base 2, the divisions by two can be done by
-	exponent adjustments in floating-point computation, or by bit shifting
-	in fixed-point computation.
+	- Apply Newton iteration to refine the result. This takes the form 
+	               yk = yk_1/2 + (f /2)/yk_1. 
+	In base 2, the divisions by two can be done by exponent adjustments 
+	in floating-point computation, or by bit shifting in fixed-point computation.
 
 	Convergence of the Newton method is quadratic, so the number of
 	correct bits doubles with each iteration. Thus, a starting point correct
@@ -70,57 +60,6 @@ namespace sw { namespace universal {
 	for the original argument; this step may involve a sign adjustment,
 	and possibly a single multiplication and/or addition.
 	*/
-
-	// reference for fast direct sqrt method
-	inline float my_test_sqrt(float a) {
-		if (_trace_sqrt) std::cout << "----------------------- TEST SQRT -----------------------" << std::endl;
-
-		bool s;
-		int e;
-		float fr;
-		unsigned int _fraction;
-		extract_fp_components(a, s, e, fr, _fraction);
-		if (_trace_sqrt) std::cout << "f          " << a << std::endl;
-		if (_trace_sqrt) std::cout << "e          " << e << std::endl;
-		if (_trace_sqrt) std::cout << "fr         " << fr << std::endl;
-		// onemme = 1.0 - machine epsilon
-		union {
-			float f;
-			unsigned i;
-		} m{ 0 };
-		m.i = 0x3f7fffff;
-		float onemme = m.f;
-
-		// y0 to 7.04 bits
-		double y = 0.41731 + 0.59016 * fr;
-		if (_trace_sqrt) std::cout << "y0         " << y << std::endl;
-
-		// y1 to 15.08 bits
-		double z = y + fr / y;
-		if (_trace_sqrt) std::cout << "y1         " << z << std::endl;
-
-		// y2 to 31.16 bits
-		y = 0.25*z + fr / z;
-		if (_trace_sqrt) std::cout << "y2         " << y << std::endl;
-
-		// Include sqrt(2) factor for odd exponents, and
-		// ensure(0.5 <= y) and (y < 1.0).
-		// Otherwise, exponent calculation is incorrect
-		if (e % 2) {
-			y = y * 0.707106781186547524400844362104;
-			if (_trace_sqrt) std::cout << "y*sqrt0.5  " << y << std::endl;
-			y = (y < 0.5 ? 0.5 : y);  // max(y, 0.5)
-			e = e + 1;
-		}
-		else {
-			y = (y < onemme ? y : onemme); //  min(y, onemme);
-		}
-		if (_trace_sqrt) std::cout << "y adjusted " << y << std::endl;
-		// update exponent to undo range reduction.
-		internal::value<23> v(y);
-		v.setscale((e >> 1) - 1);
-		return v.to_float();
-	}
 
 	// fast sqrt at a given posit configuration.
 	template<unsigned nbits, unsigned es, unsigned fbits>

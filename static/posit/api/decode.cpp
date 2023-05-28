@@ -4,8 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_DECODE
+#define NUMBER_VERBOSE_OUTPUT
+#define NUMBER_TRACE_DECODE
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 

@@ -12,8 +12,8 @@
 #pragma warning(disable : 4820)
 #endif
 // enable the following define to show the intermediate steps in the fused-dot product
-// #define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_MUL
+// #define NUMBER_VERBOSE_OUTPUT
+#define NUMBER_TRACE_MUL
 #define QUIRE_TRACE_ADD
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1

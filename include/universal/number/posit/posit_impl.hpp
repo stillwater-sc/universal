@@ -39,9 +39,9 @@
 #include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/internal/value/value.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/posit/trace_constants.hpp>
 #include <universal/number/posit/fraction.hpp>
 #include <universal/number/posit/exponent.hpp>
 #include <universal/number/posit/regime.hpp>

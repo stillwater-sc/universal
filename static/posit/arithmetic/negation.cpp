@@ -10,9 +10,9 @@
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable tracing 
-// when you define POSIT_VERBOSE_OUTPUT executing an negation the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_NEGATE
+// when you define NUMBER_VERBOSE_OUTPUT executing an negation the code will print intermediate results
+//#define NUMBER_VERBOSE_OUTPUT
+#define NUMBER_TRACE_NEGATE
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>

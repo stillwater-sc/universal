@@ -4,9 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_SQRT
+// when you define NUMBER_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
+//#define NUMBER_VERBOSE_OUTPUT
+#define NUMBER_TRACE_SQRT
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
