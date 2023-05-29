@@ -13,7 +13,26 @@
 // when you define ALGORITHM_VERBOSE_OUTPUT executing an SQRT the code will print intermediate results
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_SQRT
-// select a native posit sqrt: default is to cheat and marshall through native double precision to pass through regression tests that compare to std::sqrt references
+// select a native posit sqrt: default is to cheat and marshall through native double precision 
+// to pass the regression tests that compare to std::sqrt references
+// 
+//                    Native posit sqrt algorithm results
+// posit<10,2>                                                  sqrt PASS
+// posit<12, 2>                                                 sqrt PASS
+// posit<14, 2>                                                 sqrt PASS
+// posit<16, 2>                                                 sqrt PASS
+// posit< 20, 2>                                                sqrt PASS
+// posit< 24, 2>                                                sqrt FAIL 5 failed test cases
+// posit< 28, 2>                                                sqrt FAIL 20 failed test cases
+// posit< 32, 1>                                                sqrt FAIL 188 failed test cases
+// posit< 32, 2>                                                sqrt FAIL 180 failed test cases
+// posit< 32, 3>                                                sqrt FAIL 157 failed test cases
+// posit< 64, 2>                                                sqrt FAIL 998 failed test cases
+// posit< 64, 3>                                                sqrt FAIL 999 failed test cases
+// posit< 64, 4>                                                sqrt FAIL 999 failed test cases
+// The Newton iteration that is used in the native sqrt algorithm
+// needs to run on a higher precision intermediate to yield correct approximation
+//
 // #define POSIT_NATIVE_SQRT 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
@@ -203,20 +222,33 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<14, 2>(reportTestCases), "posit<14,2>", "sqrt");
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 2>(reportTestCases), "posit<16,2>", "sqrt");
 
+	using Posit20_2 = posit<20, 2>;
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit20_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit20_2(SpecificValue::minpos))), type_tag(Posit20_2()), "sqrt");
+	using Posit24_2 = posit<24, 2>;
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit24_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit24_2(SpecificValue::minpos))), type_tag(Posit24_2()), "sqrt");
+	using Posit28_2 = posit<28, 2>;
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit28_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit28_2(SpecificValue::minpos))), type_tag(Posit28_2()), "sqrt");
+
 #endif
 
 #if REGRESSION_LEVEL_3
+	// TBD: currently, these tests will fail as the native posit sqrt algorithm needs one more iteration to match std::sqrt(double)
+	using Posit32_1 = posit<32, 1>;
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_1 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_1(SpecificValue::minpos))), type_tag(Posit32_1()), "sqrt");
+	using Posit32_2 = posit<32, 2>;
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_2(SpecificValue::minpos))), type_tag(Posit32_2()), "sqrt");
+	using Posit32_3 = posit<32, 3>;
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_3 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_3(SpecificValue::minpos))), type_tag(Posit32_3()), "sqrt");
 
 #endif
 
 #if REGRESSION_LEVEL_4
+	// TBD: currently, these tests will fail as the native posit sqrt algorithm needs 2-3 more iterations to match std::sqrt(long double)
 	using Posit64_2 = posit<64, 2>;
-	using Posit64_3 = posit<64, 3>;
-	using Posit64_4 = posit<64, 4>;
-
-	// nbits=64 requires long double compiler support
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_2(SpecificValue::minpos))), type_tag(Posit64_2()), "sqrt");
+	using Posit64_3 = posit<64, 3>;
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_3 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_3(SpecificValue::minpos))), type_tag(Posit64_3()), "sqrt");
+	using Posit64_4 = posit<64, 4>;
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_4 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_4(SpecificValue::minpos))), type_tag(Posit64_4()), "sqrt");
 
 #endif // REGRESSION_LEVEL_4

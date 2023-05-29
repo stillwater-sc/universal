@@ -104,7 +104,7 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned es>
 	inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
 		posit<nbits, es> p;
-		if (a.isneg() || a.isnar()) {
+		if (a.sign()) {
 			p.setnar();
 			return p;
 		}
@@ -122,6 +122,7 @@ namespace sw { namespace universal {
 #else
 	template<unsigned nbits, unsigned es>
 	inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
+		if (a.sign()) return posit<nbits, es>(SpecificValue::nar);
 		return posit<nbits, es>(std::sqrt((double)a));
 	}
 #endif
