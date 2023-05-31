@@ -29,10 +29,9 @@ inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double
 }
 
 // native IEEE-754 component extraction for long double
-// this implementation assumes an 80bit extended precision representation
-// TODO: support a full quad precision long double
+// this implementation supports an 80bit extended precision representation
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, std::uint64_t& _fraction) {
-	assert(sizeof(long double) == 8 || sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64);
+	assert(sizeof(long double) == 8 || (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64));
 	if constexpr (sizeof(long double) == 8) { // check if (long double) is aliased to be just a double
 		_sign = fp < 0.0;
 		_fr = (long double)(::std::frexp(double(fp), &_exponent));
@@ -45,6 +44,8 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 	}
 }
 
+// native IEEE-754 component extraction for long double
+// this implementation supports a proper 128bit quad precision representation
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, internal::uint128& _fraction) {
 	assert(sizeof(long double) == 16 && std::numeric_limits<long double>::digits > 64);
 	_sign = fp < 0.0;
