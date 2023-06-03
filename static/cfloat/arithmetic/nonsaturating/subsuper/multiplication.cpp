@@ -5,8 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
-//#define CFLOAT_VERBOSE_OUTPUT
-//#define CFLOAT_TRACE_MUL
+//#define ALGORITHM_VERBOSE_OUTPUT
+//#define ALGORITHM_TRACE_MUL
 //#define BLOCKTRIPLE_VERBOSE_OUTPUT
 //#define BLOCKTRIPLE_TRACE_MUL
 //#define TRACE_CONVERSION 1

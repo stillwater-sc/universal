@@ -217,10 +217,12 @@ try {
 		Cfloat a; // uninitialized
 		blockbinary<a.fhbits, BlockType> significant;
 
+		std::streamsize precision = std::cout.precision();
+		std::cout << std::setprecision(8);
 		uint32_t pattern = 0x00000001ul;
 		for (unsigned i = 0; i < 24; ++i) {
 			a.setbits(pattern);
-			std::cout << to_binary(a, true) << " " << a << ": ";
+			std::cout << to_binary(a, true) << " : " << a << ": ";
 			pattern <<= 1;
 			std::cout << color_print(subnormal) << " : " << subnormal << std::endl;
 			subnormal *= 2.0f;
@@ -229,9 +231,10 @@ try {
 				constexpr bool isNormal = false;
 				int scale_offset = static_cast<int>(a.significant(significant, isNormal)); // significant will be in leading 1 format, so not interesting unless you are doing arithmetic
 				int check = a.MIN_EXP_NORMAL - scale_offset;
-				std::cout << a.MIN_EXP_NORMAL << " - " << scale_offset << " = (" << check << ") should be equal to " << a.scale() << std::endl;
+				if (check != a.scale()) std::cout << a.MIN_EXP_NORMAL << " - " << scale_offset << " = (" << check << ") should be equal to " << a.scale() << std::endl;
 			}
 		}
+		std::cout << std::setprecision(precision);
 	}
 
 	std::cout << "+---------    Subnormal exponent values   --------+\n";
@@ -241,26 +244,44 @@ try {
 			0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022
 		};
 		for (int i = 1; i < 12; ++i) {
-			std::cout << "es = " << i << " = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
+			std::cout << "es = " << std::setw(2) << i << " = " 
+				<< std::setw(5) << exponents[i] << " : " 
+				<< std::setprecision(17) << subnormal_exponent[i] << std::endl;
 		}
 	}
 
 	std::cout << "+---------    human-readable output for large cfloats   --------+\n";
 	{
+		using sp   = cfloat< 32,  8, uint32_t, true, false, false>;  // single precision
 		using dp   = cfloat< 64, 11, uint32_t, true, false, false>;  // double precision
-//		using ep   = cfloat< 80, 11, uint32_t, true, false, false>;  // extended precision
-//		using quad = cfloat<128, 15, uint8_t, true, false, false>;   // quad precision
+		using ep   = cfloat< 80, 11, uint32_t, true, false, false>;  // extended precision
+		using qp   = cfloat<128, 15, uint8_t, true, false, false>;   // quad precision
 //		using octo = cfloat<256, 18, uint8_t, true, false, false>;   // octo precision
-		using Real = dp;
 
 		auto precision = std::cout.precision();
-		std::cout << std::setprecision(std::numeric_limits<Real>::max_digits10);
-		Real v(SpecificValue::minpos);
-		v = 1.0f;
-//		auto s = to_string(v, precision);
-		std::cout << "value : " << to_binary(v) << " : " << v << '\n';
-		std::cout << v << '\n';
+
+		{
+			std::cout << std::setprecision(std::numeric_limits<sp>::max_digits10);
+			ReportValue(sp(SpecificValue::minpos), "single precision  ");
+		}
+
+		{
+			std::cout << std::setprecision(std::numeric_limits<dp>::max_digits10);
+			ReportValue(dp(SpecificValue::minpos), "double precision  ");
+		}
 	
+		// TBD: the conversion algorithm is too slow, so currently, we are casting to double
+		// using the native conversion function which doesn't support precisions beyond double
+		{
+			std::cout << std::setprecision(std::numeric_limits<ep>::max_digits10);
+			ReportValue(ep(SpecificValue::minpos), "extended precision");
+		}
+
+		{
+			std::cout << std::setprecision(std::numeric_limits<qp>::max_digits10);
+			ReportValue(qp(SpecificValue::minpos), "quad precision    ");
+		}
+
 		// this demonstrates that our conversion is WAY TOO SLOW: takes 4 minutes to create the representation: ETLO 1/23
 //		octo o(SpecificValue::maxpos);
 //		std::cout << std::fixed << o << std::scientific << '\n';
@@ -310,6 +331,25 @@ try {
 
 		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET)      : " << cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_QUIET) << "\n";
 		std::cout << "cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) : " << cfloat(std::numeric_limits<float>::signaling_NaN()).isnan(sw::universal::NAN_TYPE_SIGNALLING) << "\n";
+	}
+
+	// serialization
+	{
+		half h(0.5), hi(0);
+		std::vector<half> v;
+		for (unsigned i = 0; i < 10; ++i) {
+			ReportValue(h, "half precision");
+			v.push_back(h);
+			h *= 0.5f;
+		}
+		std::stringstream s;
+		for (auto h : v) {
+			s << h << ' ';
+		}
+		for (auto h : v) {
+			s >> hi;
+			ReportValue(hi, "half precision");
+		}
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

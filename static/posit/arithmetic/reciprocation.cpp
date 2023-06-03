@@ -10,10 +10,10 @@
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable tracing 
-// when you define POSIT_VERBOSE_OUTPUT executing an reciprocate the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_RECIPROCATE
-#define POSIT_TRACE_CONVERSION
+// when you define ALGORITHM_VERBOSE_OUTPUT executing an reciprocate the code will print intermediate results
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_RECIPROCATE
+#define ALGORITHM_TRACE_CONVERSION
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>

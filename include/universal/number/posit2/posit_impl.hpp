@@ -32,9 +32,10 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+// intermediate value tracing
+#include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posit2/posit_fwd.hpp>
-#include <universal/number/posit2/trace_constants.hpp>
 #include <universal/number/posit2/fraction.hpp>
 #include <universal/number/posit2/exponent.hpp>
 #include <universal/number/posit2/regime.hpp>

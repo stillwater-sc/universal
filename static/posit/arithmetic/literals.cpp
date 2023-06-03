@@ -10,9 +10,9 @@
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable tracing 
-// when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_ADD
+// when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_ADD
 // forth: enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 #include <universal/number/posit/posit.hpp>

@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // if you want to trace the valid intermediate results
-// #define POSIT_VERBOSE_OUTPUT
+// #define ALGORITHM_VERBOSE_OUTPUT
 #define VALID_TRACE_CONVERT
 // enable the ability to use literals in binary logic and arithmetic operators
 #define VALID_ENABLE_LITERALS 1
