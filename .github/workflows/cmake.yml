@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ v3.70, main ]
+    branches: [ fast_specialized_posits, main ]
   pull_request:
     branches: [ main ]
 
