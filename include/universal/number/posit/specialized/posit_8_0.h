@@ -22,7 +22,7 @@ inline bool posit8_isneg(posit8_t p) { return (p.v & 0x80); }
 inline bool posit8_ispos(posit8_t p) { return !(p.v & 0x80); }
 inline bool posit8_ispowerof2(posit8_t p) { return !(p.v & 0x1); }
 
-// decode takes the raw bits of the posit, and returns the regime, m, and returns the fraction bits in 'remainder'
+// decode takes the raw bits of the posit, and returns the regime, m, and returns the remaining bits in 'remaining'
 inline int8_t  posit8_decode_regime(const uint8_t bits, uint8_t* remaining) {
 	int8_t m = 0;
 	*remaining = (bits << 2) & 0xFF;
