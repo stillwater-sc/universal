@@ -266,11 +266,11 @@ private:
 		// 0.1111111..   m =  6  0 ebits   #.          >> 7 = 0
 		uint8_t ebits{ 0 };
 		switch (m) {
-		case -5, 4:
+		case -5: case 4:
 			ebits = (*remaining >> 5);
 			*remaining <<= 1;
 			break;
-		case -7, -6, 5, 6:
+		case -7: case -6: case 5: case 6:
 			ebits = 0;
 			*remaining = 0;
 		default:
