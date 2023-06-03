@@ -9,6 +9,8 @@
 // the compile guards in this file are only valid in the context of the specialization logic
 // configured in the main <universal/number/posit/posit.hpp>
 
+#include <universal/native/integers.hpp>
+
 #ifndef POSIT_FAST_POSIT_8_2
 #define POSIT_FAST_POSIT_8_2 0
 #endif
@@ -246,19 +248,35 @@ private:
 	// extract_exponent takes the regime, and the remaining bits
 	// returns the exponent value, and updates remaining to hold just the fraction bits
 	uint8_t extract_exponent(int8_t m, uint8_t* remaining) const {
-		uint8_t ebits = *remaining;
-		if (m < 0) {
+		//                                 765 432 10
+		// 0.01.00.000   m = -1  2 ebits   #00.000.--  >> 5
+		// 0.001.00.00   m = -2  2 ebits   #00.00.---  >> 5
+		// 0.0001.00.0   m = -3  2 ebits   #00.0.----  >> 5
+		// 0.00001.00.   m = -4  2 ebits   #00.------  >> 5
+		// 0.000001.0.   m = -5  1 ebit    #0-.------  >> 6
+		// 0.0000001..   m = -6  0 ebits   #.          >> 7 = 0
+		// 0.0000000..   m = -7  0 ebits   #.          >> 7 = 0
 
-		}
-		else {
-			// 0.10.00.000   m = 0
-			// 0.110.00.00   m = 1
-			// 0.1110.00.0   m = 2
-			// 0.11110.00.   m = 3
-			// 0.111110.0.   m = 4
-			// 0.1111110..   m = 5
-			// 0.1111111..   m = 6
-			ebits >>= (3 - m);
+		// 0.10.00.000   m =  0  2 ebits   #00.000.--  >> 5
+		// 0.110.00.00   m =  1  2 ebits   #00.00.---  >> 5
+		// 0.1110.00.0   m =  2  2 ebits   #00.0.----  >> 5
+		// 0.11110.00.   m =  3  2 ebits   #00..-----  >> 5
+		// 0.111110.0.   m =  4  1 ebit    #0.-------  >> 6
+		// 0.1111110..   m =  5  0 ebits   #.          >> 7 = 0
+		// 0.1111111..   m =  6  0 ebits   #.          >> 7 = 0
+		uint8_t ebits{ 0 };
+		switch (m) {
+		case -5, 4:
+			ebits = (*remaining >> 5);
+			*remaining <<= 1;
+			break;
+		case -7, -6, 5, 6:
+			ebits = 0;
+			*remaining = 0;
+		default:
+			ebits = (*remaining >> 5);
+			*remaining <<= 2;
+			break;
 		}
 		return ebits;
 	}
@@ -372,13 +390,18 @@ private:
 		uint8_t bits = ((_bits & 0x80) ? -_bits : _bits);	
 		uint8_t remaining = 0;
 		int8_t m = decode_regime(bits, &remaining);
-
+//		std::cout << to_binary(bits, 8) << " : " << to_binary(remaining, 8) << " : ";
+		int regimeScale = (1 << es) * m;
 		float s = (float)(sign_value());
-		float r = (m > 0 ? (float)((uint32_t)(1) << m) : (1.0f / (float)((uint32_t)(1) << -m)));
+		float r = (m > 0 ? (float)(1 << regimeScale) : (1.0f / (float)(1 << -regimeScale)));
 		uint8_t ebits = extract_exponent(m, &remaining);
+//		std::cout << to_binary(ebits, 2) << " : " << to_binary(remaining, 8) << '\n';
 		float e = float((uint32_t(1) << ebits));
-		float f = 1.0f;
-		f += fraction_value(remaining);
+		remaining |= 0x80; // set hidden bit
+		float f = fraction_value(remaining);
+//		std::cout << "regime value   : " << r << '\n';
+//		std::cout << "exponent value : " << e << '\n';
+//		std::cout << "fraction value : " << f << '\n';
 
 		return s * r * e * f;
 	}
@@ -428,8 +451,8 @@ private:
 	posit& float_assign(float rhs) {
 		bool sign = false;
 		bool bitNPlusOne = 0, bitsMore = 0;
-		constexpr float _minpos = 0.015625f;
-		constexpr float _maxpos = 64.0f;
+		constexpr float _minpos = 5.9604644775390625e-08f;
+		constexpr float _maxpos = 16777216.0f;
 
 		sign = (rhs < 0.0) ? true : false;
 
@@ -571,22 +594,6 @@ inline std::string to_string(const posit<NBITS_IS_8, ES_IS_2>& p, std::streamsiz
 	return ss.str();
 }
 
-inline bool twosComplementLessThan(std::uint8_t lhs, std::uint8_t rhs) {
-	// comparison of the sign bit
-	uint8_t mask = 0x80;
-	if ((lhs & mask) == 0 && (rhs & mask) == mask)	return false;
-	if ((lhs & mask) == mask && (rhs & mask) == 0) return true;
-	// sign is equal, compare the remaining bits
-	mask >>= 1;
-	while (mask > 0) {
-		if ((lhs & mask) == 0 && (rhs & mask) == mask)	return true;
-		if ((lhs & mask) == mask && (rhs & mask) == 0) return false;
-		mask >>= 1;
-	}
-	// numbers are equal
-	return false;
-}
-
 // posit - posit binary logic operators
 inline bool operator==(const posit<NBITS_IS_8, ES_IS_2>& lhs, const posit<NBITS_IS_8, ES_IS_2>& rhs) {
 	return lhs._bits == rhs._bits;
@@ -663,7 +670,7 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_8, ES_IS_2>& rhs) {
 }
 
 inline bool operator< (const posit<NBITS_IS_8, ES_IS_2>& lhs, double rhs) {
-	return twosComplementLessThan(lhs._bits, posit<NBITS_IS_8, ES_IS_2>(rhs)._bits);
+	return int8_t(lhs._bits) < int8_t(posit<NBITS_IS_8, ES_IS_2>(rhs)._bits);
 }
 
 #endif // POSIT_ENABLE_LITERALS

@@ -89,6 +89,28 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
+	p.setbits(0x64);
+	std::cout << std::setw(4) << 0x64 << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x65);
+	std::cout << std::setw(4) << 0x65 << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x66);
+	std::cout << std::setw(4) << 0x66 << " : " << color_print(p) << " : " << p << '\n';
+
+	//  124:         01111100        01111100       4       0      16         111110-              0-             ---                         65536          8.2x7Cp
+    //	125:         01111101        01111101       4       0      18         111110 - 1 - -- - 262144
+	p.setbits(0x7C);
+	std::cout << std::setw(4) << 0x7C << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x7D);
+	std::cout << std::setw(4) << 0x7D << " : " << color_print(p) << " : " << p << '\n';
+	float f = float(p);
+
+//	goto epilog;
+
+	for (unsigned i = 0; i < 128; ++i) {
+		p.setbits(i);
+		std::cout << std::setw(4) << i << " : " << color_print(p) << " : " << p << '\n';
+	}
+
 	goto epilog;
 
 	// logic tests
