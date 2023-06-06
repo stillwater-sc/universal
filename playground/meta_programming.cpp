@@ -6,9 +6,9 @@
 #include "common.hpp"
 #include <complex>
 
-// when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_CONVERSION
+// when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_CONVERSION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>

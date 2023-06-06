@@ -43,7 +43,7 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// MODULAR fixed-point (the default)
 
-	// construction
+	std::cout << "fixpnt default construction\n";
 	{
 		int start = nrOfFailedTestCases;
 		// default construction using default arithmetic (Modulo) and default BlockType (uint8_t)
@@ -56,16 +56,7 @@ try {
 		}
 	}
 
-	{
-		using TestType = fixpnt<8, 4, Modulo, uint8_t>;
-		if constexpr (static_cast<bool>(std::is_trivial<TestType>())) {
-			ReportTrivialityOfType<TestType>();
-		}
-		else {
-			std::cout << "FAIL: " << type_tag(TestType()) << " is not yet trivial\n";
-		}
-	}
-
+	std::cout << "fixpnt construction and use with Modulo arithmetic\n";
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
@@ -78,7 +69,18 @@ try {
 		}
 	}
 
-	// extreme cases
+	std::cout << "fixpnt type attributes\n";
+	{
+		using TestType = fixpnt<8, 4, Modulo, uint8_t>;
+		if constexpr (static_cast<bool>(std::is_trivial<TestType>())) {
+			ReportTrivialityOfType<TestType>();
+		}
+		else {
+			std::cout << "FAIL: " << type_tag(TestType()) << " is not yet trivial\n";
+		}
+	}
+
+	std::cout << "fixpnt extreme cases\n";
 	{
 		fixpnt<8, 0, Modulo> a;  // only integers
 		for (int i = 0; i < 5; ++i) {
@@ -100,6 +102,7 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// Saturate fixed-point
 
+	std::cout << "fixpnt construction and use with saturating arithmetic\n";
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
@@ -119,6 +122,7 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// improving efficiency for bigger fixed-points through explicit BlockType specification
 
+	std::cout << "fixpnt construction using specific limb types\n";
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and BlockType
@@ -135,7 +139,7 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	// selectors
 
-		// type tag to identify the type without having to depend on demangle
+	std::cout << "fixpnt type tag to identify the type without having to depend on demangle\n";
 	{
 		using Fixed = fixpnt<16, 2>;
 		Fixed a{ 0 };
@@ -144,6 +148,7 @@ try {
 		std::cout << "type identifier : " << type_tag(fixpnt<8, 4, Saturate, uint16_t>()) << '\n';
 	}
 
+	std::cout << "fixpnt attributes: ULP manipulation\n";
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 8;
@@ -161,6 +166,7 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	// modifiers
 
+	std::cout << "fixpnt modifiers and manipulators\n";
 	{
 		int start = nrOfFailedTestCases;
 		// state/bit management
@@ -190,6 +196,8 @@ try {
 
 	/////////////////////////////////////////////////////////////////////////////
 	// complements
+
+	std::cout << "fixpnt 1's and 2's complement functions\n";
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 8;
@@ -238,6 +246,8 @@ try {
 
 	////////////////////////////////////////////////////////////////////////////////////
 	// parsing and assignment of text input values
+
+	std::cout << "fixpnt parsing and assignment\n";
 	{
 		constexpr unsigned nbits = 12;
 		constexpr unsigned rbits = 8;
@@ -254,6 +264,7 @@ try {
 	///////////////////////////////////////////////////////////////////////////////////
 	// arithmetic
 
+	std::cout << "fixpnt arithmetic\n";
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 16;
@@ -277,6 +288,8 @@ try {
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// logic, in particular, all the literal constant combinations
+
+	std::cout << "fixpnt logic operators\n";
 	{
 		int start = nrOfFailedTestCases;
 		constexpr unsigned nbits = 8;

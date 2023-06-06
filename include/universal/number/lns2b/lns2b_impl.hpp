@@ -709,7 +709,7 @@ protected:
 		if (iszero()) return TargetFloat(0.0f);
 		int signValue = (sign() ? -1 : 1); // cache for later decision
 		// pick up the absolute value of the minimum normal and subnormal exponents 
-		constexpr unsigned minNormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat > ::minNormalExp);
+		//constexpr unsigned minNormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat > ::minNormalExp);
 		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
 		static_assert(fbbits <= minSubnormalExponent, "lns2b::to_ieee754: fraction is too small to represent with requested floating-point type");
 

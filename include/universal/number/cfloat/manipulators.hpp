@@ -23,7 +23,7 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 	s << "cfloat<"
 		<< std::setw(3) << nbits << ", "
 		<< std::setw(3) << es << ", "
-		<< typeid(bt).name() << ", "
+		<< type_tag(bt()) << ", "
 		<< (hasSubnormals ? "hasSubnormals, " : " noSubnormals, ")
 		<< (hasSupernormals ? "hasSupernormals, " : " noSupernormals, ")
 		<< (isSaturating ? "   Saturating>" : "notSaturating>");

@@ -4,12 +4,13 @@
 // Copyright (C) 2022 ITEM, University of Bremen.
 //
 // This file is aimed to provide an addition and to be included in the universal numbers project.
+#include <cassert>
+#include <cstdint>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <bitset>
-#include <cassert>
-#include <cmath>
 
 #include <universal/number/shared/specific_value_encoding.hpp>
 

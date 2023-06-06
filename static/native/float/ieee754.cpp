@@ -1,14 +1,11 @@
 // ieee754.cpp : native IEEE-754 operations
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/utility/long_double.hpp>
 #include <universal/utility/bit_cast.hpp>
-#include <iostream>
-#include <string>
-#include <limits>
 #include <universal/native/ieee754.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -141,7 +138,7 @@ try {
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -192,10 +189,12 @@ try {
 	InfinityAdditions<float>();
 	InfinityAdditions<double>();
 
+	std::cout << "\nNative floating-point ranges\n";
 	std::cout << float_range() << '\n';
 	std::cout << double_range() << '\n';
 	std::cout << longdouble_range() << '\n';
 
+	std::cout << "\nTest cases\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<float>(reportTestCases), "float", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatingPointScales<double>(reportTestCases), "double", test_tag);
 #if LONG_DOUBLE_SUPPORT

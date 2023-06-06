@@ -35,7 +35,12 @@ public:
 		return _NrOfBits;
 	}
 	int scale() const {
-		return int(_Bits.to_ulong());
+		if constexpr (es == 0) {
+			return 0;
+		}
+		else {
+			return int(_Bits.to_ulong());
+		}
 	}
 	long double value() const {
 		return (long double)(uint64_t(1) << scale());

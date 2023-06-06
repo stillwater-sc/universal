@@ -1007,7 +1007,6 @@ namespace sw { namespace universal {
 		Cfloat c{}; // == TestType but marshalled
 		constexpr size_t NEGATIVE_ZERO = (1ull << (nbits - 1)); // pattern 1.00.000
 		constexpr size_t QUIET_NAN = (~0ull >> (64 - nbits + 1)); // pattern 0.11.111
-		size_t i = 0;
 		for (size_t pattern = NR_OF_ENCODINGS - 1; pattern > NEGATIVE_ZERO ; --pattern) {  // remove negative zero from the set
 			c.setbits(pattern);
 //			std::cout << to_binary(pattern, nbits, true) << " : " << to_binary(c, true) << '\n';
@@ -1822,6 +1821,47 @@ namespace sw { namespace universal {
 			}
 		}
 		//		std::cout << std::endl;
+		return nrOfFailedTests;
+	}
+
+	/// <summary>
+	/// Enumerate all square root cases for a cfloat configuration.
+	/// Uses doubles to create a reference to verify against.
+	/// </summary>
+	/// <param name="reportTestCases"></param>
+	/// <returns></returns>
+	template<typename TestType>
+	int VerifySqrt(bool reportTestCases) {
+		constexpr size_t nbits         = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t es            = TestType::es;
+		using BlockType                = typename TestType::BlockType;
+		constexpr bool hasSubnormals   = TestType::hasSubnormals;
+		constexpr bool hasSupernormals = TestType::hasSupernormals;
+		constexpr bool isSaturating    = TestType::isSaturating;
+		using Cfloat = sw::universal::cfloat<nbits, es, BlockType, hasSubnormals, hasSupernormals, isSaturating>;
+
+		constexpr unsigned NR_TEST_CASES = (unsigned(1) << (nbits-1)); // remove the negative values from the test
+		int nrOfFailedTests = 0;
+
+		for (unsigned i = 1; i < NR_TEST_CASES; i++) {
+			Cfloat ca, csqrt, cref;
+			ca.setbits(i);
+			csqrt = sw::universal::sqrt(ca);
+			// generate reference
+			double da = double(ca);
+			cref = std::sqrt(da);
+			if (csqrt != cref) {
+				if (csqrt.isnan() && cref.isnan()) continue;
+				if (csqrt.iszero() && cref.iszero()) continue;
+				nrOfFailedTests++;
+				std::cout << csqrt << " != " << cref << std::endl;
+				if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", ca, cref, csqrt);
+				if (nrOfFailedTests > 24) return nrOfFailedTests;
+			}
+			else {
+				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", ca, cref, csqrt);
+			}
+		}
 		return nrOfFailedTests;
 	}
 

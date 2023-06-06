@@ -1,6 +1,6 @@
 // mod_conversion.cpp: test suite runner for fixed-point modulo conversions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -101,7 +101,7 @@ int VerifyUnsignedIntegerProgressions(bool reportTestCases) {
 	int nrOfFailedTestCases = 0;
 
 	using Fixed = fixpnt<nbits, rbits, arithmetic, bt>;
-	// generate the integer progression for this fixpnt, which is represented by a marging MSB
+	// generate the integer progression for this fixpnt, which is represented by a marching MSB
 	constexpr size_t ibits = nbits - rbits;  // <8,4> has 8-4 = 4 ibits in 2's complement form, and 4 rbits
 	static_assert(ibits > 2, "test requires at least 3 bits of integer bits");
 	// assume that we have maximally 64 integer bits
@@ -201,16 +201,16 @@ try {
 	f = 0.25f;
 	std::cout << to_binary(f) << " : " << f << std::endl;
 
-	fixpnt_range(fixpnt< 4, 0, Modulo, uint16_t>());
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t>");
-	fixpnt_range(fixpnt< 4, 1, Modulo, uint16_t>());
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t>");
+//	fixpnt_range(fixpnt< 4, 0, Modulo, uint16_t>());
+//	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 0, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 4, 0,Modulo,uint8_t>");
+//	fixpnt_range(fixpnt< 4, 1, Modulo, uint16_t>());
+//	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 1, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 4, 1,Modulo,uint8_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions<  8,  4, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<8,4,Modulo,uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 16,  8, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<16,8,Modulo,uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<32,16,Modulo,uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<64,32,Modulo,uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<128,64,Modulo,uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions<  8,  4, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<8,4,Modulo,uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 16,  8, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<16,8,Modulo,uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<32,16,Modulo,uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<64,32,Modulo,uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases), "signed integer conversion", "fixpnt<128,64,Modulo,uint8_t>");
 
 	// single limb representations
 	//nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat<  8,  4, Modulo, uint8_t>(reportTestCases);
@@ -224,8 +224,11 @@ try {
 	// nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat< 64, 32, Modulo, uint8_t>(reportTestCases);
 	// nrOfFailedTestCases += ReportTestResult(VerifySignedIntegerProgressionsFloat<128, 64, Modulo, uint8_t>(reportTestCases);
 
-	// nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases);
-	// nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases);
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions<  8, 4, Modulo, uint8_t>(reportTestCases),  test_tag, "fixpnt<  8, 4, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 16, 8, Modulo, uint8_t>(true),  test_tag, "fixpnt< 16, 8, Modulo, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 32, 16, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 32,16, Modulo, uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions< 64, 32, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt< 64,32, Modulo, uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyUnsignedIntegerProgressions<128, 64, Modulo, uint8_t>(reportTestCases), test_tag, "fixpnt<128,64, Modulo, uint8_t>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

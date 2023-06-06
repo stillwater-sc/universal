@@ -93,8 +93,8 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
-	void ReportValue(const TestType& a) {
-		std::cout << to_binary(a) << " : " << a << '\n';
+	void ReportValue(const TestType& a, const std::string& label = "") {
+		std::cout << label << " : " << to_binary(a) << " : " << a << '\n';
 	}
 
 	template<typename TestType>

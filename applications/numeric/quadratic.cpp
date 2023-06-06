@@ -172,6 +172,22 @@ void CompareRoots(float fa, float fb, float fc) {
 		std::cout << std::setw(TAG_WIDTH) << type_tag(Scalar()) << " roots: " << roots.first << ", " << roots.second << std::endl;
 	}
 }
+
+template<typename Real>
+Real MyKernel(const Real& a, const Real& b) {
+	return a * b;  // replace this with your kernel computation
+}
+
+constexpr double pi = 3.14159265358979323846;
+
+void Test() {
+	using Real = sw::universal::half; // half-precision IEEE-754 floating-point  
+
+	Real a = sqrt(2);
+	Real b = pi;
+	std::cout << "Result: " << MyKernel(a, b) << std::endl;
+}
+
 int main()
 try {
 	using namespace sw::universal;
@@ -187,6 +203,9 @@ try {
 
 	CompareRoots(3.0f, 5.0f, -7.0f);
 
+	std::cout << "\n\n\n";
+
+	Test();
 
 	std::cout << std::setprecision(precision);
 	std::cout << std::endl;

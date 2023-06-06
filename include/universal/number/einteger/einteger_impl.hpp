@@ -923,14 +923,14 @@ bool parse(const std::string& number, einteger<BlockType>& value) {
 	else if (std::regex_match(number, binary_regex)) {
 		//std::cout << "found a binary integer representation\n";
 		Integer scale = 1;
-		bool sign{ false };
+		//bool sign{ false };
 		unsigned byte{ 0 }; // using an unsigned to simplify accumulation, but accumulating 8-bit byte values
 		unsigned bitIndex = 0;
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
 			if (*r == '-') {
-				sign = true;;
+				//sign = true;;
 			}
 			else if (*r == '+') {
 				break;

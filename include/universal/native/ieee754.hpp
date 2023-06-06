@@ -1,7 +1,7 @@
 #pragma once
 // ieee754.hpp: manipulation functions for IEEE-754 native types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
@@ -9,8 +9,12 @@
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 #include <limits>
 #include <tuple>
+// configure the low level compiler interface to deal with floating-point bit manipulation
+#include <universal/utility/architecture.hpp>
+#include <universal/utility/compiler.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>
+// support functions
 #include <universal/native/integers.hpp>
 #include <universal/native/manipulators.hpp>
 #include <universal/native/attributes.hpp>
@@ -60,13 +64,17 @@ namespace sw { namespace universal {
 #if BIT_CAST_SUPPORT
 #include <universal/native/constexpr754.hpp>
 #else
-#include <universal/native/nonconstexpr754.hpp>
+#include <universal/native/ieee754_float.hpp>
+#include <universal/native/ieee754_double.hpp>
+#include <universal/native/ieee754_longdouble.hpp>
+// above includes are a refactoring of this old include
+//#include <universal/native/nonconstexpr754.hpp>
 #endif
 
 namespace sw { namespace universal {
 
 	template<typename Real>
-	std::ostream& operator<<(std::ostream& ostr, const ieee754_parameter<Real>& v) {
+	::std::ostream& operator<<(::std::ostream& ostr, const ieee754_parameter<Real>& v) {
 		ostr << "Total number of bits        : " << v.nbits << '\n';
 		ostr << "number of exponent bits     : " << v.ebits << '\n';              // number of exponent bits
 		ostr << "number of fraction bits     : " << v.fbits << '\n';              // number of fraction bits		
@@ -95,7 +103,7 @@ namespace sw { namespace universal {
 
 // return the Unit in the Last Position
 template<typename Real,
-	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+	typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 >
 inline Real ulp(const Real& a) {
 	return std::nextafter(a, a + a/2.0f) - a;
@@ -103,7 +111,7 @@ inline Real ulp(const Real& a) {
 
 // check if the floating-point number is zero
 template<typename Real,
-	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+	typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 >
 inline bool iszero(const Real& a) {
 	return (std::fpclassify(a) == FP_ZERO);
@@ -111,7 +119,7 @@ inline bool iszero(const Real& a) {
 
 // compile time power of 2
 template<typename Real, size_t powerOfTwo,
-	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+	typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 >
 inline constexpr Real ipow() {
 	Real base = 2.0f;
@@ -128,7 +136,7 @@ inline constexpr Real ipow() {
 
 // fast power of 2 with positive exponent
 template<typename Real,
-	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+	typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 >
 inline constexpr Real ipow(size_t exp) {
 	Real base = 2.0f;
@@ -162,14 +170,14 @@ int _extractExponent(Real v) {
 	// de-bias
 	int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
 	if (raw == 0) { // a subnormal encoding
-		int msb = findMostSignificantBit(frac);
+		int msb = static_cast<int>(findMostSignificantBit(frac));
 		e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
 	}
 	return e;
 }
 
 template<typename Real,
-	 typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+	 typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 >
 int scale(Real v) {
 	int _e{0};
@@ -201,9 +209,9 @@ Uint _extractSignificant(Real v) {
 }
 
 template<typename Real,
-	     typename = typename std::enable_if<std::is_floating_point<Real>::value, Real>::type
+	     typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
 >
-std::uint64_t significant(Real v) {
+unsigned long long significant(Real v) {
 	std::uint64_t _f{ 0 };
 	if constexpr (sizeof(Real) == 2) { // half precision floating-point
 		_f = _extractSignificant<std::uint16_t>(v);

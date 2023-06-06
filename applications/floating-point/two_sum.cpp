@@ -4,8 +4,7 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/test_suite.hpp>
 
 /*
 important properties of linear floating point arithmetic:
@@ -118,22 +117,20 @@ int ValidateTwoSum(const std::string& tag, bool reportTestCases) {
 
 #define MANUAL_TEST 0
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	// print detailed bit-level computational intermediate results
-	// bool verbose = false;
-
+	std::string test_suite  = "application two-sum";
+	std::string test_tag    = "two-sum";
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
-	bool reportTestCases = true;
-	std::string tag = "TwoSum failed: ";
 
 	// preserve the existing ostream precision
 	auto precision = std::cout.precision();
 	std::cout << std::setprecision(12);
 
-	std::cout << "Posit TwoSum validation" << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TEST
 
@@ -155,40 +152,44 @@ try {
 	++a;
 	std::cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << '\n';
 
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<2, 0>(tag, reportTestCases), "posit<2,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<2, 0>(test_tag, reportTestCases), "posit<2,0>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<3, 0>(tag, reportTestCases), "posit<3,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<3, 1>(tag, reportTestCases), "posit<3,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<3, 0>(test_tag, reportTestCases), "posit<3,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<3, 1>(test_tag, reportTestCases), "posit<3,1>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 0>(tag, reportTestCases), "posit<4,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 1>(tag, reportTestCases), "posit<4,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 2>(tag, reportTestCases), "posit<4,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 0>(test_tag, reportTestCases), "posit<4,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 1>(test_tag, reportTestCases), "posit<4,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<4, 2>(test_tag, reportTestCases), "posit<4,2>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 0>(tag, reportTestCases), "posit<5,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 1>(tag, reportTestCases), "posit<5,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 2>(tag, reportTestCases), "posit<5,2>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 3>(tag, reportTestCases), "posit<5,3>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 0>(test_tag, reportTestCases), "posit<5,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 1>(test_tag, reportTestCases), "posit<5,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 2>(test_tag, reportTestCases), "posit<5,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<5, 3>(test_tag, reportTestCases), "posit<5,3>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 0>(tag, reportTestCases), "posit<6,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 1>(tag, reportTestCases), "posit<6,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 2>(tag, reportTestCases), "posit<6,2>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 3>(tag, reportTestCases), "posit<6,3>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 4>(tag, reportTestCases), "posit<6,4>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 0>(test_tag, reportTestCases), "posit<6,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 1>(test_tag, reportTestCases), "posit<6,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 2>(test_tag, reportTestCases), "posit<6,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 3>(test_tag, reportTestCases), "posit<6,3>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 4>(test_tag, reportTestCases), "posit<6,4>", "twoSum");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 0>(tag, reportTestCases), "posit<8,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 1>(tag, reportTestCases), "posit<8,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 2>(tag, reportTestCases), "posit<8,2>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 3>(tag, reportTestCases), "posit<8,3>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(tag, reportTestCases), "posit<8,4>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(tag, reportTestCases), "posit<8,5>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 0>(test_tag, reportTestCases), "posit<8,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 1>(test_tag, reportTestCases), "posit<8,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 2>(test_tag, reportTestCases), "posit<8,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 3>(test_tag, reportTestCases), "posit<8,3>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(test_tag, reportTestCases), "posit<8,4>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(test_tag, reportTestCases), "posit<8,5>", "twoSum");
 
-#endif // MANUAL_TEST
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);
 
-	return EXIT_SUCCESS;
+	//return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;  // standard posits fail the twoSum test of floating-point, so ignore failures
+#endif // MANUAL_TEST
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

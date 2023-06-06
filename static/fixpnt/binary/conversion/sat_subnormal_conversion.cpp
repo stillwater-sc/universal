@@ -30,10 +30,11 @@ The minimum positive normal value is 2−126 ≈ 1.18 × 10−38.
 The minimum positive(subnormal) value is 2−149 ≈ 1.4 × 10−45.
 */
 
-template<size_t nbits, size_t rbits>
 void TestDenormalizedNumberConversions() {
 	using namespace sw::universal;
 
+	constexpr unsigned nbits = 151;
+	constexpr unsigned rbits = 149;
 	// minimum positive normal value of a single precision float == 2^-126
 	float minpos_normal = 1.1754943508222875079687365372222e-38;
 	std::cout << to_binary(minpos_normal) << '\n';
@@ -41,12 +42,12 @@ void TestDenormalizedNumberConversions() {
 	std::cout << to_binary(minpos_subnormal) << '\n';
 
 	fixpnt<nbits, rbits> a;
-	float f = minpos_normal;
-	for (int i = 0; i < 16; ++i) {
-		f *= 0.5f;
-		a = 1;
-		std::cout << to_float(a) << '\n';
-//		std::cout << setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << '\n';
+	a.setbits(0x1);
+	float f = minpos_subnormal;
+	for (int i = 0; i < 23; ++i) {
+		std::cout << std::setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << '\n';
+		f *= 2.0f;
+		a *= 2;
 	}
 }
 
@@ -109,7 +110,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "Fixed-point saturating subnormal conversion ";
+	std::string test_suite  = "Fixed-point saturating subnormal conversion";
 	std::string test_tag    = "conversion of IEEE-754 subnormals";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -138,10 +139,13 @@ try {
 	// can't use the regular exhaustive test suites for these very large fixed-points
 	// nrOfFailedTestCases = ReportTestResult(ValidateAssignment<256, 150, Modular, uint32_t, float>(reportTestCases), tag, "fixpnt<4,0, Modular, uint32_t>");
 	
+	TestDenormalizedNumberConversions();
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
+#pragma message("Fixed-point saturating subnormal conversion : TBD")
 
 #if REGRESSION_LEVEL_1
 

@@ -13,20 +13,21 @@ namespace sw { namespace universal { namespace blas {
     vector<Scalar> gaussian_random_vector(unsigned N, double mean = 100.00, double stddev = 6.00) {
         vector<Scalar> v(N);
         return gaussian_random(v, mean, stddev);
+
     }
 
     template<typename Scalar>
-    inline vector<Scalar>& gaussian_random(vector<Scalar>& omega, double mean = 100.00, double stddev = 6.00) {
+    inline vector<Scalar>& gaussian_random(vector<Scalar>& v, double mean = 100.00, double stddev = 6.00) {
         using value_type = typename vector<Scalar>::value_type;
         using size_type = typename vector<Scalar>::size_type;
-        const size_type nrElements = size(omega);
+        const size_type nrElements = size(v);
         std::random_device rd;
         std::mt19937 rng(rd());
         for (size_type i = 0; i < nrElements; ++i) {
             std::normal_distribution<double> s(mean, stddev);
-            omega[i] = value_type(s(rng));
+            v[i] = value_type(s(rng));
         }
-        return omega;
+        return v;
     }
 
     // generate a gaussian random MxN matrix
@@ -37,19 +38,19 @@ namespace sw { namespace universal { namespace blas {
     }
 
     template<typename Scalar>
-    inline matrix<Scalar> gaussian_random(matrix<Scalar>& omega, double mean = 100.00, double stddev = 6.00){
+    inline matrix<Scalar>& gaussian_random(matrix<Scalar>& A, double mean = 100.00, double stddev = 6.00){
         using value_type = typename matrix<Scalar>::value_type;
         using size_type = typename matrix<Scalar>::size_type;
-        const size_type ncols = num_cols(omega), nrows = num_rows(omega);                
+        const size_type ncols = num_cols(A), nrows = num_rows(A);                
         std::random_device rd;
         std::mt19937 rng(rd());                
         for(size_t i=0; i<nrows; ++i) {
             for(size_t j=0; j<ncols; ++j) {
                 std::normal_distribution<double> s(mean, stddev);
-                omega[i][j]=value_type(s(rng));
+                A[i][j]=value_type(s(rng));
             }
         }
-        return omega;
+        return A;
     }
 
 

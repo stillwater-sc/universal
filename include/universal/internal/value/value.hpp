@@ -1,7 +1,7 @@
 #pragma once
 // value.hpp: definition of a (sign, scale, significant) representation of an approximation to a real value
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -13,7 +13,9 @@
 
 #include <universal/common/exceptions.hpp>
 #include <universal/number/support/decimal.hpp>
-#include <universal/native/nonconstexpr754.hpp>
+#include <universal/native/ieee754_float.hpp>
+#include <universal/native/ieee754_double.hpp>
+#include <universal/native/ieee754_longdouble.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 
@@ -275,22 +277,40 @@ public:
 		case FP_NORMAL:
 			{
 				long double _fr{0};
-				unsigned long long _63b_fraction_without_hidden_bit{0};
 				int _exponent{0};
-				extract_fp_components(rhs, _sign, _exponent, _fr, _63b_fraction_without_hidden_bit);
-				_scale = _exponent - 1;
+				// fraction without hidden bit moved into the if
+
 				// how to interpret the fraction bits: TODO: this should be a static compile-time code block
-				if (sizeof(long double) == 8) {
+				if constexpr (sizeof(long double) == 8) {
 					// we are just a double and thus only have 52bits of fraction
+
+					std::uint64_t _63b_fraction_without_hidden_bit{0};
+					extract_fp_components(rhs, _sign, _exponent, _fr, _63b_fraction_without_hidden_bit);
+					_scale = _exponent - 1;
+
 					_fraction = extract_52b_fraction<fbits>(_63b_fraction_without_hidden_bit);
 					if (_trace_value_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
 				}
-				else if (sizeof(long double) == 16) {
+				else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
 					// how to differentiate between 80bit and 128bit formats?
+
+					std::uint64_t _63b_fraction_without_hidden_bit{0};
+					extract_fp_components(rhs, _sign, _exponent, _fr, _63b_fraction_without_hidden_bit);
+					_scale = _exponent - 1;
+
 					_fraction = extract_63b_fraction<fbits>(_63b_fraction_without_hidden_bit);
 					if (_trace_value_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 63b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
+				} else if constexpr (sizeof(long double) == 16  && std::numeric_limits<long double>::digits <= 128) {
+					internal::uint128 _112b_fraction_without_hidden_bit{0};
+					extract_fp_components(rhs, _sign, _exponent, _fr, _112b_fraction_without_hidden_bit);
+					_scale = _exponent - 1;
+
+					_fraction = extract_long_double_fraction<fbits>(&_112b_fraction_without_hidden_bit);
+					if (_trace_value_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 112b fraction upper 0x" << std::hex << _112b_fraction_without_hidden_bit.upper << " lower 0x" << std::hex << _112b_fraction_without_hidden_bit.lower << " _fraction b" << _fraction << std::dec << std::endl;
+				} else {
+					assert(false);
 				}
 				_nrOfBits = fbits;
 			}

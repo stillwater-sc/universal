@@ -1,17 +1,18 @@
 #pragma once
 // blocksignificant.hpp: parameterized blocked binary number system representing the bits of the floating-point significant scaled for the different arithmetic operations {+,-,*,/}
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cstdint>
+#include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
 
 #include <universal/internal/blocksignificant/blocksignificant_fwd.hpp>
 
-// should be defined by calling environment, just catching it here just in case it is not
+// should be defined by calling environment, just catching it here in case it is not
 #ifndef LONG_DOUBLE_SUPPORT
 #pragma message("LONG_DOUBLE_SUPPORT is not defined")
 #define LONG_DOUBLE_SUPPORT 0

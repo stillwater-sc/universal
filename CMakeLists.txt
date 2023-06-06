@@ -35,7 +35,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 67)
+  set(UNIVERSAL_VERSION_MINOR 70)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -138,7 +138,8 @@ option(BUILD_NUMBER_CONVERSIONS          "Set to ON to build conversion test sui
 
 # Basic Linear Algebra tests
 option(BUILD_LINEAR_ALGEBRA_BLAS         "Set to ON to build the BLAS tests"                   OFF)
-option(BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the BLAS vector math lib"         OFF)
+option(BUILD_LINEAR_ALGEBRA_VMATH        "Set to ON to build the vector math lib"              OFF)
+option(BUILD_LINEAR_ALGEBRA_DATA         "Set to ON to build the data prep math lib"           OFF)
 
 # benchmarking
 option(BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
@@ -197,7 +198,7 @@ endmacro()
 
 
 # Use cmake scripts and modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ools/cmake")
 trace_variable(CMAKE_MODULE_PATH)
 
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
@@ -213,6 +214,7 @@ endif()
 # Configure the compiler options
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#message(STATUS "C++17 has been enabled by default")
 message(STATUS "C++20 has been enabled by default")
 
 # enable the regression testing level of the build
@@ -579,9 +581,10 @@ if(BUILD_ALL)
 	# build the BLAS test/verification suites
 	set(BUILD_LINEAR_ALGEBRA_BLAS ON)
 	set(BUILD_LINEAR_ALGEBRA_VMATH ON)
+	set(BUILD_LINEAR_ALGEBRA_DATA ON)
 
 	# build the C API library
-	set(BUILD_C_API_PURE_LIB ON)
+	#set(BUILD_C_API_PURE_LIB ON)
 	set(BUILD_C_API_SHIM_LIB ON)
 
 	# build the HW validation environment
@@ -817,6 +820,7 @@ endif(BUILD_MIXEDPRECISION_TENSOR)
 # error benchmarks
 if(BUILD_BENCHMARK_ERROR)
 add_subdirectory("benchmark/error/sampling")
+add_subdirectory("benchmark/error/scaling")
 add_subdirectory("benchmark/error/blas")
 endif(BUILD_BENCHMARK_ERROR)
 
@@ -847,6 +851,7 @@ endif(BUILD_BENCHMARK_ENERGY)
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
+add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
 # educational examples
@@ -946,6 +951,9 @@ endif(BUILD_LINEAR_ALGEBRA_BLAS)
 if(BUILD_LINEAR_ALGEBRA_VMATH)
 add_subdirectory("linalg/vmath")
 endif(BUILD_LINEAR_ALGEBRA_VMATH)
+if(BUILD_LINEAR_ALGEBRA_DATA)
+add_subdirectory("linalg/data")
+endif(BUILD_LINEAR_ALGEBRA_DATA)
 
 ####
 # Configuration summary

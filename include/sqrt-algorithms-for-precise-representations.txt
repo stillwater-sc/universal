@@ -1,0 +1,66 @@
+
+johngustafson
+
+If you want to do a 64-bit posit square root, you will need one more iteration of Newton-Raphson, and you will need to use more than 64-bit fixed-point precision for that last iteration. The piecewise linear approximation in SoftPosit gives you an initial guess good to about 9 bits, and Newton-Raphson roughly doubles the number of correct bits on each iteration so we only needed one iteration for 16-bit posit square root (max. of 12 significant bits) and two iterations for 32-bit posit square roots (max. of 28 significant bits). For 64-bit posits, you need 60 significant bits in general, plus a few more to achieve correct rounding. Three iterations total will get you there, but be very careful with the fixed-point arithmetic to preserve as many significant bits as possible, using a bit of extended-precision integer arithmetic for the last iteration.
+
+John
+
+--
+
+MitchAlsup
+
+On Wednesday, May 24, 2023 at 9:22:07 AM UTC-5 johngustafson wrote:
+If you want to do a 64-bit posit square root, you will need one more iteration of Newton-Raphson, and you will need to use more than 64-bit fixed-point precision for that last iteration.
+
+IEEE 754 HW FMUL units that did Goldschmidt FDIV and SQRT instructions require 57-bits to obtains a 53-bit accurately rounded fraction which then fits in a 52-bit (with hidden bit) container.
+
+Goldschmidt is an algorithm related to Newton-Raphson except while NR has two dependent multiplies per step, Goldschmidt has two independent multiplies per step. Goldschmidt also converges by doubling the accurate bits every step. Newton-Raphson has the property of self correction whereas Goldschmidt does not. So, once enough bits have been obtained, the last step is a Newton-Raphson Multiply-Subtract, and from this ½ step one can determine the rounding to be applied {0, +1, +2}
+
+Given that Goldschmidt with a ½ step of NR gives IEEE accurate FDIVs and SWRTs, but here the multiplier is 57×57 instead of 53×53. I suspect the Posit version will require at least those same 4-more bits of precision.
+
+However, if you are computing a SQRT that sits right at the edge of a regime where the lesser rounding ends up in regime=k {with e=max} and the greater rounding ends up in regime k+1 {e = min}, that you will need even more bits than above by almost exactly the number of bits in the exponent posit<size,{1,2,3}>. But note:: regime k+1 may have greater fraction size when the number represented is in [0..¼] or lesser fraction size [4..infinity] So you may end  up needing those bits for regime k or regime k+1.
+
+johngustafson
+
+The first step in any posit square root routine is to return NaR if the MSB is a 1 (which takes care of all negative inputs and NaR input), and then return 0 if the input is 0.
+
+The next step is to decode the scaling factor from the regime and exponent, and do argument reduction either to [1, 2) or [2, 4), producing the scale factor of the square root while you're at it. I do not see how you can land on the edge of a regime. Mitch, can you provide an example where this happens, ideally in low precision so it's easier to read? 
+
+Three iterations of Newton-Raphson using the starting piecewise linear function in SoftPosit should provide about 70 correct bits, more than enough to round correctly to 60 bits. Correct rounding is usually accomplished using the Tuckerman test or "Tuckerman rounding" in the case where the rounding lands on the tie point between two representable values. It requires two multiplies and comparison tests. The SoftPosit method uses the technique developed by John Hauser for SoftFloat, that keeps the errors all positive or all negative after each Newton-Raphson iteration, and then you only need one multiply and comparison to break the tie.
+
+It is not necessary to have 4 more bits than what you're going to round to… but the more bits you have, the less chance that you land on a tie case and have to invoke the Tuckerman test, so that improves speed. While Cerlane wrote almost all of SoftPosit, I did supply the square root routines for her library, and I'm pretty sure that for the 32-bit posits I got 31 bits of accuracy after two Newton-Raphson iterations, just 3 bits more than the 28 bits needed in general. And it works.
+
+John
+
+
+MitchAlsup
+
+On Wednesday, May 24, 2023 at 2:03:13 PM UTC-5 johngustafson wrote:
+The first step in any posit square root routine is to return NaR if the MSB is a 1 (which takes care of all negative inputs and NaR input), and then return 0 if the input is 0.
+
+The next step is to decode the scaling factor from the regime and exponent, and do argument reduction either to [1, 2) or [2, 4), producing the scale factor of the square root while you're at it. I do not see how you can land on the edge of a regime. Mitch, can you provide an example where this happens, ideally in low precision so it's easier to read? 
+
+IEEE HW takes the LoB of the exponent which tells whether the domain is [1..2) of [2..4). To get Goldschmid stated (or NR) one uses the LoB of exponent and the top 10-bits of fraction (11-bits) indexes a table that produces 9 bits. The table entries have been arranged such that that first iteration multiplication(s) gives a result greater than 7.6 bits of precision. I generally call this 11-bits IN 9-bits OUT table. FDIV + SQRT has between 17,000 and 19,000 total bits.
+
+Three iterations of Newton-Raphson using the starting piecewise linear function in SoftPosit should provide about 70 correct bits, more than enough to round correctly to 60 bits.
+
+That may be true for FDIV and SQRT but it is not true for other functions which can be calculated with Newton-Raphson. The Muller book indicates that one "in general" needs 2×n+3 bits to correctly round things like Ln() or exp(). But it is true that one needs only 4-bits beyond the fraction LoB for "faithful" rounding. Matula patents mention using 6-bits in the fraction (SP) transcendentals ATI (now AMD) GPUs.
+ 
+Correct rounding is usually accomplished using the Tuckerman test or "Tuckerman rounding" in the case where the rounding lands on the tie point between two representable values. It requires two multiplies and comparison tests.
+
+This is the ½ Newton-Raphson iteration I spoke of before. (Funny, I never heard of it being called the Tuckerman test. I will put that in my reference list.}
+ 
+The SoftPosit method uses the technique developed by John Hauser for SoftFloat, that keeps the errors all positive or all negative after each Newton-Raphson iteration, and then you only need one multiply and comparison to break the tie.
+
+Keeping all the errors in a known direction is mandatory for making FDIV and SQRT work with Goldschmidt iteration scheme. In fact the Goldschmidt  tables I mention are organized such that the result of the even iterations have positive error and odd iterations negative. This enables convergence from a known direction and simplifies rounding.
+ 
+
+It is not necessary to have 4 more bits than what you're going to round to… but the more bits you have, the less chance that you land on a tie case and have to invoke the Tuckerman test, so that improves speed.
+
+Any HW implementation would simply place the Tuckerman test and correction as the last step before round and normalize. And this is the primary reason FDIV is 17 cycles instead of 13 (FMAC-based 57×57 multiplier tree with 11-bit IN and 9-bit OUT tables). I had a design in 1992 where we would broadcast FDIV results in cycle 13 and then perform the test and correction and rebroadcast the result if rounding changed the result; rounding did change the result about 3 times in every 128 calculations, so we got statistical performance of 13.35 cycles FDIV.
+ 
+While Cerlane wrote almost all of SoftPosit, I did supply the square root routines for her library, and I'm pretty sure that for the 32-bit posits I got 31 bits of accuracy after two Newton-Raphson iterations, just 3 bits more than the 28 bits needed in general. And it works.
+
+John
+
+Mitch 

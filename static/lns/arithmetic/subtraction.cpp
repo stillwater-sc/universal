@@ -19,9 +19,9 @@ namespace sw { namespace universal {
 	template<typename LnsType>
 	int VerifySubtraction(bool reportTestCases) {
 		constexpr size_t nbits = LnsType::nbits;
-		constexpr size_t rbits = LnsType::rbits;
-		constexpr Behavior behavior = LnsType::behavior;
-		using bt = typename LnsType::BlockType;
+		//constexpr size_t rbits = LnsType::rbits;
+		//constexpr Behavior behavior = LnsType::behavior;
+		//using bt = typename LnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
 		int nrOfFailedTestCases = 0;

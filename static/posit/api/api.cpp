@@ -16,6 +16,7 @@
 #define POSIT_ERROR_FREE_IO_FORMAT 0
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/posit/posit.hpp>
+#include <universal/verification/test_suite.hpp>
 
 int main()
 try {
@@ -28,23 +29,23 @@ try {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// posit construction, initialization, assignment and comparisions
 
+	std::cout << "*** posit construction, initialization, assignment, and comparisons\n";
 	{
-		int start = nrOfFailedTestCases;
 		// maxpos of a posit<8,0> = 64
-		posit<8, 0> a(-64), b(-128), c(64), d(-64);
+		posit<8, 0> a(-64), b(128), c(64), d(-64);
 		// b initialized to -128 in saturating arithmetic becomes -64
 		if (0 != (c + d)) ++nrOfFailedTestCases; //cout << to_binary(c + d) << endl;
-		if (a != b) ++nrOfFailedTestCases;
+		if (a != -b) ++nrOfFailedTestCases;
 
 		if (a != (d - 32)) ++nrOfFailedTestCases; // saturating to maxneg
 		if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
-		if (nrOfFailedTestCases - start > 0) {
-			std::cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << '\n';
-			std::cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << '\n';
-		}
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
+		std::cout << to_binary(c) << " : " << c << '\n';
+		std::cout << to_binary(d) << " : " << d << '\n';
 	}
 
-	// type tag to identify the type without having to depend on demangle
+	std::cout << "*** type tag to identify the type without having to depend on demangle\n";
 	{
 		using Posit = posit<16, 2>;
 		Posit a{ 0 };
@@ -55,6 +56,40 @@ try {
 		std::cout << "standard posit  : " << type_tag(posit< 64, 2>()) << '\n';
 		std::cout << "standard posit  : " << type_tag(posit<128, 2>()) << '\n';
 		std::cout << "standard posit  : " << type_tag(posit<256, 2>()) << '\n';
+	}
+
+	std::cout << "*** special cases\n";
+	{
+		using Posit = posit<8, 0>;
+		Posit a;
+		a.setnar();  ReportValue(a, "NaR    : ");
+		a.maxpos();  ReportValue(a, "maxpos : ");
+		a = 1;       ReportValue(a, "  1    : ");
+		a.minpos();  ReportValue(a, "minpos : ");
+		a.setzero(); ReportValue(a, "zero   : ");
+		a.minneg();  ReportValue(a, "minneg : ");
+		a = -1;      ReportValue(a, " -1    : ");
+		a.maxneg();  ReportValue(a, "maxneg : ");
+	}
+
+	std::cout << "*** binary, color, and value printing\n";
+	{
+		using Posit = posit<5, 1>;
+		Posit a;
+		for (unsigned i = 0; i < 32; ++i) {
+			a.setbits(i);
+			std::cout << to_binary(a) << " : " << color_print(a) << " : " << a << '\n';
+		}
+	}
+
+	std::cout << "*** pretty and info printing\n";
+	{
+		using Posit = posit<5, 1>;
+		Posit a;
+		for (unsigned i = 0; i < 32; ++i) {
+			a.setbits(i);
+			std::cout << std::left << std::setw(30) << pretty_print(a) << " : " << info_print(a) << '\n';
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////

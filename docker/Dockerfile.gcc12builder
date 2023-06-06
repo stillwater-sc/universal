@@ -5,7 +5,7 @@
 # docker push stillwater/universal:gcc12builder
 
 # BUILDER stage
-FROM gcc:12.1 as gcc12builder
+FROM gcc:12.2 as gcc12builder
 LABEL Theodore Omtzigt
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
@@ -39,5 +39,5 @@ USER stillwater
 WORKDIR /home/stillwater
 
 # add a command that when you run the container without a command, it produces something meaningful
-ENV CONTAINER_ID "Universal Numbers Library Builder GCC 12.1"
+ENV CONTAINER_ID "Universal Numbers Library Builder GCC 12.2"
 CMD ["/usr/bin/env", "bash"]

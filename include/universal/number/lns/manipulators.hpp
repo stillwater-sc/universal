@@ -19,10 +19,11 @@ namespace sw { namespace universal {
 	>
 	inline std::string type_tag(const LnsType & = {}) {
 		std::stringstream s;
+		typename LnsType::BlockType bt{0};
 		s << "lns<"
 			<< std::setw(3) << LnsType::nbits << ", "
 			<< std::setw(3) << LnsType::rbits << ", "
-			<< typeid(typename LnsType::BlockType).name() << ", "
+			<< type_tag(bt) << ", "
 		<< std::setw(10) << type_tag(Behavior{ LnsType::behavior }) << '>';
 		return s.str();
 	}

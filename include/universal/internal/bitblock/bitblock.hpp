@@ -1,14 +1,14 @@
 #pragma once
 //  bitblock.hpp : bitblock class
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <sstream>
+#include <cstdint>
+#include <cassert>
 #include <iostream>
 #include <iomanip>
-// this should be removed when we have made the transition away from std::bitset to sw::unum::bitblock
-#include <cassert>
+#include <sstream>
 #include <bitset>
 #include <universal/native/boolean_logic_operators.hpp>
 #include <universal/internal/bitblock/exceptions.hpp>

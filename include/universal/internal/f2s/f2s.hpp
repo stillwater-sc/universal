@@ -137,7 +137,7 @@ namespace sw {
 
 		template<typename UnsignedInt>
 		void GetCachedPowerForBinaryExponentRange(const int min_exponent, const int max_exponent, f2s<UnsignedInt>& power, int& decimal_exponent) {
-			using F2S = f2s<UnsignedInt>;
+			//using F2S = f2s<UnsignedInt>;
 			int kQ = sizeof(UnsignedInt) * 4;
 			double k = std::ceil((min_exponent + kQ - 1) * kD_1_LOG2_10);
 			int index =	(kCachedPowersOffset + static_cast<int>(k) - 1) / kDecimalExponentDistance + 1;

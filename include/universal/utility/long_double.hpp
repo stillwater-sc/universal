@@ -1,11 +1,14 @@
+#pragma once
 // long_double.hpp: compiler specialization for long double support
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// compilation guard fir long double support to enable ARM and RISC-V embedded environments
-
+// Some compilers, in particular MSVC, does not support a long double type.
+// For floating-point bit twiddling, we need to know the backing
+// store of the type. This compiler check yields the define LONG_DOUBLE_SUPPORT
+// with the answer to that question.
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -29,14 +32,6 @@
 
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
-#define LONG_DOUBLE_SUPPORT 0
-
-#elif defined(_ARM)
-/* ARM ------------------------------------------------------ */
-#define LONG_DOUBLE_SUPPORT 0
-
-#elif defined(_RISCV)
-/* RISC-V GNU GCC/G++ --------------------------------------- */
 #define LONG_DOUBLE_SUPPORT 0
 
 #elif defined(__PGI)

@@ -303,7 +303,7 @@ namespace sw {
 		std::string grisu(double v) noexcept {
 			gfp<UnsignedInt> w; w = v; // construction must normalize denormals
 			int q = sizeof(UnsignedInt) * 8;
-			int alpha{ 0 }, gamma{ 3 };
+			int alpha{ 0 }; //, gamma{ 3 };
 			int mk = decimalScale(w.exponent() + q, alpha);
 			CachedPower c_mk = CachedPowers[mk];
 			gfp<UnsignedInt> p10;

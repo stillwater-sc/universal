@@ -11,12 +11,12 @@
 # example would be to strace an executable to find its dependencies
 
 MAJOR=v3
-MINOR=64
+MINOR=70
 VERSION="$MAJOR.$MINOR"
 
 if [[ $# == 0 ]]; then
 	# default is to build with Clang 14
-	docker build --force-rm -t "stillwater/universal:$VERSION" -t stillwater/universal:latest -f "../Dockerfile.clang14" ..
+	docker build --force-rm -t "stillwater/universal:$VERSION" -t stillwater/universal:latest -f Dockerfile.clang14 ..
 else 
 	# pick up the compiler to use
 	COMPILER=$1
@@ -25,5 +25,5 @@ else
 	else
 		TARGET=BUILD_ALL
 	fi
-	docker build --force-rm -t "stillwater/universal:$VERSION" --build-arg "target=$TARGET" -f "../Dockerfile.$COMPILER" ..
+	docker build --force-rm -t "stillwater/universal:$VERSION" --build-arg "target=$TARGET" -f "Dockerfile.$COMPILER" ..
 fi

@@ -1,32 +1,23 @@
 // cfloat16.cpp: test suite runner for standard cfloat16, the original brain float
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <iomanip>
-
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
-
-	// map the Google brain float, cfloat16, onto the classic cfloats
-	constexpr size_t nbits = 16;
-	constexpr size_t ebits = 8;
-	using cfloat16 = cfloat<nbits, ebits>;
+	using bfloat16 = sw::universal::bfloat_t;
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = " cfloat<16,8>";
+	std::string tag = "bfloat16";
 
-	std::cout << "Standard cfloat<16,8> configuration tests\n";
+	std::cout << "Google Brain Floating-point configuration tests\n";
 
-	cfloat16 r;
+	bfloat16 r;
 	r = 1.2345;
 	std::cout << r << '\n';
 

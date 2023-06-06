@@ -39,9 +39,9 @@
 #include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/internal/value/value.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+#include <universal/number/algorithm/trace_constants.hpp>
 // posit environment
 #include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/posit/trace_constants.hpp>
 #include <universal/number/posit/fraction.hpp>
 #include <universal/number/posit/exponent.hpp>
 #include <universal/number/posit/regime.hpp>
@@ -144,7 +144,16 @@ int decode_regime(const internal::bitblock<nbits>& raw_bits) {
 // extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
 template<unsigned nbits, unsigned es, unsigned fbits>
 void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
-	// check special case
+	// check special cases
+	bitblock<nbits> nar;
+	nar[nbits - 1] = true;
+	if (raw_bits == nar) {
+		_sign = true;
+		_regime.setzero();
+		_exponent.setzero();
+		_fraction.setzero();
+		return;
+	}
 	bitblock<nbits> zero;
 	if (raw_bits == zero) {
 		_sign = false;
@@ -204,8 +213,9 @@ void decode(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _re
 		if (tmp.none()) {
 			// setnar();   special case = NaR (Not a Real)
 			_sign = true;
-			_regime.setinf();
+			_regime.setzero();
 			_exponent.reset();
+			_fraction.reset();
 		}
 		else {
 			extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);

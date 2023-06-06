@@ -1,17 +1,12 @@
 #pragma once
 // manipulators.hpp: definitions of helper functions for posit type manipulation
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <iostream>
 #include <iomanip>
-#include <cmath>  // for frexp/frexpf
-#include <typeinfo>  // for typeid()
-
-// pull in the color printing for shells utility
-#include <universal/utility/color_print.hpp>
+#include <universal/utility/color_print.hpp>  // base class for color printing in shells
 
 // This file contains functions that manipulate a posit type
 // using posit number system knowledge.
@@ -172,9 +167,9 @@ std::string info_print(const posit<nbits, es>& p, int printPrecision = 17) {
 	fraction<fbits>      _fraction;
 	decode(p.get(), _sign, _regime, _exponent, _fraction);
 
-	str << "raw: " << p.get() << " decoded: " << decoded(p) << " "
+	str << "raw: " << p.get() << " " // << " decoded: " << decoded(p) << " "
 		<< quadrant(p) << " "
-		<< (_sign ? "negative r" : "positive r")
+		<< (_sign ? "s1 r" : "s0 r")
 		<< _regime << " e"
 		<< _exponent << " f"
 		<< _fraction << " : value "
@@ -191,7 +186,7 @@ std::string color_print(const posit<nbits, es>& p) {
 	regime<nbits, es>    _regime;
 	exponent<nbits, es>  _exponent;
 	fraction<fbits>      _fraction;
-	decode(p.get(), _sign, _regime, _exponent, _fraction);
+	extract_fields(p.get(), _sign, _regime, _exponent, _fraction);
 
 	Color red(ColorCode::FG_RED);
 	Color yellow(ColorCode::FG_YELLOW);
@@ -202,24 +197,29 @@ std::string color_print(const posit<nbits, es>& p) {
 	Color def(ColorCode::FG_DEFAULT);
 	str << red << (p.isneg() ? "1" : "0");
 
-	bitblock<nbits - 1> r = _regime.get();
-	int regimeBits = (int)_regime.nrBits();
-	int nrOfRegimeBitsProcessed = 0;
-	for (unsigned i = 0; i < nbits - 1; ++i) {
-		unsigned bitIndex = nbits - 2u - i;
-		if (regimeBits > nrOfRegimeBitsProcessed++) {
-			str << yellow << (_sign ? (r[bitIndex] ? '0' : '1') : (r[bitIndex] ? '1' : '0'));
+	if (p.isnar()) {
+		for (unsigned i = 0; i < nbits - 1; ++i) str << yellow << '0';
+	}
+	else {
+		bitblock<nbits - 1> r = _regime.get();
+		int regimeBits = (int)_regime.nrBits();
+		int nrOfRegimeBitsProcessed = 0;
+		for (unsigned i = 0; i < nbits - 1; ++i) {
+			unsigned bitIndex = nbits - 2u - i;
+			if (regimeBits > nrOfRegimeBitsProcessed++) {
+				str << yellow << (r[bitIndex] ? '1' : '0');
+			}
 		}
 	}
 
-	bitblock<es> e = _exponent.get();
 	int exponentBits = (int)_exponent.nrBits();
 	int nrOfExponentBitsProcessed = 0;
 	if constexpr (es > 0) {
 		for (unsigned i = 0; i < es; ++i) {
+			bitblock<es> e = _exponent.get();
 			unsigned bitIndex = es - 1u - i;
 			if (exponentBits > nrOfExponentBitsProcessed++) {
-				str << cyan << (_sign ? (e[bitIndex] ? '0' : '1') : (e[bitIndex] ? '1' : '0'));
+				str << cyan << (e[bitIndex] ? '1' : '0');
 			}
 		}
 	}

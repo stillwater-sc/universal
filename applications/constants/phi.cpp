@@ -48,11 +48,10 @@ sw::universal::fixpnt<fbits+5, fbits> goldenRatio() {
 	return (1 + sqrt(phi)) / 2;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	print_cmd_line(argc, argv);
 	int nrOfFailedTestCases = 0;
 
 	std::cout << "Perfect approximations of the Golden Ratio constant PHI for different number systems\n";

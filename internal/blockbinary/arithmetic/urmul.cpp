@@ -80,16 +80,14 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	long long _a, _b, _c;
 	_a = (long long)a;
 	_b = (long long)b;
+	_c = _a * _b;
 	result = a * b;
-	_c = (long long)result;
-
 
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _a * _b << std::endl;
-	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _a * _b << ")   " << std::endl;
-//	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
-	reference.setbits(_a * _b);
+	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
+	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << std::endl;
+	reference.setbits(_c);
 	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }

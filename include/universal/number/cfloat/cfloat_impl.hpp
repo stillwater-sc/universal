@@ -12,7 +12,7 @@
 // 80bit IEEE-754 extended precision floats
 // true 128bit quad precision floats
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -26,10 +26,10 @@
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
+// arithmetic tracing options
+#include <universal/number/algorithm/trace_constants.hpp>
 // cfloat exception structure
 #include <universal/number/cfloat/exceptions.hpp>
-// cfloat tracing options
-#include <universal/number/cfloat/trace_constants.hpp>
 // composition types used by cfloat
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
@@ -214,12 +214,12 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 
 		// get the rounding direction and the LSB right shift: 
 		std::pair<bool, unsigned> alignment = src.roundingDecision(adjustment);
-		bool roundup = alignment.first;
 		unsigned rightShift = alignment.second;  // this is the shift to get the LSB of the src to the LSB of the tgt
-		//std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
 		//std::cout << "rightShift       " << rightShift << '\n';
 
 		if constexpr (btType::bfbits < 65) {
+			bool roundup = alignment.first;
+			//std::cout << "round-up?        " << (roundup ? "yes" : "no") << '\n';
 			// we can use a uint64_t to construct the cfloat
 			uint64_t raw = (src.sign() ? 1ull : 0ull); // process sign
 			//std::cout << "raw bits (sign)  " << to_binary(raw) << '\n';
@@ -291,7 +291,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
 /// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
 /// <typeparam name="hasSubnormals">configure gradual underflow (==subnormals)</typeparam>
-/// <typeparam name="hasSupernormals">configure graudal overflow (==supernormals)</typeparam>
+/// <typeparam name="hasSupernormals">configure gradual overflow (==supernormals)</typeparam>
 /// <typeparam name="isSaturating">configure saturation arithmetic</typeparam>
 template<unsigned _nbits, unsigned _es, typename bt = uint8_t,
 	bool _hasSubnormals = false, bool _hasSupernormals = false, bool _isSaturating = false>
@@ -442,7 +442,7 @@ public:
 	}
 
 	cfloat& operator+=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -506,7 +506,7 @@ public:
 		return *this += cfloat(rhs);
 	}
 	cfloat& operator-=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
+		if constexpr (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 		if (rhs.isnan()) 
 			return *this += rhs;
 		else 
@@ -516,7 +516,7 @@ public:
 		return *this -= cfloat(rhs);
 	}
 	cfloat& operator*=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_mul) std::cout << "---------------------- MUL -------------------\n";
+		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------\n";
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
 		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
@@ -574,7 +574,7 @@ public:
 		product.mul(a, b);
 		convert(product, *this);
 
-		if constexpr (cfloat_trace_mul) std::cout << to_binary(a) << " : " << a << " *\n" << to_binary(b) << " : " << b << " =\n" << to_binary(product) << " : " << product << '\n';
+		if constexpr (_trace_mul) std::cout << to_binary(a) << " : " << a << " *\n" << to_binary(b) << " : " << b << " =\n" << to_binary(product) << " : " << product << '\n';
 
 		return *this;
 	}
@@ -582,7 +582,7 @@ public:
 		return *this *= cfloat(rhs);
 	}
 	cfloat& operator/=(const cfloat& rhs) {
-		if constexpr (cfloat_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 
 		// special case handling of the inputs
 		// qnan / qnan = qnan
@@ -659,7 +659,7 @@ public:
 		quotient.setradix(BlockTriple::radix);
 		convert(quotient, *this);
 
-		if constexpr (cfloat_trace_div) std::cout << to_binary(a) << " : " << a << " /\n" << to_binary(b) << " : " << b << " =\n" << to_binary(quotient) << " : " << quotient << '\n';
+		if constexpr (_trace_div) std::cout << to_binary(a) << " : " << a << " /\n" << to_binary(b) << " : " << b << " =\n" << to_binary(quotient) << " : " << quotient << '\n';
 
 		return *this;
 	}
@@ -835,7 +835,7 @@ public:
 					}
 					else {
 						// special case, we need to jump past all the subnormal value encodings 1.01.0000 = minneg normal
-						setexponent(1ul - EXP_BIAS);
+						setexponent(1 - EXP_BIAS);
 						setsign(true);
 					}
 				}
@@ -3148,10 +3148,12 @@ inline std::ostream& operator<<(std::ostream& ostr, const cfloat<nbits, es, bt, 
 	return ostr << representation;
 }
 
-// istream input: TBD
+// istream input: currently marshalling through native double
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::istream& operator>>(std::istream& istr, const cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
-	istr >> v._fraction;
+inline std::istream& operator>>(std::istream& istr, cfloat<nbits,es,bt,hasSubnormals,hasSupernormals,isSaturating>& v) {
+	double d(0.0);
+	istr >> d;
+	v = d;
 	return istr;
 }
 
@@ -3750,7 +3752,7 @@ inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 }
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
-	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt>(rhs));
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, int rhs) {
@@ -3776,7 +3778,7 @@ inline bool operator> (const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 }
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline bool operator<=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {
-	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt>(rhs));
+	return operator<(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs)) || operator==(lhs, cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>(rhs));
 }
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline bool operator>=(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& lhs, long long rhs) {

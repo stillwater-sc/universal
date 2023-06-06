@@ -3,8 +3,12 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
-// pull in the posit number system
+#include <universal/utility/directives.hpp>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <string>
+
 #include <universal/number/posit/posit.hpp>
 
 int main(int argc, char** argv)

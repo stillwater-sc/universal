@@ -1,14 +1,14 @@
 // efunc_valids.cpp: playgound to experiment with the elementary math functions on valids
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
 #include <complex>
 
-// when you define VALID_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define VALID_VERBOSE_OUTPUT
-#define VALID_TRACE_CONVERSION
+// when you define ALGORITHM_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_CONVERSION
 // enable valid arithmetic exceptions
 #define VALID_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/valid/valid.hpp>
