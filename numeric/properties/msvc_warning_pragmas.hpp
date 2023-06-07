@@ -1,6 +1,4 @@
-// common.hpp : include file for standard system include files,
-// or project specific include files that are used frequently, but
-// are changed infrequently
+// msvc_warning_pragmas.hpp : include file to disable MSVC warnings
 //
 #pragma once
 #ifndef NDEBUG
@@ -14,15 +12,3 @@
 #pragma warning(disable : 5026) // warning C5026 : 'std::_Generic_error_category' : move constructor was implicitly defined as deleted
 #pragma warning(disable : 5027) // warning C5027 : 'std::_Generic_error_category' : move assignment operator was implicitly defined as deleted
 #endif 
-#include <cstdint>	// uint8_t, etc.
-
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <string>
-
-#include <vector>
-#include <algorithm>
-#include <utility>  // contains std::pair<>
-
-

@@ -95,6 +95,7 @@ option(BUILD_APPLICATIONS                "Set to ON to build application example
 
 # numerical and special math functions
 option(BUILD_NUMERIC_FUNCTIONS           "Set to ON to build special function programs"        OFF)
+option(BUILD_NUMERIC_FAITHFUL            "Set to ON to build faithful arithmetic tests"        OFF)
 option(BUILD_NUMERIC_QUIRES              "Set to ON to build quire programs"                   OFF)
 option(BUILD_NUMERIC_CHALLENGES          "Set to ON to build numerical challenge programs"     OFF)
 option(BUILD_NUMERIC_UTILS               "Set to ON to build numerical utilities"              OFF)
@@ -646,6 +647,7 @@ endif(BUILD_NUMBER_STATICS)
 # build numerical tools and tests
 if(BUILD_NUMERICS)
 	set(BUILD_NUMERIC_FUNCTIONS ON)
+	set(BUILD_NUMERIC_FAITHFUL ON)
 	set(BUILD_NUMERIC_QUIRES ON)
 	set(BUILD_NUMERIC_CHALLENGES ON)
 	set(BUILD_NUMERIC_UTILS ON)
@@ -898,24 +900,27 @@ endif(BUILD_APPLICATIONS)
 ##################################################################
 ###          numerical utilities and challenges 
 
-# numerical benchmarks and challenge problems
-if(BUILD_NUMERIC_CHALLENGES)
-add_subdirectory("numeric/properties")
-endif(BUILD_NUMERIC_CHALLENGES)
-
-if(BUILD_NUMERIC_UTILS)
-add_subdirectory("numeric/utils")
-endif(BUILD_NUMERIC_UTILS)
-
-if(BUILD_NUMERIC_FUNCTIONS)
-add_subdirectory("numeric/functions")
-endif(BUILD_NUMERIC_FUNCTIONS)
-
+# quire capability
+if(BUILD_NUMERIC_FAITHFUL)
+add_subdirectory("numeric/faithful")
+endif(BUILD_NUMERIC_FAITHFUL)
 # quire capability
 if(BUILD_NUMERIC_QUIRES)
 add_subdirectory("numeric/quire/ieee754")
 endif(BUILD_NUMERIC_QUIRES)
-
+# numeric utilities
+if(BUILD_NUMERIC_UTILS)
+add_subdirectory("numeric/utils")
+endif(BUILD_NUMERIC_UTILS)
+# numerical benchmarks and challenge problems
+if(BUILD_NUMERIC_CHALLENGES)
+add_subdirectory("numeric/properties")
+endif(BUILD_NUMERIC_CHALLENGES)
+# numeric functions of interest
+if(BUILD_NUMERIC_FUNCTIONS)
+add_subdirectory("numeric/functions")
+endif(BUILD_NUMERIC_FUNCTIONS)
+# FPBench examples
 if(BUILD_NUMERIC_FPBENCH)
 add_subdirectory("numeric/fpbench")
 endif(BUILD_NUMERIC_FPBENCH)

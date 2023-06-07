@@ -112,11 +112,11 @@ try {
 	// quire for float nbits= 32 es = 8
 	quire<32, 8, capacity> q;
 	sw::universal::internal::value<54> maxpos, maxpos_squared, minpos, minpos_squared;
-	double dmax = std::numeric_limits<float>::max();
+	constexpr double dmax = std::numeric_limits<float>::max();
 	maxpos = dmax;
 	maxpos_squared = dmax*dmax;
 	std::cout << "maxpos * maxpos = " << sw::universal::internal::to_triple(maxpos_squared) << std::endl;
-	double dmin = std::numeric_limits<float>::min();
+	constexpr double dmin = std::numeric_limits<float>::min();
 	minpos = dmin;
 	minpos_squared = dmin*dmin;
 	std::cout << "minpos * minpos = " << sw::universal::internal::to_triple(minpos_squared) << std::endl;
