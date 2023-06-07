@@ -48,10 +48,10 @@ faithful<FloatingPointType>& maxneg(faithful<FloatingPointType>& lmaxneg) {
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<typename FloatingPointType = uint8_t>
+template<typename FloatingPointType = double>
 class faithful {
 public:
-	faithful() {}
+	faithful() : value{ 0 }, error{ 0 } {}
 
 	faithful(const faithful&) = default;
 	faithful(faithful&&) = default;
@@ -69,30 +69,70 @@ public:
 	faithful(long double initial_value)        { *this = initial_value; }
 
 	// assignment operators
-	faithful& operator=(signed char rhs) { return *this = (long long)(rhs); }
-	faithful& operator=(short rhs) { return *this = (long long)(rhs); }
-	faithful& operator=(int rhs) { return *this = (long long)(rhs); }
-	faithful& operator=(long long rhs) { return *this; }
-	faithful& operator=(unsigned long long rhs) { return *this; }
-	faithful& operator=(float rhs) { return *this; } 
-	faithful& operator=(double rhs) { return *this; }
-	faithful& operator=(long double rhs) { return *this; }
+	faithful& operator=(signed char rhs) {
+		value = static_cast<FloatingPointType>(rhs);
+		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		return *this;
+	}
+	faithful& operator=(short rhs) {
+		value = static_cast<FloatingPointType>(rhs);
+		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		return *this;
+	}
+	faithful& operator=(int rhs) { 
+		value = static_cast<FloatingPointType>(rhs); 
+		error = static_cast<FloatingPointType>((long double)(rhs) - (long double)(value)); 
+		return *this; 
+	}
+	faithful& operator=(long long rhs) {
+		value = static_cast<FloatingPointType>(rhs);
+		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		return *this;
+	}
+	faithful& operator=(unsigned long long rhs) {
+		value = static_cast<FloatingPointType>(rhs);
+		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		return *this;
+	}
+	faithful& operator=(float rhs) {
+		value = static_cast<FloatingPointType>(rhs);
+		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		return *this;
+	}
+	faithful& operator=(double rhs) {
+		value = static_cast<FloatingPointType>(rhs);
+		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		return *this;
+	}
+	faithful& operator=(long double rhs) {
+		value = static_cast<FloatingPointType>(rhs);
+		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		return *this;
+	}
 
 	// arithmetic operators
 	// prefix operator
-	faithful operator-() const {				
+	faithful operator-() const {
+		value = -value;
+		error = -error;
 		return *this;
 	}
 
 	// in-place arithmetic assignment operators
-	faithful& operator+=(const faithful& rhs) { return *this; }
+	faithful& operator+=(const faithful& rhs) {
+		FloatingPointType a(value), b(rhs.value), s, r;
+		twoSum(a, b, s, r);
+		value = s;
+		error += r;
+		return *this; 
+	}
 	faithful& operator+=(double rhs) { return *this += faithful(rhs); }
 	faithful& operator-=(const faithful& rhs) { return *this; }
-	faithful& operator-=(double rhs) { return *this -= faithful<FloatingPointType>(rhs); }
+	faithful& operator-=(double rhs) { return *this -= faithful(rhs); }
 	faithful& operator*=(const faithful& rhs) { return *this; }
-	faithful& operator*=(double rhs) { return *this *= faithful<FloatingPointType>(rhs); }
+	faithful& operator*=(double rhs) { return *this *= faithful(rhs); }
 	faithful& operator/=(const faithful& rhs) { return *this; }
-	faithful& operator/=(double rhs) { return *this /= faithful<FloatingPointType>(rhs); }
+	faithful& operator/=(double rhs) { return *this /= faithful(rhs); }
 
 	// prefix/postfix operators
 	faithful& operator++() {
@@ -116,23 +156,21 @@ public:
 	void reset() {	}
 
 	// selectors
-	inline bool isneg() const { return false; }
-	inline bool iszero() const { return false; }
+	inline bool isneg() const { return value < 0.0; }
+	inline bool iszero() const { return value == 0.0 && error == 0.0; }
 	inline bool isinf() const { return false; }
 	inline bool isnan() const { return false; }
-	inline bool sign() const { return false; }
-	inline int scale() const { return false; }
-	inline std::string get() const { return std::string("tbd"); }
-
+	inline bool sign() const { return value < 0.0; }
+	inline int scale() const { return sw::universal::scale(value); }
 
 	long double to_long_double() const {
-		return 0.0l;
+		return (long double)(value);
 	}
 	double to_double() const {
-		return 0.0;
+		return double(value);
 	}
 	float to_float() const {
-		return 0.0f;
+		return float(value);
 	}
 	// Maybe remove explicit
 	explicit operator long double() const { return to_long_double(); }
@@ -140,6 +178,8 @@ public:
 	explicit operator float() const { return to_float(); }
 
 private:
+	FloatingPointType value;
+	FloatingPointType error;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<typename FPType>
