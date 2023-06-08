@@ -5,8 +5,7 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/faithful/faithful.hpp>
-#include <universal/functions/twosum.hpp>
-
+#include <universal/analysis/twosum.hpp>
 
 template<typename Scalar>
 void traceTwoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
@@ -55,14 +54,22 @@ try {
 		using Real = float;
 		Real a, b, s, r;
 
-		a = 0.5f + std::numeric_limits<Real>::epsilon() / 2.0f;
+		constexpr Real eps = std::numeric_limits<Real>::epsilon();
+		constexpr Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
+		a = 0.5f + epsHalf;
 		b = 1.0f;
+		std::cout << std::fixed;
+		std::cout << to_binary(eps) << " : " << eps << '\n';
+		std::cout << to_binary(epsHalf) << " : " << epsHalf << '\n';
+		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(b) << " : " << b << '\n';
 		twoSum(a, b, s, r);
 		std::cout << a << " + " << b << " = " << s << " + " << r << '\n';
 		// validation using a double
 		double da(a), db(b), ds(s), dr(r);
 		double sum = da + db;
 		std::cout << "sum " << sum << " vs " << (ds + dr) << '\n';
+		std::cout << std::defaultfloat;
 	}
 
 	{
@@ -72,6 +79,19 @@ try {
 		int scale = fb.scale();
 		
 		std::cout << "scale of fb : " << scale << '\n';
+		std::cout << fb << '\n';
+
+		using Real = float;
+		Real a, b;
+		constexpr Real eps = std::numeric_limits<Real>::epsilon();
+		constexpr Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
+		a = 0.5f + epsHalf;
+		b = 1.0f;
+		fa = a;
+		fb = b;
+		fs = fa + fb;
+		std::cout << "compensated sum : " << fs << '\n';
+
 	}
 
 	// restore the previous ostream precision

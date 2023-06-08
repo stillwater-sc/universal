@@ -9,6 +9,7 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/abstract/triple.hpp>
+#include <universal/analysis/twosum.hpp>
 
 namespace sw {	namespace universal {
 		
@@ -127,7 +128,13 @@ public:
 		return *this; 
 	}
 	faithful& operator+=(double rhs) { return *this += faithful(rhs); }
-	faithful& operator-=(const faithful& rhs) { return *this; }
+	faithful& operator-=(const faithful& rhs) {
+		FloatingPointType a(value), b(-rhs.value), s, r;
+		twoSum(a, b, s, r);
+		value = s;
+		error += r;
+		return *this; 
+	}
 	faithful& operator-=(double rhs) { return *this -= faithful(rhs); }
 	faithful& operator*=(const faithful& rhs) { return *this; }
 	faithful& operator*=(double rhs) { return *this *= faithful(rhs); }
@@ -204,13 +211,14 @@ private:
 ////////////////////// operators
 template<typename FPType>
 inline std::ostream& operator<<(std::ostream& ostr, const faithful<FPType>& v) {
-
+	ostr << "( " << v.value << ", " << v.error << ')';
 	return ostr;
 }
 
 template<typename FPType>
-inline std::istream& operator>>(std::istream& istr, const faithful<FPType>& v) {
-	istr >> v._fraction;
+inline std::istream& operator>>(std::istream& istr, faithful<FPType>& v) {
+	std::string token;
+	istr >> token >> v.value >> token >> v.error >> token;
 	return istr;
 }
 

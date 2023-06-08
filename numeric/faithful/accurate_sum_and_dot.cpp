@@ -9,7 +9,7 @@
 #include <vector>
 #include <universal/native/ieee754.hpp>
 #include <universal/number/posit/posit.hpp>
-#include <universal/functions/twosum.hpp>
+#include <universal/analysis/twosum.hpp>
 
 template<typename Real>
 int DemonstrateCascadeSum()
