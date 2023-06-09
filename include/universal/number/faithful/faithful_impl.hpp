@@ -9,7 +9,7 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/abstract/triple.hpp>
-#include <universal/analysis/twosum.hpp>
+#include <universal/analysis/eft.hpp>
 
 namespace sw {	namespace universal {
 		
@@ -53,12 +53,18 @@ template<typename FloatingPointType = double>
 class faithful {
 public:
 	faithful() : value{ 0 }, error{ 0 } {}
+	faithful(FloatingPointType v, FloatingPointType e) : value{ v }, error{ e } {}
 
 	faithful(const faithful&) = default;
 	faithful(faithful&&) = default;
 
 	faithful& operator=(const faithful&) = default;
 	faithful& operator=(faithful&&) = default;
+
+	// conversions
+	explicit operator long double() const { return (long double)(value) + (long double)(error); }
+	explicit operator double() const { return static_cast<double>((long double)(value)+(long double)(error)); }
+	explicit operator float() const { return static_cast<float>((long double)(value)+(long double)(error)); }
 
 	faithful(signed char initial_value)        { *this = initial_value; }
 	faithful(short initial_value)              { *this = initial_value; }
@@ -136,13 +142,26 @@ public:
 		return *this; 
 	}
 	faithful& operator-=(double rhs) { return *this -= faithful(rhs); }
-	faithful& operator*=(const faithful& rhs) { return *this; }
+	faithful& operator*=(const faithful& rhs) {
+		FloatingPointType a(value), b(rhs.value), p, r;
+		twoProd(a, b, p, r);
+		value = p;
+		error = a*rhs.error + b*error + r;
+		return *this; 
+	}
 	faithful& operator*=(double rhs) { return *this *= faithful(rhs); }
-	faithful& operator/=(const faithful& rhs) { return *this; }
+	faithful& operator/=(const faithful& rhs) {
+		FloatingPointType a(value), b(rhs.value), d, r;
+		twoDiv(a, b, d, r);
+		value = d;
+		error = (error + r) / b;
+		return *this;
+	}
 	faithful& operator/=(double rhs) { return *this /= faithful(rhs); }
 
 	// prefix/postfix operators
 	faithful& operator++() {
+		std::cerr << "operator++() TBD\n";
 		return *this;
 	}
 	faithful operator++(int) {
@@ -151,6 +170,7 @@ public:
 		return tmp;
 	}
 	faithful& operator--() {
+		std::cerr << "operator--() TBD\n";
 		return *this;
 	}
 	faithful operator--(int) {
@@ -169,20 +189,6 @@ public:
 	inline bool isnan() const { return false; }
 	inline bool sign() const { return value < 0.0; }
 	inline int scale() const { return sw::universal::scale(value); }
-
-	long double to_long_double() const {
-		return (long double)(value);
-	}
-	double to_double() const {
-		return double(value);
-	}
-	float to_float() const {
-		return float(value);
-	}
-	// Maybe remove explicit
-	explicit operator long double() const { return to_long_double(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator float() const { return to_float(); }
 
 private:
 	FloatingPointType value;

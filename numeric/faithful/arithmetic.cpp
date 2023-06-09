@@ -59,10 +59,10 @@ try {
 		a = 0.5f + epsHalf;
 		b = 1.0f;
 		std::cout << std::fixed;
-		std::cout << to_binary(eps) << " : " << eps << '\n';
-		std::cout << to_binary(epsHalf) << " : " << epsHalf << '\n';
-		std::cout << to_binary(a) << " : " << a << '\n';
-		std::cout << to_binary(b) << " : " << b << '\n';
+		std::cout << "epsilon      : " << to_binary(eps) << " : " << eps << '\n';
+		std::cout << "half epsilon : " << to_binary(epsHalf) << " : " << epsHalf << '\n';
+		std::cout << "operand a    : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "operand b    : " << to_binary(b) << " : " << b << '\n';
 		twoSum(a, b, s, r);
 		std::cout << a << " + " << b << " = " << s << " + " << r << '\n';
 		// validation using a double
@@ -72,26 +72,49 @@ try {
 		std::cout << std::defaultfloat;
 	}
 
+	std::cout << "\n\n";
+
 	{
-		faithful<float> fa, fb, fs, fr;
-		fa = 1;
-		fb = 2.0;
-		int scale = fb.scale();
-		
-		std::cout << "scale of fb : " << scale << '\n';
-		std::cout << fb << '\n';
 
 		using Real = float;
 		Real a, b;
 		constexpr Real eps = std::numeric_limits<Real>::epsilon();
 		constexpr Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
 		a = 0.5f + epsHalf;
-		b = 1.0f;
+		b = 1.0f + eps;
+		std::cout << "a = 0.5 + half epsilon : " << to_binary(a) << " : " << a << '\n';
+		std::cout << "b = 1.0 + epsilon      : " << to_binary(b) << " : " << b << '\n';
+		// validation using a double
+		double da(a), db(b);
+
+		faithful<Real> fa, fb, fsum;
 		fa = a;
 		fb = b;
-		fs = fa + fb;
-		std::cout << "compensated sum : " << fs << '\n';
+		fsum = fa + fb;
+		std::cout << "compensated sum        : " << fsum << " : " << Real(fsum) << '\n';
+		double dsum = da + db;
+		std::cout << "reference   sum        : " << dsum << '\n';
+		std::cout << "double precision : " << to_binary(dsum) << '\n';
+		std::cout << "rounded          : " << to_binary(double(float(dsum))) << '\n';
+		std::cout << "single precision : " << to_binary(float(dsum)) << '\n';
 
+		faithful<Real> fdiff;
+		fdiff = fa - fb;
+		std::cout << "compensated difference : " << fdiff << " : " << Real(fdiff) << '\n';
+		double ddiff = da - db;
+		std::cout << "reference   difference : " << ddiff << '\n';
+
+		faithful<Real> fprod;
+		fprod = fa * fb;
+		std::cout << "compensated product    : " << fprod << " : " << Real(fprod) << '\n';
+		double dprod = da * db;
+		std::cout << "reference   product    : " << dprod << '\n';
+
+		faithful<Real> fdiv;
+		fdiv = fa / fb;
+		std::cout << "compensated ratio      : " << fdiv << " : " << Real(fdiv) << '\n';
+		double ddiv = da / db;
+		std::cout << "reference   ratio      : " << ddiv << '\n';
 	}
 
 	// restore the previous ostream precision
