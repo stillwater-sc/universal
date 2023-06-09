@@ -78,17 +78,17 @@ public:
 	// assignment operators
 	faithful& operator=(signed char rhs) {
 		value = static_cast<FloatingPointType>(rhs);
-		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		error = static_cast<FloatingPointType>(double(rhs)-double(value));
 		return *this;
 	}
 	faithful& operator=(short rhs) {
 		value = static_cast<FloatingPointType>(rhs);
-		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		error = static_cast<FloatingPointType>(double(rhs) - double(value));
 		return *this;
 	}
 	faithful& operator=(int rhs) { 
 		value = static_cast<FloatingPointType>(rhs); 
-		error = static_cast<FloatingPointType>((long double)(rhs) - (long double)(value)); 
+		error = static_cast<FloatingPointType>(double(rhs) - double(value));
 		return *this; 
 	}
 	faithful& operator=(long long rhs) {
@@ -113,7 +113,7 @@ public:
 	}
 	faithful& operator=(long double rhs) {
 		value = static_cast<FloatingPointType>(rhs);
-		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
+		error = static_cast<FloatingPointType>(rhs-(long double)(value));
 		return *this;
 	}
 

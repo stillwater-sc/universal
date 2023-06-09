@@ -5,6 +5,7 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/faithful/faithful.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
 #include <universal/analysis/twosum.hpp>
 
 template<typename Scalar>
@@ -40,6 +41,49 @@ void traceCascadingSum(const std::vector<Scalar>& v, Scalar& s, Scalar& r) {
 	s = p;
 }
 
+template<typename Real>
+void CompensatedEvaluation() {
+	using namespace sw::universal;
+
+	Real a, b;
+	Real eps = std::numeric_limits<Real>::epsilon();
+	Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
+	a = 0.5f + epsHalf;
+	b = 1.0f + eps;
+	std::cout << "a = 0.5 + half epsilon : " << to_binary(a) << " : " << a << '\n';
+	std::cout << "b = 1.0 + epsilon      : " << to_binary(b) << " : " << b << '\n';
+	// validation using a double
+	double da(a), db(b);
+
+	faithful<Real> fa, fb, fsum;
+	fa = (double)a;
+	fb = (double)b;
+	fsum = fa + fb;
+	std::cout << "compensated sum        : " << fsum << " : " << double(fsum) << '\n';
+	double dsum = da + db;
+	std::cout << "reference   sum        : " << dsum << '\n';
+	std::cout << "double precision : " << to_binary(dsum) << '\n';
+	std::cout << "rounded          : " << to_binary(double(float(dsum))) << '\n';
+	std::cout << "single precision : " << to_binary(float(dsum)) << '\n';
+
+	faithful<Real> fdiff;
+	fdiff = fa - fb;
+	std::cout << "compensated difference : " << fdiff << " : " << double(fdiff) << '\n';
+	double ddiff = da - db;
+	std::cout << "reference   difference : " << ddiff << '\n';
+
+	faithful<Real> fprod;
+	fprod = fa * fb;
+	std::cout << "compensated product    : " << fprod << " : " << double(fprod) << '\n';
+	double dprod = da * db;
+	std::cout << "reference   product    : " << dprod << '\n';
+
+	faithful<Real> fdiv;
+	fdiv = fa / fb;
+	std::cout << "compensated ratio      : " << fdiv << " : " << double(fdiv) << '\n';
+	double ddiv = da / db;
+	std::cout << "reference   ratio      : " << ddiv << '\n';
+}
 
 int main()
 try {
@@ -74,48 +118,11 @@ try {
 
 	std::cout << "\n\n";
 
-	{
+//	CompensatedEvaluation<half>();
+//	CompensatedEvaluation<single>();
+	CompensatedEvaluation<float>();
+	CompensatedEvaluation<double>();
 
-		using Real = float;
-		Real a, b;
-		constexpr Real eps = std::numeric_limits<Real>::epsilon();
-		constexpr Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
-		a = 0.5f + epsHalf;
-		b = 1.0f + eps;
-		std::cout << "a = 0.5 + half epsilon : " << to_binary(a) << " : " << a << '\n';
-		std::cout << "b = 1.0 + epsilon      : " << to_binary(b) << " : " << b << '\n';
-		// validation using a double
-		double da(a), db(b);
-
-		faithful<Real> fa, fb, fsum;
-		fa = a;
-		fb = b;
-		fsum = fa + fb;
-		std::cout << "compensated sum        : " << fsum << " : " << Real(fsum) << '\n';
-		double dsum = da + db;
-		std::cout << "reference   sum        : " << dsum << '\n';
-		std::cout << "double precision : " << to_binary(dsum) << '\n';
-		std::cout << "rounded          : " << to_binary(double(float(dsum))) << '\n';
-		std::cout << "single precision : " << to_binary(float(dsum)) << '\n';
-
-		faithful<Real> fdiff;
-		fdiff = fa - fb;
-		std::cout << "compensated difference : " << fdiff << " : " << Real(fdiff) << '\n';
-		double ddiff = da - db;
-		std::cout << "reference   difference : " << ddiff << '\n';
-
-		faithful<Real> fprod;
-		fprod = fa * fb;
-		std::cout << "compensated product    : " << fprod << " : " << Real(fprod) << '\n';
-		double dprod = da * db;
-		std::cout << "reference   product    : " << dprod << '\n';
-
-		faithful<Real> fdiv;
-		fdiv = fa / fb;
-		std::cout << "compensated ratio      : " << fdiv << " : " << Real(fdiv) << '\n';
-		double ddiv = da / db;
-		std::cout << "reference   ratio      : " << ddiv << '\n';
-	}
 
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);

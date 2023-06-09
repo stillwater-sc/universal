@@ -427,11 +427,11 @@ public:
 	CONSTEXPRESSION cfloat& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
-#if LONG_DOUBLE_SUPPORT
+//#if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{} { *this = iv; }
 	CONSTEXPRESSION cfloat& operator=(long double rhs)  noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()               const noexcept { return to_native<long double>(); }
-#endif
+//#endif
 
 	// arithmetic operators
 	// prefix operator
