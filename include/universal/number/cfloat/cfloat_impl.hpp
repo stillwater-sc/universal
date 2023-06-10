@@ -348,17 +348,12 @@ public:
 
 	// constructors
 	cfloat() = default;
-	cfloat(const volatile cfloat& iv) : _block{} {
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			_block[i] = iv._block[i];
-		}
-	}
 
 	// construct a cfloat from another, block type bt must be the same
-	template<unsigned nnbits, unsigned ees>
-	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) noexcept : _block{} {
-//		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
-		*this = double(rhs);
+	template<unsigned nnbits, unsigned ees, typename bbt, bool subn, bool supn, bool sat>
+	cfloat(const cfloat<nnbits, ees, bbt, subn, supn, sat>& rhs) noexcept : _block{} {
+		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
+		*this = double(rhs); // TODO: marshall through a proper blocktriple
 	}
 
 	// converting constructors
