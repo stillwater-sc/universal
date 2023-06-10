@@ -62,13 +62,9 @@ void CompensatedEvaluation() {
 	fb = b;
 	fsum = fa + fb;
 	std::cout << "compensated sum        : " << fsum << " : " << Real(fsum) << '\n';
-	/*
 	double dsum = da + db;
 	std::cout << "reference   sum        : " << dsum << '\n';
-	std::cout << "double precision : " << to_binary(dsum) << '\n';
-	std::cout << "rounded          : " << to_binary(double(float(dsum))) << '\n';
-	std::cout << "single precision : " << to_binary(float(dsum)) << '\n';
-	*/
+
 	faithful<Real> fdiff;
 	fdiff = fa - fb;
 	std::cout << "compensated difference : " << fdiff << " : " << Real(fdiff) << '\n';
@@ -122,13 +118,13 @@ try {
 
 	std::cout << "\n\n";
 
-//	CompensatedEvaluation<quarter>();
-//	CompensatedEvaluation<half>();
+	CompensatedEvaluation<quarter>();
+	CompensatedEvaluation<half>();
 	CompensatedEvaluation<single>();
 	CompensatedEvaluation<float>();
 //	CompensatedEvaluation<double>();
 
-//	CompensatedEvaluation<cfloat<8, 5, uint8_t, true, true, false> >();
+	CompensatedEvaluation<cfloat<8, 5, uint8_t, true, true, false> >();
 
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);
