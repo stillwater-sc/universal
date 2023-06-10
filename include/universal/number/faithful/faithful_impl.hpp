@@ -62,35 +62,13 @@ public:
 	faithful& operator=(faithful&&) = default;
 
 	// conversions
-	explicit operator long double() const { return (long double)(value) + (long double)(error); }
-	explicit operator double() const { return static_cast<double>((long double)(value)+(long double)(error)); }
-	explicit operator float() const { return static_cast<float>((long double)(value)+(long double)(error)); }
+	explicit operator FloatingPointType() const { return value + error; }
 
-	faithful(signed char initial_value)        { *this = initial_value; }
-	faithful(short initial_value)              { *this = initial_value; }
-	faithful(int initial_value)                { *this = initial_value; }
 	faithful(long long initial_value)          { *this = initial_value; }
 	faithful(unsigned long long initial_value) { *this = initial_value; }
-	faithful(float initial_value)              { *this = initial_value; }
-	faithful(double initial_value)             { *this = initial_value; }
-	faithful(long double initial_value)        { *this = initial_value; }
+	faithful(FloatingPointType initial_value)  { *this = initial_value; }
 
 	// assignment operators
-	faithful& operator=(signed char rhs) {
-		value = static_cast<FloatingPointType>(rhs);
-		error = static_cast<FloatingPointType>(double(rhs)-double(value));
-		return *this;
-	}
-	faithful& operator=(short rhs) {
-		value = static_cast<FloatingPointType>(rhs);
-		error = static_cast<FloatingPointType>(double(rhs) - double(value));
-		return *this;
-	}
-	faithful& operator=(int rhs) { 
-		value = static_cast<FloatingPointType>(rhs); 
-		error = static_cast<FloatingPointType>(double(rhs) - double(value));
-		return *this; 
-	}
 	faithful& operator=(long long rhs) {
 		value = static_cast<FloatingPointType>(rhs);
 		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
@@ -101,19 +79,9 @@ public:
 		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
 		return *this;
 	}
-	faithful& operator=(float rhs) {
-		value = static_cast<FloatingPointType>(rhs);
-		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
-		return *this;
-	}
-	faithful& operator=(double rhs) {
-		value = static_cast<FloatingPointType>(rhs);
-		error = static_cast<FloatingPointType>((long double)(rhs)-(long double)(value));
-		return *this;
-	}
-	faithful& operator=(long double rhs) {
-		value = static_cast<FloatingPointType>(rhs);
-		error = static_cast<FloatingPointType>(rhs-(long double)(value));
+	faithful& operator=(FloatingPointType rhs) {
+		value = rhs;
+		error = 0;
 		return *this;
 	}
 

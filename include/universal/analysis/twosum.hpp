@@ -41,13 +41,21 @@ floating-point arithmetic property : Sterbenz lemma
 template<typename Scalar>
 void twoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
 	s = a + b;
-	Scalar bdiff = s - a;
-	Scalar adiff = s - bdiff;
+	/*
 	// the volatile keyword is required to avoid the operation being  
 	// optimized away by a compiler using associativity rules
+	// when does this requirement exist and when does it not? MSVC 2019 seems fine with it: ETLO 6/9/2023
+	volatile Scalar bdiff = s - a;
+	volatile Scalar adiff = s - bdiff;
 	volatile Scalar aerr = a - adiff;
 	volatile Scalar berr = b - bdiff;
-	r = aerr + berr;
+	r = Scalar(aerr) + Scalar(berr);    // cast away the volatile to map to the regular operator+()
+	*/
+	Scalar bdiff = s - a;
+	Scalar adiff = s - bdiff;
+	Scalar aerr = a - adiff;
+	Scalar berr = b - bdiff;
+	r = aerr + berr;    // cast away the volatile to map to the regular operator+()
 }
 
 /// <summary>

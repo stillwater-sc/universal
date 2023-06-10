@@ -18,7 +18,7 @@ namespace sw { namespace universal {
     template <typename Real>
     inline void twoDiv(const Real& a, const Real& b, Real& ratio, Real& error) {
         ratio = a / b;
-        error = -std::fma(b, ratio, -a);
+        error = -fma(b, ratio, -a);
     }
 
 }} // namespace sw::universal

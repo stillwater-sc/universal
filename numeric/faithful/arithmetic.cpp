@@ -56,10 +56,11 @@ void CompensatedEvaluation() {
 	double da(a), db(b);
 
 	faithful<Real> fa, fb, fsum;
-	fa = (double)a;
-	fb = (double)b;
+	fa = a;
+	fb = b;
 	fsum = fa + fb;
-	std::cout << "compensated sum        : " << fsum << " : " << double(fsum) << '\n';
+	std::cout << "compensated sum        : " << fsum << " : " << Real(fsum) << '\n';
+//	std::cout << "compensated sum        : " << fsum << " : " << '\n';
 	double dsum = da + db;
 	std::cout << "reference   sum        : " << dsum << '\n';
 	std::cout << "double precision : " << to_binary(dsum) << '\n';
@@ -68,21 +69,22 @@ void CompensatedEvaluation() {
 
 	faithful<Real> fdiff;
 	fdiff = fa - fb;
-	std::cout << "compensated difference : " << fdiff << " : " << double(fdiff) << '\n';
+	std::cout << "compensated difference : " << fdiff << " : " << Real(fdiff) << '\n';
 	double ddiff = da - db;
 	std::cout << "reference   difference : " << ddiff << '\n';
 
 	faithful<Real> fprod;
 	fprod = fa * fb;
-	std::cout << "compensated product    : " << fprod << " : " << double(fprod) << '\n';
+	std::cout << "compensated product    : " << fprod << " : " << Real(fprod) << '\n';
 	double dprod = da * db;
 	std::cout << "reference   product    : " << dprod << '\n';
 
 	faithful<Real> fdiv;
 	fdiv = fa / fb;
-	std::cout << "compensated ratio      : " << fdiv << " : " << double(fdiv) << '\n';
+	std::cout << "compensated ratio      : " << fdiv << " : " << Real(fdiv) << '\n';
 	double ddiv = da / db;
 	std::cout << "reference   ratio      : " << ddiv << '\n';
+
 }
 
 int main()
@@ -121,7 +123,7 @@ try {
 //	CompensatedEvaluation<half>();
 //	CompensatedEvaluation<single>();
 	CompensatedEvaluation<float>();
-	CompensatedEvaluation<double>();
+//	CompensatedEvaluation<double>();
 
 
 	// restore the previous ostream precision

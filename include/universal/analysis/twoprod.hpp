@@ -23,7 +23,7 @@ namespace sw { namespace universal {
     template <typename Real>
     inline void twoProd(const Real& a, const Real& b, Real& product, Real& error) {
         product = a * b;
-        error = std::fma(a, b, -product);
+        error = fma(a, b, -product);
     }
 
 }} // namespace sw::universal

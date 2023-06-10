@@ -348,6 +348,11 @@ public:
 
 	// constructors
 	cfloat() = default;
+	cfloat(const volatile cfloat& iv) : _block{} {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			_block[i] = iv._block[i];
+		}
+	}
 
 	// construct a cfloat from another, block type bt must be the same
 	template<unsigned nnbits, unsigned ees>
@@ -393,10 +398,6 @@ public:
 		}
 	}
 
-	/// <summary>
-	/// construct an cfloat from a native type, specialized for size
-	/// </summary>
-	/// <param name="iv">initial value to construct</param>
 	constexpr cfloat(signed char iv)                    noexcept : _block{} { *this = iv; }
 	constexpr cfloat(short iv)                          noexcept : _block{} { *this = iv; }
 	constexpr cfloat(int iv)                            noexcept : _block{} { *this = iv; }
@@ -3801,6 +3802,15 @@ inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ldexp
 	int xexp = x.scale();
 	result.setexponent(xexp + exp);  // TODO: this does not work for subnormals
 	return result;
+}
+
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
+fma(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x,
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y,
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> z) {
+	cfloat<2 * nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> fused(x);
+	return fused;
 }
 
 }} // namespace sw::universal
