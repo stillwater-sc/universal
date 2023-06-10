@@ -25,6 +25,8 @@ floating-point arithmetic property : Sterbenz lemma
 /// 
 // 
 
+//#define SW_VOLATILE volatile
+#define SW_VOLATILE 
 
 /// <summary>
 /// For any faithful number system, twoSum generates the relationship a + b = s + r, 
@@ -37,25 +39,23 @@ floating-point arithmetic property : Sterbenz lemma
 /// <param name="a">input operand</param>
 /// <param name="b">input operand</param>
 /// <param name="s">output resulting sum</param>
-/// <param name="r">output resulting remainder</param>	
+/// <param name="r">output resulting error</param>	
 template<typename Scalar>
 void twoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
-	s = a + b;
-	/*
 	// the volatile keyword is required to avoid the operation being  
 	// optimized away by a compiler using associativity rules
-	// when does this requirement exist and when does it not? MSVC 2019 seems fine with it: ETLO 6/9/2023
-	volatile Scalar bdiff = s - a;
-	volatile Scalar adiff = s - bdiff;
-	volatile Scalar aerr = a - adiff;
-	volatile Scalar berr = b - bdiff;
-	r = Scalar(aerr) + Scalar(berr);    // cast away the volatile to map to the regular operator+()
-	*/
-	Scalar bdiff = s - a;
-	Scalar adiff = s - bdiff;
-	Scalar aerr = a - adiff;
-	Scalar berr = b - bdiff;
-	r = aerr + berr;    // cast away the volatile to map to the regular operator+()
+	// when does this requirement exist and when does it not? 
+	// MSVC 2019 seems fine without it: ETLO 6/9/2023
+	// s = a + b
+	// r = aerr + berr = (a - aDelta) + (b  - bDelta) 
+	//   = (a - s + bDelta) + (b - s + a) 
+	//   = (a - s + s - a) + (b - s + a)
+	s = a + b;
+	Scalar bDelta = s - a;
+	Scalar aDelta = s - bDelta;
+	SW_VOLATILE Scalar aerr = a - aDelta;
+	SW_VOLATILE Scalar berr = b - bDelta;
+	r = aerr + berr;
 }
 
 /// <summary>

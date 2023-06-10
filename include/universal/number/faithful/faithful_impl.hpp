@@ -61,7 +61,7 @@ public:
 	faithful& operator=(const faithful&) = default;
 	faithful& operator=(faithful&&) = default;
 
-	// conversions
+	// conversion from compensated to faithfully rounded
 	explicit operator FloatingPointType() const { return value + error; }
 
 	faithful(long long initial_value)          { *this = initial_value; }
@@ -106,7 +106,7 @@ public:
 		FloatingPointType a(value), b(-rhs.value), s, r;
 		twoSum(a, b, s, r);
 		value = s;
-		error += r;
+		error += r + rhs.error;
 		return *this; 
 	}
 	faithful& operator-=(double rhs) { return *this -= faithful(rhs); }

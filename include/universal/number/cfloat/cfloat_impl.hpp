@@ -348,11 +348,13 @@ public:
 
 	// constructors
 	cfloat() = default;
+	cfloat(const cfloat&) = default;
+	cfloat& operator=(const cfloat&) = default;
 
-	// construct a cfloat from another, block type bt must be the same
-	template<unsigned nnbits, unsigned ees, typename bbt, bool subn, bool supn, bool sat>
-	cfloat(const cfloat<nnbits, ees, bbt, subn, supn, sat>& rhs) noexcept : _block{} {
-		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
+	// construct a cfloat from another
+	template<unsigned nnbits, unsigned ees, typename bbt, bool ssub, bool ssup, bool ssat>
+	cfloat(const cfloat<nnbits, ees, bbt, ssub, ssup, ssat>& rhs) noexcept : _block{} {
+//		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
 		*this = double(rhs); // TODO: marshall through a proper blocktriple
 	}
 
@@ -3804,7 +3806,15 @@ inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>
 fma(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x,
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y,
 	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> z) {
-	cfloat<2 * nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> fused(x);
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> fused{ 0 };
+	constexpr unsigned FBITS = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+	constexpr unsigned EXTRA_FBITS = (FBITS > 5 ? 2 * FBITS : 10);
+	constexpr unsigned EXTENDED_PRECISION = nbits + EXTRA_FBITS;
+	// TODO: if we want to 'emulate' the undocumented behavior of FMA hardware
+	// we would need to generate an extended precision that matches the hardware
+	// right now, we are just adding an unreasoned number of bits.
+	cfloat<EXTENDED_PRECISION, es, bt, hasSubnormals, hasSupernormals, isSaturating> preciseX(x), preciseY(y), preciseZ(z);
+	fused = preciseX * preciseY + preciseZ;
 	return fused;
 }
 

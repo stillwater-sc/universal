@@ -19,8 +19,8 @@ void traceTwoSum(const Scalar& a, const Scalar& b, Scalar& s, Scalar& r) {
 	Scalar adiff = s - bdiff;
 	std::cout << "adiff " << adiff << '\n';
 	std::cout << "bdiff " << bdiff << '\n';
-	volatile Scalar aerr = a - adiff;
-	volatile Scalar berr = b - bdiff;
+	Scalar aerr = a - adiff;
+	Scalar berr = b - bdiff;
 	std::cout << "aerr " << aerr << '\n';
 	std::cout << "berr " << berr << '\n';
 	r = aerr + berr;
@@ -45,6 +45,8 @@ template<typename Real>
 void CompensatedEvaluation() {
 	using namespace sw::universal;
 
+	std::cout << "+-------\nCompensated Evaluation for type : " << type_tag(Real()) << '\n';
+
 	Real a, b;
 	Real eps = std::numeric_limits<Real>::epsilon();
 	Real epsHalf = std::numeric_limits<Real>::epsilon() / 2.0f;
@@ -60,13 +62,13 @@ void CompensatedEvaluation() {
 	fb = b;
 	fsum = fa + fb;
 	std::cout << "compensated sum        : " << fsum << " : " << Real(fsum) << '\n';
-//	std::cout << "compensated sum        : " << fsum << " : " << '\n';
+	/*
 	double dsum = da + db;
 	std::cout << "reference   sum        : " << dsum << '\n';
 	std::cout << "double precision : " << to_binary(dsum) << '\n';
 	std::cout << "rounded          : " << to_binary(double(float(dsum))) << '\n';
 	std::cout << "single precision : " << to_binary(float(dsum)) << '\n';
-
+	*/
 	faithful<Real> fdiff;
 	fdiff = fa - fb;
 	std::cout << "compensated difference : " << fdiff << " : " << Real(fdiff) << '\n';
@@ -120,11 +122,13 @@ try {
 
 	std::cout << "\n\n";
 
+//	CompensatedEvaluation<quarter>();
 //	CompensatedEvaluation<half>();
-//	CompensatedEvaluation<single>();
+	CompensatedEvaluation<single>();
 	CompensatedEvaluation<float>();
 //	CompensatedEvaluation<double>();
 
+//	CompensatedEvaluation<cfloat<8, 5, uint8_t, true, true, false> >();
 
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);
