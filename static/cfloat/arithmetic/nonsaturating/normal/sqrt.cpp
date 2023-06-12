@@ -104,7 +104,6 @@ try {
 
 	CheckNewtonsIteration(2.0f);
 
-epilog:
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,4>", "sqrt");
 
