@@ -1,4 +1,4 @@
-// sqrt.cpp: test suite runner for native cfloat square root algorithm
+// sqrt.cpp: test suite runner for classic cfloat square root algorithm
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
@@ -13,8 +13,8 @@
 #include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
-// generate specific test case that you can trace with the trace conditions in posit.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
+// generate specific test case that you can trace with the trace conditions in posit.hpp
+// for most bugs they are traceable with _trace_conversion and _trace_[add|mul|div]
 template<typename Cfloat, typename Ty>
 void GenerateTestCase(Ty a) {
 	constexpr unsigned nbits       = Cfloat::nbits;
@@ -124,9 +124,9 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	using Cfloat64_fff = cfloat<64, 11, uint64_t, hasSubnormals, hasSupernormals, isSaturating>;
+	using Cfloat64_tff = cfloat<64, 11, uint64_t, hasSubnormals, hasSupernormals, isSaturating>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Cfloat64_fff(SpecificValue::minpos))), type_tag(Cfloat64_fff()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Cfloat64_tff >(reportTestCases, OPCODE_SQRT, 1000, double(Cfloat64_tff(SpecificValue::minpos))), type_tag(Cfloat64_tff()), "sqrt");
 
 #endif // REGRESSION_LEVEL_4
 
