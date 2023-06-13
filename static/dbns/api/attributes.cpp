@@ -1,18 +1,18 @@
-// attributes.cpp: attribute tests for fixed-size arbitrary configuration 2-base logarithmic floating-point
+// attributes.cpp: attribute tests for fixed-size arbitrary configuration double base number systems
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// Configure the lns2b template environment
+// Configure the dbns template environment
 // first: enable general or specialized configurations
-#define LNS2B_FAST_SPECIALIZATION
+#define DBNS_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
-#define LNS2B_THROW_ARITHMETIC_EXCEPTION 1
+#define DBNS_THROW_ARITHMETIC_EXCEPTION 1
 // third: enable support for native literals in logic and arithmetic operations
-#define LNS2B_ENABLE_LITERALS 1
-#include <universal/number/lns2b/lns2b.hpp>
+#define DBNS_ENABLE_LITERALS 1
+#include <universal/number/dbns/dbns.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 int main()
@@ -27,40 +27,40 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// lns2b attribute functions
+	//// dbns attribute functions
 
 	{
 		std::cout << "\nDynamic ranges of 2-base logarithmic floating-point arithmetic types\n";
-		std::cout << dynamic_range< lns2b<  8, 5> >() << '\n';    //  8 - 1 -  5 = 2 scale exponent bits: 3^##
-		std::cout << dynamic_range< lns2b< 16,12> >() << '\n';    // 16 - 1 - 12 = 3 scale exponent bits: 3^###
-		std::cout << dynamic_range< lns2b< 24,19> >() << '\n';    // 24 - 1 - 19 = 4 scale exponent bits: 3^####
-		std::cout << dynamic_range< lns2b< 32,26> >() << '\n';    // 32 - 1 - 26 = 5 scale exponent bits: 3^#####
+		std::cout << dynamic_range< dbns<  8, 5> >() << '\n';    //  8 - 1 -  5 = 2 scale exponent bits: 3^##
+		std::cout << dynamic_range< dbns< 16,12> >() << '\n';    // 16 - 1 - 12 = 3 scale exponent bits: 3^###
+		std::cout << dynamic_range< dbns< 24,19> >() << '\n';    // 24 - 1 - 19 = 4 scale exponent bits: 3^####
+		std::cout << dynamic_range< dbns< 32,26> >() << '\n';    // 32 - 1 - 26 = 5 scale exponent bits: 3^#####
 	}
 
 	{
 		std::cout << "\nMinmax of 2-base logarithmic floating-point\n";
-		std::cout << minmax_range< lns2b< 8, 5> >() << '\n';
-		std::cout << minmax_range< lns2b<16,12> >() << '\n';
-		std::cout << minmax_range< lns2b<24,19> >() << '\n';
-		std::cout << minmax_range< lns2b<32,26> >() << '\n';
+		std::cout << minmax_range< dbns< 8, 5> >() << '\n';
+		std::cout << minmax_range< dbns<16,12> >() << '\n';
+		std::cout << minmax_range< dbns<24,19> >() << '\n';
+		std::cout << minmax_range< dbns<32,26> >() << '\n';
 	}
 	
 	{
 		std::cout << "\nValue ranges of 2-base logarithmic floating-point\n";
-		std::cout << symmetry_range< lns2b< 8, 5> >() << '\n';
-		std::cout << symmetry_range< lns2b<16,12> >() << '\n';
-		std::cout << symmetry_range< lns2b<24,19> >() << '\n';
-		std::cout << symmetry_range< lns2b<32,26> >() << '\n';
+		std::cout << symmetry_range< dbns< 8, 5> >() << '\n';
+		std::cout << symmetry_range< dbns<16,12> >() << '\n';
+		std::cout << symmetry_range< dbns<24,19> >() << '\n';
+		std::cout << symmetry_range< dbns<32,26> >() << '\n';
 	}
 
 	{
 		std::cout << "\nSpecific 2-base logarithmic floating-point range function\n";
-		std::cout << lns2b_range(lns2b<7, 3>()) << '\n';
+		std::cout << dbns_range(dbns<7, 3>()) << '\n';
 	}
 
 	{
 		std::cout << "\n2-base lns sign() function\n";
-		lns2b<7, 3> a;
+		dbns<7, 3> a;
 
 		a.setbits(0x7f);
 		std::cout << std::setw(45) << type_tag(a) << " : " << to_binary(a) << " : " << a << " : " << (sign(a) ? "sign = 1" : "sign = 0") << '\n';
@@ -68,13 +68,13 @@ try {
 
 	{
 		std::cout << "\nNumber traits\n";
-		numberTraits< lns2b<8, 4> >(std::cout);
+		numberTraits< dbns<8, 4> >(std::cout);
 	}
 
 	{
 		std::cout << "\nComparitive Number traits\n";
-		compareNumberTraits< lns2b<10, 6>, lns2b<12, 7> >(std::cout);
-		threeWayCompareNumberTraits< float, lns2b<10, 6>, lns2b<12, 7> >(std::cout);
+		compareNumberTraits< dbns<10, 6>, dbns<12, 7> >(std::cout);
+		threeWayCompareNumberTraits< float, dbns<10, 6>, dbns<12, 7> >(std::cout);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -105,31 +105,31 @@ catch (...) {
 2-base logarithmic floating-point attribute functions: report test cases
 
 Dynamic ranges of 2-base logarithmic floating-point arithmetic types
-lns2b<  8,   5, unsigned char, Saturating>                                       : minexp scale -2             maxexp scale 1              minimum 4.65661e-10      maximum 27
-lns2b< 16,  12, unsigned char, Saturating>                                       : minexp scale -4             maxexp scale 3              minimum 0                maximum 2187
-lns2b< 24,  19, unsigned char, Saturating>                                       : minexp scale -8             maxexp scale 7              minimum 0                maximum 1.43489e+07
-lns2b< 32,  26, unsigned char, Saturating>                                       : minexp scale -16            maxexp scale 15             minimum 0                maximum 6.17673e+14
+dbns<  8,   5, unsigned char, Saturating>                                       : minexp scale -2             maxexp scale 1              minimum 4.65661e-10      maximum 27
+dbns< 16,  12, unsigned char, Saturating>                                       : minexp scale -4             maxexp scale 3              minimum 0                maximum 2187
+dbns< 24,  19, unsigned char, Saturating>                                       : minexp scale -8             maxexp scale 7              minimum 0                maximum 1.43489e+07
+dbns< 32,  26, unsigned char, Saturating>                                       : minexp scale -16            maxexp scale 15             minimum 0                maximum 6.17673e+14
 
 Minmax of 2-base logarithmic floating-point
-lns2b<  8,   5, unsigned char, Saturating>                                       : min 4.65661e-10       max 27
-lns2b< 16,  12, unsigned char, Saturating>                                       : min 0                 max 2187
-lns2b< 24,  19, unsigned char, Saturating>                                       : min 0                 max 1.43489e+07
-lns2b< 32,  26, unsigned char, Saturating>                                       : min 0                 max 6.17673e+14
+dbns<  8,   5, unsigned char, Saturating>                                       : min 4.65661e-10       max 27
+dbns< 16,  12, unsigned char, Saturating>                                       : min 0                 max 2187
+dbns< 24,  19, unsigned char, Saturating>                                       : min 0                 max 1.43489e+07
+dbns< 32,  26, unsigned char, Saturating>                                       : min 0                 max 6.17673e+14
 
 Value ranges of 2-base logarithmic floating-point
-lns2b<  8,   5, unsigned char, Saturating>                                       : [ -27 ... -4.65661e-10  0  4.65661e-10 ... 27]
-lns2b< 16,  12, unsigned char, Saturating>                                       : [ -2187 ... -0  0  0 ... 2187]
-lns2b< 24,  19, unsigned char, Saturating>                                       : [ -1.43489e+07 ... -0  0  0 ... 1.43489e+07]
-lns2b< 32,  26, unsigned char, Saturating>                                       : [ -6.17673e+14 ... -0  0  0 ... 6.17673e+14]
+dbns<  8,   5, unsigned char, Saturating>                                       : [ -27 ... -4.65661e-10  0  4.65661e-10 ... 27]
+dbns< 16,  12, unsigned char, Saturating>                                       : [ -2187 ... -0  0  0 ... 2187]
+dbns< 24,  19, unsigned char, Saturating>                                       : [ -1.43489e+07 ... -0  0  0 ... 1.43489e+07]
+dbns< 32,  26, unsigned char, Saturating>                                       : [ -6.17673e+14 ... -0  0  0 ... 6.17673e+14]
 
 Specific 2-base logarithmic floating-point range function
-   lns2b<  7,   3, unsigned char, Saturating> : [ -2187 ... -0.0078125 0 0.0078125 ... 2187 ]
+   dbns<  7,   3, unsigned char, Saturating> : [ -2187 ... -0.0078125 0 0.0078125 ... 2187 ]
 
 2-base lns sign() function
-   lns2b<  7,   3, unsigned char, Saturating> : 0b1.111.111 : -17.0859 : sign = 1
+   dbns<  7,   3, unsigned char, Saturating> : 0b1.111.111 : -17.0859 : sign = 1
 
 Number traits
-std::numeric_limits< class sw::universal::lns2b<8,4,unsigned char> >
+std::numeric_limits< class sw::universal::dbns<8,4,unsigned char> >
 min exponent                                             -4
 max exponent                                              3
 radix                                                     2
@@ -146,8 +146,8 @@ signaling_NAN                                     -nan(ind)
 
 
 Comparitive Number traits
-comparing numeric_limits between class sw::universal::lns2b<10,6,unsigned char> and class sw::universal::lns2b<12,7,unsigned char>
-				class sw::universal::lns2b<10,6,unsigned char> vs class sw::universal::lns2b<12,7,unsigned char>
+comparing numeric_limits between class sw::universal::dbns<10,6,unsigned char> and class sw::universal::dbns<12,7,unsigned char>
+				class sw::universal::dbns<10,6,unsigned char> vs class sw::universal::dbns<12,7,unsigned char>
 min exponent                                -4 vs                             -8
 max exponent                                 3 vs                              7
 radix                                        2 vs                              2

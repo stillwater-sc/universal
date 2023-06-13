@@ -1,5 +1,5 @@
 #pragma once
-// numeric_limits.hpp: definition of numeric_limits for 2-base logarithmic types
+// numeric_limits.hpp: definition of numeric_limits for double base number system types
 //
 // Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
@@ -8,41 +8,41 @@
 namespace std {
 
 template <unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-class numeric_limits< sw::universal::lns2b<nbits, fbbits, bt, xtra...> > {
+class numeric_limits< sw::universal::dbns<nbits, fbbits, bt, xtra...> > {
 public:
-	using LNS = sw::universal::lns2b<nbits, fbbits, bt, xtra...>;
+	using DBNS = sw::universal::dbns<nbits, fbbits, bt, xtra...>;
 	static constexpr bool is_specialized = true;
-	static constexpr LNS  min() { // return minimum value
-		return LNS(sw::universal::SpecificValue::minpos);
+	static constexpr DBNS  min() { // return minimum value
+		return DBNS(sw::universal::SpecificValue::minpos);
 	} 
-	static constexpr LNS  max() { // return maximum value
-		return LNS(sw::universal::SpecificValue::maxpos);
+	static constexpr DBNS  max() { // return maximum value
+		return DBNS(sw::universal::SpecificValue::maxpos);
 	} 
-	static constexpr LNS  lowest() { // return most negative value
-		return LNS(sw::universal::SpecificValue::maxneg);
+	static constexpr DBNS  lowest() { // return most negative value
+		return DBNS(sw::universal::SpecificValue::maxneg);
 	} 
-	static constexpr LNS  epsilon() { // return smallest effective increment from 1.0
-		LNS one{ 1.0f }, incr{ 1.0f };
+	static constexpr DBNS  epsilon() { // return smallest effective increment from 1.0
+		DBNS one{ 1.0f }, incr{ 1.0f };
 		++incr;
 		return incr - one;
 	}
-	static constexpr LNS  round_error() { // return largest rounding error
-		return LNS(0.5);
+	static constexpr DBNS  round_error() { // return largest rounding error
+		return DBNS(0.5);
 	}
-	static constexpr LNS  denorm_min() {  // return minimum denormalized value
-		return LNS(sw::universal::SpecificValue::minpos);
+	static constexpr DBNS  denorm_min() {  // return minimum denormalized value
+		return DBNS(sw::universal::SpecificValue::minpos);
 	}
-	static constexpr LNS  infinity() { // return positive infinity
-		return LNS(INFINITY); 
+	static constexpr DBNS  infinity() { // return positive infinity
+		return DBNS(INFINITY); 
 	}
-	static constexpr LNS  quiet_NaN() { // return non-signaling NaN
-		return LNS(NAN); 
+	static constexpr DBNS  quiet_NaN() { // return non-signaling NaN
+		return DBNS(NAN); 
 	}
-	static constexpr LNS  signaling_NaN() { // return signaling NaN
-		return LNS(NAN);
+	static constexpr DBNS  signaling_NaN() { // return signaling NaN
+		return DBNS(NAN);
 	}
 
-	static constexpr int digits       = -LNS::min_exponent + fbbits;
+	static constexpr int digits       = -DBNS::min_exponent + fbbits;
 	static constexpr int digits10     = static_cast<int>(digits / 3.3f);
 	static constexpr int max_digits10 = digits10;
 	static constexpr bool is_signed   = true;
@@ -50,9 +50,9 @@ public:
 	static constexpr bool is_exact    = false;
 	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent = LNS::min_exponent;
+	static constexpr int min_exponent = DBNS::min_exponent;
 	static constexpr int min_exponent10 = static_cast<int>(min_exponent / 3.3f);
-	static constexpr int max_exponent = LNS::max_exponent;
+	static constexpr int max_exponent = DBNS::max_exponent;
 	static constexpr int max_exponent10 = static_cast<int>(max_exponent / 3.3f);
 	static constexpr bool has_infinity = false;
 	static constexpr bool has_quiet_NaN = false;

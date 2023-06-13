@@ -1,5 +1,5 @@
 #pragma once
-// table.hpp: generate a table of encoding and values for fixed-size arbitrary configuration 2-base logarithmic numbers
+// table.hpp: generate a table of encoding and values for fixed-size arbitrary configuration double base numbers
 //
 // Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
@@ -7,13 +7,13 @@
 
 namespace sw { namespace universal {
 
-// generate a full binary representation table for a given lns2b configuration
+// generate a full binary representation table for a given dbns configuration
 template<size_t nbits, size_t fbbits, typename BlockType = std::uint8_t, auto... xtra>
-void GenerateLns2bTable(std::ostream& ostr, bool csvFormat = false) {
+void GenerateDbnsTable(std::ostream& ostr, bool csvFormat = false) {
 	const size_t size = (1 << nbits);
-	sw::universal::lns2b<nbits, fbbits, BlockType, xtra...> v;
+	sw::universal::dbns<nbits, fbbits, BlockType, xtra...> v;
 	if (csvFormat) {
-		ostr << "\"Generate Value table for an LNS2B<" << nbits << "," << fbbits << "> in CSV format\"" << std::endl;
+		ostr << "\"Generate Value table for an DBNS<" << nbits << "," << fbbits << "> in CSV format\"" << std::endl;
 		ostr << "#, Binary, sign, scale, value\n";
 		for (size_t i = 0; i < size; i++) {
 			v.setbits(i);
@@ -27,7 +27,7 @@ void GenerateLns2bTable(std::ostream& ostr, bool csvFormat = false) {
 		ostr << std::endl;
 	}
 	else {
-		ostr << "Generate Value table for an LNS2B<" << nbits << "," << fbbits << "> in TXT format" << std::endl;
+		ostr << "Generate Value table for an DBNS<" << nbits << "," << fbbits << "> in TXT format" << std::endl;
 
 		const size_t index_column = 5;
 		const size_t bin_column = 16;

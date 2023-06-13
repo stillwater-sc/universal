@@ -1,5 +1,5 @@
 #pragma once
-// lns2b_impl.hpp: implementation of a fixed-size, arbitrary configuration 2-base logarithmic number system configuration
+// dbns_impl.hpp: implementation of a fixed-size, arbitrary configuration 2-base logarithmic number system configuration
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -12,13 +12,13 @@
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/behavior/arithmetic.hpp>
-#include <universal/number/lns2b/lns2b_fwd.hpp>
+#include <universal/number/dbns/dbns_fwd.hpp>
 
 namespace sw { namespace universal {
 		
-// convert a floating-point value to a specific lns2b configuration. Semantically, p = v, return reference to p
+// convert a floating-point value to a specific dbns configuration. Semantically, p = v, return reference to p
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-inline lns2b<nbits, fbbits, bt, xtra...>& convert(const triple<nbits, bt>& v, lns2b<nbits, fbbits, bt, xtra...>& p) {
+inline dbns<nbits, fbbits, bt, xtra...>& convert(const triple<nbits, bt>& v, dbns<nbits, fbbits, bt, xtra...>& p) {
 	if (v.iszero()) {
 		p.setzero();
 		return p;
@@ -31,26 +31,26 @@ inline lns2b<nbits, fbbits, bt, xtra...>& convert(const triple<nbits, bt>& v, ln
 }
 
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-inline lns2b<nbits, fbbits, bt, xtra...>& minpos(lns2b<nbits, fbbits, bt, xtra...>& lminpos) {
+inline dbns<nbits, fbbits, bt, xtra...>& minpos(dbns<nbits, fbbits, bt, xtra...>& lminpos) {
 	return lminpos;
 }
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-lns2b<nbits, fbbits, bt, xtra...>& maxpos(lns2b<nbits, fbbits, bt, xtra...>& lmaxpos) {
+dbns<nbits, fbbits, bt, xtra...>& maxpos(dbns<nbits, fbbits, bt, xtra...>& lmaxpos) {
 	return lmaxpos;
 }
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-lns2b<nbits, fbbits, bt, xtra...>& minneg(lns2b<nbits, fbbits, bt, xtra...>& lminneg) {
+dbns<nbits, fbbits, bt, xtra...>& minneg(dbns<nbits, fbbits, bt, xtra...>& lminneg) {
 	return lminneg;
 }
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-lns2b<nbits, fbbits, bt, xtra...>& maxneg(lns2b<nbits, fbbits, bt, xtra...>& lmaxneg) {
+dbns<nbits, fbbits, bt, xtra...>& maxneg(dbns<nbits, fbbits, bt, xtra...>& lmaxneg) {
 	return lmaxneg;
 }
 
-// template class representing a value in scientific notation, using a template size for the number of fraction bits
+
 template<unsigned _nbits, unsigned _fbbits, typename bt = uint8_t, auto... xtra>
-class lns2b {
-	static_assert(_nbits > _fbbits, "configuration not supported: not enough second base bits");
+class dbns {
+	static_assert(_nbits > _fbbits, "configuration not supported: too many first base bits leaving no bits for second base");
 	static_assert( sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported" );
 	static_assert(_nbits - _fbbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
 	static_assert(_fbbits < 64, "configuration not supported: scaling factor is > 2^64");
@@ -83,21 +83,21 @@ public:
 	static constexpr uint64_t FB_MASK = (rightShift > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> rightShift) : 0ull);
 	static constexpr uint64_t SB_MASK = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - (nbits - fbbits - 1)));
 
-	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + lns2b exponent
-	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the lns2b exponent
+	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + dbns exponent
+	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the dbns exponent
 
 	static constexpr float    base[2] = { 0.5f, 3.0f };
 
 	/// trivial constructor
-	lns2b() = default;
+	dbns() = default;
 
 	// decorated/converting constructors
-	constexpr lns2b(const std::string& stringRep) {
+	constexpr dbns(const std::string& stringRep) {
 		assign(stringRep);
 	}
 
 	// specific value constructor
-	constexpr lns2b(const SpecificValue code) noexcept
+	constexpr dbns(const SpecificValue code) noexcept
 		: _block{} {
 		switch (code) {
 		case SpecificValue::maxpos:
@@ -122,7 +122,7 @@ public:
 		case SpecificValue::infneg:
 			setinf(true);
 			break;
-		case SpecificValue::nar: // approximation as lns2b don't have a NaR
+		case SpecificValue::nar: // approximation as dbns don't have a NaR
 		case SpecificValue::qnan:
 		case SpecificValue::snan:
 			setnan();
@@ -130,36 +130,36 @@ public:
 		}
 	}
 
-	constexpr lns2b(signed char initial_value)        noexcept { *this = initial_value; }
-	constexpr lns2b(short initial_value)              noexcept { *this = initial_value; }
-	constexpr lns2b(int initial_value)                noexcept { *this = initial_value; }
-	constexpr lns2b(long initial_value)               noexcept { *this = initial_value; }
-	constexpr lns2b(long long initial_value)          noexcept { *this = initial_value; }
-	constexpr lns2b(unsigned long long initial_value) noexcept { *this = initial_value; }
-	constexpr lns2b(float initial_value)              noexcept { *this = initial_value; }
-	constexpr lns2b(double initial_value)             noexcept { *this = initial_value; }
+	constexpr dbns(signed char initial_value)        noexcept { *this = initial_value; }
+	constexpr dbns(short initial_value)              noexcept { *this = initial_value; }
+	constexpr dbns(int initial_value)                noexcept { *this = initial_value; }
+	constexpr dbns(long initial_value)               noexcept { *this = initial_value; }
+	constexpr dbns(long long initial_value)          noexcept { *this = initial_value; }
+	constexpr dbns(unsigned long long initial_value) noexcept { *this = initial_value; }
+	constexpr dbns(float initial_value)              noexcept { *this = initial_value; }
+	constexpr dbns(double initial_value)             noexcept { *this = initial_value; }
 
 	// assignment operators
-	constexpr lns2b& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
-	constexpr lns2b& operator=(short rhs)              noexcept { return convert_signed(rhs); }
-	constexpr lns2b& operator=(int rhs)                noexcept { return convert_signed(rhs); }
-	constexpr lns2b& operator=(long rhs)               noexcept { return convert_signed(rhs); }
-	constexpr lns2b& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	constexpr lns2b& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
-	CONSTEXPRESSION lns2b& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
-	CONSTEXPRESSION lns2b& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
+	constexpr dbns& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr dbns& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr dbns& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr dbns& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr dbns& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr dbns& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	CONSTEXPRESSION dbns& operator=(float rhs)        noexcept { return convert_ieee754(rhs); }
+	CONSTEXPRESSION dbns& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
 
 	// arithmetic operators
 	// prefix operator
-	constexpr lns2b operator-() const noexcept {
+	constexpr dbns operator-() const noexcept {
 		if (isnan() || iszero()) return *this;
-		lns2b negate(*this);
+		dbns negate(*this);
 		negate.setbit(nbits - 1, !sign());
 		return negate;
 	}
 
 	// in-place arithmetic assignment operators
-	lns2b& operator+=(const lns2b& rhs) {
+	dbns& operator+=(const dbns& rhs) {
 		double sum{ 0.0 };
 		if constexpr (behavior == Behavior::Saturating) {
 			sum = double(*this) + double(rhs);  // TODO: native implementation
@@ -169,10 +169,10 @@ public:
 		}
 		return *this = sum; // <-- saturation happens in the assignment
 	}
-	lns2b& operator+=(double rhs) { 
-		return operator+=(lns2b(rhs));
+	dbns& operator+=(double rhs) { 
+		return operator+=(dbns(rhs));
 	}
-	lns2b& operator-=(const lns2b& rhs) { 
+	dbns& operator-=(const dbns& rhs) { 
 		double diff{ 0.0 };
 		if constexpr (behavior == Behavior::Saturating) {
 			diff = double(*this) - double(rhs);  // TODO: native implementation
@@ -182,10 +182,10 @@ public:
 		}
 		return *this = diff; // <-- saturation happens in the assignment
 	}
-	lns2b& operator-=(double rhs) {
-		return operator-=(lns2b(rhs));
+	dbns& operator-=(double rhs) {
+		return operator-=(dbns(rhs));
 	}
-	lns2b& operator*=(const lns2b& rhs) {
+	dbns& operator*=(const dbns& rhs) {
 		if (isnan()) return *this;
 		if (rhs.isnan()) {
 			setnan();
@@ -196,7 +196,7 @@ public:
 			setzero();
 			return *this;
 		}
-		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the lns2b sign bit to yield the exponents
+		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the dbns sign bit to yield the exponents
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
 		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
 			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
@@ -211,10 +211,10 @@ public:
 			}
 			else if (sum <= maxneg) {
 				_block = maxneg;   // == zero encoding
-				negative = false;  // ignore lns2b sign, otherwise this becomes NaN
+				negative = false;  // ignore dbns sign, otherwise this becomes NaN
 			}
 			else {
-				_block.assign(sum); // this might set the lns2b sign, but we are going to explicitly set it before returning
+				_block.assign(sum); // this might set the dbns sign, but we are going to explicitly set it before returning
 			}
 		}
 		else {
@@ -224,8 +224,8 @@ public:
 		setsign(negative);
 		return *this;
 	}
-	lns2b& operator*=(double rhs) { return operator*=(lns2b(rhs)); }
-	lns2b& operator/=(const lns2b& rhs) {
+	dbns& operator*=(double rhs) { return operator*=(dbns(rhs)); }
+	dbns& operator/=(const dbns& rhs) {
 		if (isnan()) return *this;
 		if (rhs.isnan()) {
 			setnan();
@@ -233,7 +233,7 @@ public:
 		}
 		if (rhs.iszero()) {
 #if LNS_THROW_ARITHMETIC_EXCEPTION
-			throw lns2b_divide_by_zero();
+			throw dbns_divide_by_zero();
 #else
 			setnan();
 			return *this;
@@ -241,7 +241,7 @@ public:
 		}
 		if (iszero()) return *this;
 
-		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the lns2b sign bit to yield the exponents
+		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the dbns sign bit to yield the exponents
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
 		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
 			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
@@ -256,10 +256,10 @@ public:
 			}
 			else if (sum <= maxneg) {
 				_block = maxneg;   // == zero encoding
-				negative = false;  // ignore lns2b sign, otherwise this becomes NaN
+				negative = false;  // ignore dbns sign, otherwise this becomes NaN
 			}
 			else {
-				_block.assign(sum); // this might set the lns2b sign, but we are going to explicitly set it before returning
+				_block.assign(sum); // this might set the dbns sign, but we are going to explicitly set it before returning
 			}
 		}
 		else {
@@ -269,24 +269,24 @@ public:
 		setsign(negative);
 		return *this;
 	}
-	lns2b& operator/=(double rhs) { return operator/=(lns2b(rhs)); }
+	dbns& operator/=(double rhs) { return operator/=(dbns(rhs)); }
 
 	// prefix/postfix operators
-	lns2b& operator++() {
+	dbns& operator++() {
 		++_block;
 		return *this;
 	}
-	lns2b operator++(int) {
-		lns2b tmp(*this);
+	dbns operator++(int) {
+		dbns tmp(*this);
 		operator++();
 		return tmp;
 	}
-	lns2b& operator--() {
+	dbns& operator--() {
 		--_block;
 		return *this;
 	}
-	lns2b operator--(int) {
-		lns2b tmp(*this);
+	dbns operator--(int) {
+		dbns tmp(*this);
 		operator--();
 		return tmp;
 	}
@@ -327,7 +327,7 @@ public:
 	}
 	
 	// create specific number system values of interest
-	constexpr lns2b& maxpos() noexcept {
+	constexpr dbns& maxpos() noexcept {
 		// maximum positive value has this bit pattern: 0-00..00-11...11, that is, sign = 0, first base = 00..00, second base = 11..11
 		clear();
 		for (unsigned i = 0; i < nbits - fbbits - 1; ++i) {
@@ -335,7 +335,7 @@ public:
 		}
 		return *this;
 	}
-	constexpr lns2b& minpos() noexcept {
+	constexpr dbns& minpos() noexcept {
 		// minimum positive value has this bit pattern: 0-11...11-00...00, that is, sign = 0, first base = 11..11, second base = 00..00
 		clear();
 		for (unsigned i = nbits - fbbits - 1; i < nbits - 1; ++i) {
@@ -343,13 +343,13 @@ public:
 		}
 		return *this;
 	}
-	constexpr lns2b& zero() noexcept {
+	constexpr dbns& zero() noexcept {
 		// the zero value has this bit pattern: 0-100..00-00..000, sign = 0, msb = 1, rest 0
 		clear();
 		setbit(nbits - 2, true);    // msb = 1
 		return *this;
 	}
-	constexpr lns2b& minneg() noexcept {
+	constexpr dbns& minneg() noexcept {
 		// minimum negative value has this bit pattern: 1-11...11-00...00, that is, sign = 0, first base = 11..11, second base = 00..00
 		clear();
 		for (unsigned i = nbits - fbbits - 1; i < nbits; ++i) {
@@ -357,7 +357,7 @@ public:
 		}
 		return *this;
 	}
-	constexpr lns2b& maxneg() noexcept {
+	constexpr dbns& maxneg() noexcept {
 		// maximum negative value has this bit pattern: 1-00..00-11...11, that is, sign = 0, first base = 00..00, second base = 11..11
 		clear();
 		for (unsigned i = 0; i < nbits - fbbits - 1; ++i) {
@@ -463,8 +463,8 @@ public:
 	
 	// guard long double support to enable ARM and RISC-V embedded environments
 #if LONG_DOUBLE_SUPPORT
-	lns2b(long double initial_value)                        noexcept { *this = initial_value; }
-	CONSTEXPRESSION lns2b& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
+	dbns(long double initial_value)                        noexcept { *this = initial_value; }
+	CONSTEXPRESSION dbns& operator=(long double rhs)       noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()                 const noexcept { return to_ieee754<long double>(); }
 #endif
 
@@ -498,7 +498,7 @@ protected:
 	/// 1's complement of the encoding. Used internally to create specific bit patterns
 	/// </summary>
 	/// <returns>reference to this cfloat object</returns>
-	constexpr lns2b& flip() noexcept { // in-place one's complement
+	constexpr dbns& flip() noexcept { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block.setblock(i, bt(~_block[i]));
 		}
@@ -512,7 +512,7 @@ protected:
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
-	CONSTEXPRESSION lns2b& assign(const std::string& str) noexcept {
+	CONSTEXPRESSION dbns& assign(const std::string& str) noexcept {
 		clear();
 		return *this;
 	}
@@ -521,15 +521,15 @@ protected:
 	/// convertion routines from native types
 
 	template<typename SignedInt>
-	CONSTEXPRESSION lns2b& convert_signed(SignedInt v) noexcept {
+	CONSTEXPRESSION dbns& convert_signed(SignedInt v) noexcept {
 		return convert_ieee754(double(v));
 	}
 	template<typename UnsignedInt>
-	CONSTEXPRESSION lns2b& convert_unsigned(UnsignedInt v) noexcept {
+	CONSTEXPRESSION dbns& convert_unsigned(UnsignedInt v) noexcept {
 		return convert_ieee754(double(v));
 	}
 	template<typename Real>
-	CONSTEXPRESSION lns2b& convert_ieee754(Real v) noexcept {
+	CONSTEXPRESSION dbns& convert_ieee754(Real v) noexcept {
 		bool s{ false };
 		uint64_t unbiasedExponent{ 0 };
 		uint64_t rawFraction{ 0 };
@@ -568,8 +568,8 @@ protected:
 		// NOTE: this is required to protect the rounding code below, which only works for values between [minpos, maxpos]
 		// TODO: this is all incredibly slow as we are creating special values and converting them to Real to compare
 		if constexpr (behavior == Behavior::Saturating) {
-			lns2b maxpos(SpecificValue::maxpos);
-			lns2b maxneg(SpecificValue::maxneg);
+			dbns maxpos(SpecificValue::maxpos);
+			dbns maxneg(SpecificValue::maxneg);
 			Real absoluteValue = std::abs(v);
 			//std::cout << "maxpos : " << to_binary(maxpos) << " : " << maxpos << '\n';
 			if (v > 0 && v >= Real(maxpos)) {
@@ -578,8 +578,8 @@ protected:
 			if (v < 0 && v <= Real(maxneg)) {
 				return *this = maxneg;
 			}
-			lns2b minpos(SpecificValue::minpos);
-			lns2b<nbits + 1, fbbits + 1, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
+			dbns minpos(SpecificValue::minpos);
+			dbns<nbits + 1, fbbits + 1, bt, xtra...> halfMinpos(SpecificValue::minpos); // in log space
 			//std::cout << "minpos     : " << minpos << '\n';
 			//std::cout << "halfMinpos : " << halfMinpos << '\n';
 			if (absoluteValue <= Real(halfMinpos)) {
@@ -601,7 +601,7 @@ protected:
 		}
 
 
-		ExponentBlockBinary lns2bExponent{ 0 };
+		ExponentBlockBinary dbnsExponent{ 0 };
 
 		extractFields(logv, s, unbiasedExponent, rawFraction); // use native conversion
 		if (unbiasedExponent > 0) rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
@@ -649,7 +649,7 @@ protected:
 				}
 				rawFraction = (s ? (~rawFraction + 1) : rawFraction); // if negative, map to two's complement
 			}
-			lns2bExponent.setbits(rawFraction);
+			dbnsExponent.setbits(rawFraction);
 		}
 		else {
 			int shiftLeft = -shiftRight;
@@ -657,21 +657,21 @@ protected:
 				// no need to round, just shift the bits in place
 				rawFraction <<= shiftLeft;
 				rawFraction = (s ? (~rawFraction + 1) : rawFraction); // if negative, map to two's complement
-				lns2bExponent.setbits(rawFraction);
+				dbnsExponent.setbits(rawFraction);
 			}
 			else {
 				// we need to project the bits we have on the fixpnt
 				for (unsigned i = 0; i < ieee754_parameter<Real>::fbits + 1; ++i) {
 					if (rawFraction & 0x01) {
-						lns2bExponent.setbit(i + shiftLeft);
+						dbnsExponent.setbit(i + shiftLeft);
 					}
 					rawFraction >>= 1;
 				}
-				if (s) lns2bExponent.twosComplement();
+				if (s) dbnsExponent.twosComplement();
 			}
 		}
-//		std::cout << "lns2b exponent : " << to_binary(lns2bExponent) << " : " << lns2bExponent << '\n';
-		_block = lns2bExponent;
+//		std::cout << "dbns exponent : " << to_binary(dbnsExponent) << " : " << dbnsExponent << '\n';
+		_block = dbnsExponent;
 		setsign(negative);
 
 		return *this;
@@ -711,7 +711,7 @@ protected:
 		// pick up the absolute value of the minimum normal and subnormal exponents 
 		//constexpr unsigned minNormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat > ::minNormalExp);
 		constexpr unsigned minSubnormalExponent = static_cast<unsigned>(-ieee754_parameter<TargetFloat>::minSubnormalExp);
-		static_assert(fbbits <= minSubnormalExponent, "lns2b::to_ieee754: fraction is too small to represent with requested floating-point type");
+		static_assert(fbbits <= minSubnormalExponent, "dbns::to_ieee754: fraction is too small to represent with requested floating-point type");
 
 		TargetFloat dim1, dim2;
 		dim1 = ipow(base[0], extractExponent(0));
@@ -726,24 +726,24 @@ private:
 
 	// stream operators
 
-	friend std::ostream& operator<< (std::ostream& ostr, const lns2b& r) {
+	friend std::ostream& operator<< (std::ostream& ostr, const dbns& r) {
 		ostr << double(r);
 		return ostr;
 	}
-	friend std::istream& operator>> (std::istream& istr, lns2b& r) {
+	friend std::istream& operator>> (std::istream& istr, dbns& r) {
 		double d;
 		istr >> d;
 		r = d;
 		return istr;
 	}
 
-	// lns2b - logic operators
+	// dbns - logic operators
 
-	friend constexpr bool operator==(const lns2b& lhs, const lns2b& rhs) {
+	friend constexpr bool operator==(const dbns& lhs, const dbns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
 		return lhs._block == rhs._block;
 	}
-	friend constexpr bool operator< (const lns2b& lhs, const lns2b& rhs) {
+	friend constexpr bool operator< (const dbns& lhs, const dbns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
 		blockbinary<nbits-1, bt, BinaryNumberType::Signed> l(lhs._block), r(rhs._block); // extract the 2's complement exponent
 		bool lhs_is_negative = lhs.sign();
@@ -751,93 +751,93 @@ private:
 		                                       : lhs_is_negative ? l > r : l < r;
 	}
 
-	friend constexpr bool operator!=(const lns2b& lhs, const lns2b& rhs) {
+	friend constexpr bool operator!=(const dbns& lhs, const dbns& rhs) {
 		return !operator==(lhs, rhs);
 	}
-	friend constexpr bool operator> (const lns2b& lhs, const lns2b& rhs) {
+	friend constexpr bool operator> (const dbns& lhs, const dbns& rhs) {
 		return  operator< (rhs, lhs);
 	}
-	friend constexpr bool operator<=(const lns2b& lhs, const lns2b& rhs) {
+	friend constexpr bool operator<=(const dbns& lhs, const dbns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
 		return !operator> (lhs, rhs);
 	}
-	friend constexpr bool operator>=(const lns2b& lhs, const lns2b& rhs) {
+	friend constexpr bool operator>=(const dbns& lhs, const dbns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
 		return !operator< (lhs, rhs);
 	}
-	// lns2b - literal logic operators
+	// dbns - literal logic operators
 
-	friend constexpr bool operator==(const lns2b& lhs, double rhs) { return lhs == lns2b(rhs); }
-	friend constexpr bool operator!=(const lns2b& lhs, double rhs) { return !operator==(lhs, rhs); }
-	friend constexpr bool operator< (const lns2b& lhs, double rhs) { return lhs < lns2b(rhs); }
-	friend constexpr bool operator> (const lns2b& lhs, double rhs) { return  operator< (rhs, lhs); }
-	friend constexpr bool operator<=(const lns2b& lhs, double rhs) { return !operator> (lhs, rhs); }
-	friend constexpr bool operator>=(const lns2b& lhs, double rhs) { return !operator< (lhs, rhs); }
+	friend constexpr bool operator==(const dbns& lhs, double rhs) { return lhs == dbns(rhs); }
+	friend constexpr bool operator!=(const dbns& lhs, double rhs) { return !operator==(lhs, rhs); }
+	friend constexpr bool operator< (const dbns& lhs, double rhs) { return lhs < dbns(rhs); }
+	friend constexpr bool operator> (const dbns& lhs, double rhs) { return  operator< (rhs, lhs); }
+	friend constexpr bool operator<=(const dbns& lhs, double rhs) { return !operator> (lhs, rhs); }
+	friend constexpr bool operator>=(const dbns& lhs, double rhs) { return !operator< (lhs, rhs); }
 
-	// lns2b - lns2b binary arithmetic operators
+	// dbns - dbns binary arithmetic operators
 
-	friend constexpr lns2b operator+(const lns2b& lhs, const lns2b& rhs) {
-		lns2b sum(lhs);
+	friend constexpr dbns operator+(const dbns& lhs, const dbns& rhs) {
+		dbns sum(lhs);
 		sum += rhs;
 		return sum;
 	}
-	friend constexpr lns2b operator-(const lns2b& lhs, const lns2b& rhs) {
-		lns2b diff(lhs);
+	friend constexpr dbns operator-(const dbns& lhs, const dbns& rhs) {
+		dbns diff(lhs);
 		diff -= rhs;
 		return diff;
 	}
-	friend constexpr lns2b operator*(const lns2b& lhs, const lns2b& rhs) {
-		lns2b mul(lhs);
+	friend constexpr dbns operator*(const dbns& lhs, const dbns& rhs) {
+		dbns mul(lhs);
 		mul *= rhs;
 		return mul;
 	}
-	friend constexpr lns2b operator/(const lns2b& lhs, const lns2b& rhs) {
-		lns2b ratio(lhs);
+	friend constexpr dbns operator/(const dbns& lhs, const dbns& rhs) {
+		dbns ratio(lhs);
 		ratio /= rhs;
 		return ratio;
 	}
 
-	// lns2b - literal binary arithmetic operators
+	// dbns - literal binary arithmetic operators
 
-	friend constexpr lns2b operator+(const lns2b& lhs, double rhs) {
-		lns2b sum(lhs);
+	friend constexpr dbns operator+(const dbns& lhs, double rhs) {
+		dbns sum(lhs);
 		sum += rhs;
 	}
-	friend constexpr lns2b operator-(const lns2b& lhs, double rhs) {
-		lns2b diff(lhs);
+	friend constexpr dbns operator-(const dbns& lhs, double rhs) {
+		dbns diff(lhs);
 		diff -= rhs;
 		return diff;
 	}
-	friend constexpr lns2b operator*(const lns2b& lhs, double rhs) {
-		lns2b mul(lhs);
+	friend constexpr dbns operator*(const dbns& lhs, double rhs) {
+		dbns mul(lhs);
 		mul *= rhs;
 		return mul;
 	}
-	friend constexpr lns2b operator/(const lns2b& lhs, double rhs) {
-		lns2b ratio(lhs);
+	friend constexpr dbns operator/(const dbns& lhs, double rhs) {
+		dbns ratio(lhs);
 		ratio /= rhs;
 		return ratio;
 	}
 
-	// literal - lns2b binary arithmetic operators
+	// literal - dbns binary arithmetic operators
 
-	friend constexpr lns2b operator+(double lhs, const lns2b& rhs) {
-		lns2b sum(lhs);
+	friend constexpr dbns operator+(double lhs, const dbns& rhs) {
+		dbns sum(lhs);
 		sum += rhs;
 		return sum;
 	}
-	friend constexpr lns2b operator-(double lhs, const lns2b& rhs) {
-		lns2b diff(lhs);
+	friend constexpr dbns operator-(double lhs, const dbns& rhs) {
+		dbns diff(lhs);
 		diff -= rhs;
 		return diff;
 	}
-	friend constexpr lns2b operator*(double lhs, const lns2b& rhs) {
-		lns2b mul(lhs);
+	friend constexpr dbns operator*(double lhs, const dbns& rhs) {
+		dbns mul(lhs);
 		mul *= rhs;
 		return mul;
 	}
-	friend constexpr lns2b operator/(double lhs, const lns2b& rhs) {
-		lns2b ratio(lhs);
+	friend constexpr dbns operator/(double lhs, const dbns& rhs) {
+		dbns ratio(lhs);
 		ratio /= rhs;
 		return ratio;
 	}
@@ -845,13 +845,13 @@ private:
 
 // return the Unit in the Last Position
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-inline lns2b<nbits, fbbits, bt, xtra...> ulp(const lns2b<nbits, fbbits, bt, xtra...>& a) {
-	lns2b<nbits, fbbits, bt, xtra...> b(a);
+inline dbns<nbits, fbbits, bt, xtra...> ulp(const dbns<nbits, fbbits, bt, xtra...>& a) {
+	dbns<nbits, fbbits, bt, xtra...> b(a);
 	return ++b - a;
 }
 
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-std::string to_binary(const lns2b<nbits, fbbits, bt, xtra...>& number, bool nibbleMarker = false) {
+std::string to_binary(const dbns<nbits, fbbits, bt, xtra...>& number, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	s << (number.sign() ? "1." : "0.");
@@ -874,7 +874,7 @@ std::string to_binary(const lns2b<nbits, fbbits, bt, xtra...>& number, bool nibb
 }
 
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-std::string to_triple(const lns2b<nbits, fbbits, bt, xtra...>& v, bool nibbleMarker = false) {
+std::string to_triple(const dbns<nbits, fbbits, bt, xtra...>& v, bool nibbleMarker = false) {
 	std::stringstream s;
 	s << "0b";
 	s << (v.sign() ? "(-, " : "(+, ");
@@ -884,7 +884,7 @@ std::string to_triple(const lns2b<nbits, fbbits, bt, xtra...>& v, bool nibbleMar
 }
 
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-std::string components(const lns2b<nbits, fbbits, bt, xtra...>& v) {
+std::string components(const dbns<nbits, fbbits, bt, xtra...>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b" << std::setw(nbits) << v.fraction();
@@ -902,20 +902,20 @@ std::string components(const lns2b<nbits, fbbits, bt, xtra...>& v) {
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-constexpr lns2b<nbits, fbbits, bt, xtra...> abs(const lns2b<nbits, fbbits, bt, xtra...>& v) {
-	lns2b<nbits, fbbits, bt, xtra...> magnitude(v);
+constexpr dbns<nbits, fbbits, bt, xtra...> abs(const dbns<nbits, fbbits, bt, xtra...>& v) {
+	dbns<nbits, fbbits, bt, xtra...> magnitude(v);
 	magnitude.setsign(false);
 	return magnitude;
 }
 // ToDo constexpt frexp
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-lns2b<nbits, fbbits, bt, xtra...> frexp(const lns2b<nbits, fbbits, bt, xtra...>& x, int* exp) {
-	return lns2b<nbits, fbbits, bt, xtra...>(std::frexp(double(x), exp));
+dbns<nbits, fbbits, bt, xtra...> frexp(const dbns<nbits, fbbits, bt, xtra...>& x, int* exp) {
+	return dbns<nbits, fbbits, bt, xtra...>(std::frexp(double(x), exp));
 }
 // ToDo constexpr ldexp
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-lns2b<nbits, fbbits, bt, xtra...> ldexp(const lns2b<nbits, fbbits, bt, xtra...>& x, int exp) {
-		return lns2b<nbits, fbbits, bt, xtra...>(std::ldexp(double(x), exp));
+dbns<nbits, fbbits, bt, xtra...> ldexp(const dbns<nbits, fbbits, bt, xtra...>& x, int exp) {
+		return dbns<nbits, fbbits, bt, xtra...>(std::ldexp(double(x), exp));
 }
 
 }} // namespace sw::universal

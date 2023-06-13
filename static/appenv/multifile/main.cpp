@@ -16,7 +16,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/number/lns2b/lns2b.hpp>
+#include <universal/number/dbns/dbns.hpp>
 
 #include <universal/verification/test_reporters.hpp>
 
@@ -42,14 +42,14 @@ using Fixpnt  = sw::universal::fixpnt<8, 4, sw::universal::Saturate, uint8_t>;
 using Cfloat  = sw::universal::half;
 using Posit   = sw::universal::posit<8,2>;
 using Lns     = sw::universal::lns<8, 2>;
-using Lns2b   = sw::universal::lns2b<8, 6>;
+using Lns2b   = sw::universal::dbns<8, 6>;
 
 Integer integerPolynomial(const std::vector<float>& coef, const Integer& x);
 Fixpnt  fixpntPolynomial(const std::vector<float>& coef, const Fixpnt& x);
 Cfloat  cfloatPolynomial(const std::vector<float>& coef, const Cfloat& x);
 Posit   positPolynomial(const std::vector<float>& coef, const Posit& x);
 Lns     lnsPolynomial(const std::vector<float>& coef, const Lns& x);
-Lns2b   lns2bPolynomial(const std::vector<float>& coef, const Lns2b& x);
+Lns2b   dbnsPolynomial(const std::vector<float>& coef, const Lns2b& x);
 
 template<typename NumberType>
 void EvaluatePolynomial(const std::vector<float>& coefficients, const NumberType& x) {
@@ -59,7 +59,7 @@ void EvaluatePolynomial(const std::vector<float>& coefficients, const NumberType
 	std::cout << "cfloat       : " << cfloatPolynomial(coefficients, Cfloat(x)) << '\n';
 	std::cout << "posit        : " << positPolynomial(coefficients, Posit(x)) << '\n';
 	std::cout << "lns          : " << lnsPolynomial(coefficients, Lns(x)) << '\n';
-	std::cout << "lns2b        : " << lns2bPolynomial(coefficients, Lns2b(x)) << '\n';
+	std::cout << "dbns        : " << dbnsPolynomial(coefficients, Lns2b(x)) << '\n';
 }
 
 int main()

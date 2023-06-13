@@ -1,11 +1,11 @@
-// api.cpp: application programming interface demonstration of fixed-size, arbitrary precision multi-dimensional logarithmic number systems
+// api.cpp: application programming interface demonstration of fixed-size, arbitrary precision double base number systems
 //
 // Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/number/lns2b/lns2b.hpp>
-#include <universal/number/lns2b/table.hpp>
+#include <universal/number/dbns/dbns.hpp>
+#include <universal/number/dbns/table.hpp>
 #include <universal/number/cfloat/cfloat.hpp>  // bit field comparisons
 #include <universal/verification/test_suite.hpp>
 
@@ -49,7 +49,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "lns2b API demonstration";
+	std::string test_suite = "dbns API demonstration";
 	std::string test_tag = "api";
 	bool reportTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -59,11 +59,11 @@ try {
 	// float x{ 1.0f };
 	// bases(x, 2.5f, 3, 5, 7, 9);
 
-	// generate a value table for lns2b<5,2>
-	GenerateLns2bTable<5,2>(std::cout);
+	// generate a value table for dbns<5,2>
+	GenerateDbnsTable<5,2>(std::cout);
 
 	{
-		lns2b<8, 3> l(1);
+		dbns<8, 3> l(1);
 		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
 		l.debugConstexprParameters();
 
@@ -75,12 +75,12 @@ try {
 	}
 
 	// important behavioral traits
-	ReportTrivialityOfType<lns2b<8, 2>>();
+	ReportTrivialityOfType<dbns<8, 2>>();
 
 	// default behavior
 	{
-		std::cout << "+---------    default lns2b bahavior   --------+\n";
-		using Real = lns2b<8, 3>;
+		std::cout << "+---------    default dbns bahavior   --------+\n";
+		using Real = dbns<8, 3>;
 		Real a(1.0f), b(1.0f), c;
 //		ArithmeticOperators<Real>(a, b);
 		a = 1;  // integer assignment
@@ -90,43 +90,43 @@ try {
 	}
 
 	{
-		std::cout << "+---------    dynamic ranges of 8-bit lns2b<> configurations   --------+\n";
-//		std::cout << symmetry_range(lns2b<8, 0>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 1>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 2>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 3>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 4>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 5>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 6>()) << '\n';
+		std::cout << "+---------    dynamic ranges of 8-bit dbns<> configurations   --------+\n";
+//		std::cout << symmetry_range(dbns<8, 0>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 1>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 2>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 3>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 4>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 5>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 6>()) << '\n';
 	}
 
 	// configuration
 	{
 		std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
-//		using lns2b16 = lns2b<16, 5, std::uint16_t>;
-//		ArithmeticOperators<lns2b16>(1.0f, 1.0f);
+//		using dbns16 = dbns<16, 5, std::uint16_t>;
+//		ArithmeticOperators<dbns16>(1.0f, 1.0f);
 
-//		using lns2b24 = lns2b<24, 5, std::uint32_t>;
-//		ArithmeticOperators<lns2b24>(1.0f, 1.0f);
+//		using dbns24 = dbns<24, 5, std::uint32_t>;
+//		ArithmeticOperators<dbns24>(1.0f, 1.0f);
 	}
 
 	{
-		std::cout << "+---------    Dynamic ranges of lns2b<> configurations   --------+\n";
-		std::cout << dynamic_range(lns2b< 4, 2>()) << '\n';
-		std::cout << dynamic_range(lns2b< 8, 3>()) << '\n';
-		std::cout << dynamic_range(lns2b<12, 4>()) << '\n';
-		std::cout << dynamic_range(lns2b<16, 5>()) << '\n';
-		std::cout << dynamic_range(lns2b<20, 6>()) << '\n';
+		std::cout << "+---------    Dynamic ranges of dbns<> configurations   --------+\n";
+		std::cout << dynamic_range(dbns< 4, 2>()) << '\n';
+		std::cout << dynamic_range(dbns< 8, 3>()) << '\n';
+		std::cout << dynamic_range(dbns<12, 4>()) << '\n';
+		std::cout << dynamic_range(dbns<16, 5>()) << '\n';
+		std::cout << dynamic_range(dbns<20, 6>()) << '\n';
 	}
 
 	{
 		std::cout << "+---------    constexpr and specific values   --------+\n";
 		constexpr size_t nbits = 10;
 		constexpr size_t rbits = 3;
-		using Real = lns2b<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
+		using Real = dbns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
 
 //		CONSTEXPRESSION Real a{}; // zero constexpr
-//		std::cout << type_tag<Real>(a) << '\n';  // TODO: type_tag doesn't work for lns2b
+//		std::cout << type_tag<Real>(a) << '\n';  // TODO: type_tag doesn't work for dbns
 
 		// TODO: needs a constexpr version of log2() function
 //		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
@@ -143,7 +143,7 @@ try {
 		std::cout << "+---------    extreme values   --------+\n";
 		constexpr size_t nbits = 10;
 		constexpr size_t rbits = 3;
-		using Real = lns2b<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
+		using Real = dbns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
 
 		Real a, b, c;
 
@@ -157,22 +157,22 @@ try {
 
 	{
 		std::cout << "+---------    exceptions   ---------+\n";
-		using lns2b = sw::universal::lns2b<16, 8, uint16_t>;
-		lns2b a = lns2b(0.0f);
-		lns2b b = -lns2b(0.0);
+		using dbns = sw::universal::dbns<16, 8, uint16_t>;
+		dbns a = dbns(0.0f);
+		dbns b = -dbns(0.0);
 		// if (a != b) std::cout << "you can't compare indeterminate NaN\n";
-		if (a.isnan() && b.isnan()) std::cout << "PASS: both +lns2b(0) and -lns2b(0) are indeterminate\n";
-		std::cout << "+lns2b(0.0f): " <<  lns2b(0.0f) << "\n";
-		std::cout << "-lns2b(0.0f): " << -lns2b(0.0f) << "\n";
+		if (a.isnan() && b.isnan()) std::cout << "PASS: both +dbns(0) and -dbns(0) are indeterminate\n";
+		std::cout << "+dbns(0.0f): " <<  dbns(0.0f) << "\n";
+		std::cout << "-dbns(0.0f): " << -dbns(0.0f) << "\n";
 	}
 
 	{
 		std::cout << "+---------    comparison to classic floats   --------+\n";
-		using lns2b = lns2b<16, 8, std::uint16_t>;
+		using dbns = dbns<16, 8, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
-		lns2b a;
+		dbns a;
 		Real b;
-		static_assert(std::is_trivially_constructible<lns2b>(), "lns2b<> is not trivially constructible");
+		static_assert(std::is_trivially_constructible<dbns>(), "dbns<> is not trivially constructible");
 		a = 1;
 //		std::cout << std::setw(80) << type_tag(a) << " : " << to_binary(a, true) << " : " << color_print(a, true) << " : " << float(a) << '\n';
 		b = 1;

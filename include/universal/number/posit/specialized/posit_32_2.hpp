@@ -121,7 +121,8 @@ public:
 	}
 	posit operator-() const {
 		posit p;
-		return p.setbits((~_bits) + 1u);
+		uint64_t raw = _bits;
+		return p.setbits((~raw) + 1ull);
 	}
 	// arithmetic assignment operators
 	posit& operator+=(const posit& b) {
@@ -490,7 +491,8 @@ public:
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }
 	inline posit twosComplement() const {
 		posit p;
-		return p.setbits((~_bits) + 1ul);
+		uint64_t raw = _bits;
+		return p.setbits((~raw) + 1ull);
 	}
 
 #ifdef NEW_TO_VALUE

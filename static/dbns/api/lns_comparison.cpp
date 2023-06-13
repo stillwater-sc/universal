@@ -1,11 +1,11 @@
-// lns_comparison.cpp: comparision between 2-base and 1-base logarithmic number systems
+// lns_comparison.cpp: comparision between double base and classic logarithmic number systems
 //
 // Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/number/lns2b/lns2b.hpp>
+#include <universal/number/dbns/dbns.hpp>
 #include <universal/number/cfloat/cfloat.hpp>  // bit field comparisons
 #include <universal/verification/test_suite.hpp>
 
@@ -37,7 +37,7 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 	{
-		using Ty = lns2b<8, 3, std::uint8_t, Behavior::Saturating>;
+		using Ty = dbns<8, 3, std::uint8_t, Behavior::Saturating>;
 		
 		Ty l(1);
 		std::cout << to_binary(l) << " : " << l << " : " << color_print(l) << '\n';
@@ -61,13 +61,13 @@ try {
 	}
 
 	{
-		std::cout << "\n+---------    dynamic ranges of 8-bit lns2b<> configurations   --------+\n";
-		std::cout << symmetry_range(lns2b<8, 1>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 2>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 3>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 4>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 5>()) << '\n';
-		std::cout << symmetry_range(lns2b<8, 6>()) << '\n';
+		std::cout << "\n+---------    dynamic ranges of 8-bit dbns<> configurations   --------+\n";
+		std::cout << symmetry_range(dbns<8, 1>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 2>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 3>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 4>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 5>()) << '\n';
+		std::cout << symmetry_range(dbns<8, 6>()) << '\n';
 	}
 
 	{
@@ -83,15 +83,15 @@ try {
 	{
 		std::cout << "\n+---------    specific type range function\n";
 		lns<7, 3> a{};
-		lns2b<7, 3> b{};
+		dbns<7, 3> b{};
 		std::cout << lns_range(a) << '\n';
-		std::cout << lns2b_range(b) << '\n';
+		std::cout << dbns_range(b) << '\n';
 	}
 
 	{
 		std::cout << "\n+---------    cross-lns sign() functions\n";
 		lns<7, 3> a;
-		lns2b<7, 3> b;
+		dbns<7, 3> b;
 
 		a.setbits(0x7f);
 		std::cout << std::setw(45) << type_tag(a) << " : " << to_binary(a) << " : " << a << " : " << (sign(a) ? "sign = 1" : "sign = 0") << '\n';
@@ -102,11 +102,11 @@ try {
 
 	{
 		std::cout << "\n+---------    comparison to classic floats   --------+\n";
-		using lns2b = lns2b<16, 8, std::uint16_t>;
+		using dbns = dbns<16, 8, std::uint16_t>;
 		using Real = cfloat<16, 5, std::uint16_t>;
-		lns2b a;
+		dbns a;
 		Real b;
-		static_assert(std::is_trivially_constructible<lns2b>(), "lns2b<> is not trivially constructible");
+		static_assert(std::is_trivially_constructible<dbns>(), "dbns<> is not trivially constructible");
 		a = 1;
 		std::cout << std::setw(80) << type_tag(a) << " : " << to_binary(a, true) << " : " << color_print(a, true) << " : " << float(a) << '\n';
 		b = 1;
@@ -115,9 +115,9 @@ try {
 	
 	{
 		std::cout << "\nComparitive Number traits\n";
-		compareNumberTraits< lns<10, 6>, lns2b<10, 6> >(std::cout);
-		threeWayCompareNumberTraits< float, lns<10, 6>, lns2b<10, 6> >(std::cout);
-		threeWayCompareNumberTraits< fp8, bfloat_t, lns2b<8, 4> >(std::cout);
+		compareNumberTraits< lns<10, 6>, dbns<10, 6> >(std::cout);
+		threeWayCompareNumberTraits< float, lns<10, 6>, dbns<10, 6> >(std::cout);
+		threeWayCompareNumberTraits< fp8, bfloat_t, dbns<8, 4> >(std::cout);
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

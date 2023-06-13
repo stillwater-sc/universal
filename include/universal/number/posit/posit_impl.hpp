@@ -286,8 +286,8 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-		regime <<= es + nf + 1;
-		exponent <<= nf + 1;
+		regime <<= es + nf + 1ull;
+		exponent <<= nf + 1ull;
 		fraction <<= 1;
 		sticky_bit.set(0, sb);
 

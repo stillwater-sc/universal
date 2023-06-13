@@ -1,5 +1,5 @@
 #pragma once
-// manipulators.hpp: definitions of helper functions for 2-base logarithmic numbers manipulation
+// manipulators.hpp: definitions of helper functions for double base number system value manipulation
 //
 // Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
@@ -13,48 +13,48 @@
 
 namespace sw { namespace universal {
 
-	// Generate a type tag for this 2-base lns
-	template<typename Lns2bType,
-		std::enable_if_t< is_lns2b<Lns2bType>, bool> = true
+	// Generate a type tag for this double base number system
+	template<typename DbnsType,
+		std::enable_if_t< is_dbns<DbnsType>, bool> = true
 	>
-	inline std::string type_tag(const Lns2bType& = {}) {
+	inline std::string type_tag(const DbnsType& = {}) {
 		std::stringstream s;
-		s << "lns2b<"
-			<< std::setw(3) << Lns2bType::nbits << ", "
-			<< std::setw(3) << Lns2bType::fbbits << ", "
-			<< typeid(typename Lns2bType::BlockType).name() << ", "
-			<< std::setw(10) << type_tag(Lns2bType::behavior) << '>';
+		s << "dbns<"
+			<< std::setw(3) << DbnsType::nbits << ", "
+			<< std::setw(3) << DbnsType::fbbits << ", "
+			<< typeid(typename DbnsType::BlockType).name() << ", "
+			<< std::setw(10) << type_tag(DbnsType::behavior) << '>';
 		return s.str();
 	}
 
 #ifdef DEPRECATED
-	template<typename Lns2bType,
-		std::enable_if_t< is_lns2b<Lns2bType>, bool> = true
+	template<typename DbnsType,
+		std::enable_if_t< is_dbns<DbnsType>, bool> = true
 	>
-	inline std::string range(const Lns2bType & = {}) {
+	inline std::string range(const DbnsType & = {}) {
 		std::stringstream s;
-		Lns2bType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		DbnsType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
 		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << ']';
 		return s.str();
 	}
 #endif
 
-	// report if a native floating-point value is within the dynamic range of the lns2b configuration
-	template<typename Lns2bType,
-		std::enable_if_t< is_lns2b<Lns2bType>, bool> = true
+	// report if a native floating-point value is within the dynamic range of the dbns configuration
+	template<typename DbnsType,
+		std::enable_if_t< is_dbns<DbnsType>, bool> = true
 	>
 	inline bool isInRange(double v) {
-		Lns2bType a{};
+		DbnsType a{};
 
 		bool inside = true;
 		if (v > double(a.maxpos()) || v < double(a.maxneg())) inside = false;
 		return inside;
 	}
 
-	template<typename Lns2bType,
-		std::enable_if_t< is_lns2b<Lns2bType>, bool> = true
+	template<typename DbnsType,
+		std::enable_if_t< is_dbns<DbnsType>, bool> = true
 	>
-	inline std::string color_print(const Lns2bType& l, bool nibbleMarker = false) {
+	inline std::string color_print(const DbnsType& l, bool nibbleMarker = false) {
 
 		std::stringstream s;
 
@@ -68,10 +68,10 @@ namespace sw { namespace universal {
 		s << red << (l.sign() ? "1" : "0");
 	
 		// first base exponent bits
-		constexpr int lsbFirstBase = static_cast<int>(Lns2bType::nbits - Lns2bType::fbbits - 1);
-		for (int i = static_cast<int>(Lns2bType::nbits) - 2; i >= lsbFirstBase; --i) {
+		constexpr int lsbFirstBase = static_cast<int>(DbnsType::nbits - DbnsType::fbbits - 1);
+		for (int i = static_cast<int>(DbnsType::nbits) - 2; i >= lsbFirstBase; --i) {
 			s << cyan << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
-			if ((i - Lns2bType::fbbits) > 0 && ((i - Lns2bType::fbbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
+			if ((i - DbnsType::fbbits) > 0 && ((i - DbnsType::fbbits) % 4) == 0 && nibbleMarker) s << yellow << '\'';
 		}
 
 		// second base exponent bits

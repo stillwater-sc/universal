@@ -1,5 +1,5 @@
 #pragma once
-// attributes.hpp: information functions for 2-base logarithmic number and value attributes
+// attributes.hpp: information functions for double base number system value attributes
 //
 // Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
@@ -17,17 +17,17 @@ namespace sw { namespace universal {
 
 	// free function sign
 template<unsigned nbits, unsigned fbbits, typename bt, auto ...xtra>
-bool sign(const lns2b<nbits, fbbits, bt, xtra...>& v) {
+bool sign(const dbns<nbits, fbbits, bt, xtra...>& v) {
 	return v.sign();
 }
 
 // generate the maxneg through maxpos value range of a logarithmic number system configuration
 // the type of arithmetic, Modulo or Saturating, does not affect the range
 template<unsigned nbits, unsigned fbbits, typename bt, auto ...xtra>
-std::string lns2b_range(const lns2b<nbits, fbbits, bt, xtra...>& v) {
-	using LNS2B = lns2b<nbits, fbbits, bt, xtra...>;
+std::string dbns_range(const dbns<nbits, fbbits, bt, xtra...>& v) {
+	using DBNS = dbns<nbits, fbbits, bt, xtra...>;
 	std::stringstream s;
-	LNS2B l;
+	DBNS l;
 	s << std::setw(45) << type_tag(v) << " : [ "
 		<< l.maxneg() << " ... "
 		<< l.minneg() << " "
