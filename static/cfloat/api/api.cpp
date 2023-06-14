@@ -349,7 +349,8 @@ try {
 	{
 		half h(0.5), hi(0);
 		std::vector<half> v;
-		for (unsigned i = 0; i < 10; ++i) {
+		unsigned N = 10;
+		for (unsigned i = 0; i < N; ++i) {
 			ReportValue(h, "half precision");
 			v.push_back(h);
 			h *= 0.5f;
@@ -358,7 +359,7 @@ try {
 		for (auto h : v) {
 			s << h << ' ';
 		}
-		for (auto h : v) {
+		for (unsigned i = 0; i < N; ++i) {
 			s >> hi;
 			ReportValue(hi, "half precision");
 		}

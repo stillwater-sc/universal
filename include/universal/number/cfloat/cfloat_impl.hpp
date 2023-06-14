@@ -369,8 +369,9 @@ public:
 				value.setnormal();
 				value.setsign(rhs.sign());
 				value.setscale(rhs.scale());
-				blockbinary<rhs.fbits, bt, BinaryNumberType::Signed> fraction;
-				rhs.fraction<rhs.fbits>(fraction);
+				constexpr unsigned rhsFbits = nnbits - 1ul - ees;
+				blockbinary<rhsFbits, bbt, BinaryNumberType::Signed> fraction;
+				//rhs.fraction<rhsFbits>(fraction);
 				std::cout << "fraction : " << to_binary(fraction) << '\n';
 				//value.setfraction(fraction);
 				convert(value, *this);
@@ -3881,7 +3882,7 @@ fma(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x,
 //	ReportValue(preciseZ, "extended precision z");
 	cfloat<EXTENDED_PRECISION, es, bt, hasSubnormals, hasSupernormals, isSaturating> product = preciseX * preciseY;
 //	ReportValue(product, "extended precision p");
-	fused = preciseX * preciseY + preciseZ;
+	fused = product + preciseZ;
 	return fused;
 }
 
