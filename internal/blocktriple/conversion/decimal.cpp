@@ -20,16 +20,17 @@ namespace sw { namespace universal {
 
 	template<typename BlockTripleType>
 	std::string FixedPointFraction(const BlockTripleType& v) {
-		std::string digits;
+		std::string digits{ "tbd" };
 
 		unsigned k = 0;
-		blocksignificant bs;
+		
+		return digits;
 	}
 
 }}  // namespace sw::universal
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -57,6 +58,11 @@ try {
 
 #if MANUAL_TESTING
 
+	{
+		blocktriple<8, BlockTripleOperator::REP, uint8_t> bt;
+		bt.setbits(0x00);
+		std::cout << FixedPointFraction(bt) << '\n';
+	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
