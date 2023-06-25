@@ -243,6 +243,22 @@ public:
 		}
 	}
 
+	// multiply a fraction by an integer base
+	void scaleByBase(const blockfraction& fraction, const blockfraction& integerBase) noexcept {
+		blockfraction<nbits, bt> multiplicant(fraction);
+		blockfraction<nbits, bt> base(integerBase);
+		clear();
+		radixPoint = base.radix();
+		for (unsigned i = radixPoint; i < nbits; ++i) {
+			if (base.at(i)) {
+				add(*this, multiplicant);
+			}
+			multiplicant <<= 1;
+		}
+		// since we used operator+=, which enforces the nulling of leading bits
+		// we don't need to null here
+	}
+
 #ifdef FRACTION_REMAINDER
 	// remainder operator
 	blockfraction& operator%=(const blockfraction& rhs) noexcept {
@@ -406,8 +422,8 @@ public:
 		for (unsigned i = radixPoint; i < nbits; ++i) {
 			if (test(i)) {
 				integerPart |= bitValue;
-				bitValue <<= 1;
 			}
+			bitValue <<= 1;
 		}
 		return integerPart;
 	}

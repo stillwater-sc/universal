@@ -133,13 +133,18 @@ try {
 	}
 
 	{
-
+		using BlockFraction = blockfraction<13, uint32_t>;
 		// to process 8 fraction bits
 		// we need 4 integer bits to represent B = 10
 		// we need 9 fraction bits to represent b^-n/2
 		//          0b0000.0000'0000'0
 		// B = 10 = 0b1010.0000'0000'0 = 0b1'010.0'0000'0000 = 0x1400
-		blockfraction<13, uint32_t> v(0x1FE, 9), m(0x1, 9), half(0x100, 9), B(0x1400, 9), R, M, RB(0,9);
+		BlockFraction v(0x190, 9); // v(0x1FE, 9);
+		BlockFraction m(0x1, 9), one(0x200, 9), half(0x100, 9);
+		BlockFraction B(0x1400, 9);
+		BlockFraction R, M, RB(0, 9), oneMinusM(0, 9);
+		constexpr unsigned n = 9;
+		char digits[n];
 
 		// NOTE: the blockfraction needs its radixpoint set to yield the correct interpretation
 		// for arithmetic operators. With the default, the fraction has no integer part
@@ -153,22 +158,33 @@ try {
 		unsigned k{ 0 }, U{ 0 };
 		R = v;
 		M = m;
-		while (R >= half) {
+		oneMinusM.sub(one, M);
+		ReportValue(oneMinusM, "oneMinusM");
+		while (R >= half && R <= oneMinusM) {
 			++k;
 			std::cout << "iteration " << k << '\n';
 			ReportValue(R, "R");
 			ReportValue(B, "B");
-			RB.mul(R, B);
+			RB.scaleByBase(R, B);
 			RB.setradix(9);
 			ReportValue(RB, "RB");
 			U = RB.integer();
 			R = RB.fraction();
-			M.mul(M, B);
+			M.scaleByBase(M, B);
 			std::cout << "integer value " << U << '\n';
 			ReportValue(R, "R");
 			ReportValue(M, "M");
+			oneMinusM.sub(one, M);
+			ReportValue(oneMinusM, "oneMinusM");
+			digits[n - k] = static_cast<char>(U);
 		}
 		std::cout << "nr of digits is " << k << '\n';
+		std::cout << "digits       : 0.";
+		for (unsigned i = 0; i < k; ++i) {
+			std::cout << static_cast<unsigned>(digits[n - i - 1]);
+		}
+		std::cout << '\n';
+		std::cout << "source value : " << v << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
