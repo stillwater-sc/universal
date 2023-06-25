@@ -139,7 +139,7 @@ try {
 		// we need 9 fraction bits to represent b^-n/2
 		//          0b0000.0000'0000'0
 		// B = 10 = 0b1010.0000'0000'0 = 0b1'010.0'0000'0000 = 0x1400
-		BlockFraction v(0x190, 9); // v(0x1FE, 9);
+		BlockFraction v(0x10, 9); // v(0x190, 9); // v(0x1FE, 9);
 		BlockFraction m(0x1, 9), one(0x200, 9), half(0x100, 9);
 		BlockFraction B(0x1400, 9);
 		BlockFraction R, M, RB(0, 9), oneMinusM(0, 9);
@@ -159,25 +159,29 @@ try {
 		R = v;
 		M = m;
 		oneMinusM.sub(one, M);
+		ReportValue(R, "R");
+		ReportValue(M, "M");
 		ReportValue(oneMinusM, "oneMinusM");
-		while (R >= half && R <= oneMinusM) {
+//		do {
+		for (unsigned i = 0; i < n; ++i) {
 			++k;
 			std::cout << "iteration " << k << '\n';
-			ReportValue(R, "R");
-			ReportValue(B, "B");
+			//			ReportValue(R, "R");
+			//			ReportValue(B, "B");
 			RB.scaleByBase(R, B);
 			RB.setradix(9);
 			ReportValue(RB, "RB");
 			U = RB.integer();
 			R = RB.fraction();
 			M.scaleByBase(M, B);
-			std::cout << "integer value " << U << '\n';
+			oneMinusM.sub(one, M);
+			std::cout << std::setw(20) << "U" << " : " << U << '\n';
 			ReportValue(R, "R");
 			ReportValue(M, "M");
-			oneMinusM.sub(one, M);
 			ReportValue(oneMinusM, "oneMinusM");
 			digits[n - k] = static_cast<char>(U);
 		}
+//		} while (R >= M && R <= oneMinusM);
 		std::cout << "nr of digits is " << k << '\n';
 		std::cout << "digits       : 0.";
 		for (unsigned i = 0; i < k; ++i) {
