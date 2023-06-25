@@ -212,8 +212,6 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	std::cout << test_suite << '\n';
-
 	TestRounding();
 	AdditionSetup();
 	MultiplicationSetup();
