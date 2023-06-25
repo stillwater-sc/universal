@@ -97,7 +97,7 @@ try {
 		frac = msbMask;
 		for (size_t i = 0; i < fbits; ++i) {
 			a.setbits(frac);
-			std::cout << to_binary(a, true) << " : " << -double(a) << '\n';
+			std::cout << to_binary(a, true) << " : " << double(a) << '\n';
 			msbMask >>= 1;
 			frac |= msbMask;
 		}
@@ -117,6 +117,22 @@ try {
 			a.setradix(radix);
 			std::cout << to_binary(a) << " : " << a << '\n';
 		}
+	}
+
+	{
+
+		float v{ 1.5f };
+		bool s{ false };
+		uint64_t rawExp{ 0 };
+		uint64_t rawFraction{ 0 };
+		extractFields(v, s, rawExp, rawFraction);
+		std::cout << "floating-point " << to_binary(v) << " : " << v << '\n';
+		std::cout << "exponent bits  " << to_binary(rawExp, 8) << '\n';
+		std::cout << "fraction bits  " << to_binary(rawFraction, 24) << '\n';
+		blockfraction<26, uint32_t> sp;
+		sp.setradix(23);
+		sp.setbits(rawFraction);
+		std::cout << "fraction bits  " << to_binary(sp, true) << " : " << sp << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

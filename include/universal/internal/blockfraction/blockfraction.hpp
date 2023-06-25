@@ -22,8 +22,8 @@ namespace sw { namespace universal {
 
 // structure for blockfraction<nbits> to capture quotient and remainder during long division
 template<unsigned nbits, typename bt>
-struct bsquorem {
-	constexpr bsquorem() noexcept : exceptionId{} {} // default constructors
+struct bfquorem {
+	constexpr bfquorem() noexcept : exceptionId{} {} // default constructors
 	int exceptionId;
 	blockfraction<nbits, bt> quo; // quotient
 	blockfraction<nbits, bt> rem; // remainder
@@ -59,12 +59,10 @@ What is the required API of blockfraction to support that semantic?
 
 
 /// <summary>
-/// a block-based floating-point fraction 
+/// a block-based floating-point fraction
 /// 
-/// NOTE: don't set a default blocktype as this makes the integration more brittle
-/// as blocktriple uses the blocksignificant as storage class and needs to interact
-/// with the client number system, which is also blocked. Using the same blocktype
-/// simplifies the copying of exponent and fraction bits from and to the client.
+/// A blockfraction is by definition an unsigned entity. As arithmetic operators
+/// introduce additional bits, the radixpoint is controllable.
 /// </summary>
 /// <typeparam name="bt"></typeparam>
 template<unsigned _nbits, typename bt>
@@ -85,7 +83,11 @@ public:
 	static constexpr bt MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr bt OVERFLOW_BIT = ~(MSU_MASK >> 1) & MSU_MASK;
 	typedef bt BlockType;
-
+	/// NOTE: don't set a default blocktype as this makes the integration more brittle
+	/// as blocktriple uses the blocksignificant as storage class and needs to interact
+	/// with the client number system, which is also blocked. Using the same blocktype
+	/// simplifies the copying of fraction bits from and to the client.
+	/// 
 	// constructors
 	constexpr blockfraction() noexcept : radixPoint{ nbits }, _block{} {}
 
@@ -244,7 +246,7 @@ public:
 #ifdef FRACTION_REMAINDER
 	// remainder operator
 	blockfraction& operator%=(const blockfraction& rhs) noexcept {
-		bsquorem<nbits, bt> result = longdivision(*this, rhs);
+		bfquorem<nbits, bt> result = longdivision(*this, rhs);
 		*this = result.rem;
 		return *this;
 	}
@@ -476,20 +478,10 @@ public:
 	}
 	constexpr double to_double() const noexcept {
 		double d{ 0.0 };
-		double s{ 1.0 };
+
 		blockfraction<nbits, bt> tmp(*this);
 		int bit = static_cast<int>(nbits - 1);
 		int shift = static_cast<int>(nbits - 1 - radixPoint);
-
-		// special case preprocessing for 2's complement encodings
-//		if (encoding == BitEncoding::Twos) {
-			// nbits in the target form 00h.fffff, check msb and if set take 2's complement
-			if (test(static_cast<unsigned>(bit--))) {
-				tmp.twosComplement();
-				s = -1.0;
-			}
-			--shift; // and remove the MSB from the value computation
-//		}
 
 		// process the value above the radix
 		unsigned bitValue = 1ull << shift;
@@ -508,7 +500,7 @@ public:
 //			std::cerr << "to_double() will yield inaccurate result since blockfraction has more precision than native IEEE-754 double\n";
 //		}
 
-		return s * d;
+		return d;
 	}
 
 	// determine the rounding direction for round-to-even: returns true if we need to round up, false if we need to truncate
@@ -642,8 +634,8 @@ std::string to_hex(const blockfraction<nbits, bt>& number, bool wordMarker = tru
 
 // divide a by b and return both quotient and remainder
 template<unsigned nbits, typename bt>
-bsquorem<nbits, bt> longdivision(const blockfraction<nbits, bt>& _a, const blockfraction<nbits, bt>& _b)  {
-	bsquorem<nbits, bt> result;
+bfquorem<nbits, bt> longdivision(const blockfraction<nbits, bt>& _a, const blockfraction<nbits, bt>& _b)  {
+	bfquorem<nbits, bt> result;
 	if (_b.iszero()) {
 		result.exceptionId = 1; // division by zero
 		return result;
