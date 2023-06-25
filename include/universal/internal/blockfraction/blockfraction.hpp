@@ -92,8 +92,8 @@ public:
 	constexpr blockfraction() noexcept : radixPoint{ nbits }, _block{} {}
 
 	// value constructors
-	constexpr blockfraction(signed char rhs) noexcept : radixPoint{ nbits }, _block{} {}
-	constexpr blockfraction(int rhs) noexcept : radixPoint{ nbits }, _block{} {}
+//	constexpr blockfraction(signed char rhs) noexcept : radixPoint{ nbits }, _block{} {}
+//	constexpr blockfraction(int rhs) noexcept : radixPoint{ nbits }, _block{} {}
 	
 	// raw bit constructors
 	template <size_t... I>
@@ -400,6 +400,17 @@ public:
 	constexpr bool iseven() const noexcept { return !isodd(); }
 	constexpr bool sign() const noexcept { return test(nbits - 1); }
 	constexpr bool isneg() const noexcept { return sign(); }
+	constexpr unsigned integer() const noexcept {
+		unsigned integerPart{ 0 };
+		unsigned bitValue = 0x1;
+		for (unsigned i = radixPoint; i < nbits; ++i) {
+			if (test(i)) {
+				integerPart |= bitValue;
+				bitValue <<= 1;
+			}
+		}
+		return integerPart;
+	}
 	constexpr bool test(unsigned bitIndex) const noexcept { return at(bitIndex); }
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false;
@@ -427,33 +438,10 @@ public:
 	constexpr blockfraction fraction() const noexcept {
 		// return a copy of the fraction with the integer bits removed
 		blockfraction fractionBits(*this);
-		fractionBits.setbit(static_cast<unsigned>(radixPoint), false);
+		for (unsigned i = radixPoint; i < nbits; ++i) {
+			fractionBits.setbit(i, false);
+		}
 		return fractionBits;
-	}
-	constexpr uint64_t fraction_ull() const noexcept {
-		uint64_t raw = significant_ull();
-		// remove the non-fraction bits
-		uint64_t fractionBits = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - radixPoint));
-		raw &= fractionBits;
-		return raw;
-	}
-	template <size_t... I>
-	constexpr uint64_t significant_ull(std::index_sequence<I...> = {}) const noexcept {
-		uint64_t raw{};
-		raw = _block[MSU];
-		raw &= MSU_MASK;
-		if constexpr (sizeof...(I) == 0) {
-			if constexpr (bitsInBlock < 64 && nrBlocks > 1) {
-				return blockfraction::significant_ull(std::make_index_sequence<MSU>{});
-			}
-			else { // if bitsInBlock < 64, take top 64bits and ignore the rest
-				return raw;
-			}
-		}
-		else {
-			return ((raw <<= bitsInBlock,
-			         raw |= _block[MSU - 1 - I]), ...);
-		}
 	}
 
 	// return the position of the most significant bit, -1 if v == 0

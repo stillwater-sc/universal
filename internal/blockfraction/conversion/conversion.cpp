@@ -11,17 +11,12 @@
 #include <universal/verification/test_suite.hpp>
 
 /*
-A blockfraction is a 1's complement binary encoding with a radix point 
+A blockfraction is an unsigned binary encoding with a radix point 
 that is aligned with the hidden bit of the fraction encoding in a 
 floating-point representation. 
-  - multiplication uses a 1's complement encoding.
-  - addition and subtraction use a 2's complement encoding.
-  - division uses a 2's complement encoding.
-  - square root uses a 1's complement encoding.
 
-
-The main goal of the blockfraction abstraction is to support arbitrary floating-point 
-number systems with a high-quality, high-performance arithmetic engine.
+The main goal of the blockfraction abstraction is to support arbitrary 
+floating-point number systems with a high-quality decimal string conversion.
 
 For arbitrary and adaptive size number systems, blockfraction is not the
 right abstraction. High-performance arbitrary precision systems use a
@@ -59,6 +54,8 @@ try {
 #if MANUAL_TESTING
 	// we have deprecated the blockfraction copy constructor to catch any
 	// unsuspecting conversion copies in blockfraction use-cases
+
+	/*
 	{
 		// scenario that happens in unrounded add/sub
 		//  0b0'10.00'0000 : 2
@@ -118,9 +115,9 @@ try {
 			std::cout << to_binary(a) << " : " << a << '\n';
 		}
 	}
+	*/
 
 	{
-
 		float v{ 1.5f };
 		bool s{ false };
 		uint64_t rawExp{ 0 };
@@ -133,6 +130,45 @@ try {
 		sp.setradix(23);
 		sp.setbits(rawFraction);
 		std::cout << "fraction bits  " << to_binary(sp, true) << " : " << sp << '\n';
+	}
+
+	{
+
+		// to process 8 fraction bits
+		// we need 4 integer bits to represent B = 10
+		// we need 9 fraction bits to represent b^-n/2
+		//          0b0000.0000'0000'0
+		// B = 10 = 0b1010.0000'0000'0 = 0b1'010.0'0000'0000 = 0x1400
+		blockfraction<13, uint32_t> v(0x1FE, 9), m(0x1, 9), half(0x100, 9), B(0x1400, 9), R, M, RB(0,9);
+
+		// NOTE: the blockfraction needs its radixpoint set to yield the correct interpretation
+		// for arithmetic operators. With the default, the fraction has no integer part
+
+		ReportValue(v, "value to convert");
+		ReportValue(m, "starting M");
+		ReportValue(half, "half");
+		ReportValue(B, "base 10");
+		ReportValue(RB, "RB");
+
+		unsigned k{ 0 }, U{ 0 };
+		R = v;
+		M = m;
+		while (R >= half) {
+			++k;
+			std::cout << "iteration " << k << '\n';
+			ReportValue(R, "R");
+			ReportValue(B, "B");
+			RB.mul(R, B);
+			RB.setradix(9);
+			ReportValue(RB, "RB");
+			U = RB.integer();
+			R = RB.fraction();
+			M.mul(M, B);
+			std::cout << "integer value " << U << '\n';
+			ReportValue(R, "R");
+			ReportValue(M, "M");
+		}
+		std::cout << "nr of digits is " << k << '\n';
 	}
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
