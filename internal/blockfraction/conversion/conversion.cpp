@@ -24,6 +24,38 @@ dynamic data structure and a custom memory manager to avoid copies.
 
 */
 
+/// <summary>
+/// decimal conversion algorithm that demonstrates how rounding
+/// error causes incorrect binary to decimal conversion
+/// </summary>
+/// <param name="v"></param>
+void DecimalConversionConceptAlgorithm(double v) {
+	constexpr unsigned n = 53; // 53 bits in double mantissa
+	constexpr unsigned width = 15;
+	char digits[n];
+	unsigned k{ 0 }; // nr of digits in final conversion
+
+	sw::universal::ReportValue(v, "input value", width);
+
+	// compute exponent of decimal representation
+	int decimalExponent = static_cast<int>(floor(log10(v)));
+
+	// normalize input value so first decimal is in the 10^0 spot
+	v /= pow(10, decimalExponent); // this division adds a lot of garbage in the tail
+
+	// while there are bits to interpret
+	sw::universal::ReportValue(v, "scaled value", width);
+	while (v > 0 && k < n) {
+		double digit = floor(v);
+		digits[k++] = '0' + static_cast<char>(digit);
+		v -= digit;
+		v *= 10.0; // scale to get the next digit in 10^0 slot
+		sw::universal::ReportValue(v, "iteration value", width);
+	}
+	digits[k] = 0;
+	std::cout << digits << '\n';
+}
+
 template<typename BlockFraction>
 void Dragon1(const BlockFraction& v) {
 	using namespace sw::universal;
@@ -53,8 +85,6 @@ void Dragon1(const BlockFraction& v) {
 	do {
 		++k;
 		std::cout << "iteration " << k << '\n';
-		//			ReportValue(R, "R");
-		//			ReportValue(B, "B");
 		RB.scaleByBase(R, B);
 		RB.setradix(9);
 		ReportValue(RB, "RB");
@@ -67,7 +97,7 @@ void Dragon1(const BlockFraction& v) {
 		ReportValue(M, "M");
 		ReportValue(oneMinusM, "oneMinusM");
 		digits[n - k] = static_cast<char>(U);
-		//		} while (R >= M && R <= oneMinusM);
+//		} while (R >= M && R <= oneMinusM);
 	} while (R != zero);
 	std::cout << "nr of digits is " << k << '\n';
 	std::cout << "digits       : 0.";
@@ -109,69 +139,18 @@ try {
 	// we have deprecated the blockfraction copy constructor to catch any
 	// unsuspecting conversion copies in blockfraction use-cases
 
-	/*
 	{
-		// scenario that happens in unrounded add/sub
-		//  0b0'10.00'0000 : 2
-		//  0b0'11.00'0000 : 3
-		//	0b0'11.10'0000 : 3.5
-		//	0b0'11.11'0000 : 3.75
-		//	0b0'11.11'1000 : 3.875
-		//	0b0'11.11'1100 : 3.9375
-		//	0b0'11.11'1110 : 3.96875
-		//	0b0'11.11'1111 : 3.98438
-		// for add and sub the significant uses a 2's complement format 00h.ffff
-		constexpr size_t fbits   = 8;
-		constexpr size_t fhbits  = fbits + 1;
-		//constexpr size_t abits   = fhbits + 3;
-		//constexpr size_t sumbits = abits + 1;
-		size_t msbMask = (1 << (fbits-1));
-		size_t frac = msbMask;
-		blockfraction<fhbits, uint8_t> a;
-		a.setradix(fhbits - 3);
-		for (size_t i = 0; i < fbits; ++i) {
-			a.setbits(frac);
-			std::cout << to_binary(a, true) << " : " << a << '\n';
-			msbMask >>= 1;
-			frac |= msbMask;
-		}
-		// negative values
-		//	0b1'00.00'0000 : -0
-		//	0b1'10.00'0000 : -2
-		//	0b1'11.00'0000 : -1
-		//	0b1'11.10'0000 : -0.5
-		//	0b1'11.11'0000 : -0.25
-		//	0b1'11.11'1000 : -0.125
-		//	0b1'11.11'1100 : -0.0625
-		//	0b1'11.11'1110 : -0.03125
-		msbMask = (1 << fbits);
-		frac = msbMask;
-		for (size_t i = 0; i < fbits; ++i) {
-			a.setbits(frac);
-			std::cout << to_binary(a, true) << " : " << double(a) << '\n';
-			msbMask >>= 1;
-			frac |= msbMask;
-		}
+		std::cout << "conceptual conversion algorithm that shows sensitivity to rounding error\n";
+		DecimalConversionConceptAlgorithm(123.456);
+		std::cout << "+---------------------------------\n";
 	}
 
+#ifdef SHOW_CONVERSION
 	{
-		//	0b1111111.1 : 127.5
-		//	0b111111.11 : 63.75
-		// 	0b11111.111 : 31.875
-		//	0b1111.1111 : 15.9375
-		//	0b111.11111 : 7.96875
-		//	0b11.111111 : 3.98438
-		//	0b1.1111111 : 1.99219
-		constexpr size_t nbits = 8;
-		blockfraction<nbits, uint8_t> a(0xff, 1);
-		for (int radix = 1; radix < static_cast<int>(nbits); ++radix) {
-			a.setradix(radix);
-			std::cout << to_binary(a) << " : " << a << '\n';
-		}
-	}
-	*/
-
-	{
+		// blockfraction doesn't have conversion operators so that it 
+		// isn't going to be used as an arithmetic type. Downside is
+		// that we need to populate its bits manually if we want to
+		// inject it with native floating-point values.
 		float v{ 1.5f };
 		bool s{ false };
 		uint64_t rawExp{ 0 };
@@ -185,8 +164,10 @@ try {
 		sp.setbits(rawFraction);
 		std::cout << "fraction bits  " << to_binary(sp, true) << " : " << sp << '\n';
 	}
+#endif
 
 	{
+		std::cout << "Dragon1 algorithm\n";
 		using BlockFraction = blockfraction<13, uint32_t>;
 		// to process 8 fraction bits
 		// we need 4 integer bits to represent B = 10
@@ -195,7 +176,10 @@ try {
 		// B = 10 = 0b1010.0000'0000'0 = 0b1'010.0'0000'0000 = 0x1400
 		BlockFraction v(0x10, 9); // v(0x190, 9); // v(0x1FE, 9);
 		Dragon1(v);
+		std::cout << "+---------------------------------\n";
 	}
+
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
