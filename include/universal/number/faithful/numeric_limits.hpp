@@ -15,15 +15,15 @@ public:
 	static constexpr bool is_specialized = true;
 	static constexpr FAITHFUL  min() { // return minimum value
 		FAITHFUL lminpos;
-		return minpos<FloatingPointType>(lminpos);
+		return sw::universal::minpos<FloatingPointType>(lminpos);
 	} 
 	static constexpr FAITHFUL  max() { // return maximum value
 		FAITHFUL lmaxpos;
-		return maxpos<FloatingPointType>(lmaxpos);
+		return sw::universal::maxpos<FloatingPointType>(lmaxpos);
 	} 
 	static constexpr FAITHFUL  lowest() { // return most negative value
 		FAITHFUL lminneg;
-		return minneg<FloatingPointType>(lminneg);
+		return sw::universal::minneg<FloatingPointType>(lminneg);
 	} 
 	static constexpr FAITHFUL  epsilon() { // return smallest effective increment from 1.0
 		FAITHFUL one{ 1.0f }, incr{ 1.0f };
