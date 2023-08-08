@@ -107,7 +107,7 @@ try {
 		frac = msbMask;
 		for (size_t i = 0; i < fbits; ++i) {
 			a.setbits(frac);
-			std::cout << to_binary(a, true) << " : " << -double(a) << '\n';
+			std::cout << to_binary(a, true) << " : " << double(a) << '\n';
 			msbMask >>= 1;
 			frac |= msbMask;
 		}

@@ -1,21 +1,16 @@
 //  quire_accumulations.cpp : computational path experiments with quires
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
-
-#include <universal/number/float/quire.hpp>
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
 try {
-	using namespace sw::ieee;
-
-	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Quire Accumulation";
@@ -24,7 +19,7 @@ try {
 
 #else
 
-	std::cout << "IEEE Floating Point Quire experiments\n";
+	std::cout << "IEEE-754 Floating-Point Quire experiments\n";
 	
 	std::cout << "\nTBD\n";
 

@@ -665,7 +665,7 @@ Here is a complete list:
 - *universal/number/unum* - arbitrary configuration unum Type 1 number system
 - *universal/number/unum2* - arbitrary configuration unum Type 2 number system
 - *universal/number/lns* - arbitrary configuration logarithmic number system with fixed-point exponent
-- *universal/number/lns2b* - two-base logarithmic number system with integer exponents
+- *universal/number/dbns* - double base number system with integer exponents
 - *universal/number/sorn* - set of real numbers 
 
 ### _elastic_ adaptive-precision configurations

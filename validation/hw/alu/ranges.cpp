@@ -9,7 +9,7 @@
 #include <string>
 #include <universal/hw/alu.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/number/lns2b/lns2b.hpp>
+#include <universal/number/dbns/dbns.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 
@@ -52,9 +52,9 @@ try {
 	using lns8_4 = lns<8,4>;
 	using lns8_5 = lns<8,5>;
 
-	using lns2b8_3 = lns2b<8,3>;
-	using lns2b8_4 = lns2b<8,4>;
-	using lns2b8_5 = lns2b<8,5>;
+	using dbns8_3 = dbns<8,3>;
+	using dbns8_4 = dbns<8,4>;
+	using dbns8_5 = dbns<8,5>;
 
 	using posit8_0 = posit<8,0>;
 	using posit8_1 = posit<8,1>;
@@ -89,9 +89,9 @@ try {
 		PrintMinposMaxpos<lns8_4 > (ostr, tsv);
 		PrintMinposMaxpos<lns8_5 > (ostr, tsv);
 
-		PrintMinposMaxpos<lns2b8_3 > (ostr, tsv);
-		PrintMinposMaxpos<lns2b8_4 > (ostr, tsv);
-		PrintMinposMaxpos<lns2b8_5 > (ostr, tsv);
+		PrintMinposMaxpos<dbns8_3 > (ostr, tsv);
+		PrintMinposMaxpos<dbns8_4 > (ostr, tsv);
+		PrintMinposMaxpos<dbns8_5 > (ostr, tsv);
 
 		PrintMinposMaxpos<posit8_0 > (ostr, tsv);
 		PrintMinposMaxpos<posit8_1 > (ostr, tsv);
@@ -115,9 +115,9 @@ try {
 		PrintMinposMaxpos<lns8_4 >(std::cout, tsv);
 		PrintMinposMaxpos<lns8_5 >(std::cout, tsv);
 
-		PrintMinposMaxpos<lns2b8_3 >(std::cout, tsv);
-		PrintMinposMaxpos<lns2b8_4 >(std::cout, tsv);
-		PrintMinposMaxpos<lns2b8_5 >(std::cout, tsv);
+		PrintMinposMaxpos<dbns8_3 >(std::cout, tsv);
+		PrintMinposMaxpos<dbns8_4 >(std::cout, tsv);
+		PrintMinposMaxpos<dbns8_5 >(std::cout, tsv);
 
 		PrintMinposMaxpos<posit8_0 >(std::cout, tsv);
 		PrintMinposMaxpos<posit8_1 >(std::cout, tsv);
@@ -126,12 +126,12 @@ try {
 		std::cout << '\n';
 	}
 
-	lns2b<8, 3> minpos(SpecificValue::minpos), maxpos(SpecificValue::maxpos);
-	lns2b<8, 3> minneg(SpecificValue::minneg), maxneg(SpecificValue::maxneg);
-	std::cout << "lns2b<8, 3> maxneg : " << to_binary(maxneg) << " : " << maxneg << '\n';
-	std::cout << "lns2b<8, 3> minneg : " << to_binary(minneg) << " : " << minneg << '\n';
-	std::cout << "lns2b<8, 3> minpos : " << to_binary(minpos) << " : " << minpos << '\n';
-	std::cout << "lns2b<8, 3> maxpos : " << to_binary(maxpos) << " : " << maxpos << '\n';
+	dbns<8, 3> minpos(SpecificValue::minpos), maxpos(SpecificValue::maxpos);
+	dbns<8, 3> minneg(SpecificValue::minneg), maxneg(SpecificValue::maxneg);
+	std::cout << "dbns<8, 3> maxneg : " << to_binary(maxneg) << " : " << maxneg << '\n';
+	std::cout << "dbns<8, 3> minneg : " << to_binary(minneg) << " : " << minneg << '\n';
+	std::cout << "dbns<8, 3> minpos : " << to_binary(minpos) << " : " << minpos << '\n';
+	std::cout << "dbns<8, 3> maxpos : " << to_binary(maxpos) << " : " << maxpos << '\n';
 
 	return EXIT_SUCCESS;
 }

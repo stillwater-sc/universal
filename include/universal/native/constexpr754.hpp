@@ -56,7 +56,7 @@ inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExp
 #ifdef LONG_DOUBLE_DOWNCAST
 template<>
 inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
-	double d = static_cast<long double>(value);
+	double d = static_cast<double>(value);
 	uint64_t bc = std::bit_cast<uint64_t, double>(d);
 	s = (ieee754_parameter<double>::smask & bc);
 	rawExponentBits = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;

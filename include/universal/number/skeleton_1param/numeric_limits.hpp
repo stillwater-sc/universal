@@ -1,7 +1,7 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for logarithmic types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,41 +9,41 @@
 namespace std {
 
 template <size_t nbits, typename bt> 
-class numeric_limits< sw::universal::lns<nbits,bt> > {
+class numeric_limits< sw::universal::oneparam<nbits,bt> > {
 public:
-	using LNS = sw::universal::lns<nbits, bt>;
+	using ONEPARAM = sw::universal::oneparam<nbits, bt>;
 	static constexpr bool is_specialized = true;
-	static constexpr LNS  min() { // return minimum value
-		LNS lminpos;
+	static constexpr ONEPARAM  min() { // return minimum value
+		ONEPARAM lminpos;
 		return minpos<nbits, bt>(lminpos);
 	} 
-	static constexpr LNS  max() { // return maximum value
-		LNS lmaxpos;
+	static constexpr ONEPARAM  max() { // return maximum value
+		ONEPARAM lmaxpos;
 		return maxpos<nbits, bt>(lmaxpos);
 	} 
-	static constexpr LNS  lowest() { // return most negative value
-		LNS lminneg;
+	static constexpr ONEPARAM  lowest() { // return most negative value
+		ONEPARAM lminneg;
 		return minneg<nbits, bt>(lminneg);
 	} 
-	static constexpr LNS  epsilon() { // return smallest effective increment from 1.0
-		LNS one{ 1.0f }, incr{ 1.0f };
+	static constexpr ONEPARAM  epsilon() { // return smallest effective increment from 1.0
+		ONEPARAM one{ 1.0f }, incr{ 1.0f };
 		++incr;
 		return incr - one;
 	}
-	static constexpr LNS  round_error() { // return largest rounding error
-		return LNS(0.5);
+	static constexpr ONEPARAM  round_error() { // return largest rounding error
+		return ONEPARAM(0.5);
 	}
-	static constexpr LNS  denorm_min() {  // return minimum denormalized value
-		return LNS(1.0); 
+	static constexpr ONEPARAM  denorm_min() {  // return minimum denormalized value
+		return ONEPARAM(1.0); 
 	}
-	static constexpr LNS  infinity() { // return positive infinity
-		return LNS(INFINITY); 
+	static constexpr ONEPARAM  infinity() { // return positive infinity
+		return ONEPARAM(INFINITY); 
 	}
-	static constexpr LNS  quiet_NaN() { // return non-signaling NaN
-		return LNS(NAN); 
+	static constexpr ONEPARAM  quiet_NaN() { // return non-signaling NaN
+		return ONEPARAM(NAN); 
 	}
-	static constexpr LNS  signaling_NaN() { // return signaling NaN
-		return LNS(NAN);
+	static constexpr ONEPARAM  signaling_NaN() { // return signaling NaN
+		return ONEPARAM(NAN);
 	}
 
 	static constexpr int digits       = 3333333;

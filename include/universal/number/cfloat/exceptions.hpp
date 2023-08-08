@@ -1,7 +1,7 @@
 #pragma once
 // exceptions.hpp: definition of arbitrary configuration cfloat exceptions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/common/exceptions.hpp>
@@ -21,7 +21,7 @@ struct cfloat_quire_exception : public cfloat_arithmetic_exception {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// specialized exceptions to aid application level exception handling
 
-// not_a_real is thrown when a rvar is NaN
+// cfloat_not_a_number is thrown when a rvar is NaN
 struct cfloat_not_a_number : public cfloat_arithmetic_exception {
 	cfloat_not_a_number() : cfloat_arithmetic_exception("not a number") {}
 };
@@ -57,7 +57,7 @@ struct cfloat_quire_negative_sqrt_arg : public cfloat_quire_exception {
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-/// REAL INTERNAL OPERATION EXCEPTIONS
+/// cfloat internal operation exceptions
 
 struct cfloat_internal_exception : public universal_internal_exception {
 	cfloat_internal_exception(const std::string& err) : universal_internal_exception(std::string("cfloat internal exception: ") + err) {};

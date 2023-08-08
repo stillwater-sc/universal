@@ -4,7 +4,7 @@ The Universal library offers plug-in replacements to the native types of the C++
 These types live in the sw::universal namespace. To make it simpler to mix custom types
 with the standard library type, this math library shim injects the std math library 
 functions for the native IEEE-754 types into the sw::universal namespace. This enables
-straignt forward code that can be parameterized by number type and receive both
+straightforward code that can be parameterized by number type and receive both
 native IEEE-754 types and custom Universal number types.
 
 
@@ -15,8 +15,9 @@ For example, a fully generalized L1 norm function can now be written as:
 namespace sw { namespace universal { namespace blas {
 
 // L1-norm of a vector 
-template<typename Scalar> Scalar normL1(const sw::universal::blas::vector<Scalar>& v) { 
-    using namespace sw::universal; // to specialize abs() 
+template<typename Scalar> 
+Scalar normL1(const sw::universal::blas::vector<Scalar>& v) { 
+    using namespace sw::universal; // to specialize abs() for sw::universal types
     Scalar L1Norm{ 0 };
     for (auto e : v) {
         L1Norm += abs(e);
