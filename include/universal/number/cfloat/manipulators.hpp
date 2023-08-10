@@ -30,6 +30,20 @@ std::string type_tag(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals,
 	return s.str();
 }
 
+// Generate a type field descriptor for this cfloat
+template<typename CfloatType,
+	std::enable_if_t< is_cfloat<CfloatType>, bool> = true
+>
+inline std::string type_field(const CfloatType & = {}) {
+	std::stringstream s;
+	typename CfloatType::BlockType bt{0};
+	unsigned nbits = CfloatType::nbits;  // total bits
+	unsigned ebits = CfloatType::es;     // exponent bits
+	unsigned fbits = CfloatType::fbits;  // integer bits
+	s << "fields(s:1|e:" << ebits << "|m:" << fbits << ')';
+	return s.str();
+}
+
 // generate and tabulate subnormals of a cfloat configuration
 template<typename cfloatConfiguration>
 void subnormals() {
@@ -127,7 +141,7 @@ std::string components(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 
 // generate a binary string for cfloat
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
-inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v) {
+inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool nibbleMarker = false, bool hexPrefix = true) {
 	constexpr unsigned bitsInByte = 8;
 	constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -135,12 +149,12 @@ inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernor
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
 	std::stringstream s;
-	s << "0x" << std::hex;
-	long nrNibbles = long(1ull + ((nbits - 1ull) >> 2ull));
-	for (long n = nrNibbles - 1; n >= 0; --n) {
+	if (hexPrefix) s << "0x" << std::hex;
+	int nrNibbles = int(1ull + ((nbits - 1ull) >> 2ull));
+	for (int n = nrNibbles - 1; n >= 0; --n) {
 		uint8_t nibble = v.nibble(unsigned(n));
 		s << hexChar[nibble];
-		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) s << '\'';
+		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
 	}
 	return s.str();
 }
@@ -156,7 +170,7 @@ inline std::string hex_print(const cfloat<nbits, es, bt, hasSubnormals, hasSuper
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& r) {
 	std::stringstream s;
-	constexpr size_t fhbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fhbits;
+	constexpr unsigned fhbits = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fhbits;
 	bool sign{ false };
 	blockbinary<es, bt> e;
 	blockbinary<fhbits, bt> f;
@@ -166,13 +180,13 @@ std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorm
 	s << (sign ? '1' : '0');
 
 	// exponent bits
-	s << '-';
+	s << ':';
 	for (int i = int(es) - 1; i >= 0; --i) {
 		s << (e.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
 	// fraction bits
-	s << '-';
+	s << ':';
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
 		s << (f.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
@@ -182,7 +196,7 @@ std::string pretty_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernorm
 
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 std::string info_print(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& p, int printPrecision = 17) {
-	return "TBD";
+	return std::string("TBD");
 }
 
 // generate a binary, color-coded representation of the cfloat

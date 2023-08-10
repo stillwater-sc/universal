@@ -43,7 +43,7 @@ namespace sw { namespace universal {
 	}
 
 	template<unsigned nbits, unsigned rbits, typename bt, auto ...xtra>
-	inline std::string to_hex(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
+	inline std::string to_hex(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false, bool hexPrefix = true) {
 		constexpr unsigned bitsInByte = 8;
 		constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 		char hexChar[16] = {
@@ -51,12 +51,12 @@ namespace sw { namespace universal {
 			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 		};
 		std::stringstream s;
-		s << "0x" << std::hex;
-		long nrNibbles = long(1ull + ((nbits - 1ull) >> 2ull));
-		for (long n = nrNibbles - 1; n >= 0; --n) {
+		if (hexPrefix) s << "0x" << std::hex;
+		int nrNibbles = int(1ull + ((nbits - 1ull) >> 2ull));
+		for (int n = nrNibbles - 1; n >= 0; --n) {
 			uint8_t nibble = v.nibble(unsigned(n));
 			s << hexChar[nibble];
-			if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) s << '\'';
+			if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
 		}
 		return s.str();
 	}
@@ -81,6 +81,42 @@ namespace sw { namespace universal {
 		bool inside = true;
 		if (v > double(a.maxpos()) || v < double(a.maxneg())) inside = false;
 		return inside;
+	}
+
+	template<typename LnsType,
+		std::enable_if_t< is_lns<LnsType>, bool> = true
+	>
+	inline std::string pretty_print(const LnsType& l, bool nibbleMarker = false) {
+		std::stringstream s;
+
+		bool sign = l.sign();
+
+		// sign bit
+		s << (sign ? "1:" : "0:");
+
+		// integer bits
+		for (int i = static_cast<int>(LnsType::nbits) - 2; i >= static_cast<int>(LnsType::rbits); --i) {
+			s << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
+			if ((i - LnsType::rbits) > 0 && ((i - LnsType::rbits) % 4) == 0 && nibbleMarker) s << '\'';
+		}
+
+		// fraction bits
+		if constexpr (LnsType::rbits > 0) {
+			s << ':';
+			for (int i = static_cast<int>(LnsType::rbits) - 1; i >= 0; --i) {
+				s << (l.at(static_cast<unsigned>(i)) ? '1' : '0');
+				if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+			}
+		}
+
+		return s.str();
+	}
+
+	template<typename LnsType,
+		std::enable_if_t< is_lns<LnsType>, bool> = true
+	>
+	inline std::string info_print(const LnsType& l, int printPrecision = 17) {
+		return std::string("TBD");
 	}
 
 	template<typename LnsType,

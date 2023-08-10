@@ -14,6 +14,7 @@
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/math/math_constants.hpp>
 
 template<typename Scalar>
 void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
@@ -59,6 +60,16 @@ try {
 
 	// manual test cases
 	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<quarter>(reportTestCases), "compress to quarter precision", "quarter precision");
+
+	{
+		duble a(m_pi);
+		ReportFormats(a);
+	}
+	{
+		lns<64, 32> a(m_pi);
+		ReportFormats(a);
+	}
+	return 0;
 
 	unsigned N = 32;
 	sw::universal::blas::vector<double> x(N), y(N);

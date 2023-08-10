@@ -12,6 +12,7 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>
 #include <universal/verification/test_case.hpp>
+#include <universal/verification/test_formats.hpp>
 #include <universal/verification/test_suite_exceptions.hpp>
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/test_suite_logic.hpp>
