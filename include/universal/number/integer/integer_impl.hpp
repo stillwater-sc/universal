@@ -812,7 +812,16 @@ public:
 	}
 	constexpr bool test(unsigned i)  const noexcept { return at(i); }
 	constexpr bt   block(unsigned i) const noexcept { if (i < nrBlocks) return _block[i]; else return bt(0u); }
-
+	constexpr uint8_t nibble(unsigned n) const noexcept {
+		if (n < (1 + ((nbits - 1) >> 2))) {
+			bt word = _block[(n * 4) / bitsInBlock];
+			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
+			bt mask = bt(0xF << (nibbleIndexInWord * 4));
+			bt nibblebits = bt(mask & word);
+			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
+		}
+		return false;
+	}
 	// operators
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const integer& a, const integer& b, integer& r) {

@@ -44,8 +44,6 @@ namespace sw { namespace universal {
 
 	template<unsigned nbits, unsigned rbits, typename bt, auto ...xtra>
 	inline std::string to_hex(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false, bool hexPrefix = true) {
-		constexpr unsigned bitsInByte = 8;
-		constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 		char hexChar[16] = {
 			'0', '1', '2', '3', '4', '5', '6', '7',
 			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',

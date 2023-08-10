@@ -62,6 +62,15 @@ try {
 	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<quarter>(reportTestCases), "compress to quarter precision", "quarter precision");
 
 	{
+		constexpr unsigned nbits = 40;
+		integer<nbits, uint32_t, IntegerNumberType::NaturalNumber> a{123456789};
+		integer<nbits, uint32_t, IntegerNumberType::WholeNumber> b{123456789};
+		integer<nbits, uint32_t, IntegerNumberType::IntegerNumber> c{-123456789};
+		ReportFormats(a);
+		ReportFormats(b);
+		ReportFormats(c);
+	}
+	{
 		duble a(m_pi);
 		ReportFormats(a);
 	}
