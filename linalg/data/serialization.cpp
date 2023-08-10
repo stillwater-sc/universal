@@ -16,6 +16,48 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/math/math_constants.hpp>
 
+void ReportNumberSystemFormats() {
+	using namespace sw::universal;
+
+	{
+		constexpr unsigned nbits = 40;
+		integer<nbits, uint32_t, IntegerNumberType::NaturalNumber> a{123456789};
+		integer<nbits, uint32_t, IntegerNumberType::WholeNumber> b{123456789};
+		integer<nbits, uint32_t, IntegerNumberType::IntegerNumber> c{-123456789};
+		ReportFormats(a);
+		ReportFormats(b);
+		ReportFormats(c);
+	}
+	{
+		fixpnt<40, 32, Modulo, uint32_t> a(m_pi);
+		ReportFormats(a);
+		ReportFormats(-a);
+		fixpnt<40, 32, Saturate, uint32_t> b(m_pi);
+		ReportFormats(b);
+
+	}
+	{
+		cfloat<64, 11, uint32_t, true, false, false> a(m_pi);
+		ReportFormats(a);
+	}
+	{
+		posit<64, 5> a(m_pi);
+		ReportFormats(a);
+	}
+	{
+		lns<64, 32> a(m_pi);
+		ReportFormats(a);
+	}
+	{
+		dbns<8,3,uint8_t> a(m_pi);
+		ReportFormats(a);
+		dbns<10, 4, uint8_t> b(m_pi);
+		ReportFormats(b);
+		dbns<12, 5, uint8_t> c(m_pi);
+		ReportFormats(c);
+	}
+}
+
 template<typename Scalar>
 void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
 	ostr << sw::universal::type_tag(Scalar()) << '\n';
@@ -61,35 +103,7 @@ try {
 	// manual test cases
 	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<quarter>(reportTestCases), "compress to quarter precision", "quarter precision");
 
-	{
-		constexpr unsigned nbits = 40;
-		integer<nbits, uint32_t, IntegerNumberType::NaturalNumber> a{123456789};
-		integer<nbits, uint32_t, IntegerNumberType::WholeNumber> b{123456789};
-		integer<nbits, uint32_t, IntegerNumberType::IntegerNumber> c{-123456789};
-		ReportFormats(a);
-		ReportFormats(b);
-		ReportFormats(c);
-	}
-	{
-		fixpnt<40, 32, Modulo, uint32_t> a(m_pi);
-		ReportFormats(a);
-		ReportFormats(-a);
-		fixpnt<40, 32, Saturate, uint32_t> b(m_pi);
-		ReportFormats(b);
-
-	}
-	{
-		duble a(m_pi);
-		ReportFormats(a);
-	}
-	{
-		posit<64, 5> a(m_pi);
-		ReportFormats(a);
-	}
-	{
-		lns<64, 32> a(m_pi);
-		ReportFormats(a);
-	}
+	ReportNumberSystemFormats();
 	return 0;
 
 	unsigned N = 32;

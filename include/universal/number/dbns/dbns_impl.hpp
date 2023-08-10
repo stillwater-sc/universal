@@ -58,7 +58,8 @@ public:
 	typedef bt BlockType;
 
 	static constexpr unsigned nbits    = _nbits;
-	static constexpr unsigned fbbits   = _fbbits;
+	static constexpr unsigned fbbits   = _fbbits;            // first base exponent bits
+	static constexpr unsigned sbbits   = nbits - fbbits - 1; // second base exponent bits
 	static constexpr Behavior behavior = {xtra...};
 
 	static constexpr double   scaling = double(1ull << fbbits);
@@ -433,6 +434,10 @@ public:
 		double v = double(*this); // expensive, but necessary to be base invariant
 		return sw::universal::scale(v);
 	}
+	constexpr uint64_t fraction() const noexcept {
+		uint64_t fractionBits = 0xffff'ffff;
+		return fractionBits;
+	}
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		bt word = _block[bitIndex / bitsInBlock];
@@ -442,6 +447,16 @@ public:
 	constexpr bt   block(unsigned b) const noexcept {
 		if (b < nrBlocks) return _block[b];
 		return bt(0); // return 0 when block index out of bounds
+	}
+	constexpr uint8_t nibble(unsigned n) const noexcept {
+		if (n < (1 + ((nbits - 1) >> 2))) {
+			bt word = _block[(n * 4) / bitsInBlock];
+			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
+			bt mask = bt(0xF << (nibbleIndexInWord * 4));
+			bt nibblebits = bt(mask & word);
+			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
+		}
+		return false;
 	}
 
 	constexpr uint64_t extractExponent(int base) const noexcept {
@@ -870,31 +885,6 @@ std::string to_binary(const dbns<nbits, fbbits, bt, xtra...>& number, bool nibbl
 			if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 		}
 	}
-	return s.str();
-}
-
-template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-std::string to_triple(const dbns<nbits, fbbits, bt, xtra...>& v, bool nibbleMarker = false) {
-	std::stringstream s;
-	s << "0b";
-	s << (v.sign() ? "(-, " : "(+, ");
-	s << v.scale() << ", ";
-	s << v.fraction() << ')';
-	return s.str();
-}
-
-template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-std::string components(const dbns<nbits, fbbits, bt, xtra...>& v) {
-	std::stringstream s;
-	if (v.iszero()) {
-		s << " zero b" << std::setw(nbits) << v.fraction();
-		return s.str();
-	}
-	else if (v.isinf()) {
-		s << " infinite b" << std::setw(nbits) << v.fraction();
-		return s.str();
-	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
 	return s.str();
 }
 
