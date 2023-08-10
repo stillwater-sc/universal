@@ -1,4 +1,4 @@
-// sacling.cpp: test suite for scaling functions for data preprocessing
+// scaling.cpp: test suite for scaling functions for data preprocessing
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //

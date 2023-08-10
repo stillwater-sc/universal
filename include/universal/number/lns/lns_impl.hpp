@@ -47,7 +47,8 @@ lns<nbits, rbits, bt, xtra...>& maxneg(lns<nbits, rbits, bt, xtra...>& lmaxneg) 
 	return lmaxneg;
 }
 
-// template class representing a value in scientific notation, using a template size for the number of fraction bits
+// template class representing a value in logarithmic form with a sign bit and a fixed-point exponent
+// nbits is the total number of bits, rbits represent the rational bit in the fixed-point exponent.
 template<unsigned _nbits, unsigned _rbits, typename bt = uint8_t, auto... xtra>
 class lns {
 	static_assert(_nbits > _rbits, "configuration not supported: not enough integer bits");
@@ -441,9 +442,19 @@ public:
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
-	inline constexpr bt block(unsigned b) const noexcept {
+	constexpr bt block(unsigned b) const noexcept {
 		if (b < nrBlocks) return _block[b];
 		return bt(0); // return 0 when block index out of bounds
+	}
+	constexpr uint8_t nibble(unsigned n) const noexcept {
+		if (n < (1 + ((nbits - 1) >> 2))) {
+			bt word = _block[(n * 4) / bitsInBlock];
+			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
+			bt mask = bt(0xF << (nibbleIndexInWord * 4));
+			bt nibblebits = bt(mask & word);
+			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
+		}
+		return false;
 	}
 
 	explicit operator int()       const noexcept { return to_signed<int>(); }

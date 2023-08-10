@@ -28,6 +28,39 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 
+	// Generate a type field descriptor for this lns
+	template<typename LnsType,
+		std::enable_if_t< is_lns<LnsType>, bool> = true
+	>
+	inline std::string type_field(const LnsType & = {}) {
+		std::stringstream s;
+		typename LnsType::BlockType bt{0};
+		unsigned nbits = LnsType::nbits;        // total bits
+		unsigned rbits = LnsType::rbits;        // rational bits
+		unsigned ibits = nbits - 1ull - rbits;  // integer bits
+		s << "fields(s:1|i:" << ibits << "|r:" << rbits << ')';
+		return s.str();
+	}
+
+	template<unsigned nbits, unsigned rbits, typename bt, auto ...xtra>
+	inline std::string to_hex(const lns<nbits, rbits, bt, xtra...>& v, bool nibbleMarker = false) {
+		constexpr unsigned bitsInByte = 8;
+		constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
+		char hexChar[16] = {
+			'0', '1', '2', '3', '4', '5', '6', '7',
+			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+		};
+		std::stringstream s;
+		s << "0x" << std::hex;
+		long nrNibbles = long(1ull + ((nbits - 1ull) >> 2ull));
+		for (long n = nrNibbles - 1; n >= 0; --n) {
+			uint8_t nibble = v.nibble(unsigned(n));
+			s << hexChar[nibble];
+			if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) s << '\'';
+		}
+		return s.str();
+	}
+
 	template<typename LnsType,
 		std::enable_if_t< is_lns<LnsType>, bool> = true
 	>
