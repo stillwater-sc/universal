@@ -1037,7 +1037,24 @@ public:
 
 	bitblock<nbits>    get() const { return _bits; }
 	unsigned long long encoding() const { return _bits.to_ullong(); }
-
+	constexpr bool test(unsigned bitIndex) const noexcept {
+		return (bitIndex < nbits ? _bits[bitIndex] : false);
+	}
+	constexpr bool at(unsigned bitIndex) const noexcept {
+		return (bitIndex < nbits ? _bits[bitIndex] : false);
+	}
+	constexpr uint8_t nibble(unsigned n) const noexcept {
+		uint8_t nibbleBits{ 0 };
+		if (n < (1 + ((nbits - 1) >> 2))) {
+			unsigned baseNibbleIndex = 4 * n;
+			unsigned mask = 0x1;
+			for (unsigned i = baseNibbleIndex; i < nbits && i < baseNibbleIndex + 4; ++i) {
+				nibbleBits |= (test(i) ? mask : 0);
+				mask <<= 1;
+			}
+		}
+		return nibbleBits;
+	}
 	// Modifiers
 	constexpr void clear() { _bits.reset(); }
 	constexpr void setzero() { clear(); }

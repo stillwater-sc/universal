@@ -83,6 +83,10 @@ try {
 		ReportFormats(a);
 	}
 	{
+		posit<64, 5> a(m_pi);
+		ReportFormats(a);
+	}
+	{
 		lns<64, 32> a(m_pi);
 		ReportFormats(a);
 	}

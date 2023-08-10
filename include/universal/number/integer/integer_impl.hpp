@@ -820,7 +820,7 @@ public:
 			bt nibblebits = bt(mask & word);
 			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
 		}
-		return false;
+		return 0;
 	}
 	// operators
 	// reduce returns the ratio and remainder of a and b in *this and r

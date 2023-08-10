@@ -142,8 +142,6 @@ std::string components(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormal
 // generate a binary string for cfloat
 template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
 inline std::string to_hex(const cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& v, bool nibbleMarker = false, bool hexPrefix = true) {
-	constexpr unsigned bitsInByte = 8;
-	constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',

@@ -1633,7 +1633,7 @@ public:
 			bt nibblebits = bt(mask & word);
 			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
 		}
-		return false;
+		return 0;
 	}
 	constexpr bt block(unsigned b) const noexcept {
 		if (b < nrBlocks) {
