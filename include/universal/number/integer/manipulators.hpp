@@ -40,7 +40,7 @@ inline std::string type_field(const integer<nbits, BlockType, NumberType> & = {}
 	return s.str();
 }
 
-// return in triple form (sign, scale, fraction)
+// return hex format
 template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 inline std::string to_hex(const integer<nbits, BlockType, NumberType>& v, bool nibbleMarker = false, bool hexPrefix = true) {
 	char hexChar[16] = {

@@ -48,21 +48,12 @@ namespace sw { namespace universal {
 constexpr bool Modulo    = true;
 constexpr bool Saturate = !Modulo;
 
-// forward references
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> class fixpnt;
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, bt>&);
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> struct fixpntdiv_t;
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpntdiv_t<nbits, rbits, arithmetic, bt> fixpntdiv(const fixpnt<nbits, rbits, arithmetic, bt>&, const fixpnt<nbits, rbits, arithmetic, bt>&);
-
 // fixpntdiv_t for fixpnt<nbits,rbits> to capture quotient and remainder during long division
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 struct fixpntdiv_t {
 	fixpnt<nbits, rbits, arithmetic, bt> quot; // quotient
 	fixpnt<nbits, rbits, arithmetic, bt> rem;  // remainder
 };
-
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& v);
 
 // free function generator to create a 1's complement copy of a fixpnt
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
@@ -628,17 +619,18 @@ public:
 	constexpr fixpnt& twosComplement() noexcept { _block.twosComplement(); return *this; }
 
 	// selectors
-	constexpr bool   sign()                const noexcept { return _block.sign(); }
-	constexpr fixpnt integer()             const noexcept { return floor(*this); }
-	constexpr fixpnt fraction()            const noexcept { return (*this - integer()); }
-	blockbinary<nbits, bt> bits()          const noexcept { return blockbinary<nbits, bt>(_block); }
-	constexpr bool   iszero()              const noexcept { return _block.iszero(); }
-	constexpr bool   ispos()               const noexcept { return _block.ispos(); }
-	constexpr bool   isneg()               const noexcept { return _block.isneg(); }
-	constexpr bool   isnan()               const noexcept { return false; }
-	constexpr bool   isinf()               const noexcept { return false; }
-	constexpr bool   at(unsigned bitIndex)   const noexcept { return _block.at(bitIndex); }
-	constexpr bool   test(unsigned bitIndex) const noexcept { return _block.test(bitIndex); }
+	constexpr bool    sign()                  const noexcept { return _block.sign(); }
+	constexpr fixpnt  integer()               const noexcept { return floor(*this); }
+	constexpr fixpnt  fraction()              const noexcept { return (*this - integer()); }
+	blockbinary<nbits, bt> bits()             const noexcept { return blockbinary<nbits, bt>(_block); }
+	constexpr bool    iszero()                const noexcept { return _block.iszero(); }
+	constexpr bool    ispos()                 const noexcept { return _block.ispos(); }
+	constexpr bool    isneg()                 const noexcept { return _block.isneg(); }
+	constexpr bool    isnan()                 const noexcept { return false; }
+	constexpr bool    isinf()                 const noexcept { return false; }
+	constexpr bool    at(unsigned bitIndex)   const noexcept { return _block.at(bitIndex); }
+	constexpr bool    test(unsigned bitIndex) const noexcept { return _block.test(bitIndex); }
+	constexpr uint8_t nibble(unsigned n)      const noexcept { return _block.nibble(n); }
 
 protected:
 	// HELPER methods

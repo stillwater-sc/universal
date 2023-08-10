@@ -1,13 +1,13 @@
 #pragma once
 // manipulators.hpp: definitions of helper functions for classic cfloat type manipulation
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>  // for typeid()
-
+#include <universal/number/cfloat/cfloat_fwd.hpp>
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 

@@ -49,9 +49,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "serialization";
-	std::string test_tag    = "save/restore";
-	bool reportTestCases    = true;
+	std::string test_suite = "serialization";
+	std::string test_tag = "save/restore";
+	bool reportTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -69,6 +69,14 @@ try {
 		ReportFormats(a);
 		ReportFormats(b);
 		ReportFormats(c);
+	}
+	{
+		fixpnt<40, 32, Modulo, uint32_t> a(m_pi);
+		ReportFormats(a);
+		ReportFormats(-a);
+		fixpnt<40, 32, Saturate, uint32_t> b(m_pi);
+		ReportFormats(b);
+
 	}
 	{
 		duble a(m_pi);

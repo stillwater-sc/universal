@@ -53,6 +53,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include <universal/number/fixpnt/exceptions.hpp>
+#include <universal/number/fixpnt/fixpnt_fwd.hpp>
 #include <universal/number/fixpnt/fixpnt_impl.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 #include <universal/number/fixpnt/numeric_limits.hpp>
