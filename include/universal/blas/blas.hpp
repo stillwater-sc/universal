@@ -11,6 +11,7 @@
 
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
+#include <universal/blas/tensor.hpp>
 
 constexpr uint64_t SIZE_1K   = 1024;
 constexpr uint64_t SIZE_2K   = 2 * SIZE_1K;
@@ -68,6 +69,9 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 // Utilities
 #include <universal/blas/scaling.hpp>
 #include <universal/blas/linspace.hpp>
+
+// Serialization
+#include <universal/blas/serialization/datafile.hpp>
 
 // MATLAB-style elementary vector functions
 #include <universal/blas/vmath/power.hpp>

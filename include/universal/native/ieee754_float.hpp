@@ -46,6 +46,8 @@ inline void setFields(float& value, bool s, uint64_t rawExponentBits, uint64_t r
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // native single precision IEEE floating point
 
+#ifdef DEPRECATED
+// DEPRECATED: we have standardized on raw bit hex, not field hex format
 // generate a binary string for a native single precision IEEE floating point
 inline std::string to_hex(float number) {
 	std::stringstream s;
@@ -54,6 +56,7 @@ inline std::string to_hex(float number) {
 	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
 	return s.str();
 }
+#endif // DEPRECATED
 
 // generate a binary string for a native single precision IEEE floating point
 inline std::string to_binary(float number, bool bNibbleMarker = false) {

@@ -74,44 +74,6 @@ void ReportNumberSystemFormats() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-template<typename Scalar>
-struct TypeTag {
-	void clear() {
-		numberSystem.clear();
-		nbits = 0;
-		field[0] = field[1] = field[2] = field[3] = field[4] = 0;
-		blockType.clear();
-	}
-	std::string numberSystem;
-	unsigned nbits;
-	unsigned field[5];
-	std::string blockType;
-};
-
-template<>
-struct TypeTag<double> {
-	TypeTag() : numberSystem{ "double" }, nbits{ 64 }, field{ 11,0,0,0,0 }, blockType{ std::string("uint64_t") } {}
-	void clear() {
-		numberSystem.clear();
-		nbits = 0;
-		field[0] = field[1] = field[2] = field[3] = field[4] = 0;
-		blockType.clear();
-	}
-	std::string numberSystem;
-	unsigned nbits;
-	unsigned field[5];
-	std::string blockType;
-};
-
-std::ostream& operator<<(std::ostream& ostr, const TypeTag<double>& tt) {
-	return ostr << tt.numberSystem << " < " << tt.nbits << " , " << tt.field[0] << ", BlockType= " << tt.blockType << " > ";
-}
-
-std::istream& operator>>(std::istream& istr, TypeTag<double>& tt) {
-	std::string token{};
-	return istr >> tt.numberSystem >> token >> tt.nbits >> token >> tt.field[0] >> token >> tt.blockType >> token;
-}
-
 int main()
 try {
 	using namespace sw::universal;
@@ -129,21 +91,35 @@ try {
 	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<quarter>(reportTestCases), "compress to quarter precision", "quarter precision");
 
 	// ReportNumberSystemFormats();
-	std::stringstream s;
-	TypeTag<double> ttDoubleSave, ttDoubleRestored;
-	std::cout << ttDoubleSave << '\n';
-	s >> ttDoubleSave;
-	ttDoubleRestored.clear();
-	s << ttDoubleRestored;
-	std::cout << ttDoubleRestored << '\n';
 
 	{
-		sw::universal::blas::vector<double> x(5), y(5);
+		float f;
+		single b;
+		b.setbits(0x23456789);
+		f = float(b);
+		std::cout << to_hex(f, true) << '\n';
+		std::cout << to_binary(f) << " : " << to_hex(f) << " : " << f << '\n';
+
+		std::cout << to_binary(b) << " : " << to_hex(b) << " : " << b << '\n';
+
+	}
+	{
+		// Create instances of different specialized collections
+		sw::universal::blas::vector<float> x(5);
 		gaussian_random(x, 0.0, 0.1);
-		save(s, x);
-		restore(s, y);
-		std::cout << x << '\n';
-		std::cout << y << '\n';
+		sw::universal::blas::vector<half> y(5);
+		gaussian_random(y, 0.0, 0.1);
+
+		// Create collection holders with references to the specialized collections
+		blas::CollectionHolder< sw::universal::blas::vector<float> > doubleVector(x);
+		blas::CollectionHolder< sw::universal::blas::vector<half> > halfVector(y);
+
+		// Use the base class reference to aggregate the collections
+		blas::datafile<blas::TextFormat> df;
+		df.add(x);
+		df.add(y);
+		df.save(std::cout, false);
+		df.save(std::cout, true);
 	}
 	return 0;
 

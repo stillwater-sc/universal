@@ -65,6 +65,8 @@ inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExp
 #endif // LONG_DOUBLE_DOWNCAST
 #endif // LONG_DOUBLE_SUPPORT
 
+#ifdef DEPRECATED
+// DEPRECATED: we have standardized on raw bit hex, not field hex format
 // generate a hex formatted string for a native IEEE floating point
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
@@ -78,6 +80,7 @@ inline std::string to_hex(Real number) {
 	s << (sign ? '1' : '0') << '.' << std::hex << int(rawExponent) << '.' << rawFraction;
 	return s.str();
 }
+#endif // DEPRECATED
 
 // generate a binary string for a native IEEE floating point
 template<typename Real,

@@ -25,11 +25,6 @@ inline std::string to_base2_scientific(long double number) {
 }
 
 // generate a binary string for a native long double precision IEEE floating point
-inline std::string to_hex(long double number) {
-	return to_hex(double(number));
-}
-
-// generate a binary string for a native long double precision IEEE floating point
 inline std::string to_binary(long double number, bool bNibbleMarker = false) {
 	return to_binary(double(number), bNibbleMarker);
 }

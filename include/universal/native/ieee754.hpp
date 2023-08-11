@@ -241,4 +241,54 @@ void valueRepresentations(Real value) {
 	std::cout << "color  : " << color_print(value) << '\n';
 }
 
+
+template<typename Real,
+	typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
+>
+std::string to_hex(const Real& number, bool nibbleMarker = false, bool hexPrefix = true) {
+	char hexChar[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+	};
+	union FConv {
+		float       f;
+		double      d;
+		//long double l;
+		uint64_t    u;
+	} converter{0};
+	unsigned nbits = sizeof(Real)*8;
+	switch (nbits) {
+		case 32: 
+			converter.f = number;
+			break;
+		case 64:
+			converter.d = number;
+			break;
+		case 128:
+			//converter.l = number;
+			std::cerr << "long double not supported\n";
+			break;
+		default:
+			std::cerr << "unrecognized floating-point size\n";
+			break;
+	}
+	uint64_t bits = converter.u;
+//	std::cout << "\nconvert  : " << to_binary(bits, nbits) << " : " << bits << '\n';
+	std::stringstream s;
+	if (hexPrefix) s << "0x";
+	int nrNibbles = int(1ull + ((nbits - 1ull) >> 2ull));
+	int nibbleIndex = (nrNibbles - 1);
+	uint64_t mask = (0xFull << (nibbleIndex*4));
+//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint64_t raw = (bits & mask);
+		uint8_t nibble = raw >> (nibbleIndex*4);
+		s << hexChar[nibble];
+		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+		mask >>= 4;
+		--nibbleIndex;
+	}
+	return s.str();
+}
+
 }} // namespace sw::universal
