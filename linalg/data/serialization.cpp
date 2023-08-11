@@ -58,19 +58,6 @@ void ReportNumberSystemFormats() {
 	}
 }
 
-template<typename Scalar>
-void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
-	ostr << sw::universal::type_tag(Scalar()) << '\n';
-	ostr << sw::universal::type_field(Scalar()) << '\n';
-	ostr << "shape(" << v.size() << ", 1)\n";
-	unsigned i = 0;
-	for (auto e : v) {
-		ostr << sw::universal::to_hex(e) << ' ';
-		if ((++i % 16) == 0) ostr << '\n';
-	}
-	ostr << std::endl;
-}
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -86,6 +73,44 @@ void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
 #define REGRESSION_LEVEL_3 1
 #define REGRESSION_LEVEL_4 1
 #endif
+
+template<typename Scalar>
+struct TypeTag {
+	void clear() {
+		numberSystem.clear();
+		nbits = 0;
+		field[0] = field[1] = field[2] = field[3] = field[4] = 0;
+		blockType.clear();
+	}
+	std::string numberSystem;
+	unsigned nbits;
+	unsigned field[5];
+	std::string blockType;
+};
+
+template<>
+struct TypeTag<double> {
+	TypeTag() : numberSystem{ "double" }, nbits{ 64 }, field{ 11,0,0,0,0 }, blockType{ std::string("uint64_t") } {}
+	void clear() {
+		numberSystem.clear();
+		nbits = 0;
+		field[0] = field[1] = field[2] = field[3] = field[4] = 0;
+		blockType.clear();
+	}
+	std::string numberSystem;
+	unsigned nbits;
+	unsigned field[5];
+	std::string blockType;
+};
+
+std::ostream& operator<<(std::ostream& ostr, const TypeTag<double>& tt) {
+	return ostr << tt.numberSystem << " < " << tt.nbits << " , " << tt.field[0] << ", BlockType= " << tt.blockType << " > ";
+}
+
+std::istream& operator>>(std::istream& istr, TypeTag<double>& tt) {
+	std::string token{};
+	return istr >> tt.numberSystem >> token >> tt.nbits >> token >> tt.field[0] >> token >> tt.blockType >> token;
+}
 
 int main()
 try {
@@ -103,7 +128,23 @@ try {
 	// manual test cases
 	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<quarter>(reportTestCases), "compress to quarter precision", "quarter precision");
 
-	ReportNumberSystemFormats();
+	// ReportNumberSystemFormats();
+	std::stringstream s;
+	TypeTag<double> ttDoubleSave, ttDoubleRestored;
+	std::cout << ttDoubleSave << '\n';
+	s >> ttDoubleSave;
+	ttDoubleRestored.clear();
+	s << ttDoubleRestored;
+	std::cout << ttDoubleRestored << '\n';
+
+	{
+		sw::universal::blas::vector<double> x(5), y(5);
+		gaussian_random(x, 0.0, 0.1);
+		save(s, x);
+		restore(s, y);
+		std::cout << x << '\n';
+		std::cout << y << '\n';
+	}
 	return 0;
 
 	unsigned N = 32;
@@ -111,6 +152,8 @@ try {
 	double zeroMean = 0.0;
 	double variance = 0.1;
 	gaussian_random(x, zeroMean, variance);
+
+
 
 	{
 		sw::universal::blas::vector<lns<8, 2, uint8_t>> v(N);
