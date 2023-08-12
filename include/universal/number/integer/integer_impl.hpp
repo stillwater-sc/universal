@@ -100,11 +100,14 @@ chunk values. The chunks need to be interpreted as unsigned binary segments.
 */
 
 // integer is an arbitrary fixed-sized 2's complement integer
-template<unsigned _nbits, typename bt = std::uint8_t, IntegerNumberType NumberType = IntegerNumberType::IntegerNumber>
+template<unsigned _nbits, typename bt = std::uint8_t, IntegerNumberType _NumberType = IntegerNumberType::IntegerNumber>
 class integer {
 public:
-	typedef bt BlockType;
+	// cache template parameters
 	static constexpr unsigned nbits = _nbits;
+	typedef bt BlockType;
+	static constexpr IntegerNumberType NumberType = _NumberType;
+	// derive other parameters
 	static constexpr unsigned bitsInByte = 8ull;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	static constexpr unsigned nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);

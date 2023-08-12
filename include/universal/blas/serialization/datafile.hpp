@@ -43,40 +43,71 @@ namespace sw { namespace universal { namespace blas {
     // save the Universal type id given an arithmetic type
     template<typename Scalar>
     void saveTypeId(std::ostream& ostr, const Scalar& t = {}) {
+        constexpr size_t nrBytes = sizeof(t);
         uint32_t typeId{ UNIVERSAL_UNKNOWN_ARITHMETIC_TYPE };
-        if constexpr (::std::is_integral_v<Scalar>) {
-            if constexpr (sizeof(t) == 1) {
+        uint32_t nrParameters{ 0 };
+        uint32_t parameter[16];
+        if constexpr (std::is_integral_v<Scalar>) {
+            if constexpr (1 == nrBytes) {
                 typeId = UNIVERSAL_NATIVE_INT8_TYPE;
             }
-            else if constexpr (sizeof(t) == 2) {
+            else if constexpr (2 == nrBytes) {
                 typeId = UNIVERSAL_NATIVE_INT16_TYPE;
             }
-            else if constexpr (sizeof(t) == 4) {
+            else if constexpr (4 == nrBytes) {
                 typeId = UNIVERSAL_NATIVE_INT32_TYPE;
             }
-            else if constexpr (sizeof(t) == 8) {
+            else if constexpr (8 == nrBytes) {
                 typeId = UNIVERSAL_NATIVE_INT64_TYPE;
             }
+            else {
+                std::cerr << "unsupported integer size of " << nrBytes << " bytes\n";
+            }
         }
-        if constexpr (std::is_floating_point_v<Scalar>) {
-            if constexpr (sizeof(t) == 1) {
+        else if constexpr (std::is_floating_point_v<Scalar>) {
+            if constexpr (1 == nrBytes) {
                 typeId = UNIVERSAL_NATIVE_FP8_TYPE;
             }
-            else if constexpr (sizeof(t) == 2) {
+            else if constexpr (2 == nrBytes) {
                 typeId = UNIVERSAL_NATIVE_FP16_TYPE;
             }
-            else if constexpr (sizeof(t) == 4) {
+            else if constexpr (4 == nrBytes) {
                 typeId = UNIVERSAL_NATIVE_FP32_TYPE;
             }
-            else if constexpr (sizeof(t) == 8) {
+            else if constexpr (8 == nrBytes) {
                 typeId = UNIVERSAL_NATIVE_FP64_TYPE;
             }
+            else {
+                std::cerr << "unsupported floating-point size of " << nrBytes << " bytes\n";
+            }
+
         }
-//        else if constexpr (is_integer<Scalar>) {
-//            typeId = UNIVERSAL_INTEGER_TYPE;
-//        }
+        else if constexpr (is_integer<Scalar>) {
+            typeId = UNIVERSAL_INTEGER_TYPE;
+            nrParameters = 3;
+            parameter[0] = Scalar::nbits;
+            parameter[1] = Scalar::bitsInBlock;
+            switch (Scalar::NumberType) {
+            case IntegerNumberType::IntegerNumber:
+                parameter[2] = 0;
+                break;
+            case IntegerNumberType::WholeNumber:
+                parameter[2] = 1;
+                break;
+            case IntegerNumberType::NaturalNumber:
+                parameter[2] = 2;
+                break;
+            default:
+                parameter[2] = -1; // error
+            }
+        }
         else if constexpr (is_fixpnt<Scalar>) {
             typeId = UNIVERSAL_FIXPNT_TYPE;
+            nrParameters = 4;
+            parameter[0] = Scalar::nbits;
+            parameter[1] = Scalar::rbits;
+            parameter[2] = (Scalar::arithmetic ? 1 : 0);
+            parameter[3] = Scalar::bitsInBlock;
         }
 //        else if constexpr (is_areal<Scalar>) {
 //            typeId = UNIVERSAL_AREAL_TYPE;
@@ -86,20 +117,45 @@ namespace sw { namespace universal { namespace blas {
 //        }
         else if constexpr (is_cfloat<Scalar>) {
             typeId = UNIVERSAL_CFLOAT_TYPE;
+            nrParameters = 6;
+            parameter[0] = Scalar::nbits;
+            parameter[1] = Scalar::es;
+            parameter[2] = Scalar::bitsInBlock;
+            parameter[3] = (Scalar::hasSubnormals ? 1 : 0);
+            parameter[4] = (Scalar::hasSupernormals ? 1 : 0);
+            parameter[5] = (Scalar::isSaturating ? 1 : 0);
         }
         else if constexpr (is_posit<Scalar>) {
             typeId = UNIVERSAL_POSIT_TYPE;
+            nrParameters = 2;
+            parameter[0] = Scalar::nbits;
+            parameter[1] = Scalar::es;
         }
         else if constexpr (is_lns<Scalar>) {
             typeId = UNIVERSAL_LNS_TYPE;
+            nrParameters = 3;
+            parameter[0] = Scalar::nbits;
+            parameter[1] = Scalar::rbits;
+            parameter[2] = Scalar::bitsInBlock;
+            //parameter[3] = xtra;
         }
         else if constexpr (is_dbns<Scalar>) {
             typeId = UNIVERSAL_DBNS_TYPE;
+            nrParameters = 3;
+            parameter[0] = Scalar::nbits;
+            parameter[1] = Scalar::fbbits;
+            parameter[2] = Scalar::bitsInBlock;
+            //parameter[3] = xtra;
         }
         else {
             typeId = UNIVERSAL_UNKNOWN_ARITHMETIC_TYPE;
         }
         ostr << typeId << '\n';
+        ostr << nrParameters;
+        for (unsigned i = 0; i < nrParameters; ++i) {
+            ostr << ' ' << parameter[i];
+        }
+        ostr << std::endl;
     }
 
 /*

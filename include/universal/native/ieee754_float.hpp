@@ -76,7 +76,7 @@ std::string to_hex(float number, bool nibbleMarker = false, bool hexPrefix = tru
 	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
 	for (int n = nrNibbles - 1; n >= 0; --n) {
 		uint32_t raw = (bits & mask);
-		uint8_t nibble = raw >> (nibbleIndex * 4);
+		uint8_t nibble = static_cast<uint8_t>(raw >> (nibbleIndex * 4));
 		s << hexChar[nibble];
 		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
 		mask >>= 4;
