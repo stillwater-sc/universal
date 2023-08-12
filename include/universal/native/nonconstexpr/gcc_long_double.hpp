@@ -103,6 +103,7 @@ inline std::string to_hex(long double number, bool nibbleMarker = false, bool he
 	};
 	long_double_decoder decoder;
 	decoder.ld = number;
+	// lower segment
 	uint64_t bits = decoder.bits[1];
 	//	std::cout << "\nconvert  : " << to_binary(bits, 32) << " : " << bits << '\n';
 	std::stringstream s;
@@ -122,7 +123,7 @@ inline std::string to_hex(long double number, bool nibbleMarker = false, bool he
 	// lower segment
 	bits = decoder.bits[0];
 	nibbleIndex = (nrNibbles - 1);
-	uint64_t mask = (0xFull << (nibbleIndex * 4));
+	mask = (0xFull << (nibbleIndex * 4));
 	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
 	for (int n = nrNibbles - 1; n >= 0; --n) {
 		uint64_t raw = (bits & mask);
