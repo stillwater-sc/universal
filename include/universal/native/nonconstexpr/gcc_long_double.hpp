@@ -29,6 +29,7 @@ namespace sw { namespace universal {
 			uint64_t exponent : 15;
 			uint64_t sign : 1;
 		} parts;
+		uint64_t bits[2];
 	};
 #else
 // long double decoder
@@ -40,6 +41,7 @@ union long_double_decoder {
 		uint64_t exponent : 15;
 		uint64_t sign : 1;
 	} parts;
+	uint64_t bits[2];
 };
 #endif // defined(__aarch64__)
 
@@ -82,12 +84,54 @@ inline std::string to_base2_scientific(long double number) {
 	return s.str();
 }
 
+#ifdef DEPRECATED
+// DEPRECATED: we have standardized on raw bit hex, not field hex format
 // generate a binary string for a native double precision IEEE floating point
 inline std::string to_hex(long double number) {
 	std::stringstream s;
 	long_double_decoder decoder;
 	decoder.ld = number;
 	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
+	return s.str();
+}
+#endif // DEPRECATED
+
+inline std::string to_hex(long double number, bool nibbleMarker = false, bool hexPrefix = true) {
+	char hexChar[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+	};
+	long_double_decoder decoder;
+	decoder.ld = number;
+	uint64_t bits = decoder.bits[1];
+	//	std::cout << "\nconvert  : " << to_binary(bits, 32) << " : " << bits << '\n';
+	std::stringstream s;
+	if (hexPrefix) s << "0x";
+	int nrNibbles = 16;
+	int nibbleIndex = (nrNibbles - 1);
+	uint64_t mask = (0xFull << (nibbleIndex * 4));
+	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint64_t raw = (bits & mask);
+		uint8_t nibble = static_cast<uint8_t>(raw >> (nibbleIndex * 4));
+		s << hexChar[nibble];
+		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+		mask >>= 4;
+		--nibbleIndex;
+	}
+	// lower segment
+	bits = decoder.bits[0];
+	nibbleIndex = (nrNibbles - 1);
+	uint64_t mask = (0xFull << (nibbleIndex * 4));
+	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint64_t raw = (bits & mask);
+		uint8_t nibble = static_cast<uint8_t>(raw >> (nibbleIndex * 4));
+		s << hexChar[nibble];
+		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+		mask >>= 4;
+		--nibbleIndex;
+	}
 	return s.str();
 }
 

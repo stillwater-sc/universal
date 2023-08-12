@@ -59,7 +59,7 @@ inline std::string to_hex(double number) {
 }
 #endif // DEPRECATED
 
-std::string to_hex(double number, bool nibbleMarker = false, bool hexPrefix = true) {
+inline std::string to_hex(double number, bool nibbleMarker = false, bool hexPrefix = true) {
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
