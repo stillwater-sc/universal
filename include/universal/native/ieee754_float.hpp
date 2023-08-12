@@ -23,6 +23,7 @@ union float_decoder {
     uint32_t exponent :  8;
     uint32_t sign     :  1;
   } parts;
+  uint32_t bits;
 };
 
 inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
@@ -57,6 +58,32 @@ inline std::string to_hex(float number) {
 	return s.str();
 }
 #endif // DEPRECATED
+
+std::string to_hex(float number, bool nibbleMarker = false, bool hexPrefix = true) {
+	char hexChar[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+	};
+	float_decoder decoder;
+	decoder.f = number;
+	uint32_t bits = decoder.bits;
+	//	std::cout << "\nconvert  : " << to_binary(bits, 32) << " : " << bits << '\n';
+	std::stringstream s;
+	if (hexPrefix) s << "0x";
+	int nrNibbles = 8;
+	int nibbleIndex = (nrNibbles - 1);
+	uint32_t mask = (0xFull << (nibbleIndex * 4));
+	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint32_t raw = (bits & mask);
+		uint8_t nibble = raw >> (nibbleIndex * 4);
+		s << hexChar[nibble];
+		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+		mask >>= 4;
+		--nibbleIndex;
+	}
+	return s.str();
+}
 
 // generate a binary string for a native single precision IEEE floating point
 inline std::string to_binary(float number, bool bNibbleMarker = false) {

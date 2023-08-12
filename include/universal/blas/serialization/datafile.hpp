@@ -20,9 +20,90 @@
 #include <universal/blas/blas.hpp>
  
 namespace sw { namespace universal { namespace blas {  
+    constexpr uint32_t UNIVERSAL_DATA_FILE_MAGIC_NUMBER = 0xAAA0;
+    // arithmetic types Universal supports
+    constexpr uint32_t UNIVERSAL_NATIVE_INT8_TYPE  = 0x0010;
+    constexpr uint32_t UNIVERSAL_NATIVE_INT16_TYPE = 0x0011;
+    constexpr uint32_t UNIVERSAL_NATIVE_INT32_TYPE = 0x0012;
+    constexpr uint32_t UNIVERSAL_NATIVE_INT64_TYPE = 0x0013;
+    constexpr uint32_t UNIVERSAL_NATIVE_FP8_TYPE   = 0x0020;
+    constexpr uint32_t UNIVERSAL_NATIVE_FP16_TYPE  = 0x0021;
+    constexpr uint32_t UNIVERSAL_NATIVE_FP32_TYPE  = 0x0022;
+    constexpr uint32_t UNIVERSAL_NATIVE_FP64_TYPE  = 0x0023;
+    constexpr uint32_t UNIVERSAL_INTEGER_TYPE      = 0x0101;
+    constexpr uint32_t UNIVERSAL_FIXPNT_TYPE       = 0x0201;
+    constexpr uint32_t UNIVERSAL_AREAL_TYPE        = 0x0301;
+    constexpr uint32_t UNIVERSAL_BFLOAT_TYPE       = 0x0302;
+    constexpr uint32_t UNIVERSAL_CFLOAT_TYPE       = 0x0303;
+    constexpr uint32_t UNIVERSAL_POSIT_TYPE        = 0x0401;
+    constexpr uint32_t UNIVERSAL_LNS_TYPE          = 0x0501;
+    constexpr uint32_t UNIVERSAL_DBNS_TYPE         = 0x0601;
+    constexpr uint32_t UNIVERSAL_UNKNOWN_ARITHMETIC_TYPE = 0xFFFF;
+
+    // save the Universal type id given an arithmetic type
+    template<typename Scalar>
+    void saveTypeId(std::ostream& ostr, const Scalar& t = {}) {
+        uint32_t typeId{ UNIVERSAL_UNKNOWN_ARITHMETIC_TYPE };
+        if constexpr (::std::is_integral_v<Scalar>) {
+            if constexpr (sizeof(t) == 1) {
+                typeId = UNIVERSAL_NATIVE_INT8_TYPE;
+            }
+            else if constexpr (sizeof(t) == 2) {
+                typeId = UNIVERSAL_NATIVE_INT16_TYPE;
+            }
+            else if constexpr (sizeof(t) == 4) {
+                typeId = UNIVERSAL_NATIVE_INT32_TYPE;
+            }
+            else if constexpr (sizeof(t) == 8) {
+                typeId = UNIVERSAL_NATIVE_INT64_TYPE;
+            }
+        }
+        if constexpr (std::is_floating_point_v<Scalar>) {
+            if constexpr (sizeof(t) == 1) {
+                typeId = UNIVERSAL_NATIVE_FP8_TYPE;
+            }
+            else if constexpr (sizeof(t) == 2) {
+                typeId = UNIVERSAL_NATIVE_FP16_TYPE;
+            }
+            else if constexpr (sizeof(t) == 4) {
+                typeId = UNIVERSAL_NATIVE_FP32_TYPE;
+            }
+            else if constexpr (sizeof(t) == 8) {
+                typeId = UNIVERSAL_NATIVE_FP64_TYPE;
+            }
+        }
+//        else if constexpr (is_integer<Scalar>) {
+//            typeId = UNIVERSAL_INTEGER_TYPE;
+//        }
+        else if constexpr (is_fixpnt<Scalar>) {
+            typeId = UNIVERSAL_FIXPNT_TYPE;
+        }
+//        else if constexpr (is_areal<Scalar>) {
+//            typeId = UNIVERSAL_AREAL_TYPE;
+//        }
+//        else if constexpr (is_bfloat<Scalar>) {
+//            typeId = UNIVERSAL_BFLOAT_TYPE;
+//        }
+        else if constexpr (is_cfloat<Scalar>) {
+            typeId = UNIVERSAL_CFLOAT_TYPE;
+        }
+        else if constexpr (is_posit<Scalar>) {
+            typeId = UNIVERSAL_POSIT_TYPE;
+        }
+        else if constexpr (is_lns<Scalar>) {
+            typeId = UNIVERSAL_LNS_TYPE;
+        }
+        else if constexpr (is_dbns<Scalar>) {
+            typeId = UNIVERSAL_DBNS_TYPE;
+        }
+        else {
+            typeId = UNIVERSAL_UNKNOWN_ARITHMETIC_TYPE;
+        }
+        ostr << typeId << '\n';
+    }
 
 /*
-        Theo base class `ICollection` that defines the interface for adding items
+        The base class `ICollection` that defines the interface for adding items
         and displaying items in a collection.
 
         The `datafile` template class inherits from `ICollection` and implements the required
@@ -39,6 +120,7 @@ namespace sw { namespace universal { namespace blas {
     class ICollection {
     public:
         virtual void save(std::ostream&, bool) const = 0;
+        virtual void restore(std::istream&) = 0;
         virtual ~ICollection() {}
     };
 
@@ -48,13 +130,14 @@ namespace sw { namespace universal { namespace blas {
     public:
         CollectionHolder(CollectionType& dataStructure) : collection(dataStructure) {}
 
-        void addItem(typename CollectionType::value_type item) {
-            collection.push_back(item);
-        }
+ //       void addItem(typename CollectionType::value_type item) {
+ //          collection.push_back(item);
+ //       }
 
         void save(std::ostream& ostr, bool hex) const override {
             using Scalar = CollectionType::value_type;
-            ostr << type_tag(Scalar()) << '\n';
+            saveTypeId<Scalar>(ostr);
+            ostr << "# " << type_tag(Scalar()) << '\n'; // comment
             if (hex) {
                 for (const auto& item : collection) {
                     ostr << to_hex(item, false, false) << ' ';
@@ -70,6 +153,9 @@ namespace sw { namespace universal { namespace blas {
             }
         }
 
+        void restore(std::istream& istr) override {
+
+        }
     private:
         CollectionType& collection;
     };
@@ -86,6 +172,7 @@ namespace sw { namespace universal { namespace blas {
         }
 
 		bool save(std::ostream& ostr, bool hex = false) const {
+            ostr << UNIVERSAL_DATA_FILE_MAGIC_NUMBER << '\n';
             for (const auto& ds : dataStructures) {
                 ostr << "NEXT ";
                 ds->save(ostr, hex);
@@ -94,7 +181,13 @@ namespace sw { namespace universal { namespace blas {
 		}
 
 		bool restore(std::istream& istr) {
-
+            uint32_t magic_number;
+            istr >> magic_number;
+            if (magic_number != UNIVERSAL_DATA_FILE_MAGIC_NUMBER) {
+                std::cerr << "Not a Universal Data File\n";
+                return false;
+            }
+            return true;
 		}
 
 	protected:

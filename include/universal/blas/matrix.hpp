@@ -12,6 +12,46 @@
 #include <universal/number/posit/posit_fwd.hpp>
 #include <universal/number/cfloat/cfloat_fwd.hpp>
 
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+#define _HAS_NODISCARD 1
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+// already defines _NODISCARD
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+#define _HAS_NODISCARD 1
+
+#endif
+
+#if _HAS_NODISCARD
+#define _NODISCARD [[nodiscard]]
+#else // ^^^ CAN HAZ [[nodiscard]] / NO CAN HAZ [[nodiscard]] vvv
+#define _NODISCARD
+#endif // _HAS_NODISCARD
+
 namespace sw { namespace universal { namespace blas { 
 
 template<typename Scalar> class matrix;
@@ -42,6 +82,10 @@ public:
 	typedef value_type&								reference;
 	typedef const value_type*						const_pointer_type;
 	typedef typename std::vector<Scalar>::size_type size_type;
+	typedef typename std::vector<Scalar>::iterator     iterator;
+	typedef typename std::vector<Scalar>::const_iterator const_iterator;
+	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
+	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
 
 	matrix() : _m{ 0 }, _n{ 0 }, data(0) {}
 	matrix(unsigned m, unsigned n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
@@ -148,9 +192,6 @@ public:
 		return *this;
 	}
 
-	
-
-
 	// modifiers
 	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
 	inline void resize(unsigned m, unsigned n) { _m = m; _n = n; data.resize(m * n); }
@@ -186,6 +227,39 @@ public:
 	matrix Zero(unsigned m, unsigned n) {
 		matrix z(m, n);
 		return z;
+	}
+
+	// iterators
+	_NODISCARD iterator begin() noexcept {
+		return data.begin();
+	}
+
+	_NODISCARD const_iterator begin() const noexcept {
+		return data.begin();
+	}
+
+	_NODISCARD iterator end() noexcept {
+		return data.end();
+	}
+
+	_NODISCARD const_iterator end() const noexcept {
+		return data.end();
+	}
+
+	_NODISCARD reverse_iterator rbegin() noexcept {
+		return reverse_iterator(end());
+	}
+
+	_NODISCARD const_reverse_iterator rbegin() const noexcept {
+		return const_reverse_iterator(end());
+	}
+
+	_NODISCARD reverse_iterator rend() noexcept {
+		return reverse_iterator(begin());
+	}
+
+	_NODISCARD const_reverse_iterator rend() const noexcept {
+		return const_reverse_iterator(begin());
 	}
 
 private:

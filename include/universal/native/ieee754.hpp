@@ -241,7 +241,7 @@ void valueRepresentations(Real value) {
 	std::cout << "color  : " << color_print(value) << '\n';
 }
 
-
+#ifdef DEPRECATED
 template<typename Real,
 	typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
 >
@@ -290,5 +290,6 @@ std::string to_hex(const Real& number, bool nibbleMarker = false, bool hexPrefix
 	}
 	return s.str();
 }
+#endif // DEPRECATED
 
 }} // namespace sw::universal

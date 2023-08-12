@@ -16,6 +16,22 @@
 #include <universal/verification/test_suite.hpp>
 #include <universal/math/math_constants.hpp>
 
+void ReportNativeHexFormats() {
+	using namespace sw::universal;
+
+	float f;
+	double d;
+	single b;
+	b.setbits(0x23456789);
+	f = float(b);
+	d = double(b);
+	std::cout << to_hex(f, true, true) << '\n';
+	std::cout << to_hex(d, true, true) << '\n';
+	std::cout << to_binary(f) << " : " << to_hex(f) << " : " << f << '\n';
+	std::cout << to_binary(d) << " : " << to_hex(d) << " : " << d << '\n';
+	std::cout << to_binary(b) << " : " << to_hex(b) << " : " << b << '\n';
+}
+
 void ReportNumberSystemFormats() {
 	using namespace sw::universal;
 
@@ -58,6 +74,52 @@ void ReportNumberSystemFormats() {
 	}
 }
 
+void TestSerialization() {
+	using namespace sw::universal;
+
+	// Create instances of different specialized collections
+	sw::universal::blas::vector<float> xfp32(5), yfp32(5);
+	sw::universal::blas::matrix<float> Afp32(5, 5);
+	sw::universal::blas::tensor<float> Tfp32(5, 5); // TBD
+	sw::universal::blas::matrix<float> dpfp32(1, 1);
+	gaussian_random(xfp32, 0.0, 0.1);
+	gaussian_random(yfp32, 0.0, 0.1);
+	auto zfp32 = Afp32 * xfp32;
+	dpfp32 = xfp32 * yfp32;
+	sw::universal::blas::vector<half> x(5), y(5);
+	sw::universal::blas::matrix<half> A(5, 5);
+	sw::universal::blas::matrix<half> dotProduct(1, 1);
+	x = xfp32;
+	y = yfp32;
+	A = Afp32;
+	auto z = A * x;
+	dotProduct = x * y;
+
+	// Use the base class reference to aggregate the collections
+	blas::datafile<blas::TextFormat> df;
+	df.add(Tfp32);
+	df.add(xfp32);
+	df.add(yfp32);
+	df.add(Afp32);
+	df.add(dpfp32);
+	df.add(x);
+	df.add(y);
+	df.add(z);
+	df.add(dotProduct);
+	df.save(std::cout, false);  // decimal format
+	//		df.save(std::cout, true);   // hex format
+
+	std::stringstream s;
+	df.save(s, true);
+	blas::datafile<blas::TextFormat> in;
+	if (!in.restore(s)) {
+		std::cerr << "Failed to load Universal Data File\n";
+	}
+	else {
+		in.save(std::cout, true);
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -89,38 +151,22 @@ try {
 
 	// manual test cases
 	//nrOfFailedTestCases += ReportTestResult(VerifyCompress<quarter>(reportTestCases), "compress to quarter precision", "quarter precision");
-
+	
+	// ReportNativeHexFormats();
 	// ReportNumberSystemFormats();
 
-	{
-		float f;
-		single b;
-		b.setbits(0x23456789);
-		f = float(b);
-		std::cout << to_hex(f, true) << '\n';
-		std::cout << to_binary(f) << " : " << to_hex(f) << " : " << f << '\n';
+	blas::saveTypeId<char>(std::cout);
+	blas::saveTypeId<short>(std::cout);
+	blas::saveTypeId<int>(std::cout);
+	blas::saveTypeId<long>(std::cout);
+	blas::saveTypeId<long long>(std::cout);
+	half h;
+	blas::saveTypeId(std::cout, h);
+	posit<32, 2> p;
+	blas::saveTypeId(std::cout, p);
 
-		std::cout << to_binary(b) << " : " << to_hex(b) << " : " << b << '\n';
 
-	}
-	{
-		// Create instances of different specialized collections
-		sw::universal::blas::vector<float> x(5);
-		gaussian_random(x, 0.0, 0.1);
-		sw::universal::blas::vector<half> y(5);
-		gaussian_random(y, 0.0, 0.1);
-
-		// Create collection holders with references to the specialized collections
-		blas::CollectionHolder< sw::universal::blas::vector<float> > doubleVector(x);
-		blas::CollectionHolder< sw::universal::blas::vector<half> > halfVector(y);
-
-		// Use the base class reference to aggregate the collections
-		blas::datafile<blas::TextFormat> df;
-		df.add(x);
-		df.add(y);
-		df.save(std::cout, false);
-		df.save(std::cout, true);
-	}
+	//TestSerialization();
 	return 0;
 
 	unsigned N = 32;

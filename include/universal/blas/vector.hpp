@@ -1,5 +1,5 @@
 #pragma once
-// vector.hpp: super-simple vector class
+// vector.hpp: Universal vector class that composes std::vector<>
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -9,7 +9,7 @@
 #include <sstream>
 #include <vector>
 #include <initializer_list>
-#include <cmath>  // for std::sqrt
+#include <cmath>
 // special number system definitions
 #include <universal/number/posit/posit_fwd.hpp>
 #include <universal/traits/posit_traits.hpp>
