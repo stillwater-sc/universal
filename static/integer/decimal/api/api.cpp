@@ -1,6 +1,6 @@
-// api.cpp: test suite runner for class interface tests of the integer<> type
+// api.cpp: test suite runner for class interface tests of the decimal integer type
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,12 +12,17 @@
 #include <universal/number/integer/integer.hpp>
 #include <universal/verification/test_reporters.hpp> 
 
+///////////////////////////// TBD!!!! ///////////////////////////////////
+// this is currently just a binary integer skeleton until we can figure
+// out how to name this decimal integer class
+
+
 int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "integer<> class API test suite ";
-	std::string test_tag    = "integer<> class API";
+	std::string test_suite  = "decimal integer class API test suite ";
+	std::string test_tag    = "decimal integer class API";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
