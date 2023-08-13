@@ -1,7 +1,7 @@
 #pragma once
-// next.hpp: nextafter/nexttoward functions for rationals
+// next.hpp: nextafter/nexttoward functions for adaptive precision decimal rationals
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -24,7 +24,7 @@ Return Value
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 */
 
-rational nextafter(rational x, rational target) {
+erational nextafter(erational x, erational target) {
 	if (x == target) return target;
 
 		if (x > target) {
@@ -37,7 +37,7 @@ rational nextafter(rational x, rational target) {
 	return x;
 }
 		
-rational nexttoward(rational x, rational target) {
+erational nexttoward(erational x, erational target) {
 	if (x == target) return x;
 
 		if (x > target) {

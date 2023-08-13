@@ -1,23 +1,23 @@
 #pragma once
-// sqrt.hpp: sqrt functions for rationals
+// sqrt.hpp: sqrt functions for adaptive precision decimal rationals
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
-#include <universal/number/rational/numeric_limits.hpp>
+#include <universal/number/erational/numeric_limits.hpp>
 
-#ifndef RATIONAL_NATIVE_SQRT
-#define RATIONAL_NATIVE_SQRT 0
+#ifndef ERATIONAL_NATIVE_SQRT
+#define ERATIONAL_NATIVE_SQRT 0
 #endif
 
 namespace sw { namespace universal {
 
-#if RATIONAL_NATIVE_SQRT
+#if ERATIONAL_NATIVE_SQRT
 	// native sqrt for rational
 	inline rational sqrt(const rational& f) {
-		if (f < 0) throw rational_negative_sqrt_arg();
-		using Rational = rational;
+		if (f < 0) throw erational_negative_sqrt_arg();
+		using Rational = erational;
 		constexpr Rational eps = std::numeric_limits<Rational>::epsilon();
 		Rational y(f);
 		Rational x(f);
@@ -36,15 +36,15 @@ namespace sw { namespace universal {
 		return x;
 	}
 #else
-	inline rational sqrt(const rational& f) {
-#if RATIONAL_THROW_ARITHMETIC_EXCEPTION
+	inline erational sqrt(const erational& f) {
+#if ERATIONAL_THROW_ARITHMETIC_EXCEPTION
 		if (f.isneg()) {
-			throw rational_negative_sqrt_arg();
+			throw erational_negative_sqrt_arg();
 		}
 #else
-		std::cerr << "rational_negative_sqrt_arg\n";
+		std::cerr << "erational_negative_sqrt_arg\n";
 #endif
-		return rational(std::sqrt((double)f));
+		return erational(std::sqrt((double)f));
 	}
 #endif
 

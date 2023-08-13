@@ -1,6 +1,6 @@
 // gemm.cpp: data flow performance measurement of mixed-precision matrix-matrix product
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -12,8 +12,8 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 // enable operation counts
-#define DECIMAL_OPERATIONS_COUNT 1
-#include <universal/number/decimal/decimal.hpp>
+#define EDECIMAL_OPERATIONS_COUNT 1
+#include <universal/number/edecimal/edecimal.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>

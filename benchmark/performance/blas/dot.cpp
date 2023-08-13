@@ -1,6 +1,6 @@
 // dot.cpp: data flow performance measurements of mixed-precision dot product
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -27,7 +27,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/blas/blas.hpp>
 
 int main(int argc, char** argv)

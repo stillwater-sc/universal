@@ -1,14 +1,14 @@
-//  decimal_lpp.cpp : algorithm to find the largest palindrome product using decimal number system
+// edecimal_lpp.cpp : algorithm to find the largest palindrome product using adaptive precision decimal number system
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-// decimal number system
-#include <universal/number/decimal/decimal.hpp>
+
+#include <universal/number/edecimal/edecimal.hpp>
 
 /*
  * A palindrome number reads the same both ways. The largest palindrome made from the product
@@ -17,37 +17,37 @@
  * Find the largest palindrome made from the product of two n-digit numbers.
  */
 
-sw::universal::decimal convert(std::string& palindrome) {
-	sw::universal::decimal p;
+sw::universal::edecimal convert(std::string& palindrome) {
+	sw::universal::edecimal p;
 	if (p.parse(palindrome)) {
 		return p;
 	}
-	return sw::universal::decimal(0);
+	return sw::universal::edecimal(0);
 }
 
-bool isPalindrome(const sw::universal::decimal& suspectedPalindrome) {
+bool isPalindrome(const sw::universal::edecimal& suspectedPalindrome) {
 	std::string s1 = to_string(suspectedPalindrome);
 	std::string s2(s1);
 	std::reverse(s2.begin(), s2.end());
 	return (s1 == s2);
 }
 
-bool LargestPalindromeProduct(const sw::universal::decimal& nrDigits) {
+bool LargestPalindromeProduct(const sw::universal::edecimal& nrDigits) {
 	using namespace sw::universal;
 
 	std::stringstream ss;
 	for (long i = 0; i < long(nrDigits); ++i) {
 		ss << '9';
 	}
-	decimal max;
+	edecimal max;
 	max.parse(ss.str());
 
-	decimal nrOfSteps = 0;
-	decimal largestPalindrome = 0;
-	for (decimal i = max; i >= 0; --i) {
-		for (decimal j = max; j >= 0; --j) {
+	edecimal nrOfSteps = 0;
+	edecimal largestPalindrome = 0;
+	for (edecimal i = max; i >= 0; --i) {
+		for (edecimal j = max; j >= 0; --j) {
 			++nrOfSteps;
-			decimal possiblePalindrome = i * j;
+			edecimal possiblePalindrome = i * j;
 			if (isPalindrome(possiblePalindrome)) {
 				if (largestPalindrome < possiblePalindrome) {
 					largestPalindrome = possiblePalindrome;
@@ -66,7 +66,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	using Decimal = decimal;
+	using Decimal = edecimal;
 
 	Decimal nrDigits = 1;
 

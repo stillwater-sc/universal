@@ -14,7 +14,7 @@
 #include <universal/internal/value/value.hpp>		// TODO remove: INTERNAL class: not part of the public Universal API
 #include <universal/number/integer/integer.hpp>		// TODO remove: temporary as we are developing the string conversion functionality
 #include <universal/number/einteger/einteger.hpp>	// TODO remove: temporary
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/verification/test_suite.hpp>
 
 using namespace sw::universal;

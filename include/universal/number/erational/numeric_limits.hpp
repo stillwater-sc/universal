@@ -1,7 +1,7 @@
 #pragma once
-// numeric_limits.hpp: definition of numeric_limits for rational arithmetic types
+// numeric_limits.hpp: definition of numeric_limits for adaptive precision decimal rational arithmetic types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -22,7 +22,7 @@ A class that is a literal type is a class (defined with class, struct or union) 
 	TODO: how to make the decimal class a literal type so that we can use it as a return type for min/max/lowest etc.
 */
 template <> 
-class numeric_limits< sw::universal::rational >
+class numeric_limits< sw::universal::erational >
 {
 public:
 	static constexpr bool is_specialized = true;

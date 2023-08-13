@@ -1,7 +1,7 @@
 #pragma once
-// hypot.hpp: hypotenuse functions for rationals
+// hypot.hpp: hypotenuse functions for adaptive precision decimal rationals
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -40,17 +40,17 @@ hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN
 
 namespace sw { namespace universal {
 
-rational hypot(rational x, rational y) {
-	return rational(std::hypot(double(x),double(y)));
+erational hypot(erational x, erational y) {
+	return erational(std::hypot(double(x),double(y)));
 }
 
-rational hypotf(rational x, rational y) {
-	return rational(std::hypotf(float(x),float(y)));
+erational hypotf(erational x, erational y) {
+	return erational(std::hypotf(float(x),float(y)));
 }
 
 #if LONG_DOUBLE_SUPPORT
-rational hypotl(rational x, rational y) {
-	return rational(std::hypotl((long double)(x),(long double)(y)));
+erational hypotl(erational x, erational y) {
+	return erational(std::hypotl((long double)(x),(long double)(y)));
 }
 #endif
 
