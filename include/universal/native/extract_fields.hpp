@@ -41,6 +41,9 @@ namespace sw { namespace universal {
 	}
 
 #if LONG_DOUBLE_SUPPORT
+
+//#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
+
 	// specialization to extract fields from a long double
 	template<>
 	inline constexpr void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
@@ -50,6 +53,9 @@ namespace sw { namespace universal {
 		rawFractionBits = (ieee754_parameter<long double>::fmask & bc);
 	}
 #else
+
+//#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
+
 #define LONG_DOUBLE_DOWNCAST
 #ifdef LONG_DOUBLE_DOWNCAST
 	template<>
@@ -89,6 +95,32 @@ namespace sw { namespace universal {
 		rawFractionBits = decoder.parts.fraction;
 		bits = uint64_t(decoder.bits);
 	}
+
+#if LONG_DOUBLE_SUPPORT
+
+//#pragma message("LONG_DOUBLE_SUPPORT is configured in extract_fields")
+
+	// specialization to extract fields from a long double
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		long_double_decoder decoder;
+		decoder.ld = value;
+		s = decoder.parts.sign ? true : false;
+		rawExponentBits = decoder.parts.exponent;
+		rawFractionBits = decoder.parts.fraction;
+		bits = decoder.bits[0];  // communicate the lower order bits which represent the fraction bits
+	}
+#else
+
+//#pragma message("LONG_DOUBLE_SUPPORT is not configured in extract_fields")
+
+#define LONG_DOUBLE_DOWNCAST
+#ifdef LONG_DOUBLE_DOWNCAST
+	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
+		extractFields(double(value), s, rawExponentBits, rawFractionBits, bits);
+	}
+#endif // LONG_DOUBLE_DOWNCAST
+#endif // LONG_DOUBLE_SUPPORT
+
 
 #endif   // BIT_CAST_SUPPORT
 

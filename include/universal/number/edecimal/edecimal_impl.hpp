@@ -16,7 +16,7 @@
 namespace sw { namespace universal {
 
 /// <summary>
-/// Adaptive precision edecimal number type
+/// Adaptive precision decimal integer number type
 /// </summary>
 /// The digits are managed as a vector with the digit for 10^0 stored at index 0, 10^1 stored at index 1, etc.
 class edecimal : public std::vector<uint8_t> {

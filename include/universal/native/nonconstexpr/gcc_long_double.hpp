@@ -1,7 +1,7 @@
 #pragma once
 // gcc_long_double.hpp: nonconstexpr implementation of IEEE-754 long double manipulators
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,50 +9,6 @@
 /* GNU GCC/G++. --------------------------------------------- */
 
 namespace sw { namespace universal {
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-// compiler specific long double IEEE floating point
-
-/*
- * In contrast to the single and double-precision formats, this format does not utilize an implicit/hidden bit. 
- * Rather, bit 63 contains the integer part of the significand and bits 62-0 hold the fractional part. 
- * Bit 63 will be 1 on all normalized numbers.
- */
-
-#if defined(__aarch64__)
-	union long_double_decoder {
-		long_double_decoder() : ld{ 0.0l } {}
-		long_double_decoder(long double _ld) : ld{ _ld } {}
-		long double ld;
-		struct {
-			uint64_t fraction : 112;
-			uint64_t exponent : 15;
-			uint64_t sign : 1;
-		} parts;
-		uint64_t bits[2];
-	};
-#else
-// long double decoder
-union long_double_decoder {
-	long double ld;
-	struct {
-		uint64_t fraction : 63;
-		uint64_t bit63 : 1;
-		uint64_t exponent : 15;
-		uint64_t sign : 1;
-	} parts;
-	uint64_t bits[2];
-};
-#endif // defined(__aarch64__)
-
-// extract the fields of a native C++ long double
-inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
-	long_double_decoder decoder;
-	decoder.ld = value;
-	s = decoder.parts.sign == 1 ? true : false;
-	rawExponentBits = decoder.parts.exponent;
-	rawFractionBits = decoder.parts.fraction;
-}
 
 // ieee_components returns a tuple of sign, exponent, and fraction.
 inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
