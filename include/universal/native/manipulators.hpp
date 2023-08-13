@@ -10,6 +10,7 @@
 #include <sstream>
 #include <universal/utility/find_msb.hpp>
 #include <universal/native/ieee754_parameter.hpp>
+#include <universal/native/ieee754_type_tag.hpp>
 #include <universal/native/nonconst_bitcast.hpp>
 #include <universal/utility/color_print.hpp>
 
