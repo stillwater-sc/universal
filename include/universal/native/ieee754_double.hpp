@@ -11,38 +11,6 @@
 
 namespace sw { namespace universal {
 
-////////////////////////////////////////////////////////////////////////
-// union structure helper
-
-union double_decoder {
-  double_decoder() : d{0.0} {}
-  double_decoder(double _d) : d{_d} {}
-  double d;
-  struct {
-    uint64_t fraction : 52;
-    uint64_t exponent : 11;
-    uint64_t sign     :  1;
-  } parts;
-  uint64_t bits;
-};
-
-inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-	double_decoder decoder;
-	decoder.d = value;
-	s = decoder.parts.sign ? true : false;
-	rawExponentBits = decoder.parts.exponent;
-	rawFractionBits = decoder.parts.fraction;
-	bits = uint64_t(decoder.bits);
-}
-
-inline void setFields(double& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
-	double_decoder decoder;
-	decoder.parts.sign = s;
-	decoder.parts.exponent = rawExponentBits & 0x7FF;
-	decoder.parts.fraction = rawFractionBits & 0xF'FFFF'FFFF'FFFF;
-	value = decoder.d;
-}
-
 ////////////////// string operators
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

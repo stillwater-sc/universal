@@ -64,8 +64,8 @@ void DecodeWorkload(size_t NR_OPS) {
 	for (size_t i = 0; i < NR_OPS; ++i) {
 		a = NativeFloat(i);
 		bool s;
-		uint64_t e, f;
-		extractFields(a, s, e, f);
+		uint64_t e, f, b;
+		extractFields(a, s, e, f, b);
 		if (s == false) {
 			++success;
 		}

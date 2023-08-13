@@ -533,23 +533,24 @@ protected:
 
 			bool s{ false };
 			uint64_t unbiasedExponent{ 0 };
-			uint64_t raw{ 0 };
-			extractFields(rhs, s, unbiasedExponent, raw);
+			uint64_t fraction{ 0 };
+			uint64_t bits{ 0 };
+			extractFields(rhs, s, unbiasedExponent, fraction, bits);
 			// TODO: subnormals
 
-			raw |= (1ull << ieee754_parameter<Ty>::fbits); // add in the hidden bit
+			fraction |= (1ull << ieee754_parameter<Ty>::fbits); // add in the hidden bit
 			// scale up by fbits, convert, and then scale back
 			uint64_t mask = 0x1;
 			decimal base; // can't use base(1) semantics here as it would cause an infinite loop
 			base[0] = 1;
 //			int i = 0;
-			while (raw) { // minimum loop iterations; exits when no bits left
+			while (fraction) { // minimum loop iterations; exits when no bits left
 //				std::cout << std::setw(3) << i++ << "  base : " << base << '\n';
-				if (raw & mask) {
+				if (fraction & mask) {
 					*this += base;
 				}
 				base += base;
-				raw >>= 1;
+				fraction >>= 1;
 			}
 //			std::cout << "upconversion : " << *this << " : final bit value: " << base << '\n';
 			int scale = static_cast<int>(unbiasedExponent) - ieee754_parameter<Ty>::bias; // original scale of the number

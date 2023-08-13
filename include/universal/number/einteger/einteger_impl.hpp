@@ -724,8 +724,8 @@ protected:
 		bool s{ false };
 		std::uint64_t rawExponent{ 0 };
 		std::uint64_t rawFraction{ 0 };
-		// use native conversion
-		extractFields(rhs, s, rawExponent, rawFraction);
+		uint64_t bits{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction, bits);
 		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
 			// we can't represent NaNs or Infinities
 			return *this;

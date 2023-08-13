@@ -696,9 +696,10 @@ protected:
 
 			bool s{ false };
 			uint64_t unbiasedExponent{ 0 };
-			uint64_t raw{ 0 };
-			extractFields(v, s, unbiasedExponent, raw); // use native conversion
-			if (unbiasedExponent > 0) raw |= (1ull << ieee754_parameter<Arith>::fbits);
+			uint64_t fraction{ 0 };
+			uint64_t bits{ 0 };
+			extractFields(v, s, unbiasedExponent, fraction, bits); // use native conversion
+			if (unbiasedExponent > 0) fraction |= (1ull << ieee754_parameter<Arith>::fbits);
 			int radixPoint = ieee754_parameter<Arith>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Arith>::bias);
 
 			// our fixed-point has its radixPoint at rbits
@@ -711,9 +712,9 @@ protected:
 				// because the mask logic will make round and sticky both 0
 				// so no need to special case it
 				uint64_t mask = (1ull << (shiftRight - 1));
-				bool guard = (mask & raw);
+				bool guard = (mask & fraction);
 				mask >>= 1;
-				bool round = (mask & raw);
+				bool round = (mask & fraction);
 				if (shiftRight > 1) {
 					mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
 					mask = ~mask;
@@ -721,10 +722,10 @@ protected:
 				else {
 					mask = 0;
 				}
-				bool sticky = (mask & raw);
+				bool sticky = (mask & fraction);
 
-				raw >>= shiftRight;  // shift out the bits we are rounding away
-				bool lsb = (raw & 0x1ul);
+				fraction >>= shiftRight;  // shift out the bits we are rounding away
+				bool lsb = (fraction & 0x1ul);
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
 				//       0     1       0     0       down  round to even
@@ -733,27 +734,27 @@ protected:
 				//       x     1       1     0        up
 				//       x     1       1     1        up
 				if (guard) {
-					if (lsb && (!round && !sticky)) ++raw; // round to even
-					if (round || sticky) ++raw;
+					if (lsb && (!round && !sticky)) ++fraction; // round to even
+					if (round || sticky) ++fraction;
 				}
-				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
-				f.setbits(raw);
+				fraction = (s ? (~fraction + 1) : fraction); // if negative, map to two's complement
+				f.setbits(fraction);
 			}
 			else {
 				int shiftLeft = -shiftRight;
 				if (shiftLeft < (64 - ieee754_parameter<Arith>::fbits)) {  // what is the distance between the MSB and 64?
 					// no need to round, just shift the bits in place
-					raw <<= shiftLeft;
-					raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
-					f.setbits(raw);
+					fraction <<= shiftLeft;
+					fraction = (s ? (~fraction + 1) : fraction); // if negative, map to two's complement
+					f.setbits(fraction);
 				}
 				else {
 					// we need to project the bits we have on the fixpnt
 					for (unsigned i = 0; i < ieee754_parameter<Arith>::fbits + 1; ++i) {
-						if (raw & 0x01) {
+						if (fraction & 0x01) {
 							f.setbit(i + shiftLeft);
 						}
-						raw >>= 1;
+						fraction >>= 1;
 					}
 					if (s) f.twosComplement();
 				}

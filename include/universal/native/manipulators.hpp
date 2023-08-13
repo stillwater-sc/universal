@@ -4,7 +4,12 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <iomanip>
 #include <string>
+#include <sstream>
+#include <universal/utility/find_msb.hpp>
+#include <universal/native/ieee754_parameter.hpp>
 #include <universal/utility/color_print.hpp>
 
 namespace sw { namespace universal {
@@ -84,7 +89,7 @@ namespace sw { namespace universal {
 		// de-bias
 		int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
 		if (raw == 0) { // a subnormal encoding
-			int msb = static_cast<int>(findMostSignificantBit(frac));
+			int msb = static_cast<int>(find_msb(frac));
 			e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
 		}
 		return e;
@@ -274,7 +279,8 @@ namespace sw { namespace universal {
 		bool sign{ false };
 		uint64_t rawExponent{ 0 };
 		uint64_t rawFraction{ 0 };
-		extractFields(number, sign, rawExponent, rawFraction);
+		uint64_t bits{ 0 };
+		extractFields(number, sign, rawExponent, rawFraction, bits);
 		s << (sign ? '1' : '0') << '.' << std::hex << int(rawExponent) << '.' << rawFraction;
 		return s.str();
 	}

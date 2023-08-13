@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <sstream>
 #include <bitset>
-#include <universal/native/boolean_logic_operators.hpp>
+#include <universal/utility/boolean_logic_operators.hpp>
 #include <universal/internal/bitblock/exceptions.hpp>
 
 namespace sw { namespace universal { namespace internal {

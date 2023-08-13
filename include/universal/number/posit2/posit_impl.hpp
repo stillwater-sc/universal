@@ -28,7 +28,7 @@
 // - define to non-zero if you want to throw exceptions on arithmetic errors
 // #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 
-#include <universal/native/bit_functions.hpp>
+#include <universal/utility/find_msb.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>

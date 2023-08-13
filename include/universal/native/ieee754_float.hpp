@@ -11,38 +11,6 @@
 
 namespace sw { namespace universal {
 
-////////////////////////////////////////////////////////////////////////
-// union structure helper
-
-union float_decoder {
-  float_decoder() : f{0.0f} {}
-  float_decoder(float _f) : f{_f} {}
-  float f;
-  struct {
-    uint32_t fraction : 23;
-    uint32_t exponent :  8;
-    uint32_t sign     :  1;
-  } parts;
-  uint32_t bits;
-};
-
-inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
-	float_decoder decoder;
-	decoder.f = value;
-	s = decoder.parts.sign ? true : false;
-	rawExponentBits = static_cast<uint64_t>(decoder.parts.exponent);
-	rawFractionBits = static_cast<uint64_t>(decoder.parts.fraction);
-	bits = uint64_t(decoder.bits);
-}
-
-inline void setFields(float& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
-	float_decoder decoder;
-	decoder.parts.sign = s;
-	decoder.parts.exponent = rawExponentBits & 0xFF;
-	decoder.parts.fraction = rawFractionBits & 0x7FFFFF;
-	value = decoder.f;
-}
-
 ////////////////// string operators
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

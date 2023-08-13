@@ -22,7 +22,7 @@
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
-#include <universal/native/bit_functions.hpp>
+#include <universal/utility/find_msb.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
@@ -1718,7 +1718,7 @@ public:
 				significant |= (bt(0x1ul) << fbits);
 			}
 			else {
-				unsigned msb = findMostSignificantBit(significant);
+				unsigned msb = find_msb(significant);
 //				std::cout << "msb : " << msb << " : fhbits : " << fhbits << " : " << to_binary(significant, true) << std::endl;
 				shift = fhbits - msb;
 				significant <<= shift;
@@ -2208,7 +2208,7 @@ protected:
 		if (0 == rhs) return *this;
 
 		uint64_t raw = static_cast<uint64_t>(rhs);
-		int msb = static_cast<int>(findMostSignificantBit(raw)) - 1; // msb > 0 due to zero test above 
+		int msb = static_cast<int>(find_msb(raw)) - 1; // msb > 0 due to zero test above 
 		int exponent = msb;
 		// remove the MSB as it represents the hidden bit in the cfloat representation
 		uint64_t hmask = ~(1ull << msb);
@@ -2245,7 +2245,7 @@ protected:
 		bool s = (rhs < 0);
 		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
 
-		int msb = static_cast<int>(findMostSignificantBit(raw)) - 1; // msb > 0 due to zero test above 
+		int msb = static_cast<int>(find_msb(raw)) - 1; // msb > 0 due to zero test above 
 		int exponent = msb;
 		// remove the MSB as it represents the hidden bit in the cfloat representation
 		uint64_t hmask = ~(1ull << msb);
@@ -2287,7 +2287,8 @@ public:
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
-			extractFields(rhs, s, rawExponent, rawFraction);
+			uint64_t bits{ 0 };
+			extractFields(rhs, s, rawExponent, rawFraction, bits);
 			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
 				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
 					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
@@ -2326,8 +2327,8 @@ public:
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
-			// use native conversion
-			extractFields(rhs, s, rawExponent, rawFraction);
+			uint64_t bits{ 0 };
+			extractFields(rhs, s, rawExponent, rawFraction, bits);
 			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
 				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
 					rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
@@ -2368,8 +2369,8 @@ public:
 			bool s{ false };
 			uint64_t rawExponent{ 0 };
 			uint64_t rawFraction{ 0 };
-			extractFields(rhs, s, rawExponent, rawFraction);
-
+			uint64_t bits{ 0 };
+			extractFields(rhs, s, rawExponent, rawFraction, bits);
 			// special case handling
 			if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
 				if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||

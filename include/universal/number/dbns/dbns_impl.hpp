@@ -548,7 +548,8 @@ protected:
 		bool s{ false };
 		uint64_t unbiasedExponent{ 0 };
 		uint64_t rawFraction{ 0 };
-		extractFields(v, s, unbiasedExponent, rawFraction);
+		uint64_t bits{ 0 };
+		extractFields(v, s, unbiasedExponent, rawFraction, bits);
 		if (unbiasedExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
 			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
 				rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
@@ -617,8 +618,7 @@ protected:
 
 
 		ExponentBlockBinary dbnsExponent{ 0 };
-
-		extractFields(logv, s, unbiasedExponent, rawFraction); // use native conversion
+		extractFields(logv, s, unbiasedExponent, rawFraction, bits); // use native conversion
 		if (unbiasedExponent > 0) rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
 		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
 
