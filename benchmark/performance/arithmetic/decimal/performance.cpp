@@ -1,6 +1,6 @@
 // performance.cpp : performance benchmarking for adaptive precision decimal integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -8,8 +8,8 @@
 #include <string>
 #include <chrono>
 // configure the decimal arithmetic class
-#define DECIMAL_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/number/decimal/decimal.hpp>
+#define EDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/number/edecimal/edecimal.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
@@ -22,48 +22,48 @@
 // test performance of shift operator on integer<> class
 void TestShiftOperatorPerformance() {
 	using namespace sw::universal;
-	using Decimal = sw::universal::decimal;
-	std::cout << "decimal logical shift operator performance\n";
+	using Decimal = sw::universal::edecimal;
+	std::cout << "edecimal logical shift operator performance\n";
 
 	constexpr uint64_t NR_OPS = 1000;
 
-	PerformanceRunner("decimal 1-digits     shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
-	PerformanceRunner("decimal 10-digits    shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
-	PerformanceRunner("decimal 100-digits   shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 1-digits     shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 10-digits    shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 100-digits   shifts        ", ShiftPerformanceWorkload< Decimal >, NR_OPS);
 }
 
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace sw::universal;
-	using Decimal = sw::universal::decimal;
-	std::cout << "decimal arithmetic operator performance\n";
+	using Decimal = sw::universal::edecimal;
+	std::cout << "edecimal arithmetic operator performance\n";
 
 	uint64_t NR_OPS = 1000;
 
-	PerformanceRunner("decimal 1-digits    add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
-	PerformanceRunner("decimal 10-digits   add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
-//	PerformanceRunner("decimal 100-digits  add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
-//	PerformanceRunner("decimal 1000-digits add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 1-digits    add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 10-digits   add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("edecimal 100-digits  add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("edecimal 1000-digits add/subtract   ", AdditionSubtractionWorkload< Decimal >, NR_OPS);
 
 	NR_OPS = 1024;
-	PerformanceRunner("decimal 1-digit     division       ", DivisionWorkload< Decimal >, NR_OPS);
-	PerformanceRunner("decimal 10-digit    division       ", DivisionWorkload< Decimal >, NR_OPS);
-//	PerformanceRunner("decimal 100-digit   division       ", DivisionWorkload< Decimal >, NR_OPS);
-//	PerformanceRunner("decimal 1000-digit  division       ", DivisionWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 1-digit     division       ", DivisionWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 10-digit    division       ", DivisionWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("edecimal 100-digit   division       ", DivisionWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("edecimal 1000-digit  division       ", DivisionWorkload< Decimal >, NR_OPS);
 
 	NR_OPS = 1024;
-	PerformanceRunner("decimal 11-digit    remainder      ", RemainderWorkload< Decimal >, NR_OPS);
-	PerformanceRunner("decimal 10-digit    remainder      ", RemainderWorkload< Decimal >, NR_OPS);
-//	PerformanceRunner("decimal 100-digit   remainder      ", RemainderWorkload< Decimal >, NR_OPS);
-//	PerformanceRunner("decimal 1000-digit  remainder      ", RemainderWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 11-digit    remainder      ", RemainderWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 10-digit    remainder      ", RemainderWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("edecimal 100-digit   remainder      ", RemainderWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("edecimal 1000-digit  remainder      ", RemainderWorkload< Decimal >, NR_OPS);
 
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024;
-	PerformanceRunner("decimal 1-digit     multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
-	PerformanceRunner("decimal 10-digit    multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
-//	PerformanceRunner("decimal 100-digit   multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
-//	PerformanceRunner("decimal 1000-digit  multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 1-digit     multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
+	PerformanceRunner("edecimal 10-digit    multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("edecimal 100-digit   multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
+//	PerformanceRunner("edecimal 1000-digit  multiplication ", MultiplicationWorkload< Decimal >, NR_OPS);
 }
 
 // conditional compilation
@@ -74,7 +74,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string tag = "Decimal big-integer operator performance benchmarking";
+	std::string tag = "edecimal big-integer operator performance benchmarking";
 
 #if MANUAL_TESTING
 

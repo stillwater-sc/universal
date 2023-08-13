@@ -175,7 +175,9 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 		if (msb >= 0 && es > 0) {
 			nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<unsigned>(msb + 1ll);
 			for (unsigned i = 0; i < nrExponentBits; ++i) {
-				_exp[es - 1u - i] = tmp[static_cast<unsigned>(msb) - i];
+				uint64_t ebit = static_cast<uint64_t>(es) - 1ull - i;
+				uint64_t tmpb = static_cast<uint64_t>(msb) - i;
+				_exp[ebit] = tmp[tmpb];
 			}
 		}
 		_exponent.set(_exp, nrExponentBits);
@@ -191,8 +193,9 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	msb = msb - int(nrExponentBits);
 	unsigned nrFractionBits = (msb < 0 ? 0ull : static_cast<unsigned>(msb) + 1ull);
 	if (msb >= 0) {
-		for (int i = msb; i >= 0; --i) {
-			_frac[fbits - 1ull - (static_cast<unsigned>(msb) - static_cast<unsigned>(i))] = tmp[static_cast<unsigned>(i)];
+		for (int64_t i = msb; i >= 0; --i) {
+			uint64_t fbit = fbits - 1ull - (static_cast<uint64_t>(msb) - i);
+			_frac[fbit] = tmp[i];
 		}
 	}
 	_fraction.set(_frac, nrFractionBits);
@@ -353,14 +356,14 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
 		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
-		for (unsigned i = lsb; i < nf; ++i) fraction[i] = fraction_in[fbits - nf + i];
+		for (unsigned i = lsb; i < nf; ++i) fraction[i] = fraction_in[static_cast<uint64_t>(fbits) - nf + i];
 
-		bool sb = anyAfter(fraction_in, static_cast<int>(fbits) - 1 - int(nf));
+		bool sb = anyAfter(fraction_in, static_cast<int64_t>(fbits) - 1ll - static_cast<int64_t>(nf));
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-		regime <<= es + nf + 1;
-		exponent <<= nf + 1;
+		regime <<= (es + nf + 1ull);
+		exponent <<= (nf + 1ull);
 		fraction <<= 1;
 		sticky_bit.set(0, sb);
 
