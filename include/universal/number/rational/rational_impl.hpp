@@ -1,7 +1,7 @@
 #pragma once
-// rational_impl.hpp: implementation of adaptive precision rational arithmetic type
+// rational_impl.hpp: implementation of adaptive precision decimal rational arithmetic type
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
@@ -16,8 +16,8 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/string/strmanip.hpp>
-#include <universal/number/rational/exceptions.hpp>
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/erational/exceptions.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 
 namespace sw { namespace universal {
 
