@@ -34,7 +34,6 @@
 #include "exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
-#include <universal/native/bit_functions.hpp>
 // TODO: these need to be redesigned to enable constexpr and improve performance: roadmap V3 Q1 2021
 #include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/internal/value/value.hpp>

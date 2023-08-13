@@ -14,12 +14,6 @@
 #include <universal/utility/compiler.hpp>
 #include <universal/utility/bit_cast.hpp>
 #include <universal/utility/long_double.hpp>
-// support functions
-#include <universal/native/integers.hpp>
-#include <universal/native/manipulators.hpp>
-#include <universal/native/attributes.hpp>
-#include <universal/native/bit_functions.hpp>
-#include <universal/traits/arithmetic_traits.hpp>
 
 namespace sw { namespace universal {
 
@@ -70,6 +64,13 @@ namespace sw { namespace universal {
 // above includes are a refactoring of this old include
 //#include <universal/native/nonconstexpr754.hpp>
 #endif
+
+// support functions
+#include <universal/native/integers.hpp>
+#include <universal/native/manipulators.hpp>
+#include <universal/native/attributes.hpp>
+#include <universal/native/bit_functions.hpp>
+#include <universal/traits/arithmetic_traits.hpp>
 
 namespace sw { namespace universal {
 
@@ -158,138 +159,5 @@ DestinationType BitCast(SourceType source) {
 	memmove(&dest, &source, sizeof(DestinationType));
 	return dest;
 }
-
-// internal function to extract exponent
-template<typename Uint, typename Real>
-int _extractExponent(Real v) {
-	static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-	Uint raw{BitCast<Uint>(v)};
-	raw &= static_cast<Uint>(~ieee754_parameter<Real>::smask);
-	Uint frac{ raw };
-	raw >>= ieee754_parameter<Real>::fbits;
-	// de-bias
-	int e = static_cast<int>(raw) - static_cast<int>(ieee754_parameter<Real>::bias);
-	if (raw == 0) { // a subnormal encoding
-		int msb = static_cast<int>(findMostSignificantBit(frac));
-		e -= (static_cast<int>(ieee754_parameter<Real>::fbits) - msb);
-	}
-	return e;
-}
-
-template<typename Real,
-	 typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
->
-int scale(Real v) {
-	int _e{0};
-	if constexpr (sizeof(Real) == 2) { // half precision floating-point
-		_e = _extractExponent<std::uint16_t>(v);
-	}
-	if constexpr (sizeof(Real) == 4) { // single precision floating-point
-		_e = _extractExponent<std::uint32_t>(v);
-	}
-	else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-		_e = _extractExponent<std::uint64_t>(v);
-	}
-	else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
-		//long double frac = frexpl(v, &_e);
-		frexpl(v, &_e);
-		_e -= 1;
-	}
-	return _e;
-}
-
-// internal function to extract significant
-template<typename Uint, typename Real>
-Uint _extractSignificant(Real v) {
-	static_assert(sizeof(Real) == sizeof(Uint), "mismatched sizes");
-	Uint raw{ BitCast<Uint>(v) };
-	raw &= ieee754_parameter<Real>::fmask;
-	raw |= ieee754_parameter<Real>::hmask; // add the hidden bit
-	return raw;
-}
-
-template<typename Real,
-	     typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real>::type
->
-unsigned long long significant(Real v) {
-	std::uint64_t _f{ 0 };
-	if constexpr (sizeof(Real) == 2) { // half precision floating-point
-		_f = _extractSignificant<std::uint16_t>(v);
-	}
-	if constexpr (sizeof(Real) == 4) { // single precision floating-point
-		_f = _extractSignificant<std::uint32_t>(v);
-	}
-	else if constexpr (sizeof(Real) == 8) { // double precision floating-point
-		_f = _extractSignificant<std::uint64_t>(v);
-	}
-	else if constexpr (sizeof(Real) == 16) { // long double precision floating-point
-		_f = 0;
-	}
-	return _f;
-}
-
-// print representations of an IEEE-754 floating-point
-template<typename Real>
-void valueRepresentations(Real value) {
-	using namespace sw::universal;
-	std::cout << "IEEE-754 type : " << type_tag<Real>() << '\n';
-	std::cout << "hex    : " << to_hex(value) << '\n';
-	std::cout << "binary : " << to_binary(value) << '\n';
-	std::cout << "triple : " << to_triple(value) << '\n';
-	std::cout << "base2  : " << to_base2_scientific(value) << '\n';
-	std::cout << "base10 : " << value << '\n';
-	std::cout << "color  : " << color_print(value) << '\n';
-}
-
-#ifdef DEPRECATED
-template<typename Real,
-	typename = typename ::std::enable_if< ::std::is_floating_point<Real>::value, Real >::type
->
-std::string to_hex(const Real& number, bool nibbleMarker = false, bool hexPrefix = true) {
-	char hexChar[16] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-	};
-	union FConv {
-		float       f;
-		double      d;
-		//long double l;
-		uint64_t    u;
-	} converter{0};
-	unsigned nbits = sizeof(Real)*8;
-	switch (nbits) {
-		case 32: 
-			converter.f = number;
-			break;
-		case 64:
-			converter.d = number;
-			break;
-		case 128:
-			//converter.l = number;
-			std::cerr << "long double not supported\n";
-			break;
-		default:
-			std::cerr << "unrecognized floating-point size\n";
-			break;
-	}
-	uint64_t bits = converter.u;
-//	std::cout << "\nconvert  : " << to_binary(bits, nbits) << " : " << bits << '\n';
-	std::stringstream s;
-	if (hexPrefix) s << "0x";
-	int nrNibbles = int(1ull + ((nbits - 1ull) >> 2ull));
-	int nibbleIndex = (nrNibbles - 1);
-	uint64_t mask = (0xFull << (nibbleIndex*4));
-//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
-	for (int n = nrNibbles - 1; n >= 0; --n) {
-		uint64_t raw = (bits & mask);
-		uint8_t nibble = raw >> (nibbleIndex*4);
-		s << hexChar[nibble];
-		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
-		mask >>= 4;
-		--nibbleIndex;
-	}
-	return s.str();
-}
-#endif // DEPRECATED
 
 }} // namespace sw::universal

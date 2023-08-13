@@ -26,12 +26,13 @@ union double_decoder {
   uint64_t bits;
 };
 
-inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
+inline void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits, uint64_t& bits) noexcept {
 	double_decoder decoder;
 	decoder.d = value;
 	s = decoder.parts.sign ? true : false;
 	rawExponentBits = decoder.parts.exponent;
 	rawFractionBits = decoder.parts.fraction;
+	bits = uint64_t(decoder.bits);
 }
 
 inline void setFields(double& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {

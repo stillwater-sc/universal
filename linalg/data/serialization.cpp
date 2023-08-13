@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
+#include <universal/native/ieee754.hpp>
+#include <universal/native/integers.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/cfloat/cfloat.hpp>

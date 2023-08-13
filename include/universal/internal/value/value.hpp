@@ -13,10 +13,7 @@
 
 #include <universal/common/exceptions.hpp>
 #include <universal/number/support/decimal.hpp>
-#include <universal/native/ieee754_float.hpp>
-#include <universal/native/ieee754_double.hpp>
-#include <universal/native/ieee754_longdouble.hpp>
-#include <universal/native/bit_functions.hpp>
+#include <universal/native/ieee754.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 
 namespace sw { namespace universal { namespace internal {

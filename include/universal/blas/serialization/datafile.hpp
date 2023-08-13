@@ -16,7 +16,18 @@
 #include <list>
 #include <map>
 #include <memory>
+// the arithmetic types datafile is supporting
 #include <universal/native/ieee754.hpp>
+#include <universal/native/integers.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/einteger/einteger.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/lns/lns.hpp>
+#include <universal/number/dbns/dbns.hpp>
+// the aggregation types that datafile is supporting
 #include <universal/blas/blas.hpp>
  
 namespace sw { namespace universal { namespace blas {  
