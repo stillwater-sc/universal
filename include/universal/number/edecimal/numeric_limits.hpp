@@ -1,7 +1,7 @@
 #pragma once
-// numeric_limits.hpp: definition of numeric_limits for decimal types
+// numeric_limits.hpp: definition of numeric_limits for adaptive precision decimal types
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -19,10 +19,10 @@ using namespace sw::universal;
 			3- is an aggregate type, or has at least one constexpr constructor or constructor template that is not a copy or move constructor, and
 			4- has all non - static data members and base classes of literal types
 
-		TODO: how to make the decimal class a literal type so that we can use it as a return type for min/max/lowest etc.
+		TODO: how to make the edecimal class a literal type so that we can use it as a return type for min/max/lowest etc.
 */
 	template <> 
-	class numeric_limits< sw::universal::decimal >
+	class numeric_limits< sw::universal::edecimal >
 	{
 	public:
 		static constexpr bool is_specialized = true;

@@ -1,6 +1,6 @@
-//  exceptions.cpp : test suite for arithmetic exceptions of decimal numbers
+//  exceptions.cpp : test suite for arithmetic exceptions of adaptive precision decimal integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -8,7 +8,7 @@
 #include <string>
 // configure the number system
 #define DECIMAL_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -31,19 +31,20 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "decimal arithmetic exceptions ";
-	std::string test_tag = "exceptions";
-	std::cout << test_suite << '\n';
-	bool bReportIndividualTestCases = false;
+	std::string test_suite  = "edecimal arithmetic exceptions ";
+	std::string test_tag    = "exceptions";
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	using Number = sw::universal::decimal;
+	using Number = sw::universal::edecimal;
 
-	nrOfFailedTestCases += TestDivisionByZero<Number>(bReportIndividualTestCases);
+	nrOfFailedTestCases += TestDivisionByZero<Number>(reportTestCases);
 
-	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(bReportIndividualTestCases);
+	nrOfFailedTestCases += TestNegativeSqrtArgument<Number>(reportTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -69,11 +70,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::decimal_arithmetic_exception& err) {
+catch (const sw::universal::edecimal_arithmetic_exception& err) {
 	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::decimal_internal_exception& err) {
+catch (const sw::universal::edecimal_internal_exception& err) {
 	std::cerr << "Uncaught internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

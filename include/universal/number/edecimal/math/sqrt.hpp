@@ -1,19 +1,19 @@
 #pragma once
-// sqrt.hpp: sqrt functions for decimals
+// sqrt.hpp: sqrt functions for adaptive precision decimal integers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/ieee754.hpp>
-#include <universal/number/decimal/numeric_limits.hpp>
+#include <universal/number/edecimal/numeric_limits.hpp>
 
-#ifndef DECIMAL_NATIVE_SQRT
-#define DECIMAL_NATIVE_SQRT 0
+#ifndef EDECIMAL_NATIVE_SQRT
+#define EDECIMAL_NATIVE_SQRT 0
 #endif
 
 namespace sw { namespace universal {
 
-#if DECIMAL_NATIVE_SQRT
+#if EDECIMAL_NATIVE_SQRT
 	// native sqrt for decimal
 	inline decimal sqrt(const decimal& f) {
 		if (f < 0) throw decimal_negative_sqrt_arg();
@@ -36,21 +36,21 @@ namespace sw { namespace universal {
 		return x;
 	}
 #else
-	inline decimal sqrt(const decimal& f) {
-#if DECIMAL_THROW_ARITHMETIC_EXCEPTION
+	inline edecimal sqrt(const edecimal& f) {
+#if EDECIMAL_THROW_ARITHMETIC_EXCEPTION
 		if (f.isneg()) {
-			throw decimal_negative_sqrt_arg();
+			throw edecimal_negative_sqrt_arg();
 		}
 #else
 		std::cerr << "decimal_negative_sqrt_arg\n";
 #endif
-		return decimal(std::sqrt((double)f));
+		return edecimal(std::sqrt((double)f));
 	}
 #endif
 
 	// reciprocal sqrt
-//	inline decimal rsqrt(const decimal& f) {
-//		decimal rsqrt = sqrt(f);
+//	inline edecimal rsqrt(const edecimal& f) {
+//		edecimal rsqrt = sqrt(f);
 //		return rsqrt.reciprocate();
 //	}
 

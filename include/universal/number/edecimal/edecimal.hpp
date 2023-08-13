@@ -1,10 +1,10 @@
-// arbitrary decimal arithmetic type standard header
+// adaptive precision decimal integer arithmetic type standard header
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _DECIMAL_STANDARD_HEADER_
-#define _DECIMAL_STANDARD_HEADER_
+#ifndef _EDECIMAL_STANDARD_HEADER_
+#define _EDECIMAL_STANDARD_HEADER_
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  COMPILATION DIRECTIVES TO DIFFERENT COMPILERS
@@ -16,35 +16,48 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// required std libraries 
+#include <cstdint>
+#include <sstream>
+#include <cassert>
 #include <iostream>
 #include <iomanip>
+#include <vector>
+#include <limits>
+#include <regex>
+#include <algorithm>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///  BEHAVIORAL COMPILATION SWITCHES
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // enable/disable the ability to use literals in binary logic and arithmetic operators
-#if !defined(DECIMAL_ENABLE_LITERALS)
+#if !defined(EDECIMAL_ENABLE_LITERALS)
 // default is to enable them
-#define DECIMAL_ENABLE_LITERALS 1
+#define EDECIMAL_ENABLE_LITERALS 1
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // enable throwing specific exceptions for integer arithmetic errors
 // left to application to enable
-#if !defined(DECIMAL_THROW_ARITHMETIC_EXCEPTION)
+#if !defined(EDECIMAL_THROW_ARITHMETIC_EXCEPTION)
 // default is to use std::cerr as a signalling error
-#define DECIMAL_THROW_ARITHMETIC_EXCEPTION 0
+#define EDECIMAL_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
+/// support functions
+#include <universal/native/ieee754.hpp>
+#include <universal/string/strmanip.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include <universal/number/decimal/exceptions.hpp>
-#include <universal/number/decimal/decimal_impl.hpp>
-#include <universal/number/decimal/numeric_limits.hpp>
+#include <universal/number/edecimal/exceptions.hpp>
+#include <universal/number/edecimal/edecimal_fwd.hpp>
+#include <universal/number/edecimal/edecimal_impl.hpp>
+#include <universal/number/edecimal/numeric_limits.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include <universal/number/decimal/mathlib.hpp>
+#include <universal/number/edecimal/mathlib.hpp>
 
 #endif
