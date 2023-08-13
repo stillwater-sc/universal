@@ -38,7 +38,7 @@ try {
 	std::cout << std::setprecision(17);
 	
 	{
-		using Scalar = decimal;
+		using Scalar = edecimal;
 		using Vector = sw::universal::blas::vector<Scalar>;
 //		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;             // TODO: <--- bug conversion from double
 //		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
@@ -51,7 +51,7 @@ try {
 		std::cout << "b: " << b << '\n';
 
 		std::cout << "\n\n";
-		decimal v = dot(a, b);
+		edecimal v = dot(a, b);
 		std::cout << v << (v == 2 ? " <----- PASS\n" : " <-----      FAIL\n");
 	}
 

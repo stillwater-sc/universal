@@ -22,7 +22,7 @@ namespace sw { namespace universal {
 class edecimal : public std::vector<uint8_t> {
 #if EDECIMAL_OPERATIONS_COUNT
 	static bool enableAdd;
-	static occurrence<decimal> ops;
+	static occurrence<edecimal> ops;
 #endif
 public:
 	edecimal() { setzero(); }

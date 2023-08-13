@@ -1,13 +1,13 @@
 //  largest_palindrome_product.cpp : algorithm to find the largest palindrome product
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <sstream>
 #include <cmath>
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 
 /*
  * A palinddrome number reads the same both ways. The largest palindrome made from the product

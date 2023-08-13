@@ -29,11 +29,11 @@ std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::po
 	return ss.str();
 }
 
-#if DECIMAL_OPERATIONS_COUNT
+#if EDECIMAL_OPERATIONS_COUNT
 
 // create the static storage for the occurrence measurements of the decimal number system
-bool sw::universal::decimal::enableAdd = true;
-sw::universal::occurrence<sw::universal::decimal> sw::universal::decimal::ops;
+bool sw::universal::edecimal::enableAdd = true;
+sw::universal::occurrence<sw::universal::edecimal> sw::universal::edecimal::ops;
 
 #endif
 
@@ -41,14 +41,14 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal::blas;
 
-	using Scalar = sw::universal::decimal;
+	using Scalar = sw::universal::edecimal;
 	using Matrix = matrix<Scalar>;
 
 	constexpr size_t N = 5;
 
 	Matrix A = eye<Scalar>(N);
 	Matrix B = frank<Scalar>(N);
-	sw::universal::decimal proxy;
+	sw::universal::edecimal proxy;
 	proxy.resetStats();
 	Matrix C = A * B;
 	std::cout << C << std::endl;
