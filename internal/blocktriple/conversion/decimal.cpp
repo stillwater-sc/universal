@@ -22,7 +22,7 @@ namespace sw { namespace universal {
 	std::string FixedPointFraction(const BlockTripleType& v) {
 		std::string digits{ "tbd" };
 
-		unsigned k = 0;
+		//unsigned k = 0;
 		
 		return digits;
 	}

@@ -39,6 +39,8 @@ try {
 #if MANUAL_TESTING
 
 	using Rational = sw::universal::erational;
+	Rational r{1.2345};
+	std::cout << r << '\n';
 
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

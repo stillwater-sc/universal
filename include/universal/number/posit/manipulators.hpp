@@ -30,7 +30,7 @@ namespace sw { namespace universal {
 	>
 	inline std::string type_field(const PositType & = {}) {
 		std::stringstream s;
-		unsigned nbits = PositType::nbits;  // total bits
+//		unsigned nbits = PositType::nbits;  // total bits
 		unsigned ebits = PositType::es;     // exponent bits
 		unsigned fbits = PositType::fbits;  // integer bits
 		s << "fields(s:1|r:[2]+|e:" << ebits << "|m:" << fbits << ')';

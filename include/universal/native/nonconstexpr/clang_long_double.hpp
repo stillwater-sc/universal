@@ -17,39 +17,8 @@ namespace sw { namespace universal {
 // __aarch64__ which is defined for 64bit arm, and 64bit arm only.
 
 #if defined(UNIVERSAL_ARCH_POWER)
-	union long_double_decoder {
-		long_double_decoder() : ld{ 0.0l } {}
-		long_double_decoder(long double _ld) : ld{ _ld } {}
-		long double ld;
-		struct {
-			uint64_t fraction : 64;
-			uint64_t upper : 48;
-			uint64_t exponent : 15;
-			uint64_t sign : 1;
-		} parts;
-	};
 
 #elif defined(UNIVERSAL_ARCH_X86_64)
-	union long_double_decoder {
-		long_double_decoder() : ld{ 0.0l } {}
-		long_double_decoder(long double _ld) : ld{ _ld } {}
-		long double ld;
-		struct {
-			uint64_t fraction : 63;
-			uint64_t bit63 : 1;
-			uint64_t exponent : 15;
-			uint64_t sign : 1;
-		} parts;
-	};
-
-	// extract the fields of a native C++ long double
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
-		long_double_decoder decoder;
-		decoder.ld = value;
-		s = decoder.parts.sign == 1 ? true : false;
-		rawExponentBits = decoder.parts.exponent;
-		rawFractionBits = decoder.parts.fraction;
-	}
 
 	// ieee_components returns a tuple of sign, exponent, and fraction.
 	inline std::tuple<bool, int, std::uint64_t> ieee_components(long double fp) {
@@ -201,88 +170,47 @@ namespace sw { namespace universal {
 		return s.str();
 	}
 #else 
-    // long double is mapped to double in ARM64
-	union long_double_decoder {
-		long_double_decoder() : ld{ 0.0l } {}
-		long_double_decoder(long double _ld) : ld{ _ld } {}
-		long double ld;
-		struct {
-			uint64_t fraction : 52;
-			uint64_t exponent : 11;
-			uint64_t sign : 1;
-		} parts;
-	};
 
-	inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
-		double_decoder decoder;
-		decoder.d = value;
-		s = decoder.parts.sign ? true : false;
-		rawExponentBits = decoder.parts.exponent;
-		rawFractionBits = decoder.parts.fraction;
-	}	
 
-		// generate a binary string for a native double precision IEEE floating point
-	inline std::string to_hex(long double number) {
+	inline std::string to_hex(long double number, bool nibbleMarker = false, bool hexPrefix = true) {
+		char hexChar[16] = {
+			'0', '1', '2', '3', '4', '5', '6', '7',
+			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+		};
+		long_double_decoder decoder;
+		decoder.ld = number;
+		// lower segment
+		uint64_t bits = decoder.bits[1];
+		//	std::cout << "\nconvert  : " << to_binary(bits, 32) << " : " << bits << '\n';
 		std::stringstream s;
-		double_decoder decoder;
-		decoder.d = number;
-		s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
+		if (hexPrefix) s << "0x";
+		int nrNibbles = 16;
+		int nibbleIndex = (nrNibbles - 1);
+		uint64_t mask = (0xFull << (nibbleIndex * 4));
+		//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
+		for (int n = nrNibbles - 1; n >= 0; --n) {
+			uint64_t raw = (bits & mask);
+			uint8_t nibble = static_cast<uint8_t>(raw >> (nibbleIndex * 4));
+			s << hexChar[nibble];
+			if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+			mask >>= 4;
+			--nibbleIndex;
+		}
+		// lower segment
+		bits = decoder.bits[0];
+		nibbleIndex = (nrNibbles - 1);
+		mask = (0xFull << (nibbleIndex * 4));
+		//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
+		for (int n = nrNibbles - 1; n >= 0; --n) {
+			uint64_t raw = (bits & mask);
+			uint8_t nibble = static_cast<uint8_t>(raw >> (nibbleIndex * 4));
+			s << hexChar[nibble];
+			if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+			mask >>= 4;
+			--nibbleIndex;
+		}
 		return s.str();
 	}
-
-	// does clang support long double?
-
-#ifdef DEPRECATED
-// DEPRECATED: we have standardized on raw bit hex, not field hex format
-// generate a binary string for a native double precision IEEE floating point
-inline std::string to_hex(long double number) {
-	std::stringstream s;
-	long_double_decoder decoder;
-	decoder.ld = number;
-	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
-	return s.str();
-}
-
-inline std::string to_hex(long double number, bool nibbleMarker = false, bool hexPrefix = true) {
-	char hexChar[16] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-	};
-	long_double_decoder decoder;
-	decoder.ld = number;
-	// lower segment
-	uint64_t bits = decoder.bits[1];
-	//	std::cout << "\nconvert  : " << to_binary(bits, 32) << " : " << bits << '\n';
-	std::stringstream s;
-	if (hexPrefix) s << "0x";
-	int nrNibbles = 16;
-	int nibbleIndex = (nrNibbles - 1);
-	uint64_t mask = (0xFull << (nibbleIndex * 4));
-	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
-	for (int n = nrNibbles - 1; n >= 0; --n) {
-		uint64_t raw = (bits & mask);
-		uint8_t nibble = static_cast<uint8_t>(raw >> (nibbleIndex * 4));
-		s << hexChar[nibble];
-		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
-		mask >>= 4;
-		--nibbleIndex;
-	}
-	// lower segment
-	bits = decoder.bits[0];
-	nibbleIndex = (nrNibbles - 1);
-	mask = (0xFull << (nibbleIndex * 4));
-	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
-	for (int n = nrNibbles - 1; n >= 0; --n) {
-		uint64_t raw = (bits & mask);
-		uint8_t nibble = static_cast<uint8_t>(raw >> (nibbleIndex * 4));
-		s << hexChar[nibble];
-		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
-		mask >>= 4;
-		--nibbleIndex;
-	}
-	return s.str();
-}
-#endif // DEPRECATED
 
 	// generate a binary string for a native double precision IEEE floating point
 	inline std::string to_binary(long double number, bool bNibbleMarker = false) {

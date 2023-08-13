@@ -18,6 +18,7 @@
 // set up the database of compiler/architecture specific floating-point parameters
 #include <universal/native/ieee754_parameter.hpp>
 #include <universal/native/ieee754_decoder.hpp>
+#include <universal/native/ieee754_type_tag.hpp>
 
 // if the compiler environment allows, set up
 // constexpr compatible bit casts, otherwise
@@ -34,6 +35,7 @@
 
 // support functions
 #include <universal/native/integers.hpp>
+#include <universal/native/ieee754_parameter_ostream.hpp>
 #include <universal/native/manipulators.hpp>
 #include <universal/native/attributes.hpp>
 #include <universal/traits/arithmetic_traits.hpp>

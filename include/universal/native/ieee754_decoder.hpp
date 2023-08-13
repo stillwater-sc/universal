@@ -48,6 +48,7 @@ namespace sw { namespace universal {
 	 * Bit 63 will be 1 on all normalized numbers.
 	 */
 
+#if defined(ALTERNATIVE_DATA)
 #if defined(__aarch64__)
 	union long_double_decoder {
 		long_double_decoder() : ld{ 0.0l } {}
@@ -68,10 +69,59 @@ namespace sw { namespace universal {
 			uint64_t fraction : 63;
 			uint64_t bit63 : 1;
 			uint64_t exponent : 15;
-		uint64_t sign : 1;
-	} parts;
-	uint64_t bits[2];
+			uint64_t sign : 1;
+		} parts;
+		uint64_t bits[2];
 };
 #endif // defined(__aarch64__)
+#endif // alternative_data
+
+// __arm__ which is defined for 32bit arm, and 32bit arm only.
+// __aarch64__ which is defined for 64bit arm, and 64bit arm only.
+
+#if defined(UNIVERSAL_ARCH_POWER)
+	union long_double_decoder {
+		long_double_decoder() : ld{ 0.0l } {}
+		long_double_decoder(long double _ld) : ld{ _ld } {}
+		long double ld;
+		struct {
+			uint64_t fraction : 64;
+			uint64_t upper : 48;
+			uint64_t exponent : 15;
+			uint64_t sign : 1;
+		} parts;
+		uint64_t bits[2];
+	};
+
+#elif defined(UNIVERSAL_ARCH_X86_64)
+
+	union long_double_decoder {
+		long_double_decoder() : ld{ 0.0l } {}
+		long_double_decoder(long double _ld) : ld{ _ld } {}
+		long double ld;
+		struct {
+			uint64_t fraction : 63;
+			uint64_t bit63 : 1;
+			uint64_t exponent : 15;
+			uint64_t sign : 1;
+		} parts;
+		uint64_t bits[2];
+	};
+
+#else 
+    // long double is mapped to double in ARM64
+	union long_double_decoder {
+		long_double_decoder() : ld{ 0.0l } {}
+		long_double_decoder(long double _ld) : ld{ _ld } {}
+		long double ld;
+		struct {
+			uint64_t fraction : 52;
+			uint64_t exponent : 11;
+			uint64_t sign : 1;
+		} parts;
+		uint64_t bits[2];
+	};
+
+#endif
 
 }} // namespace sw::universal

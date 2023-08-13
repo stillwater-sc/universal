@@ -202,7 +202,7 @@ namespace sw { namespace universal { namespace blas {
  //       }
 
         void save(std::ostream& ostr, bool hex) const override {
-            using Scalar = CollectionType::value_type;
+            using Scalar = typename CollectionType::value_type;
             saveTypeId<Scalar>(ostr);
             ostr << "# " << type_tag(Scalar()) << '\n'; // comment
             if (hex) {

@@ -39,9 +39,11 @@ try {
 	ReportFormats(f);
 
 	double d{m_pi};
+	ReportFormats(d);
 
 #if LONG_DOUBLE_SUPPORT
 	long double ld{m_pi};
+	ReportFormats(ld);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

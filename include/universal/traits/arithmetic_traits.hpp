@@ -1,7 +1,7 @@
 #pragma once
 // arithmetic_traits.hpp: functions to report on number system properties
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -9,8 +9,8 @@
 #include <sstream>
 #include <string>
 #include <limits>
-
-#include <universal/native/manipulators.hpp>   // type_tag for float/double/long double
+#include <universal/native/integer_type_tag.hpp>
+#include <universal/native/ieee754_type_tag.hpp>
 
 namespace sw { namespace universal {
 

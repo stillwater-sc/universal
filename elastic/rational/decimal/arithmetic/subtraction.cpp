@@ -38,9 +38,9 @@ try {
 
 #if MANUAL_TESTING
 
-//	using Rational = sw::universal::rational;
-
-
+	using Rational = sw::universal::erational;
+	Rational r{1.2345};
+	std::cout << r << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
