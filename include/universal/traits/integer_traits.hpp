@@ -14,8 +14,8 @@ namespace sw { namespace universal {
 		: false_type
 	{
 	};
-	template<unsigned nbits>
-	struct is_integer_trait< sw::universal::integer<nbits> >
+	template<unsigned nbits, typename bt, IntegerNumberType nt>
+	struct is_integer_trait< sw::universal::integer<nbits, bt, nt> >
 		: true_type
 	{
 	};

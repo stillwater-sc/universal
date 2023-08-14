@@ -76,6 +76,48 @@ void ReportNumberSystemFormats() {
 	}
 }
 
+void TestSaveTypeId() {
+	using namespace sw::universal;
+
+	blas::saveTypeId<char>(std::cout);
+	blas::saveTypeId<short>(std::cout);
+	blas::saveTypeId<int>(std::cout);
+	blas::saveTypeId<long>(std::cout);
+	blas::saveTypeId<long long>(std::cout);
+	blas::saveTypeId<float>(std::cout);
+	blas::saveTypeId<double>(std::cout);
+	blas::saveTypeId<long double>(std::cout);
+	blas::saveTypeId<integer<  8, uint8_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	blas::saveTypeId<integer< 16, uint16_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	blas::saveTypeId<integer< 32, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	blas::saveTypeId<integer< 64, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
+	blas::saveTypeId<integer<128, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
+
+	blas::saveTypeId<fixpnt<32, 16, Modulo>>(std::cout);
+	blas::saveTypeId<fixpnt<64, 32, Saturate>>(std::cout);
+
+	blas::saveTypeId<cfloat<12, 8, uint16_t, true, true, false>>(std::cout);
+	blas::saveTypeId<quarter>(std::cout);
+	blas::saveTypeId<half>(std::cout);
+	blas::saveTypeId<single>(std::cout);
+	blas::saveTypeId<duble>(std::cout);
+	blas::saveTypeId<quad>(std::cout);
+
+	blas::saveTypeId<posit<  8, 2>>(std::cout);
+	blas::saveTypeId<posit< 16, 2>>(std::cout);
+	blas::saveTypeId<posit< 32, 2>>(std::cout);
+	blas::saveTypeId<posit< 64, 2>>(std::cout);
+	blas::saveTypeId<posit<128, 2>>(std::cout);
+	blas::saveTypeId<posit<256, 2>>(std::cout);
+
+	blas::saveTypeId<lns<16, 8, uint16_t>>(std::cout);
+	blas::saveTypeId<dbns<8, 3, uint8_t>>(std::cout);
+
+	// or this ADL format
+	half h;
+	blas::saveTypeId(std::cout, h);
+}
+
 void TestSerialization() {
 	using namespace sw::universal;
 
@@ -161,43 +203,7 @@ try {
 	std::cout << (is_integer<integer<16>> ? "integer" : "not an integer") << '\n';
 	std::cout << (is_integer<integer<160>> ? "integer" : "not an integer") << '\n';
 
-	blas::saveTypeId<char>(std::cout);
-	blas::saveTypeId<short>(std::cout);
-	blas::saveTypeId<int>(std::cout);
-	blas::saveTypeId<long>(std::cout);
-	blas::saveTypeId<long long>(std::cout);
-	blas::saveTypeId<float>(std::cout);
-	blas::saveTypeId<double>(std::cout);
-	blas::saveTypeId<long double>(std::cout);
-	blas::saveTypeId<integer<  8, uint8_t , IntegerNumberType::IntegerNumber>>(std::cout);
-	blas::saveTypeId<integer< 16, uint16_t, IntegerNumberType::IntegerNumber>>(std::cout);
-	blas::saveTypeId<integer< 32, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
-	blas::saveTypeId<integer< 64, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
-	blas::saveTypeId<integer<128, uint32_t, IntegerNumberType::IntegerNumber>>(std::cout);
-
-	blas::saveTypeId<fixpnt<32, 16, Modulo>>(std::cout);
-	blas::saveTypeId<fixpnt<64, 32, Saturate>>(std::cout);
-
-	blas::saveTypeId<cfloat<12, 8, uint16_t, true, true, false>>(std::cout);
-	blas::saveTypeId<quarter>(std::cout);
-	blas::saveTypeId<half>(std::cout);
-	blas::saveTypeId<single>(std::cout);
-	blas::saveTypeId<duble>(std::cout);
-	blas::saveTypeId<quad>(std::cout);
-
-	blas::saveTypeId<posit<  8, 2>>(std::cout);
-	blas::saveTypeId<posit< 16, 2>>(std::cout);
-	blas::saveTypeId<posit< 32, 2>>(std::cout);
-	blas::saveTypeId<posit< 64, 2>>(std::cout);
-	blas::saveTypeId<posit<128, 2>>(std::cout);
-	blas::saveTypeId<posit<256, 2>>(std::cout);
-
-	blas::saveTypeId<lns<16, 8, uint16_t>>(std::cout);
-	blas::saveTypeId<dbns<8, 3, uint8_t>>(std::cout);
-
-	// or this ADL format
-	half h;
-	blas::saveTypeId(std::cout, h);
+	TestSaveTypeId();
 
 	TestSerialization();
 	return 0;
