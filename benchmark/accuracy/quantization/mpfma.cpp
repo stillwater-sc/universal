@@ -104,6 +104,7 @@ void StatisticalSampling(double mean, double stddev) {
 	std::cout << "accumulation type   : " << symmetry_range<AccumulationType>() << '\n';
 	unsigned nrSamples{ 10000 };
 	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 50, mean, stddev);
+	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 100, mean, stddev);
 	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 500, mean, stddev);
 	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 1000, mean, stddev);
 	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 2000, mean, stddev);
