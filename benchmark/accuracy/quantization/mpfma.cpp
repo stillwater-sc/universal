@@ -78,10 +78,23 @@ void QuantizationExperiment(unsigned nrSamples, unsigned vectorSize, double mean
 	std::cout << "dot product  mean  : " << dot_avg << '\n';
 	double dot_stddev = 0;
 	for (auto e : dotProduct) {
-		dot_stddev += (double(e) - dot_avg);
+		auto diff = (double(e) - dot_avg);
+		dot_stddev += (diff * diff);
 	}
 	dot_stddev /= double(N - 1);
 	std::cout << "dot product stddev : " << dot_stddev << '\n';
+	std::sort(dotProduct.begin(), dotProduct.end());
+	std::cout << std::setw(8) << ""
+		<< "[ "
+		<< std::setw(FIELD_WIDTH) << dotProduct[0] << " ... "
+		<< std::setw(FIELD_WIDTH) << "avg(" << dot_avg << ") ... "
+		<< std::setw(FIELD_WIDTH) << "median(" << dotProduct[N / 2] << ") ... "
+		<< std::setw(FIELD_WIDTH) << dotProduct[N - 1] << "]\n";
+//	unsigned i = 0;
+//	for (auto e : dotProduct) {
+//		std::cout << " " << e;
+//		if (i > 0 && (i % 16) == 0) std::cout << '\n';
+//	}
 }
 
 template<typename  RepresentationType, typename AccumulationType>
