@@ -21,6 +21,7 @@ void QuantizationExperiment(unsigned nrSamples, unsigned vectorSize, double mean
 	gaussian_random(y_data, mean, stddev);
 	blas::vector<double> sorted(L);
 	blas::vector<RepresentationType> quantized_data(L), quantized_sorted(L), quantized_y(L);
+	blas::vector<double> upSampledToDouble(L);
 	quantized_y = y_data;
 	blas::vector<AccumulationType> upSampled(L);
 	blas::vector<AccumulationType> y(L);
@@ -48,7 +49,8 @@ void QuantizationExperiment(unsigned nrSamples, unsigned vectorSize, double mean
 		experimentalMean += sorted_avg;
 		
 		quantized_data = reference_data;
-		auto quantized_avg = double(blas::sum(quantized_data)) / L;
+		upSampledToDouble = quantized_data;
+		auto quantized_avg = double(blas::sum(upSampledToDouble)) / L;
 		quantizedMean += quantized_avg;
 
 		// dot products in AccumulationType
@@ -69,11 +71,30 @@ void QuantizationExperiment(unsigned nrSamples, unsigned vectorSize, double mean
 				<< std::setw(FIELD_WIDTH) << quantized_sorted[L - 1] << "]\n";
 		}
 	}
-	std::cout << "experimental mean : " << (experimentalMean / N) << '\n';
-	std::cout << "quantized    mean : " << (quantizedMean / N) << '\n';
+	std::cout << "experimental mean  : " << (experimentalMean / N) << '\n';
+	std::cout << "quantized    mean  : " << (quantizedMean / N) << '\n';
 
-	AccumulationType avg = sum(dotProduct) / N;
-	std::cout << "dot product  mean : " << avg << '\n';
+	double dot_avg = double(sum(dotProduct)) / N;
+	std::cout << "dot product  mean  : " << dot_avg << '\n';
+	double dot_stddev = 0;
+	for (auto e : dotProduct) {
+		dot_stddev += (double(e) - dot_avg);
+	}
+	dot_stddev /= double(N - 1);
+	std::cout << "dot product stddev : " << dot_stddev << '\n';
+}
+
+template<typename  RepresentationType, typename AccumulationType>
+void StatisticalSampling(double mean, double stddev) {
+	using namespace sw::universal;
+	std::cout << "representation type : " << symmetry_range<RepresentationType>() << '\n';
+	std::cout << "accumulation type   : " << symmetry_range<AccumulationType>() << '\n';
+	unsigned nrSamples{ 10000 };
+	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 50, mean, stddev);
+	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 500, mean, stddev);
+	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 1000, mean, stddev);
+	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 2000, mean, stddev);
+	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 4000, mean, stddev);
 }
 
 int main(int argc, char** argv)
@@ -84,22 +105,12 @@ try {
 	std::cout << std::setprecision(3);
 	
 	// generate a set of N vectors of length L in double as reference
-	using fp8 = fp8e2m5;
 	using fp12 = cfloat<12, 5, uint16_t, true, true, false>; // accumulation type
 
 	double mean{ 0.0 }, stddev{ 1.0 };
-	std::cout << "representation type : " << symmetry_range<fp8>() << '\n';
-	std::cout << "accumulation type   : " << symmetry_range<fp12>() << '\n';
-	unsigned nrSamples{ 10000 };
-	QuantizationExperiment<fp8, fp12>(nrSamples, 50, mean, stddev);
-	QuantizationExperiment<fp8, fp12>(nrSamples, 100, mean, stddev);
-	QuantizationExperiment<fp8, fp12>(nrSamples, 200, mean, stddev);
-	QuantizationExperiment<fp8, fp12>(nrSamples, 400, mean, stddev);
-	QuantizationExperiment<fp8, fp12>(nrSamples, 600, mean, stddev);
-	QuantizationExperiment<fp8, fp12>(nrSamples, 800, mean, stddev);
-	QuantizationExperiment<fp8, fp12>(nrSamples, 1000, mean, stddev);
-	QuantizationExperiment<fp8, fp12>(nrSamples, 2000, mean, stddev);
-	QuantizationExperiment<fp8, fp12>(nrSamples, 4000, mean, stddev);
+	StatisticalSampling<fp8e3m4, fp12>(mean, stddev);
+	StatisticalSampling<fp8e4m3, fp12>(mean, stddev);
+	StatisticalSampling<fp8e5m2, fp12>(mean, stddev);
 
 	std::cout << std::setprecision(prec);
 
