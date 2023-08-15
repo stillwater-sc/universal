@@ -830,6 +830,7 @@ endif(BUILD_BENCHMARK_ERROR)
 # accuracy benchmarks
 if(BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
+add_subdirectory("benchmark/accuracy/quantization")
 endif(BUILD_BENCHMARK_ACCURACY)
 
 # reproducibility benchmarks
