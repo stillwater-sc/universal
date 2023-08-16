@@ -119,12 +119,13 @@ void TestSaveTypeId() {
 	blas::saveTypeId(std::cout, h);
 }
 
+template<typename Scalar>
 void TestVectorSerialization() {
 	using namespace sw::universal;
-	sw::universal::blas::vector<float> xfp32(5);
-	gaussian_random(xfp32, 0.0, 0.1);
+	sw::universal::blas::vector<Scalar> v(5);
+	gaussian_random(v, 0.0, 0.1);
 	blas::datafile<blas::TextFormat> df;
-	df.add(xfp32);
+	df.add(v);
 	df.save(std::cout, false);  // decimal format
 	std::stringstream s;
 	df.save(s, false);  // decimal format
@@ -214,7 +215,8 @@ try {
 	// ReportNativeHexFormats();
 	// ReportNumberSystemFormats();
 
-	TestVectorSerialization();
+	//TestVectorSerialization<float>();
+	TestVectorSerialization<half>();
 	return 0;
 
 	TestSaveTypeId();

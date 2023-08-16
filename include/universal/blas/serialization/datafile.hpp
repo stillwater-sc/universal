@@ -373,28 +373,49 @@ namespace sw { namespace universal { namespace blas {
 		}
 
         template<typename Scalar>
-        void restoreVector(std::istream& istr, uint32_t nrOfElements) {
+        void restoreVector(std::istream& istr, uint32_t nrElements) {
             sw::universal::blas::vector<Scalar>* v = new sw::universal::blas::vector<Scalar>;
             add<sw::universal::blas::vector<Scalar>>(*v);
             float item{ 0 };
-            for (unsigned i = 0; i < nrOfElements; ++i) {
+            for (unsigned i = 0; i < nrElements; ++i) {
                 istr >> item;
                 v->push_back(item);
             }
 //            std::cout << "restored vector is : " << *v << '\n';
         }
         template<typename Scalar>
-        void restoreMatrix(std::istream& istr, uint32_t nrOfElements) { // we know that blas::matrix uses a vector for storage
+        void restoreMatrix(std::istream& istr, uint32_t nrElements) { // we know that blas::matrix uses a vector for storage
             sw::universal::blas::matrix<Scalar>* v = new sw::universal::blas::matrix<Scalar>;
             add<sw::universal::blas::matrix<Scalar>>(*v);
             float item{ 0 };
-            for (unsigned i = 0; i < nrOfElements; ++i) {
+            for (unsigned i = 0; i < nrElements; ++i) {
                 istr >> item;
                 v->push_back(item);
             }
             //            std::cout << "restored matrix is : " << *v << '\n';
         }
 
+        template<typename Scalar>
+        void restoreCollection(std::istream& istr, uint32_t aggregationType, uint32_t nrElements) {
+            switch (aggregationType) {
+            case UNIVERSAL_AGGREGATE_SCALAR:
+                std::cout << "Creating a scalar\n";
+                break;
+            case UNIVERSAL_AGGREGATE_VECTOR:
+                std::cout << "Creating a vector\n";
+                restoreVector<Scalar>(istr, nrElements);
+                break;
+            case UNIVERSAL_AGGREGATE_MATRIX:
+                std::cout << "Creating a matrix\n";
+                restoreMatrix<Scalar>(istr, nrElements);
+                break;
+            case UNIVERSAL_AGGREGATE_TENSOR:
+                std::cout << "Creating a tensor\n";
+                break;
+            default:
+                std::cout << "unknown aggregate\n";
+            }
+        }
 		bool restore(std::istream& istr) {
             uint32_t magic_number;
             istr >> magic_number;
@@ -413,45 +434,35 @@ namespace sw { namespace universal { namespace blas {
                 for (uint32_t i = 0; i < nrParameters; ++i) {
                     istr >> parameter[i];
                 }
-//                std::cout << "typeId        : " << typeId << std::endl;
-//                std::cout << "nr parameters : " << nrParameters << std::endl;
-//                for (uint32_t i = 0; i < nrParameters; ++i) {
-//                    std::cout << "parameter[" << i << "] : " << parameter[i] << std::endl;
-//                }
+                std::cout << "typeId        : " << typeId << std::endl;
+                std::cout << "nr parameters : " << nrParameters << std::endl;
+                for (uint32_t i = 0; i < nrParameters; ++i) {
+                    std::cout << "parameter[" << i << "] : " << parameter[i] << std::endl;
+                }
                 // read the mandatory comment line
                 std::string aggregationTypeComment;
                 std::string token;
                 istr >> token; // pick up the comment token
                 std::getline(istr, aggregationTypeComment);
-//                std::cout << "comment line : " << aggregationTypeComment << std::endl;
-                uint32_t aggregationType, nrOfElements;
-                istr >> aggregationType >> nrOfElements;
+                std::cout << "comment line : " << aggregationTypeComment << std::endl;
+                uint32_t aggregationType, nrElements;
+                istr >> aggregationType >> nrElements;
 //                std::cout << "aggregationType : " << aggregationType << std::endl;
-//                std::cout << "nr of elements  : " << nrOfElements << std::endl;
+//                std::cout << "nr of elements  : " << nrElements << std::endl;
                 switch (typeId) {
                 case UNIVERSAL_NATIVE_INT8_TYPE:
                     create<int8_t>(aggregationType);
                     break;
                 case UNIVERSAL_NATIVE_FP32_TYPE:
-                    // create<float>(aggregationType);
-                    switch (aggregationType) {
-                    case UNIVERSAL_AGGREGATE_SCALAR:
-                        std::cout << "Creating a scalar\n";
-                        break;
-                    case UNIVERSAL_AGGREGATE_VECTOR:
-                        std::cout << "Creating a vector\n";
-                        restoreVector<float>(istr, nrOfElements);
-                        break;
-                    case UNIVERSAL_AGGREGATE_MATRIX:
-                        std::cout << "Creating a matrix\n";
-                        restoreMatrix<float>(istr, nrOfElements);
-                        break;
-                    case UNIVERSAL_AGGREGATE_TENSOR:
-                        std::cout << "Creating a tensor\n";
-                        break;
-                    default:
-                        std::cout << "unknown aggregate\n";
-                    }
+                    restoreCollection<float>(istr, aggregationType, nrElements);
+                    break;
+                case UNIVERSAL_NATIVE_FP64_TYPE:
+                    restoreCollection<double>(istr, aggregationType, nrElements);
+                    break;
+                case UNIVERSAL_CFLOAT_TYPE:
+                    // todo: is there a good way to synthesize a type from dynamic data?
+                    using onecfloat = cfloat<16, 5, uint16_t, true, false, false>;
+                    restoreCollection<onecfloat>(istr, aggregationType, nrElements);
                     break;
                 default:
                     std::cout << "unknown typeId : " << typeId << '\n';
