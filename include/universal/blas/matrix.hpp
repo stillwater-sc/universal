@@ -86,6 +86,7 @@ public:
 	typedef typename std::vector<Scalar>::const_iterator const_iterator;
 	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
 	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
+	static constexpr unsigned AggregationType = UNIVERSAL_AGGREGATE_MATRIX;
 
 	matrix() : _m{ 0 }, _n{ 0 }, data(0) {}
 	matrix(unsigned m, unsigned n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
@@ -193,12 +194,13 @@ public:
 	}
 
 	// modifiers
-	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
-	inline void resize(unsigned m, unsigned n) { _m = m; _n = n; data.resize(m * n); }
+	void push_back(const Scalar& v) { data.push_back(v); }
+	void setzero() { for (auto& elem : data) elem = Scalar(0); }
+	void resize(unsigned m, unsigned n) { _m = m; _n = n; data.resize(m * n); }
 	// selectors
-	inline unsigned rows() const { return _m; }
-	inline unsigned cols() const { return _n; }
-	inline std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
+	unsigned rows() const { return _m; }
+	unsigned cols() const { return _n; }
+	std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
 
 	// in-place transpose
 	matrix& transpose() {

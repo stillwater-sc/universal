@@ -659,7 +659,7 @@ std::string to_bit_string(bitblock<nbits> bits, bool separator = true) {
 }
 
 template<unsigned nbits>
-std::string to_hex(bitblock<nbits> bits) {
+std::string to_hex(bitblock<nbits> bits, bool nibbleMarker = false, bool hexPrefix = true) {
 	char str[(nbits >> 2) + 2]{ 0 };
 	for (unsigned i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
 	//const char* hexits = "0123456789ABCDEF";

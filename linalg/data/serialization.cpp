@@ -7,6 +7,7 @@
 #include <cmath>
 #include <universal/native/ieee754.hpp>
 #include <universal/native/integers.hpp>
+#include <universal/number/einteger/einteger.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
@@ -118,6 +119,20 @@ void TestSaveTypeId() {
 	blas::saveTypeId(std::cout, h);
 }
 
+void TestVectorSerialization() {
+	using namespace sw::universal;
+	sw::universal::blas::vector<float> xfp32(5);
+	gaussian_random(xfp32, 0.0, 0.1);
+	blas::datafile<blas::TextFormat> df;
+	df.add(xfp32);
+	df.save(std::cout, false);  // decimal format
+	std::stringstream s;
+	df.save(s, false);  // decimal format
+	df.clear();
+	df.restore(s);
+	df.save(std::cout, false);
+}
+
 void TestSerialization() {
 	using namespace sw::universal;
 
@@ -199,9 +214,8 @@ try {
 	// ReportNativeHexFormats();
 	// ReportNumberSystemFormats();
 
-	std::cout << (is_integer<integer<8>> ? "integer" : "not an integer") << '\n';
-	std::cout << (is_integer<integer<16>> ? "integer" : "not an integer") << '\n';
-	std::cout << (is_integer<integer<160>> ? "integer" : "not an integer") << '\n';
+	TestVectorSerialization();
+	return 0;
 
 	TestSaveTypeId();
 

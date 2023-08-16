@@ -69,6 +69,7 @@ public:
 	typedef typename std::vector<Scalar>::const_iterator const_iterator;
 	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
 	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
+	static constexpr unsigned AggregationType = UNIVERSAL_AGGREGATE_VECTOR;
 
 	vector() : data(0) {}
 	vector(size_t N) : data(N) {}

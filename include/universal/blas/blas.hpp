@@ -9,6 +9,12 @@
 #ifndef _UNIVERSAL_BLAS_LIBRARY
 #define _UNIVERSAL_BLAS_LIBRARY
 
+// aggregation types for serialization
+constexpr uint32_t UNIVERSAL_AGGREGATE_SCALAR = 0x1001;
+constexpr uint32_t UNIVERSAL_AGGREGATE_VECTOR = 0x2002;
+constexpr uint32_t UNIVERSAL_AGGREGATE_MATRIX = 0x4004;
+constexpr uint32_t UNIVERSAL_AGGREGATE_TENSOR = 0x8008;
+
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/tensor.hpp>
