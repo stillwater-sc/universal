@@ -388,7 +388,7 @@ namespace sw {
 			std::stringstream s;
 			s << '(' << (v.s() ? "-, " : "+, ");
 			s << to_hex(v.f(), 0, true) << ", ";
-			s << v.e() << '(' << to_hex(v.e(), 16, true) << ')' << ')';
+			s << v.e() << '(' << to_hex(v.e(), true, true) << ')' << ')';
 			return s.str();
 		}
 

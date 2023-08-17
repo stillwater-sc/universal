@@ -9,8 +9,6 @@
 #include <initializer_list>
 #include <map>
 #include <universal/blas/exceptions.hpp>
-#include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/cfloat/cfloat_fwd.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -200,7 +198,8 @@ public:
 	// selectors
 	unsigned rows() const { return _m; }
 	unsigned cols() const { return _n; }
-	std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
+//	std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
+	unsigned size() const { return data.size(); }
 
 	// in-place transpose
 	matrix& transpose() {
@@ -275,7 +274,7 @@ inline unsigned num_rows(const matrix<Scalar>& A) { return A.rows(); }
 template<typename Scalar>
 inline unsigned num_cols(const matrix<Scalar>& A) { return A.cols(); }
 template<typename Scalar>
-inline std::pair<unsigned, unsigned> size(const matrix<Scalar>& A) { return A.size(); }
+inline std::pair<unsigned, unsigned> size(const matrix<Scalar>& A) { return std::make_pair(A.rows(), A.cols()); }
 
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
@@ -357,20 +356,6 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	return b;
 }
 
-// overload for posits to use fused dot products
-template<unsigned nbits, unsigned es>
-vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const vector< posit<nbits, es> >& x) {
-	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
-	vector< posit<nbits, es> > b(A.rows());
-	for (unsigned i = 0; i < A.rows(); ++i) {
-		quire<nbits, es, capacity> q;
-		for (unsigned j = 0; j < A.cols(); ++j) {
-			q += quire_mul(A(i, j), x[j]);
-		}
-		convert(q.to_value(), b[i]); // one and only rounding step of the fused-dot product
-	}
-	return b;
-}
 
 template<typename Scalar>
 matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
@@ -410,31 +395,6 @@ matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	return C;
 }
 
-
-
-// overload for posits uses fused dot products
-template<unsigned nbits, unsigned es>
-matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const matrix< posit<nbits, es> >& B) {
-	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
-	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	unsigned rows = A.rows();
-	unsigned cols = B.cols();
-	unsigned dots = A.cols();
-	matrix< posit<nbits, es> > C(rows, cols);
-	for (unsigned i = 0; i < rows; ++i) {
-		for (unsigned j = 0; j < cols; ++j) {
-			quire<nbits, es, capacity> q;
-			for (unsigned k = 0; k < dots; ++k) {
-				q += quire_mul(A(i, k), B(k, j));
-			}
-			convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
-		}
-	}
-	return C;
-}
-
-
-
 // matrix equivalence tests
 template<typename Scalar>
 bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
@@ -452,8 +412,6 @@ bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	}
 	return equal;
 }
-
-
 
 template<typename Scalar>
 bool operator!=(const matrix<Scalar>& A, const matrix<Scalar>& B) {

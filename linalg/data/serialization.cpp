@@ -134,13 +134,28 @@ void TestVectorSerialization() {
 	df.save(std::cout, false);
 }
 
+template<typename Scalar>
+void TestMatrixSerialization() {
+	using namespace sw::universal;
+	sw::universal::blas::matrix<Scalar> m(5,5);
+	gaussian_random(m, 0.0, 0.1);
+	blas::datafile<blas::TextFormat> df;
+	df.add(m);
+	df.save(std::cout, false);  // decimal format
+	std::stringstream s;
+	df.save(s, false);  // decimal format
+	df.clear();
+	df.restore(s);
+	df.save(std::cout, false);
+}
+
 void TestSerialization() {
 	using namespace sw::universal;
 
 	// Create instances of different specialized collections
 	sw::universal::blas::vector<float> xfp32(5), yfp32(5);
 	sw::universal::blas::matrix<float> Afp32(5, 5);
-	sw::universal::blas::tensor<float> Tfp32(5, 5); // TBD
+//	sw::universal::blas::tensor<float> Tfp32(5, 5); // TBD
 	sw::universal::blas::matrix<float> dpfp32(1, 1);
 	gaussian_random(xfp32, 0.0, 0.1);
 	gaussian_random(yfp32, 0.0, 0.1);
@@ -157,7 +172,7 @@ void TestSerialization() {
 
 	// Use the base class reference to aggregate the collections
 	blas::datafile<blas::TextFormat> df;
-	df.add(Tfp32);
+//	df.add(Tfp32);
 	df.add(xfp32);
 	df.add(yfp32);
 	df.add(Afp32);
@@ -216,12 +231,12 @@ try {
 	// ReportNumberSystemFormats();
 
 	//TestVectorSerialization<float>();
-	TestVectorSerialization<half>();
-	return 0;
+	TestMatrixSerialization<float>();
+//	TestVectorSerialization<half>();
 
-	TestSaveTypeId();
+//	TestSaveTypeId();
 
-	TestSerialization();
+	// TestSerialization();
 	return 0;
 
 	unsigned N = 32;

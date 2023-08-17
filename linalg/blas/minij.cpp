@@ -27,11 +27,11 @@ void MinIJMatrixTest(size_t N = 5) {
 	auto M = minij<Scalar>(N);
 
 	// normalize the column vectors
-	auto total = sum(M);
+	auto total = sumOfElements(M);
 	std::cout << "Total    : " << total << '\n';
-	auto rowSums = sum(M, 1);
+	auto rowSums = sumOfElements(M, 1);
 	std::cout << "Row sums : " << rowSums << '\n';
-	auto colSums = sum(M, 2);
+	auto colSums = sumOfElements(M, 2);
 	std::cout << "Col sums : " << colSums << '\n';
 }
 

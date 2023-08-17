@@ -305,16 +305,20 @@ namespace sw { namespace universal { namespace blas {
             using Scalar = typename CollectionType::value_type;
             saveTypeId<Scalar>(ostr);
             saveAggregationInfo(ostr);
+            int i{ 0 };
             if (hex) {
                 for (const auto& item : collection) {
-                    ostr << to_hex(item, false, false) << ' ';
+                    ostr << to_hex(item, false, false);
+                    ++i;
+                    if ((i % 10) == 0) ostr << '\n'; else ostr << ' ';
                 }
                 std::cout << std::endl;
             }
             else {
                 for (const auto& item : collection) {
-                    ostr << item << ' ';
-                    //ostr << to_binary(item) << " : " << to_hex(item) << " : " << item << '\n';
+                    ostr << item;
+                    ++i;
+                    if ((i % 10) == 0) ostr << '\n'; else ostr << ' ';
                 }
                 std::cout << std::endl;
             }
@@ -396,7 +400,7 @@ namespace sw { namespace universal { namespace blas {
         }
 
         template<typename Scalar>
-        void restoreCollection(std::istream& istr, uint32_t aggregationType, uint32_t nrElements) {
+        void restoreData(std::istream& istr, uint32_t aggregationType, uint32_t nrElements) {
             switch (aggregationType) {
             case UNIVERSAL_AGGREGATE_SCALAR:
                 std::cout << "Creating a scalar\n";
@@ -416,6 +420,53 @@ namespace sw { namespace universal { namespace blas {
                 std::cout << "unknown aggregate\n";
             }
         }
+        void restoreCollection(std::istream& istr, uint32_t typeId, uint32_t nrParameters, uint32_t* parameter, uint32_t aggregationType, uint32_t nrElements) {
+            constexpr bool verbose = false; // turn debug tracking on/off
+            if constexpr (verbose) {
+                std::cout << "typeId        : " << typeId << std::endl;
+                std::cout << "nr parameters : " << nrParameters << std::endl;
+                for (uint32_t i = 0; i < nrParameters; ++i) {
+                    std::cout << "parameter[" << i << "] : " << parameter[i] << std::endl;
+                }
+                std::cout << "aggregationType : " << aggregationType << std::endl;
+                std::cout << "nr of elements  : " << nrElements << std::endl;
+            }
+            switch (typeId) {
+            case UNIVERSAL_NATIVE_INT32_TYPE:
+                restoreData<int32_t>(istr, aggregationType, nrElements);
+                break;
+            case UNIVERSAL_NATIVE_FP32_TYPE:
+                restoreData<float>(istr, aggregationType, nrElements);
+                break;
+            case UNIVERSAL_NATIVE_FP64_TYPE:
+                restoreData<double>(istr, aggregationType, nrElements);
+                break;
+            case UNIVERSAL_CFLOAT_TYPE:
+                // TBD: this is ugly: we will need to enumerate all possible
+                // configurations in explicit template invocations, which will
+                // be hundreds of templates, and that will be a major compilation
+                // task. For the datafile restore() this would not have any positive ROI
+                // but it maybe an interesting interface for a CLI, so I am 
+                // keeping it in here as a discovery note.
+
+                // one idea is to serialize just a limited set of cfloats
+                // like just the small fp8 and fp16 configurations
+                using onecfloat = cfloat<16, 5, uint16_t, true, false, false>;
+                restoreData<onecfloat>(istr, aggregationType, nrElements);
+                break;
+            case UNIVERSAL_LNS_TYPE:
+                using onelns = lns<8, 2, uint8_t>;
+                restoreData<onelns>(istr, aggregationType, nrElements);
+                break;
+            case UNIVERSAL_DBNS_TYPE:
+                using onedbns = dbns<8, 3, uint8_t>;
+                restoreData<onedbns>(istr, aggregationType, nrElements);
+                break;
+            default:
+                std::cout << "unknown typeId : " << typeId << '\n';
+            }
+        }
+
 		bool restore(std::istream& istr) {
             uint32_t magic_number;
             istr >> magic_number;
@@ -434,11 +485,6 @@ namespace sw { namespace universal { namespace blas {
                 for (uint32_t i = 0; i < nrParameters; ++i) {
                     istr >> parameter[i];
                 }
-                std::cout << "typeId        : " << typeId << std::endl;
-                std::cout << "nr parameters : " << nrParameters << std::endl;
-                for (uint32_t i = 0; i < nrParameters; ++i) {
-                    std::cout << "parameter[" << i << "] : " << parameter[i] << std::endl;
-                }
                 // read the mandatory comment line
                 std::string aggregationTypeComment;
                 std::string token;
@@ -447,28 +493,10 @@ namespace sw { namespace universal { namespace blas {
                 std::cout << "comment line : " << aggregationTypeComment << std::endl;
                 uint32_t aggregationType, nrElements;
                 istr >> aggregationType >> nrElements;
-//                std::cout << "aggregationType : " << aggregationType << std::endl;
-//                std::cout << "nr of elements  : " << nrElements << std::endl;
-                switch (typeId) {
-                case UNIVERSAL_NATIVE_INT8_TYPE:
-                    create<int8_t>(aggregationType);
-                    break;
-                case UNIVERSAL_NATIVE_FP32_TYPE:
-                    restoreCollection<float>(istr, aggregationType, nrElements);
-                    break;
-                case UNIVERSAL_NATIVE_FP64_TYPE:
-                    restoreCollection<double>(istr, aggregationType, nrElements);
-                    break;
-                case UNIVERSAL_CFLOAT_TYPE:
-                    // todo: is there a good way to synthesize a type from dynamic data?
-                    using onecfloat = cfloat<16, 5, uint16_t, true, false, false>;
-                    restoreCollection<onecfloat>(istr, aggregationType, nrElements);
-                    break;
-                default:
-                    std::cout << "unknown typeId : " << typeId << '\n';
-                }
 
-                // read the next record
+                restoreCollection(istr, typeId, nrParameters, parameter, aggregationType, nrElements);
+
+                // read the typeId of the next record, or the termination token
                 istr >> typeId;
             }
             return true;
