@@ -26,6 +26,7 @@ namespace sw { namespace universal {
 			b = da;
 	//		std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
 			if (a != b) {
+				if (isnan(a) && b.isnan()) continue;
 				++nrOfFailedTestCases;
 				if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
 			}
@@ -57,17 +58,17 @@ void GenerateBitWeightTable() {
 template<typename Real>
 void SampleTest(Real v) {
 	using namespace sw::universal;
-	std::cout << to_binary(lns<8, 0>(v)) << " : " << lns<8, 0>(v) << '\n';
-	std::cout << to_binary(lns<8, 1>(v)) << " : " << lns<8, 1>(v) << '\n';
-	std::cout << to_binary(lns<8, 2>(v)) << " : " << lns<8, 2>(v) << '\n';
-	std::cout << to_binary(lns<8, 3>(v)) << " : " << lns<8, 3>(v) << '\n';
-	std::cout << to_binary(lns<8, 4>(v)) << " : " << lns<8, 4>(v) << '\n';
-	std::cout << to_binary(lns<8, 5>(v)) << " : " << lns<8, 5>(v) << '\n';
-	std::cout << to_binary(lns<8, 6>(v)) << " : " << lns<8, 6>(v) << '\n';
+	std::cout << symmetry_range(lns<8, 0>()) << '\n' << to_binary(lns<8, 0>(v)) << " : " << lns<8, 0>(v) << '\n';
+	std::cout << symmetry_range(lns<8, 1>()) << '\n' << to_binary(lns<8, 1>(v)) << " : " << lns<8, 1>(v) << '\n';
+	std::cout << symmetry_range(lns<8, 2>()) << '\n' << to_binary(lns<8, 2>(v)) << " : " << lns<8, 2>(v) << '\n';
+	std::cout << symmetry_range(lns<8, 3>()) << '\n' << to_binary(lns<8, 3>(v)) << " : " << lns<8, 3>(v) << '\n';
+	std::cout << symmetry_range(lns<8, 4>()) << '\n' << to_binary(lns<8, 4>(v)) << " : " << lns<8, 4>(v) << '\n';
+	std::cout << symmetry_range(lns<8, 5>()) << '\n' << to_binary(lns<8, 5>(v)) << " : " << lns<8, 5>(v) << '\n';
+	std::cout << symmetry_range(lns<8, 6>()) << '\n' << to_binary(lns<8, 6>(v)) << " : " << lns<8, 6>(v) << '\n';
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -103,8 +104,6 @@ try {
 
 	// GenerateBitWeightTable<double>();
 	SampleTest(1024.0f);
-	return 0;
-
 
 	// manual exhaustive test
 //	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<LNS4_1>(reportTestCases), type_tag(LNS4_1()), test_tag);
