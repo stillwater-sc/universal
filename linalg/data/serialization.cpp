@@ -131,7 +131,7 @@ void TestVectorSerialization() {
 	df.save(s, false);  // decimal format
 	df.clear();
 	df.restore(s);
-	df.save(std::cout, false);
+	df.save(std::cout, true);
 }
 
 template<typename Scalar>
@@ -146,7 +146,7 @@ void TestMatrixSerialization() {
 	df.save(s, false);  // decimal format
 	df.clear();
 	df.restore(s);
-	df.save(std::cout, false);
+	df.save(std::cout, true);
 }
 
 void TestSerialization() {
@@ -230,7 +230,8 @@ try {
 	// ReportNativeHexFormats();
 	// ReportNumberSystemFormats();
 
-	//TestVectorSerialization<float>();
+	TestVectorSerialization<float>();
+	TestVectorSerialization<dbns<8, 3>>();
 	TestMatrixSerialization<float>();
 //	TestVectorSerialization<half>();
 

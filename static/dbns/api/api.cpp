@@ -56,11 +56,12 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	// float x{ 1.0f };
-	// bases(x, 2.5f, 3, 5, 7, 9);
-
-	// generate a value table for dbns<5,2>
-	GenerateDbnsTable<5,2>(std::cout);
+#ifdef EXTRA
+	{
+		// experiment with variadic template arguments to specify multi-base lns configurations
+		float x{ 1.0f };
+		bases(x, 2, 3, 5.5f, 7.1, 9);
+	}
 
 	{
 		dbns<8, 3> l(1);
@@ -73,25 +74,33 @@ try {
 
 		std::cout << dynamic_range(l) << '\n';
 	}
+#endif
 
-	// important behavioral traits
-	ReportTrivialityOfType<dbns<8, 2>>();
+	{
+		std::cout << "+-------- important behavioral traits   --------+\n";
+		ReportTrivialityOfType<dbns<8, 3>>();
+	}
 
 	// default behavior
 	{
 		std::cout << "+---------    default dbns bahavior   --------+\n";
 		using Real = dbns<8, 3>;
-		Real a(1.0f), b(1.0f), c;
-//		ArithmeticOperators<Real>(a, b);
-		a = 1;  // integer assignment
-		b = 1;
-		c = a + b;
-//		ReportBinaryOperation(a, "+", b, c);
-	}
+		Real a(0.5f), b(1.0f), c(3.0f);
 
+		ReportValue(a, "a = 0.5");
+		ReportValue(b, "b = 1.0");
+		ReportValue(c, "c = 3.0");
+
+		//		ArithmeticOperators<Real>(a, b);
+		a = 0.5f;
+		b = 3.0f;
+		c = a + b;
+		ReportBinaryOperation(a, "+", b, c);
+	}
+	return 0;
 	{
 		std::cout << "+---------    dynamic ranges of 8-bit dbns<> configurations   --------+\n";
-//		std::cout << symmetry_range(dbns<8, 0>()) << '\n';
+		//		std::cout << symmetry_range(dbns<8, 0>()) << '\n';
 		std::cout << symmetry_range(dbns<8, 1>()) << '\n';
 		std::cout << symmetry_range(dbns<8, 2>()) << '\n';
 		std::cout << symmetry_range(dbns<8, 3>()) << '\n';
@@ -103,11 +112,11 @@ try {
 	// configuration
 	{
 		std::cout << "+---------    arithmetic operators with explicit alignment bahavior   --------+\n";
-//		using dbns16 = dbns<16, 5, std::uint16_t>;
-//		ArithmeticOperators<dbns16>(1.0f, 1.0f);
+		//		using dbns16 = dbns<16, 5, std::uint16_t>;
+		//		ArithmeticOperators<dbns16>(1.0f, 1.0f);
 
-//		using dbns24 = dbns<24, 5, std::uint32_t>;
-//		ArithmeticOperators<dbns24>(1.0f, 1.0f);
+		//		using dbns24 = dbns<24, 5, std::uint32_t>;
+		//		ArithmeticOperators<dbns24>(1.0f, 1.0f);
 	}
 
 	{
@@ -125,12 +134,12 @@ try {
 		constexpr size_t rbits = 3;
 		using Real = dbns<nbits, rbits>;  // BlockType = uint8_t, behavior = Saturating
 
-//		CONSTEXPRESSION Real a{}; // zero constexpr
-//		std::cout << type_tag<Real>(a) << '\n';  // TODO: type_tag doesn't work for dbns
+		//		CONSTEXPRESSION Real a{}; // zero constexpr
+		//		std::cout << type_tag<Real>(a) << '\n';  // TODO: type_tag doesn't work for dbns
 
-		// TODO: needs a constexpr version of log2() function
-//		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
-//		std::cout << to_binary(b) << " : " << b << '\n';
+				// TODO: needs a constexpr version of log2() function
+		//		CONSTEXPRESSION Real b(1.0f);  // constexpr of a native type conversion
+		//		std::cout << to_binary(b) << " : " << b << '\n';
 
 		CONSTEXPRESSION Real c(SpecificValue::minpos);  // constexpr of a special value in the encoding
 		std::cout << to_binary(c) << " : " << c << " == minpos" << '\n';
@@ -162,8 +171,26 @@ try {
 		dbns b = -dbns(0.0);
 		// if (a != b) std::cout << "you can't compare indeterminate NaN\n";
 		if (a.isnan() && b.isnan()) std::cout << "PASS: both +dbns(0) and -dbns(0) are indeterminate\n";
-		std::cout << "+dbns(0.0f): " <<  dbns(0.0f) << "\n";
+		std::cout << "+dbns(0.0f): " << dbns(0.0f) << "\n";
 		std::cout << "-dbns(0.0f): " << -dbns(0.0f) << "\n";
+	}
+	
+	{
+		std::cout << "+---------    extract exponents   --------+\n";
+		{
+			dbns<8, 3> l;  // 1 limb
+			l.setbits(0x11);
+			ReportValue(l);
+			std::cout << "first  exponent : " << l.extractExponent(0) << '\n';
+			std::cout << "second exponent : " << l.extractExponent(1) << '\n';
+		}
+		{
+			dbns<16, 9> l; // two limbs
+			l.setbits(0x1fff);
+			ReportValue(l);
+			std::cout << "first  exponent : " << l.extractExponent(0) << '\n';
+			std::cout << "second exponent : " << l.extractExponent(1) << '\n';
+		}
 	}
 
 	{
