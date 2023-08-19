@@ -85,19 +85,18 @@ try {
 	{
 		std::cout << "+---------    default dbns bahavior   --------+\n";
 		using Real = dbns<8, 3>;
-		Real a(0.5f), b(1.0f), c(3.0f);
+		Real a(0.5f), b(1.0f), c{ 0 };
 
-		ReportValue(a, "a = 0.5");
-		ReportValue(b, "b = 1.0");
-		ReportValue(c, "c = 3.0");
-
-		//		ArithmeticOperators<Real>(a, b);
-		a = 0.5f;
-		b = 3.0f;
 		c = a + b;
 		ReportBinaryOperation(a, "+", b, c);
+		c = a - b;
+		ReportBinaryOperation(a, "-", b, c);
+		c = a * b;
+		ReportBinaryOperation(a, "*", b, c);
+		c = a / b;
+		ReportBinaryOperation(a, "/", b, c);
 	}
-	return 0;
+
 	{
 		std::cout << "+---------    dynamic ranges of 8-bit dbns<> configurations   --------+\n";
 		//		std::cout << symmetry_range(dbns<8, 0>()) << '\n';
@@ -121,11 +120,14 @@ try {
 
 	{
 		std::cout << "+---------    Dynamic ranges of dbns<> configurations   --------+\n";
-		std::cout << dynamic_range(dbns< 4, 2>()) << '\n';
-		std::cout << dynamic_range(dbns< 8, 3>()) << '\n';
-		std::cout << dynamic_range(dbns<12, 4>()) << '\n';
-		std::cout << dynamic_range(dbns<16, 5>()) << '\n';
-		std::cout << dynamic_range(dbns<20, 6>()) << '\n';
+		std::cout << dynamic_range(dbns< 4,  2>()) << '\n';
+		std::cout << dynamic_range(dbns< 8,  3>()) << '\n';
+		std::cout << dynamic_range(dbns<12,  6>()) << '\n';
+		// double-base number systems with bases {0.5,3} 
+		// grow too quickly to represent with doubles
+		// as shown with the following two configurations.
+		std::cout << dynamic_range(dbns<16,  8>()) << '\n';
+		std::cout << dynamic_range(dbns<20, 12>()) << '\n';
 	}
 
 	{

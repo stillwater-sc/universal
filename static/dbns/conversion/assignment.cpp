@@ -24,8 +24,9 @@ namespace sw { namespace universal {
 			a.setbits(i);
 			double da = double(a);
 			b = da;
-	//		std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
+//			std::cout << to_binary(a) << " : " << da << " vs " << b << '\n';
 			if (a != b) {
+				if (a.isnan() && b.isnan()) continue;
 				++nrOfFailedTestCases;
 				if (reportTestCases) ReportAssignmentError("FAIL", "=", da, b, a);
 			}
@@ -41,19 +42,8 @@ namespace sw { namespace universal {
 
 } }
 
-template<typename Real>
-void SampleTest(Real v) {
-	using namespace sw::universal;
-	std::cout << symmetry_range(dbns<8, 1>()) << '\n' << to_binary(dbns<8, 1>(v)) << " : " << dbns<8, 1>(v) << '\n';
-	std::cout << symmetry_range(dbns<8, 2>()) << '\n' << to_binary(dbns<8, 2>(v)) << " : " << dbns<8, 2>(v) << '\n';
-	std::cout << symmetry_range(dbns<8, 3>()) << '\n' << to_binary(dbns<8, 3>(v)) << " : " << dbns<8, 3>(v) << '\n';
-	std::cout << symmetry_range(dbns<8, 4>()) << '\n' << to_binary(dbns<8, 4>(v)) << " : " << dbns<8, 4>(v) << '\n';
-	std::cout << symmetry_range(dbns<8, 5>()) << '\n' << to_binary(dbns<8, 5>(v)) << " : " << dbns<8, 5>(v) << '\n';
-	std::cout << symmetry_range(dbns<8, 6>()) << '\n' << to_binary(dbns<8, 6>(v)) << " : " << dbns<8, 6>(v) << '\n';
-}
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -72,29 +62,24 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "dbns assignment validation";
-	std::string test_tag    = "assignment";
-	bool reportTestCases    = true;
+	std::string test_suite = "dbns assignment validation";
+	std::string test_tag = "assignment";
+	bool reportTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-//	using DBNS16_8 = dbns<16, 8, std::uint16_t>;
-//	using DBNS12_5 = dbns<12, 5, std::uint8_t>;
+	//	using DBNS16_8 = dbns<16, 8, std::uint16_t>;
+	//	using DBNS12_5 = dbns<12, 5, std::uint8_t>;
 	using DBNS8_3 = dbns<8, 3, std::uint8_t>;
 	using DBNS6_3 = dbns<6, 3, std::uint8_t>;
-//	using DBNS4_1 = dbns<4, 1, std::uint8_t>;
-
-	// GenerateBitWeightTable<double>();
-	SampleTest(1024.0f);
-	return 0;
-
+	//	using DBNS4_1 = dbns<4, 1, std::uint8_t>;
 
 	// manual exhaustive test
 //	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<DBNS4_1>(reportTestCases), type_tag(DBNS4_1()), test_tag);
-	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<DBNS6_3>(reportTestCases), type_tag(DBNS6_3()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<DBNS6_3>(reportTestCases), type_tag<DBNS6_3>(), test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<DBNS8_3>(reportTestCases), type_tag(DBNS8_3()), test_tag);
 //	nrOfFailedTestCases += ReportTestResult(ValidateAssignment<DBNS12_5>(reportTestCases), type_tag(DBNS12_5()), test_tag);
 
@@ -105,6 +90,10 @@ try {
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<4, 1, std::uint8_t> >(reportTestCases), type_tag(dbns<4, 1, std::uint8_t>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<4, 2, std::uint8_t> >(reportTestCases), type_tag(dbns<4, 2, std::uint8_t>()), test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<6, 2, std::uint8_t> >(reportTestCases), type_tag(dbns<6, 2, std::uint8_t>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<6, 3, std::uint8_t> >(reportTestCases), type_tag(dbns<6, 3, std::uint8_t>()), test_tag);
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<6, 4, std::uint8_t> >(reportTestCases), type_tag(dbns<6, 4, std::uint8_t>()), test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<8, 2, std::uint8_t> >(reportTestCases), type_tag(dbns<8, 2, std::uint8_t>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<8, 3, std::uint8_t> >(reportTestCases), type_tag(dbns<8, 3, std::uint8_t>()), test_tag);

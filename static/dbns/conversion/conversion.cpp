@@ -4,6 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <vector>
+#include <algorithm>
 #include <universal/number/dbns/dbns.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -60,123 +62,39 @@ namespace sw { namespace universal {
 		template<size_t nbits, size_t rbits, typename bt, auto... x>
 		int VerifyConversion(bool reportTestCases) {
 			// we are going to generate a test set that consists of all dbns configs and their midpoints
-			// we do this by enumerating an dbns that is 1-bit larger than the test configuration
-			// These larger posits will be at the mid-point between the smaller sample values
-			// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
-			// to test the rounding logic of the conversion.
+			// As DBNS is a logarithmic number system, we need to generate these midpoints in 
+			// logarithmic space.
+			// the values traced out by DBNS are wicket, jumping all over the place.
+			// One idea is to set up the set, sort the values and than use those values
+			// to generate the +- deltas.
 			using TestType = dbns<nbits, rbits, bt, x...>;
-			using ContainingType = dbns<nbits + 1, rbits + 1, bt, x...>;
 
 			constexpr size_t max = nbits > 16 ? 16 : nbits;
-			size_t NR_TEST_CASES = (size_t(1) << (max + 1));
-			size_t QUARTER = (size_t(1) << (max - 1));
-			size_t HALF = (size_t(1) << max);
-
+			size_t NR_TEST_CASES = (size_t(1) << max);
 			if constexpr (nbits > 16) {
 				std::cout << "VerifyConversion: " << type_tag(TestType()) << " : NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 16" << std::endl;
 			}
 
-//			ContainingType halfMinpos(SpecificValue::minpos);  // in the more precise type
-//			double dhalfMinpos = double(halfMinpos);
-//			std::cerr << "half minpos : " << halfMinpos << " : " << to_binary(halfMinpos) << '\n';
-	
-			// execute the test
 			int nrOfFailedTests = 0;
-			for (size_t i = 0; i < NR_TEST_CASES; i++) {
-				ContainingType ref, prev, next;
-				// std::cerr << "i : " << i << '\n';
-				ref.setbits(i);
-				double da = double(ref);
-				double eps = da * 1.0e-6; //  (da > 0 ? da * 1.0e-6 : da * -1.0e-6);
-				double input;
-				TestType a;
-				if (i % 2) {
-					if (i == QUARTER - 1) {
-						if (reportTestCases) std::cerr << " odd-1: special case of project to maxpos\n";
-						input = da - eps;
-						a = input;
-						prev.setbits(i - 1);
-						nrOfFailedTests += Compare(input, a, prev, "round down to maxpos", reportTestCases);
-						input = da + eps;
-						a = input;
-						nrOfFailedTests += Compare(input, a, prev, "project down to maxpos", reportTestCases);
-					}
-					else if (i == HALF - 1) {
-						if (reportTestCases) std::cerr << " odd-2: special case of project to 1.0\n";
-						input = da - eps;
-						a = input;
-						prev.setbits(i - 1);
-						nrOfFailedTests += Compare(input, a, prev, "round down to 1.0", reportTestCases);
-						input = da + eps;
-						a = input;
-						next.setbits(0);   // encoding of 1.0
-						nrOfFailedTests += Compare(input, a, next, "round up to 1.0", reportTestCases);
-					}
-					else if (i == NR_TEST_CASES - 1) {
-						if (reportTestCases) std::cerr << " odd-3: special case of project to -1.0\n";
-						input = da - eps;
-						a = input;
-						prev.setbits(i - 1);
-						nrOfFailedTests += Compare(input, a, prev, "round down to -1.0", reportTestCases);
-						input = da + eps;
-						a = input;
-						next.setbits(0);
-						next.setsign();       // encoding of -1.0
-						nrOfFailedTests += Compare(input, a, next, "round up to -1.0", reportTestCases);
-					}
-					else {
-						// for odd values, we are between dbns values, so we create the round-up and round-down cases
-						// std::cerr << " odd-4: between value case\n";
-						// round-down
-						input = da - eps;
-						a = input;
-						prev.setbits(i - 1);
-						//next.setbits(i + 1);
-						//std::cout << "da       : " << da << '\n';
-						//std::cout << "eps      : " << eps << '\n';
-						//std::cout << "input    : " << input << '\n';
-						//std::cout << "previous : " << to_binary(prev) << " : " << prev << '\n';
-						//std::cout << "midpoint : " << to_binary(ref) << " : " << ref << '\n';
-						//std::cout << "next     : " << to_binary(next) << " : " << next << '\n';
-						//std::cout << "sample   : " << to_binary(a) << " : " << a << '\n';
-						//std::cout << input << " : " << float(ref) << " : " << float(next) << '\n';
-						nrOfFailedTests += Compare(input, a, prev, "round down", reportTestCases);
-						// round-up
-						input = da + eps;
-						a = input;
-						next.setbits(i + 1);
-						nrOfFailedTests += Compare(input, a, next, "round up", reportTestCases);
-					}
-				}
-				else {
-					// for the even values, we generate the round-to-actual cases
-					if (i == QUARTER) {
-						if (reportTestCases) std::cerr << "even-1: special case of rounding to 0\n";
-						input = eps;
-						a = input;
-						nrOfFailedTests += Compare(input, a, ref, "round down", reportTestCases);
-						input = 0.0;
-						a = input;
-						nrOfFailedTests += Compare(input, a, ref, " == ", reportTestCases);
-						input = -eps;
-						a = input;
-						nrOfFailedTests += Compare(input, a, ref, "round up", reportTestCases);
-					}
-					else {
-						// std::cerr << "even-2: same value case\n";
-						// round-up
-						input = da - eps;
-						a = input;
-						nrOfFailedTests += Compare(input, a, ref, "round up", reportTestCases);
-						a = da;
-						nrOfFailedTests += Compare(input, a, ref, " == ", reportTestCases);
-						// round-down
-						input = da + eps;
-						a = input;
-						nrOfFailedTests += Compare(input, a, ref, "round down", reportTestCases);
-					}
-				}
+			TestType a;
+			std::vector<TestType> dbnsBits;
+			std::vector<double> samples;
+			for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
+				a.setbits(i);
+				if (a.isnan()) continue;
+				dbnsBits.push_back(a);
+				samples.push_back(double(a));
 			}
+			std::cout << "size of samples is " << size(samples) << '\n';
+			for (auto e : samples) {
+				std::cout << std::setw(20) << e << " : " << to_binary(a = e) << '\n';
+			}
+			std::cout << '\n';
+			std::sort(samples.begin(), samples.end());
+			for (auto e : samples) {
+				std::cout << std::setw(20) << e << " : " << to_binary(a = e) << '\n';
+			}
+
 			return nrOfFailedTests;
 		}
 
@@ -254,6 +172,10 @@ try {
 
 #if MANUAL_TESTING
 
+	{
+		nrOfFailedTestCases += VerifyConversion<5, 2, std::uint8_t>(true);
+	}
+	return 0;
 	{
 		using DBNS5_2 = dbns<5, 2, std::uint8_t>;
 		DBNS5_2 minpos(SpecificValue::minpos);

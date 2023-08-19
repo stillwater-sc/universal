@@ -296,8 +296,8 @@ public:
 	// modifiers
 	// clear resets all bits
 	constexpr void clear()                         noexcept { _block.clear(); }
-	constexpr void setzero()                       noexcept { _block.clear(); setbit(nbits - 2, true); }
-	constexpr void setnan()                        noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
+	constexpr void setzero()                       noexcept { zero(); }
+	constexpr void setnan()                        noexcept { zero(); setbit(nbits - 1); }
 	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(unsigned i, bool v = true) noexcept {
@@ -581,25 +581,35 @@ protected:
 //			setzero();
 //			return *this;
 //		}
-		double fulle = -log2(abs(v));
-//		std::cout << "fulle : " << fulle << '\n';
+
+		// v = 2^a * 3^b =>
+		// v = 2^(a + b*log2of3) =>
+		// scale of v = (a + b*log2of3)
+		// we use this relationship to search among the second base exponents 
+		// and find a first base exponent that minimizes the error
+		// between the result and the value we are trying to approximate.
+		double scale = log2(abs(v));
+//		std::cout << "scale : " << scale << '\n';
 		double best_err = 1.0e10;
 		int32_t best_e0 = 500;
 		int32_t best_e1 = 500;
-		int32_t b0{ 1 }, b1{ 1 }; // exponent biases
+		double log2of3 = log2(3.0);
 		double err{ 0.0 };
 		int32_t e0{ 0 }, e1{ 0 };
-		for (e1 = 0; e1 < SB_MASK; ++e1) {
-			e0 = static_cast<int32_t>(round((fulle - e1 * b1) / b0));
-			err = abs(fulle - (e0 * b0 + e1 * b1));
-//			std::cout << "e0 : " << e0 << " e1 : " << e1 << " err : " << err << '\n';
+		for (e1 = 0; e1 <= SB_MASK; ++e1) {
+			e0 = static_cast<int32_t>(round((scale - e1 * log2of3))); // find the first base exponent that sits closed to the value
+			err = abs(scale - (e0 + e1 * log2of3));
+//			double fb = pow(2.0, e0);
+//			double sb = pow(3.0, e1);
+//			double value = fb * sb;
+//			std::cout << "e0 : " << e0 << " e1 : " << e1 << " err : " << err << " fb : " << fb << " sb : " << sb << " value : " << value << '\n';
 			if (err < best_err) {
 				best_err = err;
 				best_e0 = e0;
 				best_e1 = e1;
 			}
 		}
-		e0 = best_e0;
+		e0 = -best_e0;
 		e1 = best_e1;
 //		std::cout << "e0 : " << e0 << " e1 : " << e1 << " err : " << err << '\n';
 		e0 <<= sbbits;
