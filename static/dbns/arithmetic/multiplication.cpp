@@ -97,12 +97,12 @@ try {
 
 #if MANUAL_TESTING
 
-	using DBNS4_1_mod = dbns<4, 1, std::uint8_t, Behavior::Wrapping>;
+	//using DBNS4_1_mod = dbns<4, 1, std::uint8_t, Behavior::Wrapping>;
 	using DBNS4_1_sat = dbns<4, 1, std::uint8_t, Behavior::Saturating>;
 	using DBNS4_2     = dbns<4, 2, std::uint8_t>;
-	using DBNS5_2     = dbns<5, 2, std::uint8_t>;
+	//using DBNS5_2     = dbns<5, 2, std::uint8_t>;
 	using DBNS8_3     = dbns<8, 3, std::uint8_t>;
-	using DBNS9_4     = dbns<9, 4, std::uint8_t>;
+	//using DBNS9_4     = dbns<9, 4, std::uint8_t>;
 	using DBNS16_5    = dbns<16, 5, std::uint16_t>;
 
 	// nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2>(true), "dbns<4,2, uint8_t>", test_tag);
@@ -123,24 +123,12 @@ try {
 	TestCase<DBNS16_5, double>(TestCaseOperator::MUL, INFINITY, INFINITY);
 	TestCase<DBNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
-	{
-		// static shift variable problems
-		using DBNS4_3_sat = dbns<4, 3, std::uint8_t>;
-		DBNS4_3_sat a(0);
-		a.debugConstexprParameters();
-		using DBNS9_8_sat = dbns<9, 8, std::uint8_t>;
-		DBNS9_8_sat b(0);
-		b.debugConstexprParameters();
-	}
-
 	reportTestCases = true;
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_1_mod>(false), "dbns<4,1,uint8_t,Behavior::Wrapping>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_1_sat>(reportTestCases), "dbns<4,1, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2>(reportTestCases), "dbns<4,2, uint8_t>", test_tag);
-// 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_3_sat>(reportTestCases), "dbns<4,3, uint8_t>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2>(reportTestCases), "dbns<5,2, uint8_t>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_3>(reportTestCases), "dbns<8,3, uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS9_4>(reportTestCases), "dbns<9,4, uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

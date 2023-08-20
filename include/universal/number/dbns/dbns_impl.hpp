@@ -57,7 +57,7 @@ dbns<nbits, fbbits, bt, xtra...>& maxneg(dbns<nbits, fbbits, bt, xtra...>& dbns_
 // double-base logarithmic number system: bases 2^-1, and 3
 template<unsigned _nbits, unsigned _fbbits, typename bt = uint8_t, auto... xtra>
 class dbns {
-	static_assert(_nbits > _fbbits, "configuration not supported: too many first base bits leaving no bits for second base");
+	static_assert(_nbits > (_fbbits + 1), "configuration not supported: too many first base bits leaving no bits for second base");
 	static_assert(sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported");
 	static_assert(_nbits - _fbbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
 	static_assert(_fbbits < 64, "configuration not supported: scaling factor is > 2^64");
@@ -604,6 +604,7 @@ protected:
 	CONSTEXPRESSION dbns& convert_ieee754(Real v) noexcept {
 		using std::abs;
 		using std::log2;
+		using std::pow;
 		using std::round;
 		bool s{ false };
 		uint64_t unbiasedExponent{ 0 };
@@ -659,7 +660,7 @@ protected:
 		double lowestError = 1.0e10;
 		int best_a = 500;
 		int best_b = 500;
-		for (int b = 0; b <= SB_MASK; ++b) {
+		for (int b = 0; b <= static_cast<int>(SB_MASK); ++b) {
 			int a = static_cast<int>(round((scale - b * log2of3))); // find the first base exponent that is closest to the value
 			double err = abs(scale - (a + b * log2of3));
 			if constexpr (bDebug) {
