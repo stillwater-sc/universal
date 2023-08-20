@@ -58,6 +58,7 @@ dbns<nbits, fbbits, bt, xtra...>& maxneg(dbns<nbits, fbbits, bt, xtra...>& dbns_
 template<unsigned _nbits, unsigned _fbbits, typename bt = uint8_t, auto... xtra>
 class dbns {
 	static_assert(_nbits > (_fbbits + 1), "configuration not supported: too many first base bits leaving no bits for second base");
+	static_assert(_fbbits > 0, "fbbits == 0 is an invalid configuration: need to have two exponent fields to be a double-base number system");
 	static_assert(sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported");
 	static_assert(_nbits - _fbbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
 	static_assert(_fbbits < 64, "configuration not supported: scaling factor is > 2^64");
@@ -213,24 +214,47 @@ public:
 		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
 			clear();
 			if (a > MAX_A || b > MAX_B) {
-				double e = -double(a) + b * log2of3;
-				if (e < 1.0) {
-					setzero();
+				// try to project the value back into valid pairs
+				// the approximations of unity looks like (3, -2), (8,-5), (19,-12), (84,-53),... 
+				// they grow too fast and in a rather irregular manner. There are more 
+				// subtle number theoretic considerations, but the ones outlined above 
+				// should be sufficient to figure out a good solution to the problem.
+				// 2^3*3^-2 = 0.888  2^-3*3^2 = 1.125
+				// 2^8*3^-5 = 1.053  2^-8*3^5 = 0.949
+				unsigned first[] = { 3, 8, 19, 84 };
+				unsigned second[] = { 2, 5, 12, 53 };
+				bool unableToAdjust{ true };
+				for (unsigned i = 0; i < 4; ++i) {
+					unsigned adjusted_a = a - first[i];
+					unsigned adjusted_b = b - second[i];
+					if (adjusted_a <= MAX_A && adjusted_b <= MAX_B) {
+						setexponent(0, adjusted_a);
+						setexponent(1, adjusted_b);
+						unableToAdjust = false;
+					}
 				}
-				else {
-					setExponent(0, 0);
-					setExponent(1, MAX_B);
+				if (unableToAdjust){
+					if (a > b) {
+						setexponent(0, MAX_A);
+						setexponent(1, 0);
+						negative = false; // we need to avoid nan(ind)
+					}
+					else {
+						setexponent(0, 0);
+						setexponent(1, MAX_B);
+					}
 				}
 			}
 			else {
-				setExponent(0, a);
-				setExponent(1, b);
+				setexponent(0, a);
+				setexponent(1, b);
 			}
 		}
 		else {
 			static_assert(true, "multi-limb TBD");
 		}
 		setsign(negative);
+		if (isnan()) setzero(); // if the arithmetic ends up in the nan encoding, set the value to zero
 		return *this;
 	}
 	dbns& operator*=(double rhs) { return operator*=(dbns(rhs)); }
@@ -255,8 +279,8 @@ public:
 		uint32_t e1 = extractExponent(1) - rhs.extractExponent(1);
 		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
 			clear();
-			setExponent(0, e0);
-			setExponent(1, e1);
+			setexponent(0, e0);
+			setexponent(1, e1);
 		}
 		else {
 			static_assert(true, "multi-limb TBD");
@@ -362,14 +386,16 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	constexpr void setExponent(int base, uint32_t exponentBits) noexcept {
+	constexpr void setexponent(int base, uint32_t exponentBits) noexcept {
 		if constexpr (1 == nrBlocks) {
 			if (base == 0) {
-				exponentBits &= (FB_MASK >> sbbits); // lob off any bits outside the field width
+				_block[MSU] &= ~FB_MASK;
+				exponentBits &= MAX_A; // lob off any bits outside the field width
 				exponentBits <<= sbbits; // shift them in place
 				_block[MSU] |= (exponentBits & FB_MASK); 
 			}
 			else if (base == 1) {
+				_block[MSU] &= ~SB_MASK;
 				_block[MSU] |= (exponentBits & SB_MASK);
 			}
 		}
@@ -498,8 +524,7 @@ public:
 		}
 		return false;
 	}
-
-	constexpr uint64_t extractExponent(int base) const noexcept {
+	constexpr uint32_t extractExponent(int base) const noexcept { // we return a 32bit exponent
 		if constexpr (1 == nrBlocks) {
 			uint64_t bits = static_cast<uint64_t>(_block[MSU]);
 			if (base == 0) {
@@ -509,7 +534,7 @@ public:
 			else if (base == 1) {
 				bits &= SB_MASK; // value is already normalized
 			}
-			return bits;
+			return static_cast<uint32_t>(bits);
 		}
 		else {
 			uint64_t bits{ 0 };
@@ -523,9 +548,9 @@ public:
 					bits |= (at(i) ? (1 << i) : 0);
 				}
 			}
-			return bits;
+			return static_cast<uint32_t>(bits);
 		}
-		return 0;
+		return 0ul;
 	}
 	explicit operator int()       const noexcept { return to_signed<int>(); }
 	explicit operator long()      const noexcept { return to_signed<long>(); }
@@ -676,26 +701,50 @@ protected:
 			}
 		}
 		if constexpr (bDebug) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
-		unsigned a = static_cast<unsigned>(-best_a);
-		unsigned b = static_cast<unsigned>(best_b);
-		if (a > (FB_MASK >> sbbits) || b > SB_MASK) {
-			// we are out of range
-			if (abs(v) < 1.0) {
-				// map to zero
-				a = static_cast<unsigned>(FB_MASK);
-				b = 0;
-				s = false;
+		assert(best_b >= 0); // second exponent is negative
+		int a = static_cast<unsigned>(-best_a);
+		int b = static_cast<unsigned>(best_b);
+		if (a < 0 || a > MAX_A || b > MAX_B) {
+			// try to project the value back into valid pairs
+			// the approximations of unity looks like (8,-5), (19,-12), (84,-53),... 
+			// they grow too fast and in a rather irregular manner. There are more 
+			// subtle number theoretic considerations, but the ones outlined above 
+			// should be sufficient to figure out a good solution to the problem.
+			// 2^3*3^-2 = 0.888  2^-3*3^2 = 1.125
+			// 2^8*3^-5 = 1.053  2^-8*3^5 = 0.949
+			int first[] = { 3, -3, 5, -5, 8, -8, 19, -19, 84, -84 };
+			int second[] = { 2, -2, 3, -3, 5, -5, 12, -12, 53, -53 };
+			bool unableToAdjust{ true };
+			for (unsigned i = 0; i < 10; ++i) {
+				int adjusted_a = a - first[i];
+				int adjusted_b = b - second[i];
+				if (adjusted_a >= 0 && adjusted_a < static_cast<int>(MAX_A) && adjusted_b >= 0 && adjusted_b < static_cast<int>(MAX_B)) {
+					setexponent(0, static_cast<unsigned>(adjusted_a));
+					setexponent(1, static_cast<unsigned>(adjusted_b));
+					setsign(s);
+					unableToAdjust = false;
+				}
 			}
-			else {
-				// map to largest value
-				a = 0;
-				b = static_cast<unsigned>(SB_MASK);
+			if (unableToAdjust) {
+				//if (a > b) {
+				if (best_a < 0 && best_b >= 0) {
+					setexponent(0, MAX_A);
+					setexponent(1, 0);
+					setsign(false); // we need to avoid nan(ind)
+				}
+				else {   // we have maxed out
+					setexponent(0, 0);
+					setexponent(1, MAX_B);
+					setsign(s);
+				}
 			}
 		}
 		else {
 			a <<= sbbits;
+			_block[MSU] = static_cast<bt>(static_cast<bt>(s ? SIGN_BIT_MASK : 0u) | static_cast<bt>(a) | static_cast<bt>(b));
 		}
-		_block[MSU] = ((s ? SIGN_BIT_MASK : 0) | a | b);
+		// avoid assigning to nan(ind)
+		if (isnan()) setzero();
 		return *this;
 	}
 

@@ -100,23 +100,64 @@ try {
 	//using DBNS4_1_mod = dbns<4, 1, std::uint8_t, Behavior::Wrapping>;
 	using DBNS4_1_sat = dbns<4, 1, std::uint8_t, Behavior::Saturating>;
 	using DBNS4_2     = dbns<4, 2, std::uint8_t>;
-	//using DBNS5_2     = dbns<5, 2, std::uint8_t>;
+	using DBNS5_2     = dbns<5, 2, std::uint8_t>;
 	using DBNS8_3     = dbns<8, 3, std::uint8_t>;
 	//using DBNS9_4     = dbns<9, 4, std::uint8_t>;
 	using DBNS16_5    = dbns<16, 5, std::uint16_t>;
 
 	// nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2>(true), "dbns<4,2, uint8_t>", test_tag);
+	// nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2>(true), "dbns<5,2, uint8_t>", test_tag);
+
+	{
+		float d{ 0 };
+		DBNS5_2 a{ 0.5 }, b{ 1.125 }, c{ 0 };
+		a = 4.5; b = 3.375;
+		c = a * b;
+		ReportBinaryOperation(a, "*", b, c);
+		d = 4.5 * 3.375;
+		ReportValue(d, "d should be 15.1875");
+		c = d;
+		ReportValue(c, "c should be 13.5");
+		return 0;
+		c = a * b;
+		ReportBinaryOperation(a, "*", b, c);
+		d = 0.5 * 1.125;
+		c = d;
+		ReportValue(c);
+		d = 3.0 * 27.0;
+		c = d;
+		ReportValue(c);
+		d = 9.0 * 27.0;
+		c = d;
+		ReportValue(c);
+		a = 0.375; b = 3.375;
+		c = a * b;
+		ReportBinaryOperation(a, "*", b, c);
+
+
+	}
+	return 0;
 
 	{
 		DBNS4_2 a{ 3 }, b{ 0.375 }, c{ 0 }, one{ 1 };
 		ReportValue(one, "one");
 		c = a * b;
 		ReportBinaryOperation(a, "*", b, c);
-		a = 0.25; b = 0.25;
+		a = 0.25; b = 0.375;
+		c = a * b;
+		ReportBinaryOperation(a, "*", b, c);
+		b = -b;
+		c = a * b;
+		ReportBinaryOperation(a, "*", b, c);
+		a = 0.375;
+		c = a * b;
+		ReportBinaryOperation(a, "*", b, c);
+		DBNS4_2 d{ -0.14 };
+		ReportValue(d);
+		a = 0.5f; b = -0.25f;
 		c = a * b;
 		ReportBinaryOperation(a, "*", b, c);
 	}
-	return 0;
 
 	// generate individual testcases to hand trace/debug
 	TestCase<DBNS4_1_sat, float>(TestCaseOperator::MUL, 0.353f, -0.353f);
@@ -127,7 +168,7 @@ try {
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_1_mod>(false), "dbns<4,1,uint8_t,Behavior::Wrapping>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_1_sat>(reportTestCases), "dbns<4,1, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2>(reportTestCases), "dbns<4,2, uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2>(reportTestCases), "dbns<5,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2>(reportTestCases), "dbns<5,2, uint8_t>", test_tag);
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_3>(reportTestCases), "dbns<8,3, uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -135,31 +176,37 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	using DBNS4_0_sat = dbns<4, 0, std::uint8_t>;
 	using DBNS4_1_sat = dbns<4, 1, std::uint8_t>;
 	using DBNS4_2_sat = dbns<4, 2, std::uint8_t>;
-//	using DBNS4_3_sat = dbns<4, 3, std::uint8_t>;
 	using DBNS5_2_sat = dbns<5, 2, std::uint8_t>;
+	using DBNS6_2_sat = dbns<6, 2, std::uint8_t>;
+	using DBNS6_3_sat = dbns<6, 3, std::uint8_t>;
 	using DBNS8_1_sat = dbns<8, 1, std::uint8_t>;
+	using DBNS8_2_sat = dbns<8, 2, std::uint8_t>;
+	using DBNS8_3_sat = dbns<8, 3, std::uint8_t>;
 	using DBNS8_4_sat = dbns<8, 4, std::uint8_t>;
+	using DBNS8_5_sat = dbns<8, 5, std::uint8_t>;
 	using DBNS8_6_sat = dbns<8, 6, std::uint8_t>;
-	using DBNS9_0_sat = dbns<9, 0, std::uint8_t>;
 	using DBNS9_4_sat = dbns<9, 4, std::uint8_t>;
 	using DBNS9_7_sat = dbns<9, 7, std::uint8_t>;
-//	using DBNS9_8_sat = dbns<9, 8, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_0_sat>(reportTestCases), "dbns<4,0, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_1_sat>(reportTestCases), "dbns<4,1, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2_sat>(reportTestCases), "dbns<4,2, uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_3_sat>(reportTestCases), "dbns<4,3, uint8_t>", test_tag);
+
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2_sat>(reportTestCases), "dbns<5,2, uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS6_2_sat>(reportTestCases), "dbns<6,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS6_3_sat>(reportTestCases), "dbns<6,3, uint8_t>", test_tag);
+
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_1_sat>(reportTestCases), "dbns<8,1, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_2_sat>(reportTestCases), "dbns<8,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_3_sat>(reportTestCases), "dbns<8,3, uint8_t>", test_tag);	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_5_sat>(reportTestCases), "dbns<8,5, uint8_t>", test_tag);	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_6_sat>(reportTestCases), "dbns<8,6, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS9_0_sat>(reportTestCases), "dbns<9,0, uint8_t>", test_tag);
+
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS9_4_sat>(reportTestCases), "dbns<9,4, uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS9_7_sat>(reportTestCases), "dbns<9,7, uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS9_8_sat>(reportTestCases), "dbns<9,8, uint8_t>", test_tag);
 
 #endif
 

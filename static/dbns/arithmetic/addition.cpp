@@ -62,7 +62,7 @@ namespace sw { namespace universal {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -98,11 +98,15 @@ try {
 	using DBNS16_5_sat = dbns<16, 5, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
-	TestCase< DBNS16_5_sat, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+	TestCase< DBNS5_2_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 	TestCase< DBNS8_3_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< DBNS9_4_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< DBNS16_5_sat, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
 
-	// manual exhaustive test
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_1_sat>(true), "dbns<4,1,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_2_sat>(reportTestCases), "dbns<4,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS5_2_sat>(reportTestCases), "dbns<5,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_3_sat>(reportTestCases), "dbns<8,3,uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
