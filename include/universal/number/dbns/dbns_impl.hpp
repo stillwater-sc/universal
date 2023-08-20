@@ -1,14 +1,13 @@
 #pragma once
 // dbns_impl.hpp: implementation of a fixed-size, arbitrary configuration 2-base logarithmic number system configuration
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2022-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
-#include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/abstract/triple.hpp>
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/behavior/arithmetic.hpp>
@@ -84,11 +83,8 @@ public:
 	static constexpr uint64_t FB_MASK = (rightShift > 0 ? ((0xFFFF'FFFF'FFFF'FFFFull >> rightShift) << sbbits) : 0ull);
 	static constexpr uint64_t SB_MASK = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - (nbits - fbbits - 1)));
 
-	using BlockBinary = blockbinary<nbits, bt, BinaryNumberType::Signed>; // sign + dbns exponent
-	using ExponentBlockBinary = blockbinary<nbits-1, bt, BinaryNumberType::Signed>;  // just the dbns exponent
-
 	// the smallest value with this base set and the assumption that exponents are positive is 0b0.111.0000
-	static constexpr float    base[2] = { 0.5f, 3.0f };
+	static constexpr float    bases[2] = { 0.5f, 3.0f };
 
 	/// trivial constructor
 	dbns() = default;
@@ -100,7 +96,7 @@ public:
 
 	// specific value constructor
 	constexpr dbns(const SpecificValue code) noexcept
-		: _block{} {
+		: _block{0} {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();
@@ -198,30 +194,17 @@ public:
 			setzero();
 			return *this;
 		}
-		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the dbns sign bit to yield the exponents
-		bool negative = sign() ^ rhs.sign(); // determine sign of result
-		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
-			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
-			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(maxexp), maxneg(minexp); // expand into type of sum
-			blockbinary<nbits, bt, BinaryNumberType::Signed> expandedLexp(lexp), expandedRexp(rexp); // expand and sign extend if necessary
-			blockbinary<nbits, bt, BinaryNumberType::Signed> sum;
 
-			sum = uradd(expandedLexp, expandedRexp);
-			// check if sum is in range
-			if (sum >= maxpos) {
-				_block = maxpos;
-			}
-			else if (sum <= maxneg) {
-				_block = maxneg;   // == zero encoding
-				negative = false;  // ignore dbns sign, otherwise this becomes NaN
-			}
-			else {
-				_block.assign(sum); // this might set the dbns sign, but we are going to explicitly set it before returning
-			}
+		bool negative = sign() ^ rhs.sign(); // determine sign of result
+		uint32_t e0 = extractExponent(0) + rhs.extractExponent(0);
+		uint32_t e1 = extractExponent(1) + rhs.extractExponent(1);
+		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
+			clear();
+			setExponent(0, e0);
+			setExponent(1, e1);
 		}
 		else {
-			lexp += rexp;
-			_block.assign(lexp);
+			static_assert(true, "multi-limb TBD");
 		}
 		setsign(negative);
 		return *this;
@@ -243,30 +226,16 @@ public:
 		}
 		if (iszero()) return *this;
 
-		ExponentBlockBinary lexp(_block), rexp(rhs._block); // strip the dbns sign bit to yield the exponents
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
+		uint32_t e0 = extractExponent(0) - rhs.extractExponent(0);
+		uint32_t e1 = extractExponent(1) - rhs.extractExponent(1);
 		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
-			static constexpr ExponentBlockBinary maxexp(SpecificValue::maxpos), minexp(SpecificValue::maxneg);
-			blockbinary<nbits, bt, BinaryNumberType::Signed> maxpos(maxexp), maxneg(minexp); // expand into type of sum
-			blockbinary<nbits, bt, BinaryNumberType::Signed> expandedLexp(lexp), expandedRexp(rexp); // expand and sign extend if necessary
-			blockbinary<nbits, bt, BinaryNumberType::Signed> sum;
-
-			sum = ursub(expandedLexp, expandedRexp);
-			// check if sum is in range
-			if (sum >= maxpos) {
-				_block = maxpos;
-			}
-			else if (sum <= maxneg) {
-				_block = maxneg;   // == zero encoding
-				negative = false;  // ignore dbns sign, otherwise this becomes NaN
-			}
-			else {
-				_block.assign(sum); // this might set the dbns sign, but we are going to explicitly set it before returning
-			}
+			clear();
+			setExponent(0, e0);
+			setExponent(1, e1);
 		}
 		else {
-			lexp += rexp;
-			_block.assign(lexp);
+			static_assert(true, "multi-limb TBD");
 		}
 		setsign(negative);
 		return *this;
@@ -275,7 +244,23 @@ public:
 
 	// prefix/postfix operators
 	dbns& operator++() {
-		++_block;
+		if constexpr (1 == nrBlocks) {
+			++_block[0];
+		}
+		else {
+			if (_block[0] == storageMask) {
+				_block[0] = 0;
+				for (unsigned i = 1; i < nrBlocks; ++i) {
+					if (_block[i] < storageMask) {
+						++_block[i];
+						break;
+					}
+				}
+			}
+			else {
+				++_block[0];
+			}
+		}
 		return *this;
 	}
 	dbns operator++(int) {
@@ -284,7 +269,26 @@ public:
 		return tmp;
 	}
 	dbns& operator--() {
-		--_block;
+		if constexpr (1 == nrBlocks) {
+			--_block[0];
+		}
+		else {
+			if (_block[0] == 0) {
+				_block[0] = storageMask;
+				for (unsigned i = 1; i < nrBlocks; ++i) {
+					if (_block[i] > 0) { // execute the borrow
+						--_block[i];
+						break;
+					}
+					else {
+						_block[i] = storageMask;
+					}
+				}
+			}
+			else {
+				--_block[0];
+			}
+		}
 		return *this;
 	}
 	dbns operator--(int) {
@@ -295,7 +299,18 @@ public:
 
 	// modifiers
 	// clear resets all bits
-	constexpr void clear()                         noexcept { _block.clear(); }
+	constexpr void clear()                         noexcept {
+		if constexpr (1 == nrBlocks) {
+			_block[0] = 0;
+		}
+		else if constexpr (2 == nrBlocks) {
+			_block[0] = 0;
+			_block[1] = 0;
+		}
+		else {
+			for (unsigned i = 0; i < nrBlocks; ++i) _block[i] = 0;
+		}
+	}
 	constexpr void setzero()                       noexcept { zero(); }
 	constexpr void setnan()                        noexcept { zero(); setbit(nbits - 1); }
 	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
@@ -307,27 +322,49 @@ public:
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
-			//_block[i / bitsInBlock] = bt((block & null) | mask);
-			_block.setblock(blockIndex, bt((block & null) | mask));
+			_block[blockIndex] = bt((block & null) | mask);
 		}
 		// nop if i is out of range
 	}
 	constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
-			//_block[0] = value & storageMask;
-			_block.setblock(0, value & storageMask);
+			_block[0] = value & storageMask;
 		}
 		else if constexpr (1 < nrBlocks) {
 			for (unsigned i = 0; i < nrBlocks; ++i) {
-				//_block[i] = value & storageMask;
-				_block.setblock(i, value & storageMask);
+				_block[i] = value & storageMask;
 				value >>= bitsInBlock;
 			}
 		}
-		//_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		_block.setblock(MSU, _block[MSU] & MSU_MASK);
+		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	
+	constexpr void setExponent(int base, uint32_t exponentBits) noexcept {
+		if constexpr (1 == nrBlocks) {
+			if (base == 0) {
+				exponentBits &= (FB_MASK >> sbbits); // lob off any bits outside the field width
+				exponentBits <<= sbbits; // shift them in place
+				_block[MSU] |= (exponentBits & FB_MASK); 
+			}
+			else if (base == 1) {
+				_block[MSU] |= (exponentBits & SB_MASK);
+			}
+		}
+		else {
+			uint32_t mask = 0x1;
+			if (0 == base) {
+				for (unsigned i = sbbits; i < nbits - 1; ++i) {
+					setbit(i, (mask & exponentBits) != 0);
+					mask <<= 1;
+				}
+			}
+			else {
+				for (unsigned i = 0; i < sbbits; ++i) {
+					setbit(i, (mask & exponentBits) != 0);
+					mask <<= 1;
+				}
+			}
+		}
+	}
 	// create specific number system values of interest
 	constexpr dbns& maxpos() noexcept {
 		// maximum positive value has this bit pattern: 0-00..00-11...11, that is, sign = 0, first base = 00..00, second base = 11..11
@@ -390,7 +427,7 @@ public:
 	}
 	constexpr bool isneg()  const noexcept { return sign(); }
 	constexpr bool ispos()  const noexcept { return !sign(); }
-	constexpr bool isinf()  const noexcept { return false; }
+	constexpr bool isinf()  const noexcept { return false; }  // TODO: no inf in dbns: shall we set it to maxpos?
 	constexpr bool isnan()  const noexcept { // special encoding
 		// 1.1111.0000 is NaN
 		for (unsigned i = 0; i < sbbits; ++i) {
@@ -406,14 +443,18 @@ public:
 		return (SIGN_BIT_MASK & _block[MSU]) != 0;
 	}
 	constexpr int  scale()  const noexcept {
-		// this needs to work for all potential bases
-		double v = double(*this); // expensive, but necessary to be base invariant
-		return sw::universal::scale(v);
+		using std::log2;
+		// Scale needs to work for all potential bases
+		// we shouldn't go through double conversion as doubles do not
+		// have enough dynamic range for dbns configs, so
+		// we should go through the exponent calculation directly
+		double log2of3 = log2(bases[1]);
+		uint32_t e0 = extractExponent(0);
+		uint32_t e1 = extractExponent(1);
+		return static_cast<int>(e0 + e1 * log2of3);
 	}
-	constexpr uint64_t fraction() const noexcept {
-		uint64_t fractionBits = 0xffff'ffff;
-		return fractionBits;
-	}
+	// fraction returns 0
+	constexpr uint64_t fraction() const noexcept { return 0; }
 	constexpr bool at(unsigned bitIndex) const noexcept {
 		if (bitIndex >= nbits) return false; // fail silently as no-op
 		bt word = _block[bitIndex / bitsInBlock];
@@ -508,9 +549,9 @@ protected:
 	/// <returns>reference to this cfloat object</returns>
 	constexpr dbns& flip() noexcept { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {
-			_block.setblock(i, bt(~_block[i]));
+			_block[i] = bt(~_block[i]);
 		}
-		_block.setblock(MSU, _block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
+		_block[MSU] = (_block[MSU] & MSU_MASK); // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 
@@ -597,7 +638,7 @@ protected:
 		double err{ 0.0 };
 		int32_t e0{ 0 }, e1{ 0 };
 		for (e1 = 0; e1 <= SB_MASK; ++e1) {
-			e0 = static_cast<int32_t>(round((scale - e1 * log2of3))); // find the first base exponent that sits closed to the value
+			e0 = static_cast<int32_t>(round((scale - e1 * log2of3))); // find the first base exponent that is closest to the value
 			err = abs(scale - (e0 + e1 * log2of3));
 //			double fb = pow(2.0, e0);
 //			double sb = pow(3.0, e1);
@@ -612,8 +653,12 @@ protected:
 		e0 = -best_e0;
 		e1 = best_e1;
 //		std::cout << "e0 : " << e0 << " e1 : " << e1 << " err : " << err << '\n';
-		e0 <<= sbbits;
-		_block.setblock(MSU, (s ? SIGN_BIT_MASK : 0) | e0 | e1);
+//		assert(e0 >= 0, "first base exponent is negative");
+//		assert(e1 >= 0, "second base exponent is negative");
+		uint32_t ue0 = static_cast<uint32_t>(e0);
+		uint32_t ue1 = static_cast<uint32_t>(e1);
+		ue0 <<= sbbits;
+		_block[MSU] = ((s ? SIGN_BIT_MASK : 0) | ue0 | ue1);
 		return *this;
 	}
 
@@ -654,13 +699,13 @@ protected:
 		static_assert(fbbits <= minSubnormalExponent, "dbns::to_ieee754: fraction is too small to represent with requested floating-point type");
 
 		TargetFloat dim1, dim2;
-		dim1 = ipow(base[0], extractExponent(0));
-		dim2 = ipow(base[1], extractExponent(1));
+		dim1 = ipow(bases[0], extractExponent(0));
+		dim2 = ipow(bases[1], extractExponent(1));
 		return signValue * dim1 * dim2;
 	}
 
 private:
-	BlockBinary _block;
+	BlockType _block[nrBlocks];
 
 	////////////////////// operators
 
@@ -681,7 +726,18 @@ private:
 
 	friend constexpr bool operator==(const dbns& lhs, const dbns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;
-		return lhs._block == rhs._block;
+		if constexpr (1 == nrBlocks) {
+			return lhs._block[0] == rhs._block[0];
+		}
+		else if constexpr (2 == nrBlocks) {
+			return lhs._block[0] == rhs._block[0] && lhs._block[1] == rhs._block[1];
+		}
+		else {
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				if (lhs._block[i] != rhs._block[i]) return false;
+			}
+			return true;
+		}
 	}
 	friend constexpr bool operator< (const dbns& lhs, const dbns& rhs) {
 		if (lhs.isnan() || rhs.isnan()) return false;

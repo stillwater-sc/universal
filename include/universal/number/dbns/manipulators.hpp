@@ -37,7 +37,17 @@ namespace sw { namespace universal {
 		unsigned sbbits = DbnsType::sbbits;  // second exponent bits
 		s << "fields(s:1|e1:" << fbbits << "|e2:" << sbbits << ')';
 		return s.str();
-}
+	}
+
+	template<typename DbnsType,
+		std::enable_if_t< is_dbns<DbnsType>, bool> = true
+	>
+	inline std::string range(const DbnsType & = {}) {
+		std::stringstream s;
+		DbnsType b(SpecificValue::maxneg), c(SpecificValue::minneg), d(SpecificValue::minpos), e(SpecificValue::maxpos);
+		s << "[" << b << " ... " << c << ", 0, " << d << " ... " << e << "]\n";
+		return s.str();
+	}
 
 	// report if a native floating-point value is within the dynamic range of the dbns configuration
 	template<typename DbnsType,
