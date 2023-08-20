@@ -30,36 +30,44 @@ inline dbns<nbits, fbbits, bt, xtra...>& convert(const triple<nbits, bt>& v, dbn
 }
 
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-inline dbns<nbits, fbbits, bt, xtra...>& minpos(dbns<nbits, fbbits, bt, xtra...>& lminpos) {
-	return lminpos;
+inline dbns<nbits, fbbits, bt, xtra...>& minpos(dbns<nbits, fbbits, bt, xtra...>& dbns_minpos) {
+	dbns<nbits, fbbits, bt, xtra...> a(SpecificValue::minpos);
+	dbns_minpos = a;
+	return dbns_minpos;
 }
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-dbns<nbits, fbbits, bt, xtra...>& maxpos(dbns<nbits, fbbits, bt, xtra...>& lmaxpos) {
-	return lmaxpos;
+dbns<nbits, fbbits, bt, xtra...>& maxpos(dbns<nbits, fbbits, bt, xtra...>& dbns_maxpos) {
+	dbns<nbits, fbbits, bt, xtra...> a(SpecificValue::maxpos);
+	dbns_maxpos = a;
+	return dbns_maxpos;
 }
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-dbns<nbits, fbbits, bt, xtra...>& minneg(dbns<nbits, fbbits, bt, xtra...>& lminneg) {
-	return lminneg;
+dbns<nbits, fbbits, bt, xtra...>& minneg(dbns<nbits, fbbits, bt, xtra...>& dbns_minneg) {
+	dbns<nbits, fbbits, bt, xtra...> a(SpecificValue::minneg);
+	dbns_minneg = a;
+	return dbns_minneg;
 }
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
-dbns<nbits, fbbits, bt, xtra...>& maxneg(dbns<nbits, fbbits, bt, xtra...>& lmaxneg) {
-	return lmaxneg;
+dbns<nbits, fbbits, bt, xtra...>& maxneg(dbns<nbits, fbbits, bt, xtra...>& dbns_maxneg) {
+	dbns<nbits, fbbits, bt, xtra...> a(SpecificValue::maxneg);
+	dbns_maxneg = a;
+	return dbns_maxneg;
 }
 
 // double-base logarithmic number system: bases 2^-1, and 3
 template<unsigned _nbits, unsigned _fbbits, typename bt = uint8_t, auto... xtra>
 class dbns {
 	static_assert(_nbits > _fbbits, "configuration not supported: too many first base bits leaving no bits for second base");
-	static_assert( sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported" );
+	static_assert(sizeof...(xtra) <= 1, "At most one optional extra argument is currently supported");
 	static_assert(_nbits - _fbbits < 66, "configuration not supported: the scale of this configuration is > 2^64");
 	static_assert(_fbbits < 64, "configuration not supported: scaling factor is > 2^64");
 public:
 	typedef bt BlockType;
 
-	static constexpr unsigned nbits    = _nbits;
-	static constexpr unsigned fbbits   = _fbbits;            // first base exponent bits
-	static constexpr unsigned sbbits   = nbits - fbbits - 1; // second base exponent bits
-	static constexpr Behavior behavior = {xtra...};
+	static constexpr unsigned nbits = _nbits;
+	static constexpr unsigned fbbits = _fbbits;            // first base exponent bits
+	static constexpr unsigned sbbits = nbits - fbbits - 1; // second base exponent bits
+	static constexpr Behavior behavior = { xtra... };
 
 	static constexpr double   scaling = double(1ull << fbbits);
 	static constexpr unsigned bitsInByte = 8ull;
@@ -80,11 +88,15 @@ public:
 	static constexpr int64_t  min_exponent = (maxShift > 0) ? (-(1ll << leftShift)) : 0;
 	static constexpr int64_t  max_exponent = (maxShift > 0) ? (1ll << leftShift) - 1 : 0;
 	static constexpr int      rightShift = (fbbits == 0 ? 0 : (64 - fbbits));
-	static constexpr uint64_t FB_MASK = (rightShift > 0 ? ((0xFFFF'FFFF'FFFF'FFFFull >> rightShift) << sbbits) : 0ull);
-	static constexpr uint64_t SB_MASK = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - (nbits - fbbits - 1)));
+	static constexpr uint64_t MAX_A = (rightShift > 0 ? (0xFFFF'FFFF'FFFF'FFFFull >> rightShift) : 0ull);
+	static constexpr uint64_t FB_MASK = (MAX_A << sbbits);
+	static constexpr uint64_t MAX_B   = (0xFFFF'FFFF'FFFF'FFFFull >> (64 - sbbits));
+	static constexpr uint64_t SB_MASK = MAX_B;
 
 	// the smallest value with this base set and the assumption that exponents are positive is 0b0.111.0000
-	static constexpr float    bases[2] = { 0.5f, 3.0f };
+	static constexpr double   base0   = 0.5;
+	static constexpr double   base1   = 3.0;
+	static constexpr double   log2of3 = 1.5849625007211561814537389439478;
 
 	/// trivial constructor
 	dbns() = default;
@@ -196,12 +208,24 @@ public:
 		}
 
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
-		uint32_t e0 = extractExponent(0) + rhs.extractExponent(0);
-		uint32_t e1 = extractExponent(1) + rhs.extractExponent(1);
+		uint32_t a = extractExponent(0) + rhs.extractExponent(0);
+		uint32_t b = extractExponent(1) + rhs.extractExponent(1);
 		if constexpr (behavior == Behavior::Saturating) { // saturating, no infinite
 			clear();
-			setExponent(0, e0);
-			setExponent(1, e1);
+			if (a > MAX_A || b > MAX_B) {
+				double e = -double(a) + b * log2of3;
+				if (e < 1.0) {
+					setzero();
+				}
+				else {
+					setExponent(0, 0);
+					setExponent(1, MAX_B);
+				}
+			}
+			else {
+				setExponent(0, a);
+				setExponent(1, b);
+			}
 		}
 		else {
 			static_assert(true, "multi-limb TBD");
@@ -369,7 +393,7 @@ public:
 	constexpr dbns& maxpos() noexcept {
 		// maximum positive value has this bit pattern: 0-00..00-11...11, that is, sign = 0, first base = 00..00, second base = 11..11
 		clear();
-		for (unsigned i = 0; i < nbits - fbbits - 1; ++i) {
+		for (unsigned i = 0; i < sbbits; ++i) {
 			setbit(i, true);
 		}
 		return *this;
@@ -448,7 +472,6 @@ public:
 		// we shouldn't go through double conversion as doubles do not
 		// have enough dynamic range for dbns configs, so
 		// we should go through the exponent calculation directly
-		double log2of3 = log2(bases[1]);
 		uint32_t e0 = extractExponent(0);
 		uint32_t e1 = extractExponent(1);
 		return static_cast<int>(e0 + e1 * log2of3);
@@ -617,48 +640,61 @@ protected:
 			return *this;
 		}
 
-		// check if the value is in the representable range
-//		if (abs(v) < minpos()) {
-//			setzero();
-//			return *this;
-//		}
+		// it is too expensive to check if the value is in the representable range
+		// the search below will end up at 0 or maxpos
 
+		// we search for the a and b in v = 2^a * 3^b, with both a and b positive
+		// in our representation we have 0.5^a * 3^b, which would be equivalent
+		// to a being negative
+		// 
 		// v = 2^a * 3^b =>
 		// v = 2^(a + b*log2of3) =>
 		// scale of v = (a + b*log2of3)
 		// we use this relationship to search among the second base exponents 
 		// and find a first base exponent that minimizes the error
 		// between the result and the value we are trying to approximate.
-		double scale = log2(abs(v));
-//		std::cout << "scale : " << scale << '\n';
-		double best_err = 1.0e10;
-		int32_t best_e0 = 500;
-		int32_t best_e1 = 500;
-		double log2of3 = log2(3.0);
-		double err{ 0.0 };
-		int32_t e0{ 0 }, e1{ 0 };
-		for (e1 = 0; e1 <= SB_MASK; ++e1) {
-			e0 = static_cast<int32_t>(round((scale - e1 * log2of3))); // find the first base exponent that is closest to the value
-			err = abs(scale - (e0 + e1 * log2of3));
-//			double fb = pow(2.0, e0);
-//			double sb = pow(3.0, e1);
-//			double value = fb * sb;
-//			std::cout << "e0 : " << e0 << " e1 : " << e1 << " err : " << err << " fb : " << fb << " sb : " << sb << " value : " << value << '\n';
-			if (err < best_err) {
-				best_err = err;
-				best_e0 = e0;
-				best_e1 = e1;
+		constexpr bool bDebug = false;
+		double scale = log2(abs(v)); 
+		if constexpr (bDebug) std::cout << "scale : " << scale << '\n';
+		double lowestError = 1.0e10;
+		int best_a = 500;
+		int best_b = 500;
+		for (int b = 0; b <= SB_MASK; ++b) {
+			int a = static_cast<int>(round((scale - b * log2of3))); // find the first base exponent that is closest to the value
+			double err = abs(scale - (a + b * log2of3));
+			if constexpr (bDebug) {
+				double fb = pow(2.0, a);
+				double sb = pow(3.0, b);
+				double value = fb * sb;
+				std::cout << "a : " << a << " b : " << b << " err : " << err << " fb : " << fb << " sb : " << sb << " value : " << value << '\n';
+			}
+			if (err < lowestError) {
+				lowestError = err;
+				best_a = a;
+				best_b = b;
 			}
 		}
-		e0 = -best_e0;
-		e1 = best_e1;
-//		std::cout << "e0 : " << e0 << " e1 : " << e1 << " err : " << err << '\n';
-//		assert(e0 >= 0, "first base exponent is negative");
-//		assert(e1 >= 0, "second base exponent is negative");
-		uint32_t ue0 = static_cast<uint32_t>(e0);
-		uint32_t ue1 = static_cast<uint32_t>(e1);
-		ue0 <<= sbbits;
-		_block[MSU] = ((s ? SIGN_BIT_MASK : 0) | ue0 | ue1);
+		if constexpr (bDebug) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
+		unsigned a = static_cast<unsigned>(-best_a);
+		unsigned b = static_cast<unsigned>(best_b);
+		if (a > (FB_MASK >> sbbits) || b > SB_MASK) {
+			// we are out of range
+			if (abs(v) < 1.0) {
+				// map to zero
+				a = static_cast<unsigned>(FB_MASK);
+				b = 0;
+				s = false;
+			}
+			else {
+				// map to largest value
+				a = 0;
+				b = static_cast<unsigned>(SB_MASK);
+			}
+		}
+		else {
+			a <<= sbbits;
+		}
+		_block[MSU] = ((s ? SIGN_BIT_MASK : 0) | a | b);
 		return *this;
 	}
 
@@ -699,8 +735,8 @@ protected:
 		static_assert(fbbits <= minSubnormalExponent, "dbns::to_ieee754: fraction is too small to represent with requested floating-point type");
 
 		TargetFloat dim1, dim2;
-		dim1 = ipow(bases[0], extractExponent(0));
-		dim2 = ipow(bases[1], extractExponent(1));
+		dim1 = ipow(base0, extractExponent(0));
+		dim2 = ipow(base1, extractExponent(1));
 		return signValue * dim1 * dim2;
 	}
 

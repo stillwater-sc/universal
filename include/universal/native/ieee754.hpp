@@ -9,6 +9,7 @@
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 #include <limits>
 #include <tuple>
+
 // configure the low level compiler interface to deal with floating-point bit manipulation
 #include <universal/utility/architecture.hpp>
 #include <universal/utility/compiler.hpp>
@@ -19,6 +20,13 @@
 #include <universal/native/ieee754_parameter.hpp>
 #include <universal/native/ieee754_decoder.hpp>
 #include <universal/native/ieee754_type_tag.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
+// enable throwing specific exceptions long double special handling of 128bit fields
+#if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
+// default is to use std::cerr for signalling an error
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 
 // if the compiler environment allows, set up
 // constexpr compatible bit casts, otherwise

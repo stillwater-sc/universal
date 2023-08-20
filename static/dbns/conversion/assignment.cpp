@@ -4,9 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// minimum set of include files to reflect source code dependencies
 #include <universal/native/ieee754.hpp>
 #include <universal/number/dbns/dbns.hpp>
+#include <universal/number/dbns/table.hpp>
 #include <universal/verification/test_suite.hpp>
 
 
@@ -70,6 +70,22 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
+
+	GenerateDbnsTable<5, 2>(std::cout);
+
+	{
+		// check the assignment when we are out of range
+		dbns<5, 2> a;
+		std::cout << range(a) << '\n';
+		a = 50.0;
+		ReportValue(a, "a");
+		a = -50.0;
+		ReportValue(a, "a");
+		a = 0.01;
+		ReportValue(a, "a");
+		a = -0.01;
+		ReportValue(a, "a");
+	}
 
 	//	using DBNS16_8 = dbns<16, 8, std::uint16_t>;
 	//	using DBNS12_5 = dbns<12, 5, std::uint8_t>;

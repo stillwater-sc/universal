@@ -1,5 +1,5 @@
 #pragma once
-//  bitblock.hpp : bitblock class
+// bitblock.hpp : bitblock class
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //

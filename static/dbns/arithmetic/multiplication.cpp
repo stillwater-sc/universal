@@ -17,15 +17,16 @@ namespace sw { namespace universal {
 	//>
 	template<typename DbnsType>
 	int VerifyMultiplication(bool reportTestCases) {
+		using std::abs;
 		constexpr size_t nbits = DbnsType::nbits;
-		//constexpr size_t rbits = DbnsType::rbits;
+		//constexpr size_t fbbits = DbnsType::fbbits;
 		//constexpr Behavior behavior = DbnsType::behavior;
 		//using bt = typename DbnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
-
 		int nrOfFailedTestCases = 0;
 
-		DbnsType a{}, b{}, c{}, cref{};
+		DbnsType a{}, b{}, c{}, cref{}, maxvalue(SpecificValue::maxpos);
+		double maxpos = double(maxvalue);
 		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
 			a.setbits(i);
 			double da = double(a);
@@ -34,14 +35,22 @@ namespace sw { namespace universal {
 				double db = double(b);
 
 				double ref = da * db;
-				if (reportTestCases && !isInRange<DbnsType>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
-				}
+//				if (reportTestCases && !isInRange<DbnsType>(ref)) {
+//					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+//				}
 				c = a * b;
 				cref = ref;
 //				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
 //				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				if (c != cref) {
+					if (!isInRange<DbnsType>(ref)) {
+						if (abs(ref) > maxpos) {
+							if (cref == maxvalue) continue;
+						}
+						else {
+							if (cref.iszero()) continue;
+						}
+					}
 					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
@@ -58,81 +67,6 @@ namespace sw { namespace universal {
 	}
 
 } }
-
-/*
-Generate Value table for an DBNS<4,1> in TXT format
-   #           Binary    sign   scale                         value          format
-   0:         0b0.00.0       0       0                             1                1
-   1:         0b0.00.1       0       0                       1.41421          1.41421
-   2:         0b0.01.0       0       1                             2                2
-   3:         0b0.01.1       0       1                       2.82843          2.82843
-   4:         0b0.10.0       0      -2                             0                0
-   5:         0b0.10.1       0      -2                      0.353553         0.353553
-   6:         0b0.11.0       0      -1                           0.5              0.5
-   7:         0b0.11.1       0      -1                      0.707107         0.707107
-   8:         0b1.00.0       1       0                            -1               -1
-   9:         0b1.00.1       1       0                      -1.41421         -1.41421
-  10:         0b1.01.0       1       1                            -2               -2
-  11:         0b1.01.1       1       1                      -2.82843         -2.82843
-  12:         0b1.10.0       1      -2                     -nan(ind)        -nan(ind)
-  13:         0b1.10.1       1      -2                     -0.353553        -0.353553
-  14:         0b1.11.0       1      -1                          -0.5             -0.5
-  15:         0b1.11.1       1      -1                     -0.707107        -0.707107
-
-Generate Value table for an DBNS<4,2> in TXT format
-   #           Binary    sign   scale                         value          format
-   0:         0b0.0.00       0       0                             1                1
-   1:         0b0.0.01       0       0                       1.18921          1.18921
-   2:         0b0.0.10       0       0                       1.41421          1.41421
-   3:         0b0.0.11       0       0                       1.68179          1.68179
-   4:         0b0.1.00       0      -1                             0                0
-   5:         0b0.1.01       0      -1                      0.594604         0.594604
-   6:         0b0.1.10       0      -1                      0.707107         0.707107
-   7:         0b0.1.11       0      -1                      0.840896         0.840896
-   8:         0b1.0.00       1       0                            -1               -1
-   9:         0b1.0.01       1       0                      -1.18921         -1.18921
-  10:         0b1.0.10       1       0                      -1.41421         -1.41421
-  11:         0b1.0.11       1       0                      -1.68179         -1.68179
-  12:         0b1.1.00       1      -1                     -nan(ind)        -nan(ind)
-  13:         0b1.1.01       1      -1                     -0.594604        -0.594604
-  14:         0b1.1.10       1      -1                     -0.707107        -0.707107
-  15:         0b1.1.11       1      -1                     -0.840896        -0.840896
-
-Generate Value table for an DBNS<5,2> in TXT format
-   #           Binary    sign   scale                         value          format
-   0:        0b0.00.00       0       0                             1                1
-   1:        0b0.00.01       0       0                       1.18921          1.18921
-   2:        0b0.00.10       0       0                       1.41421          1.41421
-   3:        0b0.00.11       0       0                       1.68179          1.68179
-   4:        0b0.01.00       0       1                             2                2
-   5:        0b0.01.01       0       1                       2.37841          2.37841
-   6:        0b0.01.10       0       1                       2.82843          2.82843
-   7:        0b0.01.11       0       1                       3.36359          3.36359
-   8:        0b0.10.00       0      -2                             0                0
-   9:        0b0.10.01       0      -2                      0.297302         0.297302
-  10:        0b0.10.10       0      -2                      0.353553         0.353553
-  11:        0b0.10.11       0      -2                      0.420448         0.420448
-  12:        0b0.11.00       0      -1                           0.5              0.5
-  13:        0b0.11.01       0      -1                      0.594604         0.594604
-  14:        0b0.11.10       0      -1                      0.707107         0.707107
-  15:        0b0.11.11       0      -1                      0.840896         0.840896
-  16:        0b1.00.00       1       0                            -1               -1
-  17:        0b1.00.01       1       0                      -1.18921         -1.18921
-  18:        0b1.00.10       1       0                      -1.41421         -1.41421
-  19:        0b1.00.11       1       0                      -1.68179         -1.68179
-  20:        0b1.01.00       1       1                            -2               -2
-  21:        0b1.01.01       1       1                      -2.37841         -2.37841
-  22:        0b1.01.10       1       1                      -2.82843         -2.82843
-  23:        0b1.01.11       1       1                      -3.36359         -3.36359
-  24:        0b1.10.00       1      -2                     -nan(ind)        -nan(ind)
-  25:        0b1.10.01       1      -2                     -0.297302        -0.297302
-  26:        0b1.10.10       1      -2                     -0.353553        -0.353553
-  27:        0b1.10.11       1      -2                     -0.420448        -0.420448
-  28:        0b1.11.00       1      -1                          -0.5             -0.5
-  29:        0b1.11.01       1      -1                     -0.594604        -0.594604
-  30:        0b1.11.10       1      -1                     -0.707107        -0.707107
-  31:        0b1.11.11       1      -1                     -0.840896        -0.840896
- */
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -164,20 +98,25 @@ try {
 #if MANUAL_TESTING
 
 	using DBNS4_1_mod = dbns<4, 1, std::uint8_t, Behavior::Wrapping>;
-	using DBNS4_1_sat = dbns<4, 1, std::uint8_t>;
+	using DBNS4_1_sat = dbns<4, 1, std::uint8_t, Behavior::Saturating>;
 	using DBNS4_2     = dbns<4, 2, std::uint8_t>;
-	using DBNS4_3_sat = dbns<4, 3, std::uint8_t>;
 	using DBNS5_2     = dbns<5, 2, std::uint8_t>;
 	using DBNS8_3     = dbns<8, 3, std::uint8_t>;
 	using DBNS9_4     = dbns<9, 4, std::uint8_t>;
-	using DBNS9_8_sat = dbns<9, 8, std::uint8_t>;
 	using DBNS16_5    = dbns<16, 5, std::uint16_t>;
 
+	// nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2>(true), "dbns<4,2, uint8_t>", test_tag);
+
 	{
-		DBNS4_2 a{ 3 }, b{ 3 }, c{ 0 };
+		DBNS4_2 a{ 3 }, b{ 0.375 }, c{ 0 }, one{ 1 };
+		ReportValue(one, "one");
+		c = a * b;
+		ReportBinaryOperation(a, "*", b, c);
+		a = 0.25; b = 0.25;
 		c = a * b;
 		ReportBinaryOperation(a, "*", b, c);
 	}
+	return 0;
 
 	// generate individual testcases to hand trace/debug
 	TestCase<DBNS4_1_sat, float>(TestCaseOperator::MUL, 0.353f, -0.353f);
@@ -186,8 +125,10 @@ try {
 
 	{
 		// static shift variable problems
+		using DBNS4_3_sat = dbns<4, 3, std::uint8_t>;
 		DBNS4_3_sat a(0);
 		a.debugConstexprParameters();
+		using DBNS9_8_sat = dbns<9, 8, std::uint8_t>;
 		DBNS9_8_sat b(0);
 		b.debugConstexprParameters();
 	}

@@ -83,7 +83,7 @@ try {
 
 	std::string test_suite  = "dbns addition validation";
 	std::string test_tag    = "addition";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);

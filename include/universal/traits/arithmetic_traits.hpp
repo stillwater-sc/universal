@@ -23,7 +23,7 @@ namespace sw { namespace universal {
 		std::stringstream str;
 		str << std::left << std::setw(WIDTH_TYPE_TAG) << type_tag(Ty());
 		str << " : ";
-		if (std::numeric_limits<Ty>::has_denorm == std::float_denorm_style::denorm_absent) {
+		if constexpr (std::numeric_limits<Ty>::has_denorm == std::float_denorm_style::denorm_absent) {
 			str << "min " << std::setw(13) << std::numeric_limits<Ty>::min() << "     ";
 		}
 		else {

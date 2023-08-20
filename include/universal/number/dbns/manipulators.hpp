@@ -53,7 +53,7 @@ namespace sw { namespace universal {
 	template<typename DbnsType,
 		std::enable_if_t< is_dbns<DbnsType>, bool> = true
 	>
-	inline bool isInRange(double v) {
+	inline constexpr bool isInRange(double v) noexcept {
 		DbnsType a{};
 
 		bool inside = true;

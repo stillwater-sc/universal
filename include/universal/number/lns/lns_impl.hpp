@@ -324,7 +324,7 @@ public:
 				value >>= bitsInBlock;
 			}
 		}
-		_block.setblock(MSU, _block[MSU] & MSU_MASK); // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block.setblock(MSU, static_cast<bt>(_block[MSU] & MSU_MASK)); // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
 	
 	// create specific number system values of interest
