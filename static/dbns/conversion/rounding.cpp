@@ -77,8 +77,8 @@ namespace sw { namespace universal {
 		using std::round;
 
 		DbnsType doubleBaseNumber{ 0 };
-		typedef DbnsType::BlockType BlockType;
-		constexpr unsigned nbits   = DbnsType::nbits;
+		typedef typename DbnsType::BlockType BlockType;
+		//constexpr unsigned nbits   = DbnsType::nbits;
 		constexpr unsigned fbbits  = DbnsType::fbbits;
 		constexpr unsigned sbbits  = DbnsType::sbbits;
 		constexpr uint64_t FB_MASK = DbnsType::FB_MASK;
@@ -160,7 +160,7 @@ namespace sw { namespace universal {
 		assert(best_b >= 0); // second exponent is negative
 		int a = static_cast<unsigned>(-best_a);
 		int b = static_cast<unsigned>(best_b);
-		if (a < 0 || a > MAX_A || b > MAX_B) {
+		if (a < 0 || a > static_cast<int>(MAX_A) || b > static_cast<int>(MAX_B)) {
 			// try to project the value back into valid pairs
 			// the approximations of unity looks like (8,-5), (19,-12), (84,-53),... 
 			// they grow too fast and in a rather irregular manner. There are more 
