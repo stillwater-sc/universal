@@ -105,8 +105,8 @@ try {
 	//using DBNS9_4     = dbns<9, 4, std::uint8_t>;
 	using DBNS16_5    = dbns<16, 5, std::uint16_t>;
 
-	// nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2>(true), "dbns<4,2, uint8_t>", test_tag);
-	// nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2>(true), "dbns<5,2, uint8_t>", test_tag);
+	 nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2>(true), "dbns<4,2, uint8_t>", test_tag);
+	 nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2>(true), "dbns<5,2, uint8_t>", test_tag);
 
 	{
 		float d{ 0 };
@@ -115,10 +115,10 @@ try {
 		c = a * b;
 		ReportBinaryOperation(a, "*", b, c);
 		d = 4.5 * 3.375;
-		ReportValue(d, "d should be 15.1875");
+		ReportValue(d, "d is 15.1875");
 		c = d;
 		ReportValue(c, "c should be 13.5");
-		return 0;
+
 		c = a * b;
 		ReportBinaryOperation(a, "*", b, c);
 		d = 0.5 * 1.125;

@@ -35,13 +35,13 @@ namespace sw { namespace universal {
 				double db = double(b);
 
 				double ref = da + db;
-				if (reportTestCases && !isInRange<DbnsType>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
-				}
+//				if (reportTestCases && !isInRange<DbnsType>(ref)) {
+//					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+//				}
 				c = a + b;
 				cref = ref;
-				//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-				//std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
+//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
+//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				if (c != cref) {
 					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
 					++nrOfFailedTestCases;
@@ -98,6 +98,7 @@ try {
 	using DBNS16_5_sat = dbns<16, 5, std::uint16_t>;
 
 	// generate individual testcases to hand trace/debug
+	TestCase< DBNS4_1_sat, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
 	TestCase< DBNS5_2_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 	TestCase< DBNS8_3_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 	TestCase< DBNS9_4_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);

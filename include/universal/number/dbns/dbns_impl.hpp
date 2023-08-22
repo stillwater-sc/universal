@@ -550,7 +550,6 @@ public:
 			}
 			return static_cast<uint32_t>(bits);
 		}
-		return 0ul;
 	}
 	explicit operator int()       const noexcept { return to_signed<int>(); }
 	explicit operator long()      const noexcept { return to_signed<long>(); }
@@ -687,6 +686,7 @@ protected:
 		int best_b = 500;
 		for (int b = 0; b <= static_cast<int>(SB_MASK); ++b) {
 			int a = static_cast<int>(round((scale - b * log2of3))); // find the first base exponent that is closest to the value
+			if (a > 0 || a > static_cast<int>(MAX_A)) continue;
 			double err = abs(scale - (a + b * log2of3));
 			if constexpr (bDebug) {
 				double fb = pow(2.0, a);
@@ -702,8 +702,9 @@ protected:
 		}
 		if constexpr (bDebug) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
 		assert(best_b >= 0); // second exponent is negative
-		int a = static_cast<unsigned>(-best_a);
-		int b = static_cast<unsigned>(best_b);
+		clear();
+		int a = -best_a;
+		int b = best_b;
 		if (a < 0 || a > static_cast<int>(MAX_A) || b > static_cast<int>(MAX_B)) {
 			// try to project the value back into valid pairs
 			// the approximations of unity looks like (8,-5), (19,-12), (84,-53),... 
@@ -712,10 +713,11 @@ protected:
 			// should be sufficient to figure out a good solution to the problem.
 			// 2^3*3^-2 = 0.888  2^-3*3^2 = 1.125
 			// 2^8*3^-5 = 1.053  2^-8*3^5 = 0.949
-			int first[] = { 3, -3, 5, -5, 8, -8, 19, -19, 84, -84 };
-			int second[] = { 2, -2, 3, -3, 5, -5, 12, -12, 53, -53 };
+			// multiplier   0.5, 1.5, 0.6, 0.889, 1.125, 0.949, 1.053.....
+			int first[]  = { 1, 1, -1, 3, -3, 5, -5, 8, -8, 19, -19, 84, -84 };
+			int second[] = { 0, 1, -1, 2, -2, 3, -3, 5, -5, 12, -12, 53, -53 };
 			bool unableToAdjust{ true };
-			for (unsigned i = 0; i < 10; ++i) {
+			for (unsigned i = 0; i < 13; ++i) {
 				int adjusted_a = a - first[i];
 				int adjusted_b = b - second[i];
 				if (adjusted_a >= 0 && adjusted_a < static_cast<int>(MAX_A) && adjusted_b >= 0 && adjusted_b < static_cast<int>(MAX_B)) {
@@ -723,6 +725,7 @@ protected:
 					setexponent(1, static_cast<unsigned>(adjusted_b));
 					setsign(s);
 					unableToAdjust = false;
+					break;
 				}
 			}
 			if (unableToAdjust) {
@@ -785,9 +788,9 @@ protected:
 		static_assert(fbbits <= minSubnormalExponent, "dbns::to_ieee754: fraction is too small to represent with requested floating-point type");
 
 		TargetFloat dim1, dim2;
-		dim1 = ipow(base0, extractExponent(0));
-		dim2 = ipow(base1, extractExponent(1));
-		return signValue * dim1 * dim2;
+		dim1 = ipow(TargetFloat(base0), extractExponent(0));
+		dim2 = ipow(TargetFloat(base1), extractExponent(1));
+		return static_cast<TargetFloat>(signValue) * dim1 * dim2;
 	}
 
 private:

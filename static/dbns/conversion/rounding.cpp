@@ -79,9 +79,9 @@ namespace sw { namespace universal {
 		DbnsType doubleBaseNumber{ 0 };
 		typedef typename DbnsType::BlockType BlockType;
 		//constexpr unsigned nbits   = DbnsType::nbits;
-		constexpr unsigned fbbits  = DbnsType::fbbits;
-		constexpr unsigned sbbits  = DbnsType::sbbits;
-		constexpr uint64_t FB_MASK = DbnsType::FB_MASK;
+		//constexpr unsigned fbbits  = DbnsType::fbbits;
+		//constexpr unsigned sbbits  = DbnsType::sbbits;
+		//constexpr uint64_t FB_MASK = DbnsType::FB_MASK;
 		constexpr uint64_t SB_MASK = DbnsType::SB_MASK;
 		constexpr uint64_t MAX_A   = DbnsType::MAX_A;
 		constexpr uint64_t MAX_B   = DbnsType::MAX_B;
@@ -137,29 +137,34 @@ namespace sw { namespace universal {
 		// between the result and the value we are trying to approximate.
 		constexpr bool bDebug = true;
 		double scale = log2(abs(v));
-		if constexpr (bDebug) std::cout << "scale : " << scale << '\n';
+		if constexpr (bDebug) std::cout << "input value : " << v << " scale : " << scale << '\n';
 		double lowestError = 1.0e10;
 		int best_a = 500;
 		int best_b = 500;
 		for (int b = 0; b <= static_cast<int>(SB_MASK); ++b) {
 			int a = static_cast<int>(round((scale - b * log2of3))); // find the first base exponent that is closest to the value
+			if (a > 0 || a > static_cast<int>(MAX_A)) continue;
 			double err = abs(scale - (a + b * log2of3));
 			if constexpr (bDebug) {
 				double fb = pow(2.0, a);
 				double sb = pow(3.0, b);
 				double value = fb * sb;
-				std::cout << "a : " << a << " b : " << b << " err : " << err << " fb : " << fb << " sb : " << sb << " value : " << value << '\n';
+				std::cout << "a : " <<std::setw(3) << a << " b : " << std::setw(3) << b << " err : " << std::setw(12) << err << " fb : " << std::setw(10) << fb << " sb : " << std::setw(10) << sb << " value : " << std::setw(10) << value;
 			}
 			if (err < lowestError) {
+				if constexpr (bDebug) std::cout << " ACCEPTED\n";
 				lowestError = err;
 				best_a = a;
 				best_b = b;
 			}
+			else {
+				if constexpr (bDebug) std::cout << "                 REJECTED\n";
+			}
 		}
 		if constexpr (bDebug) std::cout << "best a : " << best_a << " best b : " << best_b << " lowest err : " << lowestError << '\n';
 		assert(best_b >= 0); // second exponent is negative
-		int a = static_cast<unsigned>(-best_a);
-		int b = static_cast<unsigned>(best_b);
+		int a = -best_a;
+		int b = best_b;
 		if (a < 0 || a > static_cast<int>(MAX_A) || b > static_cast<int>(MAX_B)) {
 			// try to project the value back into valid pairs
 			// the approximations of unity looks like (8,-5), (19,-12), (84,-53),... 
@@ -168,10 +173,11 @@ namespace sw { namespace universal {
 			// should be sufficient to figure out a good solution to the problem.
 			// 2^3*3^-2 = 0.888  2^-3*3^2 = 1.125
 			// 2^8*3^-5 = 1.053  2^-8*3^5 = 0.949
-			int first[] = { 3, -3, 5, -5, 8, -8, 19, -19, 84, -84 };
-			int second[] = { 2, -2, 3, -3, 5, -5, 12, -12, 53, -53 };
+			// multiplier   0.5, 1.5, 0.6, 0.889, 1.125, 0.949, 1.053.....
+			int first[] =  { 1, 1, -1, 3, -3, 5, -5, 8, -8, 19, -19, 84, -84 };
+			int second[] = { 0, 1, -1, 2, -2, 3, -3, 5, -5, 12, -12, 53, -53 };
 			bool unableToAdjust{ true };
-			for (unsigned i = 0; i < 10; ++i) {
+			for (unsigned i = 0; i < 13; ++i) {
 				int adjusted_a = a - first[i];
 				int adjusted_b = b - second[i];
 				if (adjusted_a >= 0 && adjusted_a < static_cast<int>(MAX_A) && adjusted_b >= 0 && adjusted_b < static_cast<int>(MAX_B)) {
@@ -179,6 +185,7 @@ namespace sw { namespace universal {
 					doubleBaseNumber.setexponent(1, static_cast<unsigned>(adjusted_b));
 					doubleBaseNumber.setsign(s);
 					unableToAdjust = false;
+					break;
 				}
 			}
 			if (unableToAdjust) {
@@ -196,7 +203,6 @@ namespace sw { namespace universal {
 			}
 		}
 		else {
-			a <<= sbbits;
 			doubleBaseNumber.setexponent(0, static_cast<BlockType>(a));
 			doubleBaseNumber.setexponent(1, static_cast<BlockType>(b));
 			doubleBaseNumber.setsign(s);
@@ -238,22 +244,26 @@ try {
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
+	// GenerateDbnsTable<4, 1>(std::cout);
 	// GenerateDbnsTable<5, 2>(std::cout);
 	// GenerateDbnsTable<7, 3>(std::cout);
-
 
 	using DBNS5_2_sat = dbns<5, 2, uint8_t, Behavior::Saturating>;
 	using DBNS7_3_sat = dbns<7, 3, uint8_t, Behavior::Saturating>;
 
-	DBNS5_2_sat d{ 0 };
+	float f = 4.5 * 3.375;
+	DBNS5_2_sat d{ f }, d2{ 0 };
+	d2 = convert_ieee754<DBNS5_2_sat>(f);
+	std::cout << std::setw(10) << f << " : " << to_binary(d) << " : " << to_binary(d2) << '\n';
+	return 0;
+
 	for (unsigned i = 0; i < 32; ++i) {
 		d.setbits(i);
-		float f = float(d);
-		auto d2 = convert_ieee754<DBNS5_2_sat>(f);
+		f = float(d);
+		d2 = convert_ieee754<DBNS5_2_sat>(f);
 		std::cout << std::setw(10) << f << " : " << to_binary(d) << " : " << to_binary(d2) << '\n';
+		if (d == d2) std::cout << "   PASS\n"; else std::cout << "   FAIL\n";
 	}
-
-
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -301,6 +311,26 @@ catch (...) {
 
 
 /*
+
+  Generate Value table for an DBNS<4,1> in TXT format
+   #           Binary    sign   scale                         value          format
+   0:         0b0.0.00       0       0                             1                1
+   1:         0b0.0.01       0       1                             3                3
+   2:         0b0.0.10       0       3                             9                9
+   3:         0b0.0.11       0       4                            27               27
+   4:         0b0.1.00       0       1                             0                0
+   5:         0b0.1.01       0       2                           1.5              1.5
+   6:         0b0.1.10       0       4                           4.5              4.5
+   7:         0b0.1.11       0       5                          13.5             13.5
+   8:         0b1.0.00       1       0                            -1               -1
+   9:         0b1.0.01       1       1                            -3               -3
+  10:         0b1.0.10       1       3                            -9               -9
+  11:         0b1.0.11       1       4                           -27              -27
+  12:         0b1.1.00       1       1                     -nan(ind)        -nan(ind)
+  13:         0b1.1.01       1       2                          -1.5             -1.5
+  14:         0b1.1.10       1       4                          -4.5             -4.5
+  15:         0b1.1.11       1       5                         -13.5            -13.5
+
 Generate Value table for an DBNS<5,2> in TXT format
    #           Binary    sign   scale                         value          format
    0:        0b0.00.00       0       0                             1                1

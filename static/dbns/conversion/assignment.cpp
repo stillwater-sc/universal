@@ -107,9 +107,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<4, 1, std::uint8_t> >(reportTestCases), type_tag(dbns<4, 1, std::uint8_t>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<4, 2, std::uint8_t> >(reportTestCases), type_tag(dbns<4, 2, std::uint8_t>()), test_tag);
 
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<5, 2, std::uint8_t> >(reportTestCases), type_tag(dbns<5, 2, std::uint8_t>()), test_tag);
+
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<6, 2, std::uint8_t> >(reportTestCases), type_tag(dbns<6, 2, std::uint8_t>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<6, 3, std::uint8_t> >(reportTestCases), type_tag(dbns<6, 3, std::uint8_t>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<6, 4, std::uint8_t> >(reportTestCases), type_tag(dbns<6, 4, std::uint8_t>()), test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<7, 3, std::uint8_t> >(reportTestCases), type_tag(dbns<7, 3, std::uint8_t>()), test_tag);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<8, 2, std::uint8_t> >(reportTestCases), type_tag(dbns<8, 2, std::uint8_t>()), test_tag);
 	nrOfFailedTestCases += ReportTestResult(ValidateAssignment< dbns<8, 3, std::uint8_t> >(reportTestCases), type_tag(dbns<8, 3, std::uint8_t>()), test_tag);
