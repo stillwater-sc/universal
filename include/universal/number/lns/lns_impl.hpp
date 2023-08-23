@@ -16,6 +16,21 @@
 
 namespace sw { namespace universal {
 		
+	// arithmetic event statistics
+	constexpr bool bCollectLnsEventStatistics = false;  // by default, event statistics are disabled
+	struct LnsArithmeticStatistics {
+		LnsArithmeticStatistics() : conversionEvents{ 0 } {}
+		void reset() {
+			conversionEvents = 0;
+		}
+		int conversionEvents;
+	};
+	inline std::ostream& operator<<(std::ostream& ostr, const LnsArithmeticStatistics& stats) {
+		ostr << "Conversions                     : " << stats.conversionEvents << '\n';
+		return ostr;
+	}
+	static LnsArithmeticStatistics lnsStats;
+
 // convert a floating-point value to a specific lns configuration. Semantically, p = v, return reference to p
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 inline lns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, lns<nbits, rbits, bt, xtra...>& p) {
@@ -532,6 +547,7 @@ protected:
 	}
 	template<typename Real>
 	CONSTEXPRESSION lns& convert_ieee754(Real v) noexcept {
+		if constexpr (bCollectLnsEventStatistics) ++lnsStats.conversionEvents;
 		bool s{ false };
 		uint64_t unbiasedExponent{ 0 };
 		uint64_t rawFraction{ 0 };

@@ -23,8 +23,9 @@ namespace sw { namespace universal {
 		//constexpr Behavior behavior = DbnsType::behavior;
 		//using bt = typename DbnsType::BlockType;
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
-
 		int nrOfFailedTestCases = 0;
+
+		if constexpr (bCollectDbnsEventStatistics) dbnsStats.reset();
 
 		DbnsType a, b, c, cref;
 		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
@@ -40,14 +41,10 @@ namespace sw { namespace universal {
 //				}
 				c = a + b;
 				cref = ref;
-//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				if (c != cref) {
 					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
-					//std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-					//std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				}
 				else {
 					// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
@@ -55,6 +52,7 @@ namespace sw { namespace universal {
 				if (nrOfFailedTestCases > 24) return nrOfFailedTestCases;
 			}
 		}
+		if constexpr (bCollectDbnsEventStatistics) if (reportTestCases) std::cout << dbnsStats << '\n';
 		return nrOfFailedTestCases;
 	}
 
@@ -90,39 +88,67 @@ try {
 
 #if MANUAL_TESTING
 
-	using DBNS4_1_sat = dbns<4, 1, std::uint8_t>;
-	using DBNS4_2_sat = dbns<4, 2, std::uint8_t>;
-	using DBNS5_2_sat = dbns<5, 2, std::uint8_t>;
-	using DBNS8_3_sat = dbns<8, 3, std::uint8_t>;
-	using DBNS9_4_sat = dbns<9, 4, std::uint8_t>;
-	using DBNS16_5_sat = dbns<16, 5, std::uint16_t>;
+	using DBNS4_1_sat = dbns<4, 1, std::uint8_t, Behavior::Saturating>;
+	using DBNS4_2_sat = dbns<4, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS5_2_sat = dbns<5, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS6_2_sat = dbns<6, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS6_3_sat = dbns<6, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS7_3_sat = dbns<7, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS8_3_sat = dbns<8, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS8_4_sat = dbns<8, 4, std::uint8_t, Behavior::Saturating>;
+	using DBNS9_4_sat = dbns<9, 4, std::uint8_t, Behavior::Saturating>;
+	using DBNS16_5_sat = dbns<16, 5, std::uint16_t, Behavior::Saturating>;
 
 	// generate individual testcases to hand trace/debug
+#ifdef LATER
 	TestCase< DBNS4_1_sat, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
 	TestCase< DBNS5_2_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 	TestCase< DBNS8_3_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 	TestCase< DBNS9_4_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
 	TestCase< DBNS16_5_sat, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_1_sat>(true), "dbns<4,1,uint8_t>", test_tag);
+	reportTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_1_sat>(reportTestCases), "dbns<4,1,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_2_sat>(reportTestCases), "dbns<4,2,uint8_t>", test_tag);
+
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS5_2_sat>(reportTestCases), "dbns<5,2,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS6_2_sat>(reportTestCases), "dbns<6,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS6_3_sat>(reportTestCases), "dbns<6,3,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS7_3_sat>(reportTestCases), "dbns<7,3,uint8_t>", test_tag);
+
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_3_sat>(reportTestCases), "dbns<8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_4_sat>(reportTestCases), "dbns<8,4,uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	using DBNS4_1_sat = dbns<4, 1, std::uint8_t>;
-	using DBNS4_2_sat = dbns<4, 2, std::uint8_t>;
-	using DBNS5_2_sat = dbns<5, 2, std::uint8_t>;
-	using DBNS8_3_sat = dbns<8, 3, std::uint8_t>;
+	using DBNS4_1_sat = dbns<4, 1, std::uint8_t, Behavior::Saturating>;
+	using DBNS4_2_sat = dbns<4, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS5_2_sat = dbns<5, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS6_2_sat = dbns<6, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS6_3_sat = dbns<6, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS7_3_sat = dbns<7, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS8_3_sat = dbns<8, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS8_4_sat = dbns<8, 4, std::uint8_t, Behavior::Saturating>;
+
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_1_sat>(reportTestCases), "dbns<4,1,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_2_sat>(reportTestCases), "dbns<4,2,uint8_t>", test_tag);
+	
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS5_2_sat>(reportTestCases), "dbns<5,2,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS6_2_sat>(reportTestCases), "dbns<6,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS6_3_sat>(reportTestCases), "dbns<6,3,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS7_3_sat>(reportTestCases), "dbns<7,3,uint8_t>", test_tag);
+	
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_3_sat>(reportTestCases), "dbns<8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_4_sat>(reportTestCases), "dbns<8,4,uint8_t>", test_tag);
 
 #endif
 

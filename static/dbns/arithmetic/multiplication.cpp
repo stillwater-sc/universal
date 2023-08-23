@@ -25,6 +25,8 @@ namespace sw { namespace universal {
 		constexpr size_t NR_ENCODINGS = (1ull << nbits);
 		int nrOfFailedTestCases = 0;
 
+		if constexpr (bCollectDbnsEventStatistics) dbnsStats.reset();
+
 		DbnsType a{}, b{}, c{}, cref{}, maxvalue(SpecificValue::maxpos);
 		double maxpos = double(maxvalue);
 		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
@@ -40,8 +42,6 @@ namespace sw { namespace universal {
 //				}
 				c = a * b;
 				cref = ref;
-//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				if (c != cref) {
 					if (!isInRange<DbnsType>(ref)) {
 						if (abs(ref) > maxpos) {
@@ -54,8 +54,6 @@ namespace sw { namespace universal {
 					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
 					++nrOfFailedTestCases;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
-//					std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-//					std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
 				}
 				else {
 					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
@@ -63,6 +61,7 @@ namespace sw { namespace universal {
 				if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
 			}
 		}
+		if constexpr (bCollectDbnsEventStatistics) if (reportTestCases) std::cout << dbnsStats << '\n';
 		return nrOfFailedTestCases;
 	}
 

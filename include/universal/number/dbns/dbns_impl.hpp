@@ -15,6 +15,28 @@
 
 namespace sw { namespace universal {
 		
+	// arithmetic event statistics
+	constexpr bool bCollectDbnsEventStatistics = false;  // by default, event statistics are disabled
+	struct DbnsArithmeticStatistics {
+		DbnsArithmeticStatistics() : conversionEvents{ 0 }, exponentOverflowDuringSearch{ 0 }, roundingFailure{ 0 } {}
+		void reset() {
+			conversionEvents = 0;
+			exponentOverflowDuringSearch = 0;
+			roundingFailure = 0;
+		}
+		int conversionEvents;
+		int exponentOverflowDuringSearch;
+		int roundingFailure;
+	};
+	inline std::ostream& operator<<(std::ostream& ostr, const DbnsArithmeticStatistics& stats) {
+		ostr << "Conversions                     : " << stats.conversionEvents << '\n';
+		ostr << "Exponent Overflow During Search : " << stats.exponentOverflowDuringSearch << '\n';
+		ostr << "Rounding Successes              : " << (stats.conversionEvents - stats.roundingFailure) << '\n';
+		ostr << "Rounding Failures               : " << stats.roundingFailure << '\n';
+		return ostr;
+	}
+	static DbnsArithmeticStatistics dbnsStats;
+
 // convert a floating-point value to a specific dbns configuration. Semantically, p = v, return reference to p
 template<unsigned nbits, unsigned fbbits, typename bt, auto... xtra>
 inline dbns<nbits, fbbits, bt, xtra...>& convert(const triple<nbits, bt>& v, dbns<nbits, fbbits, bt, xtra...>& p) {
@@ -626,6 +648,7 @@ protected:
 	}
 	template<typename Real>
 	CONSTEXPRESSION dbns& convert_ieee754(Real v) noexcept {
+		if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.conversionEvents;
 		using std::abs;
 		using std::log2;
 		using std::pow;
@@ -682,11 +705,14 @@ protected:
 		double scale = log2(abs(v)); 
 		if constexpr (bDebug) std::cout << "scale : " << scale << '\n';
 		double lowestError = 1.0e10;
-		int best_a = 500;
-		int best_b = 500;
+		int best_a = std::numeric_limits<int>::max();
+		int best_b = std::numeric_limits<int>::max();
 		for (int b = 0; b <= static_cast<int>(SB_MASK); ++b) {
 			int a = static_cast<int>(round((scale - b * log2of3))); // find the first base exponent that is closest to the value
-			if (a > 0 || a > static_cast<int>(MAX_A)) continue;
+			if (a > 0 || a > static_cast<int>(MAX_A)) {
+				if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.exponentOverflowDuringSearch;
+				continue;
+			}
 			double err = abs(scale - (a + b * log2of3));
 			if constexpr (bDebug) {
 				double fb = pow(2.0, a);
@@ -729,6 +755,7 @@ protected:
 				}
 			}
 			if (unableToAdjust) {
+				if constexpr (bCollectDbnsEventStatistics) ++dbnsStats.roundingFailure;
 				//if (a > b) {
 				if (best_a < 0 && best_b >= 0) {
 					setexponent(0, MAX_A);
