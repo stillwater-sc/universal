@@ -369,10 +369,10 @@ public:
 				value.setnormal();
 				value.setsign(rhs.sign());
 				value.setscale(rhs.scale());
-				constexpr unsigned rhsFbits = nnbits - 1ul - ees;
-				blockbinary<rhsFbits, bbt, BinaryNumberType::Signed> fraction;
+				//constexpr unsigned rhsFbits = nnbits - 1ul - ees;
+				//blockbinary<rhsFbits, bbt, BinaryNumberType::Signed> fraction;
 				//rhs.fraction<rhsFbits>(fraction);
-				std::cout << "fraction : " << to_binary(fraction) << '\n';
+				//std::cout << "fraction : " << to_binary(fraction) << '\n';
 				//value.setfraction(fraction);
 				convert(value, *this);
 			}
@@ -2595,7 +2595,7 @@ public:
 					std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
 #endif
 					// construct the target cfloat
-					uint64_t bits = (s ? 1ull : 0ull);
+					bits = (s ? 1ull : 0ull);
 					bits <<= es;
 					bits |= biasedExponent;
 					bits <<= fbits;

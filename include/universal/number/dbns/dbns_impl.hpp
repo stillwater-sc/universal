@@ -28,7 +28,8 @@ namespace sw { namespace universal {
 		int exponentOverflowDuringSearch;
 		int roundingFailure;
 	};
-	inline std::ostream& operator<<(std::ostream& ostr, const DbnsArithmeticStatistics& stats) {
+
+	inline std::ostream& operator<<(std::ostream& ostr, const DbnsArithmeticStatistics stats) {
 		ostr << "Conversions                     : " << stats.conversionEvents << '\n';
 		ostr << "Exponent Overflow During Search : " << stats.exponentOverflowDuringSearch << '\n';
 		ostr << "Rounding Successes              : " << (stats.conversionEvents - stats.roundingFailure) << '\n';

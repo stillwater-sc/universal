@@ -118,13 +118,15 @@ try {
 	std::streamsize prec = std::cout.precision();
 	std::cout << std::setprecision(3);
 	
-	// generate a set of N vectors of length L in double as reference
+
 	using fp12 = cfloat<12, 5, uint16_t, true, true, false>; // accumulation type
 
-	double mean{ 0.0 }, stddev{ 1.0 };
+	double mean{ 0 }, stddev{ 1.0 };
 	StatisticalSampling<fp8e3m4, fp12>(mean, stddev);
 	StatisticalSampling<fp8e4m3, fp12>(mean, stddev);
 	StatisticalSampling<fp8e5m2, fp12>(mean, stddev);
+
+	// input fp<4,3>, multiply output fp<6,4>, accumulation output fp<6,4>
 
 	std::cout << std::setprecision(prec);
 
