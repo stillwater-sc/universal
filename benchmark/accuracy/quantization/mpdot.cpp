@@ -15,7 +15,7 @@ namespace sw {
 	namespace universal {
 
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
-		OutputType DotProductExperiment(const blas::vector<InputType>& a, const blas::vector<InputType>& b) {
+		OutputType dot(const blas::vector<InputType>& a, const blas::vector<InputType>& b) {
 			size_t Na = size(a);
 			size_t Nb = size(b);
 			assert(Na == Nb && "vectors are not of the same length");
@@ -35,69 +35,144 @@ namespace sw {
 			return result;
 		}
 
+
 		/// <summary>
 		/// generate the custom dot products
 		/// </summary>
 		/// <param name="data">input vectors</param>
 		/// <param name="dots">output dot product results</param>
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
-		void GenerateSpecializedDotProducts(const std::vector<sw::universal::blas::vector<InputType>>& data, std::vector<OutputType>& dots) {
+		void GenerateDotProducts(const std::vector<sw::universal::blas::vector<InputType>>& data, std::vector<OutputType>& dots) {
+			using namespace sw::universal;
+			std::cout << "input arithmetic type         : " << symmetry_range<InputType>() << '\n';
+			std::cout << "product arithmetic type       : " << symmetry_range<ProductType>() << '\n';
+			std::cout << "accumulation arithmetic type  : " << symmetry_range<AccumulationType>() << '\n';
+			std::cout << "output arithmetic type        : " << symmetry_range<OutputType>() << '\n';
+			size_t N = size(data);
+			dots.resize(N);
+			for (size_t i = 0; i < N; ++i) {
+				auto result = dot<InputType, ProductType, AccumulationType, OutputType>(data[0], data[i]);
+				std::cout << "custom dot product : " << to_binary(result) << " : " << result << '\n';
+				dots[i] = result;
+			}
+		}
+
+		// generate a test set of N vectors of length L in double as reference
+		void GenerateTestVectors(unsigned N, unsigned L, std::vector<sw::universal::blas::vector<double>>& data, double d) {
+			using namespace sw::universal;
+			blas::vector<double> reference_data(L);
+			data.resize(N);
+			for (unsigned i = 0; i < N; ++i) {
+				data[i].resize(L);
+				data[i] = d;
+			}
+		}
+
+		// generate a set of N vectors of length L in double as reference
+		void GenerateRandomVectors(unsigned N, unsigned L, std::vector<sw::universal::blas::vector<double>>& data) {
+			using namespace sw::universal;
+			blas::vector<double> reference_data(L);
+			data.resize(N);
+			double mean{ 0.0 }, stddev{ 1.0 };
+			for (unsigned i = 0; i < N; ++i) {
+				data[i].resize(L);
+				blas::gaussian_random(data[i], mean, stddev);
+			}
+		}
+
+		template<typename InputType>
+		void ConvertToInputType(const std::vector<sw::universal::blas::vector<double>>& data, std::vector<sw::universal::blas::vector<InputType>>& idata) {
+			size_t N = size(data);
+			size_t L = size(data[0]);
+			idata.resize(N);
+			for (size_t i = 0; i < size(data); ++i) {
+				idata[i].resize(L);
+				idata[i] = data[i];
+			}
+		}
+
+		template<typename Scalar>
+		void PrintStdVector(const std::string& header, const std::vector<Scalar>& vec) {
+			std::cout << "\n>>>>>>>  " << header << "  <<<<<<<\n";
+			for (auto e : vec) {
+				std::cout << e << '\n';
+			}
+		}
+
+		template<typename DataType>
+		void PrintDataSet(const std::string& header, const std::vector<sw::universal::blas::vector<DataType>>& data) {
+			std::cout << "\n>>>>>>>  " << header << "  <<<<<<<\n";
+			for (auto e : data) {
+				std::cout << e << '\n';
+			}
+		}
+
+
+		/// <summary>
+		/// generate the reference dot products
+		/// </summary>
+		/// <param name="data">input vectors</param>
+		/// <param name="dots">output dot product results</param>
+		void GenerateReferenceDotProducts(const std::vector<sw::universal::blas::vector<double>>& data, std::vector<double>& dots) {
 			using namespace sw::universal;
 			size_t N = size(data);
 			dots.resize(N);
 			for (size_t i = 0; i < N; ++i) {
-				auto result = DotProductExperiment<InputType, ProductType, AccumulationType, OutputType>(data[0], data[i]);
-				std::cout << "custom dot product : " << to_binary(result) << " : " << result << '\n';
+				auto result = dot<double, double, double, double>(data[0], data[i]);
+				std::cout << "reference dot product : " << to_binary(result) << " : " << result << '\n';
+				dots[i] = result;
+			}
+		}
+
+		/// <summary>
+		/// Given two values, u, and v, calculate the relative error between u and v
+		/// </summary>
+		/// <param name="u"></param>
+ 		/// <param name="v"></param>
+		/// <returns>relative error half of the difference ln(v) - ln(u)</returns>
+		double relativeError(double u, double v) {
+			using std::log;
+			double relativeErr = 0.5* (log(v) - log(u));
+			return relativeErr;
+		}
+
+		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
+		void QuantizationVsAccuracy(const std::vector<sw::universal::blas::vector<double>>& data) {
+			using namespace sw::universal;
+			std::cout << "input arithmetic type         : " << symmetry_range<InputType>() << '\n';
+			std::cout << "product arithmetic type       : " << symmetry_range<ProductType>() << '\n';
+			std::cout << "accumulation arithmetic type  : " << symmetry_range<AccumulationType>() << '\n';
+			std::cout << "output arithmetic type        : " << symmetry_range<OutputType>() << '\n';
+
+			size_t N = size(data);
+			PrintDataSet("Reference data set", data);
+			std::vector<double> referenceDots(N);
+			GenerateReferenceDotProducts(data, referenceDots);
+			PrintStdVector("reference dots ", referenceDots);
+
+			std::vector < blas::vector<InputType> > idata;
+			ConvertToInputType(data, idata);
+			PrintDataSet("InputType data set", idata);
+
+			std::vector< OutputType > dots;
+			GenerateDotProducts< InputType, ProductType, AccumulationType, OutputType >(idata, dots);
+
+			// we now have N samples on which we can calculate a relative error.
+			std::vector<double> errors(N);
+			for (size_t i = 0; i < N; ++i) {
+				double u{ referenceDots[i] };
+				double v{ dots[i] };
+				errors[i] = relativeError(u, v);
+			}
+
+			constexpr unsigned WIDTH = 10;
+			for (size_t i = 0; i < N; ++i) {
+				std::cout << std::setw(WIDTH) << dots[i] << std::setw(WIDTH) << referenceDots[i] << std::setw(WIDTH) << errors[i] << '\n';
 			}
 		}
 } }
 
-// generate a set of N vectors of length L in double as reference
-void GenerateRandomVectors(unsigned N, unsigned L, std::vector<sw::universal::blas::vector<double>>& data) {
-	using namespace sw::universal;
-	blas::vector<double> reference_data(L);
-	data.resize(N);
-	double mean{ 0.0 }, stddev{ 1.0 };
-	for (unsigned i = 0; i < N; ++i) {
-		data[i].resize(L);
-		blas::gaussian_random(data[i], mean, stddev);
-	}
-}
 
-template<typename InputType>
-void ConvertToInputType(const std::vector<sw::universal::blas::vector<double>>& data, std::vector<sw::universal::blas::vector<InputType>>& idata) {
-	size_t N = size(data);
-	size_t L = size(data[0]);
-	idata.resize(N);
-	for (size_t i = 0; i < size(data); ++i) {
-		idata[i].resize(L);
-		idata[i]  = data[i];
-	}
-}
-
-template<typename DataType>
-void PrintRandomVectors(const std::string& header, const std::vector<sw::universal::blas::vector<DataType>>& data) {
-	std::cout << "\n>>>>>>>  " << header << "  <<<<<<<\n";
-	for (auto e : data) {
-		std::cout << e << '\n';
-	}
-}
-
-
-/// <summary>
-/// generate the reference dot products
-/// </summary>
-/// <param name="data">input vectors</param>
-/// <param name="dots">output dot product results</param>
-void GenerateReferenceDotProducts(const std::vector<sw::universal::blas::vector<double>>& data, std::vector<double>& dots) {
-	using namespace sw::universal;
-	size_t N = size(data);
-	dots.resize(N);
-	for (size_t i = 0; i < N; ++i) {
-		auto result = DotProductExperiment<double, double, double, double>(data[0], data[i]);
-		std::cout << "reference dot product : " << to_binary(result) << " : " << result << '\n';
-	}
-}
 
 
 
@@ -144,18 +219,13 @@ void GenerateParetoSamples(const std::vector<sw::universal::blas::vector<double>
 	using fp9e4m4_tt = cfloat<9, 4, uint8_t, true, true, false>;
 	using fp9e6m2_tt = cfloat<9, 6, uint8_t, true, true, false>;
 
-//	DotProductExperiment<InputType, ProductType, AccumulationType, OutputType>;
-	size_t N = size(data);
-	PrintRandomVectors("Reference data set", data);
-	std::vector<double> referenceDots(N);
-	GenerateReferenceDotProducts(data, referenceDots);
+	double u{ 1.0 }, v{ 1.0 };
+	for (unsigned i = 0; i < 10; ++i) {
+		std::cout << "v : " << v << " u : " << u << " : relative error : " << relativeError(u, v) << '\n';
+		v *= 1.1;
+	}
 
-	std::vector < blas::vector<fp8e4m3_tt> > idata;
-	ConvertToInputType(data, idata);
-	PrintRandomVectors("InputType data set", idata);
-
-	std::vector< fp8e4m3_tt > dots;
-	GenerateSpecializedDotProducts< fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt >(idata, dots);
+	QuantizationVsAccuracy< fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt >(data);
 
 }
 
@@ -192,7 +262,8 @@ try {
 	std::cout << std::setprecision(3);
 	
 	std::vector<blas::vector<double>> data;
-	GenerateRandomVectors(5, 5, data);
+//	GenerateRandomVectors(5, 5, data);
+	GenerateTestVectors(5, 5, data, 0.75);
 	
 	GenerateParetoSamples(data);
 
