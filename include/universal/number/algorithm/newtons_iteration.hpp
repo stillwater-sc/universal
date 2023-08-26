@@ -6,7 +6,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/number/algorithm/trace_constants.hpp>
 #include <universal/native/ieee754.hpp>
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value.hpp>
+#undef BITBLOCK_THROW_ARITHMETIC_EXCEPTION
+#undef VALUE_THROW_ARITHMETIC_EXCEPTION
 
 namespace sw { namespace universal {
 

@@ -348,12 +348,39 @@ public:
 
 	// constructors
 	cfloat() = default;
+	cfloat(const cfloat&) = default;
+	cfloat& operator=(const cfloat&) = default;
 
-	// construct a cfloat from another, block type bt must be the same
-	template<unsigned nnbits, unsigned ees>
-	cfloat(const cfloat<nnbits, ees, bt, hasSubnormals, hasSupernormals, isSaturating>& rhs) noexcept : _block{} {
-//		static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
-		*this = double(rhs);
+	// construct a cfloat from another
+	template<unsigned nnbits, unsigned ees, typename bbt, bool ssub, bool ssup, bool ssat>
+	cfloat(const cfloat<nnbits, ees, bbt, ssub, ssup, ssat>& rhs) noexcept : _block{} {
+		if (rhs.isnan()) {
+			setnan(rhs.sign() ? NAN_TYPE_SIGNALLING : NAN_TYPE_QUIET);
+		}
+		else if (rhs.isinf()) {
+			setinf(rhs.sign());
+		}
+		else if (rhs.iszero()) {
+			setzero();
+		}
+		else {
+			if constexpr (std::is_same_v<bt, bbt>) {
+				blocktriple<fbits, BlockTripleOperator::REP, bt> value;
+				value.setnormal();
+				value.setsign(rhs.sign());
+				value.setscale(rhs.scale());
+				constexpr unsigned rhsFbits = nnbits - 1ul - ees;
+				blockbinary<rhsFbits, bbt, BinaryNumberType::Signed> fraction;
+				//rhs.fraction<rhsFbits>(fraction);
+				std::cout << "fraction : " << to_binary(fraction) << '\n';
+				//value.setfraction(fraction);
+				convert(value, *this);
+			}
+			else {
+				static_assert(nnbits < 64, "converting constructor marshalls values through native double precision, and rhs has more bits");
+				*this = double(rhs); // TODO: marshall through a proper blocktriple
+			}
+		}
 	}
 
 	// converting constructors
@@ -393,10 +420,6 @@ public:
 		}
 	}
 
-	/// <summary>
-	/// construct an cfloat from a native type, specialized for size
-	/// </summary>
-	/// <param name="iv">initial value to construct</param>
 	constexpr cfloat(signed char iv)                    noexcept : _block{} { *this = iv; }
 	constexpr cfloat(short iv)                          noexcept : _block{} { *this = iv; }
 	constexpr cfloat(int iv)                            noexcept : _block{} { *this = iv; }
@@ -427,11 +450,11 @@ public:
 	CONSTEXPRESSION cfloat& operator=(double rhs)       noexcept { return convert_ieee754(rhs); }
 
 	// guard long double support to enable ARM and RISC-V embedded environments
-#if LONG_DOUBLE_SUPPORT
+//#if LONG_DOUBLE_SUPPORT
 	CONSTEXPRESSION cfloat(long double iv)  noexcept : _block{} { *this = iv; }
 	CONSTEXPRESSION cfloat& operator=(long double rhs)  noexcept { return convert_ieee754(rhs); }
 	explicit operator long double()               const noexcept { return to_native<long double>(); }
-#endif
+//#endif
 
 	// arithmetic operators
 	// prefix operator
@@ -1247,17 +1270,6 @@ public:
 		return *this;
 	}
 
-	/// <summary>
-	/// 1's complement of the encoding
-	/// </summary>
-	/// <returns>reference to this cfloat object</returns>
-	constexpr cfloat& flip() noexcept { // in-place one's complement
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			_block[i] = bt(~_block[i]);
-		}
-		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
-		return *this;
-	}
 
 	/// <summary>
 	/// assign the value of the string representation to the cfloat
@@ -2140,6 +2152,53 @@ public:
 
 protected:
 	// HELPER methods
+
+	/// <summary>
+	/// 1's complement of the encoding used to set up specific encoding patterns.
+	/// This is not an arithmetic operator that makes sense for floating-point numbers.
+	/// </summary>
+	/// <returns>reference to this cfloat object</returns>
+	constexpr cfloat& flip() noexcept { // in-place one's complement
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			_block[i] = bt(~_block[i]);
+		}
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+
+	/// <summary>
+	/// shift left is a bit level encoding helper for fast limb-based conversions between different cfloats
+	/// </summary>
+	/// <param name="bitsToShift"></param>
+	void shiftLeft(unsigned bitsToShift) {
+		if (bitsToShift == 0) return;
+		if (bitsToShift > nbits) {
+			setzero();
+		}
+		if (bitsToShift >= bitsInBlock) {
+			int blockShift = bitsToShift / bitsInBlock;
+			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
+				_block[i] = _block[i - blockShift];
+			}
+			for (int i = blockShift - 1; i >= 0; --i) {
+				_block[i] = bt(0);
+			}
+			// adjust the shift
+			bitsToShift -= blockShift * bitsInBlock;
+			if (bitsToShift == 0) return;
+		}
+		if constexpr (MSU > 0) {
+			// construct the mask for the upper bits in the block that need to move to the higher word
+			bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+			for (unsigned i = MSU; i > 0; --i) {
+				_block[i] <<= bitsToShift;
+				// mix in the bits from the right
+				bt bits = bt(mask & _block[i - 1]);
+				_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+			}
+		}
+		_block[0] <<= bitsToShift;
+	}
 
 	// convert an unsigned integer into a cfloat
 	// TODO: this method does not protect against being called with a signed integer
@@ -3801,6 +3860,30 @@ inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> ldexp
 	int xexp = x.scale();
 	result.setexponent(xexp + exp);  // TODO: this does not work for subnormals
 	return result;
+}
+
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+inline cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> 
+fma(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x,
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> y,
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> z) {
+	cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> fused{ 0 };
+	constexpr unsigned FBITS = cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>::fbits;
+	constexpr unsigned EXTRA_FBITS = FBITS+2;
+	constexpr unsigned EXTENDED_PRECISION = nbits + EXTRA_FBITS;
+	// the C++ fma spec indicates that the x*y+z is evaluated in 'infinite' precision
+	// with only a single rounding event. The minimum finite precision that would behave like this
+	// is the precision where the product x*y does not need to be rounded, which will
+	// need at least 2*(fbits+1) mantissa bits to capture all bits that can be
+	// generated by the product.
+	cfloat<EXTENDED_PRECISION, es, bt, hasSubnormals, hasSupernormals, isSaturating> preciseX(x), preciseY(y), preciseZ(z);
+//	ReportValue(preciseX, "extended precision x");
+//	ReportValue(preciseY, "extended precision y");
+//	ReportValue(preciseZ, "extended precision z");
+	cfloat<EXTENDED_PRECISION, es, bt, hasSubnormals, hasSupernormals, isSaturating> product = preciseX * preciseY;
+//	ReportValue(product, "extended precision p");
+	fused = product + preciseZ;
+	return fused;
 }
 
 }} // namespace sw::universal

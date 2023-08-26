@@ -29,6 +29,18 @@ try {
 		ReportTrivialityOfType<TestType>();
 	}
 
+	// construction, initialization, and copy construction
+	{
+		quarter q{ 1.0f };  // literal float to fp8
+		single s(1.0);      // literal double to single
+		half h(s);          // variable single to half precision
+		fp8e5m2 fp8e5 = h;  // half to custom fp8e5m2 precision
+		std::cout << "IEEE-754 fp8     : " << to_binary(q) << " : " << q << '\n';
+		std::cout << "IEEE-754 fp16    : " << to_binary(h) << " : " << h << '\n';
+		std::cout << "IEEE-754 fp32    : " << to_binary(s) << " : " << s << '\n';
+		std::cout << "custom   fp8e5m2 : " << to_binary(fp8e5) << " : " << fp8e5 << '\n';
+	}
+
 	// default behavior
 	std::cout << "+---------    Default cfloat has no subnormals, no supernormals and is not saturating\n";
 	{
@@ -337,7 +349,8 @@ try {
 	{
 		half h(0.5), hi(0);
 		std::vector<half> v;
-		for (unsigned i = 0; i < 10; ++i) {
+		unsigned N = 10;
+		for (unsigned i = 0; i < N; ++i) {
 			ReportValue(h, "half precision");
 			v.push_back(h);
 			h *= 0.5f;
@@ -346,7 +359,7 @@ try {
 		for (auto h : v) {
 			s << h << ' ';
 		}
-		for (auto h : v) {
+		for (unsigned i = 0; i < N; ++i) {
 			s >> hi;
 			ReportValue(hi, "half precision");
 		}
