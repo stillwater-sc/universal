@@ -111,6 +111,22 @@ void StatisticalSampling(double mean, double stddev) {
 	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 4000, mean, stddev);
 }
 
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -118,6 +134,32 @@ try {
 	std::streamsize prec = std::cout.precision();
 	std::cout << std::setprecision(3);
 	
+#if MANUAL_TESTING
+
+	using namespace sw::universal;
+	using RepresentationType = fp8e4m3;
+	using AccumulationType = cfloat<12, 5, uint16_t, true, true, false>; // accumulation type
+	std::cout << "representation type : " << symmetry_range<RepresentationType>() << '\n';
+	std::cout << "accumulation type   : " << symmetry_range<AccumulationType>() << '\n';
+	unsigned nrSamples{ 100 };
+	double mean{ 0.0 }, stddev{ 1.0 };
+	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 50, mean, stddev);
+
+	return EXIT_SUCCESS;
+#else
+
+#if REGRESSION_LEVEL_1
+
+#endif
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
 
 	using fp12 = cfloat<12, 5, uint16_t, true, true, false>; // accumulation type
 
@@ -126,11 +168,12 @@ try {
 	StatisticalSampling<fp8e4m3, fp12>(mean, stddev);
 	StatisticalSampling<fp8e5m2, fp12>(mean, stddev);
 
-	// input fp<4,3>, multiply output fp<6,4>, accumulation output fp<6,4>
+#endif
 
 	std::cout << std::setprecision(prec);
 
 	return EXIT_SUCCESS;
+#endif
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

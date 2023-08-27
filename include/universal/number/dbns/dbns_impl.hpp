@@ -230,7 +230,7 @@ public:
 			setzero();
 			return *this;
 		}
-
+#if defined(NATIVE_DBNS_ARITHMETIC)
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
 		uint32_t a = extractExponent(0) + rhs.extractExponent(0);
 		uint32_t b = extractExponent(1) + rhs.extractExponent(1);
@@ -278,6 +278,10 @@ public:
 		}
 		setsign(negative);
 		if (isnan()) setzero(); // if the arithmetic ends up in the nan encoding, set the value to zero
+#else
+		// marshall through double value
+		* this = double(*this) * double(rhs);
+#endif
 		return *this;
 	}
 	dbns& operator*=(double rhs) { return operator*=(dbns(rhs)); }
@@ -297,6 +301,8 @@ public:
 		}
 		if (iszero()) return *this;
 
+#if defined(NATIVE_DBNS_ARITHMETIC)
+		// this simple code doesn't work because of modulo underflow when the right hand side exponent is bigger than the left hand side
 		bool negative = sign() ^ rhs.sign(); // determine sign of result
 		uint32_t e0 = extractExponent(0) - rhs.extractExponent(0);
 		uint32_t e1 = extractExponent(1) - rhs.extractExponent(1);
@@ -309,6 +315,10 @@ public:
 			static_assert(true, "multi-limb TBD");
 		}
 		setsign(negative);
+#else
+		// marshall through double value
+		* this = double(*this) / double(rhs);
+#endif
 		return *this;
 	}
 	dbns& operator/=(double rhs) { return operator/=(dbns(rhs)); }
@@ -484,7 +494,7 @@ public:
 	// selectors
 	constexpr bool iszero() const noexcept { // special encoding: 0.11..11.0000
 		if constexpr (1 == nrBlocks) {
-			if (!at(nbits - 1) && ((_block[MSU] & FB_MASK) == FB_MASK) && ((_block[MSU] & SB_MASK) == 0)) return true;
+			if (!at(nbits - 1) && ((_block[MSU] & FB_MASK) == FB_MASK) && ((_block[MSU] & SB_MASK) == 0)) return true; else return false;
 		}
 		else {
 			for (unsigned i = 0; i < sbbits; ++i) {
@@ -496,7 +506,6 @@ public:
 			// zero is sign bit is off, nan is sign bit is on
 			return !at(nbits - 1);
 		}
-		return false;
 	}
 	constexpr bool isneg()  const noexcept { return sign(); }
 	constexpr bool ispos()  const noexcept { return !sign(); }

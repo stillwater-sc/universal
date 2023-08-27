@@ -136,7 +136,7 @@ Generate Value table for an DBNS<5,2> in TXT format
  */
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -160,7 +160,7 @@ try {
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
@@ -172,11 +172,6 @@ try {
 	using DBNS9_4_sat = dbns<9, 4, std::uint8_t>;
 	using DBNS16_5_sat = dbns<16, 5, std::uint16_t>;
 
-	// : FAIL 1                    / 267.33408830141792123 != 0.0037406378152288035158 golden reference is 62757.488603861726006
-	// : result 0b0.1111.1111
-	// : vs ref 0b0.0111.1111
-	//  0b0.0000.0000 / 0b0.0000.0001
-	// 0b0.0000.0000 / 0b1.1111.1111
 	{
 		DBNS9_4_sat a, b, c;
 		a.setbits(0);
@@ -214,13 +209,24 @@ try {
 
 #if REGRESSION_LEVEL_1
 	using DBNS4_1_sat = dbns<4, 1, std::uint8_t>;
-//	using DBNS4_2_sat = dbns<4, 2, std::uint8_t>;
+	using DBNS4_2_sat = dbns<4, 2, std::uint8_t>;
 	using DBNS5_2_sat = dbns<5, 2, std::uint8_t>;
+	using DBNS5_3_sat = dbns<5, 3, std::uint8_t>;
+	using DBNS6_3_sat = dbns<6, 3, std::uint8_t>;
+	using DBNS7_3_sat = dbns<7, 3, std::uint8_t>;
 	using DBNS8_3_sat = dbns<8, 3, std::uint8_t>;
+	using DBNS8_4_sat = dbns<8, 4, std::uint8_t>;
+	using DBNS8_5_sat = dbns<8, 5, std::uint8_t>;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS4_1_sat>(reportTestCases), "dbns< 4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS4_2_sat>(reportTestCases), "dbns< 4,2,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS5_2_sat>(reportTestCases), "dbns< 5,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS5_3_sat>(reportTestCases), "dbns< 5,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS6_3_sat>(reportTestCases), "dbns< 6,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS7_3_sat>(reportTestCases), "dbns< 7,3,uint8_t>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS8_3_sat>(reportTestCases), "dbns< 8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS8_4_sat>(reportTestCases), "dbns< 8,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS8_5_sat>(reportTestCases), "dbns< 8,5,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
