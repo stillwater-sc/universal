@@ -23,7 +23,7 @@ namespace sw { namespace universal { namespace blas {
 	std::ostream& operator<<(std::ostream& ostr, const SummaryStats<Scalar>& stats) {
 		ostr << "mean     : " << stats.mean << '\n';
 		ostr << "stddev   : " << stats.stddev << '\n';
-		ostr << "quartiles\n";
+		ostr << "quartiles: ";
 		ostr << " [ " << stats.quartiles[0] << ", "
 	 	     << stats.quartiles[1] << ", "
 	 	     << stats.quartiles[2] << ", "

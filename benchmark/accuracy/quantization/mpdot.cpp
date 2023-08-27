@@ -134,12 +134,15 @@ namespace sw {
 		}
 
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
-		void QuantizationVsAccuracy(const std::vector<sw::universal::blas::vector<double>>& data) {
+		void QuantizationVsAccuracy(const std::vector<sw::universal::blas::vector<double>>& data, bool reportTypeRanges = false) {
 			using namespace sw::universal;
-			std::cout << "input arithmetic type         : " << symmetry_range<InputType>() << '\n';
-			std::cout << "product arithmetic type       : " << symmetry_range<ProductType>() << '\n';
-			std::cout << "accumulation arithmetic type  : " << symmetry_range<AccumulationType>() << '\n';
-			std::cout << "output arithmetic type        : " << symmetry_range<OutputType>() << '\n';
+			if (reportTypeRanges) {
+				std::cout << "input arithmetic type         : " << symmetry_range<InputType>() << '\n';
+				std::cout << "product arithmetic type       : " << symmetry_range<ProductType>() << '\n';
+				std::cout << "accumulation arithmetic type  : " << symmetry_range<AccumulationType>() << '\n';
+				std::cout << "output arithmetic type        : " << symmetry_range<OutputType>() << '\n';
+			}
+			std::cout << type_tag(InputType()) << '\n';
 
 			size_t N = size(data);
 			if (N < 10) PrintDataSet("Reference data set", data);
@@ -176,8 +179,79 @@ namespace sw {
 } }
 
 
+// Generate an experiment with single type FMA but progressively narrower floating-point
+void GenerateFloatingPointSamples(const std::vector<sw::universal::blas::vector<double>>& data) {
+	using namespace sw::universal;
 
+	// InputTypes
+	using fp12_tf = cfloat<12, 5, uint16_t, true, false, false>;
+	using fp11_tf = cfloat<11, 5, uint16_t, true, false, false>;
+	using fp10_tf = cfloat<10, 5, uint16_t, true, false, false>;
+	using fp9_tf  = cfloat< 9, 5, uint16_t, true, false, false>;
+	using fp8e4_tf  = cfloat<8, 4, uint8_t, true, false, false>;
+	using fp8_tf = cfloat<8, 5, uint8_t, true, false, false>;
+	using fp7_tf  = cfloat<7, 5, uint8_t, true, false, false>;
+	using fp6_tf  = cfloat<6, 4, uint8_t, true, false, false>;
+	using fp5_tf  = cfloat<5, 3, uint8_t, true, false, false>;
+	using fp4_tf  = cfloat<4, 2, uint8_t, true, false, false>;
+	QuantizationVsAccuracy< single, single, single, single >(data);
+	QuantizationVsAccuracy< bfloat_t, bfloat_t, bfloat_t, bfloat_t >(data);
+	QuantizationVsAccuracy< half, half, half, half >(data);
+	QuantizationVsAccuracy< fp12_tf, fp12_tf, fp12_tf, fp12_tf >(data);
+	QuantizationVsAccuracy< fp11_tf, fp11_tf, fp11_tf, fp11_tf >(data);
+	QuantizationVsAccuracy< fp10_tf, fp10_tf, fp10_tf, fp10_tf >(data);
+	QuantizationVsAccuracy< fp9_tf, fp9_tf, fp9_tf, fp9_tf >(data);
+	QuantizationVsAccuracy< fp8e4_tf, fp8e4_tf, fp8e4_tf, fp8e4_tf >(data);
+	QuantizationVsAccuracy< fp8_tf, fp8_tf, fp8_tf, fp8_tf >(data);
+	QuantizationVsAccuracy< fp7_tf, fp7_tf, fp7_tf, fp7_tf >(data);
+	QuantizationVsAccuracy< fp6_tf, fp6_tf, fp6_tf, fp6_tf >(data);
+	QuantizationVsAccuracy< fp5_tf, fp5_tf, fp5_tf, fp5_tf >(data);
+	QuantizationVsAccuracy< fp4_tf, fp4_tf, fp4_tf, fp4_tf >(data);
+}
 
+void GenerateSmallFloatingPointSamples(const std::vector<sw::universal::blas::vector<double>>& data) {
+	using namespace sw::universal;
+
+	// InputTypes
+
+	using fp9_tf = cfloat< 9, 5, uint16_t, true, false, false>;
+	using fp8e3_tf = cfloat<8, 3, uint8_t, true, false, false>;
+	using fp8e4_tf = cfloat<8, 4, uint8_t, true, false, false>;
+	using fp8e5_tf = cfloat<8, 5, uint8_t, true, false, false>;
+	using fp7_tf = cfloat<7, 5, uint8_t, true, false, false>;
+
+	QuantizationVsAccuracy< single, single, single, single >(data);
+	QuantizationVsAccuracy< fp9_tf, fp9_tf, float, fp9_tf >(data);
+	QuantizationVsAccuracy< fp8e3_tf, fp8e3_tf, float, fp8e3_tf >(data);
+	QuantizationVsAccuracy< fp8e3_tf, half, float, fp8e3_tf >(data);
+	QuantizationVsAccuracy< fp8e4_tf, fp8e4_tf, float, fp8e4_tf >(data);
+	QuantizationVsAccuracy< fp8e4_tf, half, float, fp8e4_tf >(data);
+	QuantizationVsAccuracy< fp8e5_tf, fp8e5_tf, float, fp8e5_tf >(data);
+	QuantizationVsAccuracy< fp7_tf, fp7_tf, float, fp7_tf >(data);
+
+}
+
+void GenerateSmallFixedPointSamples(const std::vector<sw::universal::blas::vector<double>>& data) {
+	using namespace sw::universal;
+
+	// InputTypes
+
+	using fp9_tf = fixpnt< 9, 5, Saturate, uint16_t>;
+	using fp8r3_tf = fixpnt<8, 3, Saturate, uint8_t>;
+	using fp8r4_tf = fixpnt<8, 4, Saturate, uint8_t>;
+	using fp8r5_tf = fixpnt<8, 5, Saturate, uint8_t>;
+	using fp7_tf = fixpnt<7, 5, Saturate, uint8_t>;
+
+	QuantizationVsAccuracy< single, single, single, single >(data);
+	QuantizationVsAccuracy< fp9_tf, fp9_tf, float, fp9_tf >(data);
+	QuantizationVsAccuracy< fp8r3_tf, fp8r3_tf, float, fp8r3_tf >(data);
+	QuantizationVsAccuracy< fp8r3_tf, float, float, fp8r3_tf >(data);
+	QuantizationVsAccuracy< fp8r4_tf, fp8r4_tf, float, fp8r4_tf >(data);
+	QuantizationVsAccuracy< fp8r4_tf, float, float, fp8r4_tf >(data);
+	QuantizationVsAccuracy< fp8r5_tf, fp8r5_tf, float, fp8r5_tf >(data);
+	QuantizationVsAccuracy< fp7_tf, fp7_tf, float, fp7_tf >(data);
+
+}
 
 void GenerateParetoSamples(const std::vector<sw::universal::blas::vector<double>>& data) {
 	using namespace sw::universal;
@@ -235,20 +309,6 @@ void checkRelativeError() {
 	}
 }
 
-template<typename  RepresentationType, typename AccumulationType>
-void StatisticalSampling(double mean, double stddev) {
-	using namespace sw::universal;
-	std::cout << "representation type : " << symmetry_range<RepresentationType>() << '\n';
-	std::cout << "accumulation type   : " << symmetry_range<AccumulationType>() << '\n';
-	unsigned nrSamples{ 10000 };
-	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 50, mean, stddev);
-	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 100, mean, stddev);
-	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 500, mean, stddev);
-	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 1000, mean, stddev);
-	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 2000, mean, stddev);
-	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 4000, mean, stddev);
-}
-
 void print_cmdline(int argc, char** argv) {
 	std::cout << "cmd: ";
 	for (int i = 0; i < argc; ++i) {
@@ -267,10 +327,14 @@ try {
 	std::cout << std::setprecision(3);
 	
 	std::vector<blas::vector<double>> data;
-	GenerateRandomVectors(10, 256, data);
+	//GenerateRandomVectors(100, 4096, data);
+	GenerateRandomVectors(10, 8192, data);
 //	GenerateTestVectors(5, 5, data, 0.75);
 	
-	GenerateParetoSamples(data);
+	GenerateSmallFixedPointSamples(data);
+	// GenerateSmallFloatingPointSamples(data);
+	// GenerateFloatingPointSamples(data);
+	// GenerateParetoSamples(data);
 
 	std::cout << std::setprecision(prec);
 
