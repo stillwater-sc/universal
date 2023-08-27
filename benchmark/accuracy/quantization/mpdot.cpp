@@ -44,15 +44,11 @@ namespace sw {
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
 		void GenerateDotProducts(const std::vector<sw::universal::blas::vector<InputType>>& data, std::vector<OutputType>& dots) {
 			using namespace sw::universal;
-			std::cout << "input arithmetic type         : " << symmetry_range<InputType>() << '\n';
-			std::cout << "product arithmetic type       : " << symmetry_range<ProductType>() << '\n';
-			std::cout << "accumulation arithmetic type  : " << symmetry_range<AccumulationType>() << '\n';
-			std::cout << "output arithmetic type        : " << symmetry_range<OutputType>() << '\n';
 			size_t N = size(data);
 			dots.resize(N);
 			for (size_t i = 0; i < N; ++i) {
 				auto result = dot<InputType, ProductType, AccumulationType, OutputType>(data[0], data[i]);
-				std::cout << "custom dot product : " << to_binary(result) << " : " << result << '\n';
+				if (N < 10) std::cout << "custom dot product : " << to_binary(result) << " : " << result << '\n';
 				dots[i] = result;
 			}
 		}
@@ -119,7 +115,7 @@ namespace sw {
 			dots.resize(N);
 			for (size_t i = 0; i < N; ++i) {
 				auto result = dot<double, double, double, double>(data[0], data[i]);
-				std::cout << "reference dot product : " << to_binary(result) << " : " << result << '\n';
+				if (N < 10) std::cout << "reference dot product : " << to_binary(result) << " : " << result << '\n';
 				dots[i] = result;
 			}
 		}
@@ -132,7 +128,8 @@ namespace sw {
 		/// <returns>relative error half of the difference ln(v) - ln(u)</returns>
 		double relativeError(double u, double v) {
 			using std::log;
-			double relativeErr = 0.5* (log(v) - log(u));
+			using std::abs;
+			double relativeErr = 0.5* (log(abs(v)) - log(abs(u)));
 			return relativeErr;
 		}
 
@@ -145,14 +142,14 @@ namespace sw {
 			std::cout << "output arithmetic type        : " << symmetry_range<OutputType>() << '\n';
 
 			size_t N = size(data);
-			PrintDataSet("Reference data set", data);
+			if (N < 10) PrintDataSet("Reference data set", data);
 			std::vector<double> referenceDots(N);
 			GenerateReferenceDotProducts(data, referenceDots);
-			PrintStdVector("reference dots ", referenceDots);
+			if (N < 10) PrintStdVector("reference dots ", referenceDots);
 
 			std::vector < blas::vector<InputType> > idata;
 			ConvertToInputType(data, idata);
-			PrintDataSet("InputType data set", idata);
+			if (N < 10) PrintDataSet("InputType data set", idata);
 
 			std::vector< OutputType > dots;
 			GenerateDotProducts< InputType, ProductType, AccumulationType, OutputType >(idata, dots);
@@ -165,10 +162,16 @@ namespace sw {
 				errors[i] = relativeError(u, v);
 			}
 
-			constexpr unsigned WIDTH = 10;
-			for (size_t i = 0; i < N; ++i) {
-				std::cout << std::setw(WIDTH) << dots[i] << std::setw(WIDTH) << referenceDots[i] << std::setw(WIDTH) << errors[i] << '\n';
+			if (N < 10) {
+				constexpr unsigned WIDTH = 10;
+				for (size_t i = 0; i < N; ++i) {
+					std::cout << std::setw(WIDTH) << dots[i] << std::setw(WIDTH) << referenceDots[i] << std::setw(WIDTH) << errors[i] << '\n';
+				}
 			}
+			auto stats = blas::summaryStatistics(errors);
+
+			std::cout << stats << '\n';
+
 		}
 } }
 
@@ -219,16 +222,18 @@ void GenerateParetoSamples(const std::vector<sw::universal::blas::vector<double>
 	using fp9e4m4_tt = cfloat<9, 4, uint8_t, true, true, false>;
 	using fp9e6m2_tt = cfloat<9, 6, uint8_t, true, true, false>;
 
-	double u{ 1.0 }, v{ 1.0 };
-	for (unsigned i = 0; i < 10; ++i) {
-		std::cout << "v : " << v << " u : " << u << " : relative error : " << relativeError(u, v) << '\n';
-		v *= 1.1;
-	}
-
 	QuantizationVsAccuracy< fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt >(data);
-
+	QuantizationVsAccuracy< fp8e4m3_tt, fp8e5m2_tt, fp16e5m10_tt, fp8e4m3_tt >(data);
+	QuantizationVsAccuracy< half, half, float, half >(data);
 }
 
+void checkRelativeError() {
+	double u{ 1.0 }, v{ 1.0 };
+	for (unsigned i = 0; i < 10; ++i) {
+		std::cout << "v : " << v << " u : " << u << " : relative error : " << sw::universal::relativeError(u, v) << '\n';
+		v *= 1.1;
+	}
+}
 
 template<typename  RepresentationType, typename AccumulationType>
 void StatisticalSampling(double mean, double stddev) {
@@ -262,8 +267,8 @@ try {
 	std::cout << std::setprecision(3);
 	
 	std::vector<blas::vector<double>> data;
-//	GenerateRandomVectors(5, 5, data);
-	GenerateTestVectors(5, 5, data, 0.75);
+	GenerateRandomVectors(10, 256, data);
+//	GenerateTestVectors(5, 5, data, 0.75);
 	
 	GenerateParetoSamples(data);
 

@@ -42,13 +42,13 @@ namespace sw { namespace universal { namespace blas {
 		for (auto e : data) {
 			sum += e;
 		}
-		stats.mean = sum / N;
+		stats.mean = sum / Scalar(N);
 		sum = 0.0;
 		for (auto e : data) {
 			Scalar s = (e - stats.mean);
 			sum += s*s;
 		}
-		stats.stddev = sum / (N - 1); // use sample statistics formula
+		stats.stddev = sum / Scalar(N - 1); // use sample statistics formula
 					      //
 		Vector v(data); // create a copy you can sort
 		std::sort(v.begin(), v.end(), 

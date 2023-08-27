@@ -76,6 +76,9 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/scaling.hpp>
 #include <universal/blas/linspace.hpp>
 
+// Statistics
+#include <universal/blas/statistics.hpp>
+
 // Serialization
 #include <universal/blas/serialization/datafile.hpp>
 
