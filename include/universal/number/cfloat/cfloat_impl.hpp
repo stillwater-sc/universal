@@ -250,8 +250,21 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, op, bt>& src, cfloa
 			//std::cout << "raw bits (final) " << to_binary(raw) << '\n';
 			tgt.setbits(raw);
 //			std::cout << "raw bits (all)   " << to_binary(raw) << '\n';
-			// when you get too far, map it back to +-inf: TBD: this doesn't appear to be the right algorithm to catch all overflow patterns
-			if (tgt.isnan()) tgt.setinf(src.sign());	// map back to +-inf
+			if constexpr (isSaturating) {
+				if (tgt.isnan()) {
+					if (src.sign()) {
+						tgt.maxneg();	// map back to maxneg
+					}
+					else {
+						tgt.maxpos();	// map back to maxpos
+					}
+				}
+			}
+			else {
+				// when you get too far, map it back to +-inf: 
+				// TBD: this doesn't appear to be the right algorithm to catch all overflow patterns
+				if (tgt.isnan()) tgt.setinf(src.sign());	// map back to +-inf
+			}
 		}
 		else {
 			// compose the segments
@@ -961,6 +974,7 @@ public:
 	}
 	constexpr void setzero() noexcept { clear(); }
 	constexpr void setinf(bool sign = true) noexcept {
+		// the Inf encoding is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
 		if constexpr (0 == nrBlocks) {
 			return;
 		}
@@ -1025,6 +1039,7 @@ public:
 		}	
 	}
 	constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
+		// the NaN encoding is the pattern 0b0'11...11'11...11 for a quiet Nan, and 0b1'11...11'11...111 for a signalling NaN
 		if constexpr (0 == nrBlocks) {
 			return;
 		}
@@ -1205,23 +1220,46 @@ public:
 	
 	// create specific number system values of interest
 	constexpr cfloat& maxpos() noexcept {
-		if constexpr (hasSupernormals) {
-			// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
-			clear();
-			flip();
-			setbit(nbits - 1ull, false); // sign = 0
-			setbit(1ull, false); // bit1 = 0
+		if constexpr (isSaturating) {
+			// in a saturating encoding with supernormals we are removing the Inf encoding pattern 0b0'11...11'11...10 for a +inf, 
+			// and 0b1'11...11'11...110 for a -inf and using it as a value
+			if constexpr (hasSupernormals) {
+				// maximum positive value has this bit pattern: 0-1...1-111...110, that is, sign = 0, e = 11..11, f = 111...110
+				clear();
+				flip();
+				setbit(nbits - 1ull, false); // sign = 0
+				setbit(0ull, false); // bit0 = 0
+			}
+			else {
+				// maximum positive value has this bit pattern: 0-11...10-111...111, that is, sign = 0, e = 11..10, f = 111...111
+				clear();
+				flip();
+				setbit(fbits, false); // set least significant exponent bit to 0
+				setbit(nbits - 1ull, false); // set sign to 0
+			}
 		}
 		else {
-			// maximum positive value has this bit pattern: 0-1...0-111...111, that is, sign = 0, e = 11..10, f = 111...111
-			clear();
-			flip();
-			setbit(fbits, false); // set least significant exponent bit to 0
-			setbit(nbits - 1ull, false); // set sign to 0
+			// the Inf encoding is the pattern 0b0'11...11'11...10 for a +inf, and 0b1'11...11'11...110 for a -inf
+			// the maxpos is the encoding before that
+			if constexpr (hasSupernormals) {
+				// maximum positive value has this bit pattern: 0-1...1-111...101, that is, sign = 0, e = 11..11, f = 111...101
+				clear();
+				flip();
+				setbit(nbits - 1ull, false); // sign = 0
+				setbit(1ull, false); // bit1 = 0
+			}
+			else {
+				// maximum positive value has this bit pattern: 0-1...0-111...111, that is, sign = 0, e = 11..10, f = 111...111
+				clear();
+				flip();
+				setbit(fbits, false); // set least significant exponent bit to 0
+				setbit(nbits - 1ull, false); // set sign to 0
+			}
 		}
 		return *this;
 	}
 	constexpr cfloat& minpos() noexcept {
+		// minpos encoding is not impacted by saturating encodings, which only affects maxpos and inf
 		if constexpr (hasSubnormals) {
 			// minimum positive value has this bit pattern: 0-000-00...01, that is, sign = 0, e = 000, f = 00001
 			clear();
@@ -1240,6 +1278,7 @@ public:
 		return *this;
 	}
 	constexpr cfloat& minneg() noexcept {
+		// minneg encoding is not impacted by saturating encodings, which only affects maxpos and inf
 		if constexpr (hasSubnormals) {
 			// minimum negative value has this bit pattern: 1-000-00...01, that is, sign = 1, e = 00, f = 00001
 			clear();
@@ -1255,17 +1294,35 @@ public:
 		return *this;
 	}
 	constexpr cfloat& maxneg() noexcept {
-		if constexpr (hasSupernormals) {
-			// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1..1, f = 111...101
-			clear();
-			flip();
-			setbit(1ull, false);
+		if constexpr (isSaturating) {
+			// in a saturating encoding with supernormals we are removing the Inf encoding pattern 0b0'11...11'11...10 for a +inf, 
+			// and 0b1'11...11'11...110 for a -inf and using it as a value
+			if constexpr (hasSupernormals) {
+				// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1..1, f = 111...110
+				clear();
+				flip();
+				setbit(0ull, false);
+			}
+			else {
+				// maximum negative value has this bit pattern: 1-1...0-111...111, that is, sign = 1, e = 11..10, f = 111...111
+				clear();
+				flip();
+				setbit(fbits, false);
+			}
 		}
 		else {
-			// maximum negative value has this bit pattern: 1-1...0-111...111, that is, sign = 1, e = 11..10, f = 111...111
-			clear();
-			flip();
-			setbit(fbits, false);
+			if constexpr (hasSupernormals) {
+				// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1..1, f = 111...101
+				clear();
+				flip();
+				setbit(1ull, false);
+			}
+			else {
+				// maximum negative value has this bit pattern: 1-1...0-111...111, that is, sign = 1, e = 11..10, f = 111...111
+				clear();
+				flip();
+				setbit(fbits, false);
+			}
 		}
 		return *this;
 	}
@@ -2176,7 +2233,7 @@ protected:
 			setzero();
 		}
 		if (bitsToShift >= bitsInBlock) {
-			int blockShift = bitsToShift / bitsInBlock;
+			int blockShift = static_cast<int>(bitsToShift / bitsInBlock);
 			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
 				_block[i] = _block[i - blockShift];
 			}
@@ -2710,8 +2767,8 @@ public:
 								for (unsigned i = MSU; i > 0; --i) {
 									fractionBlock[i] <<= bitsToShift;
 									// mix in the bits from the right
-									bt bits = static_cast<bt>(bitsToMoveMask & fractionBlock[i - 1]); // operator & yields an int
-									fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
+									bt fracbits = static_cast<bt>(bitsToMoveMask & fractionBlock[i - 1]); // operator & yields an int
+									fractionBlock[i] |= (fracbits >> (bitsInBlock - bitsToShift));
 								}
 								fractionBlock[0] <<= bitsToShift;
 							}
