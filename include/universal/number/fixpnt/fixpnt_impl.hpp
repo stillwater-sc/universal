@@ -106,6 +106,7 @@ public:
 	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
 	static constexpr unsigned  nbits = _nbits;
 	static constexpr unsigned  rbits = _rbits;
+	static constexpr unsigned  fbits = _rbits;  // creating symmetry with other types in Universal
 	static constexpr bool      arithmetic = _arithmetic;
 	typedef bt BlockType;
 	static constexpr unsigned  bitsInChar = 8;

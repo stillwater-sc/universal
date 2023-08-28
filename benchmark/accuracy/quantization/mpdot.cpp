@@ -136,13 +136,50 @@ namespace sw {
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
 		void QuantizationVsAccuracy(const std::vector<sw::universal::blas::vector<double>>& data, bool reportTypeRanges = false) {
 			using namespace sw::universal;
+			constexpr bool bCSV = true;
 			if (reportTypeRanges) {
 				std::cout << "input arithmetic type         : " << symmetry_range<InputType>() << '\n';
 				std::cout << "product arithmetic type       : " << symmetry_range<ProductType>() << '\n';
 				std::cout << "accumulation arithmetic type  : " << symmetry_range<AccumulationType>() << '\n';
 				std::cout << "output arithmetic type        : " << symmetry_range<OutputType>() << '\n';
 			}
-			std::cout << type_tag(InputType()) << '\n';
+			unsigned faEquivalency{ 0 };
+			{
+				if constexpr (is_fixpnt<ProductType> == true) {
+					constexpr unsigned nbits = ProductType::nbits;
+					faEquivalency += (nbits + 1) * (nbits + 1);
+				}
+				else {
+					if constexpr (std::is_floating_point<ProductType>::value == true) {
+						constexpr unsigned fbits = ieee754_parameter<ProductType>::fbits;
+						faEquivalency += (fbits + 1) * (fbits + 1);
+						constexpr unsigned ebits = ieee754_parameter<ProductType>::ebits;
+						faEquivalency += ebits + 1;
+					}
+					else {
+						constexpr unsigned fbits = ProductType::fbits;
+						faEquivalency += (fbits + 1) * (fbits + 1);
+						constexpr unsigned es = ProductType::es;
+						faEquivalency += es + 1;
+					}
+				}
+			}
+			{
+				if constexpr (std::is_floating_point<AccumulationType>::value == true) {
+					faEquivalency += sizeof(AccumulationType) * 8;
+				}
+				else {
+					constexpr unsigned nbits = AccumulationType::nbits;
+					// constexpr unsigned fbits = AccumulationType::fbits;
+					faEquivalency += nbits + 1;
+				}
+			}
+			if constexpr (bCSV) {
+				std::cout << type_tag(InputType()) << ", ";
+			}
+			else {
+				std::cout << type_tag(InputType()) << '\n';
+			}
 
 			size_t N = size(data);
 			if (N < 10) PrintDataSet("Reference data set", data);
@@ -173,7 +210,12 @@ namespace sw {
 			}
 			auto stats = blas::summaryStatistics(errors);
 
-			std::cout << stats << '\n';
+			if constexpr (bCSV) {
+				std::cout << stats.mean << ", " << faEquivalency << ", " << stats.stddev << '\n';
+			}
+			else {
+				std::cout << stats << '\n';
+			}
 
 		}
 } }
@@ -236,20 +278,21 @@ void GenerateSmallFixedPointSamples(const std::vector<sw::universal::blas::vecto
 
 	// InputTypes
 
-	using fp9_tf = fixpnt< 9, 5, Saturate, uint16_t>;
-	using fp8r3_tf = fixpnt<8, 3, Saturate, uint8_t>;
-	using fp8r4_tf = fixpnt<8, 4, Saturate, uint8_t>;
-	using fp8r5_tf = fixpnt<8, 5, Saturate, uint8_t>;
-	using fp7_tf = fixpnt<7, 5, Saturate, uint8_t>;
+	using fp9r2_tf = fixpnt< 9, 2, Saturate, uint16_t>;
+	using fp8r2_tf = fixpnt< 8, 2, Saturate, uint8_t>;
+	using fp8r3_tf = fixpnt< 8, 3, Saturate, uint8_t>;
+	using fp8r4_tf = fixpnt< 8, 4, Saturate, uint8_t>;
+	using fp8r5_tf = fixpnt< 8, 5, Saturate, uint8_t>;
+	using fp7r4_tf = fixpnt< 7, 4, Saturate, uint8_t>;
 
 	QuantizationVsAccuracy< single, single, single, single >(data);
-	QuantizationVsAccuracy< fp9_tf, fp9_tf, float, fp9_tf >(data);
+	QuantizationVsAccuracy< fp9r2_tf, fp9r2_tf, float, fp9r2_tf >(data);
 	QuantizationVsAccuracy< fp8r3_tf, fp8r3_tf, float, fp8r3_tf >(data);
 	QuantizationVsAccuracy< fp8r3_tf, float, float, fp8r3_tf >(data);
 	QuantizationVsAccuracy< fp8r4_tf, fp8r4_tf, float, fp8r4_tf >(data);
 	QuantizationVsAccuracy< fp8r4_tf, float, float, fp8r4_tf >(data);
 	QuantizationVsAccuracy< fp8r5_tf, fp8r5_tf, float, fp8r5_tf >(data);
-	QuantizationVsAccuracy< fp7_tf, fp7_tf, float, fp7_tf >(data);
+	QuantizationVsAccuracy< fp7r4_tf, fp7r4_tf, float, fp7r4_tf >(data);
 
 }
 
@@ -331,8 +374,8 @@ try {
 	GenerateRandomVectors(10, 8192, data);
 //	GenerateTestVectors(5, 5, data, 0.75);
 	
-	GenerateSmallFixedPointSamples(data);
-	// GenerateSmallFloatingPointSamples(data);
+	// GenerateSmallFixedPointSamples(data);
+	GenerateSmallFloatingPointSamples(data);
 	// GenerateFloatingPointSamples(data);
 	// GenerateParetoSamples(data);
 

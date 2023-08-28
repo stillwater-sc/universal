@@ -86,7 +86,19 @@ try {
 		a.constexprClassParameters();
 	}
 
-
+/*
++-----
+blocktriple<  1, ADD, unsigned char>  radix point at 4, smallest scale = -1, largest scale = 1
+FAIL: (+,   0, 0b011.1000) :             3.5 -> 0b0.11.0 != ref 0b0.10.1 or inf != 3
+FAIL: (+,   1, 0b010.0000) :               4 -> 0b0.11.0 != ref 0b0.10.1 or inf != 3
+FAIL: (+,   1, 0b010.1000) :               5 -> 0b0.11.0 != ref 0b0.10.1 or inf != 3
+FAIL: (+,   1, 0b011.1000) :               7 -> 0b0.11.0 != ref 0b0.10.1 or inf != 3
+FAIL: (-,   0, 0b011.1000) :            -3.5 -> 0b1.11.0 != ref 0b1.10.1 or -inf != -3
+FAIL: (-,   1, 0b010.0000) :              -4 -> 0b1.11.0 != ref 0b1.10.1 or -inf != -3
+FAIL: (-,   1, 0b010.1000) :              -5 -> 0b1.11.0 != ref 0b1.10.1 or -inf != -3
+FAIL: (-,   1, 0b011.1000) :              -7 -> 0b1.11.0 != ref 0b1.10.1 or -inf != -3
+conversion blocktriple -> saturating cfloat                  cfloat<4,2, uint8_t, tft> from blocktriple ADD FAIL 8 failed test cases
+*/
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<4, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<4,2, uint8_t, tft> from blocktriple ADD");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<cfloat<5, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating>, BlockTripleOperator::ADD>(reportTestCases), test_tag, "cfloat<5,2, uint8_t, tft> from blocktriple ADD");
 

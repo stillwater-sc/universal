@@ -1,7 +1,7 @@
 #pragma once
 //  fixpnt_traits.hpp : traits for fixed-point number systems
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/traits/integral_constant.hpp>
@@ -14,8 +14,8 @@ namespace sw { namespace universal {
 		: false_type
 	{
 	};
-	template<unsigned nbits, unsigned rbits>
-	struct is_fixpnt_trait< sw::universal::fixpnt<nbits, rbits> >
+	template<unsigned nbits, unsigned rbits, bool arithmetic, typename  bt>
+	struct is_fixpnt_trait< sw::universal::fixpnt<nbits, rbits, arithmetic, bt> >
 		: true_type
 	{
 	};
