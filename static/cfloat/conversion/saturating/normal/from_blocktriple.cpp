@@ -122,9 +122,15 @@ try {
 		b_sat.maxpos();
 		c_sat = a_sat + b_sat;
 		ReportValue(c_sat, "   saturating cfloat 2*maxpos");
+		a_sat.maxneg();
+		b_sat = 0.5;
+		c_sat = a_sat - b_sat;
+		ReportValue(c_sat, "   saturating cfloat maxneg - 0.5");
+		b_sat.maxpos();
+		c_sat = a_sat - b_sat;
+		ReportValue(c_sat, "   saturating cfloat 2*maxneg");
 	}
 
-	return 0;
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t es = 2;
@@ -155,6 +161,17 @@ try {
 		// FAIL : (+, 0, 0b011.1) : 3.5 -> 0b0.11.1 != ref 0b0.11.0 or nan != nan
 		GenerateConversionTest<Cfloat, BlockTripleOperator::ADD>(1, 0x70ull);
 		nrOfFailedTestCases += ReportTestResult(VerifyCfloatFromBlocktripleConversion<Cfloat, BlockTripleOperator::ADD>(true), test_tag, "cfloat<4,2, uint8_t, fft> from blocktriple ADD");
+		/*
+		blocktriple<  1, ADD, unsigned char>  radix point at 4, smallest scale = 0, largest scale = 1
+			FAIL: (+, 0, 0b011.1000) : 3.5 -> 0b0.11.0 != ref 0b0.10.1 or inf != 3
+			FAIL : (+, 1, 0b010.0000) : 4 -> 0b0.11.0 != ref 0b0.10.1 or inf != 3
+			FAIL : (+, 1, 0b010.1000) : 5 -> 0b0.11.0 != ref 0b0.10.1 or inf != 3
+			FAIL : (+, 1, 0b011.1000) : 7 -> 0b0.11.0 != ref 0b0.10.1 or inf != 3
+			FAIL : (-, 0, 0b011.1000) : -3.5 -> 0b1.11.0 != ref 0b1.10.1 or -inf != -3
+			FAIL : (-, 1, 0b010.0000) : -4 -> 0b1.11.0 != ref 0b1.10.1 or -inf != -3
+			FAIL : (-, 1, 0b010.1000) : -5 -> 0b1.11.0 != ref 0b1.10.1 or -inf != -3
+			FAIL : (-, 1, 0b011.1000) : -7 -> 0b1.11.0 != ref 0b1.10.1 or -inf != -3
+		*/
 	}
 
 	{

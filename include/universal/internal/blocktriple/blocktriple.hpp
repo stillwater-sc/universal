@@ -876,7 +876,7 @@ private:
 			switch(op) {
 			case BlockTripleOperator::REP:
 				_significant.setradix(fbits);
-				std::cout << "rhs = " << rhs << " : significant = " << _significant << '\n';
+				// std::cout << "rhs = " << rhs << " : significant = " << _significant << '\n';
 				break;
 			case BlockTripleOperator::ADD:
 				_significant.setradix(abits);
