@@ -107,6 +107,11 @@ public:
 		assign(stringRep);
 	}
 
+	template<unsigned srcnbits, unsigned srcrbits, typename srcbt, auto... srcxtra>
+	constexpr lns(const lns<srcnbits, srcrbits, srcbt, srcxtra...>& rhs) {
+		*this = double(rhs);
+	}
+
 	// specific value constructor
 	constexpr lns(const SpecificValue code) noexcept
 		: _block{} {

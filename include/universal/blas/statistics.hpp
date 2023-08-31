@@ -35,6 +35,7 @@ namespace sw { namespace universal { namespace blas {
 	template<typename Vector>
 	SummaryStats<typename Vector::value_type> summaryStatistics(const Vector& data) {
 		using std::isnan;
+		using std::sqrt;
 		using Scalar = typename Vector::value_type;
 		SummaryStats<Scalar> stats;
 		size_t N = size(data);
@@ -48,7 +49,7 @@ namespace sw { namespace universal { namespace blas {
 			Scalar s = (e - stats.mean);
 			sum += s*s;
 		}
-		stats.stddev = sum / Scalar(N - 1); // use sample statistics formula
+		stats.stddev = sqrt(sum / Scalar(N - 1)); // use sample statistics formula
 					      //
 		Vector v(data); // create a copy you can sort
 		std::sort(v.begin(), v.end(), 

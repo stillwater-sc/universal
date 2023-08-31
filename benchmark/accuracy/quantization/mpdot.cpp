@@ -6,6 +6,7 @@
 #include <universal/utility/directives.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
+#include <universal/number/dbns/dbns.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
@@ -30,7 +31,7 @@ namespace sw {
 			blas::vector<AccumulationType> acc(Na);
 			acc = cc;
 
-			OutputType result = sum(acc);
+			OutputType result = OutputType(sum(acc));
 
 			return result;
 		}
@@ -133,59 +134,130 @@ namespace sw {
 			return relativeErr;
 		}
 
+		unsigned IntegerAdder(unsigned nbits) {
+			using std::log2;
+			return (nbits * static_cast<unsigned>(log2(nbits)));
+		}
+		unsigned IntegerMultiplier(unsigned nbits) {
+			return (nbits * nbits);
+		}
+		unsigned FloatingPointMultiplier(unsigned ebits, unsigned fbits) {
+			return IntegerMultiplier(fbits + 1) + IntegerAdder(ebits);
+		}
+		unsigned FloatingPointAdder(unsigned ebits, unsigned fbits) {
+			return IntegerAdder(fbits + 1) + IntegerAdder(ebits);
+		}
+
+		template<typename ProductType>
+		unsigned MultiplierCircuitComplexity() {
+			unsigned faEquivalency{ 0 };
+			if constexpr (std::is_floating_point<ProductType>::value == true) {
+				//std::cerr << "ProductType is floating-point\n";
+				constexpr unsigned ebits = ieee754_parameter<ProductType>::ebits;
+				constexpr unsigned fbits = ieee754_parameter<ProductType>::fbits;
+				faEquivalency += FloatingPointMultiplier(ebits, fbits);
+			}
+			else if constexpr (is_cfloat<ProductType> == true) {
+				//std::cerr << "ProductType is cfloat\n";
+				constexpr unsigned ebits = ProductType::es;
+				constexpr unsigned fbits = ProductType::fbits;
+				faEquivalency += FloatingPointMultiplier(ebits, fbits);
+			}
+			else if constexpr (is_integer<ProductType> == true) {
+				//std::cerr << "ProductType is integer<>\n";
+				constexpr unsigned nbits = ProductType::nbits;
+				faEquivalency += IntegerMultiplier(nbits);
+			}
+			else if constexpr (is_fixpnt<ProductType> == true) {
+				//std::cerr << "ProductType is fixpnt\n";
+				constexpr unsigned nbits = ProductType::nbits;
+				faEquivalency += IntegerMultiplier(nbits);
+			}
+			else if constexpr (is_lns<ProductType> == true) {
+				//std::cerr << "ProductType is lns\n";
+				constexpr unsigned nbits = ProductType::nbits - 1u;
+				faEquivalency += IntegerAdder(nbits);
+			}
+			else if constexpr (is_dbns<ProductType> == true) {
+				//std::cerr << "ProductType is dbns\n";
+				constexpr unsigned nbits = ProductType::nbits - 1u;
+				faEquivalency += IntegerAdder(nbits);
+			}
+			else {
+				std::cerr << "ProductType :" << type_tag(ProductType()) << " is unsupported\n";
+			}
+			return faEquivalency;
+		}
+
+
+
+		template<typename AccumulationType>
+		unsigned AccumulatorCircuitComplexity()
+		{
+			unsigned faEquivalency{ 0 };
+			if constexpr (std::is_floating_point<AccumulationType>::value == true) {
+				//std::cerr << "AccumulationType is floating-point\n";
+				unsigned fbits = ieee754_parameter<AccumulationType>::fbits + 1;
+				unsigned ebits = ieee754_parameter<AccumulationType>::ebits + 1;
+				faEquivalency += FloatingPointAdder(ebits, fbits);
+			}
+			else if constexpr (is_cfloat<AccumulationType> == true) {
+				//std::cerr << "AccumulationType is cfloat\n";
+				constexpr unsigned ebits = AccumulationType::es + 1;
+				constexpr unsigned fbits = AccumulationType::fbits + 1;
+				faEquivalency += FloatingPointAdder(ebits, fbits);
+			}
+			else if constexpr (is_integer<AccumulationType> == true) {
+				//std::cerr << "AccumulationType is integer<>\n";
+				constexpr unsigned nbits = AccumulationType::nbits;
+				faEquivalency += IntegerAdder(nbits);
+			}
+			else if constexpr (is_fixpnt<AccumulationType> == true) {
+				//std::cerr << "AccumulationType is fixpnt\n";
+				constexpr unsigned nbits = AccumulationType::nbits;
+				faEquivalency += IntegerAdder(nbits);
+			}
+			else if constexpr (is_lns<AccumulationType> == true) {
+				//std::cerr << "AccumulationType is lns\n";
+				constexpr unsigned nbits = AccumulationType::nbits;
+				faEquivalency += 4*IntegerAdder(nbits - 1);
+			}
+			else if constexpr (is_dbns<AccumulationType> == true) {
+				//std::cerr << "AccumulationType is dbns\n";
+				constexpr unsigned nbits = AccumulationType::nbits;
+				faEquivalency += 2 * IntegerAdder(nbits - 1);
+			}
+			else {
+				std::cerr << "AccumulationType :" << type_tag(AccumulationType()) << " is unsupported\n";
+			}
+			return faEquivalency;
+		}
+
+
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
-		void QuantizationVsAccuracy(const std::vector<sw::universal::blas::vector<double>>& data, bool reportTypeRanges = false) {
+		void QuantizationVsAccuracy(const std::string& tag, const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots, bool reportTypeRanges = false) {
 			using namespace sw::universal;
 			constexpr bool bCSV = true;
 			if (reportTypeRanges) {
-				std::cout << "input arithmetic type         : " << symmetry_range<InputType>() << '\n';
-				std::cout << "product arithmetic type       : " << symmetry_range<ProductType>() << '\n';
-				std::cout << "accumulation arithmetic type  : " << symmetry_range<AccumulationType>() << '\n';
-				std::cout << "output arithmetic type        : " << symmetry_range<OutputType>() << '\n';
+				std::string info = symmetry_range<InputType>();
+				std::cout << "input arithmetic type         : " << info << '\n';
+				info = symmetry_range<ProductType>();
+				std::cout << "product arithmetic type       : " << info << '\n';
+				info = symmetry_range<AccumulationType>();
+				std::cout << "accumulation arithmetic type  : " << info << '\n';
+				info = symmetry_range<OutputType>();
+				std::cout << "output arithmetic type        : " << info << '\n';
 			}
-			unsigned faEquivalency{ 0 };
-			{
-				if constexpr (is_fixpnt<ProductType> == true) {
-					constexpr unsigned nbits = ProductType::nbits;
-					faEquivalency += (nbits + 1) * (nbits + 1);
-				}
-				else {
-					if constexpr (std::is_floating_point<ProductType>::value == true) {
-						constexpr unsigned fbits = ieee754_parameter<ProductType>::fbits;
-						faEquivalency += (fbits + 1) * (fbits + 1);
-						constexpr unsigned ebits = ieee754_parameter<ProductType>::ebits;
-						faEquivalency += ebits + 1;
-					}
-					else {
-						constexpr unsigned fbits = ProductType::fbits;
-						faEquivalency += (fbits + 1) * (fbits + 1);
-						constexpr unsigned es = ProductType::es;
-						faEquivalency += es + 1;
-					}
-				}
-			}
-			{
-				if constexpr (std::is_floating_point<AccumulationType>::value == true) {
-					faEquivalency += sizeof(AccumulationType) * 8;
-				}
-				else {
-					constexpr unsigned nbits = AccumulationType::nbits;
-					// constexpr unsigned fbits = AccumulationType::fbits;
-					faEquivalency += nbits + 1;
-				}
-			}
+			unsigned faEquivalency = MultiplierCircuitComplexity<ProductType>() + AccumulatorCircuitComplexity<AccumulationType>();
+
 			if constexpr (bCSV) {
-				std::cout << type_tag(InputType()) << ", ";
+				std::cout << type_tag(InputType()) << ", " << tag << ", ";
 			}
 			else {
-				std::cout << type_tag(InputType()) << '\n';
+				std::cout << type_tag(InputType()) << ' ' << tag << '\n';
 			}
 
 			size_t N = size(data);
-			if (N < 10) PrintDataSet("Reference data set", data);
-			std::vector<double> referenceDots(N);
-			GenerateReferenceDotProducts(data, referenceDots);
-			if (N < 10) PrintStdVector("reference dots ", referenceDots);
 
 			std::vector < blas::vector<InputType> > idata;
 			ConvertToInputType(data, idata);
@@ -211,7 +283,11 @@ namespace sw {
 			auto stats = blas::summaryStatistics(errors);
 
 			if constexpr (bCSV) {
-				std::cout << stats.mean << ", " << faEquivalency << ", " << stats.stddev << '\n';
+				std::cout << stats.stddev << ", " << faEquivalency << ", " << stats.mean ;
+				for (int i = 0; i < 5; ++i) {
+					std::cout << ", " << stats.quartiles[i];
+				}
+				std::cout << '\n';
 			}
 			else {
 				std::cout << stats << '\n';
@@ -222,7 +298,7 @@ namespace sw {
 
 
 // Generate an experiment with single type FMA but progressively narrower floating-point
-void GenerateFloatingPointSamples(const std::vector<sw::universal::blas::vector<double>>& data) {
+void GenerateFloatingPointSamples(const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots) {
 	using namespace sw::universal;
 
 	// InputTypes
@@ -230,50 +306,30 @@ void GenerateFloatingPointSamples(const std::vector<sw::universal::blas::vector<
 	using fp11_tf = cfloat<11, 5, uint16_t, true, false, false>;
 	using fp10_tf = cfloat<10, 5, uint16_t, true, false, false>;
 	using fp9_tf  = cfloat< 9, 5, uint16_t, true, false, false>;
-	using fp8e4_tf  = cfloat<8, 4, uint8_t, true, false, false>;
-	using fp8_tf = cfloat<8, 5, uint8_t, true, false, false>;
+	using fp8_tf  = cfloat<8, 5, uint8_t, true, false, false>;
 	using fp7_tf  = cfloat<7, 5, uint8_t, true, false, false>;
 	using fp6_tf  = cfloat<6, 4, uint8_t, true, false, false>;
 	using fp5_tf  = cfloat<5, 3, uint8_t, true, false, false>;
 	using fp4_tf  = cfloat<4, 2, uint8_t, true, false, false>;
-	QuantizationVsAccuracy< single, single, single, single >(data);
-	QuantizationVsAccuracy< bfloat_t, bfloat_t, bfloat_t, bfloat_t >(data);
-	QuantizationVsAccuracy< half, half, half, half >(data);
-	QuantizationVsAccuracy< fp12_tf, fp12_tf, fp12_tf, fp12_tf >(data);
-	QuantizationVsAccuracy< fp11_tf, fp11_tf, fp11_tf, fp11_tf >(data);
-	QuantizationVsAccuracy< fp10_tf, fp10_tf, fp10_tf, fp10_tf >(data);
-	QuantizationVsAccuracy< fp9_tf, fp9_tf, fp9_tf, fp9_tf >(data);
-	QuantizationVsAccuracy< fp8e4_tf, fp8e4_tf, fp8e4_tf, fp8e4_tf >(data);
-	QuantizationVsAccuracy< fp8_tf, fp8_tf, fp8_tf, fp8_tf >(data);
-	QuantizationVsAccuracy< fp7_tf, fp7_tf, fp7_tf, fp7_tf >(data);
-	QuantizationVsAccuracy< fp6_tf, fp6_tf, fp6_tf, fp6_tf >(data);
-	QuantizationVsAccuracy< fp5_tf, fp5_tf, fp5_tf, fp5_tf >(data);
-	QuantizationVsAccuracy< fp4_tf, fp4_tf, fp4_tf, fp4_tf >(data);
-}
+	QuantizationVsAccuracy< single, single, single, single >("fp32_ieee", data, referenceDots);
+	QuantizationVsAccuracy< bfloat_t, bfloat_t, bfloat_t, bfloat_t >("bfloat16_ieee", data, referenceDots);
+	QuantizationVsAccuracy< half, half, half, half >("fp16e5_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp12_tf, fp12_tf, fp12_tf, fp12_tf >("fp12e5_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp11_tf, fp11_tf, fp11_tf, fp11_tf >("fp11e5_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp10_tf, fp10_tf, fp10_tf, fp10_tf >("fp10e5_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp9_tf, fp9_tf, fp9_tf, fp9_tf >("fp9e5_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp8_tf, fp8_tf, fp8_tf, fp8_tf >("fp8e5_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp7_tf, fp7_tf, fp7_tf, fp7_tf >("fp7e5_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp6_tf, fp6_tf, fp6_tf, fp6_tf >("fp6e4_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp5_tf, fp5_tf, fp5_tf, fp5_tf >("fp5e3_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp4_tf, fp4_tf, fp4_tf, fp4_tf >("fp4e2_ieee", data, referenceDots);
 
-void GenerateSmallFloatingPointSamples(const std::vector<sw::universal::blas::vector<double>>& data) {
-	using namespace sw::universal;
-
-	// InputTypes
-
-	using fp9_tf = cfloat< 9, 5, uint16_t, true, false, false>;
-	using fp8e3_tf = cfloat<8, 3, uint8_t, true, false, false>;
 	using fp8e4_tf = cfloat<8, 4, uint8_t, true, false, false>;
-	using fp8e5_tf = cfloat<8, 5, uint8_t, true, false, false>;
-	using fp7_tf = cfloat<7, 5, uint8_t, true, false, false>;
-
-	QuantizationVsAccuracy< single, single, single, single >(data);
-	QuantizationVsAccuracy< fp9_tf, fp9_tf, float, fp9_tf >(data);
-	QuantizationVsAccuracy< fp8e3_tf, fp8e3_tf, float, fp8e3_tf >(data);
-	QuantizationVsAccuracy< fp8e3_tf, half, float, fp8e3_tf >(data);
-	QuantizationVsAccuracy< fp8e4_tf, fp8e4_tf, float, fp8e4_tf >(data);
-	QuantizationVsAccuracy< fp8e4_tf, half, float, fp8e4_tf >(data);
-	QuantizationVsAccuracy< fp8e5_tf, fp8e5_tf, float, fp8e5_tf >(data);
-	QuantizationVsAccuracy< fp7_tf, fp7_tf, float, fp7_tf >(data);
-
+	QuantizationVsAccuracy< fp8e4_tf, fp8e4_tf, fp8e4_tf, fp8e4_tf >("fp8e4_ieee", data, referenceDots);
 }
 
-void GenerateSmallFixedPointSamples(const std::vector<sw::universal::blas::vector<double>>& data) {
+
+void GenerateSmallFixedPointSamples(const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots) {
 	using namespace sw::universal;
 
 	// InputTypes
@@ -285,18 +341,43 @@ void GenerateSmallFixedPointSamples(const std::vector<sw::universal::blas::vecto
 	using fp8r5_tf = fixpnt< 8, 5, Saturate, uint8_t>;
 	using fp7r4_tf = fixpnt< 7, 4, Saturate, uint8_t>;
 
-	QuantizationVsAccuracy< single, single, single, single >(data);
-	QuantizationVsAccuracy< fp9r2_tf, fp9r2_tf, float, fp9r2_tf >(data);
-	QuantizationVsAccuracy< fp8r3_tf, fp8r3_tf, float, fp8r3_tf >(data);
-	QuantizationVsAccuracy< fp8r3_tf, float, float, fp8r3_tf >(data);
-	QuantizationVsAccuracy< fp8r4_tf, fp8r4_tf, float, fp8r4_tf >(data);
-	QuantizationVsAccuracy< fp8r4_tf, float, float, fp8r4_tf >(data);
-	QuantizationVsAccuracy< fp8r5_tf, fp8r5_tf, float, fp8r5_tf >(data);
-	QuantizationVsAccuracy< fp7r4_tf, fp7r4_tf, float, fp7r4_tf >(data);
+	QuantizationVsAccuracy< single, single, single, single >("fp32_ieee", data, referenceDots);
+	QuantizationVsAccuracy< fp9r2_tf, fp9r2_tf, float, fp9r2_tf >("fixpnt9r2_9r2_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fp8r3_tf, fp8r3_tf, float, fp8r3_tf >("fixpnt8r3_8r3_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fp8r3_tf, float, float, fp8r3_tf >("fixpnt8r3_fp32_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fp8r4_tf, fp8r4_tf, float, fp8r4_tf >("fixpnt8r4_8r4_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fp8r4_tf, float, float, fp8r4_tf >("fixpnt8r4_fp32_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fp8r5_tf, fp8r5_tf, float, fp8r5_tf >("fixpnt8r5_8r5_fp32", data, referenceDots);
+	QuantizationVsAccuracy< fp7r4_tf, fp7r4_tf, float, fp7r4_tf >("fixpnt7r4_7r4_fp32", data, referenceDots);
 
 }
 
-void GenerateParetoSamples(const std::vector<sw::universal::blas::vector<double>>& data) {
+void GenerateParetoSamples(const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots) {
+	using namespace sw::universal;
+
+	using fi8r4   = fixpnt<8, 4, Saturate, uint8_t>;
+	using fi16r8  = fixpnt<16, 8, Saturate, uint8_t>;
+	using fi32r16 = fixpnt<32, 16, Saturate, uint8_t>;
+	QuantizationVsAccuracy< fi8r4, fi16r8, fi32r16, fi8r4 >("fi8r4_16r8_32r16", data, referenceDots);
+	using fi32r8 = fixpnt<32, 8, Saturate, uint8_t>;
+	QuantizationVsAccuracy< fi8r4, fi16r8, fi32r8, fi8r4 >("fi8r4_16r8_32r8", data, referenceDots);
+
+	using fp8e4sat = cfloat<8, 4, uint8_t, true, true, true>;
+	using fp13e5sat = cfloat<13, 5, uint8_t, true, true, true>;
+	using fp16e8sat = cfloat<16, 8, uint8_t, true, true, true>;
+	QuantizationVsAccuracy< fp8e4sat, fp13e5sat, fp16e8sat, fp8e4sat >("fp8e4_fp13e5_fp16e8sat", data, referenceDots);
+	using fp8e4nonsat = cfloat<8, 4, uint8_t, true, true, false>;
+	using fp13e5nonsat = cfloat<13, 5, uint8_t, true, true, false>;
+	using fp16e8nonsat = cfloat<16, 8, uint8_t, true, true, false>;
+	QuantizationVsAccuracy< fp8e4nonsat, fp13e5nonsat, fp16e8nonsat, fp8e4nonsat >("fp8e4_fp13e5_fp16e8nonsat", data, referenceDots);
+
+	using lns8r3 = lns<8, 3, uint8_t>;
+	using lns10r4 = lns<10, 4, uint8_t>;
+	using lns12r5 = lns<12, 5, uint8_t>;
+	QuantizationVsAccuracy< lns8r3, lns10r4, lns12r5, lns8r3 >("lns8r3_lns10r4_lns12r5", data, referenceDots);
+}
+
+void GenerateParetoSamples2(const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots) {
 	using namespace sw::universal;
 
 	// InputTypes
@@ -339,9 +420,9 @@ void GenerateParetoSamples(const std::vector<sw::universal::blas::vector<double>
 	using fp9e4m4_tt = cfloat<9, 4, uint8_t, true, true, false>;
 	using fp9e6m2_tt = cfloat<9, 6, uint8_t, true, true, false>;
 
-	QuantizationVsAccuracy< fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt >(data);
-	QuantizationVsAccuracy< fp8e4m3_tt, fp8e5m2_tt, fp16e5m10_tt, fp8e4m3_tt >(data);
-	QuantizationVsAccuracy< half, half, float, half >(data);
+	QuantizationVsAccuracy< fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt, fp8e4m3_tt >("fp8e4_tt", data, referenceDots);
+	QuantizationVsAccuracy< fp8e4m3_tt, fp8e5m2_tt, fp16e5m10_tt, fp8e4m3_tt >("fp8e4_e5_fp15e5", data, referenceDots);
+	QuantizationVsAccuracy< half, half, float, half >("fp16_ieee", data, referenceDots);
 }
 
 void checkRelativeError() {
@@ -369,15 +450,39 @@ try {
 	std::streamsize prec = std::cout.precision();
 	std::cout << std::setprecision(3);
 	
+	std::cout << "circuit complexity of single precision accumulator : " << AccumulatorCircuitComplexity<float>() << '\n';
+	std::cout << "circuit complexity of single precision accumulator : " << AccumulatorCircuitComplexity<single>() << '\n';
+	std::cout << "circuit complexity of 8-bit integer accumulator    : " << AccumulatorCircuitComplexity<integer<8>>() << '\n';
+	std::cout << "circuit complexity of 16-bit integer accumulator   : " << AccumulatorCircuitComplexity<integer<16>>() << '\n';
+	std::cout << "circuit complexity of 32-bit integer accumulator   : " << AccumulatorCircuitComplexity<integer<32>>() << '\n';
+	std::cout << "circuit complexity of 16-bit fixpnt accumulator    : " << AccumulatorCircuitComplexity<fixpnt<16,8>>() << '\n';
+	std::cout << "circuit complexity of 8-bit lns accumulator        : " << AccumulatorCircuitComplexity<lns<8, 3>>() << '\n';
+	std::cout << "circuit complexity of 8-bit dbns accumulator       : " << AccumulatorCircuitComplexity<dbns<8, 4>>() << '\n';
+
+	std::cout << "circuit complexity of single precision multiplier  : " << MultiplierCircuitComplexity<float>() << '\n';
+	std::cout << "circuit complexity of single precision multiplier  : " << MultiplierCircuitComplexity<single>() << '\n';
+	std::cout << "circuit complexity of 8-bit integer multiplier     : " << MultiplierCircuitComplexity<integer<8>>() << '\n';
+	std::cout << "circuit complexity of 16-bit integer multiplier    : " << MultiplierCircuitComplexity<integer<16>> () << '\n';
+	std::cout << "circuit complexity of 32-bit integer multiplier    : " << MultiplierCircuitComplexity<integer<32>>() << '\n';
+	std::cout << "circuit complexity of 16-bit fixpnt multiplier     : " << MultiplierCircuitComplexity<fixpnt<16,8>> () << '\n';
+	std::cout << "circuit complexity of 8-bit lns multiplier         : " << MultiplierCircuitComplexity<lns<8, 3>>() << '\n';
+	std::cout << "circuit complexity of 8-bit dbns multiplier        : " << MultiplierCircuitComplexity<dbns<8, 4>>() << '\n';
+
 	std::vector<blas::vector<double>> data;
 	//GenerateRandomVectors(100, 4096, data);
-	GenerateRandomVectors(10, 8192, data);
+	//GenerateRandomVectors(10, 8192, data);
+	GenerateRandomVectors(2, 16, data);
 //	GenerateTestVectors(5, 5, data, 0.75);
-	
-	// GenerateSmallFixedPointSamples(data);
-	GenerateSmallFloatingPointSamples(data);
-	// GenerateFloatingPointSamples(data);
-	// GenerateParetoSamples(data);
+	size_t N = size(data);
+	if (N < 10) PrintDataSet("Reference data set", data);
+	std::vector<double> referenceDots(N);
+
+	GenerateReferenceDotProducts(data, referenceDots);
+	if (N < 10) PrintStdVector("reference dots ", referenceDots);
+
+	// GenerateSmallFixedPointSamples(data, referenceDots);
+	// GenerateFloatingPointSamples(data, referenceDots);
+	 GenerateParetoSamples(data, referenceDots);
 
 	std::cout << std::setprecision(prec);
 

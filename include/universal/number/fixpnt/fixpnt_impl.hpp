@@ -175,7 +175,7 @@ public:
 		//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
 		// TODO: do we want prohibit this condition? To be consistent with native types we need to round automatically.
 		if constexpr (src_nbits <= nbits) {
-			_block = a.getbb();
+			_block = a.bits();
 			if constexpr (src_nbits < nbits) {
 				if (a.sign()) { // sign extend if necessary
 					for (unsigned i = src_nbits; i < nbits; ++i) setbit(i);
@@ -560,7 +560,6 @@ public:
 		if (bitIndex < nbits) _block.setbit(bitIndex, v);
 		// when bitIndex is out-of-bounds, fail silently as no-op
 	}
-	// use un-interpreted raw bits to set the bits of the fixpnt: TODO: expand the API to support fixed-points > 64 bits
 	constexpr void setbits(uint64_t value) noexcept { _block.setbits(value); }
 
 	// specific number system values we would like to have as constexpr
@@ -623,7 +622,6 @@ public:
 	constexpr bool    sign()                  const noexcept { return _block.sign(); }
 	constexpr fixpnt  integer()               const noexcept { return floor(*this); }
 	constexpr fixpnt  fraction()              const noexcept { return (*this - integer()); }
-	blockbinary<nbits, bt> bits()             const noexcept { return blockbinary<nbits, bt>(_block); }
 	constexpr bool    iszero()                const noexcept { return _block.iszero(); }
 	constexpr bool    ispos()                 const noexcept { return _block.ispos(); }
 	constexpr bool    isneg()                 const noexcept { return _block.isneg(); }
@@ -632,6 +630,9 @@ public:
 	constexpr bool    at(unsigned bitIndex)   const noexcept { return _block.at(bitIndex); }
 	constexpr bool    test(unsigned bitIndex) const noexcept { return _block.test(bitIndex); }
 	constexpr uint8_t nibble(unsigned n)      const noexcept { return _block.nibble(n); }
+
+	// collect a copy of the underlying bit representation
+	blockbinary<nbits, bt, BinaryNumberType::Signed> bits() const noexcept { return _block; }
 
 protected:
 	// HELPER methods
