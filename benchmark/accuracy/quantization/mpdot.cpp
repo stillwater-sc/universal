@@ -147,6 +147,20 @@ namespace sw {
 		unsigned FloatingPointAdder(unsigned ebits, unsigned fbits) {
 			return IntegerAdder(fbits + 1) + IntegerAdder(ebits);
 		}
+		unsigned LnsMultiplier(unsigned nbits, unsigned rbits) {
+			return IntegerAdder(nbits - 1);
+		}
+		unsigned LnsAdder(unsigned nbits, unsigned rbits) {
+			// implement as a conversion to fixed-point
+			return IntegerAdder(1 << (nbits - 1)) + (1 << rbits) * 0.1667; // fixed-point + LUT
+		}
+		unsigned DbnsMultiplier(unsigned nbits, unsigned fbbits) {
+			return IntegerAdder(nbits - 1);
+		}
+		unsigned DbnsAdder(unsigned nbits, unsigned fbbits) {
+			// implement as a discriminant adder
+			return 2*IntegerAdder(nbits - 1 + 2 + 2);
+		}
 
 		template<typename ProductType>
 		unsigned MultiplierCircuitComplexity() {
@@ -175,13 +189,15 @@ namespace sw {
 			}
 			else if constexpr (is_lns<ProductType> == true) {
 				//std::cerr << "ProductType is lns\n";
-				constexpr unsigned nbits = ProductType::nbits - 1u;
-				faEquivalency += IntegerAdder(nbits);
+				constexpr unsigned nbits = ProductType::nbits;
+				constexpr unsigned rbits = ProductType::rbits;
+				faEquivalency += LnsMultiplier(nbits, rbits);
 			}
 			else if constexpr (is_dbns<ProductType> == true) {
 				//std::cerr << "ProductType is dbns\n";
-				constexpr unsigned nbits = ProductType::nbits - 1u;
-				faEquivalency += IntegerAdder(nbits);
+				constexpr unsigned nbits = ProductType::nbits;
+				constexpr unsigned fbbits = ProductType::fbbits;
+				faEquivalency += DbnsMultiplier(nbits, fbbits);
 			}
 			else {
 				std::cerr << "ProductType :" << type_tag(ProductType()) << " is unsupported\n";
@@ -220,12 +236,14 @@ namespace sw {
 			else if constexpr (is_lns<AccumulationType> == true) {
 				//std::cerr << "AccumulationType is lns\n";
 				constexpr unsigned nbits = AccumulationType::nbits;
-				faEquivalency += 4*IntegerAdder(nbits - 1);
+				constexpr unsigned rbits = AccumulationType::rbits;
+				faEquivalency += LnsAdder(nbits, rbits);
 			}
 			else if constexpr (is_dbns<AccumulationType> == true) {
 				//std::cerr << "AccumulationType is dbns\n";
 				constexpr unsigned nbits = AccumulationType::nbits;
-				faEquivalency += 2 * IntegerAdder(nbits - 1);
+				constexpr unsigned fbbits = AccumulationType::fbbits;
+				faEquivalency += DbnsAdder(nbits, fbbits);
 			}
 			else {
 				std::cerr << "AccumulationType :" << type_tag(AccumulationType()) << " is unsupported\n";
@@ -233,6 +251,27 @@ namespace sw {
 			return faEquivalency;
 		}
 
+		void EnumerateFloatingPointAlus() {
+			for (unsigned nbits = 3; nbits < 32; ++nbits) {
+				for (unsigned ebits = 2; ebits < nbits - 2 && ebits < 9; ++ebits) {  // require both exponent and fraction bits
+					unsigned fbits = nbits - 1 - ebits;
+					std::cout << "fp" << nbits << 'e' << ebits << ", " << FloatingPointAdder(ebits, fbits) << ", " << FloatingPointMultiplier(ebits, fbits) << '\n';
+				}
+			}
+			for (unsigned nbits = 32; nbits < 65; nbits += 16) {
+				for (unsigned ebits = 8; ebits < 16; ++ebits) {  // require both exponent and fraction bits
+					unsigned fbits = nbits - 1 - ebits;
+					std::cout << "fp" << nbits << 'e' << ebits << ", " << FloatingPointAdder(ebits, fbits) << ", " << FloatingPointMultiplier(ebits, fbits) << '\n';
+				}
+			}
+
+		}
+		void EnumerateLnsAlus() {
+			for (unsigned nbits = 2; nbits < 65; ++nbits) {
+				unsigned rbits = (nbits - 1) >> 1;
+				std::cout << "lns" << nbits << 'r' << rbits << ", " << LnsAdder(nbits, rbits) << ", " << LnsMultiplier(nbits, rbits) << '\n';
+			}
+		}
 
 		template<typename InputType, typename ProductType, typename AccumulationType, typename OutputType>
 		void QuantizationVsAccuracy(const std::string& tag, const std::vector<sw::universal::blas::vector<double>>& data, const std::vector<double>& referenceDots, bool reportTypeRanges = false) {
@@ -450,6 +489,11 @@ try {
 	std::streamsize prec = std::cout.precision();
 	std::cout << std::setprecision(3);
 	
+
+	EnumerateFloatingPointAlus();
+
+	return 0;
+
 	std::cout << "circuit complexity of single precision accumulator : " << AccumulatorCircuitComplexity<float>() << '\n';
 	std::cout << "circuit complexity of single precision accumulator : " << AccumulatorCircuitComplexity<single>() << '\n';
 	std::cout << "circuit complexity of 8-bit integer accumulator    : " << AccumulatorCircuitComplexity<integer<8>>() << '\n';
@@ -467,6 +511,7 @@ try {
 	std::cout << "circuit complexity of 16-bit fixpnt multiplier     : " << MultiplierCircuitComplexity<fixpnt<16,8>> () << '\n';
 	std::cout << "circuit complexity of 8-bit lns multiplier         : " << MultiplierCircuitComplexity<lns<8, 3>>() << '\n';
 	std::cout << "circuit complexity of 8-bit dbns multiplier        : " << MultiplierCircuitComplexity<dbns<8, 4>>() << '\n';
+
 
 	std::vector<blas::vector<double>> data;
 	//GenerateRandomVectors(100, 4096, data);
