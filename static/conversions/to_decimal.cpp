@@ -1,6 +1,6 @@
 // to_decimal.cpp : test suite for conversions to decimal
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,7 +10,7 @@
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_suite.hpp>

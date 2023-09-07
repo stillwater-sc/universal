@@ -163,11 +163,11 @@ inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleM
 template<typename Integer,
 	typename = typename std::enable_if< std::is_integral<Integer>::value, Integer >::type
 >
-inline std::string to_hex(const Integer& number, int nbits = 0, bool bWordMarker = true) {
+inline std::string to_hex(const Integer& number, bool nibbleMarker = false, bool hexPrefix = true) {
 	std::stringstream s;
-	if (nbits == 0) nbits = 8 * sizeof(number);
+	uint64_t nbits = 8 * sizeof(number);
 	char hex[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-	s << "0x";
+	if (hexPrefix) s << "0x";
 	uint64_t mask = (1ull << (nbits - 1));
 	uint64_t nibble{ 0 };
 	unsigned nibbleIndex = nbits / 4 - 1u;
@@ -180,7 +180,7 @@ inline std::string to_hex(const Integer& number, int nbits = 0, bool bWordMarker
 			s << hex[nibble];
 			rightShift -= 4;
 			nibble = 0;
-			if (bWordMarker && nibbleIndex > 0 && nibbleIndex % 4 == 0) s << '\'';
+			if (nibbleMarker && nibbleIndex > 0 && nibbleIndex % 4 == 0) s << '\'';
 			--nibbleIndex;
 		}
 	}

@@ -1,42 +1,42 @@
-//  api.cpp : test suite runner for abitrary precision decimal integers class API
+//  api.cpp : test suite runner for adaptive precision decimal integers class API
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-// configure the decimal integer arithmetic class
-#define DECIMAL_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/decimal/decimal.hpp>
+// configure the elastic decimal integer arithmetic class
+#define EDECIMAL_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
 namespace sw::universal {
 
-static constexpr unsigned DECIMAL_TABLE_WIDTH = 15;
+static constexpr unsigned edecimal_TABLE_WIDTH = 15;
 
-// report decimal binary operator error
-void ReportBinaryDecimalError(const std::string& test_case, const std::string& op, const decimal& lhs, const decimal& rhs, const decimal& dref, const long& ref) {
+// report edecimal binary operator error
+void ReportBinaryedecimalError(const std::string& test_case, const std::string& op, const edecimal& lhs, const edecimal& rhs, const edecimal& dref, const long& ref) {
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
-		<< std::setw(DECIMAL_TABLE_WIDTH) << lhs
+		<< std::setw(edecimal_TABLE_WIDTH) << lhs
 		<< " " << op << " "
-		<< std::setw(DECIMAL_TABLE_WIDTH) << rhs
+		<< std::setw(edecimal_TABLE_WIDTH) << rhs
 		<< " != "
-		<< std::setw(DECIMAL_TABLE_WIDTH) << dref << " it should have been "
-		<< std::setw(DECIMAL_TABLE_WIDTH) << ref
+		<< std::setw(edecimal_TABLE_WIDTH) << dref << " it should have been "
+		<< std::setw(edecimal_TABLE_WIDTH) << ref
 		<< std::setprecision(5)
 		<< std::endl;
 }
 
-// report decimal binary operator success
-void ReportBinaryDecimalSuccess(const std::string& test_case, const std::string& op, const decimal& lhs, const decimal& rhs, const decimal& dref, const long& ref) {
+// report edecimal binary operator success
+void ReportBinaryedecimalSuccess(const std::string& test_case, const std::string& op, const edecimal& lhs, const edecimal& rhs, const edecimal& dref, const long& ref) {
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
-		<< std::setw(DECIMAL_TABLE_WIDTH) << lhs
+		<< std::setw(edecimal_TABLE_WIDTH) << lhs
 		<< " " << op << " "
-		<< std::setw(DECIMAL_TABLE_WIDTH) << rhs
+		<< std::setw(edecimal_TABLE_WIDTH) << rhs
 		<< " == "
-		<< std::setw(DECIMAL_TABLE_WIDTH) << dref << " equal to the reference "
-		<< std::setw(DECIMAL_TABLE_WIDTH) << ref
+		<< std::setw(edecimal_TABLE_WIDTH) << dref << " equal to the reference "
+		<< std::setw(edecimal_TABLE_WIDTH) << ref
 		<< std::setprecision(5)
 		<< std::endl;
 }
@@ -45,17 +45,17 @@ void ReportBinaryDecimalSuccess(const std::string& test_case, const std::string&
 int VerifyAddition(long ub, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	for (long i = -ub; i <= ub; ++i) {
-		decimal d1 = i;
+		edecimal d1 = i;
 		for (long j = -ub; j <= ub; ++j) {
-			decimal d2 = j;
+			edecimal d2 = j;
 			long ref = i + j;
-			decimal dref = d1 + d2;
+			edecimal dref = d1 + d2;
 			if (dref != ref) {
 				++nrOfFailedTests;
-				if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "add", d1, d2, dref, ref);
+				if (bReportIndividualTestCases) ReportBinaryedecimalError("FAIL", "add", d1, d2, dref, ref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
+				// if (bReportIndividualTestCases) ReportBinaryedecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
 			}
 		}
 	}
@@ -66,17 +66,17 @@ int VerifyAddition(long ub, bool bReportIndividualTestCases) {
 int VerifySubtraction(long ub, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	for (long i = -ub; i <= ub; ++i) {
-		decimal d1 = i;
+		edecimal d1 = i;
 		for (long j = -ub; j <= ub; ++j) {
-			decimal d2 = j;
+			edecimal d2 = j;
 			long ref = i - j;
-			decimal dref = d1 - d2;
+			edecimal dref = d1 - d2;
 			if (dref != ref) {
 				++nrOfFailedTests;
-				if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "sub", d1, d2, dref, ref);
+				if (bReportIndividualTestCases) ReportBinaryedecimalError("FAIL", "sub", d1, d2, dref, ref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "seb", d1, d2, dref, ref);
+				// if (bReportIndividualTestCases) ReportBinaryedecimalSuccess("SUCCESS", "seb", d1, d2, dref, ref);
 			}
 		}
 	}
@@ -87,17 +87,17 @@ int VerifySubtraction(long ub, bool bReportIndividualTestCases) {
 int VerifyMultiplication(long ub, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	for (long i = -ub; i <= ub; ++i) {
-		decimal d1 = i;
+		edecimal d1 = i;
 		for (long j = -ub; j <= ub; ++j) {
-			decimal d2 = j;
+			edecimal d2 = j;
 			long ref = i * j;
-			decimal dref = d1 * d2;
+			edecimal dref = d1 * d2;
 			if (dref != ref) {
 				++nrOfFailedTests;
-				if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "mul", d1, d2, dref, ref);
+				if (bReportIndividualTestCases) ReportBinaryedecimalError("FAIL", "mul", d1, d2, dref, ref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "mul", d1, d2, dref, ref);
+				// if (bReportIndividualTestCases) ReportBinaryedecimalSuccess("SUCCESS", "mul", d1, d2, dref, ref);
 			}
 		}
 	}
@@ -107,17 +107,17 @@ int VerifyMultiplication(long ub, bool bReportIndividualTestCases) {
 // verification of division
 int VerifyDivision(long ub, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
-	decimal dref;
+	edecimal dref;
 	for (long i = -ub; i <= ub; ++i) {
-		decimal d1 = i;
+		edecimal d1 = i;
 		for (long j = -ub; j <= ub; ++j) {
-			decimal d2 = j;
+			edecimal d2 = j;
 			long ref = 0; // clang insists on initializing this to silence a warning
 			if (j == 0) {
 				try {
 					dref = d1 / d2;
 				}
-				catch (decimal_integer_divide_by_zero& e) {
+				catch (edecimal_integer_divide_by_zero& e) {
 					if (bReportIndividualTestCases) {
 						std::cout << "properly caught divide by zero exception: " << e.what() << std::endl;
 					}
@@ -135,17 +135,17 @@ int VerifyDivision(long ub, bool bReportIndividualTestCases) {
 			}
 			if (dref != ref) {
 				++nrOfFailedTests;
-				if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "div", d1, d2, dref, ref);
+				if (bReportIndividualTestCases) ReportBinaryedecimalError("FAIL", "div", d1, d2, dref, ref);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
+				//if (bReportIndividualTestCases) ReportBinaryedecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
 			}
 		}
 	}
 	return nrOfFailedTests;
 }
 
-bool less(const decimal& lhs, const decimal& rhs) {
+bool less(const edecimal& lhs, const edecimal& rhs) {
 	return lhs < rhs;
 }
 
@@ -155,7 +155,7 @@ bool less(const decimal& lhs, const decimal& rhs) {
 
 void examples() {
 	using namespace sw::universal;
-	decimal d1, d2, d3;
+	edecimal d1, d2, d3;
 	
 //	d1.parse("0000"); cout << "bad parse: " << d1 << endl;
 
@@ -166,19 +166,19 @@ void examples() {
 
 	std::string val = "1234567890";
 	if (!d1.parse(val)) {
-		std::cerr << "failed to parse the decimal value -" << val << "-\n";
+		std::cerr << "failed to parse the edecimal value -" << val << "-\n";
 	}
 	std::cout << d1 << '\n';
 
 	val = "-123";
 	if (!d2.parse(val)) {
-		std::cerr << "failed to parse the decimal value -" << val << "-\n";
+		std::cerr << "failed to parse the edecimal value -" << val << "-\n";
 	}
 	std::cout << d2 << '\n';
 
 	val = "+123";
 	if (!d3.parse(val)) {
-		std::cerr << "failed to parse the decimal value -" << val << "-\n";
+		std::cerr << "failed to parse the edecimal value -" << val << "-\n";
 	}
 	std::cout << d3 << '\n';
 
@@ -256,12 +256,12 @@ void reportType(Ty v) {
 }
 
 void findLargestMultipleTest() {
-	sw::universal::decimal d;
+	sw::universal::edecimal d;
 	int fails = 0;
 	int numerator = 9;
 	d = numerator;
 	for (int i = 0; i < 100; ++i) {
-		sw::universal::decimal multiple = sw::universal::findLargestMultiple(i, d);
+		sw::universal::edecimal multiple = sw::universal::findLargestMultiple(i, d);
 		if (multiple != (i / 9)) {
 			std::cout << d << " into " << i << " yields multiplier " << multiple << " but should have been " << (i/numerator) << std::endl;
 			++fails;
@@ -280,10 +280,10 @@ int BigNumberComputation() {
 
 	std::cout << "big number computation\n";
 	int nrOfFailedTestCases = 0;
-	decimal a, b, c, d, e, f;
+	edecimal a, b, c, d, e, f;
 	a.parse("1234567890"); std::cout << a << '\n';
 	b.parse("5432109876"); std::cout << b << '\n';
-	c = decimal(1) << 9; std::cout << c << '\n';
+	c = edecimal(1) << 9; std::cout << c << '\n';
 	d = a * b * c; std::cout << d << '\n';
 	e = d / a;  std::cout << e << '\n';
 	f = e / b; std::cout << f << '\n';
@@ -304,11 +304,11 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "decimal arithmetic";
+	std::string tag = "edecimal arithmetic";
 
 #if MANUAL_TESTING
 
-	decimal d1, d2, d3;
+	edecimal d1, d2, d3;
 
 	d1 = -1'234'567'890;
 	d2 = +1'234'567'890;
@@ -345,24 +345,24 @@ try {
 	std::cout << "doubled    : " << d1 + d1 << std::endl;
 
 	long rangeBound = 10; // 100;
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition(rangeBound, bReportIndividualTestCases), "decimal", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision(rangeBound, bReportIndividualTestCases), "decimal", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition(rangeBound, bReportIndividualTestCases), "edecimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(rangeBound, bReportIndividualTestCases), "edecimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(rangeBound, bReportIndividualTestCases), "edecimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision(rangeBound, bReportIndividualTestCases), "edecimal", "division");
 
 	nrOfFailedTestCases += BigNumberComputation();
 
 	nrOfFailedTestCases = 0; // in manual testing ignore failures
 
 #else
-	std::cout << "Decimal Arithmetic verfication\n";
+	std::cout << "edecimal Arithmetic verfication\n";
 
 	long rangeBound = 100;
 	std::cout << "quick sample test with range bound: " << rangeBound << '\n';
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition(rangeBound, bReportIndividualTestCases), "decimal", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision(rangeBound, bReportIndividualTestCases), "decimal", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition(rangeBound, bReportIndividualTestCases), "edecimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(rangeBound, bReportIndividualTestCases), "edecimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(rangeBound, bReportIndividualTestCases), "edecimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision(rangeBound, bReportIndividualTestCases), "edecimal", "division");
 
 	nrOfFailedTestCases += BigNumberComputation();
 
@@ -370,10 +370,10 @@ try {
 
 	long stressRangeBound = (1 << 9);
 	std::cout << "stress testing with range bound: " << stressRangeBound << '\n';
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition(stressRangeBound, bReportIndividualTestCases), "decimal", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(stressRangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(stressRangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision(stressRangeBound, bReportIndividualTestCases), "decimal", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition(stressRangeBound, bReportIndividualTestCases), "edecimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction(stressRangeBound, bReportIndividualTestCases), "edecimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication(stressRangeBound, bReportIndividualTestCases), "edecimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision(stressRangeBound, bReportIndividualTestCases), "edecimal", "division");
 
 #endif // STRESS_TESTING
 

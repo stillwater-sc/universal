@@ -16,9 +16,7 @@
 #include <cmath>
 // universal BLAS
 #include <universal/number/posit/posit.hpp>
-#include <universal/blas/vector.hpp>
-#include <universal/blas/matrix.hpp>
-#include <universal/blas/solvers/lu.hpp>
+#include <universal/blas/blas.hpp>
 
 using std::string;
 using std::vector;

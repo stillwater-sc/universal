@@ -1,6 +1,6 @@
 // constexpr.cpp: compile time tests for fixed-point constexpr
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,6 +12,7 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_suite.hpp>
+#include <universal/math/math_constants.hpp>
 
 template<typename Fixpnt>
 int DecoratedConstructors() {
@@ -111,11 +112,9 @@ int AssignmentOperators() {
 #define REGRESSION_LEVEL_4 1
 #endif
 
-constexpr double pi = 3.14159265358979323846;
-
 template<typename Fixpnt>
 void ConstexprFixpnt() {
-	CONSTEXPRESSION Fixpnt a(pi);
+	CONSTEXPRESSION Fixpnt a(sw::universal::m_pi);
 	std::cout << type_tag(a) << " : " << a << '\n';
 }
 
@@ -149,7 +148,7 @@ try {
 
 	constexpr size_t FIRST_COLUMN = 43;
 	std::cout << "constexpr pi approximations\n";
-	std::cout << std::setw(FIRST_COLUMN) << "type" << " : " << pi << '\n';
+	std::cout << std::setw(FIRST_COLUMN) << "type" << " : " << m_pi << '\n';
 	ConstexprFixpnt<fixpnt<8, 4>>();
 	ConstexprFixpnt<fixpnt<9, 6>>();
 	ConstexprFixpnt<fixpnt<16, 4>>();
@@ -158,7 +157,7 @@ try {
 	ConstexprFixpnt<fixpnt<32, 28>>();
 	auto oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(30);
-	std::cout << std::setw(FIRST_COLUMN) << "double" << " : " << pi << '\n';
+	std::cout << std::setw(FIRST_COLUMN) << "double" << " : " << m_pi << '\n';
 	std::cout << std::setprecision(oldPrecision);
 
 #if REGRESSION_LEVEL_1

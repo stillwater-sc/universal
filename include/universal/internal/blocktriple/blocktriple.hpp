@@ -27,7 +27,7 @@
 #include <universal/native/integers.hpp> // to_binary(uint64_t)
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
-#include <universal/native/bit_functions.hpp>
+#include <universal/utility/find_msb.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
 // blocktriple operation trace options
 #include <universal/internal/blocktriple/trace_constants.hpp>
@@ -739,7 +739,7 @@ private:
 		_zero = false;
 		_sign = false;
 		uint64_t raw = static_cast<uint64_t>(rhs);
-		_scale = static_cast<int>(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		_scale = static_cast<int>(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
 		constexpr unsigned sizeInBits = 8 * sizeof(Ty);
 		uint64_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
@@ -774,7 +774,7 @@ private:
 		_zero = false;
 		_sign = (rhs < 0);
 		uint64_t raw = static_cast<uint64_t>(_sign ? -rhs : rhs);
-		_scale = static_cast<int>(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		_scale = static_cast<int>(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
 		constexpr unsigned sizeInBits = 8 * sizeof(Ty);
 		uint64_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
@@ -808,7 +808,8 @@ private:
 		bool s{ false };
 		uint64_t rawExponent{ 0 };
 		uint64_t rawFraction{ 0 };
-		extractFields(rhs, s, rawExponent, rawFraction);
+		uint64_t bits{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction, bits);
 
 		// special case handling
 		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
@@ -875,7 +876,7 @@ private:
 			switch(op) {
 			case BlockTripleOperator::REP:
 				_significant.setradix(fbits);
-				std::cout << "rhs = " << rhs << " : significant = " << _significant << '\n';
+				// std::cout << "rhs = " << rhs << " : significant = " << _significant << '\n';
 				break;
 			case BlockTripleOperator::ADD:
 				_significant.setradix(abits);

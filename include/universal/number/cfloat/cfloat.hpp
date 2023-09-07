@@ -103,7 +103,7 @@ using amd24    = cfloat<24, 8, std::uint32_t, false, false, false>;
 // By default we enable both subnormals and supernormals
 // as the number of encodings is severely limited (128 vs 256 samples)
 using fp8e2m5  = cfloat<8, 2, std::uint8_t, true, true, false>;
-using fp8e3m2  = cfloat<8, 3, std::uint8_t, true, true, false>;
+using fp8e3m4  = cfloat<8, 3, std::uint8_t, true, true, false>;
 using fp8e4m3  = cfloat<8, 4, std::uint8_t, true, true, false>;
 using fp8e5m2  = cfloat<8, 5, std::uint8_t, true, true, false>;
 

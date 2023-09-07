@@ -1,6 +1,6 @@
 // addition.cpp: test suite runner for addition on adaptive precision decimal integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,15 +11,15 @@
 #include <limits>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 namespace sw { namespace universal {
 
 		// enumerate all addition cases for a decimal integer configuration
 		template<size_t nbits>
-		int VerifyDecimalAddition(bool reportTestCases) {
-			using Integer = decimal;
+		int VerifyEdecimalAddition(bool reportTestCases) {
+			using Integer = edecimal;
 			constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 			constexpr size_t signBitMask = (1ull << (nbits - 1));
 			constexpr size_t valueBitMask = ~signBitMask;
@@ -73,7 +73,7 @@ namespace sw { namespace universal {
 template<typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::decimal a, b, aref, asum;
+	sw::universal::edecimal a, b, aref, asum;
 	a = _a;
 	b = _b;
 	asum = a + b;
@@ -126,19 +126,19 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalAddition<10>(reportTestCases), "decimal addition nbits=10", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<10>(reportTestCases), "decimal addition nbits=10", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalAddition<16>(reportTestCases), "decimal addition nbits=16", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<16>(reportTestCases), "decimal addition nbits=16", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalAddition<32>(reportTestCases), "decimal addition nbits=32", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<32>(reportTestCases), "decimal addition nbits=32", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalAddition<64>(reportTestCases), "decimal addition nbits=64", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalAddition<64>(reportTestCases), "decimal addition nbits=64", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

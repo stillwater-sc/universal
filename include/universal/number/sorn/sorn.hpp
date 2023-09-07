@@ -37,6 +37,7 @@
 #include <universal/number/sorn/exceptions.hpp>
 #include <universal/number/sorn/sorn_fwd.hpp>
 #include <universal/number/sorn/sorn_impl.hpp>
+#include <universal/number/sorn/sorn_type_tag.hpp>
 #include <universal/number/sorn/sorn_traits.hpp>
 #include <universal/number/sorn/numeric_limits.hpp>
 

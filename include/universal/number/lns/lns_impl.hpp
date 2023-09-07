@@ -16,6 +16,21 @@
 
 namespace sw { namespace universal {
 		
+	// arithmetic event statistics
+	constexpr bool bCollectLnsEventStatistics = false;  // by default, event statistics are disabled
+	struct LnsArithmeticStatistics {
+		LnsArithmeticStatistics() : conversionEvents{ 0 } {}
+		void reset() {
+			conversionEvents = 0;
+		}
+		int conversionEvents;
+	};
+	inline std::ostream& operator<<(std::ostream& ostr, const LnsArithmeticStatistics& stats) {
+		ostr << "Conversions                     : " << stats.conversionEvents << '\n';
+		return ostr;
+	}
+	static LnsArithmeticStatistics lnsStats;
+
 // convert a floating-point value to a specific lns configuration. Semantically, p = v, return reference to p
 template<unsigned nbits, unsigned rbits, typename bt, auto... xtra>
 inline lns<nbits, rbits, bt, xtra...>& convert(const triple<nbits, bt>& v, lns<nbits, rbits, bt, xtra...>& p) {
@@ -47,7 +62,8 @@ lns<nbits, rbits, bt, xtra...>& maxneg(lns<nbits, rbits, bt, xtra...>& lmaxneg) 
 	return lmaxneg;
 }
 
-// template class representing a value in scientific notation, using a template size for the number of fraction bits
+// template class representing a value in logarithmic form with a sign bit and a fixed-point exponent
+// nbits is the total number of bits, rbits represent the rational bit in the fixed-point exponent.
 template<unsigned _nbits, unsigned _rbits, typename bt = uint8_t, auto... xtra>
 class lns {
 	static_assert(_nbits > _rbits, "configuration not supported: not enough integer bits");
@@ -89,6 +105,11 @@ public:
 	// decorated/converting constructors
 	constexpr lns(const std::string& stringRep) {
 		assign(stringRep);
+	}
+
+	template<unsigned srcnbits, unsigned srcrbits, typename srcbt, auto... srcxtra>
+	constexpr lns(const lns<srcnbits, srcrbits, srcbt, srcxtra...>& rhs) {
+		*this = double(rhs);
 	}
 
 	// specific value constructor
@@ -323,7 +344,7 @@ public:
 				value >>= bitsInBlock;
 			}
 		}
-		_block.setblock(MSU, _block[MSU] & MSU_MASK); // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block.setblock(MSU, static_cast<bt>(_block[MSU] & MSU_MASK)); // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
 	
 	// create specific number system values of interest
@@ -441,9 +462,19 @@ public:
 		bt mask = bt(1ull << (bitIndex % bitsInBlock));
 		return (word & mask);
 	}
-	inline constexpr bt block(unsigned b) const noexcept {
+	constexpr bt block(unsigned b) const noexcept {
 		if (b < nrBlocks) return _block[b];
 		return bt(0); // return 0 when block index out of bounds
+	}
+	constexpr uint8_t nibble(unsigned n) const noexcept {
+		if (n < (1 + ((nbits - 1) >> 2))) {
+			bt word = _block[(n * 4) / bitsInBlock];
+			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
+			bt mask = bt(0xF << (nibbleIndexInWord * 4));
+			bt nibblebits = bt(mask & word);
+			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
+		}
+		return false;
 	}
 
 	explicit operator int()       const noexcept { return to_signed<int>(); }
@@ -521,10 +552,12 @@ protected:
 	}
 	template<typename Real>
 	CONSTEXPRESSION lns& convert_ieee754(Real v) noexcept {
+		if constexpr (bCollectLnsEventStatistics) ++lnsStats.conversionEvents;
 		bool s{ false };
 		uint64_t unbiasedExponent{ 0 };
 		uint64_t rawFraction{ 0 };
-		extractFields(v, s, unbiasedExponent, rawFraction);
+		uint64_t bits{ 0 };
+		extractFields(v, s, unbiasedExponent, rawFraction, bits);
 		if (unbiasedExponent == ieee754_parameter<Real>::eallset) { // nan and inf need to be remapped
 			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask) ||
 				rawFraction == (ieee754_parameter<Real>::fmask & (ieee754_parameter<Real>::qnanmask | ieee754_parameter<Real>::snanmask))) {
@@ -593,8 +626,7 @@ protected:
 
 
 		ExponentBlockBinary lnsExponent{ 0 };
-
-		extractFields(logv, s, unbiasedExponent, rawFraction); // use native conversion
+		extractFields(logv, s, unbiasedExponent, rawFraction, bits); // use native conversion
 		if (unbiasedExponent > 0) rawFraction |= (1ull << ieee754_parameter<Real>::fbits);
 		int radixPoint = ieee754_parameter<Real>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Real>::bias);
 

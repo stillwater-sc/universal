@@ -1,6 +1,6 @@
 //  quires.cpp : test suite for IEEE float quires
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,7 +10,7 @@
 #define TEMPLATIZED_TYPE 0
 // enable/disable quire exceptions
 #define QUIRE_THROW_EXCEPTION 0
-#include <universal/native/bit_functions.hpp>
+#include <universal/utility/find_msb.hpp>
 #include <universal/number/float/float_functions.hpp>
 #include <universal/number/float/quire.hpp>
 

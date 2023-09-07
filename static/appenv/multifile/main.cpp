@@ -10,6 +10,7 @@
 #include <cmath>
 #include <limits>
 
+#include <universal/native/ieee754.hpp>
 #include <universal/number/integer/integer.hpp>
 #include <universal/number/einteger/einteger.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>

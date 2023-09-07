@@ -13,6 +13,30 @@
 
 namespace sw { namespace universal {
 
+
+	// Generate a type tag for this posit, for example, posit<8,1>
+	template<unsigned nbits, unsigned es>
+	std::string type_tag(const posit<nbits, es> & = {}) {
+		std::stringstream str;
+		str << "posit<"
+			<< std::setw(3) << nbits << ", "
+			<< std::setw(1) << es << '>';
+		return str.str();
+	}
+
+	// Generate a type field descriptor for this cfloat
+	template<typename PositType,
+		std::enable_if_t< is_posit<PositType>, bool> = true
+	>
+	inline std::string type_field(const PositType & = {}) {
+		std::stringstream s;
+//		unsigned nbits = PositType::nbits;  // total bits
+		unsigned ebits = PositType::es;     // exponent bits
+		unsigned fbits = PositType::fbits;  // integer bits
+		s << "fields(s:1|r:[2]+|e:" << ebits << "|m:" << fbits << ')';
+		return s.str();
+	}
+
 // report dynamic range of a type, specialized for a posit
 template<unsigned nbits, unsigned es>
 std::string dynamic_range() {
@@ -45,16 +69,6 @@ std::string posit_range() {
 	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
 	str << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::min() << "     ";
 	str << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::max() ;
-	return str.str();
-}
-
-// Generate a type tag for this posit, for example, posit<8,1>
-template<unsigned nbits, unsigned es>
-std::string type_tag(const posit<nbits, es>& = {}) {
-	std::stringstream str;
-	str << "posit<" 
-		<< std::setw(3) << nbits << ", " 
-		<< std::setw(1) << es << '>';
 	return str.str();
 }
 
@@ -102,6 +116,24 @@ std::string component_values_to_string(const posit<nbits, es>& p) {
 		<< " Value : " << p.to_int64()
 		<< std::dec;
 	return str.str();
+}
+
+// generate a binary string for cfloat
+template<unsigned nbits, unsigned es>
+inline std::string to_hex(const posit<nbits, es>& v, bool nibbleMarker = false, bool hexPrefix = true) {
+	char hexChar[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+	};
+	std::stringstream s;
+	if (hexPrefix) s << "0x" << std::hex;
+	int nrNibbles = int(1ull + ((nbits - 1ull) >> 2ull));
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint8_t nibble = v.nibble(unsigned(n));
+		s << hexChar[nibble];
+		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+	}
+	return s.str();
 }
 
 // generate a posit format ASCII format nbits.esxNN...NNp

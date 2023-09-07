@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ v3.71, main ]
+    branches: [ v3.72, dev, main ]
   pull_request:
     branches: [ main ]
 

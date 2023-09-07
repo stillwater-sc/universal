@@ -1,0 +1,193 @@
+// addition.cpp: test suite runner for addition arithmetic on fixed-sized, arbitrary precision double-base logarithmic number system
+//
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+#include <universal/number/dbns/dbns.hpp>
+//#include <universal/verification/test_suite.hpp>    // there is a generic VerifyAddition there: we need a trait to break template match
+// in the mean time: explicity bring in the dependencies to get the test running
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_case.hpp>
+#include <universal/verification/test_reporters.hpp>
+
+namespace sw { namespace universal {
+
+	//template<typename DbnsType,
+	//	std::enable_if_t<is_dbns<DbnsType>, DbnsType> = 0
+	//>
+	template<typename DbnsType>
+	int VerifyAddition(bool reportTestCases) {
+		constexpr size_t nbits = DbnsType::nbits;
+		//constexpr size_t rbits = DbnsType::rbits;
+		//constexpr Behavior behavior = DbnsType::behavior;
+		//using bt = typename DbnsType::BlockType;
+		constexpr size_t NR_ENCODINGS = (1ull << nbits);
+		int nrOfFailedTestCases = 0;
+
+		if constexpr (bCollectDbnsEventStatistics) dbnsStats.reset();
+
+		DbnsType a, b, c, cref;
+		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
+			a.setbits(i);
+			double da = double(a);
+			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
+				b.setbits(j);
+				double db = double(b);
+
+				double ref = da + db;
+//				if (reportTestCases && !isInRange<DbnsType>(ref)) {
+//					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+//				}
+				c = a + b;
+				cref = ref;
+				if (c != cref) {
+					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
+					++nrOfFailedTestCases;
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
+				}
+				else {
+					// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
+				}
+				if (nrOfFailedTestCases > 24) return nrOfFailedTestCases;
+			}
+		}
+		if constexpr (bCollectDbnsEventStatistics) if (reportTestCases) std::cout << dbnsStats << '\n';
+		return nrOfFailedTestCases;
+	}
+
+} }  // namespace sw::universal
+
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
+int main()
+try {
+	using namespace sw::universal;
+
+	std::string test_suite  = "dbns addition validation";
+	std::string test_tag    = "addition";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+
+	using DBNS4_1_sat = dbns<4, 1, std::uint8_t, Behavior::Saturating>;
+	using DBNS4_2_sat = dbns<4, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS5_2_sat = dbns<5, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS6_2_sat = dbns<6, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS6_3_sat = dbns<6, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS7_3_sat = dbns<7, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS8_3_sat = dbns<8, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS8_4_sat = dbns<8, 4, std::uint8_t, Behavior::Saturating>;
+	using DBNS9_4_sat = dbns<9, 4, std::uint8_t, Behavior::Saturating>;
+	using DBNS16_5_sat = dbns<16, 5, std::uint16_t, Behavior::Saturating>;
+
+	// generate individual testcases to hand trace/debug
+#ifdef LATER
+	TestCase< DBNS4_1_sat, float>(TestCaseOperator::ADD, 1.0f, 1.0f);
+	TestCase< DBNS5_2_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< DBNS8_3_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< DBNS9_4_sat, float>(TestCaseOperator::ADD, 0.5f, -0.5f);
+	TestCase< DBNS16_5_sat, double>(TestCaseOperator::ADD, INFINITY, INFINITY);
+#endif
+
+	reportTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_1_sat>(reportTestCases), "dbns<4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_2_sat>(reportTestCases), "dbns<4,2,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS5_2_sat>(reportTestCases), "dbns<5,2,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS6_2_sat>(reportTestCases), "dbns<6,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS6_3_sat>(reportTestCases), "dbns<6,3,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS7_3_sat>(reportTestCases), "dbns<7,3,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_3_sat>(reportTestCases), "dbns<8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_4_sat>(reportTestCases), "dbns<8,4,uint8_t>", test_tag);
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
+#else
+
+#if REGRESSION_LEVEL_1
+	using DBNS4_1_sat = dbns<4, 1, std::uint8_t, Behavior::Saturating>;
+	using DBNS4_2_sat = dbns<4, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS5_2_sat = dbns<5, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS6_2_sat = dbns<6, 2, std::uint8_t, Behavior::Saturating>;
+	using DBNS6_3_sat = dbns<6, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS7_3_sat = dbns<7, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS8_3_sat = dbns<8, 3, std::uint8_t, Behavior::Saturating>;
+	using DBNS8_4_sat = dbns<8, 4, std::uint8_t, Behavior::Saturating>;
+
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_1_sat>(reportTestCases), "dbns<4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS4_2_sat>(reportTestCases), "dbns<4,2,uint8_t>", test_tag);
+	
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS5_2_sat>(reportTestCases), "dbns<5,2,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS6_2_sat>(reportTestCases), "dbns<6,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS6_3_sat>(reportTestCases), "dbns<6,3,uint8_t>", test_tag);
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS7_3_sat>(reportTestCases), "dbns<7,3,uint8_t>", test_tag);
+	
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_3_sat>(reportTestCases), "dbns<8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS8_4_sat>(reportTestCases), "dbns<8,4,uint8_t>", test_tag);
+
+#endif
+
+#if REGRESSION_LEVEL_2
+	using DBNS9_4_sat = dbns<9, 4, std::uint8_t>;
+	using DBNS10_4_sat = dbns<10, 4, std::uint8_t>;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS9_4_sat>(reportTestCases), "dbns<9,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<DBNS10_4_sat>(reportTestCases), "dbns<10,4,uint8_t>", test_tag);
+#endif
+
+#if REGRESSION_LEVEL_3
+#endif
+
+#if REGRESSION_LEVEL_4
+#endif
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
+}
+catch (char const* msg) {
+	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Caught unexpected universal arithmetic exception : " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Caught unexpected universal internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
+}

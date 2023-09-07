@@ -306,8 +306,8 @@ namespace sw {
 			template<typename Real>
 			f2s& convert_ieee754(Real v) noexcept {
 				bool sign{ false };
-				uint64_t biased{ 0 }, f64{ 0 };
-				extractFields(v, sign, biased, f64);
+				uint64_t biased{ 0 }, f64{ 0 }, bits{ 0 };
+				extractFields(v, sign, biased, f64, bits);
 				s_ = sign;
 				e_ = static_cast<int>(biased) - ieee754_parameter<Real>::bias;
 				f_ = static_cast<UnsignedInt>(ieee754_parameter<Real>::hmask | f64); // add the hidden bit
@@ -388,7 +388,7 @@ namespace sw {
 			std::stringstream s;
 			s << '(' << (v.s() ? "-, " : "+, ");
 			s << to_hex(v.f(), 0, true) << ", ";
-			s << v.e() << '(' << to_hex(v.e(), 16, true) << ')' << ')';
+			s << v.e() << '(' << to_hex(v.e(), true, true) << ')' << ')';
 			return s.str();
 		}
 

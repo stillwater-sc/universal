@@ -35,7 +35,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 71)
+  set(UNIVERSAL_VERSION_MINOR 72)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -830,6 +830,7 @@ endif(BUILD_BENCHMARK_ERROR)
 # accuracy benchmarks
 if(BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
+add_subdirectory("benchmark/accuracy/quantization")
 endif(BUILD_BENCHMARK_ACCURACY)
 
 # reproducibility benchmarks

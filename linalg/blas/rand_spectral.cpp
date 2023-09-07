@@ -40,11 +40,11 @@ try {
 	std::cout << Qbase << '\n';
 
 	// normalize the column vectors
-	auto total = sum(Qbase);
+	auto total = sumOfElements(Qbase); // default is dim = 0
 	std::cout << "Total    : " << total << '\n';
-	auto rowSums = sum(Qbase, 1);
+	auto rowSums = sumOfElements(Qbase, 1);
 	std::cout << "Row sums : " << rowSums << '\n';
-	auto colSums = sum(Qbase, 2);
+	auto colSums = sumOfElements(Qbase, 2);
 	std::cout << "Col sums : " << colSums << '\n';
 
 	normalize(Qbase, 2);  // normalize columns so they are unit length

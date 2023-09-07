@@ -1,6 +1,6 @@
 // multiplication.cpp: test suite runner for multiplicationon adaptive precision decimal integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,15 +11,15 @@
 #include <limits>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 namespace sw { namespace universal {
 
 		// enumerate all addition cases for a decimal integer configuration
 		template<size_t nbits>
-		int VerifyDecimalMultiplication(bool reportTestCases) {
-			using Integer = decimal;
+		int VerifyEdecimalMultiplication(bool reportTestCases) {
+			using Integer = edecimal;
 			constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 			constexpr size_t signBitMask = (1ull << (nbits - 1));
 			constexpr size_t valueBitMask = ~signBitMask;
@@ -74,7 +74,7 @@ namespace sw { namespace universal {
 template<typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::decimal a, b, aref, aproduct ;
+	sw::universal::edecimal a, b, aref, aproduct ;
 	a = _a;
 	b = _b;
 	aproduct = a * b;
@@ -121,26 +121,26 @@ try {
 	GenerateTestCase(1, 10);
 	GenerateTestCase(10, 100);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalMultiplication<8>(reportTestCases), "decimal multiplication nbits=8", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<8>(reportTestCases), "decimal multiplication nbits=8", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalMultiplication<10>(reportTestCases), "decimal multiplication nbits=10", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<10>(reportTestCases), "decimal multiplication nbits=10", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalMultiplication<16>(reportTestCases), "decimal multiplication nbits=16", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<16>(reportTestCases), "decimal multiplication nbits=16", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalMultiplication<32>(reportTestCases), "decimal multiplication nbits=32", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<32>(reportTestCases), "decimal multiplication nbits=32", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalMultiplication<64>(reportTestCases), "decimal multiplication nbits=64", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalMultiplication<64>(reportTestCases), "decimal multiplication nbits=64", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
