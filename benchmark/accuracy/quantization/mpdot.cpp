@@ -36,6 +36,35 @@ namespace sw {
 			return result;
 		}
 
+		/// <summary>
+		/// Calculate the Quantization Signal to Noise Ratio
+		/// </summary>
+		/// <typeparam name="NumberType">the quantization type</typeparam>
+		/// <param name="data"></param>
+		/// <returns>qsnr estimate</returns>
+		template<typename NumberType>
+		double qsnr(const blas::vector<double>& data) {
+			using std::abs;
+			unsigned N = static_cast<unsigned>(size(data));
+			blas::vector<NumberType> q(data);
+			// qsnr = -10log  E[ (abs(Q(X) - X))^2 ] / E[ (abs(X))^2 ]
+			double delta{ 0.0 }, value{ 0.0 };
+			for (unsigned i = 0; i < N; ++i) {
+				double x = data[i];
+				//std::cout << "Q(x) : " << q[i] << " x : " << x << '\n';
+				double diff = abs(double(q[i]) - x);
+				double diffSquared = diff * diff;
+				//std::cout << "diff : " << diff << " : diff^2 : " << diffSquared << '\n';
+				delta += diffSquared;
+				value += x * x;
+			}
+			// generate the expected values
+			delta /= N;
+			value /= N;
+			if (delta == 0.0) delta = std::numeric_limits<double>::epsilon();
+			//std::cout << "E[ (abs(Q(X) - X))^2 ] : " << delta << " : E[ abs(X))^2 ] : " << value << '\n';
+			return -10.0 * log(delta / value);
+		}
 
 		/// <summary>
 		/// generate the custom dot products
@@ -142,24 +171,24 @@ namespace sw {
 			return (nbits * nbits);
 		}
 		unsigned FloatingPointMultiplier(unsigned ebits, unsigned fbits) {
-			return IntegerMultiplier(fbits + 1) + IntegerAdder(ebits);
+			return IntegerMultiplier(fbits + 1u) + IntegerAdder(ebits);
 		}
 		unsigned FloatingPointAdder(unsigned ebits, unsigned fbits) {
-			return IntegerAdder(fbits + 1) + IntegerAdder(ebits);
+			return IntegerAdder(fbits + 1u) + IntegerAdder(ebits);
 		}
 		unsigned LnsMultiplier(unsigned nbits, unsigned rbits) {
-			return IntegerAdder(nbits - 1);
+			return IntegerAdder(nbits - 1u);
 		}
 		unsigned LnsAdder(unsigned nbits, unsigned rbits) {
 			// implement as a conversion to fixed-point
-			return IntegerAdder(1 << (nbits - 1)) + (1 << rbits) * 0.1667; // fixed-point + LUT
+			return IntegerAdder(1u << (nbits - 1u - rbits)) + static_cast<unsigned>(static_cast<double>(1ull << rbits) * 0.1667); // fixed-point + LUT  SRAM = 6T, FA = 36T -> 6/36 = 0.1667
 		}
 		unsigned DbnsMultiplier(unsigned nbits, unsigned fbbits) {
-			return IntegerAdder(nbits - 1);
+			return IntegerAdder(nbits - 1u);
 		}
 		unsigned DbnsAdder(unsigned nbits, unsigned fbbits) {
 			// implement as a discriminant adder
-			return 2*IntegerAdder(nbits - 1 + 2 + 2);
+			return 2*IntegerAdder(nbits - 1u + 2u + 2u);
 		}
 
 		template<typename ProductType>
@@ -251,25 +280,33 @@ namespace sw {
 			return faEquivalency;
 		}
 
-		void EnumerateFloatingPointAlus() {
-			for (unsigned nbits = 3; nbits < 32; ++nbits) {
-				for (unsigned ebits = 2; ebits < nbits - 2 && ebits < 9; ++ebits) {  // require both exponent and fraction bits
+		void EnumerateSmallFloatingPointFmas() {
+			for (unsigned nbits = 4; nbits < 21; ++nbits) {
+				for (unsigned ebits = 2; ebits < nbits - 2 && ebits < 10; ++ebits) {  // require both exponent and fraction bits
 					unsigned fbits = nbits - 1 - ebits;
-					std::cout << "fp" << nbits << 'e' << ebits << ", " << FloatingPointAdder(ebits, fbits) << ", " << FloatingPointMultiplier(ebits, fbits) << '\n';
+					std::cout << "fp" << nbits << 'e' << ebits << ", " << FloatingPointMultiplier(ebits, fbits) << ", " << FloatingPointAdder(2 * ebits, 2 * (fbits + 1)) << '\n';
 				}
 			}
-			for (unsigned nbits = 32; nbits < 65; nbits += 16) {
+		}
+		void EnumerateLargeFloatingPointFmas() {
+			for (unsigned nbits = 32; nbits < 65; nbits += 8) {
 				for (unsigned ebits = 8; ebits < 16; ++ebits) {  // require both exponent and fraction bits
 					unsigned fbits = nbits - 1 - ebits;
-					std::cout << "fp" << nbits << 'e' << ebits << ", " << FloatingPointAdder(ebits, fbits) << ", " << FloatingPointMultiplier(ebits, fbits) << '\n';
+					std::cout << "fp" << nbits << 'e' << ebits << ", " << FloatingPointMultiplier(ebits, fbits) << ", " << FloatingPointAdder(2 * ebits, 2 * (fbits + 1)) << '\n';
 				}
 			}
-
 		}
-		void EnumerateLnsAlus() {
-			for (unsigned nbits = 2; nbits < 65; ++nbits) {
+		void EnumerateLnsFmas() {
+			for (unsigned nbits = 3; nbits < 17; ++nbits) {
 				unsigned rbits = (nbits - 1) >> 1;
-				std::cout << "lns" << nbits << 'r' << rbits << ", " << LnsAdder(nbits, rbits) << ", " << LnsMultiplier(nbits, rbits) << '\n';
+				std::cout << "lns" << nbits << 'r' << rbits << ", " << LnsMultiplier(nbits, rbits) << ", " << LnsAdder(nbits, rbits) << '\n';
+			}
+		}
+
+		void EnumerateDbnsFmas() {
+			for (unsigned nbits = 3; nbits < 17; ++nbits) {
+				unsigned fbbits = (nbits % 2) ? 1 + ((nbits - 1) >> 1) : ((nbits - 1) >> 1); // favor first base exponent
+				std::cout << "dbns" << nbits << "fb" << fbbits << ", " << DbnsMultiplier(nbits, fbbits) << ", " << DbnsAdder(nbits, fbbits) << '\n';
 			}
 		}
 
@@ -464,6 +501,18 @@ void GenerateParetoSamples2(const std::vector<sw::universal::blas::vector<double
 	QuantizationVsAccuracy< half, half, float, half >("fp16_ieee", data, referenceDots);
 }
 
+template<typename QuantizationType>
+void ULP_test(double error) {
+	using namespace sw::universal;
+	blas::vector<double> vr(64), vq(64);
+
+	// set up the data set
+	vr = 1.0; // unit vector
+	vq = error; // quantization error vector
+	vr += vq; // add the quantization error to the whole vector so each element has quantization error of 1 ULP
+	std::cout << "QSNR " << type_tag(QuantizationType()) << " : " << qsnr<QuantizationType>(vr) << '\n';
+}
+
 void checkRelativeError() {
 	double u{ 1.0 }, v{ 1.0 };
 	for (unsigned i = 0; i < 10; ++i) {
@@ -487,10 +536,56 @@ try {
 	print_cmdline(argc, argv);
 
 	std::streamsize prec = std::cout.precision();
-	std::cout << std::setprecision(3);
-	
+	std::cout << std::setprecision(17);
 
-	EnumerateFloatingPointAlus();
+
+
+	// EnumerateSmallFloatingPointFmas();
+	// EnumerateLnsFmas();
+	EnumerateDbnsFmas();
+	return 0;
+
+	using fp12e4     = cfloat<12, 4, uint16_t, true, true, false>;
+	using fp12e5     = cfloat<12, 5, uint16_t, true, true, false>;
+	using fp8e3m4_ff = cfloat<8, 3, uint8_t, false, false, false>;
+	using fp8e4m3_ff = cfloat<8, 4, uint8_t, false, false, false>;
+	using fp8e5m2_ff = cfloat<8, 5, uint8_t, false, false, false>;
+	blas::vector<double> vr(64), vq(64);
+	for (unsigned i = 0; i < 5; ++i) {
+		blas::gaussian_random(vr, 0.0, 1.0);
+
+		std::cout << "QSNR " << type_tag(half())    << " : half    " << qsnr<half>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp12e4())  << " : fp12e4_tt " << qsnr<fp12e4>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp12e5())  << " : fp12e4_tt " << qsnr<fp12e5>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp8e2m5()) << "  : fp8e2m5_tt " << qsnr<fp8e2m5>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp8e3m4()) << "  : fp8e3m4_tt " << qsnr<fp8e3m4>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp8e4m3()) << "  : fp8e4m3_tt " << qsnr<fp8e4m3>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp8e5m2()) << "  : fp8e5m2_tt " << qsnr<fp8e5m2>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp8e3m4_ff()) << "  : fp8e3m4_ff " << qsnr<fp8e3m4_ff>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp8e4m3_ff()) << "  : fp8e4m3_ff " << qsnr<fp8e4m3_ff>(vr) << '\n';
+		std::cout << "QSNR " << type_tag(fp8e5m2_ff()) << "  : fp8e5m2_ff " << qsnr<fp8e5m2_ff>(vr) << '\n';
+	}
+
+	{
+		using fp9e2_tt = cfloat<9, 2, uint16_t, true, true, false>;
+		double error = double(std::numeric_limits<fp9e2_tt>::epsilon());
+		ULP_test<fp8e2m5>(error);
+	}
+	{
+		using fp9e3_tt = cfloat<9, 3, uint16_t, true, true, false>;
+		double error = double(std::numeric_limits<fp9e3_tt>::epsilon());
+		ULP_test<fp8e3m4>(error);
+	}
+	{
+		using fp9e4_tt = cfloat<9, 4, uint16_t, true, true, false>;
+		double error = double(std::numeric_limits<fp9e4_tt>::epsilon());
+		ULP_test<fp8e4m3>(error);
+	}
+	{
+		using fp9e5_tt = cfloat<9, 5, uint16_t, true, true, false>;
+		double error = double(std::numeric_limits<fp9e5_tt>::epsilon());
+		ULP_test<fp8e5m2>(error);
+	}
 
 	return 0;
 

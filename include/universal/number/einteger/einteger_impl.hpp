@@ -27,7 +27,7 @@ public:
 	using bt = BlockType;
 	static constexpr unsigned bitsInBlock = sizeof(BlockType) * 8;
 	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
-	static constexpr uint64_t BASE = (ALL_ONES + 1ull);
+	static constexpr uint64_t BASE = uint64_t(ALL_ONES) + 1ull;
 	static_assert(bitsInBlock <= 32, "BlockType must be one of [uint8_t, uint16_t, uint32_t]");
 
 	einteger() : _sign(false), _block{} { }
