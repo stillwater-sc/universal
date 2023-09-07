@@ -9,7 +9,7 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
-#include <universal/native/bit_functions.hpp>
+#include <universal/utility/find_msb.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
@@ -234,7 +234,7 @@ public:
 		clear();
 		if (0 == rhs) return *this;
 		uint64_t raw = static_cast<uint64_t>(rhs);
-		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		int exponent = int(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - exponent - 1;
 		raw <<= shift;
@@ -247,7 +247,7 @@ public:
 		if (0 == rhs) return *this;
 		bool s = (rhs < 0);
 		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
-		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		int exponent = int(find_msb(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - exponent - 1;
 		raw <<= shift;

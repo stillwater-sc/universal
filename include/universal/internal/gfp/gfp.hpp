@@ -139,8 +139,8 @@ namespace sw {
 			template<typename Real>
 			gfp& operator=(Real v) {
 				bool sign{ false };
-				uint64_t biased{ 0 }, f64{ 0 };
-				extractFields(v, sign, biased, f64);
+				uint64_t biased{ 0 }, f64{ 0 }, bits{ 0 };
+				extractFields(v, sign, biased, f64, bits);
 				s = sign;
 				e = static_cast<int>(biased) - ieee754_parameter<Real>::bias;
 				q = ieee754_parameter<Real>::fbits;

@@ -4,10 +4,6 @@
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <sstream>
-#include <iomanip>
-
-#include <universal/utility/color_print.hpp>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // compiler specific long double IEEE floating point
@@ -34,6 +30,8 @@ infinity and Not a Number.If the exponent field is zero, the
 value is a denormal number and the exponent of 2 is 16382.
 */
 #include <universal/native/nonconstexpr/extract_fp_components.hpp>
+
+// specialize for the different compiler environments
 #include <universal/native/nonconstexpr/msvc_long_double.hpp>
 #include <universal/native/nonconstexpr/clang_long_double.hpp>
 #include <universal/native/nonconstexpr/gcc_long_double.hpp>

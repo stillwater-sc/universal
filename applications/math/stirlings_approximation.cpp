@@ -1,6 +1,6 @@
 //  stirlings_approximation.cpp : Stirling's approximation for factorials
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -9,7 +9,7 @@
 #include <algorithm>
 
 #include <universal/native/ieee754.hpp>
-#include <universal/number/decimal/decimal.hpp> // the oracle number system to use
+#include <universal/number/edecimal/edecimal.hpp> // the oracle number system to use
 #include <universal/number/posit/posit.hpp>
 #include <universal/functions/factorial.hpp>
 
@@ -92,7 +92,7 @@ try {
 	using namespace sw::universal;
 
 	using Real = posit<256,2>;
-	using Integer = decimal;
+	using Integer = edecimal;
 
 	constexpr size_t FIRST_COLUMN = 10;
 	constexpr size_t COLUMN_WIDTH = 40;
@@ -116,7 +116,7 @@ try {
 		std::string ref = "815915283247897734345611269596115894272000000000";
 		double ld = sw::function::factorial<double>(40);
 		double ldr = sw::function::factoriali<double>(40);
-		decimal d = sw::function::factorial<decimal>(40);
+		edecimal d = sw::function::factorial<edecimal>(40);
 		double ad = double(d);
 		auto precision = std::cout.precision();
 		auto digits = std::numeric_limits<double>::max_digits10;
@@ -133,7 +133,7 @@ try {
 		ref = "30414093201713378043612608166064768844377641568960512000000000000";
 		ld = sw::function::factorial<double>(50);
 		ldr = sw::function::factoriali<double>(50);
-		d = sw::function::factorial<decimal>(50);
+		d = sw::function::factorial<edecimal>(50);
 		ad = double(d);
 		std::cout << ref << '\n';
 		std::cout << d << '\n';
@@ -146,7 +146,7 @@ try {
 		ref = "8320987112741390144276341183223364380754172606361245952449277696409600000000000000";
 		ld = sw::function::factorial<double>(60);
 		ldr = sw::function::factoriali<double>(60);
-		d = sw::function::factorial<decimal>(60);
+		d = sw::function::factorial<edecimal>(60);
 		ad = double(d);
 		std::cout << ref << '\n';
 		std::cout << d << '\n';

@@ -1,6 +1,6 @@
 // matrix_ops.cpp: matrix API for sw::universal::blas
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -8,7 +8,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/integer/integer.hpp>
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 

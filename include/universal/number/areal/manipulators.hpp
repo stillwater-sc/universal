@@ -47,7 +47,7 @@ std::string components(const areal<nbits, es, bt>& v) {
 
 // generate a binary string for areal
 template<unsigned nbits, unsigned es, typename bt>
-inline std::string to_hex(const areal<nbits, es, bt>& v) {
+inline std::string to_hex(const areal<nbits, es, bt>& v, bool nibbleMarker = false, bool hexPrefix = true) {
 	constexpr unsigned bitsInByte = 8;
 	constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -55,12 +55,12 @@ inline std::string to_hex(const areal<nbits, es, bt>& v) {
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
 	std::stringstream ss;
-	ss << "0x" << std::hex;
+	if (hexPrefix) ss << "0x";
 	long nrNibbles = long(1ull + ((nbits - 1ull) >> 2ull));
 	for (long n = nrNibbles - 1; n >= 0; --n) {
 		uint8_t nibble = v.nibble(unsigned(n));
 		ss << hexChar[nibble];
-		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+		if (nibbleMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
 }

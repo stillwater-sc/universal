@@ -317,15 +317,6 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	/*
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0, std::uint8_t>(reportTestCases), "lns<3,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0, std::uint8_t>(reportTestCases), "lns<4,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<5, 0, std::uint8_t>(reportTestCases), "lns<5,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<6, 0, std::uint8_t>(reportTestCases), "lns<6,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<7, 0, std::uint8_t>(reportTestCases), "lns<7,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<8, 0, std::uint8_t>(reportTestCases), "lns<8,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<9, 0, std::uint8_t>(reportTestCases), "lns<9,0>", test_tag);
-	*/
 
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 3, 0, std::uint8_t>(reportTestCases), "lns<3,0>", test_tag);
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 3, 1, std::uint8_t>(reportTestCases), "lns<3,1>", test_tag);

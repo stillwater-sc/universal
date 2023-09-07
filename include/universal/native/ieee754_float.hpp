@@ -11,47 +11,46 @@
 
 namespace sw { namespace universal {
 
-////////////////////////////////////////////////////////////////////////
-// union structure helper
-
-union float_decoder {
-  float_decoder() : f{0.0f} {}
-  float_decoder(float _f) : f{_f} {}
-  float f;
-  struct {
-    uint32_t fraction : 23;
-    uint32_t exponent :  8;
-    uint32_t sign     :  1;
-  } parts;
-};
-
-inline void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
-	float_decoder decoder;
-	decoder.f = value;
-	s = decoder.parts.sign ? true : false;
-	rawExponentBits = static_cast<uint64_t>(decoder.parts.exponent);
-	rawFractionBits = static_cast<uint64_t>(decoder.parts.fraction);
-}
-
-inline void setFields(float& value, bool s, uint64_t rawExponentBits, uint64_t rawFractionBits) noexcept {
-	float_decoder decoder;
-	decoder.parts.sign = s;
-	decoder.parts.exponent = rawExponentBits & 0xFF;
-	decoder.parts.fraction = rawFractionBits & 0x7FFFFF;
-	value = decoder.f;
-}
-
 ////////////////// string operators
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // native single precision IEEE floating point
 
+#ifdef DEPRECATED
+// DEPRECATED: we have standardized on raw bit hex, not field hex format
 // generate a binary string for a native single precision IEEE floating point
 inline std::string to_hex(float number) {
 	std::stringstream s;
 	float_decoder decoder;
 	decoder.f = number;
 	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
+	return s.str();
+}
+#endif // DEPRECATED
+
+inline std::string to_hex(float number, bool nibbleMarker = false, bool hexPrefix = true) {
+	char hexChar[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+	};
+	float_decoder decoder;
+	decoder.f = number;
+	uint32_t bits = decoder.bits;
+	//	std::cout << "\nconvert  : " << to_binary(bits, 32) << " : " << bits << '\n';
+	std::stringstream s;
+	if (hexPrefix) s << "0x";
+	int nrNibbles = 8;
+	int nibbleIndex = (nrNibbles - 1);
+	uint32_t mask = (0xFull << (nibbleIndex * 4));
+	//	std::cout << "mask       : " << to_binary(mask, nbits) << '\n';
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint32_t raw = (bits & mask);
+		uint8_t nibble = static_cast<uint8_t>(raw >> (nibbleIndex * 4));
+		s << hexChar[nibble];
+		if (nibbleMarker && n > 0 && (n % 4) == 0) s << '\'';
+		mask >>= 4;
+		--nibbleIndex;
+	}
 	return s.str();
 }
 

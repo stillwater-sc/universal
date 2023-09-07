@@ -1,6 +1,6 @@
 // rump_equation.cpp: example program to show Rump computation requiring high-precision floats to work
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <ostream>
@@ -8,15 +8,12 @@
 #include <numeric>   // nextafter
 
 // select the number systems we would like to compare
-#include <universal/number/decimal/decimal.hpp>
-#include <universal/number/integer/integer.hpp>
+#include <universal/number/erational/erational.hpp>
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/number/areal/areal.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/lns/lns.hpp>
-
-#include <universal/number/posit/numeric_limits.hpp>
 
 #include <universal/blas/blas.hpp>
 

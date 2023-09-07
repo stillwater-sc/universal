@@ -1,12 +1,12 @@
-//  logic.cpp : test suite for logic operators on rational numbers
+//  logic.cpp : test suite for logic operators on adaptive precision decimal rational numbers
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <iostream>
 #include <string>
-#include <universal/number/rational/rational.hpp>
+#include <universal/number/erational/erational.hpp>
 #include <universal/verification/test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -29,18 +29,18 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "rational logic comparisons ";
+	std::string test_suite  = "erational logic comparisons ";
 	std::string test_tag    = "comparison";
-//	bool reportTestCases    = false;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
-	std::cout << test_suite << '\n';
+	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-//	using Rational = sw::universal::rational;
-
-
+	using Rational = sw::universal::erational;
+	Rational r{1.2345};
+	std::cout << r << '\n';
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -66,11 +66,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::rational_arithmetic_exception& err) {
+catch (const sw::universal::erational_arithmetic_exception& err) {
 	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::rational_internal_exception& err) {
+catch (const sw::universal::erational_internal_exception& err) {
 	std::cerr << "Uncaught internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

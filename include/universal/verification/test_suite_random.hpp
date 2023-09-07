@@ -242,6 +242,17 @@ namespace sw { namespace universal {
 			reference = std::atanh(da);
 			break;
 		case RandomsOp::OPCODE_NOP:
+		case RandomsOp::OPCODE_ADD:
+		case RandomsOp::OPCODE_SUB:
+		case RandomsOp::OPCODE_MUL:
+		case RandomsOp::OPCODE_DIV:
+		case RandomsOp::OPCODE_IPA:
+		case RandomsOp::OPCODE_IPS:
+		case RandomsOp::OPCODE_IPM:
+		case RandomsOp::OPCODE_IPD:
+		case RandomsOp::OPCODE_POW:
+		case RandomsOp::OPCODE_HYPOT:
+		case RandomsOp::OPCODE_RAN:
 		default:
 			result = std::numeric_limits<float>::signaling_NaN();
 			std::cerr << "Unsupported unary operator: operation ignored\n";
@@ -386,12 +397,14 @@ namespace sw { namespace universal {
 	// We will then execute the unary operator on .
 	// provide 		double dminpos = double(minpos<nbits, es>(pminpos));
 	template<typename TestType>
-	int VerifyUnaryOperatorThroughRandoms(bool reportTestCases, RandomsOp opcode, size_t nrOfRandoms, double dminpos) {
+	int VerifyUnaryOperatorThroughRandoms(bool reportTestCases, RandomsOp opcode, size_t nrOfRandoms) {
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
 		default:
 		case RandomsOp::OPCODE_NOP:
+		case RandomsOp::OPCODE_POW:
+		case RandomsOp::OPCODE_RAN:
 			return 0;
 		case RandomsOp::OPCODE_ASSIGN:
 			break;
@@ -461,6 +474,7 @@ namespace sw { namespace universal {
 			executeUnary(opcode, da, nut, ref, result);
 
 			if (result != ref) {
+				if (result.isnan() && ref.isnan()) continue;
 				nrOfFailedTests++;
 				if (reportTestCases) ReportUnaryArithmeticError("FAIL", operation_string, nut, result, ref);
 			}

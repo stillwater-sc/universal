@@ -48,21 +48,12 @@ namespace sw { namespace universal {
 constexpr bool Modulo    = true;
 constexpr bool Saturate = !Modulo;
 
-// forward references
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> class fixpnt;
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpnt<nbits, rbits, arithmetic, bt> abs(const fixpnt<nbits, rbits, arithmetic, bt>&);
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> struct fixpntdiv_t;
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt> fixpntdiv_t<nbits, rbits, arithmetic, bt> fixpntdiv(const fixpnt<nbits, rbits, arithmetic, bt>&, const fixpnt<nbits, rbits, arithmetic, bt>&);
-
 // fixpntdiv_t for fixpnt<nbits,rbits> to capture quotient and remainder during long division
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
 struct fixpntdiv_t {
 	fixpnt<nbits, rbits, arithmetic, bt> quot; // quotient
 	fixpnt<nbits, rbits, arithmetic, bt> rem;  // remainder
 };
-
-template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
-bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& v);
 
 // free function generator to create a 1's complement copy of a fixpnt
 template<unsigned nbits, unsigned rbits, bool arithmetic, typename bt>
@@ -115,6 +106,7 @@ public:
 	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
 	static constexpr unsigned  nbits = _nbits;
 	static constexpr unsigned  rbits = _rbits;
+	static constexpr unsigned  fbits = _rbits;  // creating symmetry with other types in Universal
 	static constexpr bool      arithmetic = _arithmetic;
 	typedef bt BlockType;
 	static constexpr unsigned  bitsInChar = 8;
@@ -183,7 +175,7 @@ public:
 		//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
 		// TODO: do we want prohibit this condition? To be consistent with native types we need to round automatically.
 		if constexpr (src_nbits <= nbits) {
-			_block = a.getbb();
+			_block = a.bits();
 			if constexpr (src_nbits < nbits) {
 				if (a.sign()) { // sign extend if necessary
 					for (unsigned i = src_nbits; i < nbits; ++i) setbit(i);
@@ -568,7 +560,6 @@ public:
 		if (bitIndex < nbits) _block.setbit(bitIndex, v);
 		// when bitIndex is out-of-bounds, fail silently as no-op
 	}
-	// use un-interpreted raw bits to set the bits of the fixpnt: TODO: expand the API to support fixed-points > 64 bits
 	constexpr void setbits(uint64_t value) noexcept { _block.setbits(value); }
 
 	// specific number system values we would like to have as constexpr
@@ -628,17 +619,20 @@ public:
 	constexpr fixpnt& twosComplement() noexcept { _block.twosComplement(); return *this; }
 
 	// selectors
-	constexpr bool   sign()                const noexcept { return _block.sign(); }
-	constexpr fixpnt integer()             const noexcept { return floor(*this); }
-	constexpr fixpnt fraction()            const noexcept { return (*this - integer()); }
-	blockbinary<nbits, bt> bits()          const noexcept { return blockbinary<nbits, bt>(_block); }
-	constexpr bool   iszero()              const noexcept { return _block.iszero(); }
-	constexpr bool   ispos()               const noexcept { return _block.ispos(); }
-	constexpr bool   isneg()               const noexcept { return _block.isneg(); }
-	constexpr bool   isnan()               const noexcept { return false; }
-	constexpr bool   isinf()               const noexcept { return false; }
-	constexpr bool   at(unsigned bitIndex)   const noexcept { return _block.at(bitIndex); }
-	constexpr bool   test(unsigned bitIndex) const noexcept { return _block.test(bitIndex); }
+	constexpr bool    sign()                  const noexcept { return _block.sign(); }
+	constexpr fixpnt  integer()               const noexcept { return floor(*this); }
+	constexpr fixpnt  fraction()              const noexcept { return (*this - integer()); }
+	constexpr bool    iszero()                const noexcept { return _block.iszero(); }
+	constexpr bool    ispos()                 const noexcept { return _block.ispos(); }
+	constexpr bool    isneg()                 const noexcept { return _block.isneg(); }
+	constexpr bool    isnan()                 const noexcept { return false; }
+	constexpr bool    isinf()                 const noexcept { return false; }
+	constexpr bool    at(unsigned bitIndex)   const noexcept { return _block.at(bitIndex); }
+	constexpr bool    test(unsigned bitIndex) const noexcept { return _block.test(bitIndex); }
+	constexpr uint8_t nibble(unsigned n)      const noexcept { return _block.nibble(n); }
+
+	// collect a copy of the underlying bit representation
+	blockbinary<nbits, bt, BinaryNumberType::Signed> bits() const noexcept { return _block; }
 
 protected:
 	// HELPER methods
@@ -704,9 +698,10 @@ protected:
 
 			bool s{ false };
 			uint64_t unbiasedExponent{ 0 };
-			uint64_t raw{ 0 };
-			extractFields(v, s, unbiasedExponent, raw); // use native conversion
-			if (unbiasedExponent > 0) raw |= (1ull << ieee754_parameter<Arith>::fbits);
+			uint64_t fraction{ 0 };
+			uint64_t bits{ 0 };
+			extractFields(v, s, unbiasedExponent, fraction, bits); // use native conversion
+			if (unbiasedExponent > 0) fraction |= (1ull << ieee754_parameter<Arith>::fbits);
 			int radixPoint = ieee754_parameter<Arith>::fbits - (static_cast<int>(unbiasedExponent) - ieee754_parameter<Arith>::bias);
 
 			// our fixed-point has its radixPoint at rbits
@@ -719,9 +714,9 @@ protected:
 				// because the mask logic will make round and sticky both 0
 				// so no need to special case it
 				uint64_t mask = (1ull << (shiftRight - 1));
-				bool guard = (mask & raw);
+				bool guard = (mask & fraction);
 				mask >>= 1;
-				bool round = (mask & raw);
+				bool round = (mask & fraction);
 				if (shiftRight > 1) {
 					mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
 					mask = ~mask;
@@ -729,10 +724,10 @@ protected:
 				else {
 					mask = 0;
 				}
-				bool sticky = (mask & raw);
+				bool sticky = (mask & fraction);
 
-				raw >>= shiftRight;  // shift out the bits we are rounding away
-				bool lsb = (raw & 0x1ul);
+				fraction >>= shiftRight;  // shift out the bits we are rounding away
+				bool lsb = (fraction & 0x1ul);
 				//  ... lsb | guard  round sticky   round
 				//       x     0       x     x       down
 				//       0     1       0     0       down  round to even
@@ -741,27 +736,27 @@ protected:
 				//       x     1       1     0        up
 				//       x     1       1     1        up
 				if (guard) {
-					if (lsb && (!round && !sticky)) ++raw; // round to even
-					if (round || sticky) ++raw;
+					if (lsb && (!round && !sticky)) ++fraction; // round to even
+					if (round || sticky) ++fraction;
 				}
-				raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
-				f.setbits(raw);
+				fraction = (s ? (~fraction + 1) : fraction); // if negative, map to two's complement
+				f.setbits(fraction);
 			}
 			else {
 				int shiftLeft = -shiftRight;
 				if (shiftLeft < (64 - ieee754_parameter<Arith>::fbits)) {  // what is the distance between the MSB and 64?
 					// no need to round, just shift the bits in place
-					raw <<= shiftLeft;
-					raw = (s ? (~raw + 1) : raw); // if negative, map to two's complement
-					f.setbits(raw);
+					fraction <<= shiftLeft;
+					fraction = (s ? (~fraction + 1) : fraction); // if negative, map to two's complement
+					f.setbits(fraction);
 				}
 				else {
 					// we need to project the bits we have on the fixpnt
 					for (unsigned i = 0; i < ieee754_parameter<Arith>::fbits + 1; ++i) {
-						if (raw & 0x01) {
+						if (fraction & 0x01) {
 							f.setbit(i + shiftLeft);
 						}
-						raw >>= 1;
+						fraction >>= 1;
 					}
 					if (s) f.twosComplement();
 				}

@@ -64,7 +64,7 @@ public:
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (static_cast<unsigned>(msb) >= es - 1ull ? es : static_cast<unsigned>(msb) + 1ull);
 				for (unsigned i = 0; i < nrExponentBits; i++) {
-					_exp[es - 1 - i] = _raw_bits[msb - i];
+					_exp[static_cast<uint64_t>(es) - 1ull - i] = _raw_bits[static_cast<uint64_t>(msb) - i];
 				}
 			}
 			set(_exp, nrExponentBits);
@@ -103,7 +103,7 @@ public:
 		_NrOfBits = (nbits - 1 - nrRegimeBits > es ? es : nbits - 1 - nrRegimeBits);
 		if (_NrOfBits > 0) {
 			if (_NrOfBits < es) {
-				rounding_mode = _Bits[es - 1 - _NrOfBits] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
+				rounding_mode = _Bits[static_cast<uint64_t>(es) - 1ull - _NrOfBits] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
 				if (_trace_rounding) std::cout << "truncated exp" << (rounding_mode == GEOMETRIC_ROUND_UP ? " geo-up " : " geo-dw ");
 			}
 			else {
@@ -111,7 +111,6 @@ public:
 					// use the fraction to determine rounding as this posit has fraction bits
 					rounding_mode = ARITHMETIC_ROUNDING;
 					if (_trace_rounding) std::cout << "arithmetic  rounding ";
-
 				}
 				else {
 					// this posit is in the geometric regime and has consumed all the bits
