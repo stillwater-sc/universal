@@ -5,7 +5,11 @@
 # example would be to strace an executable to find its dependencies
 
 MAJOR=v3
+<<<<<<< HEAD
 MINOR=72
+=======
+MINOR=73
+>>>>>>> upstream/v3.73
 VERSION="$MAJOR.$MINOR"
 
 if [[ $# == 0 ]]; then
