@@ -11,7 +11,7 @@ namespace sw { namespace universal { namespace blas {
 
 // generate identity matrix
 template<typename Scalar>
-matrix<Scalar> eye(size_t N) {
+matrix<Scalar> eye(unsigned N) {
 	matrix<Scalar> I(N, N);
 	I = Scalar(1.0f);
 	return I;

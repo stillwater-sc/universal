@@ -32,9 +32,10 @@ void TraceProducts(const sw::universal::blas::vector<Scalar>& x, const sw::unive
 	}
 	std::cout << "input   range = [ " << minInput << ", " << maxInput << "]\n";
 	std::cout << "product range = [ " << minProduct << ", " << maxProduct << "]\n";
-	std::cout << sw::universal::symmetry_range<Scalar>() << '\n';
-	// std::cout << sw::universal::dynamic_range<Scalar>() << '\n'; // not that interesting in this context
-	std::cout << sw::universal::minmax_range<Scalar>() << '\n';
+	std::string infoStr = sw::universal::symmetry_range<Scalar>();
+	std::cout << infoStr << '\n';
+	infoStr = sw::universal::minmax_range<Scalar>();
+	std::cout << infoStr << '\n';
 }
 
 template<typename Scalar, bool verbose = true>
@@ -43,8 +44,8 @@ void DotProductError(const sw::universal::blas::vector<double>& x, double minx, 
 	using namespace sw::universal; 
 	std::cout << "\nScalar type : " << type_tag(Scalar()) << '\n';
 
-	auto minpos = double(std::numeric_limits<Scalar>::min());
-	auto maxpos = double(std::numeric_limits<Scalar>::max());
+	auto minpos = static_cast<double>(std::numeric_limits<Scalar>::min());
+	auto maxpos = static_cast<double>(std::numeric_limits<Scalar>::max());
 	auto maxxy = std::max(maxx, maxy);
 	auto focus{ 1.0 }, expand{ 1.0 };
 	if (maxxy*maxxy > maxpos) { // need to scale the vectors

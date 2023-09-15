@@ -145,6 +145,7 @@ option(BUILD_LINEAR_ALGEBRA_DATA         "Set to ON to build the data prep math 
 # benchmarking
 option(BUILD_BENCHMARK_ERROR             "Set to ON to build error benchmarks"                 OFF)
 option(BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
+option(BUILD_BENCHMARK_RANGE             "Set to ON to build dynamic range benchmarks"         OFF)
 option(BUILD_BENCHMARK_REPRODUCIBILITY   "Set to ON to build reproducibility benchmarks"       OFF)
 option(BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
 option(BUILD_BENCHMARK_ENERGY            "Set to ON to build energy efficiency benchmarks"     OFF)
@@ -658,6 +659,7 @@ endif(BUILD_NUMERICS)
 if(BUILD_BENCHMARKS)
 	set(BUILD_BENCHMARK_ERROR ON)
 	set(BUILD_BENCHMARK_ACCURACY ON)
+	set(BUILD_BENCHMARK_RANGE ON)
 	set(BUILD_BENCHMARK_REPRODUCIBILITY ON)
 	set(BUILD_BENCHMARK_ENERGY ON)
 	set(BUILD_BENCHMARK_PERFORMANCE ON)
@@ -832,6 +834,12 @@ if(BUILD_BENCHMARK_ACCURACY)
 add_subdirectory("benchmark/accuracy/blas")
 add_subdirectory("benchmark/accuracy/quantization")
 endif(BUILD_BENCHMARK_ACCURACY)
+
+# range benchmarks
+if(BUILD_BENCHMARK_RANGE)
+add_subdirectory("benchmark/range/blas")
+add_subdirectory("benchmark/range/arithmetic")
+endif(BUILD_BENCHMARK_RANGE)
 
 # reproducibility benchmarks
 if(BUILD_BENCHMARK_REPRODUCIBILITY)

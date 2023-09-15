@@ -127,7 +127,7 @@ template<typename Vector>
 size_t amax(size_t n, const Vector& x, size_t incx = 1) {
 	size_t ix{ 0 }, index{ 0 };
 	auto running_max = abs(x[ix]);
-	for (ix = 1; ix < size(x); ix += incx) {
+	for (ix = 1; ix < n; ix += incx) {
 		auto absolute = abs(x[ix]);
 		if (absolute > running_max) {
 			index = ix;
@@ -142,7 +142,7 @@ template<typename Vector>
 size_t amin(size_t n, const Vector& x, size_t incx = 1) {
 	size_t ix{ 0 }, index{ 0 };
 	auto running_min = abs(x[ix]);
-	for (ix = 1; ix < size(x); ix += incx) {
+	for (ix = 1; ix < n; ix += incx) {
 		auto absolute = abs(x[ix]);
 		if (absolute < running_min) {
 			index = ix;
