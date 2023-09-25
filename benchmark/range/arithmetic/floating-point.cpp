@@ -147,7 +147,7 @@ try {
 		std::cout << symmetry_range<dbns<14, 7, uint8_t>>() << '\n';
 		std::cout << symmetry_range<dbns<14, 8, uint8_t>>() << '\n';
 		std::cout << symmetry_range<dbns<14, 9, uint8_t>>() << '\n';
-		std::cout << symmetry_range<dbns<14, 10, uint8_t>>() << '\n';
+		std::cout << symmetry_range<dbns<14,10, uint8_t>>() << '\n';
 	}
 	std::cout << std::setprecision(prec);
 
