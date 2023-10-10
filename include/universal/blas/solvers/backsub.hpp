@@ -3,6 +3,7 @@
  *
  * @author:     James Quinlan
  * @date:       2022-12-17
+ * @modified:   2023-10-10
  * @copyright:  Copyright (c) 2022 Stillwater Supercomputing, Inc.
  * @license:    MIT Open Source license 
  * ***********************************************************************
@@ -27,10 +28,8 @@ Vector backsub(const Matrix& A, const Vector& b) {
         }
         x(i) = (b(i) - y)/A(i,i);
     }
-
 	return x;
 }
-
 
 template<unsigned nbits, unsigned es, unsigned capacity = 10>
 vector<posit<nbits,es>> backsub(const matrix<posit<nbits,es>> & A, const vector<posit<nbits,es>>& b) {
@@ -51,6 +50,5 @@ vector<posit<nbits,es>> backsub(const matrix<posit<nbits,es>> & A, const vector<
     }
 	return x;
 }
-
 
 }}} // namespace sw::universal::blas
