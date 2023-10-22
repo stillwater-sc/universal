@@ -9,7 +9,7 @@
 
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/abstract/triple.hpp>
-#include <universal/analysis/eft.hpp>
+#include <universal/numerics/eft.hpp>
 
 namespace sw {	namespace universal {
 		

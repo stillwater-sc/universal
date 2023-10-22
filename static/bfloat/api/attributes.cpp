@@ -71,8 +71,8 @@ try {
 
 	{
 		std::cout << "Number traits\n";
-		numberTraits< bfloat_t >(std::cout);  // FP32
-		numberTraits< bfloat16 >(std::cout);   // IEEE-754
+		numberTraits< bfloat_t >(std::cout);   // cfloat emulation
+		numberTraits< bfloat16 >(std::cout);   // fp32 IEEE-754 emulation
 		std::cout << '\n';
 	}
 
@@ -82,7 +82,7 @@ try {
 	}
 	{
 		std::cout << "Comparitive Number traits\n";
-		compareNumberTraits< cfloat<8, 2>, cfloat<8, 4> >(std::cout);
+		compareNumberTraits< bfloat_t, bfloat16 >(std::cout);
 		std::cout << '\n';
 	}
 

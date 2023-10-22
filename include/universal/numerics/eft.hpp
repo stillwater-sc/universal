@@ -5,6 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/analysis/twosum.hpp>
-#include <universal/analysis/twoprod.hpp>
-#include <universal/analysis/twodiv.hpp>
+#include <universal/numerics/twosum.hpp>
+#include <universal/numerics/twoprod.hpp>
+#include <universal/numerics/twodiv.hpp>

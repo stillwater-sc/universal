@@ -89,8 +89,8 @@ public:
 	matrix() : _m{ 0 }, _n{ 0 }, data(0) {}
 	matrix(unsigned m, unsigned n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
 	matrix(std::initializer_list< std::initializer_list<Scalar> > values) {
-		unsigned nrows = values.size();
-		unsigned ncols = values.begin()->size();
+		unsigned nrows = static_cast<unsigned>(values.size());
+		unsigned ncols = static_cast<unsigned>(values.begin()->size());
 		data.resize(nrows * ncols);
 		unsigned r = 0;
 		for (auto l : values) {

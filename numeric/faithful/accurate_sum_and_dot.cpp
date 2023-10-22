@@ -9,13 +9,13 @@
 #include <vector>
 #include <universal/native/ieee754.hpp>
 #include <universal/number/posit/posit.hpp>
-#include <universal/analysis/twosum.hpp>
+#include <universal/numerics/twosum.hpp>
 
 template<typename Real>
-int DemonstrateCascadeSum()
-{
+int DemonstrateCascadeSum(size_t N = 10) {
 	using namespace sw::universal;
-	constexpr size_t N = 10;
+
+	std::cout << "+-------------   cascade sum --------------+\n";
 	std::vector<Real> v(N);
 	v[0] = 0.5f + std::numeric_limits<Real>::epsilon() / 2.0f;
 	v[1] = 1.0f;
@@ -62,7 +62,6 @@ int DemonstrateCascadeSum()
 int main()
 try {
 	using namespace sw::universal;
-
 
 	// preserve the existing ostream precision
 	auto precision = std::cout.precision();

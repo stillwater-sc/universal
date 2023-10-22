@@ -1,21 +1,10 @@
-// dot.cpp: data flow performance measurements of mixed-precision dot product
+// dot.cpp: dynamic range measurement of mixed-precision dot product
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// enable the following define to show the intermediate steps in the fused-dot product
-// #define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_MUL
-#define QUIRE_TRACE_ADD
-// configure posit environment using fast posits
-#define POSIT_FAST_POSIT_8_0 1
-#define POSIT_FAST_POSIT_16_1 1
-#define POSIT_FAST_POSIT_32_2 1
-#define POSIT_FAST_POSIT_64_3 0  // TODO
-// enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/edecimal/edecimal.hpp>
 #include <universal/blas/blas.hpp>
@@ -50,7 +39,7 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << "Caught exception: " << msg << std::endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::universal_arithmetic_exception& err) {

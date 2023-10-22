@@ -1,5 +1,5 @@
 #pragma once
-// bfloat16_impl.hpp: definition of the Google Brain Float number system
+// bfloat8_impl.hpp: definition of the Google Brain Float number system
 //
 // Copyright (C) 2022-2022 Stillwater Supercomputing, Inc.
 //
@@ -13,18 +13,18 @@
 #include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
-#include <universal/number/bfloat/bfloat16_fwd.hpp>
+#include <universal/number/bfloat/bfloat8_fwd.hpp>
 #include <universal/number/bfloat/exceptions.hpp>
 
 namespace sw { namespace universal {
 
 
-// bfloat16 is Google's Brain Float type
-class bfloat16 {
+// bfloat8 is Google's Brain Float type
+class bfloat8 {
 		// HELPER methods
 	template<typename SignedInt,
 		typename = typename std::enable_if< std::is_integral<SignedInt>::value, SignedInt >::type>
-	constexpr bfloat16& convert_signed(SignedInt v) noexcept {
+	constexpr bfloat8& convert_signed(SignedInt v) noexcept {
 		if (0 == v) {
 			setzero();
 		}
@@ -38,7 +38,7 @@ class bfloat16 {
 	}
 	template<typename UnsignedInt,
 		typename = typename std::enable_if< std::is_integral<UnsignedInt>::value, UnsignedInt >::type>
-	constexpr bfloat16& convert_unsigned(UnsignedInt v) noexcept {
+	constexpr bfloat8& convert_unsigned(UnsignedInt v) noexcept {
 		if (0 == v) {
 			setzero();
 		}
@@ -52,7 +52,7 @@ class bfloat16 {
 	}
 	template<typename Real,
 		typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type>
-	constexpr bfloat16& convert_ieee754(Real rhs) noexcept {
+	constexpr bfloat8& convert_ieee754(Real rhs) noexcept {
 		float f = float(rhs);
 		uint16_t pun[2];
 		std::memcpy(pun, &f, 4);
@@ -73,16 +73,16 @@ public:
 	static constexpr unsigned nbits = 16;
 	static constexpr unsigned es = 8;
 
-	bfloat16() = default;
+	bfloat8() = default;
 
-	constexpr bfloat16(const bfloat16&) = default;
-	constexpr bfloat16(bfloat16&&) = default;
+	constexpr bfloat8(const bfloat8&) = default;
+	constexpr bfloat8(bfloat8&&) = default;
 
-	constexpr bfloat16& operator=(const bfloat16&) = default;
-	constexpr bfloat16& operator=(bfloat16&&) = default;
+	constexpr bfloat8& operator=(const bfloat8&) = default;
+	constexpr bfloat8& operator=(bfloat8&&) = default;
 
 	// specific value constructor
-	constexpr bfloat16(const SpecificValue code) noexcept : _bits{} {
+	constexpr bfloat8(const SpecificValue code) noexcept : _bits{} {
 		switch (code) {
 		case SpecificValue::infpos:
 			setinf(false);
@@ -117,34 +117,34 @@ public:
 	}
 
 	// initializers for native types
-	constexpr bfloat16(signed char initial_value)        noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(short initial_value)              noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(int initial_value)                noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long initial_value)               noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long long initial_value)          noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(char initial_value)               noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned short initial_value)     noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned int initial_value)       noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned long initial_value)      noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(unsigned long long initial_value) noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(float initial_value)              noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(double initial_value)             noexcept : _bits{} { *this = initial_value; }
-	constexpr bfloat16(long double initial_value)        noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(signed char initial_value)        noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(short initial_value)              noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(int initial_value)                noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(long initial_value)               noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(long long initial_value)          noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(char initial_value)               noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(unsigned short initial_value)     noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(unsigned int initial_value)       noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(unsigned long initial_value)      noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(unsigned long long initial_value) noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(float initial_value)              noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(double initial_value)             noexcept : _bits{} { *this = initial_value; }
+	constexpr bfloat8(long double initial_value)        noexcept : _bits{} { *this = initial_value; }
 
 	// assignment operators for native types
-	constexpr bfloat16& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(short rhs)              noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(int rhs)                noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(long rhs)               noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
-	constexpr bfloat16& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
-	constexpr bfloat16& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
-	constexpr bfloat16& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
-	constexpr bfloat16& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
+	constexpr bfloat8& operator=(signed char rhs)        noexcept { return convert_signed(rhs); }
+	constexpr bfloat8& operator=(short rhs)              noexcept { return convert_signed(rhs); }
+	constexpr bfloat8& operator=(int rhs)                noexcept { return convert_signed(rhs); }
+	constexpr bfloat8& operator=(long rhs)               noexcept { return convert_signed(rhs); }
+	constexpr bfloat8& operator=(long long rhs)          noexcept { return convert_signed(rhs); }
+	constexpr bfloat8& operator=(char rhs)               noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat8& operator=(unsigned short rhs)     noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat8& operator=(unsigned int rhs)       noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat8& operator=(unsigned long rhs)      noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat8& operator=(unsigned long long rhs) noexcept { return convert_unsigned(rhs); }
+	constexpr bfloat8& operator=(float rhs)              noexcept { return convert_ieee754(rhs); }
+	constexpr bfloat8& operator=(double rhs)             noexcept { return convert_ieee754(rhs); }
+	constexpr bfloat8& operator=(long double rhs)        noexcept { return convert_ieee754(rhs); }
 
 	// conversion operators
 	explicit operator float() const noexcept { return convert_to_ieee754<float>(); }
@@ -152,13 +152,13 @@ public:
 	explicit operator long double() const noexcept { return convert_to_ieee754<long double>(); }
 
 	// prefix operators
-	bfloat16 operator-() const noexcept {
-		bfloat16 tmp;
+	bfloat8 operator-() const noexcept {
+		bfloat8 tmp;
 		tmp.setbits(_bits ^ 0x8000u);
 		return tmp;
 	}
 
-	bfloat16& operator++() noexcept {
+	bfloat8& operator++() noexcept {
 		if (isneg()) {
 			if (_bits == 0x8001u) { // pattern 1.00.001 == minneg
 				_bits = 0;
@@ -177,12 +177,12 @@ public:
 		}
 		return *this;
 	}
-	bfloat16 operator++(int) noexcept {
-		bfloat16 tmp(*this);
+	bfloat8 operator++(int) noexcept {
+		bfloat8 tmp(*this);
 		operator++();
 		return tmp;
 	}
-	bfloat16& operator--() noexcept {
+	bfloat8& operator--() noexcept {
 		if (sign()) {
 			++_bits;
 		}
@@ -196,26 +196,26 @@ public:
 		}
 		return *this;
 	}
-	bfloat16 operator--(int) noexcept {
-		bfloat16 tmp(*this);
+	bfloat8 operator--(int) noexcept {
+		bfloat8 tmp(*this);
 		operator--();
 		return tmp;
 	}
 
 	// arithmetic operators
-	bfloat16& operator+=(const bfloat16& rhs) {
+	bfloat8& operator+=(const bfloat8& rhs) {
 		*this = float(*this) + float(rhs);
 		return *this;
 	}
-	bfloat16& operator-=(const bfloat16& rhs) {
+	bfloat8& operator-=(const bfloat8& rhs) {
 		*this = float(*this) - float(rhs);
 		return *this;
 	}
-	bfloat16& operator*=(const bfloat16& rhs) {
+	bfloat8& operator*=(const bfloat8& rhs) {
 		*this = float(*this) * float(rhs);
 		return *this;
 	}
-	bfloat16& operator/=(const bfloat16& rhs) {
+	bfloat8& operator/=(const bfloat8& rhs) {
 		*this = float(*this) / float(rhs);
 		return *this;
 	}
@@ -240,19 +240,19 @@ public:
 	}
 	constexpr void setbits(unsigned short value) noexcept { _bits = value; }
 
-	constexpr bfloat16& minpos() noexcept { _bits = 0x0001u; return *this; }
-	constexpr bfloat16& maxpos() noexcept { _bits = 0x7F7Fu; return *this; }
-	constexpr bfloat16& zero()   noexcept { _bits = 0x0000u; return *this; }
-	constexpr bfloat16& minneg() noexcept { _bits = 0x8001u; return *this; }
-	constexpr bfloat16& maxneg() noexcept { _bits = 0xFF7Fu; return *this; }
+	constexpr bfloat8& minpos() noexcept { _bits = 0x0001u; return *this; }
+	constexpr bfloat8& maxpos() noexcept { _bits = 0x7F7Fu; return *this; }
+	constexpr bfloat8& zero()   noexcept { _bits = 0x0000u; return *this; }
+	constexpr bfloat8& minneg() noexcept { _bits = 0x8001u; return *this; }
+	constexpr bfloat8& maxneg() noexcept { _bits = 0xFF7Fu; return *this; }
 
 	/// <summary>
-	/// assign the value of the string representation to the bfloat16
+	/// assign the value of the string representation to the bfloat8
 	/// </summary>
 	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
 	/// <returns>reference to this cfloat</returns>
 	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
-	CONSTEXPRESSION bfloat16& assign(const std::string& str) noexcept {
+	CONSTEXPRESSION bfloat8& assign(const std::string& str) noexcept {
 		clear();
 		unsigned nrChars = static_cast<unsigned>(str.size());
 		unsigned nrBits = 0;
@@ -361,84 +361,56 @@ public:
 	constexpr int  scale()  const noexcept { int biased = static_cast<int>((_bits & 0x7F80u) >> 7); return biased - 127; }
 	constexpr unsigned short bits() const noexcept { return _bits; }
 
-	constexpr bool test(unsigned bitIndex) const noexcept { return at(bitIndex); }
-	constexpr bool at(unsigned bitIndex) const noexcept {
-		if (bitIndex < nbits) {
-			uint16_t word = _bits;
-			uint16_t mask = uint16_t(1ull << bitIndex);
-			return (word & mask);
-		}
-		return false;
-	}
-	constexpr uint8_t nibble(unsigned n) const noexcept {
-		if (n < 4) {
-			uint16_t word = _bits;
-			int nibbleIndexInWord = int(n);
-			uint16_t mask = uint16_t(0xF << (nibbleIndexInWord * 4));
-			uint16_t nibblebits = uint16_t(mask & word);
-			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
-		}
-		return 0;
-	}
-	constexpr uint8_t exponent() const noexcept {
-		uint8_t e = static_cast<uint8_t>((_bits & 0x7f80) >> 7);
-		return e;
-	}
-	constexpr uint8_t fraction() const noexcept {
-		uint8_t f = static_cast<uint8_t>(_bits & 0x7f);
-		return f;
-	}
-
 protected:
 	unsigned short _bits;
 
 private:
 
-	// bfloat16 - bfloat16 logic comparisons
-	friend bool operator==(bfloat16 lhs, bfloat16 rhs);
+	// bfloat8 - bfloat8 logic comparisons
+	friend bool operator==(bfloat8 lhs, bfloat8 rhs);
 
-	// bfloat16 - literal logic comparisons
-	friend bool operator==(bfloat16 lhs, float rhs);
+	// bfloat8 - literal logic comparisons
+	friend bool operator==(bfloat8 lhs, float rhs);
 
-	// literal - bfloat16 logic comparisons
-	friend bool operator==(float lhs, bfloat16 rhs);
+	// literal - bfloat8 logic comparisons
+	friend bool operator==(float lhs, bfloat8 rhs);
 };
 
 ////////////////////////    functions   /////////////////////////////////
 
 
-inline bfloat16 abs(bfloat16 a) {
+inline bfloat8 abs(bfloat8 a) {
 	return (a.isneg() ? -a : a);
 }
 
 
 /// stream operators
 
-// parse a bfloat16 ASCII format and make a binary bfloat16 out of it
-bool parse(const std::string& number, bfloat16& value) {
+// parse a bfloat8 ASCII format and make a binary bfloat8 out of it
+bool parse(const std::string& number, bfloat8& value) {
 	bool bSuccess = false;
 	value.zero();
 	return bSuccess;
 }
 
-// generate an bfloat16 format ASCII format
-inline std::ostream& operator<<(std::ostream& ostr, bfloat16 bf) {
+// generate an bfloat8 format ASCII format
+inline std::ostream& operator<<(std::ostream& ostr, bfloat8 bf) {
 	return ostr << float(bf);
 }
 
-// read an ASCII bfloat16 format
-inline std::istream& operator>>(std::istream& istr, bfloat16& p) {
+// read an ASCII bfloat8 format
+inline std::istream& operator>>(std::istream& istr, bfloat8& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
-		std::cerr << "unable to parse -" << txt << "- into a bfloat16 value\n";
+		std::cerr << "unable to parse -" << txt << "- into a bfloat8 value\n";
 	}
 	return istr;
 }
 
 ////////////////// string operators
 
-std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
+std::string to_binary(bfloat8 bf, bool bNibbleMarker = false) {
 	std::stringstream s;
 	unsigned short bits = bf.bits();
 	unsigned short mask = 0x8000u;
@@ -459,169 +431,169 @@ std::string to_binary(bfloat16 bf, bool bNibbleMarker = false) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// bfloat16 - bfloat16 binary logic operators
+// bfloat8 - bfloat8 binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
-inline bool operator==(bfloat16 lhs, bfloat16 rhs) {
+inline bool operator==(bfloat8 lhs, bfloat8 rhs) {
 	// NaN != NaN
 	if (lhs.isnan() || rhs.isnan()) return false;
 	return lhs._bits == rhs._bits;
 }
 
-inline bool operator!=(bfloat16 lhs, bfloat16 rhs) {
+inline bool operator!=(bfloat8 lhs, bfloat8 rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (bfloat16 lhs, bfloat16 rhs) {
+inline bool operator< (bfloat8 lhs, bfloat8 rhs) {
 	return (float(lhs) - float(rhs)) > 0;
 }
 
-inline bool operator> (bfloat16 lhs, bfloat16 rhs) {
+inline bool operator> (bfloat8 lhs, bfloat8 rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(bfloat16 lhs, bfloat16 rhs) {
+inline bool operator<=(bfloat8 lhs, bfloat8 rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(bfloat16 lhs, bfloat16 rhs) {
+inline bool operator>=(bfloat8 lhs, bfloat8 rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// bfloat16 - literal binary logic operators
+// bfloat8 - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-inline bool operator==(const bfloat16& lhs, float rhs) {
-	return operator==(lhs, bfloat16(rhs));
+inline bool operator==(const bfloat8& lhs, float rhs) {
+	return operator==(lhs, bfloat8(rhs));
 }
 
-inline bool operator!=(const bfloat16& lhs, float rhs) {
-	return !operator==(lhs, bfloat16(rhs));
+inline bool operator!=(const bfloat8& lhs, float rhs) {
+	return !operator==(lhs, bfloat8(rhs));
 }
 
-inline bool operator< (const bfloat16& lhs, float rhs) {
-	return operator<(lhs, bfloat16(rhs));
+inline bool operator< (const bfloat8& lhs, float rhs) {
+	return operator<(lhs, bfloat8(rhs));
 }
 
-inline bool operator> (const bfloat16& lhs, float rhs) {
-	return operator< (bfloat16(rhs), lhs);
+inline bool operator> (const bfloat8& lhs, float rhs) {
+	return operator< (bfloat8(rhs), lhs);
 }
 
-inline bool operator<=(const bfloat16& lhs, float rhs) {
-	return operator< (lhs, bfloat16(rhs)) || operator==(lhs, bfloat16(rhs));
+inline bool operator<=(const bfloat8& lhs, float rhs) {
+	return operator< (lhs, bfloat8(rhs)) || operator==(lhs, bfloat8(rhs));
 }
 
-inline bool operator>=(const bfloat16& lhs, float rhs) {
-	return !operator< (lhs, bfloat16(rhs));
+inline bool operator>=(const bfloat8& lhs, float rhs) {
+	return !operator< (lhs, bfloat8(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// literal - bfloat16 binary logic operators
+// literal - bfloat8 binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
 
-inline bool operator==(float lhs, const bfloat16& rhs) {
-	return operator==(bfloat16(lhs), rhs);
+inline bool operator==(float lhs, const bfloat8& rhs) {
+	return operator==(bfloat8(lhs), rhs);
 }
 
-inline bool operator!=(float lhs, const bfloat16& rhs) {
-	return !operator==(bfloat16(lhs), rhs);
+inline bool operator!=(float lhs, const bfloat8& rhs) {
+	return !operator==(bfloat8(lhs), rhs);
 }
 
-inline bool operator< (float lhs, const bfloat16& rhs) {
-	return operator<(bfloat16(lhs), rhs);
+inline bool operator< (float lhs, const bfloat8& rhs) {
+	return operator<(bfloat8(lhs), rhs);
 }
 
-inline bool operator> (float lhs, const bfloat16& rhs) {
-	return operator< (rhs, bfloat16(lhs));
+inline bool operator> (float lhs, const bfloat8& rhs) {
+	return operator< (rhs, bfloat8(lhs));
 }
 
-inline bool operator<=(float lhs, const bfloat16& rhs) {
-	return operator< (bfloat16(lhs), rhs) || operator==(bfloat16(lhs), rhs);
+inline bool operator<=(float lhs, const bfloat8& rhs) {
+	return operator< (bfloat8(lhs), rhs) || operator==(bfloat8(lhs), rhs);
 }
 
-inline bool operator>=(float lhs, const bfloat16& rhs) {
-	return !operator< (bfloat16(lhs), rhs);
+inline bool operator>=(float lhs, const bfloat8& rhs) {
+	return !operator< (bfloat8(lhs), rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// bfloat16 - bfloat16 binary arithmetic operators
+// bfloat8 - bfloat8 binary arithmetic operators
 // BINARY ADDITION
 
-inline bfloat16 operator+(bfloat16 lhs, bfloat16 rhs) {
-	bfloat16 sum = lhs;
+inline bfloat8 operator+(bfloat8 lhs, bfloat8 rhs) {
+	bfloat8 sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 
-inline bfloat16 operator-(bfloat16 lhs, bfloat16 rhs) {
-	bfloat16 diff = lhs;
+inline bfloat8 operator-(bfloat8 lhs, bfloat8 rhs) {
+	bfloat8 diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 
-inline bfloat16 operator*(bfloat16 lhs, bfloat16 rhs) {
-	bfloat16 mul = lhs;
+inline bfloat8 operator*(bfloat8 lhs, bfloat8 rhs) {
+	bfloat8 mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 
-inline bfloat16 operator/(bfloat16 lhs, bfloat16 rhs) {
-	bfloat16 ratio = lhs;
+inline bfloat8 operator/(bfloat8 lhs, bfloat8 rhs) {
+	bfloat8 ratio = lhs;
 	ratio /= rhs;
 	return ratio;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// bfloat16 - literal binary arithmetic operators
+// bfloat8 - literal binary arithmetic operators
 // BINARY ADDITION
 
-inline bfloat16 operator+(bfloat16 lhs, float rhs) {
-	return operator+(lhs, bfloat16(rhs));
+inline bfloat8 operator+(bfloat8 lhs, float rhs) {
+	return operator+(lhs, bfloat8(rhs));
 }
 // BINARY SUBTRACTION
 
-inline bfloat16 operator-(bfloat16 lhs, float rhs) {
-	return operator-(lhs, bfloat16(rhs));
+inline bfloat8 operator-(bfloat8 lhs, float rhs) {
+	return operator-(lhs, bfloat8(rhs));
 }
 // BINARY MULTIPLICATION
 
-inline bfloat16 operator*(bfloat16 lhs, float rhs) {
-	return operator*(lhs, bfloat16(rhs));
+inline bfloat8 operator*(bfloat8 lhs, float rhs) {
+	return operator*(lhs, bfloat8(rhs));
 }
 // BINARY DIVISION
 
-inline bfloat16 operator/(bfloat16 lhs, float rhs) {
-	return operator/(lhs, bfloat16(rhs));
+inline bfloat8 operator/(bfloat8 lhs, float rhs) {
+	return operator/(lhs, bfloat8(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// literal - bfloat16 binary arithmetic operators
+// literal - bfloat8 binary arithmetic operators
 // BINARY ADDITION
 
-inline bfloat16 operator+(float lhs, bfloat16 rhs) {
-	return operator+(bfloat16(lhs), rhs);
+inline bfloat8 operator+(float lhs, bfloat8 rhs) {
+	return operator+(bfloat8(lhs), rhs);
 }
 // BINARY SUBTRACTION
 
-inline bfloat16 operator-(float lhs, bfloat16 rhs) {
-	return operator-(bfloat16(lhs), rhs);
+inline bfloat8 operator-(float lhs, bfloat8 rhs) {
+	return operator-(bfloat8(lhs), rhs);
 }
 // BINARY MULTIPLICATION
 
-inline bfloat16 operator*(float lhs, bfloat16 rhs) {
-	return operator*(bfloat16(lhs), rhs);
+inline bfloat8 operator*(float lhs, bfloat8 rhs) {
+	return operator*(bfloat8(lhs), rhs);
 }
 // BINARY DIVISION
 
-inline bfloat16 operator/(float lhs, bfloat16 rhs) {
-	return operator/(bfloat16(lhs), rhs);
+inline bfloat8 operator/(float lhs, bfloat8 rhs) {
+	return operator/(bfloat8(lhs), rhs);
 }
 
 }} // namespace sw::universal

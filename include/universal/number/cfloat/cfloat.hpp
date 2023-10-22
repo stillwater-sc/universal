@@ -94,7 +94,7 @@ using fp256    = octo;
 
 // DL
 // Google brain float
-using bfloat_t = cfloat<16, 8, std::uint16_t, false, false, false>;
+using bfloat_t = cfloat<16, 8, std::uint16_t, true, false, false>;
 using msfp8    = cfloat<8, 2, std::uint8_t, false, false, false>;
 using msfp9    = cfloat<9, 3, std::uint16_t, false, false, false>;
 using amd24    = cfloat<24, 8, std::uint32_t, false, false, false>;

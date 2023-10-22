@@ -64,7 +64,7 @@ bool twosComplementLessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& r
 	if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
 	if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
 	// sign is equal, compare the remaining bits
-	if (nbits > 1) {
+	if constexpr (nbits > 1) {
 		for (int i = static_cast<int>(nbits) - 2; i >= 0; --i) {
 			if (lhs[unsigned(i)] == 0 && rhs[unsigned(i)] == 1)	return true;
 			if (lhs[unsigned(i)] == 1 && rhs[unsigned(i)] == 0) return false;

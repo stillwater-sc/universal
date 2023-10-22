@@ -990,7 +990,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 	int new_scale = lhs.scale() + rhs.scale();
 	bitblock<mbits> result_fraction;
 
-	if (fbits > 0) {
+	if constexpr (fbits > 0) {
 		// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
 		bitblock<fhbits> r1 = lhs.get_fixed_point();
 		bitblock<fhbits> r2 = rhs.get_fixed_point();

@@ -1,21 +1,15 @@
-// gemm.cpp: energy measurement of mixed-precision general matrix-matrix product
+// gemm.cpp: dynamic range measurement of mixed-precision general matrix-matrix product
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
-// enable the following define to show the intermediate steps in the fused-dot product
-// #define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_MUL
-#define QUIRE_TRACE_ADD
-// enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 // enable operation counts
 #define EDECIMAL_OPERATIONS_COUNT 1
 #include <universal/number/edecimal/edecimal.hpp>
-#define BLAS_TRACE_ROUNDING_EVENTS 1
+
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 
