@@ -97,7 +97,10 @@ color coded  : 0b0.0111'1111.001'1110'0000'0110'0101'0010
 
 # Statement of need
 
+
+
 The demand for high-performance computing (HPC), machine learning, and deep learning has grown significantly in recent years [e.g., @carmichael:2019; @cococcioni2022small;@desrentes:2022posit8], leading to increased environmental impact and financial cost due to their high energy consumption for storage and processing [@haidar:2018b]. To address these challenges, researchers are exploring ways to reduce energy consumption through redesigning algorithms and minimizing data movement and processing. The use of multi-precision arithmetic in hardware is also becoming more prevalent [@haidar:2018a]. NVIDIA has added support for low-precision formats in its GPUs to perform tensor operations [@choquette2021nvidia], including a 19-bit format with an 8-bit exponent and 10-bit mantissa (see also [@intel:2018; @kharya:2020]. Additionally, Google has developed the "Brain Floating Point Format," known as "bfloat16," which enables the training and operation of deep neural networks using Tensor Processing Units (TPUs) at higher performance and lower cost [@wang2019bfloat16]. This trend towards low-precision numerics is driving the redesign of many standard algorithms, particularly in the field of energy-efficient linear solvers, which is a rapidly growing area of research [@carson:2018; @haidar:2017; @haidar:2018a; @haidar:2018b; @higham:2019].
+
 
 
 While the primary motivation for low-precision arithmetic is its high performance and energy efficiency, mixed-precision algorithm designs aim to identify and exploit opportunities to rightsize the number system used for critical computational paths representing the execution bottleneck. Furthermore, when these algorithms are incorporated into embedded devices and custom hardware engines, we approach optimal performance and power efficiency. Therefore, investigations into computational mathematics and measuring mixed-precision algorithms' accuracy, efficiency, robustness, and stability are needed.
