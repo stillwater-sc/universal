@@ -1,14 +1,10 @@
 // posit_256_5.cpp: test suite runner for fast specialized 256-bit posit<256,5>
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#pragma warning(disable : 4514) // unreferenced inline function has been removed
-#pragma warning(disable : 4820) // bytes padding added after data member
-#pragma warning(disable : 4710) // function not inlined
-#endif
+#include <universal/utility/directives.hpp>
+
 // Configure the posit template environment
 // first: enable fast specialized posit<256,5>
 //#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations

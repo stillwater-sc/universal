@@ -1,14 +1,10 @@
 // posit_48_2.cpp: test suite runner for specialized extended standard 48-bit posit<48,2>
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#pragma warning(disable : 4514) // unreferenced inline function has been removed
-#pragma warning(disable : 4820) // bytes padding added after data member
-#pragma warning(disable : 4710) // function not inlined
-#endif
+#include <universal/utility/directives.hpp>
+
 // Configure the posit template environment
 // first: enable fast specialized posit<48,2>
 #define POSIT_FAST_POSIT_48_2 1    // TODO: fast posit<48,2> not implemented yet
