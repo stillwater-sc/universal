@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 #include <cstring>
-#include <universal/internal/bitblock/bitblock.hpp>
+#include <universal/internal/bitblock/bitblock.hpp>   // TODO: remove this by isolating the internal::uint128_t type
 
 /*
  * The frexpf/frexp/frexpl functions have become constexpr in C++23. Universal is using the <bit> library

@@ -39,9 +39,11 @@
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #else
-// for the value<> class assume the same behavior as requested for posits
+// for the composite value<> class assume the same behavior as requested for posits
 #define VALUE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
+#if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////

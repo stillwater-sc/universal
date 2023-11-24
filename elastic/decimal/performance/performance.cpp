@@ -1,6 +1,6 @@
-// performance.cpp: test suite runner for measuring performance off adaptive precision binary integers
+// performance.cpp: test suite runner for measuring performance off adaptive precision decimal integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,8 +10,8 @@
 #include <limits>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/einteger/einteger.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/number/edecimal/edecimal.hpp>
+#include <universal/verification/test_status.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -33,8 +33,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "einteger performance testing";
-	std::string test_tag    = "einteger performance";
+	std::string test_suite  = "edecimal performance testing";
+	std::string test_tag    = "edecimal performance";
 	int nrOfFailedTestCases = 0;
 
 

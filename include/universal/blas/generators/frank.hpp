@@ -11,7 +11,7 @@ namespace sw { namespace universal { namespace blas {
 
 // fill a dense (N, N) matrix with linear index values in row order
 template <typename Scalar>
-matrix<Scalar> frank(int N) {
+matrix<Scalar> frank(unsigned N) {
 	using Matrix = matrix<Scalar>;
 	// precondition tests
 	if (N <= 0) return matrix<Scalar>{};
@@ -43,16 +43,16 @@ matrix<Scalar> frank(int N) {
  *                ....
  *  [ 0   0   0   .... 1  1 ]
 */
-	for (size_t i = 0; i < size_t(N); ++i) {
-		for (size_t j = 0; j < size_t(N); ++j) {
+	for (unsigned i = 0; i < N; ++i) {
+		for (unsigned j = 0; j < N; ++j) {
 			if (j + 2 <= i) {
 				A(i, j) = Scalar(0);
 			}
 			else if (j + 1 == i) {
-				A(i, j) = Scalar(N - int(i));
+				A(i, j) = Scalar(N - i);
 			}
 			else if (j >= i) {
-				A(i, j) = Scalar(N - int(j));
+				A(i, j) = Scalar(N - j);
 			}
 			else {
 				std::cerr << "unassigned condition " << i << " , " << j << std::endl;

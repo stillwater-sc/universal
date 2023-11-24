@@ -1,10 +1,10 @@
 #pragma once
 // quire.hpp: definition of a parameterized quire configurations for posits
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/boolean_logic_operators.hpp>
+#include <universal/utility/boolean_logic_operators.hpp>
 #include <universal/number/quire/exceptions.hpp>
 
 namespace sw { namespace universal {
@@ -191,7 +191,7 @@ public:
 		_sign = rhs & 0x8000000000000000;
 		unsigned long long magnitude;
 		magnitude = static_cast<unsigned long long>(_sign ? -rhs : rhs);
-		unsigned msb = findMostSignificantBit(magnitude);
+		unsigned msb = find_msb(magnitude);
 		if (msb > half_range + capacity) {
 			throw operand_too_large_for_quire{};
 		}
@@ -215,7 +215,7 @@ public:
 	}
 	quire& operator=(unsigned long long rhs) {
 		reset();
-		unsigned msb = findMostSignificantBit(rhs);
+		unsigned msb = find_msb(rhs);
 		if (msb > half_range + capacity) {
 			throw operand_too_large_for_quire{};
 		}

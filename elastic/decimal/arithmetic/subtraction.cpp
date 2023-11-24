@@ -1,6 +1,6 @@
 // subtraction.cpp: test suite runner for subtractionon adaptive precision decimal integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,15 +11,15 @@
 #include <limits>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/verification/test_reporters.hpp>
 
 namespace sw { namespace universal {
 
 		// enumerate all addition cases for a decimal integer configuration
 		template<size_t nbits>
-		int VerifyDecimalSubtraction(bool reportTestCases) {
-			using Integer = decimal;
+		int VerifyEdecimalSubtraction(bool reportTestCases) {
+			using Integer = edecimal;
 			constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 			constexpr size_t signBitMask = (1ull << (nbits - 1));
 			constexpr size_t valueBitMask = ~signBitMask;
@@ -74,7 +74,7 @@ namespace sw { namespace universal {
 template<typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::universal::decimal a, b, aref, adiff;
+	sw::universal::edecimal a, b, aref, adiff;
 	a = _a;
 	b = _b;
 	adiff= a - b;
@@ -120,27 +120,27 @@ try {
 	GenerateTestCase(1, 2);
 	GenerateTestCase(1, 9);
 
-	nrOfFailedTestCases += VerifyDecimalSubtraction<8>(reportTestCases);
-	nrOfFailedTestCases += VerifyDecimalSubtraction<16>(reportTestCases);
+	nrOfFailedTestCases += VerifyEdecimalSubtraction<8>(reportTestCases);
+	nrOfFailedTestCases += VerifyEdecimalSubtraction<16>(reportTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalSubtraction<10>(reportTestCases), "decimal subtraction nbits=10", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalSubtraction<10>(reportTestCases), "decimal subtraction nbits=10", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalSubtraction<16>(reportTestCases), "decimal subtraction nbits=16", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalSubtraction<16>(reportTestCases), "decimal subtraction nbits=16", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalSubtraction<32>(reportTestCases), "decimal subtraction nbits=32", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalSubtraction<32>(reportTestCases), "decimal subtraction nbits=32", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyDecimalSubtraction<64>(reportTestCases), "decimal subtraction nbits=64", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalSubtraction<64>(reportTestCases), "decimal subtraction nbits=64", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

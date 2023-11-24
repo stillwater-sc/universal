@@ -17,6 +17,20 @@ namespace sw { namespace universal { namespace blas {
     }
 
     template<typename Scalar>
+    inline std::vector<Scalar>& gaussian_random(std::vector<Scalar>& v, double mean = 100.00, double stddev = 6.00) {
+        using value_type = typename vector<Scalar>::value_type;
+        using size_type = typename vector<Scalar>::size_type;
+        const size_type nrElements = size(v);
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        for (size_type i = 0; i < nrElements; ++i) {
+            std::normal_distribution<double> s(mean, stddev);
+            v[i] = value_type(s(rng));
+        }
+        return v;
+    }
+
+    template<typename Scalar>
     inline vector<Scalar>& gaussian_random(vector<Scalar>& v, double mean = 100.00, double stddev = 6.00) {
         using value_type = typename vector<Scalar>::value_type;
         using size_type = typename vector<Scalar>::size_type;
@@ -52,5 +66,19 @@ namespace sw { namespace universal { namespace blas {
         }
         return A;
     }
+
+
+template<typename Scalar>
+inline void gaussian_random(vector<Scalar>& omega, double mean = 100.00, double stddev = 6.00){
+    using value_type = typename vector<Scalar>::value_type;
+    // using unsigned = typename vector<Scalar>::size_type;
+    const unsigned nelements = size(omega);                
+    std::random_device rd;
+    std::mt19937 rng(rd());                
+    for(unsigned j=0; j<nelements; ++j) {
+        std::normal_distribution<double> s(mean, stddev);
+        omega[j]=value_type(s(rng));
+    }
+}
 
 }}} // namespace sw::universal::blas

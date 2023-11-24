@@ -1,6 +1,6 @@
 // assignment.cpp: test suite runner for fixed-point assignments from native types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -15,6 +15,9 @@
 #include <universal/number/fixpnt/fixpnt.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
+
+// PositiveTestCases and NegativeTestCases need to_hex function for native floating-point
+#include <universal/native/ieee754.hpp>
 
 void PositiveTestCases() {
 	using namespace sw::universal;

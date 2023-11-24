@@ -1,6 +1,6 @@
-// factorial.cpp: test suite runner for factorials on adaptive precision binary integers
+// factorial.cpp: test suite runner for factorials on adaptive precision decimal integers
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,8 +10,8 @@
 #include <limits>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/number/einteger/einteger.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/number/edecimal/edecimal.hpp>
+#include <universal/verification/test_status.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
@@ -33,8 +33,8 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "adaptive precision binary integer math function validation";
-	std::string test_tag    = "einteger math function failed";
+	std::string test_suite  = "adaptive precision decimal integer factorial validation";
+	std::string test_tag    = "edecimal factorial";
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING

@@ -13,10 +13,9 @@
 
 #include <universal/common/exceptions.hpp>
 #include <universal/number/support/decimal.hpp>
-#include <universal/native/ieee754_float.hpp>
-#include <universal/native/ieee754_double.hpp>
-#include <universal/native/ieee754_longdouble.hpp>
-#include <universal/native/bit_functions.hpp>
+#include <universal/utility/find_msb.hpp>
+#include <universal/native/ieee754.hpp>
+#include <universal/native/nonconstexpr/extract_fp_components.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 
 namespace sw { namespace universal { namespace internal {
@@ -133,7 +132,7 @@ public:
 		_sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
 		if (_sign) {
 			// process negative number: process 2's complement of the input
-			_scale = int(sw::universal::findMostSignificantBit(-rhs)) - 1;
+			_scale = int(sw::universal::find_msb(-rhs)) - 1;
 			uint64_t _fraction_without_hidden_bit = uint64_t(_scale == 0 ? 0 : (-rhs << (64 - _scale)));
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			//take_2s_complement();
@@ -142,7 +141,7 @@ public:
 		}
 		else {
 			// process positive number
-			_scale = int(sw::universal::findMostSignificantBit(rhs)) - 1;
+			_scale = int(sw::universal::find_msb(rhs)) - 1;
 			uint64_t _fraction_without_hidden_bit = uint64_t(_scale == 0 ? 0 : (rhs << (64 - _scale)));
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			_nrOfBits = fbits;
@@ -173,7 +172,7 @@ public:
 		}
 		else {
 			reset();
-			_scale = static_cast<int>(sw::universal::findMostSignificantBit(rhs)) - 1;
+			_scale = static_cast<int>(sw::universal::find_msb(rhs)) - 1;
 			uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0ull : (rhs << (64 - _scale)); // the scale == -1 case is handled above
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			_nrOfBits = fbits;
@@ -856,7 +855,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 
 	scale_of_result -= shift;
 	const int hpos = int(abits) - 1 - shift;         // position of the hidden bit 
-	sum <<= abits - hpos + 1;
+	sum <<= (1ll + static_cast<int64_t>(abits) - hpos);
 	if (_trace_value_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
 }
@@ -915,7 +914,7 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 
 	scale_of_result -= shift;
 	const int hpos = static_cast<int>(abits) - 1 - shift;         // position of the hidden bit 
-	sum <<= abits - hpos + 1;
+	sum <<= (1ll + static_cast<uint64_t>(abits) - hpos);
 	if (_trace_value_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
 }
@@ -991,7 +990,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 	int new_scale = lhs.scale() + rhs.scale();
 	bitblock<mbits> result_fraction;
 
-	if (fbits > 0) {
+	if constexpr (fbits > 0) {
 		// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
 		bitblock<fhbits> r1 = lhs.get_fixed_point();
 		bitblock<fhbits> r2 = rhs.get_fixed_point();

@@ -48,7 +48,7 @@ int main() {
 }
 ```
 
-The library contains fast implementations of special IEEE-754 formats that do not have universal hardware implementations across x86, ARM, POWER, RISC-V, and GPUs. Special formats such as quarter precision, `quarter`, half precision, `half`, and quad precision, `quad`, are provided, as well as vendor specific extensions, such as NVIDIA `TensorFloat`, Google's Brain Float, `bfloat16`, or TI DSP fixed-points, `fixpnt`. In addition to these often used specializations, *Universal* supports static and elastic integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and adaptive-precision integers, rationals, and floats. There are example number system skeletons to get you started quickly if you desire to add your own.
+The library contains fast implementations of special IEEE-754 formats that do not have universal hardware implementations across x86, ARM, POWER, RISC-V, and GPUs. Special formats such as quarter precision, `quarter`, half-precision, `half`, and quad precision, `quad`, are provided, as well as vendor-specific extensions, such as NVIDIA `TensorFloat`, Google's Brain Float, `bfloat16`, or TI DSP fixed-points, `fixpnt`. In addition to these often-used specializations, *Universal* supports static and elastic integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and adaptive-precision integers, rationals, and floats. There are example number system skeletons to get you started quickly if you desire to add your own.
 
 ## Communication channels
 
@@ -63,6 +63,16 @@ The library contains fast implementations of special IEEE-754 formats that do no
 Please cite [our work](https://arxiv.org/abs/2012.11011) if you use *Universal*.
 
 ```bib
+@article{omtzigt2023universal,
+  title={Universal Numbers Library: Multi-format Variable Precision Arithmetic Library},
+  author={Omtzigt, E Theodore L and Quinlan, James},
+  journal={Journal of Open Source Software},
+  volume={8},
+  number={83},
+  pages={5072},
+  year={2023}
+}
+
 @inproceedings{Omtzigt:2022,
   title        = {Universal: Reliable, Reproducible, and Energy-Efficient Numerics},
   author       = {E. Theodore L. Omtzigt and James Quinlan},
@@ -96,7 +106,7 @@ A quick description of the structure of the number system parameterization can b
 
 ## Quick start
 
-If you just want to experiment with the number system tools and test suites, and don't want to bother cloning and building the source code, there is a Docker container to get started:
+If you just want to experiment with the number system tools and test suites and don't want to bother cloning and building the source code, there is a Docker container to get started:
 
 ```text
 > docker pull stillwater/universal
@@ -128,7 +138,7 @@ For Ubuntu, snap will install the latest cmake, and would be the preferred metho
 ```
 
 The Universal Library is a pure C++ template library without any further dependencies, 
-even for the regression test suites, to enable hassle-free installation and use.
+even for the regression test suites to enable hassle-free installation and use.
 
 Clone the GitHub repo, and you are ready to build the different components of the Universal library.  
 The library contains tools for using integers, decimals, fixed-points, floats, posits, valids, and logarithmic
@@ -348,11 +358,11 @@ The *Universal* library contains hundreds of example programs to demonstrate the
 
 In the `education` build target (BUILD_EDUCATION), there are individual test programs that demonstrate how to use the different types.
 
-The `docs` directory contains the descriptions of the [command line tools](docs/command-line-tools.md), a [tutorial](docs/number-system-type-parameterization.md) explaining the parameterization design of the arithmetic types in *Universal*, several conference presentations, [FPTalks](docs/presentations/fptalks-custom-number-systems.pdf) and [CoNGA22](docs/presentations/conga22-universal-arithmetic-library.pdf), describing the arithmetic types. The `docs` directory also contains ready to use value tables, and dynamic range comparisons of many key small arithmetic types of interest in AI and DSP applications.
+The `docs` directory contains the descriptions of the [command line tools](docs/command-line-tools.md), a [tutorial](docs/number-system-type-parameterization.md) explaining the parameterization design of the arithmetic types in *Universal*, several conference presentations, [FPTalks](docs/presentations/fptalks-custom-number-systems.pdf) and [CoNGA22](docs/presentations/conga22-universal-arithmetic-library.pdf), describing the arithmetic types. The `docs` directory also contains ready-to-use value tables and dynamic range comparisons of many key small arithmetic types of interest in AI and DSP applications.
 
-Each number system comes with a complete regression suite to verify functionality of assignment, conversion, arithmetic, logic, exceptions, number traits, and special cases. These regression suites are run for each PR or push to the version branch. *Universal* uses standard GitHub Actions for this, so add your branch to the workflow cmake yaml to trigger CI for your own branch.
+Each number system comes with a complete regression suite to verify the functionality of assignment, conversion, arithmetic, logic, exceptions, number traits, and special cases. These regression suites are run for each PR or push to the version branch. *Universal* uses standard GitHub Actions for this, so add your branch to the workflow cmake yaml to trigger CI for your own branch.
 
-Easiest way to get started is to pick up and copy the directory structure under `ROOT/include/universal/number/skeleton_1param` or `ROOT/include/universal/number/skeleton_2params`. They are configured to get you all the constituent pieces of a number system *Universal*-style.
+The easiest way to get started is to pick up and copy the directory structure under `ROOT/include/universal/number/skeleton_1param` or `ROOT/include/universal/number/skeleton_2params`. They are configured to get you all the constituent pieces of a number system *Universal*-style.
 
 # Installation and usage
 
@@ -529,7 +539,7 @@ performance and power requirements of AI applications in both the cloud and the 
 Both Google and Microsoft have jettisoned traditional floating-point formats for their AI cloud services 
 to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded 
 applications are requantized to small integers to fit their very stringent power budgets. The AI domain
-has been researching for better number systems to address both power and performance requirements,
+has been researching better number systems to address both power and performance requirements,
 but all these efforts have worked in isolation, with results being difficult to reproduce.
 
 AI applications are only some of the applications that expose the limitations of traditional hardware.  
@@ -542,7 +552,7 @@ arithmetic systems that are tailored to the needs of the application are desired
 
 In particular, there are two concerns when using the IEEE-754 floating-point formats: 
 
--   inefficient representation of the reals
+-   inefficient representation of the real numbers
 -   irreproducibility in the context of concurrency
 
 More specifically, 
@@ -550,10 +560,10 @@ More specifically,
 1.   **Wasted Bit Patterns** 
     -   32-bit IEEE floating point has around eight million ways to represent NaN (Not-A-Number), while the 64-bit floating point has two quadrillion, which is approximately 2.251x10^15 to be more exact.  A NaN is an exceptional value to represent undefined or invalid results, such as the result of a division by zero.
 2.   **Mathematically Incorrect** 
-    -   The format specifies two zeroes, a negative and positive zero, which have different behaviors. 
+    -   The format specifies two zeroes, a negative and positive zero, with different behaviors. 
     -   Loss of associative and distributive law due to rounding after each operation.  This loss of associative and distributive arithmetic behavior creates an irreproducible result of concurrent programs that use the IEEE floating point.  This is particularly problematic for embedded and control applications.
 3.   **Overflows to ± inf and underflows to 0** 
-    -   Overflowing to ± inf increases the relative error by an infinite factor, while underflowing to 0 loses sign information.
+    -   Overflowing to ± inf increases the relative error by an infinite factor while underflowing to 0 loses sign information.
 4.   **Unused dynamic range** 
     -   The dynamic range of double precision floats is a whopping 2^2047, whereas most numerical software is architected to operate around 1.0.
 5.   **Complicated Circuitry** 
@@ -565,7 +575,7 @@ In contrast, the _posit_ number system was designed to overcome these negatives:
 
 1.   **Economical** 
     -   No bit patterns are redundant.  There is one representation for infinity denoted as ± inf and zero.  All other bit patterns are valid distinct non-zero real numbers. ± inf serves as a replacement for NaN.
-2.   **Perserves Mathematical Properites** 
+2.   **Preserves Mathematical Properties** 
     -   There is only one representation for zero, and the encoding is symmetric around 1.0.  Associative and distributive laws are supported through deferred rounding via the quire, enabling reproducible linear algebra algorithms in any concurrency environment.
 3.   **Tapered Accuracy** 
     -   Tapered accuracy is when values with small exponents have more precision and values with large exponents have fewer digits of accuracy.  This concept was first introduced by Morris (1971) in his paper ”Tapered Floating Point: A New Floating-Point Representation”.
@@ -574,7 +584,7 @@ In contrast, the _posit_ number system was designed to overcome these negatives:
 5.   **Simpler Circuitry** 
     -   There are only two exceptional cases, Not a Real and Zero.  No denormalized numbers, overflow, or underflow. 
 
-But as Deep Learning has demonstrated, there are many different requirements to optimize an arithmetic and
+However as Deep Learning has demonstrated, there are many different requirements to optimize an arithmetic and
 tailor it to the needs of the application. Universal brings all the machinery together to experiment to 
 facilitate efficient contrast and compare different arithmetic number system designs, before committing them
 to hardware.
@@ -637,20 +647,20 @@ posit logarithm function validation: PASS
 
 The universal library contains a set of functional groups to organize the development and validation of 
 different number systems. Each number system type has a single include file that brings together
-the arithmetic number type type and all the extensions that *Universal* has standardized so that
+the arithmetic number type and all the extensions that *Universal* has standardized so that
 working with numeric types is more productive. For example, facilities for number traits, an 
 arithmetic exception hierarchy, number system attributes, manipulators,
 and finally, a math library specialized for the type.
 
 The number system types are categorized as _static_ or _elastic_. Static types are arithmetic types
 that have a constant, that is _static_ size, and thus can be used for sharing composite data structures, 
-such as matrices and tensors, between general purpose CPUs and special purpose hardware accelerators.
-Elastic types are arithmetic types that can grow and shrink during computation, typically to accomodate
-error-free, or closed, computations.
+such as matrices and tensors, between general-purpose CPUs and special-purpose hardware accelerators.
+Elastic types are arithmetic types that can grow and shrink during computation, typically to accommodate
+error-free, or closed computations.
 
 In addition to the _static_ and _elastic_ classification, we also recognize that the base of the number
 system is a key parameter in the arithmetic and numerical traits of the type. In particular, the tree
-will specialize for binary and decimal forms of the arithmetic.
+will specialize in binary and decimal forms of arithmetic.
 
 Here is a complete list:
 
@@ -665,7 +675,7 @@ Here is a complete list:
 - *universal/number/unum* - arbitrary configuration unum Type 1 number system
 - *universal/number/unum2* - arbitrary configuration unum Type 2 number system
 - *universal/number/lns* - arbitrary configuration logarithmic number system with fixed-point exponent
-- *universal/number/lns2b* - two-base logarithmic number system with integer exponents
+- *universal/number/dbns* - double base number system with integer exponents
 - *universal/number/sorn* - set of real numbers 
 
 ### _elastic_ adaptive-precision configurations
@@ -681,7 +691,7 @@ Here is a complete list:
 - *universal/number/quire* - arbitrary configuration fixed-size super accumulator number system (add/sub/abs/sqrt)
 - *universal/number/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
 
-And each of these functionality groups have an associated test suite located in ".../universal/tests/..."
+And each of these functionality groups has an associated test suite located in ".../universal/tests/..."
 
 
 ## Background information

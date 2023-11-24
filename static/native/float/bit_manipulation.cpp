@@ -33,16 +33,17 @@ std::cout << "Architecture is ARM\n";
 std::cout << "Architecture is unknown\n";
 #endif
 		bool sign{ false };
-		std::uint64_t rawExponent{ 0 };
+		uint64_t rawExponent{ 0 };
 		int exponent{ 0 };
-		std::uint64_t rawFraction{ 0 };
+		uint64_t rawFraction{ 0 };
+		uint64_t bits{ 0 };
 		
 		Real a;
 		a = 1.0;
 		std::cout << to_binary(a) << " : " << a << '\n';
 		ReportValue(a);
 
-		extractFields(a, sign, rawExponent, rawFraction);
+		extractFields(a, sign, rawExponent, rawFraction, bits);
 		exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;
 		std::cout << "rawExponent       : " << rawExponent << '\n';
 		std::cout << "exponent bias     : " << ieee754_parameter<Real>::bias << '\n';

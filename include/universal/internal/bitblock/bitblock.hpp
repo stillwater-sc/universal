@@ -1,5 +1,5 @@
 #pragma once
-//  bitblock.hpp : bitblock class
+// bitblock.hpp : bitblock class
 //
 // Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <sstream>
 #include <bitset>
-#include <universal/native/boolean_logic_operators.hpp>
+#include <universal/utility/boolean_logic_operators.hpp>
 #include <universal/internal/bitblock/exceptions.hpp>
 
 namespace sw { namespace universal { namespace internal {
@@ -64,7 +64,7 @@ bool twosComplementLessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& r
 	if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
 	if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
 	// sign is equal, compare the remaining bits
-	if (nbits > 1) {
+	if constexpr (nbits > 1) {
 		for (int i = static_cast<int>(nbits) - 2; i >= 0; --i) {
 			if (lhs[unsigned(i)] == 0 && rhs[unsigned(i)] == 1)	return true;
 			if (lhs[unsigned(i)] == 1 && rhs[unsigned(i)] == 0) return false;
@@ -659,7 +659,7 @@ std::string to_bit_string(bitblock<nbits> bits, bool separator = true) {
 }
 
 template<unsigned nbits>
-std::string to_hex(bitblock<nbits> bits) {
+std::string to_hex(bitblock<nbits> bits, bool nibbleMarker = false, bool hexPrefix = true) {
 	char str[(nbits >> 2) + 2]{ 0 };
 	for (unsigned i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
 	//const char* hexits = "0123456789ABCDEF";

@@ -62,7 +62,6 @@ try {
 	std::cout << dynamic_range(lns<16, 5>()) << '\n';
 	std::cout << dynamic_range(bfloat_t()) << '\n';
 
-
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else

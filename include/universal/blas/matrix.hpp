@@ -9,8 +9,46 @@
 #include <initializer_list>
 #include <map>
 #include <universal/blas/exceptions.hpp>
-#include <universal/number/posit/posit_fwd.hpp>
-#include <universal/number/cfloat/cfloat_fwd.hpp>
+
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+#define _HAS_NODISCARD 1
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+// already defines _NODISCARD
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+#define _HAS_NODISCARD 1
+
+#endif
+
+#if _HAS_NODISCARD
+#define _NODISCARD [[nodiscard]]
+#else // ^^^ CAN HAZ [[nodiscard]] / NO CAN HAZ [[nodiscard]] vvv
+#define _NODISCARD
+#endif // _HAS_NODISCARD
 
 namespace sw { namespace universal { namespace blas { 
 
@@ -42,12 +80,17 @@ public:
 	typedef value_type&								reference;
 	typedef const value_type*						const_pointer_type;
 	typedef typename std::vector<Scalar>::size_type size_type;
+	typedef typename std::vector<Scalar>::iterator     iterator;
+	typedef typename std::vector<Scalar>::const_iterator const_iterator;
+	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
+	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
+	static constexpr unsigned AggregationType = UNIVERSAL_AGGREGATE_MATRIX;
 
 	matrix() : _m{ 0 }, _n{ 0 }, data(0) {}
 	matrix(unsigned m, unsigned n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
 	matrix(std::initializer_list< std::initializer_list<Scalar> > values) {
-		unsigned nrows = values.size();
-		unsigned ncols = values.begin()->size();
+		unsigned nrows = static_cast<unsigned>(values.size());
+		unsigned ncols = static_cast<unsigned>(values.begin()->size());
 		data.resize(nrows * ncols);
 		unsigned r = 0;
 		for (auto l : values) {
@@ -148,16 +191,15 @@ public:
 		return *this;
 	}
 
-	
-
-
 	// modifiers
-	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
-	inline void resize(unsigned m, unsigned n) { _m = m; _n = n; data.resize(m * n); }
+	void push_back(const Scalar& v) { data.push_back(v); }
+	void setzero() { for (auto& elem : data) elem = Scalar(0); }
+	void resize(unsigned m, unsigned n) { _m = m; _n = n; data.resize(m * n); }
 	// selectors
-	inline unsigned rows() const { return _m; }
-	inline unsigned cols() const { return _n; }
-	inline std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
+	unsigned rows() const { return _m; }
+	unsigned cols() const { return _n; }
+//	std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
+	unsigned size() const { return data.size(); }
 
 	// in-place transpose
 	matrix& transpose() {
@@ -188,6 +230,39 @@ public:
 		return z;
 	}
 
+	// iterators
+	_NODISCARD iterator begin() noexcept {
+		return data.begin();
+	}
+
+	_NODISCARD const_iterator begin() const noexcept {
+		return data.begin();
+	}
+
+	_NODISCARD iterator end() noexcept {
+		return data.end();
+	}
+
+	_NODISCARD const_iterator end() const noexcept {
+		return data.end();
+	}
+
+	_NODISCARD reverse_iterator rbegin() noexcept {
+		return reverse_iterator(end());
+	}
+
+	_NODISCARD const_reverse_iterator rbegin() const noexcept {
+		return const_reverse_iterator(end());
+	}
+
+	_NODISCARD reverse_iterator rend() noexcept {
+		return reverse_iterator(begin());
+	}
+
+	_NODISCARD const_reverse_iterator rend() const noexcept {
+		return const_reverse_iterator(begin());
+	}
+
 private:
 	unsigned _m, _n; // m rows and n columns
 	std::vector<Scalar> data;
@@ -199,7 +274,7 @@ inline unsigned num_rows(const matrix<Scalar>& A) { return A.rows(); }
 template<typename Scalar>
 inline unsigned num_cols(const matrix<Scalar>& A) { return A.cols(); }
 template<typename Scalar>
-inline std::pair<unsigned, unsigned> size(const matrix<Scalar>& A) { return A.size(); }
+inline std::pair<unsigned, unsigned> size(const matrix<Scalar>& A) { return std::make_pair(A.rows(), A.cols()); }
 
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
@@ -281,20 +356,6 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	return b;
 }
 
-// overload for posits to use fused dot products
-template<unsigned nbits, unsigned es>
-vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const vector< posit<nbits, es> >& x) {
-	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
-	vector< posit<nbits, es> > b(A.rows());
-	for (unsigned i = 0; i < A.rows(); ++i) {
-		quire<nbits, es, capacity> q;
-		for (unsigned j = 0; j < A.cols(); ++j) {
-			q += quire_mul(A(i, j), x[j]);
-		}
-		convert(q.to_value(), b[i]); // one and only rounding step of the fused-dot product
-	}
-	return b;
-}
 
 template<typename Scalar>
 matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
@@ -334,31 +395,6 @@ matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	return C;
 }
 
-
-
-// overload for posits uses fused dot products
-template<unsigned nbits, unsigned es>
-matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const matrix< posit<nbits, es> >& B) {
-	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
-	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	unsigned rows = A.rows();
-	unsigned cols = B.cols();
-	unsigned dots = A.cols();
-	matrix< posit<nbits, es> > C(rows, cols);
-	for (unsigned i = 0; i < rows; ++i) {
-		for (unsigned j = 0; j < cols; ++j) {
-			quire<nbits, es, capacity> q;
-			for (unsigned k = 0; k < dots; ++k) {
-				q += quire_mul(A(i, k), B(k, j));
-			}
-			convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
-		}
-	}
-	return C;
-}
-
-
-
 // matrix equivalence tests
 template<typename Scalar>
 bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
@@ -376,8 +412,6 @@ bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	}
 	return equal;
 }
-
-
 
 template<typename Scalar>
 bool operator!=(const matrix<Scalar>& A, const matrix<Scalar>& B) {

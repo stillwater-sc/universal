@@ -26,7 +26,7 @@ int VerifyLeftShift(bool reportTestCases) {
 	BlockBinary a, result;
 	int64_t shiftRef, resultRef;
 	for (size_t i = 0; i < nbits + 1; i++) {
-		shiftRef = (-1ll << i);
+		shiftRef = (0xFFFF'FFFF'FFFF'FFFFll << i);
 		if (i == nbits) shiftRef = 0; // shift all bits out
 
 		a = -1;

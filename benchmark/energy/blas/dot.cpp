@@ -1,19 +1,9 @@
 // dot.cpp: energy measurement of mixed-precision dot product
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifdef _MSC_VER
-#pragma warning(disable : 4514) // warning C4514: 'std::complex<float>::complex': unreferenced inline function has been removed
-#pragma warning(disable : 4571) // warning C4571: Informational: catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught
-#pragma warning(disable : 4625) // warning C4625: 'std::moneypunct<char,true>': copy constructor was implicitly defined as deleted
-#pragma warning(disable : 4626) // warning C4626: 'std::codecvt_base': assignment operator was implicitly defined as deleted
-#pragma warning(disable : 4710) // warning C4710: 'int swprintf_s(wchar_t *const ,const size_t,const wchar_t *const ,...)': function not inlined
-#pragma warning(disable : 4774) // warning C4774: 'sprintf_s' : format string expected in argument 3 is not a string literal
-#pragma warning(disable : 4820) // warning C4820: 'std::_Mpunct<_Elem>': '4' bytes padding added after data member 'std::_Mpunct<_Elem>::_Kseparator'
-#pragma warning(disable : 5026) // warning C5026 : 'std::_Generic_error_category' : move constructor was implicitly defined as deleted
-#pragma warning(disable : 5027) // warning C5027 : 'std::_Generic_error_category' : move assignment operator was implicitly defined as deleted
-#endif 
+#include <universal/utility/directives.hpp>
 
 // enable the following define to show the intermediate steps in the fused-dot product
 // #define ALGORITHM_VERBOSE_OUTPUT
@@ -27,10 +17,10 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/number/decimal/decimal.hpp>
+#include <universal/number/edecimal/edecimal.hpp>
 #include <universal/blas/blas.hpp>
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
@@ -38,7 +28,7 @@ try {
 	std::cout << std::setprecision(17);
 	
 	{
-		using Scalar = decimal;
+		using Scalar = edecimal;
 		using Vector = sw::universal::blas::vector<Scalar>;
 //		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;             // TODO: <--- bug conversion from double
 //		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
@@ -51,7 +41,7 @@ try {
 		std::cout << "b: " << b << '\n';
 
 		std::cout << "\n\n";
-		decimal v = dot(a, b);
+		edecimal v = dot(a, b);
 		std::cout << v << (v == 2 ? " <----- PASS\n" : " <-----      FAIL\n");
 	}
 
@@ -63,16 +53,16 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Uncaught universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Uncaught universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

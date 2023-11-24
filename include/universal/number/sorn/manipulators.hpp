@@ -1,7 +1,7 @@
 #pragma once
 // manipulators.hpp: definitions of helper functions for the manipulation of SORN numbers 
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -12,18 +12,6 @@
 #include <universal/utility/color_print.hpp>  // pull in the color printing for shells utility
 
 namespace sw { namespace universal {
-
-
-	// Generate a type tag for this sorn
-	template<signed int _start, signed int _stop, unsigned int _steps, bool _lin, bool _halfopen, bool _neg, bool _inf, bool _zero>
-	inline std::string type_tag(const sorn<_start, _stop, _steps, _lin, _halfopen, _neg, _inf, _zero>& = {}) {
-		std::stringstream s;
-		float f(0.0f);
-		s << "sorn<"
-			<< std::setw(10) << type_tag(f) // << ", "
-			<< '>';
-		return s.str();
-	}
 
 #ifdef LATER
 	// report dynamic range of a type, specialized for sorn

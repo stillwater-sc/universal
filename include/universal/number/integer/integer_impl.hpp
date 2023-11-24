@@ -100,11 +100,14 @@ chunk values. The chunks need to be interpreted as unsigned binary segments.
 */
 
 // integer is an arbitrary fixed-sized 2's complement integer
-template<unsigned _nbits, typename bt = std::uint8_t, IntegerNumberType NumberType = IntegerNumberType::IntegerNumber>
+template<unsigned _nbits, typename bt = std::uint8_t, IntegerNumberType _NumberType = IntegerNumberType::IntegerNumber>
 class integer {
 public:
-	typedef bt BlockType;
+	// cache template parameters
 	static constexpr unsigned nbits = _nbits;
+	typedef bt BlockType;
+	static constexpr IntegerNumberType NumberType = _NumberType;
+	// derive other parameters
 	static constexpr unsigned bitsInByte = 8ull;
 	static constexpr unsigned bitsInBlock = sizeof(bt) * bitsInByte;
 	static constexpr unsigned nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
@@ -812,7 +815,16 @@ public:
 	}
 	constexpr bool test(unsigned i)  const noexcept { return at(i); }
 	constexpr bt   block(unsigned i) const noexcept { if (i < nrBlocks) return _block[i]; else return bt(0u); }
-
+	constexpr uint8_t nibble(unsigned n) const noexcept {
+		if (n < (1 + ((nbits - 1) >> 2))) {
+			bt word = _block[(n * 4) / bitsInBlock];
+			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
+			bt mask = bt(0xF << (nibbleIndexInWord * 4));
+			bt nibblebits = bt(mask & word);
+			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
+		}
+		return 0;
+	}
 	// operators
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const integer& a, const integer& b, integer& r) {

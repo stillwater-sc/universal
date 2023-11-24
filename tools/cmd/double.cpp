@@ -1,13 +1,9 @@
 // double.cpp: components of a double: cli to show the sign/scale/fraction components of a double
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/utility/bit_cast.hpp>
-#include <limits>
-#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
-#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/native/ieee754.hpp>
 #include <universal/common/number_traits_reports.hpp>
 

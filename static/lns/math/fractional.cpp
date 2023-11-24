@@ -185,7 +185,7 @@ template<typename Real>
 Real test_frac(Real x) {
 	using namespace sw::universal;
 	std::cout << "frac(" << x << ") = " << frac(x) << '\n';
-	std::cout << "reference = " << (double(x) - (long long)(x)) << '\n';
+	std::cout << "reference = " << (double(x) - double(static_cast<long long>(x))) << '\n';
 	return frac(x);
 }
 

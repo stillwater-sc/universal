@@ -27,7 +27,7 @@ public:
 	using bt = BlockType;
 	static constexpr unsigned bitsInBlock = sizeof(BlockType) * 8;
 	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
-	static constexpr uint64_t BASE = (ALL_ONES + 1ull);
+	static constexpr uint64_t BASE = uint64_t(ALL_ONES) + 1ull;
 	static_assert(bitsInBlock <= 32, "BlockType must be one of [uint8_t, uint16_t, uint32_t]");
 
 	einteger() : _sign(false), _block{} { }
@@ -322,12 +322,12 @@ public:
 	// reduce returns the ratio and remainder of a and b in *this and r
 	void reduce(const einteger& a, const einteger& b, einteger& r) {
 		if (b.iszero()) {
-#if ADAPTIVEINT_THROW_ARITHMETIC_EXCEPTION
+#if EINTEGER_THROW_ARITHMETIC_EXCEPTION
 			throw einteger_divide_by_zero{};
 #else
 			std::cerr << "einteger_divide_by_zero\n";
 			return;
-#endif // ADAPTIVEINT_THROW_ARITHMETIC_EXCEPTION
+#endif // EINTEGER_THROW_ARITHMETIC_EXCEPTION
 		}
 		clear();
 		r.clear();
@@ -724,8 +724,8 @@ protected:
 		bool s{ false };
 		std::uint64_t rawExponent{ 0 };
 		std::uint64_t rawFraction{ 0 };
-		// use native conversion
-		extractFields(rhs, s, rawExponent, rawFraction);
+		uint64_t bits{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction, bits);
 		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
 			// we can't represent NaNs or Infinities
 			return *this;

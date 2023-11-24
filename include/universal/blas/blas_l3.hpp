@@ -1,7 +1,7 @@
 #pragma once
 // blas_l3.hpp: BLAS Level 3 functions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,7 +9,7 @@ namespace sw { namespace universal { namespace blas {
 
 // sum entire matrix (dim == 0), all rows (dim == 1), or all columns (dim == 2)
 template<typename Matrix>
-vector<typename Matrix::value_type> sum(Matrix& A, int dim = 0) {
+vector<typename Matrix::value_type> sumOfElements(Matrix& A, int dim = 0) {
 	using value_type = typename Matrix::value_type;
 	using size_type = typename Matrix::size_type;
 

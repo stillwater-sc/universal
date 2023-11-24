@@ -94,7 +94,8 @@ void ReportFields(Real r) {
 	bool sign{ false };
 	uint64_t rawExponent{ 0 };
 	uint64_t rawFraction{ 0 };
-	extractFields(r, sign, rawExponent, rawFraction);
+	uint64_t bits{ 0 };
+	extractFields(r, sign, rawExponent, rawFraction, bits);
 	std::cout << "sign     " << sign << '\n';
 	std::cout << "exponent " << to_binary(rawExponent, ieee754_parameter<Real>::ebits) << '\n';
 	std::cout << "mantissa " << to_binary(rawFraction, ieee754_parameter<Real>::fbits) << '\n';

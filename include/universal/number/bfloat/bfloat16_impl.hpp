@@ -18,6 +18,7 @@
 
 namespace sw { namespace universal {
 
+
 // bfloat16 is Google's Brain Float type
 class bfloat16 {
 		// HELPER methods
@@ -228,13 +229,107 @@ public:
 	constexpr void setinf(bool sign = false) noexcept { 
 		_bits = (sign ? 0xFF80u : 0x7F80u); 
 	}
+	constexpr void setbit(unsigned i, bool v = true) noexcept {
+		unsigned short bit = (1u << i);
+		if (v) {
+			_bits |= bit;
+		}
+		else {
+			_bits &= ~bit;
+		}
+	}
 	constexpr void setbits(unsigned short value) noexcept { _bits = value; }
 
-	constexpr bfloat16& minpos() noexcept { _bits = 0x0080u; return *this; }
+	constexpr bfloat16& minpos() noexcept { _bits = 0x0001u; return *this; }
 	constexpr bfloat16& maxpos() noexcept { _bits = 0x7F7Fu; return *this; }
 	constexpr bfloat16& zero()   noexcept { _bits = 0x0000u; return *this; }
-	constexpr bfloat16& minneg() noexcept { _bits = 0x8080u; return *this; }
+	constexpr bfloat16& minneg() noexcept { _bits = 0x8001u; return *this; }
 	constexpr bfloat16& maxneg() noexcept { _bits = 0xFF7Fu; return *this; }
+
+	/// <summary>
+	/// assign the value of the string representation to the bfloat16
+	/// </summary>
+	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
+	/// <returns>reference to this cfloat</returns>
+	/// Clang doesn't support constexpr yet on string manipulations, so we need to make it conditional
+	CONSTEXPRESSION bfloat16& assign(const std::string& str) noexcept {
+		clear();
+		unsigned nrChars = static_cast<unsigned>(str.size());
+		unsigned nrBits = 0;
+		unsigned nrDots = 0;
+		std::string bits;
+		if (nrChars > 2) {
+			if (str[0] == '0' && str[1] == 'b') {
+				for (unsigned i = 2; i < nrChars; ++i) {
+					char c = str[i];
+					switch (c) {
+					case '0':
+					case '1':
+						++nrBits;
+						bits += c;
+						break;
+					case '.':
+						++nrDots;
+						bits += c;
+						break;
+					case '\'':
+						// consume this delimiting character
+						break;
+					default:
+						std::cerr << "string contained a non-standard character: " << c << '\n';
+						return *this;
+					}
+				}
+			}
+			else {
+				std::cerr << "string must start with 0b: instead input pattern was " << str << '\n';
+				return *this;
+			}
+		}
+		else {
+			std::cerr << "string is too short\n";
+			return *this;
+		}
+
+		if (nrBits != nbits) {
+			std::cerr << "number of bits in the string is " << nrBits << " and needs to be " << nbits << '\n';
+			return *this;
+		}
+		if (nrDots != 2) {
+			std::cerr << "number of segment delimiters in string is " << nrDots << " and needs to be 2 for a cfloat<>\n";
+			return *this;
+		}
+
+		// assign the bits
+		int field{ 0 };  // three fields: sign, exponent, mantissa: fields are separated by a '.'
+		int nrExponentBits{ -1 };
+		unsigned bit = nrBits;
+		for (unsigned i = 0; i < bits.size(); ++i) {
+			char c = bits[i];
+			if (c == '.') {
+				++field;
+				if (field == 2) { // just finished parsing exponent field: we can now check the number of exponent bits
+					if (nrExponentBits != es) {
+						std::cerr << "provided binary string representation does not contain " << es << " exponent bits. Found " << nrExponentBits << ". Reset to 0\n";
+						clear();
+						return *this;
+					}
+				}
+			}
+			else {
+				setbit(--bit, c == '1');
+			}
+			if (field == 1) { // exponent field
+				++nrExponentBits;
+			}
+		}
+		if (field != 2) {
+			std::cerr << "provided binary string did not contain three fields separated by '.': Reset to 0\n";
+			clear();
+			return *this;
+		}
+		return *this;
+	}
 
 	// selectors
 	constexpr bool iszero()    const noexcept { return _bits == 0; }
@@ -266,6 +361,34 @@ public:
 	constexpr int  scale()  const noexcept { int biased = static_cast<int>((_bits & 0x7F80u) >> 7); return biased - 127; }
 	constexpr unsigned short bits() const noexcept { return _bits; }
 
+	constexpr bool test(unsigned bitIndex) const noexcept { return at(bitIndex); }
+	constexpr bool at(unsigned bitIndex) const noexcept {
+		if (bitIndex < nbits) {
+			uint16_t word = _bits;
+			uint16_t mask = uint16_t(1ull << bitIndex);
+			return (word & mask);
+		}
+		return false;
+	}
+	constexpr uint8_t nibble(unsigned n) const noexcept {
+		if (n < 4) {
+			uint16_t word = _bits;
+			int nibbleIndexInWord = int(n);
+			uint16_t mask = uint16_t(0xF << (nibbleIndexInWord * 4));
+			uint16_t nibblebits = uint16_t(mask & word);
+			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
+		}
+		return 0;
+	}
+	constexpr uint8_t exponent() const noexcept {
+		uint8_t e = static_cast<uint8_t>((_bits & 0x7f80) >> 7);
+		return e;
+	}
+	constexpr uint8_t fraction() const noexcept {
+		uint8_t f = static_cast<uint8_t>(_bits & 0x7f);
+		return f;
+	}
+
 protected:
 	unsigned short _bits;
 
@@ -294,7 +417,7 @@ inline bfloat16 abs(bfloat16 a) {
 // parse a bfloat16 ASCII format and make a binary bfloat16 out of it
 bool parse(const std::string& number, bfloat16& value) {
 	bool bSuccess = false;
-
+	value.zero();
 	return bSuccess;
 }
 

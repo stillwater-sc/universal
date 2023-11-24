@@ -1,6 +1,6 @@
 //  quires.cpp : test suite for IEEE float quires
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,7 +10,7 @@
 #define TEMPLATIZED_TYPE 0
 // enable/disable quire exceptions
 #define QUIRE_THROW_EXCEPTION 0
-#include <universal/native/bit_functions.hpp>
+#include <universal/utility/find_msb.hpp>
 #include <universal/number/float/float_functions.hpp>
 #include <universal/number/float/quire.hpp>
 
@@ -112,11 +112,11 @@ try {
 	// quire for float nbits= 32 es = 8
 	quire<32, 8, capacity> q;
 	sw::universal::internal::value<54> maxpos, maxpos_squared, minpos, minpos_squared;
-	double dmax = std::numeric_limits<float>::max();
+	constexpr double dmax = std::numeric_limits<float>::max();
 	maxpos = dmax;
 	maxpos_squared = dmax*dmax;
 	std::cout << "maxpos * maxpos = " << sw::universal::internal::to_triple(maxpos_squared) << std::endl;
-	double dmin = std::numeric_limits<float>::min();
+	constexpr double dmin = std::numeric_limits<float>::min();
 	minpos = dmin;
 	minpos_squared = dmin*dmin;
 	std::cout << "minpos * minpos = " << sw::universal::internal::to_triple(minpos_squared) << std::endl;

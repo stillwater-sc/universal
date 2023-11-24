@@ -1,5 +1,5 @@
 #pragma once
-// vector.hpp: super-simple vector class
+// vector.hpp: Universal vector class that composes std::vector<>
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -9,7 +9,7 @@
 #include <sstream>
 #include <vector>
 #include <initializer_list>
-#include <cmath>  // for std::sqrt
+#include <cmath>
 // special number system definitions
 #include <universal/number/posit/posit_fwd.hpp>
 #include <universal/traits/posit_traits.hpp>
@@ -56,6 +56,7 @@
 
 namespace sw { namespace universal { namespace blas {
 
+// a column vector
 template<typename Scalar>
 class vector {
 public:
@@ -68,6 +69,7 @@ public:
 	typedef typename std::vector<Scalar>::const_iterator const_iterator;
 	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
 	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
+	static constexpr unsigned AggregationType = UNIVERSAL_AGGREGATE_VECTOR;
 
 	vector() : data(0) {}
 	vector(size_t N) : data(N) {}
@@ -250,6 +252,7 @@ private:
 	std::vector<Scalar> data;
 };
 
+// ostream operators
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const vector<Scalar>& v) {
 	auto width = ostr.width();
@@ -257,6 +260,39 @@ std::ostream& operator<<(std::ostream& ostr, const vector<Scalar>& v) {
 	for (size_t j = 0; j < size(v); ++j) ostr << std::setw(width) << v[j] << " ";
 	ostr << " ]";
 	return ostr;
+}
+
+// serialization operators
+
+template<typename Scalar>
+void save(std::ostream& ostr, const sw::universal::blas::vector<Scalar>& v) {
+//	ostr << sw::universal::type_tag(Scalar()) << '\n';
+//	ostr << sw::universal::type_field(Scalar()) << '\n';
+	ostr << "shape(" << v.size() << ", 1)\n";
+	unsigned i = 0;
+	for (auto e : v) {
+		ostr << sw::universal::to_hex(e) << ' ';
+		if ((++i % 16) == 0) ostr << '\n';
+	}
+	ostr << std::endl;
+}
+
+template<typename Scalar>
+void restore(std::istream& istr, const sw::universal::blas::vector<Scalar>& v) {
+	//TypeTag<<Scalar> tt;
+	//istr << tt;
+	//TypeField<Scalar> tf; 
+	//istr << strTypeField;
+
+	// parse "shape(" << v.size() << ", 1)\n";
+	unsigned VectorSize{ 0 };
+	std::string token{};
+	istr >> token >> VectorSize >> token;
+	for (unsigned i = 0; i < VectorSize; ++i) {
+		std::string valueInHex;
+		istr >> valueInHex;
+		std::cout << valueInHex << '\n';
+	}
 }
 
 // generate a posit format ASCII format nbits.esxNN...NNp

@@ -35,6 +35,9 @@
 // default is to use std::cerr for signalling an error
 #define LNS_THROW_ARITHMETIC_EXCEPTION 0
 #endif
+#if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION LNS_THROW_ARITHMETIC_EXCEPTION
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // bring in the trait functions

@@ -9,8 +9,15 @@
 #ifndef _UNIVERSAL_BLAS_LIBRARY
 #define _UNIVERSAL_BLAS_LIBRARY
 
+// aggregation types for serialization
+constexpr uint32_t UNIVERSAL_AGGREGATE_SCALAR = 0x1001;
+constexpr uint32_t UNIVERSAL_AGGREGATE_VECTOR = 0x2002;
+constexpr uint32_t UNIVERSAL_AGGREGATE_MATRIX = 0x4004;
+constexpr uint32_t UNIVERSAL_AGGREGATE_TENSOR = 0x8008;
+
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
+#include <universal/blas/tensor.hpp>
 
 constexpr uint64_t SIZE_1K   = 1024;
 constexpr uint64_t SIZE_2K   = 2 * SIZE_1K;
@@ -69,8 +76,17 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/scaling.hpp>
 #include <universal/blas/linspace.hpp>
 
+// Statistics
+#include <universal/blas/statistics.hpp>
+
+// Serialization
+#include <universal/blas/serialization/datafile.hpp>
+
 // MATLAB-style elementary vector functions
 #include <universal/blas/vmath/power.hpp>
 #include <universal/blas/vmath/trigonometry.hpp>
+
+// type specific overloads
+#include <universal/blas/modifiers/posit_fdp.hpp>
 
 #endif // _UNIVERSAL_BLAS_LIBRARY

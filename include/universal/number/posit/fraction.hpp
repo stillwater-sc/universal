@@ -240,7 +240,7 @@ private:
 template<unsigned nfbits>
 inline std::ostream& operator<<(std::ostream& ostr, const fraction<nfbits>& f) {
 	unsigned nrOfFractionBitsProcessed = 0;
-	if (nfbits > 0) {
+	if constexpr (nfbits > 0) {
 		int upperbound = int(nfbits) - 1;
 		for (int i = upperbound; i >= 0; --i) {
 			if (f._NrOfBits > ++nrOfFractionBitsProcessed) {

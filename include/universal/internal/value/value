@@ -7,7 +7,7 @@
 #ifndef _VALUE_
 #define _VALUE_
 
-#include <universal/native/bit_functions.hpp>
+#include <universal/utility/find_msb.hpp>
 #include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/internal/value/value.hpp>
 

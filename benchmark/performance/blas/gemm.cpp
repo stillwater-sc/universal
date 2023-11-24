@@ -1,8 +1,9 @@
 // gemm.cpp: data flow performance measurement of mixed-precision matrix-matrix product
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
 // enable the following define to show the intermediate steps in the fused-dot product
 // #define ALGORITHM_VERBOSE_OUTPUT
@@ -12,8 +13,8 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 // enable operation counts
-#define DECIMAL_OPERATIONS_COUNT 1
-#include <universal/number/decimal/decimal.hpp>
+#define EDECIMAL_OPERATIONS_COUNT 1
+#include <universal/number/edecimal/edecimal.hpp>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
@@ -29,26 +30,26 @@ std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::po
 	return ss.str();
 }
 
-#if DECIMAL_OPERATIONS_COUNT
+#if EDECIMAL_OPERATIONS_COUNT
 
 // create the static storage for the occurrence measurements of the decimal number system
-bool sw::universal::decimal::enableAdd = true;
-sw::universal::occurrence<sw::universal::decimal> sw::universal::decimal::ops;
+bool sw::universal::edecimal::enableAdd = true;
+sw::universal::occurrence<sw::universal::edecimal> sw::universal::edecimal::ops;
 
 #endif
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal::blas;
 
-	using Scalar = sw::universal::decimal;
+	using Scalar = sw::universal::edecimal;
 	using Matrix = matrix<Scalar>;
 
 	constexpr size_t N = 5;
 
 	Matrix A = eye<Scalar>(N);
 	Matrix B = frank<Scalar>(N);
-	sw::universal::decimal proxy;
+	sw::universal::edecimal proxy;
 	proxy.resetStats();
 	Matrix C = A * B;
 	std::cout << C << std::endl;
@@ -60,16 +61,16 @@ catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_arithmetic_exception& err) {
+	std::cerr << "Uncaught universal arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::universal_internal_exception& err) {
+	std::cerr << "Uncaught universal internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
