@@ -1,7 +1,7 @@
 #pragma once
 // posit_8_1.hpp: specialized 8-bit posit using fast implementation specialized for posit<8,1>
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -26,7 +26,7 @@ namespace sw { namespace universal {
 #if POSIT_FAST_POSIT_8_1
 #ifdef _MSC_VER
 #pragma message("Fast specialization of posit<8,1>")
-//#else
+//#else  some compile time message that indicates that we are using a specialization for non MS compilers
 //#warning("Fast specialization of posit<8,1>")
 #endif
 

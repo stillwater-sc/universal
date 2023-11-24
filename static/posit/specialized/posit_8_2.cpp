@@ -1,6 +1,6 @@
 // posit_8_2.cpp: test suite runner for fast specialized posit<8,2>
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -17,6 +17,22 @@
 /*
 specialized small standard 8-bit posit with es = 2 
 */
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
 
 void GenerateValues() {
 	using namespace sw::universal;
@@ -35,14 +51,14 @@ try {
 
 	// no randoms, 8-bit posits can be done exhaustively
 
-	constexpr size_t nbits = 8;
-	constexpr size_t es    = 2;
+	constexpr size_t nbits = NBITS_IS_8;
+	constexpr size_t es    = ES_IS_2;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<8,2>";
 
-#if POSIT_FAST_POSIT_8_1
+#if POSIT_FAST_POSIT_8_2
 	std::cout << "Fast specialization posit<8,2> configuration tests\n";
 #else
 	std::cout << "Standard posit<8,2> configuration tests\n";
@@ -72,6 +88,30 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
+
+	p.setbits(0x64);
+	std::cout << std::setw(4) << 0x64 << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x65);
+	std::cout << std::setw(4) << 0x65 << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x66);
+	std::cout << std::setw(4) << 0x66 << " : " << color_print(p) << " : " << p << '\n';
+
+	//  124:         01111100        01111100       4       0      16         111110-              0-             ---                         65536          8.2x7Cp
+    //	125:         01111101        01111101       4       0      18         111110 - 1 - -- - 262144
+	p.setbits(0x7C);
+	std::cout << std::setw(4) << 0x7C << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x7D);
+	std::cout << std::setw(4) << 0x7D << " : " << color_print(p) << " : " << p << '\n';
+	float f = float(p);
+
+//	goto epilog;
+
+	for (unsigned i = 0; i < 128; ++i) {
+		p.setbits(i);
+		std::cout << std::setw(4) << i << " : " << color_print(p) << " : " << p << '\n';
+	}
+
+	goto epilog;
 
 	// logic tests
 	std::cout << "Logic operator tests\n";
@@ -119,6 +159,7 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <nbits, es>(bReportIndividualTestCases), tag, "pow                      ");
 
+epilog:
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

@@ -19,7 +19,7 @@ namespace sw { namespace universal {
 #if POSIT_FAST_POSIT_16_1
 #ifdef _MSC_VER
 #pragma message("Fast specialization of posit<16,1>")
-//#else
+//#else some compile time message that indicates that we are using a specialization for non MS compilers
 //#warning("Fast specialization of posit<16,1>")
 #endif
 
@@ -884,22 +884,6 @@ inline std::string to_string(const posit<NBITS_IS_16, ES_IS_1>& p, std::streamsi
 	return ss.str();
 }
 
-inline bool twosComplementLessThan(std::uint16_t lhs, std::uint16_t rhs) {
-	// comparison of the sign bit
-	uint32_t mask = 0x8000;
-	if ((lhs & mask) == 0 && (rhs & mask) == mask)	return false;
-	if ((lhs & mask) == mask && (rhs & mask) == 0) return true;
-	// sign is equal, compare the remaining bits
-	mask >>= 1;
-	while (mask > 0) {
-		if ((lhs & mask) == 0 && (rhs & mask) == mask)	return true;
-		if ((lhs & mask) == mask && (rhs & mask) == 0) return false;
-		mask >>= 1;
-	}
-	// numbers are equal
-	return false;
-}
-
 // posit - posit binary logic operators
 inline bool operator==(const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
 	return lhs._bits == rhs._bits;
@@ -968,8 +952,26 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
 	return !operator<(posit<NBITS_IS_16, ES_IS_1>(lhs), rhs);
 }
 
+/*
+inline bool twosComplementLessThan(std::uint16_t lhs, std::uint16_t rhs) {
+	// comparison of the sign bit
+	uint32_t mask = 0x8000;
+	if ((lhs & mask) == 0 && (rhs & mask) == mask)	return false;
+	if ((lhs & mask) == mask && (rhs & mask) == 0) return true;
+	// sign is equal, compare the remaining bits
+	mask >>= 1;
+	while (mask > 0) {
+		if ((lhs & mask) == 0 && (rhs & mask) == mask)	return true;
+		if ((lhs & mask) == mask && (rhs & mask) == 0) return false;
+		mask >>= 1;
+	}
+	// numbers are equal
+	return false;
+}
+*/
+
 inline bool operator< (const posit<NBITS_IS_16, ES_IS_1>& lhs, double rhs) {
-	return twosComplementLessThan(lhs._bits, posit<NBITS_IS_16, ES_IS_1>(rhs)._bits);
+	return int16_t(lhs._bits) < int16_t(posit<NBITS_IS_16, ES_IS_1>(rhs)._bits);
 }
 
 #endif // POSIT_ENABLE_LITERALS

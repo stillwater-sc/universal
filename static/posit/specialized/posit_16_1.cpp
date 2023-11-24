@@ -1,14 +1,10 @@
 // posit_16_1.cpp: test suite runner for specialized posit<16,1>
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#pragma warning(disable : 4514) // unreferenced inline function has been removed
-#pragma warning(disable : 4820) // bytes padding added after data member
-#pragma warning(disable : 4710) // function not inlined
-#endif
+#include <universal/utility/directives.hpp>
+
 // Configure the posit template environment
 // first: enable fast specialized posit<16,1>
 //#define POSIT_FAST_SPECIALIZATION
@@ -16,7 +12,6 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-//#include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
@@ -28,6 +23,10 @@
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
 #ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
 #define REGRESSION_LEVEL_1 1
 #define REGRESSION_LEVEL_2 1
 #define REGRESSION_LEVEL_3 1
@@ -62,16 +61,16 @@ try {
 	posit<nbits, es> a, b, c;
 	fa = 2;	fb = 1;
 	a = fa; b = fb; c = a; c += b;
-	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	std::cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << '\n';
 	fa = 2;	fb = -1;
 	a = fa; b = fb; c = a; c += b;
-	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	std::cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << '\n';
 	fa = -2;	fb = 1;
 	a = fa; b = fb; c = a; c += b;
-	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	std::cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << '\n';
 	fa = -2;	fb = -1;
 	a = fa; b = fb; c = a; c += b;
-	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	std::cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << '\n';
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
@@ -90,19 +89,18 @@ try {
 	a = -1; b = -1; ++b;
 	testLogicOperators(a, b);
 
-	a.set_raw_bits(0xfffd); b.set_raw_bits(0xfffe);
+	a.setbits(0xfffd); b.setbits(0xfffe);
 	testLogicOperators(a, b);
 
 	uint16_t v1 = 0x7fff;
 	uint16_t v2 = 0x8001;
-	cout << v1 << " vs " << int16_t(v1) << endl;
-	cout << v2 << " vs " << int16_t(v2) << endl;
-	a.set_raw_bits(v1); b.set_raw_bits(v2);
+	std::cout << v1 << " vs " << int16_t(v1) << '\n';
+	std::cout << v2 << " vs " << int16_t(v2) << '\n';
+	a.setbits(v1); b.setbits(v2);
 	testLogicOperators(a, b);
 	testLogicOperators(b, a);
 
-
-	cout << nrOfFailedTestCases << " number of failures\n";
+	std::cout << nrOfFailedTestCases << " number of failures\n";
 
 	nrOfFailedTestCases = 0;  // ignore failures in manual testing
 #else

@@ -1,9 +1,10 @@
 // posit_64_2.cpp: test suite runner for fast specialized posit<64,2>
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include<universal/utility/directives.hpp>
+
 // Configure the posit template environment
 // first: enable fast specialized posit<64,2>
 #define POSIT_FAST_POSIT_64_2 1  // TODO: fast posit<64,2> not implemented yet
