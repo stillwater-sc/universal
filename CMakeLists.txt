@@ -826,6 +826,7 @@ endif(BUILD_MIXEDPRECISION_TENSOR)
 if(BUILD_BENCHMARK_ERROR)
 add_subdirectory("benchmark/error/sampling")
 add_subdirectory("benchmark/error/scaling")
+add_subdirectory("benchmark/error/qsnr")
 add_subdirectory("benchmark/error/blas")
 endif(BUILD_BENCHMARK_ERROR)
 
