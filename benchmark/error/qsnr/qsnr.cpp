@@ -23,32 +23,16 @@
 
 namespace sw { namespace universal {
 
-		// Function to calculate SNR
-		double calculateSNRFP8(const blas::vector<double>& v) {
-
-			size_t N = size(v);
-
-			blas::SummaryStats stats = blas::summaryStatistics(v);
-			auto stddev = stats.stddev;
-			
-			double sum = 0.0;
-			for (auto number : v) {
-				double quantized = round(number * 255) / 255; // Quantize to FP8
-				double error = number - quantized;
-				std::cout << number << " : " << quantized << " : " << error << '\n';
-				sum += error * error;
-			}
-
-			double noise_power = sum / N;
-			double signal_power = stddev * stddev;
-			double SNR = 10 * log10(signal_power / noise_power);
-
-			return SNR;
-		}
-
+		/// <summary>
+		/// calculate the Signal to Quantization Noise ratio in dB
+		/// </summary>
+		/// <typeparam name="Scalar"></typeparam>
+		/// <param name="v">data set to quantize</param>
+		/// <returns>QSNR in dB</returns>
 		template<typename Scalar>
 		double calculateSNR(const blas::vector<double>& v) {
-			std::cout << type_tag(Scalar()) << " : " << symmetry_range<Scalar>() << '\n';
+			using std::log10;
+//			std::cout << type_tag(Scalar()) << " : " << symmetry_range<Scalar>() << '\n';
 			size_t N = size(v);
 
 			blas::SummaryStats stats = blas::summaryStatistics(v);
@@ -91,29 +75,52 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr int nrExperiments = 1;
+	constexpr int nrExperiments = 10;
+	std::map<std::string, blas::vector<double>> table;
+	std::vector<std::string> arithmeticTypename = {
+		"fixpnt<8,2>",
+		"fixpnt<8,3>",
+		"fixpnt<8,4>",
+		"fixpnt<8,5>",
+		"fp8e2m5",
+		"fp8e3m4",
+		"fp8e4m3",
+		"fp8e5m2",
+		"posit<8,0>",
+		"posit<8,1>",
+		"posit<8,2>",
+		"posit<8,3>",
+		"lns<8,2>",
+		"lns<8,3>",
+		"lns<8,4>",
+		"lns<8,5>"
+	};
 
 	for (int i = 0; i < nrExperiments; ++i) {
-		constexpr unsigned N = 10000;
+		constexpr unsigned N = 32;
 		constexpr double mean = 0.0;
 		constexpr double stddev = 1.0;
 		auto data = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
-		std::cout << "fixpnt<8,2> : " << calculateSNR<fixpnt<8, 2>>(data) << '\n';
-		std::cout << "fixpnt<8,3> : " << calculateSNR<fixpnt<8, 3>>(data) << '\n';
-		std::cout << "fixpnt<8,4> : " << calculateSNR<fixpnt<8, 4>>(data) << '\n';
-		std::cout << "fixpnt<8,5> : " << calculateSNR<fixpnt<8, 5>>(data) << '\n';
-		std::cout << "fp8e2m5     : " << calculateSNR<fp8e2m5>(data) << '\n';
-		std::cout << "fp8e3m4     : " << calculateSNR<fp8e3m4>(data) << '\n';
-		std::cout << "fp8e4m3     : " << calculateSNR<fp8e4m3>(data) << '\n';
-		std::cout << "fp8e5m2     : " << calculateSNR<fp8e5m2>(data) << '\n';
-		std::cout << "posit<8,0>  : " << calculateSNR<posit<8, 0>>(data) << '\n';
-		std::cout << "posit<8,1>  : " << calculateSNR<posit<8, 1>>(data) << '\n';
-		std::cout << "posit<8,2>  : " << calculateSNR<posit<8, 2>>(data) << '\n';
-		std::cout << "posit<8,3>  : " << calculateSNR<posit<8, 3>>(data) << '\n';
-		std::cout << "lns<8,2>    : " << calculateSNR<lns<8, 2>>(data) << '\n';
-		std::cout << "lns<8,3>    : " << calculateSNR<lns<8, 3>>(data) << '\n';
-		std::cout << "lns<8,4>    : " << calculateSNR<lns<8, 4>>(data) << '\n';
-		std::cout << "lns<8,5>    : " << calculateSNR<lns<8, 5>>(data) << '\n';
+		table["fixpnt<8,2>"].push_back(calculateSNR<fixpnt<8, 2>>(data));
+		table["fixpnt<8,3>"].push_back(calculateSNR<fixpnt<8, 3>>(data));
+		table["fixpnt<8,4>"].push_back(calculateSNR<fixpnt<8, 4>>(data));
+		table["fixpnt<8,5>"].push_back(calculateSNR<fixpnt<8, 5>>(data));
+		table["fp8e2m5"].push_back(calculateSNR<fp8e2m5>(data));
+		table["fp8e3m4"].push_back(calculateSNR<fp8e3m4>(data));
+		table["fp8e4m3"].push_back(calculateSNR<fp8e4m3>(data));
+		table["fp8e5m2"].push_back(calculateSNR<fp8e5m2>(data));
+		table["posit<8,0>"].push_back(calculateSNR<posit<8, 0>>(data));
+		table["posit<8,1>"].push_back(calculateSNR<posit<8, 1>>(data));
+		table["posit<8,2>"].push_back(calculateSNR<posit<8, 2>>(data));
+		table["posit<8,3>"].push_back(calculateSNR<posit<8, 3>>(data));
+		table["lns<8,2>"].push_back(calculateSNR<lns<8, 2>>(data));
+		table["lns<8,3>"].push_back(calculateSNR<lns<8, 3>>(data));
+		table["lns<8,4>"].push_back(calculateSNR<lns<8, 4>>(data));
+		table["lns<8,5>"].push_back(calculateSNR<lns<8, 5>>(data));
+	}
+
+	for (auto tag : arithmeticTypename) {
+		std::cout << std::setw(15) << tag << " : " << table[tag] << '\n';
 	}
 
 	return EXIT_SUCCESS;
