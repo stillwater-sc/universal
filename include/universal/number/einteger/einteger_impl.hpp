@@ -1,7 +1,7 @@
 #pragma once
 // einteger_impl.hpp: implementation of an adaptive precision binary integer
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -26,7 +26,7 @@ class einteger {
 public:
 	using bt = BlockType;
 	static constexpr unsigned bitsInBlock = sizeof(BlockType) * 8;
-	static constexpr bt       ALL_ONES = bt(~0); // block type specific all 1's value
+	static constexpr bt       ALL_ONES = bt(0xFFFF'FFFF'FFFF'FFFFull); // block type specific all 1's value
 	static constexpr uint64_t BASE = uint64_t(ALL_ONES) + 1ull;
 	static_assert(bitsInBlock <= 32, "BlockType must be one of [uint8_t, uint16_t, uint32_t]");
 

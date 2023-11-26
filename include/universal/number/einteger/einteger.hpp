@@ -36,6 +36,7 @@
 #include <universal/number/einteger/einteger_impl.hpp>
 #include <universal/number/einteger/numeric_limits.hpp>
 #include <universal/number/einteger/exceptions.hpp>
+#include <universal/traits/einteger_traits.hpp>
 #include <universal/number/einteger/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
