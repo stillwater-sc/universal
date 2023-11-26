@@ -13,7 +13,7 @@ template<typename ElasticIntegerType,
 	std::enable_if_t< is_einteger<ElasticIntegerType>, bool> = true>
 std::string type_tag(const ElasticIntegerType & = {}) {
 	std::stringstream s;
-	s << "einteger<" << typeid(ElasticIntegerType::bt).name() << '>';
+	s << "einteger<" << typeid(typename ElasticIntegerType::bt).name() << '>';
 	return s.str();
 }
 
