@@ -15,6 +15,8 @@
 #include <universal/number/posit/posit.hpp>
 #define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
+
+// Universal BLAS
 #include <universal/blas/blas.hpp>
 
 #include <universal/blas/statistics.hpp>
@@ -46,6 +48,7 @@ namespace sw { namespace universal {
 
 		template<typename Scalar>
 		double calculateSNR(const blas::vector<double>& v) {
+			std::cout << type_tag(Scalar()) << " : " << symmetry_range<Scalar>() << '\n';
 			size_t N = size(v);
 
 			blas::SummaryStats stats = blas::summaryStatistics(v);
@@ -63,7 +66,6 @@ namespace sw { namespace universal {
 			double signal_power = stddev * stddev;
 			double SNR = 10 * log10(signal_power / noise_power);
 
-			std::cout << std::numeric_limits<Scalar>::max() << ' ';
 			return SNR;
 		}
 }
