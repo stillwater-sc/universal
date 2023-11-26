@@ -1,4 +1,4 @@
-// multiplication.cpp: test suite runner for multiplicationon adaptive precision binary integers
+// multiplication.cpp: test suite runner for multiplicationon elastic precision binary integers
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -16,16 +16,18 @@
 
 namespace sw { namespace universal {
 
-	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
+	// enumerate all multiplication cases for an nbits integer configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyAdaptiveMultiplication(bool reportTestCases) {
+	int VerifyElasticMultiplication(bool reportTestCases) {
 		using Integer = einteger<BlockType>;
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 
+		uint64_t cnt{ 0 };
 		Integer ia, ib, ic, iref;
 
 		int nrOfFailedTests = 0;
-		size_t increment = std::max(1ull, NR_ENCODINGS / 1024ull);
+		size_t increment = std::max(1ull, NR_ENCODINGS / 256ull);
+		std::cout << "increment : " << increment << '\n';
 		for (size_t i = 0; i < NR_ENCODINGS; i += increment) {
 			ia.setbits(i);
 			int64_t i64a = int64_t(ia);
@@ -34,7 +36,7 @@ namespace sw { namespace universal {
 				int64_t i64b = int64_t(ib);
 				iref = i64a * i64b;
 				ic = ia * ib;
-
+				++cnt;
 				if (ic != iref) {
 					nrOfFailedTests++;
 					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", ia, ib, ic, iref);
@@ -47,6 +49,7 @@ namespace sw { namespace universal {
 			if (reportTestCases) if (i % 1024 == 0) std::cout << '.';
 		}
 		if (reportTestCases) std::cout << std::endl;
+		std::cout << "samples : " << cnt << '\n';
 		return nrOfFailedTests;
 	}
 
@@ -102,7 +105,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "adaptive precision binary integer multiplication";
+	std::string test_suite  = "elastic precision binary integer multiplication";
 	std::string test_tag    = "einteger multiplication";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -121,22 +124,22 @@ try {
 	PrintPowersOfTwo<uint16_t>();
 	PrintPowersOfTwo<uint32_t>();
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<4, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<8, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<4, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<8, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<4, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<8, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<4, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<8, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<8, uint16_t>(reportTestCases), "einteger<uint16_t> 1word", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<16, uint16_t>(reportTestCases), "einteger<uint16_t> 2words", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<8, uint16_t>(reportTestCases), "einteger<uint16_t> 1word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<16, uint16_t>(reportTestCases), "einteger<uint16_t> 2words", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<16, uint32_t>(reportTestCases), "einteger<uint32_t> 1word", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveMultiplication<20, uint32_t>(reportTestCases), "einteger<uint32_t> 2words", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<16, uint32_t>(reportTestCases), "einteger<uint32_t> 1word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticMultiplication<20, uint32_t>(reportTestCases), "einteger<uint32_t> 2words", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

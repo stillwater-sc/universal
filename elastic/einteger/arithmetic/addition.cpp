@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition on adaptive precision binary integers
+// addition.cpp: test suite runner for addition on elastic precision binary integers
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -18,7 +18,7 @@ namespace sw { namespace universal {
 
 	// enumerate all addition cases for an einteger<BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyAdaptiveAddition(bool reportTestCases) {
+	int VerifyElasticAddition(bool reportTestCases) {
 		using Integer = einteger<BlockType>;
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 
@@ -93,7 +93,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "adaptive precision binary integer addition";
+	std::string test_suite  = "elastic precision binary integer addition";
 	std::string test_tag    = "einteger addition";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
@@ -124,18 +124,18 @@ try {
 	GenerateTestCase<std::uint32_t>(1, 2);
 	GenerateTestCase<std::uint64_t>(0xFFFF'FFFF, 1);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<8, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<12, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticAddition<8, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticAddition<12, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<16, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<16, uint16_t>(reportTestCases), "einteger<uint16_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<32, uint32_t>(reportTestCases), "einteger<uint32_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveAddition<4, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticAddition<16, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticAddition<16, uint16_t>(reportTestCases), "einteger<uint16_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticAddition<32, uint32_t>(reportTestCases), "einteger<uint32_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticAddition<4, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

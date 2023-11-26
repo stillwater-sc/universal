@@ -1,4 +1,4 @@
-// division.cpp: test suite runner for division on adaptive precision binary integers
+// division.cpp: test suite runner for division on elastic precision binary integers
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -20,7 +20,7 @@ namespace sw { namespace universal {
 
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyAdaptiveDivision(bool reportTestCases) {
+	int VerifyElasticDivision(bool reportTestCases) {
 		using Integer = einteger<BlockType>;
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 
@@ -193,7 +193,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "adaptive precision binary integer division";
+	std::string test_suite  = "elastic precision binary integer division";
 	std::string test_tag    = "einteger division";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -264,13 +264,13 @@ try {
 		std::cout << "_r  : " << to_binary(_r, 32, true) << " : " << _r << '\n';
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(8, reportTestCases), "einteger<uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint16_t>(8, reportTestCases), "einteger<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint32_t>(8, reportTestCases), "einteger<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<uint8_t>(8, reportTestCases), "einteger<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<uint16_t>(8, reportTestCases), "einteger<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<uint32_t>(8, reportTestCases), "einteger<uint32_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint8_t>(16, reportTestCases), "einteger<uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint16_t>(16, reportTestCases), "einteger<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<uint32_t>(16, reportTestCases), "einteger<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<uint8_t>(16, reportTestCases), "einteger<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<uint16_t>(16, reportTestCases), "einteger<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<uint32_t>(16, reportTestCases), "einteger<uint32_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -284,15 +284,15 @@ try {
 
 #if REGRESSION_LEVEL_1
 	nrOfFailedTestCases += DirectedTests();
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<16, uint8_t>(reportTestCases), "einteger<uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<16, uint16_t>(reportTestCases), "einteger<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<32, uint32_t>(reportTestCases), "einteger<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<16, uint8_t>(reportTestCases), "einteger<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<16, uint16_t>(reportTestCases), "einteger<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<32, uint32_t>(reportTestCases), "einteger<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<32, uint8_t>(reportTestCases), "einteger<uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<32, uint16_t>(reportTestCases), "einteger<uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveDivision<64, uint32_t>(reportTestCases), "einteger<uint32_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<32, uint8_t>(reportTestCases), "einteger<uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<32, uint16_t>(reportTestCases), "einteger<uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticDivision<64, uint32_t>(reportTestCases), "einteger<uint32_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3
