@@ -16,44 +16,8 @@
 #define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
 
-// Universal BLAS
 #include <universal/blas/blas.hpp>
-
-#include <universal/blas/statistics.hpp>
-
-namespace sw { namespace universal {
-
-		/// <summary>
-		/// calculate the Signal to Quantization Noise ratio in dB
-		/// </summary>
-		/// <typeparam name="Scalar"></typeparam>
-		/// <param name="v">data set to quantize</param>
-		/// <returns>QSNR in dB</returns>
-		template<typename Scalar>
-		double calculateSNR(const blas::vector<double>& v) {
-			using std::log10;
-//			std::cout << type_tag(Scalar()) << " : " << symmetry_range<Scalar>() << '\n';
-			size_t N = size(v);
-
-			blas::SummaryStats stats = blas::summaryStatistics(v);
-			auto stddev = stats.stddev;
-
-			double sum = 0.0;
-			for (auto number : v) {
-				double quantized = double(Scalar(number)); // Quantize to Scalar
-				double error = number - quantized;
-				// std::cout << number << " : " << quantized << " : " << error << '\n';
-				sum += error * error;
-			}
-
-			double noise_power = sum / N;
-			double signal_power = stddev * stddev;
-			double SNR = 10 * log10(signal_power / noise_power);
-
-			return SNR;
-		}
-}
-}
+#include <universal/quantization/qsnr.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -101,26 +65,26 @@ try {
 		constexpr double mean = 0.0;
 		constexpr double stddev = 1.0;
 		auto data = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
-		table["fixpnt<8,2>"].push_back(calculateSNR<fixpnt<8, 2>>(data));
-		table["fixpnt<8,3>"].push_back(calculateSNR<fixpnt<8, 3>>(data));
-		table["fixpnt<8,4>"].push_back(calculateSNR<fixpnt<8, 4>>(data));
-		table["fixpnt<8,5>"].push_back(calculateSNR<fixpnt<8, 5>>(data));
-		table["fp8e2m5"].push_back(calculateSNR<fp8e2m5>(data));
-		table["fp8e3m4"].push_back(calculateSNR<fp8e3m4>(data));
-		table["fp8e4m3"].push_back(calculateSNR<fp8e4m3>(data));
-		table["fp8e5m2"].push_back(calculateSNR<fp8e5m2>(data));
-		table["posit<8,0>"].push_back(calculateSNR<posit<8, 0>>(data));
-		table["posit<8,1>"].push_back(calculateSNR<posit<8, 1>>(data));
-		table["posit<8,2>"].push_back(calculateSNR<posit<8, 2>>(data));
-		table["posit<8,3>"].push_back(calculateSNR<posit<8, 3>>(data));
-		table["lns<8,2>"].push_back(calculateSNR<lns<8, 2>>(data));
-		table["lns<8,3>"].push_back(calculateSNR<lns<8, 3>>(data));
-		table["lns<8,4>"].push_back(calculateSNR<lns<8, 4>>(data));
-		table["lns<8,5>"].push_back(calculateSNR<lns<8, 5>>(data));
+		table["fixpnt<8,2>"].push_back(qsnr<fixpnt<8, 2>>(data));
+		table["fixpnt<8,3>"].push_back(qsnr<fixpnt<8, 3>>(data));
+		table["fixpnt<8,4>"].push_back(qsnr<fixpnt<8, 4>>(data));
+		table["fixpnt<8,5>"].push_back(qsnr<fixpnt<8, 5>>(data));
+		table["fp8e2m5"].push_back(qsnr<fp8e2m5>(data));
+		table["fp8e3m4"].push_back(qsnr<fp8e3m4>(data));
+		table["fp8e4m3"].push_back(qsnr<fp8e4m3>(data));
+		table["fp8e5m2"].push_back(qsnr<fp8e5m2>(data));
+		table["posit<8,0>"].push_back(qsnr<posit<8, 0>>(data));
+		table["posit<8,1>"].push_back(qsnr<posit<8, 1>>(data));
+		table["posit<8,2>"].push_back(qsnr<posit<8, 2>>(data));
+		table["posit<8,3>"].push_back(qsnr<posit<8, 3>>(data));
+		table["lns<8,2>"].push_back(qsnr<lns<8, 2>>(data));
+		table["lns<8,3>"].push_back(qsnr<lns<8, 3>>(data));
+		table["lns<8,4>"].push_back(qsnr<lns<8, 4>>(data));
+		table["lns<8,5>"].push_back(qsnr<lns<8, 5>>(data));
 	}
 
 	for (auto tag : arithmeticTypename) {
-		std::cout << std::setw(15) << tag << " : " << table[tag] << '\n';
+		std::cout << std::setw(15) << tag << " : " << blas::quantiles(table[tag]) << '\n';
 	}
 
 	return EXIT_SUCCESS;
