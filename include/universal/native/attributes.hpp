@@ -71,4 +71,10 @@ namespace sw { namespace universal {
 		return ieee754_range<long double, 15>();
 	}
 
+	template<typename RealType,
+		std::enable_if_t< std::is_floating_point<RealType>::value, bool> = true
+	>
+	std::string is_subnormal() {
+	}
+
 }} // namespace sw::universal

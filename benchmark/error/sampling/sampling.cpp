@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 
+#include <universal/native/ieee754.hpp>
+
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/integer/integer.hpp>
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
@@ -43,6 +45,21 @@ void SampleError(sw::universal::blas::vector<double>& reals) {
 	std::cout << "Maximum sampling error : " << maxError << '\n';
 }
 
+
+template<typename Scalar>
+void DenormRatio(const sw::universal::blas::vector<double>& reals) {
+	using std::isdenorm;
+
+	using namespace sw::universal;
+	
+	blas::vector<Scalar> samples(reals);
+	unsigned denorm{ 0 };
+	for (auto v : samples) {
+		if (isdenorm(v)) ++denorm;
+	}
+	std::cout << std::setw(80) << type_tag(Scalar()) << " : denorms : " << denorm << " ratio of denorms : " << double(denorm) / size(reals) << '\n';
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -63,6 +80,7 @@ int main()
 try {
 	using namespace sw::universal;
 
+#if MANUAL_TESTING
 	auto reals = sw::universal::blas::gaussian_random_vector<double>(10, 0.0, 32.0);
 
 	constexpr bool Verbose = false;
@@ -82,6 +100,27 @@ try {
 	SampleError< lns<8, 3> >(reals);
 	SampleError< lns<8, 4> >(reals);
 	SampleError< lns<8, 5> >(reals);
+
+
+#else
+
+	unsigned N = 100000;
+	double mean{ 0.0 }, stddev{ 1.0 };
+
+	auto reals = sw::universal::blas::gaussian_random_vector<double>(N, mean, stddev);
+
+	DenormRatio<cfloat<4, 2, uint8_t, true, true, false>>(reals);
+	DenormRatio<cfloat<6, 2, uint8_t, true, true, false>>(reals);
+	DenormRatio<cfloat<7, 2, uint8_t, true, true, false>>(reals);
+	DenormRatio<fp8e2m5>(reals);
+	DenormRatio<fp8e3m4>(reals);
+	DenormRatio<fp8e4m3>(reals);
+	DenormRatio<half>(reals);
+	DenormRatio<float>(reals);
+	DenormRatio<double>(reals);
+
+#endif
+
 
 	return EXIT_SUCCESS;
 }
