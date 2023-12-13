@@ -1,13 +1,13 @@
 #pragma once
 // posit_16_2.hpp: specialized 16-bit posit using fast implementation specialized for posit<16,2>
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // DO NOT USE DIRECTLY!
 // the compile guards in this file are only valid in the context of the specialization logic
-// configured in the main <universal/posit/posit>
+// configured in the main <universal/number/posit/posit.hpp>
 
 #ifndef POSIT_FAST_POSIT_16_2
 #define POSIT_FAST_POSIT_16_2 0

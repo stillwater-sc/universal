@@ -1,6 +1,6 @@
 // posit_16_2.cpp: test suite runner for specialized posit<16,2>
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,6 +12,7 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
+#include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
@@ -38,8 +39,8 @@ try {
 	using namespace sw::universal;
 
 	// configure a posit<16,2>
-	constexpr size_t nbits = NBITS_IS_16;
-	constexpr size_t es    = ES_IS_2;
+	constexpr unsigned nbits = NBITS_IS_16;
+	constexpr unsigned es    = ES_IS_2;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
@@ -193,6 +194,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyAtanh                       <nbits, es>(bReportIndividualTestCases), tag, "atanh                    ");
 
 	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction               <nbits, es>(bReportIndividualTestCases), tag, "pow                      ");
+#endif
+
+#ifdef EXHAUSTIVE
+	// arithmetic tests
+	std::cout << "Arithmetic tests\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(bReportIndividualTestCases), tag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(bReportIndividualTestCases), tag, "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(bReportIndividualTestCases), tag, "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(bReportIndividualTestCases), tag, "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(bReportIndividualTestCases), tag, "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(bReportIndividualTestCases), tag, "reciprocate    (native)  ");
 #endif
 
 #endif // MANUAL_TESTING
