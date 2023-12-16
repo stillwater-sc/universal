@@ -1,7 +1,7 @@
 #pragma once
 // posit_32_2.hpp: specialized 32-bit posit using fast compute specialized for posit<32,2>
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -163,7 +163,7 @@ public:
 		int32_t shiftRight = m;
 
 		// adjust shift and extract fraction bits of rhs
-		extractAddand(rhs, shiftRight, remaining);
+		extractAddand(rhs, m, remaining);
 		uint64_t frac64B = ((0x40000000ull | uint64_t(remaining) << 1) & 0x7FFFFFFFull) << 32; // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
 		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 29);
@@ -488,7 +488,7 @@ public:
 	inline int sign_value() const { return (_bits & 0x8) ? -1 : 1; }
 
 	bitblock<NBITS_IS_32> get() const { bitblock<NBITS_IS_32> bb; bb = long(_bits); return bb; }
-	unsigned long long encoding() const { return (unsigned long long)(_bits); }
+	unsigned long long bits() const { return (unsigned long long)(_bits); }
 	inline posit twosComplement() const {
 		posit p;
 		uint64_t raw = _bits;

@@ -199,7 +199,7 @@ public:
 	inline int sign_value() const  { return (_bits & 0x80 ? -1 : 1); }
 
 	bitblock<NBITS_IS_8> get() const { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
-	unsigned long long encoding() const { return (unsigned long long)(_bits); }
+	unsigned long long bits() const { return (unsigned long long)(_bits); }
 
 	// Modifiers
 	inline void clear() { _bits = 0; }

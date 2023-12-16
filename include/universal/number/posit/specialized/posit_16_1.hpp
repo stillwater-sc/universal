@@ -1,7 +1,7 @@
 #pragma once
 // posit_16_1.hpp: specialized 16-bit posit using fast compute specialized for posit<16,1>
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -157,17 +157,22 @@ public:
 
 		// extract the exponent
 		uint16_t exp = remaining >> 14;
+		std::cout << "exponent : " << exp << '\n';
 
 		// extract remaining fraction bits
+		std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
 		uint32_t lhs_fraction = (0x4000 | remaining) << 16;
 		int8_t shiftRight = m;
+		std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		// adjust shift and extract fraction bits of rhs
 		extractAddand(rhs, shiftRight, remaining);
 		uint32_t rhs_fraction = (0x4000 | remaining) << 16;
+		std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
 
 		// this is 2kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 1) + exp - (remaining >> 14);
+		std::cout << "shiftRight : " << int(shiftRight) << '\n';
 
 		if (shiftRight == 0) {
 			lhs_fraction += rhs_fraction;  // this will always product a carry
@@ -186,6 +191,8 @@ public:
 				lhs_fraction >>= 1;
 			}
 		}
+
+		std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		_bits = round(m, exp, lhs_fraction);
 		if (sign) _bits = -_bits & 0xFFFF;
@@ -443,7 +450,7 @@ public:
 	inline int sign_value() const  { return (_bits & 0x8 ? -1 : 1); }
 
 	bitblock<NBITS_IS_16> get() const { bitblock<NBITS_IS_16> bb; bb = int(_bits); return bb; }
-	unsigned long long encoding() const { return (unsigned long long)(_bits); }
+	unsigned long long bits() const { return (unsigned long long)(_bits); }
 
 	// Modifiers
 	inline void clear() { _bits = 0; }
@@ -637,14 +644,16 @@ private:
 		_bits = uint16_t(ptt.to_ulong());
 		return *this;
 	}
-
+public:
 	// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
 	inline void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
 		remaining = (bits << 2) & 0xFFFF;
+		std::cout << "remaining : " << to_binary(remaining, 16, true) << '\n';
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
 				++m;
 				remaining = (remaining << 1) & 0xFFFF;
+				std::cout << "remaining : " << to_binary(remaining, 16, true) << '\n';
 			}
 		}
 		else {              // negative regimes

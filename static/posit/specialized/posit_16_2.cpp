@@ -8,18 +8,22 @@
 // Configure the posit template environment
 // first: enable fast specialized posit<16,2>
 //#define POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_16_2 1
+#define POSIT_FAST_POSIT_16_1 0
+#define POSIT_FAST_POSIT_16_2 0
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
+
+#ifdef EXHAUSTIVE
+#include <universal/verification/posit_test_suite.hpp>
+#endif
 
 // Standard posit with nbits = 16 have es = 2 exponent bit.
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -43,7 +47,7 @@ try {
 	constexpr unsigned es    = ES_IS_2;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool reportTestCases = false;
 	size_t RND_TEST_CASES = 10000;
 
 #if POSIT_FAST_POSIT_16_2
@@ -58,11 +62,99 @@ try {
 	std::string tag = type_tag(p);
 
 #if MANUAL_TESTING
+	/*
+                   a : 0b0.10.01.00000000000 : 2
+                   b : 0b0.10.00.00000000000 : 1 +
+                   c : 0b0.10.01.10000000000 : 3
+                   a : 0b0.10.1.000000000000 : 2
+                   b : 0b0.10.0.000000000000 : 1 +
+                   c : 0b0.10.1.100000000000 : 3
+
+	*/
+
 	float fa, fb;
-	posit<nbits, es> a, b, c;
+	posit<16, 1> a, b, c;
+/*
+	{
+
+
+		int8_t m;
+		uint16_t remaining;
+		uint16_t bits;
+		a.setbits(0x5C02);
+		b.setbits(0x4002);
+		ReportValue(a, "a");
+		ReportValue(b, "b");
+		c = a + b;
+		ReportValue(c, "c");
+	}
+	*/
+	{
+		posit<16, 2> a, b, c;
+
+		int8_t m;
+		uint16_t remaining;
+		uint16_t bits;
+		std::cout << "\n+----------------      0b0.10.11.100'0000'0010\n";
+		a.setbits(0x5C02);   // 0b0.10.11.100'0000'0010
+		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
+		ReportValue(a, "a");
+		ReportValue(b, "b");
+		c = a + b;
+		ReportValue(c, "c");
+
+		std::cout << "\n+----------------      0b0.110.11.10'0000'0010\n";
+		a.setbits(0x6E02);   // 0b0.110.11.10'0000'0010
+		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
+		ReportValue(a, "a");
+		ReportValue(b, "b");
+		c = a + b;
+		ReportValue(c, "c");
+
+
+		std::cout << "\n+----------------      0b0.1110.11.1'0000'0010\n";
+		a.setbits(0x7702);   // 0b0.1110.11.1'0000'0010
+		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
+		ReportValue(a, "a");
+		ReportValue(b, "b");
+		c = a + b;
+		ReportValue(c, "c");
+
+		std::cout << "\n+----------------      0b0.1'1110.11.1000'0010\n";
+		a.setbits(0x7B02);   // 0b0.1'1110.11.1000'0010
+		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
+		ReportValue(a, "a");
+		ReportValue(b, "b");
+		c = a + b;
+		ReportValue(c, "c");
+	}
+
+	return 0;
+	{
+		posit<16, 2> a, b, c;
+		for (unsigned i = 0; i < 16; ++i) {
+			a.setbits(i);
+			double da = double(a);
+			for (unsigned j = 0; j < 16; ++j) {
+				b.setbits(j);
+				double db = double(b);
+				double dc = da + db;
+				c = a + b;
+				ReportBinaryOperation(a, "+", b, c);
+			}
+		}
+	}
+
+	return 0;
+
+	posit<16, 1> aa, bb, cc;
 	fa = 2;	fb = 1;
 	a = fa; b = fb; c = a; c += b;
-	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(a + b) << "(" << (fa + fb) << ") " << to_binary(c) << "(" << c << ")" << '\n';
+	ReportBinaryOperationVertically(a, "+", b, c);
+	aa = fa; bb = fb; cc = aa + bb;
+	ReportBinaryOperationVertically(aa, "+", bb, cc);
+
+	return 0;
 	fa = 2;	fb = -1;
 	a = fa; b = fb; c = a; c += b;
 	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(a + b) << "(" << (fa + fb) << ") " << to_binary(c) << "(" << c << ")" << '\n';
@@ -73,11 +165,12 @@ try {
 	a = fa; b = fb; c = a; c += b;
 	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(a + b) << "(" << (fa + fb) << ") " << to_binary(c) << "(" << c << ")" << '\n';
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPM, 100), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPD, 100), tag, "/=             (native)  ");
+	return 0;
 
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPM, 100), tag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPD, 100), tag, "/=             (native)  ");
 
 	a.setnar(); b.setnar();
 	testLogicOperators(a, b);
@@ -130,10 +223,10 @@ try {
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	RND_TEST_CASES = 1024;
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
 
 #endif
 
@@ -151,7 +244,7 @@ try {
 #if REGRESSION_LEVEL_3
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(bReportIndividualTestCases), tag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(reportTestCases), tag, "integer assign (native)  ");
 	// FAIL =              0.25003 did not convert to             0.250061 instead it yielded                  0.25  raw 0b0.01.0.000000000000
 	// FAIL = 0.99994 did not convert to             0.999878 instead it yielded                     1  raw 0b0.10.0.000000000000
 	// posit<16, 1> float assign(native)   FAIL 2 failed test cases
@@ -161,50 +254,51 @@ try {
 	// arithmetic tests
 	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPA, RND_TEST_CASES), tag, "+=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPS, RND_TEST_CASES), tag, "-=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPM, RND_TEST_CASES), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, RND_TEST_CASES), tag, "+=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPS, RND_TEST_CASES), tag, "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPM, RND_TEST_CASES), tag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=             (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifySqrt                        <nbits, es>(bReportIndividualTestCases), tag, "sqrt           (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp                         <nbits, es>(bReportIndividualTestCases), tag, "exp                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp2                        <nbits, es>(bReportIndividualTestCases), tag, "exp2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog                         <nbits, es>(bReportIndividualTestCases), tag, "log                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog2                        <nbits, es>(bReportIndividualTestCases), tag, "log2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog10                       <nbits, es>(bReportIndividualTestCases), tag, "log10                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifySine                        <nbits, es>(bReportIndividualTestCases), tag, "sin                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosine                      <nbits, es>(bReportIndividualTestCases), tag, "cos                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTangent                     <nbits, es>(bReportIndividualTestCases), tag, "tan                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsin                        <nbits, es>(bReportIndividualTestCases), tag, "asin                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcos                        <nbits, es>(bReportIndividualTestCases), tag, "acos                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtan                        <nbits, es>(bReportIndividualTestCases), tag, "atan                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifySinh                        <nbits, es>(bReportIndividualTestCases), tag, "sinh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosh                        <nbits, es>(bReportIndividualTestCases), tag, "cosh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTanh                        <nbits, es>(bReportIndividualTestCases), tag, "tanh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsinh                       <nbits, es>(bReportIndividualTestCases), tag, "asinh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcosh                       <nbits, es>(bReportIndividualTestCases), tag, "acosh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtanh                       <nbits, es>(bReportIndividualTestCases), tag, "atanh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifySqrt                        <nbits, es>(reportTestCases), tag, "sqrt           (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp                         <nbits, es>(reportTestCases), tag, "exp                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp2                        <nbits, es>(reportTestCases), tag, "exp2                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog                         <nbits, es>(reportTestCases), tag, "log                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog2                        <nbits, es>(reportTestCases), tag, "log2                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog10                       <nbits, es>(reportTestCases), tag, "log10                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifySine                        <nbits, es>(reportTestCases), tag, "sin                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosine                      <nbits, es>(reportTestCases), tag, "cos                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTangent                     <nbits, es>(reportTestCases), tag, "tan                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsin                        <nbits, es>(reportTestCases), tag, "asin                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcos                        <nbits, es>(reportTestCases), tag, "acos                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtan                        <nbits, es>(reportTestCases), tag, "atan                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifySinh                        <nbits, es>(reportTestCases), tag, "sinh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosh                        <nbits, es>(reportTestCases), tag, "cosh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTanh                        <nbits, es>(reportTestCases), tag, "tanh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsinh                       <nbits, es>(reportTestCases), tag, "asinh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcosh                       <nbits, es>(reportTestCases), tag, "acosh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtanh                       <nbits, es>(reportTestCases), tag, "atanh                    ");
 
-	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction               <nbits, es>(bReportIndividualTestCases), tag, "pow                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction               <nbits, es>(reportTestCases), tag, "pow                      ");
 #endif
+
 
 #ifdef EXHAUSTIVE
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(bReportIndividualTestCases), tag, "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(bReportIndividualTestCases), tag, "subtract       (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(bReportIndividualTestCases), tag, "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(bReportIndividualTestCases), tag, "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(bReportIndividualTestCases), tag, "negate         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(bReportIndividualTestCases), tag, "reciprocate    (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(reportTestCases), tag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(reportTestCases), tag, "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(reportTestCases), tag, "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(reportTestCases), tag, "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(reportTestCases), tag, "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(reportTestCases), tag, "reciprocate    (native)  ");
 #endif
 
 #endif // MANUAL_TESTING

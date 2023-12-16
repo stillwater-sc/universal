@@ -193,7 +193,7 @@ namespace sw { namespace universal {
 				inline int sign_value() const { return (_bits & 0x4u ? -1 : 1); }
 
 				bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
-				unsigned int encoding() const { return (unsigned int)(_bits & 0x7u); }
+				unsigned int bits() const { return (unsigned int)(_bits & 0x7u); }
 
 				inline void clear() { _bits = 0; }
 				inline void setzero() { clear(); }

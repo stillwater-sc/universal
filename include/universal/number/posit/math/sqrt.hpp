@@ -146,7 +146,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_3_0_roots[a.encoding()];
+		unsigned root = posit_3_0_roots[a.bits()];
 		p.setbits(root);
 		return p;
 	}
@@ -159,7 +159,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_3_1_roots[a.encoding()];
+		unsigned root = posit_3_1_roots[a.bits()];
 		p.setbits(root);
 		return p;
 	}
@@ -173,7 +173,7 @@ namespace sw { namespace universal {
 			return p;
 		}
 
-		unsigned root = posit_4_0_roots[a.encoding()];
+		unsigned root = posit_4_0_roots[a.bits()];
 		p.setbits(root);
 		return p;
 	}
@@ -186,7 +186,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_5_0_roots[a.encoding()];
+		unsigned root = posit_5_0_roots[a.bits()];
 		p.setbits(root);
 		return p;
 	}
@@ -199,7 +199,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_8_0_roots[a.encoding()];
+		unsigned root = posit_8_0_roots[a.bits()];
 		p.setbits(root);
 		return p;
 	}
@@ -212,7 +212,7 @@ namespace sw { namespace universal {
 			p.setnar();
 			return p;
 		}
-		unsigned root = posit_8_1_roots[a.encoding()];
+		unsigned root = posit_8_1_roots[a.bits()];
 		p.setbits(root);
 		return p;
 	}
@@ -242,7 +242,7 @@ namespace sw { namespace universal {
 			return p;
 		}
 
-		uint16_t raw = uint16_t(a.encoding());
+		uint16_t raw = uint16_t(a.bits());
 		int16_t scale;
 		// Compute the square root. Here, kZ is the net power-of-2 scaling of the result.
 		// Decode the regime and exponent bit; scale the input to be in the range 1 to 4:			
@@ -336,7 +336,7 @@ namespace sw { namespace universal {
 			return p;
 		}
 
-		uint32_t raw = uint32_t(a.encoding());
+		uint32_t raw = uint32_t(a.bits());
 		int32_t scale;
 		// Compute the square root; shiftZ is the power-of-2 scaling of the result.
 		// Decode regime and exponent; scale the input to be in the range 1 to 4:

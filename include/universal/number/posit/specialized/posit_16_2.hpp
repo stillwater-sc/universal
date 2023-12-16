@@ -4,6 +4,7 @@
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/native/integers.hpp>
 
 // DO NOT USE DIRECTLY!
 // the compile guards in this file are only valid in the context of the specialization logic
@@ -28,7 +29,7 @@ template<>
 class posit<NBITS_IS_16, ES_IS_2> {
 public:
 	static constexpr unsigned nbits = NBITS_IS_16;
-	static constexpr unsigned es = ES_IS_2;
+	static constexpr unsigned es    = ES_IS_2;
 	static constexpr unsigned sbits = 1;
 	static constexpr unsigned rbits = nbits - sbits;
 	static constexpr unsigned ebits = es;
@@ -156,28 +157,40 @@ public:
 		decode_regime(lhs, m, remaining);
 
 		// extract the exponent
-		uint16_t exp = remaining >> 14;
+		uint16_t exp = remaining >> 13;
+		std::cout << "exponent : " << exp << '\n';
 
 		// extract remaining fraction bits
+		std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
+		remaining <<= 3; // shift out the exponent field
+		std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
+		remaining >>= 2; // move fraction bits in the right place
+		std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
 		uint32_t lhs_fraction = (0x4000 | remaining) << 16;
 		int8_t shiftRight = m;
+		std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		// adjust shift and extract fraction bits of rhs
-		extractAddand(rhs, shiftRight, remaining);
+		std::cout << "runlengt : " << int(shiftRight) << '\n';
+		extractAddand(rhs, m, remaining);
 		uint32_t rhs_fraction = (0x4000 | remaining) << 16;
+		std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
 
 		// this is 2kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
-		shiftRight = (shiftRight << 1) + exp - (remaining >> 14);
+		shiftRight = (shiftRight << 1) + exp - (remaining >> 13);
+		std::cout << "shiftRight : " << int(shiftRight) << '\n';
 
 		if (shiftRight == 0) {
-			lhs_fraction += rhs_fraction;  // this will always product a carry
+			lhs_fraction += rhs_fraction;  // this will always produce a carry
 			if (exp) ++m;
 			exp ^= 1;
 			lhs_fraction >>= 1;
 		}
 		else {
 			(shiftRight > 31) ? (rhs_fraction = 0) : (rhs_fraction >>= shiftRight); // frac32B >>= shiftRight
+			std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
 			lhs_fraction += rhs_fraction;
+			std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 			bool rcarry = 0x80000000 & lhs_fraction; // first left bit
 			if (rcarry) {
@@ -186,6 +199,8 @@ public:
 				lhs_fraction >>= 1;
 			}
 		}
+
+		std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		_bits = round(m, exp, lhs_fraction);
 		if (sign) _bits = -_bits & 0xFFFF;
@@ -431,45 +446,46 @@ public:
 	}
 
 	// Selectors
-	inline bool sign() const { return (_bits & sign_mask); }
-	inline bool isnar() const { return (_bits == sign_mask); }
-	inline bool iszero() const { return (_bits == 0x0); }
-	inline bool isone() const { return (_bits == 0x4000); } // pattern 010000...
-	inline bool isminusone() const { return (_bits == 0xC000); } // pattern 110000...
-	inline bool isneg() const { return (_bits & sign_mask); }
-	inline bool ispos() const { return !isneg(); }
-	inline bool ispowerof2() const { return !(_bits & 0x1); }
+	bool sign() const { return (_bits & sign_mask); }
+	bool isnar() const { return (_bits == sign_mask); }
+	bool iszero() const { return (_bits == 0x0); }
+	bool isone() const { return (_bits == 0x4000); } // pattern 010000...
+	bool isminusone() const { return (_bits == 0xC000); } // pattern 110000...
+	bool isneg() const { return (_bits & sign_mask); }
+	bool ispos() const { return !isneg(); }
+	bool ispowerof2() const { return !(_bits & 0x1); }
 
-	inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
+	int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
 
 	bitblock<NBITS_IS_16> get() const { bitblock<NBITS_IS_16> bb; bb = int(_bits); return bb; }
+	uint16_t bits() const noexcept { return _bits; }
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }
 
 	// Modifiers
-	inline void clear() { _bits = 0; }
-	inline void setzero() { clear(); }
-	inline void setnar() { _bits = sign_mask; }
-	inline posit& minpos() {
+	void clear() { _bits = 0; }
+	void setzero() { clear(); }
+	void setnar() { _bits = sign_mask; }
+	posit& minpos() {
 		clear();
 		return ++(*this);
 	}
-	inline posit& maxpos() {
+	posit& maxpos() {
 		setnar();
 		return --(*this);
 	}
-	inline posit& zero() {
+	posit& zero() {
 		clear();
 		return *this;
 	}
-	inline posit& minneg() {
+	posit& minneg() {
 		clear();
 		return --(*this);
 	}
-	inline posit& maxneg() {
+	posit& maxneg() {
 		setnar();
 		return ++(*this);
 	}
-	inline posit twosComplement() const {
+	posit twosComplement() const {
 		posit p;
 		return p.setbits(~_bits + 1ul);
 	}
@@ -638,13 +654,16 @@ private:
 		return *this;
 	}
 
+	public:
 	// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
 	inline void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
 		remaining = (bits << 2) & 0xFFFF;
+		std::cout << "remaining : " << to_binary(remaining, 16, true) << '\n';
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
 				++m;
 				remaining = (remaining << 1) & 0xFFFF;
+				std::cout << "remaining : " << to_binary(remaining, 16, true) << '\n';
 			}
 		}
 		else {              // negative regimes
@@ -657,7 +676,7 @@ private:
 		}
 	}
 	inline void extractAddand(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
-		remaining = (bits << 2) & 0xFFFF;
+		remaining = (bits << 3) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
 				--m;

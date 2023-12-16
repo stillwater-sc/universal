@@ -94,7 +94,7 @@ namespace sw { namespace universal {
 
 	template<typename TestType>
 	void ReportValue(const TestType& a, const std::string& label = "", unsigned labelWidth = 20) {
-		std::cout << std::setw(labelWidth) << label << " : " << to_binary(a) << " : " << a << '\n';
+		std::cout << std::setw(labelWidth) << label << " : " << to_binary(a, true) << " : " << a << '\n';
 	}
 
 	template<typename TestType>
@@ -107,6 +107,13 @@ namespace sw { namespace universal {
 	void ReportBinaryOperation(const TestType& a, const std::string& op, const TestType& b, const TestType& c) {
 		std::cout << to_binary(a) << ' ' << op << ' ' << to_binary(b) << " = " << to_binary(c) << '\n';
 		std::cout << a << ' ' << op << ' ' << b << " = " << c << '\n';
+	}
+
+	template<typename TestType>
+	void ReportBinaryOperationVertically(const TestType& a, const std::string& op, const TestType& b, const TestType& c, unsigned labelWidth = 20) {
+		std::cout << std::setw(labelWidth) << "a" << " : " << to_binary(a) << " : " << a << '\n';
+		std::cout << std::setw(labelWidth) << "b" << " : " << to_binary(b) << " : " << b << ' ' << op << '\n';
+		std::cout << std::setw(labelWidth) << "c" << " : " << to_binary(c) << " : " << c << '\n';
 	}
 
 }} // namespace sw::universal

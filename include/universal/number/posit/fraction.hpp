@@ -265,6 +265,7 @@ template<unsigned nfbits>
 inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, bool nibbleMarker = false) {
 	unsigned int nrOfFractionBitsProcessed = 0;
 	std::stringstream sstr;
+	unsigned fbits = f.nrBits();
 	if (nfbits > 0) {
 		bitblock<nfbits> bb = f.get();
 		int upperbound = nfbits;
@@ -277,7 +278,8 @@ inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, 
 			else {
 				sstr << (dashExtent ? "-" : "");
 			}
-			if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
+			--fbits;
+			if (nibbleMarker && fbits != 0 && (fbits % 4) == 0) sstr << '\'';
 		}
 	}
 	if (nrOfFractionBitsProcessed == 0) sstr << '~'; // for proper alignment in tables

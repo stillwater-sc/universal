@@ -1038,7 +1038,7 @@ public:
 	bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
 
 	bitblock<nbits>    get() const { return _bits; }
-	unsigned long long encoding() const { return _bits.to_ullong(); }
+	unsigned long long bits() const { return _bits.to_ullong(); }
 	constexpr bool test(unsigned bitIndex) const noexcept {
 		return (bitIndex < nbits ? _bits[bitIndex] : false);
 	}

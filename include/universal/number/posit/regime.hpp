@@ -1,7 +1,7 @@
 #pragma once
 // regime.hpp: definition of a posit regime
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -182,11 +182,13 @@ template<unsigned nbits, unsigned es>
 inline std::string to_string(const regime<nbits, es>& r, bool dashExtent = true, bool nibbleMarker = false) {
 	std::stringstream sstr;
 	bitblock<nbits - 1> bb = r.get();
+	unsigned rbits = r.nrBits();
 	unsigned nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (r.nrBits() > nrOfRegimeBitsProcessed++) {
 			sstr << (bb[unsigned(i)] ? '1' : '0');
-			if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
+			--rbits;
+			if (nibbleMarker && rbits != 0 && (rbits % 4) == 0) sstr << '\'';
 		}
 		else {
 			sstr << (dashExtent ? "-" : "");

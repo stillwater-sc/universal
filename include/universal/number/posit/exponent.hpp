@@ -199,6 +199,7 @@ template<unsigned nbits, unsigned es>
 inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = true, bool nibbleMarker = false) {
 	std::stringstream sstr;
 	unsigned nrOfExponentBitsProcessed = 0;
+	unsigned ebits = e.nrBits();
 	if constexpr (es > 0) {
 		for (int i = int(es) - 1; i >= 0; --i) {
 			if (e.nrBits() > nrOfExponentBitsProcessed++) {
@@ -208,7 +209,8 @@ inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = tru
 			else {
 				sstr << (dashExtent ? "-" : "");
 			}
-			if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
+			--ebits;
+			if (nibbleMarker && ebits != 0 && (ebits % 4) == 0) sstr << '\'';
 		}
 	}
 	else {
