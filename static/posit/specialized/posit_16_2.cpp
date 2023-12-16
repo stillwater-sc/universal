@@ -8,8 +8,8 @@
 // Configure the posit template environment
 // first: enable fast specialized posit<16,2>
 //#define POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_16_1 0
-#define POSIT_FAST_POSIT_16_2 0
+#define POSIT_FAST_POSIT_16_1 1
+#define POSIT_FAST_POSIT_16_2 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
@@ -91,6 +91,9 @@ try {
 	*/
 	{
 		posit<16, 2> a, b, c;
+
+		//a = 1;
+		//std::cout << "scale : " << scale(a) << '\n';
 
 		int8_t m;
 		uint16_t remaining;

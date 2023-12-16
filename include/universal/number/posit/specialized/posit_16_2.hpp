@@ -158,27 +158,27 @@ public:
 
 		// extract the exponent
 		uint16_t exp = remaining >> 13;
-		std::cout << "exponent : " << exp << '\n';
+		//std::cout << "exponent : " << exp << '\n';
 
 		// extract remaining fraction bits
-		std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
+		//std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
 		remaining <<= 3; // shift out the exponent field
-		std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
+		//std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
 		remaining >>= 2; // move fraction bits in the right place
-		std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
+		//std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
 		uint32_t lhs_fraction = (0x4000 | remaining) << 16;
 		int8_t shiftRight = m;
-		std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
+		//std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		// adjust shift and extract fraction bits of rhs
-		std::cout << "runlengt : " << int(shiftRight) << '\n';
+		//std::cout << "runlengt : " << int(shiftRight) << '\n';
 		extractAddand(rhs, m, remaining);
 		uint32_t rhs_fraction = (0x4000 | remaining) << 16;
-		std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
+		//std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
 
 		// this is 2kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 1) + exp - (remaining >> 13);
-		std::cout << "shiftRight : " << int(shiftRight) << '\n';
+		//std::cout << "shiftRight : " << int(shiftRight) << '\n';
 
 		if (shiftRight == 0) {
 			lhs_fraction += rhs_fraction;  // this will always produce a carry
@@ -188,9 +188,9 @@ public:
 		}
 		else {
 			(shiftRight > 31) ? (rhs_fraction = 0) : (rhs_fraction >>= shiftRight); // frac32B >>= shiftRight
-			std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
+			//std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
 			lhs_fraction += rhs_fraction;
-			std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
+			//std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 			bool rcarry = 0x80000000 & lhs_fraction; // first left bit
 			if (rcarry) {
@@ -200,7 +200,7 @@ public:
 			}
 		}
 
-		std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
+		//std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		_bits = round(m, exp, lhs_fraction);
 		if (sign) _bits = -_bits & 0xFFFF;
@@ -654,16 +654,13 @@ private:
 		return *this;
 	}
 
-	public:
 	// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
 	inline void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
 		remaining = (bits << 2) & 0xFFFF;
-		std::cout << "remaining : " << to_binary(remaining, 16, true) << '\n';
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
 				++m;
 				remaining = (remaining << 1) & 0xFFFF;
-				std::cout << "remaining : " << to_binary(remaining, 16, true) << '\n';
 			}
 		}
 		else {              // negative regimes
@@ -727,36 +724,46 @@ private:
 		}
 	}
 	inline uint16_t round(const int8_t m, uint16_t exp, uint32_t fraction) const {
-		uint16_t scale, regime, bits;
+		int scale{ 0 };
+		uint16_t regime, bits;
 		if (m < 0) {
 			scale = (-m & 0xFFFF);
 			regime = 0x4000 >> scale;
 		}
 		else {
-			scale = m + 1;
+			scale = int(m) + 1;
 			regime = 0x7FFF - (0x7FFF >> scale);
 		}
+		//std::cout << "scale    : " << scale << '\n';
+		//std::cout << "regime   : " << to_binary(regime, 16) << '\n';
+		//std::cout << "exponent : " << to_binary(exp, 16) << '\n';
 
-		if (scale > 14) {
+		if (scale > 56) {
 			bits = m < 0 ? 0x0001 : 0x7FFF;  // minpos and maxpos
 		}
 		else {
-			fraction = (fraction & 0x3FFFFFFF) >> (scale + 1); // remove both carry bits
+			//std::cout << "fraction in  : " << to_binary(fraction, 32) << '\n';
+			fraction = (fraction & 0x3FFFFFFF) >> (scale + 2); // remove both carry bits
+			//std::cout << "fraction out : " << to_binary(fraction, 32) << '\n';
 			uint16_t final_fbits = uint16_t(fraction >> 16);
+			//std::cout << "fraction bits: " << to_binary(final_fbits, 16) << '\n';
 			bool bitNPlusOne = false;
-			if (scale != 14) {
+			if (scale != 56) {
 				bitNPlusOne = bool(0x8000 & fraction);
 			}
 			else if (final_fbits > 0) {
 				final_fbits = 0;
 			}
-			if (scale == 14 && exp != 0) {
+			if (scale == 56 && exp != 0) {
 				bitNPlusOne = true;
 				exp = 0;
 			}
 			else {
-				exp <<= (13 - scale);
+				exp <<= (12 - scale);
 			}
+			std::cout << "composite regime   : " << to_binary(regime, 16) << '\n';
+			std::cout << "composite exponent : " << to_binary(exp) << '\n';
+			std::cout << "composite fraction : " << to_binary(final_fbits) << '\n';
 			bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
 			// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 			if (bitNPlusOne) {
