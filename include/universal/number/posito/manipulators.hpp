@@ -1,7 +1,7 @@
 #pragma once
 // manipulators.hpp: definitions of helper functions for posit type manipulation
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -16,65 +16,30 @@ namespace sw { namespace universal {
 
 	// Generate a type tag for this posit, for example, posit<8,1>
 	template<unsigned nbits, unsigned es>
-	std::string type_tag(const posit<nbits, es> & = {}) {
+	std::string type_tag(const posito<nbits, es> & = {}) {
 		std::stringstream str;
-		str << "posit<"
+		str << "posito<"
 			<< std::setw(3) << nbits << ", "
 			<< std::setw(1) << es << '>';
 		return str.str();
 	}
 
-	// Generate a type field descriptor for this posit
-	template<typename PositType,
-		std::enable_if_t< is_posit<PositType>, bool> = true
+	// Generate a type field descriptor for this cfloat
+	template<typename PositoType,
+		std::enable_if_t< is_posito<PositoType>, bool> = true
 	>
-	inline std::string type_field(const PositType & = {}) {
+	inline std::string type_field(const PositoType & = {}) {
 		std::stringstream s;
-//		unsigned nbits = PositType::nbits;  // total bits
-		unsigned ebits = PositType::es;     // exponent bits
-		unsigned fbits = PositType::fbits;  // integer bits
+//		unsigned nbits = PositoType::nbits;  // total bits
+		unsigned ebits = PositoType::es;     // exponent bits
+		unsigned fbits = PositoType::fbits;  // integer bits
 		s << "fields(s:1|r:[2]+|e:" << ebits << "|m:" << fbits << ')';
 		return s.str();
 	}
 
-// report dynamic range of a type, specialized for a posit
-template<unsigned nbits, unsigned es>
-std::string dynamic_range() {
-	std::stringstream str;
-	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
-	str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
-	str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
-	return str.str();
-}
-
-// report the dynamic range of the type associated with a value
-template<unsigned nbits, unsigned es>
-std::string dynamic_range(const posit<nbits, es>& p) {
-	std::stringstream str;
-	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
-	str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
-	str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "  :  " << p;
-	return str.str();
-}
-
-// report the dynamic range of a posit
-template<unsigned nbits, unsigned es>
-std::string posit_range() {
-	std::stringstream str;
-	str << " posit<" << std::setw(3) << nbits << "," << es << "> ";
-	str << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
-	str << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-	str << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
-	str << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::min() << "     ";
-	str << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::max() ;
-	return str.str();
-}
-
 // Generate a string representing the posit components: sign, regime, exponent, faction, and value
 template<unsigned nbits, unsigned es>
-std::string components(const posit<nbits, es>& p) {
+std::string components(const posito<nbits, es>& p) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
@@ -94,33 +59,9 @@ std::string components(const posit<nbits, es>& p) {
 	return str.str();
 }
 
-template<unsigned nbits, unsigned es>
-std::string component_values_to_string(const posit<nbits, es>& p) {
-	std::stringstream str;
-	// TODO: hardcoded field sizes
-	if (p.iszero()) {
-		str << " zero    " << std::setw(103) << "b" << p.get();
-		return str.str();
-	}
-	else if (p.isinf()) {
-		str << " infinite" << std::setw(103) << "b" << p.get();
-		return str.str();
-	}
-
-	str << std::setw(14) << to_binary(p.get())
-		<< " Sign : " << std::setw(2) << p.sign()
-		<< " Regime : " << p.regime_int()
-		<< " Exponent : " << p.exponent_int()
-		<< std::hex
-		<< " Fraction : " << p.fraction_int()
-		<< " Value : " << p.to_int64()
-		<< std::dec;
-	return str.str();
-}
-
 // generate a binary string for posit
 template<unsigned nbits, unsigned es>
-inline std::string to_hex(const posit<nbits, es>& v, bool nibbleMarker = false, bool hexPrefix = true) {
+inline std::string to_hex(const posito<nbits, es>& v, bool nibbleMarker = false, bool hexPrefix = true) {
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
@@ -138,7 +79,7 @@ inline std::string to_hex(const posit<nbits, es>& v, bool nibbleMarker = false, 
 
 // generate a posit format ASCII format nbits.esxNN...NNp
 template<unsigned nbits, unsigned es>
-inline std::string hex_print(const posit<nbits, es>& p) {
+inline std::string hex_print(const posito<nbits, es>& p) {
 	// we need to transform the posit into a string
 	std::stringstream str;
 	str << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
@@ -146,7 +87,7 @@ inline std::string hex_print(const posit<nbits, es>& p) {
 }
 
 template<unsigned nbits, unsigned es>
-std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
+std::string pretty_print(const posito<nbits, es>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
@@ -190,7 +131,7 @@ std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::nu
 }
 
 template<unsigned nbits, unsigned es>
-std::string info_print(const posit<nbits, es>& p, int printPrecision = 17) {
+std::string info_print(const posito<nbits, es>& p, int printPrecision = 17) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
@@ -211,7 +152,7 @@ std::string info_print(const posit<nbits, es>& p, int printPrecision = 17) {
 }
 
 template<unsigned nbits, unsigned es>
-std::string color_print(const posit<nbits, es>& p) {
+std::string color_print(const posito<nbits, es>& p) {
 	constexpr unsigned fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	std::stringstream str;
 	bool		     	 _sign;
@@ -256,7 +197,7 @@ std::string color_print(const posit<nbits, es>& p) {
 		}
 	}
 
-	bitblock<posit<nbits, es>::fbits> f = _fraction.get();
+	bitblock<posito<nbits, es>::fbits> f = _fraction.get();
 	f = (_sign ? twos_complement(f) : f);
 	int fractionBits = (int)_fraction.nrBits();
 	int nrOfFractionBitsProcessed = 0;
