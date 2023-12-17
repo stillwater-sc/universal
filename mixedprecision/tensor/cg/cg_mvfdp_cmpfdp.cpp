@@ -19,7 +19,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // and fast posits
 //#define POSIT_FAST_SPECIALIZATION 1
-#define POSIT_FAST_POSIT_32_2 1
+#define POSIT_FAST_POSIT_32_2 0
 #include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
@@ -149,9 +149,6 @@ try {
 	fdTest<posit<64, 3>, MAX_ITERATIONS>(64);
 	fdTest<posit<128, 4>, MAX_ITERATIONS>(64);
 	fdTest<posit<256, 5>, MAX_ITERATIONS>(64);
-
-#if STRESS
-#endif // STRESS
 
 #if STRESS
 #endif // STRESS

@@ -46,15 +46,19 @@ try {
 	constexpr unsigned nbits = NBITS_IS_16;
 	constexpr unsigned es    = ES_IS_2;
 
-	int nrOfFailedTestCases = 0;
-	bool reportTestCases = false;
-	size_t RND_TEST_CASES = 10000;
-
 #if POSIT_FAST_POSIT_16_2
-	std::cout << "Fast specialization posit<16,2> configuration tests\n";
+	std::string test_suite = "Fast specialization posit<16,2>";
 #else
-	std::cout << "Standard posit<16,2> configuration tests\n";
+	std::string test_suite = "Standard posit<16,2>";
 #endif
+
+	std::string test_tag    = "arithmetic type tests";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	size_t RND_TEST_CASES = 10000;
 
 	using Scalar = posit<nbits, es>;
 	Scalar p;
@@ -197,9 +201,8 @@ try {
 	testLogicOperators(a, b);
 	testLogicOperators(b, a);
 
-	std::cout << nrOfFailedTestCases << " number of failures\n";
-
-	nrOfFailedTestCases = 0;  // ignore failures in manual testing
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
@@ -304,10 +307,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(reportTestCases), tag, "reciprocate    (native)  ");
 #endif
 
-#endif // MANUAL_TESTING
-	std::cout << std::flush;
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

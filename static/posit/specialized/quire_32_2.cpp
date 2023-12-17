@@ -8,7 +8,7 @@
 // Configure the posit template environment
 // first: enable fast specialized posit<32,2>
 //#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations
-#define POSIT_FAST_POSIT_32_2 1
+#define POSIT_FAST_POSIT_32_2 0
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
@@ -28,29 +28,30 @@ int main()
 try {
 	using namespace sw::universal;
 
-	constexpr size_t RND_TEST_CASES = 500000;
-
 	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-
-	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
-	std::string tag = " quire<32,2>";
+	constexpr size_t es    =  2;
 
 #if POSIT_FAST_POSIT_32_2
-	std::cout << "Fast specialization quire<32,2> configuration tests\n";
+	std::string test_suite = "Fast specialization quire<32,2>";
 #else
-	std::cout << "Standard quire<32,2> configuration tests\n";
+	std::string test_suite = "Standard quire<32,2>";
 #endif
+
+	std::string test_tag    = "arithmetic type tests";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+	constexpr size_t RND_TEST_CASES = 500000;
 
 	quire<nbits, es> q;
 	std::cout << dynamic_range<nbits,es>() << "\n\n";
 
 	// special cases
 	std::cout << "Special case tests\n";
-	std::string test = "Initialize to zero: ";
 	q = 0;
-	nrOfFailedTestCases += ReportCheck(tag, test, q.iszero());
+	nrOfFailedTestCases += ReportCheck(test_tag, "Initialize to zero", q.iszero());
 
 	// logic tests
 //	cout << "Logic operator tests " << endl;
@@ -63,12 +64,10 @@ try {
 
 	// arithmetic tests
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), test_tag, "addition        (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), test_tag, "multiplication  (native)  ");
 
-	// elementary function tests
-//	cout << "Elementary function tests " << endl;
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

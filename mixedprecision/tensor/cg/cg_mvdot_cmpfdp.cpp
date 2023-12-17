@@ -19,7 +19,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // and fast posits
 //#define POSIT_FAST_SPECIALIZATION 1
-#define POSIT_FAST_POSIT_32_2 1
+#define POSIT_FAST_POSIT_32_2 0
 #include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
@@ -138,6 +138,8 @@ try {
 	}
 
 #else
+
+	std::cout << "CG convergence and final residuals\n";
 	// with a preconditioner M = Jacobian(A)^-1
 	constexpr size_t MAX_ITERATIONS = 100;
 	fdTest<float, MAX_ITERATIONS>(64);

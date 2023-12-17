@@ -1,6 +1,6 @@
 // summary_statistics.cpp: test suite for summary statistics function for data preprocessing
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2023 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -67,7 +67,7 @@ try {
 	size_t N = 1024*1024;
 	std::vector<double> data(N);
 	blas::gaussian_random(data, 0.0, 1.0);
-	blas::SummaryStats stats = blas::summaryStatistics(data);
+	auto stats = blas::summaryStatistics(data);
 
 	std::cout << "Summary statistics:\n" << stats << '\n';
 

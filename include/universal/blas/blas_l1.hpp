@@ -172,9 +172,8 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 // L1-norm of a vector
 template<typename Scalar>
 Scalar normL1(const sw::universal::blas::vector<Scalar>& v) {
-	using namespace sw::universal; // to specialize abs()
 	Scalar L1Norm{ 0 };
-	for (auto e : v) {
+	for (const Scalar& e : v) {
 		L1Norm += abs(e);
 	}
 	return L1Norm;
@@ -184,7 +183,7 @@ Scalar normL1(const sw::universal::blas::vector<Scalar>& v) {
 template<typename Scalar>
 Scalar normL2(const sw::universal::blas::vector<Scalar>& v) {
 	Scalar L2Norm{ 0 };
-	for (auto e : v) {
+	for (const Scalar& e : v) {
 		L2Norm += e * e;
 	}
 	return sqrt(L2Norm);
@@ -196,7 +195,7 @@ Scalar normL3(const sw::universal::blas::vector<Scalar>& v) {
 	using namespace std;
 	using namespace sw::universal; // to specialize abs()
 	Scalar L3Norm{ 0 };
-	for (auto e : v) {
+	for (const Scalar& e : v) {
 		Scalar abse = abs(e);
 		L3Norm += abse * abse * abse;
 	}
@@ -207,7 +206,7 @@ Scalar normL3(const sw::universal::blas::vector<Scalar>& v) {
 template<typename Scalar>
 Scalar normL4(const sw::universal::blas::vector<Scalar>& v) {
 	Scalar L4Norm{ 0 };
-	for (auto e : v) {
+	for (const Scalar& e : v) {
 		Scalar esqr = e * e;
 		L4Norm += esqr * esqr;
 	}
@@ -220,7 +219,7 @@ Scalar normLinf(const sw::universal::blas::vector<Scalar>& v) {
 	using namespace std;
 	using namespace sw::universal; // to specialize abs()
 	Scalar LinfNorm{ 0 };
-	for (auto e : v) {
+	for (const Scalar& e : v) {
 		LinfNorm = (abs(e) > LinfNorm) ? abs(e) : LinfNorm;
 	}
 	return LinfNorm;
@@ -251,10 +250,11 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 		break;
 	default:
 		{
-			for (auto e : v) {
-				norm += pow(abs(e), Scalar( p ));
+			Scalar sp = Scalar( p );
+			for (const Scalar& e : v) {
+				norm += pow(abs(e), sp);
 			}
-			norm = pow(norm, Scalar( 1 ) / Scalar( p ));
+			norm = pow(norm, Scalar( 1 ) / sp);
 		}
 		break;
 	}
