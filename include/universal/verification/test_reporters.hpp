@@ -173,7 +173,7 @@ void ReportBinaryArithmeticError(const std::string& label, const std::string& op
 		<< " != "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(result)
 		<< " golden reference is "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(ref)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(ResultType(ref))
 		<< std::setprecision(old_precision)
 		<< '\n';
 }

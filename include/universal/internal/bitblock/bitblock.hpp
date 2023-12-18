@@ -685,7 +685,7 @@ std::string to_hex(bitblock<nbits> bits, bool nibbleMarker = false, bool hexPref
 		bits >>= 4;
 	}
 	str[maxHexDigits] = 0;  // null terminated string
-	return std::string(str);
+	return (hexPrefix ? std::string("0x") : std::string("")) + std::string(str);
 }
 
 // convert a sign/magnitude number to a string

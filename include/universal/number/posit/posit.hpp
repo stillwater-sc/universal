@@ -44,7 +44,9 @@
 #endif
 #else
 // for the composite value<> class assume the same behavior as requested for posits
+#if !defined(VALUE_THROW_ARITHMETIC_EXCEPTION)
 #define VALUE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
+#endif
 #if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
 #endif

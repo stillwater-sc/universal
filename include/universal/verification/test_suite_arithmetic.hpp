@@ -113,7 +113,6 @@ int VerifyAddition(bool reportTestCases) {
 			else {
 				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
 			}
-			if (nrOfFailedTests > 9) return nrOfFailedTests;
 		}
 		if constexpr (NR_VALUES > 256 * 256) {
 			if (i % (NR_VALUES / 25) == 0) std::cout << '.';

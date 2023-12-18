@@ -855,7 +855,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 
 	scale_of_result -= shift;
 	const int hpos = int(abits) - 1 - shift;         // position of the hidden bit 
-	sum <<= (1ll + static_cast<int64_t>(abits) - hpos);
+	sum <<= static_cast<size_t>(1 + int(abits) - hpos);
 	if (_trace_value_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
 }

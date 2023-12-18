@@ -266,7 +266,7 @@ inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, 
 	unsigned int nrOfFractionBitsProcessed = 0;
 	std::stringstream sstr;
 	unsigned fbits = f.nrBits();
-	if (nfbits > 0) {
+	if constexpr (nfbits != 0) {
 		bitblock<nfbits> bb = f.get();
 		int upperbound = nfbits;
 		upperbound--;
