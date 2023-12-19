@@ -53,7 +53,7 @@ try {
 #endif
 
 	std::string test_tag    = "arithmetic type tests";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -78,6 +78,9 @@ try {
 
 	float fa, fb;
 	posit<16, 1> a, b, c;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(reportTestCases), tag, "add            (native)  ");
+	return 0;
 /*
 	{
 
@@ -130,6 +133,14 @@ try {
 		std::cout << "\n+----------------      0b0.1'1110.11.1000'0010\n";
 		a.setbits(0x7B02);   // 0b0.1'1110.11.1000'0010
 		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
+		ReportValue(a, "a");
+		ReportValue(b, "b");
+		c = a + b;
+		ReportValue(c, "c");
+
+		std::cout << "\n+----------------      0b0.0'0001.10.1000'0010\n";
+		a.setbits(0x0682);   // 0b0.0'0001.10.1000'0010
+		b.setbits(0x0582);   // 0b0.0'0001.01.1000'0010
 		ReportValue(a, "a");
 		ReportValue(b, "b");
 		c = a + b;
