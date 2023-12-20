@@ -8,7 +8,9 @@
 #define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/lns/table.hpp>
-#include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_reporters.hpp>
+//#include <universal/verification/test_suite.hpp>   // the generic VerifyMultiplication doesn't deal with the LNS special cases
+//#include <universal/verification/lns_test_suite.hpp>  // is that the right solution to specialize?
 
 namespace sw {
 	namespace universal {
