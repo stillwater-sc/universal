@@ -79,6 +79,37 @@ try {
 	float fa, fb;
 	posit<16, 1> a, b, c;
 
+	{
+		posit<16, 2> a, b, c, cref;
+		float fa, fb, fc;
+		/*
+		FAIL
+		1.3877787807814456755e-17 +             -3.9990234375 !=            -1.99951171875 golden reference is             -3.9990234375
+			0b0.000000000000001.. +     0b1.10.01.11111111111 !=     0b1.10.00.11111111111 golden reference is     0b1.10.01.11111111111
+		 */
+		a.setbits(0x0001);
+		b.setbits(0xCFFF);  // 0b1.10.0'1.111'1111'1111
+		c = a + b;
+		fa = float(a);
+		fb = float(b);
+		fc = fa + fb;
+		cref = fc;
+		std::cout 
+			<< std::setw(NUMBER_COLUMN_WIDTH) << a << " + "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << b << " = "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << c << '\n';
+		std::cout
+			<< std::setw(NUMBER_COLUMN_WIDTH) << fa << " + "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << fb << " = "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << fc << '\n';
+		std::cout
+			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fa) << " + "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fb) << " = "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fc) << '\n';
+		ReportBinaryOperation(a, "+", b, c);
+		ReportBinaryArithmeticError("bla", "+", a, b, c, cref);
+	}
+	
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(reportTestCases), tag, "add            (native)  ");
 	return 0;
 /*

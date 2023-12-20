@@ -190,7 +190,7 @@ public:
 			lhs_fraction += rhs_fraction;
 			// std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
-			bool rcarry = 0x8000 & lhs_fraction; // first left bit
+			bool rcarry = (0x8000'0000 & lhs_fraction) != 0; // first left bit
 			if (rcarry) {
 				++exp;
 				if (exp > 3) {
@@ -245,7 +245,7 @@ public:
 		decode_regime(lhs, m, remaining);
 
 		// extract the exponent
-		uint16_t exp = remaining >> 14;
+		uint16_t exp = remaining >> 13;
 
 		uint32_t lhs_fraction = (0x4000 | remaining) << 16;
 		int8_t shiftRight = m;
@@ -255,7 +255,7 @@ public:
 		uint32_t rhs_fraction = (0x4000 | remaining) << 16;
 
 		// align the fractions for subtraction
-		shiftRight = (shiftRight << 1) + exp - (remaining >> 14);
+		shiftRight = (shiftRight << 2) + exp - (remaining >> 13);
 		if (shiftRight != 0) {
 			if (shiftRight >= 29) {
 				_bits = lhs;
@@ -275,7 +275,7 @@ public:
 			--m;
 			lhs_fraction <<= 2;
 		}
-		bool ecarry = bool(0x40000000 & lhs_fraction);
+		bool ecarry = (0x4000'0000 & lhs_fraction) != 0;
 		if (!ecarry) {
 			if (exp == 0) --m;
 			exp ^= 1;
