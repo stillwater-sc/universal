@@ -716,28 +716,30 @@ public:
 	explicit operator long double() const { return to_long_double(); }
 
 	// Selectors
-	bool sign() const { return _bits[nbits - 1]; }
-	bool isnar() const {
+	bool sign() const noexcept { return _bits[nbits - 1]; }
+	bool isnar() const noexcept {
 		if (_bits[nbits - 1] == false) return false;
 		bitblock<nbits> tmp(_bits);			
 		tmp.reset(nbits - 1);
 		return tmp.none() ? true : false;
 	}
-	bool iszero() const { return _bits.none() ? true : false; }
-	bool isone() const { // pattern 010000....
+	bool isnan() const noexcept { return isnar(); }
+	bool isinf() const noexcept { return false; }
+	bool iszero() const noexcept { return _bits.none() ? true : false; }
+	bool isone() const noexcept { // pattern 010000....
 		bitblock<nbits> tmp(_bits);
 		tmp.set(nbits - 2, false);
 		return _bits[nbits - 2] & tmp.none();
 	}
-	bool isminusone() const { // pattern 110000...
+	bool isminusone() const noexcept { // pattern 110000...
 		bitblock<nbits> tmp(_bits);
 		tmp.set(nbits - 1, false);
 		tmp.set(nbits - 2, false);
 		return _bits[nbits - 1] & _bits[nbits - 2] & tmp.none();
 	}
-	bool isneg() const { return _bits[nbits - 1]; }
-	bool ispos() const { return !_bits[nbits - 1]; }
-	bool ispowerof2() const {
+	bool isneg() const noexcept { return _bits[nbits - 1]; }
+	bool ispos() const noexcept { return !_bits[nbits - 1]; }
+	bool ispowerof2() const noexcept {
 		bool s{ false };
 		regime<nbits, es> r;
 		exponent<nbits, es> e;
@@ -745,10 +747,10 @@ public:
 		decode(_bits, s, r, e, f);
 		return f.none();
 	}
-	bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
+	bool isinteger() const noexcept { return true; } // return (floor(*this) == *this) ? true : false; }
 
-	bitblock<nbits>    get() const { return _bits; }
-	unsigned long long bits() const { return _bits.to_ullong(); }
+	bitblock<nbits>    get() const noexcept { return _bits; }
+	unsigned long long bits() const noexcept { return _bits.to_ullong(); }
 	constexpr bool test(unsigned bitIndex) const noexcept {
 		return (bitIndex < nbits ? _bits[bitIndex] : false);
 	}
@@ -768,13 +770,13 @@ public:
 		return nibbleBits;
 	}
 	// Modifiers
-	constexpr void clear() { _bits.reset(); }
-	constexpr void setzero() { clear(); }
-	constexpr void setnar() {
+	constexpr void clear() noexcept { _bits.reset(); }
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setnar() noexcept {
 		_bits.reset();
 		_bits.set(nbits - 1, true);
 	}
-
+	constexpr void setnan(bool sign) noexcept { setnar(); }
 	posito& minpos() noexcept { clear(); return ++(*this); }
 	posito& maxpos() noexcept { setnar(); return --(*this); }
 	posito& zero()   noexcept { clear(); return *this; }
@@ -2432,6 +2434,30 @@ internal::value<nbits> fmma(const posito<nbits, es>& a, const posito<nbits, es>&
 	// todo: implement
 	internal::value<nbits> result;
 	return result;
+}
+
+
+
+// free functions forms of member functions
+
+template<unsigned nbits, unsigned es>
+posito<nbits, es>& minpos(posito<nbits, es>& p) {
+	return p.minpos();
+}
+
+template<unsigned nbits, unsigned es>
+posito<nbits, es>& maxpos(posito<nbits, es>& p) {
+	return p.maxpos();
+}
+
+template<unsigned nbits, unsigned es>
+posito<nbits, es>& minneg(posito<nbits, es>& p) {
+	return p.minneg();
+}
+
+template<unsigned nbits, unsigned es>
+posito<nbits, es>& maxneg(posito<nbits, es>& p) {
+	return p.maxneg();
 }
 
 }} // namespace sw::universal

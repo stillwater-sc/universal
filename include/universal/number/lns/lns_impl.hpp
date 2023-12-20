@@ -319,7 +319,7 @@ public:
 	// clear resets all bits
 	constexpr void clear()                         noexcept { _block.clear(); }
 	constexpr void setzero()                       noexcept { _block.clear(); setbit(nbits - 2, true); }
-	constexpr void setnan()                        noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
+	constexpr void setnan(bool sign = false)       noexcept { _block.clear(); setbit(nbits - 1); setbit(nbits - 2); }
 	constexpr void setinf(bool sign)               noexcept { (sign ? maxneg() : maxpos()); } // TODO: is that what we want?
 	constexpr void setsign(bool s = true)          noexcept { setbit(nbits - 1, s); }
 	constexpr void setbit(unsigned i, bool v = true) noexcept {

@@ -32,30 +32,29 @@ namespace sw { namespace universal {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 /// <summary>
-/// enumerate all negation cases for a TestType
+/// enumerate all negation cases for a number system configuration
 /// </summary>
-/// <param name="tag"></param>
 /// <param name="reportTestCases"></param>
-/// <returns></returns>
+/// <returns>number of failed test cases</returns>
 template<typename TestType>
-int VerifyNegation(const std::string& tag, bool reportTestCases) {
+int VerifyNegation(bool reportTestCases) {
 	constexpr size_t nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	TestType a(0), neg(0), ref(0);
+	TestType a(0), negated(0), ref(0);
 
 	for (size_t i = 1; i < NR_TEST_CASES; i++) {
-		a.set_raw_bits(i);
-		neg = -a;
+		a.setbits(i);
+		negated = -a;
 		// generate reference
 		double da = double(a);
 		ref = -da;
-		if (neg != ref) {
+		if (negated != ref) {
 			nrOfFailedTests++;
-			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "-", a, ref, neg);
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "-", a, negated, ref);
 		}
 		else {
-			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "-", a, ref, neg);
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "-", a, negated, ref);
 		}
 	}
 	return nrOfFailedTests;
@@ -66,9 +65,8 @@ int VerifyNegation(const std::string& tag, bool reportTestCases) {
 /// Uses doubles to create a reference to compare to.
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
-/// <param name="tag">string representation of the type</param>
 /// <param name="reportTestCases">if yes, report on individual test failures</param>
-/// <returns></returns>
+/// <returns>number of failed test cases</returns>
 template<typename TestType>
 int VerifyAddition(bool reportTestCases) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
@@ -123,13 +121,75 @@ int VerifyAddition(bool reportTestCases) {
 }
 
 /// <summary>
-/// Enumerate all subtraction cases for a number system configuration.
+/// Enumerate all in-place (+=) addition cases for a number system configuration.
 /// Uses doubles to create a reference to compare to.
 /// </summary>
 /// <typeparam name="TestType">the number system type to verify</typeparam>
 /// <param name="tag">string representation of the type</param>
 /// <param name="reportTestCases">if yes, report on individual test failures</param>
 /// <returns></returns>
+template<typename TestType>
+int VerifyInPlaceAddition(bool reportTestCases) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	// set the saturation clamps
+	TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+
+	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	TestType a, b, c, cref;
+	for (size_t i = 0; i < NR_VALUES; i++) {
+		a.setbits(i); // number system concept requires a member function setbits()
+		da = double(a);
+		for (size_t j = 0; j < NR_VALUES; j++) {
+			b.setbits(j);
+			db = double(b);
+			ref = da + db;
+#if THROW_ARITHMETIC_EXCEPTION
+			// catching overflow
+			try {
+				c = a;
+				c += b;
+			}
+			catch (...) {
+				if (ref < double(maxneg) || ref > double(maxpos)) {
+					// correctly caught the overflow exception
+					continue;
+				}
+				else {
+					nrOfFailedTests++;
+				}
+			}
+#else
+			c = a;
+			c += b;
+#endif // THROW_ARITHMETIC_EXCEPTION
+			cref = ref;
+			if (c != cref) {
+				if (ref == 0 and c.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
+				nrOfFailedTests++;
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, ref);
+			}
+			else {
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, ref);
+			}
+		}
+		if constexpr (NR_VALUES > 256 * 256) {
+			if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+		}
+	}
+	std::cout << std::endl;
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// Enumerate all subtraction cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
+/// <returns>number of failed test cases</returns>
 template<typename TestType>
 int VerifySubtraction(bool reportTestCases) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
@@ -181,6 +241,335 @@ int VerifySubtraction(bool reportTestCases) {
 		}
 	}
 	std::cout << std::endl;
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// Enumerate all in-place (-=) subtraction cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyInPlaceSubtraction(bool reportTestCases) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	// set the saturation clamps
+	TestType maxpos(SpecificValue::maxpos), maxneg(SpecificValue::maxneg);
+
+	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	TestType a, b, c, cref;
+	for (size_t i = 0; i < NR_VALUES; i++) {
+		a.setbits(i); // number system concept requires a member function setbits()
+		da = double(a);
+		for (size_t j = 0; j < NR_VALUES; j++) {
+			b.setbits(j);
+			db = double(b);
+			ref = da - db;
+#if THROW_ARITHMETIC_EXCEPTION
+			// catching overflow
+			try {
+				c = a;
+				c -= b;
+			}
+			catch (...) {
+				if (ref < double(maxneg) || ref > double(maxpos)) {
+					// correctly caught the overflow exception
+					continue;
+				}
+				else {
+					nrOfFailedTests++;
+				}
+			}
+#else
+			c = a;
+			c -= b;
+#endif // THROW_ARITHMETIC_EXCEPTION
+			cref = ref;
+			if (c != cref) {
+				if (ref == 0 and c.iszero()) continue; // mismatched is ignored as compiler optimizes away negative zero
+				nrOfFailedTests++;
+				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, c, ref);
+			}
+			else {
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, ref);
+			}
+			if (nrOfFailedTests > 9) return nrOfFailedTests;
+		}
+		if constexpr (NR_VALUES > 256 * 256) {
+			if (i % (NR_VALUES / 25) == 0) std::cout << '.';
+		}
+	}
+	std::cout << std::endl;
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// Enumerate all multiplication cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyMultiplication(bool reportTestCases) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	const unsigned NR_VALUES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	TestType a, b, c, cref;
+	for (unsigned i = 0; i < NR_VALUES; i++) {
+		a.setbits(i);
+		double da = double(a);
+		for (unsigned j = 0; j < NR_VALUES; j++) {
+			b.setbits(j);
+			double db = double(b);
+			ref = da * db;
+#if THROW_ARITHMETIC_EXCEPTION
+			try {
+				c = a * b;
+			}
+			catch (...) {
+				if (a.isnan() || b.isnan()) {
+					// correctly caught the exception
+					c.setnan(true); // TODO: unify quiet vs signalling propagation among real number systems
+					// posits behave differently than floats, so this may need a least common denominator approach
+				}
+				else {
+					throw;  // rethrow
+				}
+			}
+#else
+			c = a * b;
+#endif
+			cref = ref;
+			if (c != cref) {
+				if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, ref);
+				nrOfFailedTests++;
+			}
+			else {
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// Enumerate all in-place (*=) multiplication cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyInPlaceMultiplication(bool reportTestCases) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	const unsigned NR_VALUES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	TestType a, b, c, cref;
+	for (unsigned i = 0; i < NR_VALUES; i++) {
+		a.setbits(i);
+		double da = double(a);
+		for (unsigned j = 0; j < NR_VALUES; j++) {
+			b.setbits(j);
+			double db = double(b);
+			ref = da * db;
+#if THROW_ARITHMETIC_EXCEPTION
+			try {
+				c = a;
+				c *= b;
+			}
+			catch (...) {
+				if (a.isnan() || b.isnan()) {
+					// correctly caught the exception
+					c.setnan(true); // TODO: unify quiet vs signalling propagation among real number systems
+					// posits behave differently than floats, so this may need a least common denominator approach
+				}
+				else {
+					throw;  // rethrow
+				}
+			}
+#else
+			c = a;
+			c *= b;
+#endif
+			cref = ref;
+			if (c != cref) {
+				if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, ref);
+				nrOfFailedTests++;
+			}
+			else {
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// Enumerate all division cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyDivision(bool reportTestCases) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	const unsigned NR_VALUES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	TestType a, b, c, cref;
+	for (unsigned i = 0; i < NR_VALUES; i++) {
+		a.setbits(i);
+		double da = double(a);
+		for (unsigned j = 0; j < NR_VALUES; j++) {
+			b.setbits(j);
+			double db = double(b);
+
+#if THROW_ARITHMETIC_EXCEPTION
+			try {
+				c = a / b;
+				ref = da / db;
+			}
+			catch (...) {
+				if (b.iszero()) {
+					// correctly caught the exception
+					c.setnan(true); // TODO: unify quiet vs signalling propagation among real number systems
+					// posits behave differently than floats, so this may need a least common denominator approach
+				}
+				else if (a.isnan() || b.isnan()) {
+					// Universal will throw a divide_by_nar or numerator_is_nar exception for posits
+					c.setnan(true); // TODO: unify quiet vs signalling propagation among real number systems
+				}
+				else {
+					throw;  // rethrow
+				}
+			}
+#else
+			c = a / b;
+			ref = da / db;
+#endif
+			cref = ref;
+			if (c != cref) {
+				if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, ref);
+				nrOfFailedTests++;
+			}
+			else {
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// Enumerate all in-place (/=) division cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyInPlaceDivision(bool reportTestCases) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	const unsigned NR_VALUES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+
+	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
+	TestType a, b, c, cref;
+	for (unsigned i = 0; i < NR_VALUES; i++) {
+		a.setbits(i);
+		double da = double(a);
+		for (unsigned j = 0; j < NR_VALUES; j++) {
+			b.setbits(j);
+			double db = double(b);
+
+#if THROW_ARITHMETIC_EXCEPTION
+			try {
+				c = a;
+				c /= b;
+				ref = da / db;
+			}
+			catch (...) {
+				if (b.iszero()) {
+					// correctly caught the exception
+					c.setnan(true); // TODO: unify quiet vs signalling propagation among real number systems
+					// posits behave differently than floats, so this may need a least common denominator approach
+				}
+				if (a.isnan() || b.isnan()) {
+					// Universal will throw a divide_by_nar or numerator_is_nar exception for posits
+					c.setnan(true); // TODO: unify quiet vs signalling propagation among real number systems
+				}
+				else {
+					throw;  // rethrow
+				}
+			}
+#else
+			c = a;
+			c /= b;
+			ref = da / db;
+#endif
+			cref = ref;
+			if (c != cref) {
+				if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, ref);
+				nrOfFailedTests++;
+			}
+			else {
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+/// <summary>
+/// Enumerate all reciprocation cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="reportTestCases">if yes, report on individual test failures</param>
+/// <returns>number of failed test cases</returns>
+template<typename TestType>
+int VerifyReciprocation(bool reportTestCases) {
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
+	const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+		TestType a, reciprocal, ref;
+		a.setbits(i);
+		double da = double(a);
+#if THROW_ARITHMETIC_EXCEPTION
+		try {
+			reciprocal = a.reciprocate();
+			ref = 1.0 / da;
+		}
+		catch (...) {
+			if (a.iszero()) {
+				// correctly caught divide by zero exception
+			}
+		}
+#else
+		reciprocal = a.reciprocate();
+		ref = 1.0 / da;
+#endif
+
+		if (reciprocal != ref) {
+			nrOfFailedTests++;
+			if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "reciprocate", a, reciprocal, ref);
+		}
+		else {
+			//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "reciprocate", a, reciprocal, ref);
+		}
+	}
 	return nrOfFailedTests;
 }
 

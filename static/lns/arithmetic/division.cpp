@@ -5,79 +5,84 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // configure the number system
+#define THROW_ARITHMETIC_EXCEPTION 1
 #define LNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/lns/lns.hpp>
 #include <universal/number/lns/table.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw { namespace universal {
+namespace sw {
+	namespace universal {
+		namespace local {
 
-	//template<typename LnsType,
-	//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
-	//>
-	template<typename LnsType>
-	int VerifyDivision(bool reportTestCases) {
-		constexpr size_t nbits = LnsType::nbits;
-		//constexpr size_t rbits = LnsType::rbits;
-		//constexpr Behavior behavior = LnsType::behavior;
-		//using bt = typename LnsType::BlockType;
-		constexpr size_t NR_ENCODINGS = (1ull << nbits);
+			//template<typename LnsType,
+			//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
+			//>
+			template<typename LnsType>
+			int VerifyDivision(bool reportTestCases) {
+				constexpr size_t nbits = LnsType::nbits;
+				//constexpr size_t rbits = LnsType::rbits;
+				//constexpr Behavior behavior = LnsType::behavior;
+				//using bt = typename LnsType::BlockType;
+				constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
-		int nrOfFailedTestCases = 0;
-		bool firstTime = true;
-		LnsType a{}, b{}, c{}, cref{};
-		double ref{};
-		if (reportTestCases) a.debugConstexprParameters();
-		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
-				double db = double(b);
+				int nrOfFailedTestCases = 0;
+				bool firstTime = true;
+				LnsType a{}, b{}, c{}, cref{};
+				double ref{};
+				if (reportTestCases) a.debugConstexprParameters();
+				for (size_t i = 0; i < NR_ENCODINGS; ++i) {
+					a.setbits(i);
+					double da = double(a);
+					for (size_t j = 0; j < NR_ENCODINGS; ++j) {
+						b.setbits(j);
+						double db = double(b);
 #if LNS_THROW_ARITHMETIC_EXCEPTION
-				try {
-					c = a / b;
-					ref = da / db;
-				}
-				catch (const lns_divide_by_zero& err) {
-					if (b.iszero()) {
-						// correctly caught divide by zero
-						if (firstTime) {
-							std::cout << "Correctly caught divide by zero exception : " << err.what() << '\n';
-							firstTime = false;
+						try {
+							c = a / b;
+							ref = da / db;
 						}
-						continue;
-					}
-					else {
-						++nrOfFailedTestCases;
-						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
-					}
-				}
+						catch (const lns_divide_by_zero& err) {
+							if (b.iszero()) {
+								// correctly caught divide by zero
+								if (firstTime) {
+									std::cout << "Correctly caught divide by zero exception : " << err.what() << '\n';
+									firstTime = false;
+								}
+								continue;
+							}
+							else {
+								++nrOfFailedTestCases;
+								if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
+							}
+						}
 #else
-				c = a / b;
-				ref = da / db;
+						c = a / b;
+						ref = da / db;
 #endif
-				if (reportTestCases && !isInRange<LnsType>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+						if (reportTestCases && !isInRange<LnsType>(ref)) {
+							std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+						}
+						cref = ref;
+						//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
+						//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
+						if (c != cref) {
+							if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
+							++nrOfFailedTestCases;
+							if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
+						}
+						else {
+							// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, c, ref);
+						}
+					}
+					if (nrOfFailedTestCases > 24) return 25;
 				}
-				cref = ref;
-//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				if (c != cref) {
-					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
-				}
-				else {
-					// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, c, ref);
-				}
+				return nrOfFailedTestCases;
 			}
-			if (nrOfFailedTestCases > 24) return 25;
-		}
-		return nrOfFailedTestCases;
-	}
 
-} }
+		}
+	}
+}
 
 /*
 Generate Value table for an LNS<4,2> in TXT format
@@ -218,9 +223,9 @@ try {
 	using LNS5_2_sat = lns<5, 2, std::uint8_t>;
 	using LNS8_3_sat = lns<8, 3, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS4_1_sat>(reportTestCases), "lns< 4,1,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS5_2_sat>(reportTestCases), "lns< 5,2,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS8_3_sat>(reportTestCases), "lns< 8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<LNS4_1_sat>(reportTestCases), "lns< 4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<LNS5_2_sat>(reportTestCases), "lns< 5,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<LNS8_3_sat>(reportTestCases), "lns< 8,3,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -228,9 +233,9 @@ try {
 	using LNS9_4_sat_uint16 = lns<9, 4, std::uint16_t>;
 	using LNS10_4_sat = lns<10, 4, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_sat>(reportTestCases), "lns< 9,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS9_4_sat_uint16>(reportTestCases), "lns< 9,4,uint16_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<LNS10_4_sat>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<LNS9_4_sat>(reportTestCases), "lns< 9,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<LNS9_4_sat_uint16>(reportTestCases), "lns< 9,4,uint16_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<LNS10_4_sat>(reportTestCases), "lns<10,4,uint8_t>", test_tag);
 
 #endif
 

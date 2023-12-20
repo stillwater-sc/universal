@@ -1,6 +1,6 @@
 // sqrt.cpp: test suite runner for classic cfloat square root algorithm
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -105,7 +105,7 @@ try {
 	CheckNewtonsIteration(2.0f);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyCfloatSqrt< cfloat<8, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(true), "cfloat<8,4>", "sqrt");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

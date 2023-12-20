@@ -1,6 +1,6 @@
 // multiplication.cpp: test suite runner for multiplication arithmetic of fixed-sized, arbitrary precision logarithmic number system
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,54 +10,58 @@
 #include <universal/number/lns/table.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw { namespace universal {
+namespace sw {
+	namespace universal {
+		namespace local {
 
-	//template<typename LnsType,
-	//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
-	//>
-	template<typename LnsType>
-	int VerifyMultiplication(bool reportTestCases) {
-		constexpr size_t nbits = LnsType::nbits;
-		//constexpr size_t rbits = LnsType::rbits;
-		//constexpr Behavior behavior = LnsType::behavior;
-		//using bt = typename LnsType::BlockType;
-		constexpr size_t NR_ENCODINGS = (1ull << nbits);
+			//template<typename LnsType,
+			//	std::enable_if_t<is_lns<LnsType>, LnsType> = 0
+			//>
+			template<typename LnsType>
+			int VerifyMultiplication(bool reportTestCases) {
+				constexpr size_t nbits = LnsType::nbits;
+				//constexpr size_t rbits = LnsType::rbits;
+				//constexpr Behavior behavior = LnsType::behavior;
+				//using bt = typename LnsType::BlockType;
+				constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
-		int nrOfFailedTestCases = 0;
+				int nrOfFailedTestCases = 0;
 
-		LnsType a{}, b{}, c{}, cref{};
-		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
-				double db = double(b);
+				LnsType a{}, b{}, c{}, cref{};
+				for (size_t i = 0; i < NR_ENCODINGS; ++i) {
+					a.setbits(i);
+					double da = double(a);
+					for (size_t j = 0; j < NR_ENCODINGS; ++j) {
+						b.setbits(j);
+						double db = double(b);
 
-				double ref = da * db;
-				if (reportTestCases && !isInRange<LnsType>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+						double ref = da * db;
+						if (reportTestCases && !isInRange<LnsType>(ref)) {
+							std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+						}
+						c = a * b;
+						cref = ref;
+						//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
+						//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
+						if (c != cref) {
+							if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
+							++nrOfFailedTestCases;
+							if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
+							//					std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
+							//					std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
+						}
+						else {
+							if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+						}
+						if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
+					}
 				}
-				c = a * b;
-				cref = ref;
-//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				if (c != cref) {
-					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
-//					std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-//					std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				}
-				else {
-					if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
-				}
-				if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
+				return nrOfFailedTestCases;
 			}
-		}
-		return nrOfFailedTestCases;
-	}
 
-} }
+		}
+	}
+}
 
 /*
 Generate Value table for an LNS<4,1> in TXT format
@@ -210,18 +214,18 @@ try {
 	using LNS9_7_sat = lns<9, 7, std::uint8_t>;
 	using LNS9_8_sat = lns<9, 8, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_0_sat>(reportTestCases), "lns<4,0, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_2_sat>(reportTestCases), "lns<4,2, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS4_3_sat>(reportTestCases), "lns<4,3, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS5_2_sat>(reportTestCases), "lns<5,2, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_1_sat>(reportTestCases), "lns<8,1, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_4_sat>(reportTestCases), "lns<8,4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS8_6_sat>(reportTestCases), "lns<8,6, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_0_sat>(reportTestCases), "lns<9,0, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_4_sat>(reportTestCases), "lns<9,4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_7_sat>(reportTestCases), "lns<9,7, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS9_8_sat>(reportTestCases), "lns<9,8, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_0_sat>(reportTestCases), "lns<4,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_1_sat>(reportTestCases), "lns<4,1, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_2_sat>(reportTestCases), "lns<4,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS4_3_sat>(reportTestCases), "lns<4,3, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS5_2_sat>(reportTestCases), "lns<5,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS8_1_sat>(reportTestCases), "lns<8,1, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS8_4_sat>(reportTestCases), "lns<8,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS8_6_sat>(reportTestCases), "lns<8,6, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS9_0_sat>(reportTestCases), "lns<9,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS9_4_sat>(reportTestCases), "lns<9,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS9_7_sat>(reportTestCases), "lns<9,7, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS9_8_sat>(reportTestCases), "lns<9,8, uint8_t>", test_tag);
 
 #endif
 
@@ -230,9 +234,9 @@ try {
 	using LNS10_4_sat = lns<10, 4, std::uint8_t>;
 	using LNS10_8_sat = lns<10, 8, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_0_sat>(reportTestCases), "lns<10,0, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_4_sat>(reportTestCases), "lns<10,4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<LNS10_8_sat>(reportTestCases), "lns<10,8, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS10_0_sat>(reportTestCases), "lns<10,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS10_4_sat>(reportTestCases), "lns<10,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<LNS10_8_sat>(reportTestCases), "lns<10,8, uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

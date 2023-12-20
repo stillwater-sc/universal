@@ -10,74 +10,78 @@
 #include <universal/number/dbns/table.hpp>
 #include <universal/verification/test_suite.hpp>
 
-namespace sw { namespace universal {
+namespace sw {
+	namespace universal {
+		namespace local {
 
-	//template<typename DbnsType,
-	//	std::enable_if_t<is_dbns<DbnsType>, DbnsType> = 0
-	//>
-	template<typename DbnsType>
-	int VerifyDivision(bool reportTestCases) {
-		constexpr size_t nbits = DbnsType::nbits;
-		//constexpr size_t rbits = DbnsType::rbits;
-		//constexpr Behavior behavior = DbnsType::behavior;
-		//using bt = typename DbnsType::BlockType;
-		constexpr size_t NR_ENCODINGS = (1ull << nbits);
+			//template<typename DbnsType,
+			//	std::enable_if_t<is_dbns<DbnsType>, DbnsType> = 0
+			//>
+			template<typename DbnsType>
+			int VerifyDivision(bool reportTestCases) {
+				constexpr size_t nbits = DbnsType::nbits;
+				//constexpr size_t rbits = DbnsType::rbits;
+				//constexpr Behavior behavior = DbnsType::behavior;
+				//using bt = typename DbnsType::BlockType;
+				constexpr size_t NR_ENCODINGS = (1ull << nbits);
 
-		int nrOfFailedTestCases = 0;
-		bool firstTime = true;
-		DbnsType a{}, b{}, c{}, cref{};
-		double ref{};
-		if (reportTestCases) a.debugConstexprParameters();
-		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
-				double db = double(b);
+				int nrOfFailedTestCases = 0;
+				bool firstTime = true;
+				DbnsType a{}, b{}, c{}, cref{};
+				double ref{};
+				if (reportTestCases) a.debugConstexprParameters();
+				for (size_t i = 0; i < NR_ENCODINGS; ++i) {
+					a.setbits(i);
+					double da = double(a);
+					for (size_t j = 0; j < NR_ENCODINGS; ++j) {
+						b.setbits(j);
+						double db = double(b);
 #if DBNS_THROW_ARITHMETIC_EXCEPTION
-				try {
-					c = a / b;
-					ref = da / db;
-				}
-				catch (const dbns_divide_by_zero& err) {
-					if (b.iszero()) {
-						// correctly caught divide by zero
-						if (firstTime) {
-							std::cout << "Correctly caught divide by zero exception : " << err.what() << '\n';
-							firstTime = false;
+						try {
+							c = a / b;
+							ref = da / db;
 						}
-						continue;
-					}
-					else {
-						++nrOfFailedTestCases;
-						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
-					}
-				}
+						catch (const dbns_divide_by_zero& err) {
+							if (b.iszero()) {
+								// correctly caught divide by zero
+								if (firstTime) {
+									std::cout << "Correctly caught divide by zero exception : " << err.what() << '\n';
+									firstTime = false;
+								}
+								continue;
+							}
+							else {
+								++nrOfFailedTestCases;
+								if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
+							}
+						}
 #else
-				c = a / b;
-				ref = da / db;
+						c = a / b;
+						ref = da / db;
 #endif
-				if (reportTestCases && !isInRange<DbnsType>(ref)) {
-					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+						if (reportTestCases && !isInRange<DbnsType>(ref)) {
+							std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+						}
+						cref = ref;
+						//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
+						//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
+						if (c != cref) {
+							if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
+							++nrOfFailedTestCases;
+							if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
+						}
+						else {
+							// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, c, ref);
+						}
+					}
+					if (nrOfFailedTestCases > 24) return 25;
 				}
-				cref = ref;
-//				std::cout << "ref  : " << to_binary(ref) << " : " << ref << '\n';
-//				std::cout << "cref : " << std::setw(68) << to_binary(cref) << " : " << cref << '\n';
-				if (c != cref) {
-					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", a, b, c, cref);
-				}
-				else {
-					// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, c, ref);
-				}
+				return nrOfFailedTestCases;
 			}
-			if (nrOfFailedTestCases > 24) return 25;
-		}
-		return nrOfFailedTestCases;
-	}
 
-} }
+		}
+	}
+}
 
 /*
 Generate Value table for an DBNS<4,2> in TXT format
@@ -218,15 +222,15 @@ try {
 	using DBNS8_4_sat = dbns<8, 4, std::uint8_t>;
 	using DBNS8_5_sat = dbns<8, 5, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS4_1_sat>(reportTestCases), "dbns< 4,1,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS4_2_sat>(reportTestCases), "dbns< 4,2,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS5_2_sat>(reportTestCases), "dbns< 5,2,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS5_3_sat>(reportTestCases), "dbns< 5,3,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS6_3_sat>(reportTestCases), "dbns< 6,3,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS7_3_sat>(reportTestCases), "dbns< 7,3,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS8_3_sat>(reportTestCases), "dbns< 8,3,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS8_4_sat>(reportTestCases), "dbns< 8,4,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<DBNS8_5_sat>(reportTestCases), "dbns< 8,5,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS4_1_sat>(reportTestCases), "dbns< 4,1,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS4_2_sat>(reportTestCases), "dbns< 4,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS5_2_sat>(reportTestCases), "dbns< 5,2,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS5_3_sat>(reportTestCases), "dbns< 5,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS6_3_sat>(reportTestCases), "dbns< 6,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS7_3_sat>(reportTestCases), "dbns< 7,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS8_3_sat>(reportTestCases), "dbns< 8,3,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS8_4_sat>(reportTestCases), "dbns< 8,4,uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyDivision<DBNS8_5_sat>(reportTestCases), "dbns< 8,5,uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

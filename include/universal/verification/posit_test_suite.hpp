@@ -685,11 +685,11 @@ namespace sw { namespace universal {
 				pmul = pa * pb;
 #endif
 				if (pmul != pref) {
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pmul, pref);
 					nrOfFailedTests++;
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pmul, pref);
 				}
 			}
 		}
@@ -729,11 +729,11 @@ namespace sw { namespace universal {
 				pmul *= pb;
 #endif
 				if (pmul != pref) {
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*=", pa, pb, pref, pmul);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*=", pa, pb, pmul, pref);
 					nrOfFailedTests++;
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*=", pa, pb, pref, pmul);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*=", pa, pb, pmul, pref);
 				}
 			}
 		}
@@ -761,10 +761,10 @@ namespace sw { namespace universal {
 
 			if (preciprocal != preference) {
 				nrOfFailedTests++;
-				if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "reciprocate", pa, preference, preciprocal);
+				if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "reciprocate", pa, preciprocal, preference);
 			}
 			else {
-				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "reciprocate", pa, preference, preciprocal);
+				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", "reciprocate", pa, preciprocal, preference);
 			}
 		}
 		return nrOfFailedTests;
@@ -811,7 +811,7 @@ namespace sw { namespace universal {
 						//pdiv = 0.0f;
 					}
 					else {
-						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pdiv, pref);
 						throw; // rethrow
 					}
 				}
@@ -822,7 +822,7 @@ namespace sw { namespace universal {
 						//pdiv.setnar();
 					}
 					else {
-						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pdiv, pref);
 						throw; // rethrow
 					}
 				}
@@ -831,11 +831,11 @@ namespace sw { namespace universal {
 #endif
 				// check against the IEEE reference
 				if (pdiv != pref) {
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pdiv, pref);
 					nrOfFailedTests++;
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pref, pdiv);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pdiv, pref);
 				}
 
 			}
@@ -874,7 +874,7 @@ namespace sw { namespace universal {
 						//pdiv.setnar();
 					}
 					else {
-						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pdiv, pref);
 						throw err; // rethrow
 					}
 				}
@@ -885,7 +885,7 @@ namespace sw { namespace universal {
 						//pdiv = 0.0f;
 					}
 					else {
-						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pdiv, pref);
 						throw err; // rethrow
 					}
 				}
@@ -896,7 +896,7 @@ namespace sw { namespace universal {
 						//pdiv.setnar();
 					}
 					else {
-						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pref, pdiv);
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pdiv, pref);
 						throw err; // rethrow
 					}
 				}
@@ -910,7 +910,7 @@ namespace sw { namespace universal {
 					nrOfFailedTests++;
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/=", pa, pb, pref, pdiv);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/=", pa, pb, pdiv, pref);
 				}
 
 			}

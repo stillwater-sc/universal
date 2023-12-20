@@ -40,10 +40,10 @@ int Compare(SrcType input, const TestType& nut, const RefType& reference, bool b
 	int fail = 0;
 	if (nut != reference) {
 		fail++;
-		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", double(input), double(reference), nut);
+		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", double(input), nut, double(reference));
 	}
 	else {
-		//if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", double(input), double(reference), nut);
+		//if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", double(input), nut, double(reference));
 	}
 	return fail;
 }

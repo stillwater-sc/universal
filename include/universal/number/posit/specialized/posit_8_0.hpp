@@ -187,45 +187,48 @@ public:
 	}
 		
 	// Selelctors
-	inline bool sign() const       { return (_bits & sign_mask); }
-	inline bool isnar() const      { return (_bits == sign_mask); }
-	inline bool iszero() const     { return (_bits == 0x00); }
-	inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
-	inline bool isminusone() const { return (_bits == 0xC0); } // pattern 110000...
-	inline bool isneg() const      { return (_bits & sign_mask); }
-	inline bool ispos() const      { return !isneg(); }
-	inline bool ispowerof2() const { return !(_bits & 0x1); }
+	bool sign() const noexcept       { return (_bits & sign_mask); }
+	bool isnar() const noexcept      { return (_bits == sign_mask); }
+	bool isnan() const noexcept      { return isnar(); }
+	bool isinf() const noexcept      { return false; }
+	bool iszero() const noexcept     { return (_bits == 0x00); }
+	bool isone() const noexcept      { return (_bits == 0x40); } // pattern 010000...
+	bool isminusone() const noexcept { return (_bits == 0xC0); } // pattern 110000...
+	bool isneg() const noexcept      { return (_bits & sign_mask); }
+	bool ispos() const noexcept      { return !isneg(); }
+	bool ispowerof2() const noexcept { return !(_bits & 0x1); }
 
-	inline int sign_value() const  { return (_bits & 0x80 ? -1 : 1); }
+	inline int sign_value() const noexcept { return (_bits & 0x80 ? -1 : 1); }
 
-	bitblock<NBITS_IS_8> get() const { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
-	unsigned long long bits() const { return (unsigned long long)(_bits); }
+	bitblock<NBITS_IS_8> get() const noexcept { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
+	unsigned long long bits() const noexcept { return (unsigned long long)(_bits); }
 
 	// Modifiers
-	inline void clear() { _bits = 0; }
-	inline void setzero() { clear(); }
-	inline void setnar() { _bits = 0x80; }
-	inline posit& minpos() {
+	void clear() noexcept { _bits = 0; }
+	void setzero() noexcept { clear(); }
+	void setnar() noexcept { _bits = 0x80; }
+	void setnan(bool sign) noexcept { setnar(); }
+	posit& minpos() noexcept {
 		clear();
 		return ++(*this);
 	}
-	inline posit& maxpos() {
+	posit& maxpos() noexcept {
 		setnar();
 		return --(*this);
 	}
-	inline posit& zero() {
+	posit& zero() noexcept {
 		clear();
 		return *this;
 	}
-	inline posit& minneg() {
+	posit& minneg() noexcept {
 		clear();
 		return --(*this);
 	}
-	inline posit& maxneg() {
+	posit& maxneg() noexcept {
 		setnar();
 		return ++(*this);
 	}
-	inline posit twosComplement() const {
+	posit twosComplement() const {
 		posit<NBITS_IS_8, ES_IS_0> p;
 		int8_t v = -*(int8_t*)&_bits;
 		p.setbits(v);
@@ -558,6 +561,7 @@ inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, double rhs) {
 }
 
 #endif // POSIT_ENABLE_LITERALS
+
 
 #endif // POSIT_FAST_POSIT_8_0
 

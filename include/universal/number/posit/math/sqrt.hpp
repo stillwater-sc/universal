@@ -320,6 +320,15 @@ namespace sw { namespace universal {
 	}
 #endif // POSIT_FAST_POSIT_16_1
 
+#if POSIT_FAST_POSIT_16_2
+
+	// fast sqrt for posit<16,2>
+	template<>
+	inline posit<16, 2> sqrt(const posit<16, 2>& a) {
+		return posit<16, 2>(std::sqrt(double(a)));
+	}
+
+#endif  // POSIT_FAST_POSIT_16_2
 
 #if POSIT_FAST_POSIT_32_2
 
