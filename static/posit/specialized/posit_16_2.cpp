@@ -79,49 +79,55 @@ try {
 	float fa, fb;
 	posit<16, 1> a, b, c;
 
-	{
-		posit<16, 2> a, b, c, cref;
-		float fa, fb, fc;
-		/*
-		FAIL
-		1.3877787807814456755e-17 +             -3.9990234375 !=            -1.99951171875 golden reference is             -3.9990234375
-			0b0.000000000000001.. +     0b1.10.01.11111111111 !=     0b1.10.00.11111111111 golden reference is     0b1.10.01.11111111111
+	// {
+	// 	posit<16, 2> a, b, c, cref;
+	// 	float fa, fb, fc;
+	// 	/*
+	// 	FAIL
+	// 	1.3877787807814456755e-17 +             -3.9990234375 !=            -1.99951171875 golden reference is             -3.9990234375
+	// 		0b0.000000000000001.. +     0b1.10.01.11111111111 !=     0b1.10.00.11111111111 golden reference is     0b1.10.01.11111111111
 
-		1.3877787807814456755e-17 + -7.3341652750968933105e-09 != -5.4715201258659362793e-09 golden reference is -7.3341652750968933105e-09
-			0b0.000000000000001.. +     0b1.00000001.00.11111 !=     0b1.00000001.00.01111 golden reference is     0b1.00000001.00.11111
+	// 	1.3877787807814456755e-17 + -7.3341652750968933105e-09 != -5.4715201258659362793e-09 golden reference is -7.3341652750968933105e-09
+	// 		0b0.000000000000001.. +     0b1.00000001.00.11111 !=     0b1.00000001.00.01111 golden reference is     0b1.00000001.00.11111
 
-		1.3877787807814456755e-17 - 2.2204460492503130808e-16 != -1.3877787807814456755e-17 golden reference is -2.2204460492503130808e-16
-		0b0.000000000000001.. -     0b0.00000000000001.0. !=     0b1.000000000000001.. golden reference is     0b1.00000000000001.0.
-		 */
-		a.setbits(0x0001);
-		//b.setbits(0xCFFF);  // 0b1.10.0'1.111'1111'1111
-		b.setbits(0x809F);  // 0b1000'0000'1001'1111
-		b.setbits(0x0002);  // 0b0000'0000'0000'0010
-		//a = 1;
-		//b = -1.5f;
-		c = a - b;
-		fa = float(a);
-		fb = float(b);
-		fc = fa + fb;
-		cref = fc;
-		std::cout 
-			<< std::setw(NUMBER_COLUMN_WIDTH) << a << " + "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << b << " = "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << c << '\n';
-		std::cout
-			<< std::setw(NUMBER_COLUMN_WIDTH) << fa << " + "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << fb << " = "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << fc << '\n';
-		std::cout
-			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fa) << " + "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fb) << " = "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fc) << '\n';
-		ReportBinaryOperation(a, "+", b, c);
-		ReportBinaryArithmeticError("bla", "+", a, b, c, cref);
-	}
+	// 	1.3877787807814456755e-17 - 2.2204460492503130808e-16 != -1.3877787807814456755e-17 golden reference is -2.2204460492503130808e-16
+	// 	0b0.000000000000001.. -     0b0.00000000000001.0. !=     0b1.000000000000001.. golden reference is     0b1.00000000000001.0.
+	// 	 */
+	// 	a.setbits(0x0001);
+	// 	//b.setbits(0xCFFF);  // 0b1.10.0'1.111'1111'1111
+	// 	b.setbits(0x809F);  // 0b1000'0000'1001'1111
+	// 	// b.setbits(0x0002);  // 0b0000'0000'0000'0010
+	// 	//a = 1;
+	// 	//b = -1.5f;
+	// 	c = a - b;
+	// 	fa = float(a);
+	// 	fb = float(b);
+	// 	fc = fa - fb;
+	// 	cref = fc;
+	// 	std::cout 
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << a << " - "
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << b << " = "
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << c << '\n';
+	// 	std::cout
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << fa << " - "
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << fb << " = "
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << fc << '\n';
+	// 	std::cout
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fa) << " - "
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fb) << " = "
+	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fc) << '\n';
+	// 	ReportBinaryOperation(a, "-", b, c);
+	// 	ReportBinaryArithmeticError("bla", "-", a, b, c, cref);
+	// }
 	
-	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction<nbits, es>(reportTestCases), tag, "sub            (native)  ");
-	//nrOfFailedTestCases += ReportTestResult(VerifyAddition<nbits, es>(reportTestCases), tag, "add            (native)  ");
+	std::cout << "Manual exhaustive div" << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<nbits, es>(reportTestCases), tag, "div            (native)  ");
+	std::cout << "Manual exhaustive mul" << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<nbits, es>(reportTestCases), tag, "mul            (native)  ");
+	std::cout << "Manual exhaustive sub" << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<nbits, es>(reportTestCases), tag, "sub            (native)  ");
+	std::cout << "Manual exhaustive add" << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<nbits, es>(reportTestCases), tag, "add            (native)  ");
 	return 0;
 /*
 	{
