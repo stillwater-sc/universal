@@ -16,7 +16,7 @@
 
 // generate specific test case that you can trace with the trace conditions in blocksignificant
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType>& lhs, const sw::universal::blocksignificant <nbits, BlockType>& rhs) {
 	using namespace sw::universal;
 
