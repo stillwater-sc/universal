@@ -576,33 +576,33 @@ namespace sw { namespace universal {
 			pa.setbits(i);
 			double da = double(pa);
 			for (unsigned j = 0; j < NR_POSITS; j++) {
-				posit<nbits, es> pb, pref, pdif;
+				posit<nbits, es> pb, pref, pdiff;
 
 				pb.setbits(j);
 				double db = double(pb);
 				pref = da - db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 				try {
-					pdif = pa - pb;
+					pdiff = pa - pb;
 				}
 				catch (const posit_operand_is_nar&) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
-						pdif.setnar();
+						pdiff.setnar();
 					}
 					else {
 						throw; // rethrow
 					}
 				}
 #else
-				pdif = pa - pb;
+				pdiff = pa - pb;
 #endif
-				if (pdif != pref) {
+				if (pdiff != pref) {
 					nrOfFailedTests++;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pdif, pref);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pdiff, pref);
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", pa, pb, pdif, pref);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", pa, pb, pdiff, pref);
 				}
 			}
 		}
@@ -620,34 +620,34 @@ namespace sw { namespace universal {
 			pa.setbits(i);
 			double da = double(pa);
 			for (unsigned j = 0; j < NR_POSITS; j++) {
-				posit<nbits, es> pb, pref, pdif;
+				posit<nbits, es> pb, pref, pdiff;
 				pb.setbits(j);
 				double db = double(pb);
 				pref = da - db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 				try {
-					pdif = pa;
-					pdif -= pb;
+					pdiff = pa;
+					pdiff -= pb;
 				}
 				catch (const posit_operand_is_nar& err) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
-						pdif.setnar();
+						pdiff.setnar();
 					}
 					else {
 						throw err;  // rethrow
 					}
 				}
 #else
-				pdif = pa;
-				pdif -= pb;
+				pdiff = pa;
+				pdiff -= pb;
 #endif
-				if (pdif != pref) {
+				if (pdiff != pref) {
 					nrOfFailedTests++;
-					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-=", pa, pb, pdif, pref);
+					if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-=", pa, pb, pdiff, pref);
 				}
 				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-=", pa, pb, pdif, pref);
+					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-=", pa, pb, pdiff, pref);
 				}
 			}
 		}

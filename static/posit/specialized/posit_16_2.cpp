@@ -86,10 +86,20 @@ try {
 		FAIL
 		1.3877787807814456755e-17 +             -3.9990234375 !=            -1.99951171875 golden reference is             -3.9990234375
 			0b0.000000000000001.. +     0b1.10.01.11111111111 !=     0b1.10.00.11111111111 golden reference is     0b1.10.01.11111111111
+
+		1.3877787807814456755e-17 + -7.3341652750968933105e-09 != -5.4715201258659362793e-09 golden reference is -7.3341652750968933105e-09
+			0b0.000000000000001.. +     0b1.00000001.00.11111 !=     0b1.00000001.00.01111 golden reference is     0b1.00000001.00.11111
+
+		1.3877787807814456755e-17 - 2.2204460492503130808e-16 != -1.3877787807814456755e-17 golden reference is -2.2204460492503130808e-16
+		0b0.000000000000001.. -     0b0.00000000000001.0. !=     0b1.000000000000001.. golden reference is     0b1.00000000000001.0.
 		 */
 		a.setbits(0x0001);
-		b.setbits(0xCFFF);  // 0b1.10.0'1.111'1111'1111
-		c = a + b;
+		//b.setbits(0xCFFF);  // 0b1.10.0'1.111'1111'1111
+		b.setbits(0x809F);  // 0b1000'0000'1001'1111
+		b.setbits(0x0002);  // 0b0000'0000'0000'0010
+		//a = 1;
+		//b = -1.5f;
+		c = a - b;
 		fa = float(a);
 		fb = float(b);
 		fc = fa + fb;
@@ -110,7 +120,8 @@ try {
 		ReportBinaryArithmeticError("bla", "+", a, b, c, cref);
 	}
 	
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(reportTestCases), tag, "add            (native)  ");
+	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction<nbits, es>(reportTestCases), tag, "sub            (native)  ");
+	//nrOfFailedTestCases += ReportTestResult(VerifyAddition<nbits, es>(reportTestCases), tag, "add            (native)  ");
 	return 0;
 /*
 	{

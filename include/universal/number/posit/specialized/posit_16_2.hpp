@@ -247,12 +247,12 @@ public:
 		// extract the exponent
 		uint16_t exp = remaining >> 13;
 
-		uint32_t lhs_fraction = (0x4000 | remaining) << 16;
+		uint32_t lhs_fraction = (0x4000 | remaining << 1) << 16;
 		int8_t shiftRight = m;
 
 		// adjust shift and extract fraction bits of rhs
 		extractAddand(rhs, shiftRight, remaining);
-		uint32_t rhs_fraction = (0x4000 | remaining) << 16;
+		uint32_t rhs_fraction = (0x4000 | remaining << 1) << 16;
 
 		// align the fractions for subtraction
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 13);
