@@ -162,18 +162,13 @@ public:
 		// extract remaining fraction bits
 		uint32_t lhs_fraction = ((0x4000 | remaining << 1) & 0x7FFF) << 16; // 0x4000 is the hidden bit
 		int8_t shiftRight = k;
-		// std::cout << "lhs frac: " << to_binary(lhs_fraction, 32) << '\n';
 
 		// adjust shift and extract fraction bits of rhs
-		// std::cout << "shiftRight: " << int(shiftRight) << '\n';
 		extractAddand(rhs, shiftRight, remaining);
-		// std::cout << "extractAddand shiftRight: " << int(shiftRight) << " remaining: " << to_binary(remaining, 16, true) << '\n';
 		uint32_t rhs_fraction = ((0x4000 | remaining << 1) & 0x7FFF) << 16; // 0x4000 is the hidden bit
-		// std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
 
 		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 13);
-		// std::cout << "shiftRight : " << int(shiftRight) << '\n';
 
 		if (shiftRight == 0) { // we can simplify the computation
 			lhs_fraction += rhs_fraction;  // this will always produce a carry
@@ -186,9 +181,7 @@ public:
 		}
 		else {
 			(shiftRight > 15) ? (rhs_fraction = 0) : (rhs_fraction >>= shiftRight); // frac16B >>= shiftRight
-			// std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
 			lhs_fraction += rhs_fraction;
-			// std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 			bool rcarry = (0x8000'0000 & lhs_fraction) != 0; // first left bit
 			if (rcarry) {
@@ -200,8 +193,6 @@ public:
 				lhs_fraction >>= 1;
 			}
 		}
-
-		// std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		_bits = round(k, exp, lhs_fraction);
 		if (sign) _bits = -_bits & 0xFFFF;
@@ -240,49 +231,53 @@ public:
 		}
 
 		// decode the regime of lhs
-		int8_t m = 0; // pattern length
-		uint16_t remaining = 0;
-		decode_regime(lhs, m, remaining);
+		int8_t k;  // regime numerical value
+		uint16_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
+		decode_regime(lhs, k, remaining);
 
 		// extract the exponent
-		uint16_t exp = remaining >> 13;
+		uint16_t exp = remaining >> 13;  // 16 - 1(sign) - 2(exponent)
 
-		uint32_t lhs_fraction = (0x4000 | remaining << 1) << 16;
-		int8_t shiftRight = m;
+		uint32_t lhs_fraction = ((0x4000 | remaining << 1) & 0x7FFF) << 16; // 0x4000 is the hidden bit
+		int8_t shiftRight = k;
 
 		// adjust shift and extract fraction bits of rhs
 		extractAddand(rhs, shiftRight, remaining);
-		uint32_t rhs_fraction = (0x4000 | remaining << 1) << 16;
+		uint32_t rhs_fraction = ((0x4000 | remaining << 1) & 0x7FFF) << 16; // 0x4000 is the hidden bit
 
 		// align the fractions for subtraction
+		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 13);
-		if (shiftRight != 0) {
-			if (shiftRight >= 29) {
-				_bits = lhs;
-				if (sign) _bits = -_bits & 0xFFFF;
-				return *this;
-			}
-			else {
-				rhs_fraction >>= shiftRight;
-			}
+		if (shiftRight > 31) {
+			_bits = lhs;
+			if (sign) _bits = -_bits & 0xFFFF;
+			return *this;
 		}
 		else {
 			rhs_fraction >>= shiftRight;
 		}
+
 		lhs_fraction -= rhs_fraction;
 
-		while ((lhs_fraction >> 29) == 0) {
-			--m;
-			lhs_fraction <<= 2;
-		}
-		bool ecarry = (0x4000'0000 & lhs_fraction) != 0;
-		if (!ecarry) {
-			if (exp == 0) --m;
-			exp ^= 1;
-			lhs_fraction <<= 1;
+		while ((lhs_fraction >> 27) == 0) {
+			--k;
+			lhs_fraction <<= 4;
 		}
 
-		_bits = round(m, exp, lhs_fraction);
+		bool ecarry = (0x4000'0000 & lhs_fraction) != 0;
+		while (!ecarry) {
+			if (exp == 0) {
+				--k;
+				exp = 3;
+			}
+			else {
+				--exp;
+			}
+			lhs_fraction <<= 1;
+			ecarry = (0x4000'0000 & lhs_fraction) != 0;
+		}
+
+		_bits = round(k, exp, lhs_fraction);
 		if (sign) _bits = -_bits & 0xFFFF;
 		return *this;
 	}
@@ -310,35 +305,38 @@ public:
 		rhs = rhs & sign_mask ? -rhs : rhs;
 
 		// decode the regime of lhs
-		int8_t m = 0; // pattern length
-		uint16_t remaining = 0;
-		decode_regime(lhs, m, remaining);
+		int8_t k = 0;  // regime numerical value
+		uint16_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
+		decode_regime(lhs, k, remaining);
 
 		// extract the exponent
-		int32_t exp = remaining >> 14;
+		int32_t exp = remaining >> 13;  // 16 - 1(sign) - 2(exponent)
 
-		// add the hidden bit
-		uint32_t lhs_fraction = (0x4000 | remaining);
+		// extract remaining fraction bits
+		uint16_t lhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
 		// adjust shift and extract fraction bits of rhs
-		extractMultiplicand(rhs, m, remaining);
-		exp += (remaining >> 14);
-		uint32_t rhs_fraction = (0x4000 | remaining);
-		uint32_t result_fraction = lhs_fraction * rhs_fraction;
-		//std::cout << "fbits 0x" << std::hex << result_fraction << std::dec << std::endl;
+		extractMultiplicand(rhs, k, remaining);
+		exp += (remaining >> 13);
+		uint16_t rhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
+		uint32_t result_fraction = (uint32_t) lhs_fraction * rhs_fraction;
 
-		if (exp > 1) {
-			++m;
-			exp ^= 0x2;
+		if (exp > 3) {
+			++k;
+			exp &= 0x3;
 		}
+	
 		bool rcarry = bool(result_fraction & 0x20000000);
 		if (rcarry) {
-			if (exp) m++;
-			exp ^= 0x1;
+			exp++;
+			if (exp > 3) {
+				++k;
+				exp &= 0x3;
+			}
 			result_fraction >>= 1;
 		}
 
 		// round
-		_bits = adjustAndRound(m, exp, result_fraction);
+		_bits = adjustAndRound(k, exp, result_fraction);
 		if (sign) _bits = -_bits & 0xFFFF;
 		return *this;
 	}
@@ -375,21 +373,21 @@ public:
 		rhs = rhs & sign_mask ? -rhs : rhs;
 
 		// decode the regime of lhs
-		int8_t m = 0; // pattern length
-		uint16_t remaining = 0;
-		decode_regime(lhs, m, remaining);
+		int8_t k; // regime numerical value
+		uint16_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
+		decode_regime(lhs, k, remaining);
 
 		// extract the exponent
-		int32_t exp = remaining >> 14;
+		int32_t exp = remaining >> 13; // 16 - 1(sign) - 2(exponent)
 
-		// extract the fraction
-		uint16_t lhs_fraction = (0x4000 | remaining);
-		uint32_t fraction = lhs_fraction << 14;
+		// extract remaining fraction bits
+		uint16_t lhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
+		uint32_t fraction = (uint32_t) lhs_fraction << 14;
 
 		// adjust shift and extract fraction bits of rhs
-		extractDividand(rhs, m, remaining);
-		exp -= remaining >> 14;
-		uint16_t rhs_fraction = (0x4000 | remaining);
+		extractDividand(rhs, k, remaining);
+		exp -= remaining >> 13;
+		uint16_t rhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
 
 		div_t result = div(fraction, rhs_fraction);
 		uint32_t result_fraction = result.quot;
@@ -397,20 +395,25 @@ public:
 
 		// adjust the exponent if needed
 		if (exp < 0) {
-			exp = 0x01;
-			--m;
+			exp += 4;
+			--k;
 		}
 		if (result_fraction != 0) {
 			bool rcarry = result_fraction >> 14; // this is the hidden bit (14th bit), extreme right bit is bit 0
 			if (!rcarry) {
-				if (exp == 0) --m;
-				exp ^= 0x01;
+				if (exp == 0) {
+					--k;
+					exp = 3;
+				}
+				else {
+					--exp;
+				}
 				result_fraction <<= 1;
 			}
 		}
 
 		// round
-		_bits = divRound(m, exp, result_fraction, remainder != 0);
+		_bits = divRound(k, exp, result_fraction, remainder != 0);
 		if (sign) _bits = -_bits & 0xFFFF;
 
 		return *this;
@@ -698,35 +701,37 @@ private:
 			remaining &= 0x7FFF;
 		}
 	}
-	inline void extractMultiplicand(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
+	// TODO: This is the same as decode_regime except the initialization of k. Can we combine them?
+	inline void extractMultiplicand(const uint16_t bits, int8_t& k, uint16_t& remaining) const {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
-				++m;
+				++k;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 		}
 		else {              // negative regimes
-			--m;
+			--k;
 			while (!(remaining >> 15)) {
-				--m;
+				--k;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 			remaining &= 0x7FFF;
 		}
 	}
-	inline void extractDividand(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
+	// TODO: This is the same as extractAddand. Can we combine them?
+	inline void extractDividand(const uint16_t bits, int8_t& k, uint16_t& remaining) const {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
-				--m;
+				--k;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 		}
 		else {              // negative regimes
-			++m;
+			++k;
 			while (!(remaining >> 15)) {
-				++m;
+				++k;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 			remaining &= 0x7FFF;
@@ -743,20 +748,13 @@ private:
 			scale = int16_t(k) + 1;
 			regime = 0x7FFF - (0x7FFF >> scale);
 		}
-		//std::cout << "scale    : " << scale << '\n';
-		//std::cout << "regime   : " << to_binary(regime, 16) << '\n';
-		//std::cout << "exponent : " << to_binary(exp, 16) << '\n';
 
 		if (scale > 14) {
 			bits = k < 0 ? 0x0001 : 0x7FFF;  // minpos and maxpos. exp and frac do not matter
 		}
 		else {
-			//std::cout << "fraction in  : " << to_binary(fraction, 32) << '\n';
-
 			fraction = (fraction & 0x3FFFFFFF) >> (scale + 2); // remove both carry bits, 2 bits exp
-			//std::cout << "fraction out : " << to_binary(fraction, 32) << '\n';
 			uint16_t final_fbits = uint16_t(fraction >> 16);
-			//std::cout << "fraction bits: " << to_binary(final_fbits, 16) << '\n';
 			bool bitNPlusOne = false;
 			uint16_t moreBits = 0;
 			if (scale <= 12) {
@@ -779,10 +777,6 @@ private:
 				}
 			}
 
-			// std::cout << "composite regime   : " << to_binary(regime, 16) << '\n';
-			// std::cout << "composite exponent : " << to_binary(exp) << '\n';
-			// std::cout << "composite fraction : " << to_binary(final_fbits) << '\n';
-
 			bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
 			// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 			if (bitNPlusOne) {
@@ -792,84 +786,103 @@ private:
 		}
 		return bits;
 	}
-	inline uint16_t divRound(const int8_t m, uint16_t exp, uint32_t fraction, bool nonZeroRemainder) const {
-		uint16_t scale, regime, bits;
-		if (m < 0) {
-			scale = (-m & 0xFFFF);
+	inline uint16_t divRound(const int8_t k, uint16_t exp, uint32_t fraction, bool nonZeroRemainder) const {
+		int16_t scale;
+		uint16_t regime, bits;
+		if (k < 0) {
+			scale = (-k & 0xFFFF);
 			regime = 0x4000 >> scale;
 		}
 		else {
-			scale = m + 1;
+			scale = int16_t(k) + 1;
 			regime = 0x7FFF - (0x7FFF >> scale);
 		}
 
 		if (scale > 14) {
-			bits = m < 0 ? 0x0001 : 0x7FFF;  // minpos and maxpos
+			bits = k < 0 ? 0x0001 : 0x7FFF;  // minpos and maxpos. exp and frac do not matter 
 		}
 		else {
-			fraction &= 0x3FFF; // remove both carry bits
-			uint16_t final_fbits = uint16_t(fraction >> (scale + 1));
+			fraction &= 0x3FFF; //remove carry and rcarry bits and shift to correct position
+			uint16_t final_fbits = uint16_t(fraction >> (scale + 2));
 			bool bitNPlusOne = false;
-			if (scale != 14) {
-				bitNPlusOne = bool((fraction >> scale) & 0x1);
-			}
-			else if (final_fbits > 0) {
-				final_fbits = 0;
-			}
-			if (scale == 14 && exp != 0) {
-				bitNPlusOne = true;
-				exp = 0;
+			uint16_t moreBits = 0;
+			if (scale <= 12) {
+				bitNPlusOne = bool((fraction >> (scale + 1)) & 0x1);
+				exp <<= (12 - scale);
+				if (bitNPlusOne && (((1 << (scale + 1)) - 1) & fraction)) {
+					moreBits = 0x0001;
+				}
 			}
 			else {
-				exp <<= (13 - scale);
+				if (scale == 14) {
+					bitNPlusOne = bool(exp & 0x2);
+					moreBits = exp & 0x1;
+					exp = 0;
+				}
+				else if (scale == 13) {
+					bitNPlusOne = bool(exp & 0x1);
+					exp >>= 1;
+				}
+				if (final_fbits > 0) {
+					final_fbits = 0;
+					moreBits = 0x0001;
+				}
 			}
+
 			bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
 
 			if (bitNPlusOne) {
-				uint16_t moreBits = (fraction & ((1 << scale) - 1)) ? 0x0001 : 0x0000;
 				if (nonZeroRemainder) moreBits = 0x0001;
-				// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 				bits += (bits & 0x0001) | moreBits;
 			}
 		}
 		return bits;
 	}
-	inline uint16_t adjustAndRound(const int8_t m, uint16_t exp, uint32_t fraction) const {
-		uint16_t scale, regime, bits;
-		if (m < 0) {
-			scale = (-m & 0xFFFF);
+	inline uint16_t adjustAndRound(const int8_t k, uint16_t exp, uint32_t fraction) const {
+		int16_t scale;
+		uint16_t regime, bits;
+		if (k < 0) {
+			scale = (-k & 0xFFFF);
 			regime = 0x4000 >> scale;
 		}
 		else {
-			scale = m + 1;
+			scale = int16_t(k) + 1;
 			regime = 0x7FFF - (0x7FFF >> scale);
 		}
 
 		if (scale > 14) {
-			bits = m < 0 ? 0x0001 : 0x7FFF;  // minpos and maxpos
+			bits = k < 0 ? 0x0001 : 0x7FFF;  // minpos and maxpos. exp and frac do not matter 
 		}
 		else {
-			fraction = (fraction & 0x0FFFFFFF) >> (scale - 1); // remove both carry bits
+			// remove carry and rcarry bits and shift to correct position
+			fraction = (fraction & 0x0FFFFFFF) >> scale;
 			uint16_t final_fbits = uint16_t(fraction >> 16);
 			bool bitNPlusOne = false;
-			if (scale != 14) {
+			uint16_t moreBits = 0;
+			if (scale <= 12) {
 				bitNPlusOne = bool(0x8000 & fraction);
-			}
-			else if (final_fbits > 0) {
-				final_fbits = 0;
-			}
-			if (scale == 14 && exp != 0) {
-				bitNPlusOne = true;
-				exp = 0;
+				exp <<= (12 - scale);
 			}
 			else {
-				exp <<= (13 - scale);
+				if (scale == 14) {
+					bitNPlusOne = bool(exp & 0x2);
+					moreBits = exp & 0x1;
+					exp = 0;
+				}
+				else if (scale == 13) {
+					bitNPlusOne = bool(exp & 0x1);
+					exp >>= 1;
+				}
+				if (final_fbits > 0) {
+					final_fbits = 0;
+					moreBits = 1;
+				}
 			}
 
 			bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
 			// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 			if (bitNPlusOne) {
-				uint16_t moreBits = (0x7FFF & fraction) ? 0x0001 : 0x0000;
+				if (0x7FFF & fraction) moreBits = 1;
 				bits += (bits & 0x0001) | moreBits;
 			}
 		}
