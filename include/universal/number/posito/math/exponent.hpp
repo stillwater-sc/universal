@@ -1,5 +1,5 @@
 #pragma once
-// exponent.hpp: exponent functions for posits
+// exponent.hpp: exponent functions for positos
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -7,14 +7,14 @@
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
+// the current shims are NON-COMPLIANT with the posito standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Base-e exponential function
 template<unsigned nbits, unsigned es>
-posit<nbits,es> exp(posit<nbits,es> x) {
+posito<nbits,es> exp(posito<nbits,es> x) {
 	if (isnar(x)) return x;
-	posit<nbits, es> p;
+	posito<nbits, es> p;
 	double d = std::exp(double(x));
 	if (d == 0.0) {
 		p.minpos();
@@ -27,9 +27,9 @@ posit<nbits,es> exp(posit<nbits,es> x) {
 
 // Base-2 exponential function
 template<unsigned nbits, unsigned es>
-posit<nbits,es> exp2(posit<nbits,es> x) {
+posito<nbits,es> exp2(posito<nbits,es> x) {
 	if (isnar(x)) return x;
-	posit<nbits, es> p;
+	posito<nbits, es> p;
 	double d = std::exp2(double(x));
 	if (d == 0.0) {
 		p.minpos();
@@ -42,14 +42,14 @@ posit<nbits,es> exp2(posit<nbits,es> x) {
 
 // Base-10 exponential function
 template<unsigned nbits, unsigned es>
-posit<nbits, es> exp10(posit<nbits, es> x) {
-	return posit<nbits, es>(std::pow(10.0, double(x)));
+posito<nbits, es> exp10(posito<nbits, es> x) {
+	return posito<nbits, es>(std::pow(10.0, double(x)));
 }
 		
 // Base-e exponential function exp(x)-1
 template<unsigned nbits, unsigned es>
-posit<nbits,es> expm1(posit<nbits,es> x) {
-	return posit<nbits,es>(std::expm1(double(x)));
+posito<nbits,es> expm1(posito<nbits,es> x) {
+	return posito<nbits,es>(std::expm1(double(x)));
 }
 
 

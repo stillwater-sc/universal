@@ -1,5 +1,5 @@
 #pragma once
-// math_next.hpp: nextafter/nexttoward functions for posits
+// math_next.hpp: nextafter/nexttoward functions for positos
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -24,7 +24,7 @@ Return Value
 	- And math_errhandling has MATH_ERREXCEPT set: FE_OVERFLOW is raised.
 	*/
 template<unsigned nbits, unsigned es>
-posit<nbits,es> nextafter(posit<nbits,es> x, posit<nbits, es> target) {
+posito<nbits,es> nextafter(posito<nbits,es> x, posito<nbits, es> target) {
 	if (x == target || x.isnar()) return x;
 	if (target.isnar()) {
 		if (x.isneg()) {
@@ -46,8 +46,8 @@ posit<nbits,es> nextafter(posit<nbits,es> x, posit<nbits, es> target) {
 }
 		
 template<unsigned nbits, unsigned es>
-posit<nbits,es> nexttoward(posit<nbits,es> x, posit<256, 5> target) {
-	posit<256, 5> _x(x);
+posito<nbits,es> nexttoward(posito<nbits,es> x, posito<256, 5> target) {
+	posito<256, 5> _x(x);
 	if (_x == target || x.isnar()) return x;
 	if (target.isnar()) {
 		if (x.isneg()) {

@@ -1,5 +1,5 @@
 #pragma once
-// sqrt_tables.hpp: specialized posit configurations to support efficient sqrt for small posits
+// sqrt_tables.hpp: specialized posito configurations to support efficient sqrt for small positos
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -7,41 +7,41 @@
 
 namespace sw { namespace universal {
 
-// need a better code generator for the small posits up to nbits = 8
+// need a better code generator for the small positos up to nbits = 8
 // TODO: find if there is any structure in these tables across nbits and es
 
 template<unsigned nbits, unsigned es>
-void GenerateSqrtTable() {
-	constexpr unsigned int NR_POSITS = (unsigned(1) << (nbits - 1)); // no need for negative posits
+void GeneratePositoSqrtTable() {
+	constexpr unsigned int NR_POSITS = (unsigned(1) << (nbits - 1)); // no need for negative positos
 
 	std::cout << std::setprecision(20);
-	posit<nbits, es> p;
+	posito<nbits, es> p;
 	for (unsigned int i = 0; i < NR_POSITS; i++) {
 		p.set_raw_bits(i);
 		double ref = std::sqrt(double(p));
-		posit<nbits, es> psqrt(ref);
+		posito<nbits, es> psqrt(ref);
 		std::cout << p.get() << " " << psqrt.get() << "      " << p << " " << psqrt << " ref: " << ref << std::endl;
 	}
 	std::cout << std::setprecision(5);
 }
 
-// roots for posit<3,0>
+// roots for posito<3,0>
 //   v   r       v   r          high precision root
 //  000 000      0   0     ref : 0
 //  001 001      0.5 0.5   ref : 0.70710678118654757274
 //	010 010      1   1     ref : 1
 //	011 010      2   1     ref : 1.4142135623730951455
-constexpr unsigned posit_3_0_roots[4] = { 0, 1, 2, 2 };
+constexpr unsigned posito_3_0_roots[4] = { 0, 1, 2, 2 };
 
-// roots for posit<3,1>
+// roots for posito<3,1>
 //   v   r       v   r          high precision root
 //  000 000      0    0     ref : 0
 //  001 001      0.25 0.5   ref : 0.5
 //	010 010      1   1      ref : 1
 //	011 010      4   1      ref : 1
-constexpr unsigned posit_3_1_roots[4] = { 0, 1, 2, 2 };
+constexpr unsigned posito_3_1_roots[4] = { 0, 1, 2, 2 };
 
-// roots for posit<4,0>
+// roots for posito<4,0>
 //   v    r        v    r        high precision root
 //	0000 0000      0    0        ref: 0
 //	0001 0010      0.25 0.5      ref: 0.5
@@ -51,9 +51,9 @@ constexpr unsigned posit_3_1_roots[4] = { 0, 1, 2, 2 };
 //	0101 0100      1.5  1        ref : 1.2247448713915889407
 //	0110 0101      2    1.5      ref : 1.4142135623730951455
 //	0111 0110      4    2        ref : 2
-constexpr unsigned posit_4_0_roots[8] = { 0, 2, 3, 3, 4, 4, 5, 6 };
+constexpr unsigned posito_4_0_roots[8] = { 0, 2, 3, 3, 4, 4, 5, 6 };
 
-// roots for posit<5,0>
+// roots for posito<5,0>
 //   v     r         v    r        high precision root
 //	00000 00000      0     0       ref: 0
 //	00001 00011      0.125 0.375   ref : 0.35355339059327378637
@@ -71,10 +71,10 @@ constexpr unsigned posit_4_0_roots[8] = { 0, 2, 3, 3, 4, 4, 5, 6 };
 //	01101 01011      3     1.75    ref : 1.7320508075688771932
 //	01110 01100      4     2       ref : 2
 //	01111 01101      8     3       ref : 2.8284271247461902909
-constexpr unsigned posit_5_0_roots[16] = { 0, 3, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11, 12, 13 };
+constexpr unsigned posito_5_0_roots[16] = { 0, 3, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11, 12, 13 };
 
-// roots of the sqrt for posit<8,0>
-constexpr unsigned posit_8_0_roots[128] = {
+// roots of the sqrt for posito<8,0>
+constexpr unsigned posito_8_0_roots[128] = {
 	0x00, 0x08, 0x0B, 0x0E, 0x10, 0x12, 0x14, 0x15,
 	0x17, 0x18, 0x19, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
 	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x26,
@@ -93,8 +93,8 @@ constexpr unsigned posit_8_0_roots[128] = {
 	0x67, 0x69, 0x6C, 0x6E, 0x70, 0x72, 0x73, 0x78
 };
 
-// roots of the sqrt for posit<8,1>
-constexpr unsigned posit_8_1_roots[128] = {
+// roots of the sqrt for posito<8,1>
+constexpr unsigned posito_8_1_roots[128] = {
 	0x00,0x08,0x0c,0x0e,0x10,0x12,0x13,0x16,
 	0x18,0x19,0x1a,0x1b,0x1b,0x1d,0x1e,0x1f,
 	0x20,0x21,0x22,0x23,0x24,0x24,0x25,0x26,

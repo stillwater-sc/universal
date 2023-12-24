@@ -4,8 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/native/integers.hpp>
-#include <universal/number/integer/integer.hpp>
+
 //
 // Configure the posit template environment
 // first: enable fast specialized posit<16,2>
@@ -78,26 +77,17 @@ try {
 
 	*/
 
-	float fa, fb;
-	posit<16, 1> a, b, c;
-	a.maxpos();
-	uint64_t i64 = uint64_t(a);
-	std::cout << "posit<16,1> : " << i64 << " : " << a << " : " << to_binary(a) << '\n';
-	std::cout << std::setw(25) << "maxpos" << " : " << to_binary(i64, 32, true) << " : " << i64 << '\n';
-	i64 /= 2;
-	std::cout << std::setw(25) << "half maxpos" << " : " << to_binary(i64, 32, true) << " : " << i64 << '\n';
+	posit<16, 2> a, b, c, cref;
+	float fa, fb, fc;
 
 	{
-	 	posit<16, 2> a, b, c, cref;
-	 	float fa, fb, fc;
+
 		a.maxpos();
 		uint64_t i64 = uint64_t(a);
 		std::cout << "posit<16,2> : " << i64 << " : " << a << " : " << to_binary(a) << '\n';
 		std::cout << std::setw(25) << "maxpos" << " : " << to_binary(i64, 64, true) << " : " << i64 << '\n';
 		i64 /= 2;
 		std::cout << std::setw(25) << "half maxpos" << " : " << to_binary(i64, 64, true) << " : " << i64 << '\n';
-		integer<128> i128 = double(a);
-		std::cout << std::setw(25) << "maxpos" << " : " << to_binary(i128, true) << " : " << i128 << '\n';
 
 	/*
 		FAIL
@@ -141,110 +131,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<nbits, es>(reportTestCases), tag, "sub            (native)  ");
 	std::cout << "Manual exhaustive add" << std::endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<nbits, es>(reportTestCases), tag, "add            (native)  ");
-	return 0;
-/*
-	{
-
-
-		int8_t m;
-		uint16_t remaining;
-		uint16_t bits;
-		a.setbits(0x5C02);
-		b.setbits(0x4002);
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		c = a + b;
-		ReportValue(c, "c");
-	}
-	*/
-	{
-		posit<16, 2> a, b, c;
-
-		//a = 1;
-		//std::cout << "scale : " << scale(a) << '\n';
-
-		int8_t m;
-		uint16_t remaining;
-		uint16_t bits;
-		std::cout << "\n+----------------      0b0.10.11.100'0000'0010\n";
-		a.setbits(0x5C02);   // 0b0.10.11.100'0000'0010
-		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		c = a + b;
-		ReportValue(c, "c");
-
-		std::cout << "\n+----------------      0b0.110.11.10'0000'0010\n";
-		a.setbits(0x6E02);   // 0b0.110.11.10'0000'0010
-		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		c = a + b;
-		ReportValue(c, "c");
-
-
-		std::cout << "\n+----------------      0b0.1110.11.1'0000'0010\n";
-		a.setbits(0x7702);   // 0b0.1110.11.1'0000'0010
-		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		c = a + b;
-		ReportValue(c, "c");
-
-		std::cout << "\n+----------------      0b0.1'1110.11.1000'0010\n";
-		a.setbits(0x7B02);   // 0b0.1'1110.11.1000'0010
-		b.setbits(0x4002);   // 0b0.10.00.000'0000'0010
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		c = a + b;
-		ReportValue(c, "c");
-
-		std::cout << "\n+----------------      0b0.0'0001.10.1000'0010\n";
-		a.setbits(0x0682);   // 0b0.0'0001.10.1000'0010
-		b.setbits(0x0582);   // 0b0.0'0001.01.1000'0010
-		ReportValue(a, "a");
-		ReportValue(b, "b");
-		c = a + b;
-		ReportValue(c, "c");
-	}
-
-	return 0;
-	{
-		posit<16, 2> a, b, c;
-		for (unsigned i = 0; i < 16; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (unsigned j = 0; j < 16; ++j) {
-				b.setbits(j);
-				double db = double(b);
-				double dc = da + db;
-				c = a + b;
-				ReportBinaryOperation(a, "+", b, c);
-			}
-		}
-	}
-
-	return 0;
-
-	posit<16, 1> aa, bb, cc;
-	fa = 2;	fb = 1;
-	a = fa; b = fb; c = a; c += b;
-	ReportBinaryOperationVertically(a, "+", b, c);
-	aa = fa; bb = fb; cc = aa + bb;
-	ReportBinaryOperationVertically(aa, "+", bb, cc);
-
-	return 0;
-	fa = 2;	fb = -1;
-	a = fa; b = fb; c = a; c += b;
-	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(a + b) << "(" << (fa + fb) << ") " << to_binary(c) << "(" << c << ")" << '\n';
-	fa = -2;	fb = 1;
-	a = fa; b = fb; c = a; c += b;
-	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(a + b) << "(" << (fa + fb) << ") " << to_binary(c) << "(" << c << ")" << '\n';
-	fa = -2;	fb = -1;
-	a = fa; b = fb; c = a; c += b;
-	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(a + b) << "(" << (fa + fb) << ") " << to_binary(c) << "(" << c << ")" << '\n';
-
-	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");

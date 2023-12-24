@@ -11,6 +11,12 @@ namespace sw { namespace universal {
 
 using namespace sw::universal::internal;
 
+// get the sign of the posito
+template<unsigned nbits, unsigned es>
+constexpr inline bool sign(const posito<nbits, es>& p) {
+	return p.isneg();
+}
+
 // calculate the scale of a posit
 template<unsigned nbits, unsigned es>
 inline int scale(const posito<nbits, es>& p) {

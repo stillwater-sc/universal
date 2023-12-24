@@ -1,5 +1,5 @@
 #pragma once
-// hypot.hpp: hypotenuse functions for posits
+// hypot.hpp: hypotenuse functions for positos
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -40,22 +40,22 @@ hypot(INFINITY, NAN) returns +8, but sqrt(INFINITY*INFINITY+NAN*NAN) returns NaN
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
+// the current shims are NON-COMPLIANT with the posito standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 template<unsigned nbits, unsigned es>
-posit<nbits,es> hypot(posit<nbits,es> x, posit<nbits,es> y) {
-	return posit<nbits,es>(std::hypot(double(x),double(y)));
+posito<nbits,es> hypot(posito<nbits,es> x, posito<nbits,es> y) {
+	return posito<nbits,es>(std::hypot(double(x),double(y)));
 }
 
 template<unsigned nbits, unsigned es>
-posit<nbits,es> hypotf(posit<nbits,es> x, posit<nbits,es> y) {
-	return posit<nbits,es>(std::hypotf(float(x),float(y)));
+posito<nbits,es> hypotf(posito<nbits,es> x, posito<nbits,es> y) {
+	return posito<nbits,es>(std::hypotf(float(x),float(y)));
 }
 
 template<unsigned nbits, unsigned es>
-posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y) {
-	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y)));
+posito<nbits,es> hypotl(posito<nbits,es> x, posito<nbits,es> y) {
+	return posito<nbits,es>(std::hypotl((long double)(x),(long double)(y)));
 }
 
 // _MSVC_LANG Defined as an integer literal that specifies the C++ language standard targeted by the compiler.
@@ -68,18 +68,18 @@ posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y) {
 #ifdef LATER
 // since C++17
 template<unsigned nbits, unsigned es>
-posit<nbits,es> hypot(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
-	return posit<nbits,es>(std::hypot(double(x),double(y),double(z)));
+posito<nbits,es> hypot(posito<nbits,es> x, posito<nbits,es> y, posito<nbits,es> z) {
+	return posito<nbits,es>(std::hypot(double(x),double(y),double(z)));
 }
 
 template<unsigned nbits, unsigned es>
-posit<nbits,es> hypotf(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
-	return posit<nbits,es>(std::hypotf(float(x),float(y),float(z)));
+posito<nbits,es> hypotf(posito<nbits,es> x, posito<nbits,es> y, posito<nbits,es> z) {
+	return posito<nbits,es>(std::hypotf(float(x),float(y),float(z)));
 }
 
 template<unsigned nbits, unsigned es>
-posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y, posit<nbits,es> z) {
-	return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y),(long double)(z)));
+posito<nbits,es> hypotl(posito<nbits,es> x, posito<nbits,es> y, posito<nbits,es> z) {
+	return posito<nbits,es>(std::hypotl((long double)(x),(long double)(y),(long double)(z)));
 }
 #endif
 

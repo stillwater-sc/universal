@@ -72,7 +72,11 @@
 #include <universal/number/posito/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
-/// the posit exact dot product
+/// the posito exact dot product
 //#include <universal/number/posito/fdp.hpp>
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// elementary functions math library
+#include <universal/number/posito/mathlib.hpp>
 
 #endif

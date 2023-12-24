@@ -1,5 +1,5 @@
 #pragma once
-// math_minmax.hpp: min/max functions for posits
+// math_minmax.hpp: min/max functions for positos
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -7,16 +7,16 @@
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
+// the current shims are NON-COMPLIANT with the posito standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 template<unsigned nbits, unsigned es>
-posit<nbits,es> min(posit<nbits,es> x, posit<nbits, es> y) {
+posito<nbits,es> min(posito<nbits,es> x, posito<nbits, es> y) {
 	return (x < y) ? x : y;
 }
 
 template<unsigned nbits, unsigned es>
-posit<nbits,es> max(posit<nbits,es> x, posit<nbits, es> y) {
+posito<nbits,es> max(posito<nbits,es> x, posito<nbits, es> y) {
 	return (x < y) ? y : x;
 }
 

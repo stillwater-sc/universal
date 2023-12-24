@@ -56,8 +56,8 @@ int ExhaustiveNumberSystemTest(const std::string& test_tag, bool reportTestCases
 	// conversion tests
 	cout << "Assignment/conversion tests " << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion <TestType>(reportTestCases), test_tag, "integer assign (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType,RefType,float>(reportTestCases), test_tag, "float assign   (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType,RefType,double>(reportTestCases), test_tag, "double assign  (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType, RefType, float>(reportTestCases), test_tag, "float assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType, RefType, double>(reportTestCases), test_tag, "double assign  (native)  ");
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << endl;

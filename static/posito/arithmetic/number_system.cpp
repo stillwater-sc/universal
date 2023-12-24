@@ -46,7 +46,7 @@ try {
 #if MANUAL_TESTING
 	
 	// TestType: posit<nbits, es, uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8,0>, posit<9,0>>(test_tag, reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

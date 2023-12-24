@@ -1,5 +1,5 @@
 #pragma once
-// error_gamma.hpp: error and gamma functions for posits
+// error_gamma.hpp: error and gamma functions for positos
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -7,19 +7,19 @@
 
 namespace sw { namespace universal {
 
-// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
+// the current shims are NON-COMPLIANT with the posito standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
 // Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
 template<unsigned nbits, unsigned es>
-posit<nbits,es> erf(posit<nbits,es> x) {
-	return posit<nbits,es>(std::erf(double(x)));
+posito<nbits,es> erf(posito<nbits,es> x) {
+	return posito<nbits,es>(std::erf(double(x)));
 }
 
 // Compute the complementary error function: 1 - erf(x)
 template<unsigned nbits, unsigned es>
-posit<nbits,es> erfc(posit<nbits,es> x) {
-	return posit<nbits,es>(std::erfc(double(x)));
+posito<nbits,es> erfc(posito<nbits,es> x) {
+	return posito<nbits,es>(std::erfc(double(x)));
 }
 
 }} // namespace sw::universal
