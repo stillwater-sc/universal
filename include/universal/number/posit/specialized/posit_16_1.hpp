@@ -157,22 +157,17 @@ public:
 
 		// extract the exponent
 		uint16_t exp = remaining >> 14;
-		std::cout << "exponent : " << exp << '\n';
 
 		// extract remaining fraction bits
-		std::cout << "remaining: " << to_binary(remaining, 16, true) << '\n';
 		uint32_t lhs_fraction = (0x4000 | remaining) << 16;
 		int8_t shiftRight = m;
-		std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		// adjust shift and extract fraction bits of rhs
 		extractAddand(rhs, shiftRight, remaining);
 		uint32_t rhs_fraction = (0x4000 | remaining) << 16;
-		std::cout << "rhs frac : " << to_binary(rhs_fraction, 32) << '\n';
 
 		// this is 2kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 1) + exp - (remaining >> 14);
-		std::cout << "shiftRight : " << int(shiftRight) << '\n';
 
 		if (shiftRight == 0) {
 			lhs_fraction += rhs_fraction;  // this will always product a carry
@@ -191,8 +186,6 @@ public:
 				lhs_fraction >>= 1;
 			}
 		}
-
-		std::cout << "lhs frac : " << to_binary(lhs_fraction, 32) << '\n';
 
 		_bits = round(m, exp, lhs_fraction);
 		if (sign) _bits = -_bits & 0xFFFF;
@@ -426,11 +419,11 @@ public:
 		return tmp;
 	}
 	
-	posit reciprocate() const {
+	posit reciprocate() const noexcept {
 		posit p = 1.0 / *this;
 		return p;
 	}
-	posit abs() const {
+	posit abs() const noexcept {
 		if (isneg()) {
 			return posit(-*this);
 		}
@@ -438,50 +431,50 @@ public:
 	}
 
 	// Selectors
-	inline bool sign() const       { return (_bits & sign_mask); }
-	inline bool isnar() const      { return (_bits == sign_mask); }
-	inline bool iszero() const     { return (_bits == 0x0); }
-	inline bool isone() const      { return (_bits == 0x4000); } // pattern 010000...
-	inline bool isminusone() const { return (_bits == 0xC000); } // pattern 110000...
-	inline bool isneg() const      { return (_bits & sign_mask); }
-	inline bool ispos() const      { return !isneg(); }
-	inline bool ispowerof2() const { return !(_bits & 0x1); }
+	bool sign() const noexcept       { return (_bits & sign_mask); }
+	bool isnar() const noexcept      { return (_bits == sign_mask); }
+	bool iszero() const noexcept     { return (_bits == 0x0); }
+	bool isone() const noexcept      { return (_bits == 0x4000); } // pattern 010000...
+	bool isminusone() const noexcept { return (_bits == 0xC000); } // pattern 110000...
+	bool isneg() const noexcept      { return (_bits & sign_mask); }
+	bool ispos() const noexcept      { return !isneg(); }
+	bool ispowerof2() const noexcept { return !(_bits & 0x1); }
 
-	inline int sign_value() const  { return (_bits & 0x8 ? -1 : 1); }
+	int sign_value() const noexcept { return (_bits & 0x8 ? -1 : 1); }
 
-	bitblock<NBITS_IS_16> get() const { bitblock<NBITS_IS_16> bb; bb = int(_bits); return bb; }
-	unsigned long long bits() const { return (unsigned long long)(_bits); }
+	bitblock<NBITS_IS_16> get() const noexcept { bitblock<NBITS_IS_16> bb; bb = int(_bits); return bb; }
+	unsigned long long bits() const noexcept { return (unsigned long long)(_bits); }
 
 	// Modifiers
-	inline void clear() { _bits = 0; }
-	inline void setzero() { clear(); }
-	inline void setnar() { _bits = sign_mask; }
-	inline posit& minpos() {
+	void clear() noexcept { _bits = 0; }
+	void setzero() noexcept { clear(); }
+	void setnar() noexcept { _bits = sign_mask; }
+	posit& minpos() noexcept {
 		clear();
 		return ++(*this);
 	}
-	inline posit& maxpos() {
+	posit& maxpos() noexcept {
 		setnar();
 		return --(*this);
 	}
-	inline posit& zero() {
+	posit& zero() noexcept {
 		clear();
 		return *this;
 	}
-	inline posit& minneg() {
+	posit& minneg() noexcept {
 		clear();
 		return --(*this);
 	}
-	inline posit& maxneg() {
+	posit& maxneg() noexcept {
 		setnar();
 		return ++(*this);
 	}
-	inline posit twosComplement() const {
+	posit twosComplement() const noexcept {
 		posit p;
 		return p.setbits(~_bits + 1ul);
 	}
 
-	internal::value<fbits> to_value() const {
+	internal::value<fbits> to_value() const noexcept {
 		bool		     	 _sign;
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
@@ -515,7 +508,7 @@ private:
 	long long   to_long_long() const {
 		if (iszero()) return 0;
 		if (isnar()) throw posit_nar{};
-		return long(to_long_double());
+		return (long long)(to_long_double());
 	}
 #else
 	int         to_int() const {
@@ -531,7 +524,7 @@ private:
 	long long   to_long_long() const {
 		if (iszero()) return 0;
 		if (isnar())  return (long long)(INFINITY);
-		return long(to_long_double());
+		return (long long)(to_long_double());
 	}
 #endif
 	float       to_float() const {
@@ -582,7 +575,7 @@ private:
 
 
 	// helper methods
-	constexpr posit& integer_assign(long rhs) {
+	constexpr posit& integer_assign(long long rhs) {
 		// special case for speed as this is a common initialization
 		if (rhs == 0) {
 			_bits = 0x0;
@@ -590,19 +583,19 @@ private:
 		}
 
 		bool sign = (rhs < 0);
-		uint32_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
+		uint64_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
 		uint16_t raw = 0;
-		if (v > 0x08000000) { // v > 134,217,728
+		if (v > 0x0800'0000) { // v > 134,217,728
 			raw = 0x7FFFu;  // +-maxpos
 		}
-		else if (v > 0x02FFFFFF) { // 50,331,647 < v < 134,217,728
+		else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
 			raw = 0x7FFEu;  // 0.5 of maxpos
 		}
-		else if (v < 2) {  // v == 0 or v == 1
-			raw = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
+		else if (v == 1) {  // v == 0 or v == 1
+			raw = 0x4000u;
 		}
 		else {
-			uint32_t mask = 0x02000000;
+			uint32_t mask = 0x0200'0000;
 			int8_t scale = 25;
 			uint32_t fraction_bits = v;
 			while (!(fraction_bits & mask)) {
@@ -648,12 +641,10 @@ public:
 	// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
 	inline void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
 		remaining = (bits << 2) & 0xFFFF;
-		std::cout << "remaining : " << to_binary(remaining, 16, true) << '\n';
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
 				++m;
 				remaining = (remaining << 1) & 0xFFFF;
-				std::cout << "remaining : " << to_binary(remaining, 16, true) << '\n';
 			}
 		}
 		else {              // negative regimes

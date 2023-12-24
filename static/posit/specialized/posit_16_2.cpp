@@ -4,6 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+#include <universal/native/integers.hpp>
+#include <universal/number/integer/integer.hpp>
 //
 // Configure the posit template environment
 // first: enable fast specialized posit<16,2>
@@ -23,7 +25,7 @@
 // Standard posit with nbits = 16 have es = 2 exponent bit.
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -58,7 +60,7 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	size_t RND_TEST_CASES = 10000;
+	unsigned RND_TEST_CASES = 10000;
 
 	using Scalar = posit<nbits, es>;
 	Scalar p;
@@ -78,48 +80,59 @@ try {
 
 	float fa, fb;
 	posit<16, 1> a, b, c;
+	a.maxpos();
+	uint64_t i64 = uint64_t(a);
+	std::cout << "posit<16,1> : " << i64 << " : " << a << " : " << to_binary(a) << '\n';
+	std::cout << std::setw(25) << "maxpos" << " : " << to_binary(i64, 32, true) << " : " << i64 << '\n';
+	i64 /= 2;
+	std::cout << std::setw(25) << "half maxpos" << " : " << to_binary(i64, 32, true) << " : " << i64 << '\n';
 
-	// {
-	// 	posit<16, 2> a, b, c, cref;
-	// 	float fa, fb, fc;
-	// 	/*
-	// 	FAIL
-	// 	1.3877787807814456755e-17 +             -3.9990234375 !=            -1.99951171875 golden reference is             -3.9990234375
-	// 		0b0.000000000000001.. +     0b1.10.01.11111111111 !=     0b1.10.00.11111111111 golden reference is     0b1.10.01.11111111111
+	{
+	 	posit<16, 2> a, b, c, cref;
+	 	float fa, fb, fc;
+		a.maxpos();
+		uint64_t i64 = uint64_t(a);
+		std::cout << "posit<16,2> : " << i64 << " : " << a << " : " << to_binary(a) << '\n';
+		std::cout << std::setw(25) << "maxpos" << " : " << to_binary(i64, 64, true) << " : " << i64 << '\n';
+		i64 /= 2;
+		std::cout << std::setw(25) << "half maxpos" << " : " << to_binary(i64, 64, true) << " : " << i64 << '\n';
+		integer<128> i128 = double(a);
+		std::cout << std::setw(25) << "maxpos" << " : " << to_binary(i128, true) << " : " << i128 << '\n';
 
-	// 	1.3877787807814456755e-17 + -7.3341652750968933105e-09 != -5.4715201258659362793e-09 golden reference is -7.3341652750968933105e-09
-	// 		0b0.000000000000001.. +     0b1.00000001.00.11111 !=     0b1.00000001.00.01111 golden reference is     0b1.00000001.00.11111
+	/*
+		FAIL
+		-1232                     / -1.5916157281026244164e-12 != 281474976710656           golden reference is 1125899906842624
+		0b1.1110.10.001101000     / 0b1.00000000001.00.11     != 0b0.11111111111110.0.     golden reference is 0b0.11111111111110.1.
+	 */
+		a.setbits(0x0001);
+		//b.setbits(0xCFFF);  // 0b1.10.0'1.111'1111'1111
+		b.setbits(0x809F);  // 0b1000'0000'1001'1111
+		a = -1232;
+		std::cout << a << '\n';
+		b = -1.5916157281026244164e-12;
+		c = a - b;
+		fa = float(a);
+		fb = float(b);
+		fc = fa - fb;
+		cref = fc;
+		std::cout 
+			<< std::setw(NUMBER_COLUMN_WIDTH) << a << " - "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << b << " = "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << c << '\n';
+		std::cout
+			<< std::setw(NUMBER_COLUMN_WIDTH) << fa << " - "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << fb << " = "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << fc << '\n';
+		std::cout
+			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fa) << " - "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fb) << " = "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fc) << '\n';
 
-	// 	1.3877787807814456755e-17 - 2.2204460492503130808e-16 != -1.3877787807814456755e-17 golden reference is -2.2204460492503130808e-16
-	// 	0b0.000000000000001.. -     0b0.00000000000001.0. !=     0b1.000000000000001.. golden reference is     0b1.00000000000001.0.
-	// 	 */
-	// 	a.setbits(0x0001);
-	// 	//b.setbits(0xCFFF);  // 0b1.10.0'1.111'1111'1111
-	// 	b.setbits(0x809F);  // 0b1000'0000'1001'1111
-	// 	// b.setbits(0x0002);  // 0b0000'0000'0000'0010
-	// 	//a = 1;
-	// 	//b = -1.5f;
-	// 	c = a - b;
-	// 	fa = float(a);
-	// 	fb = float(b);
-	// 	fc = fa - fb;
-	// 	cref = fc;
-	// 	std::cout 
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << a << " - "
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << b << " = "
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << c << '\n';
-	// 	std::cout
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << fa << " - "
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << fb << " = "
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << fc << '\n';
-	// 	std::cout
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fa) << " - "
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fb) << " = "
-	// 		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fc) << '\n';
-	// 	ReportBinaryOperation(a, "-", b, c);
-	// 	ReportBinaryArithmeticError("bla", "-", a, b, c, cref);
-	// }
-	
+		Compare(c, cref, fc, true);
+		ReportBinaryOperation(a, "-", b, c);
+		ReportBinaryArithmeticError("bla", "-", a, b, c, cref);
+	}
+	return 0;
 	std::cout << "Manual exhaustive div" << std::endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<nbits, es>(reportTestCases), tag, "div            (native)  ");
 	std::cout << "Manual exhaustive mul" << std::endl;

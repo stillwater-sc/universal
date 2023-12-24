@@ -70,10 +70,10 @@ namespace sw {
 #endif
 					if (psum != pref) {
 						nrOfFailedTests++;
-						if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
+						if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, psum, pref);
 					}
 					else {
-						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, psum, pref);
 					}
 
 					if (nrOfFailedTests > 99) return NR_POSITS;
@@ -139,7 +139,7 @@ try {
 	// manual exhaustive test
 //	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyAddition< posito<3, 0> >(true), "posito<3,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyAddition< posit<8, 0> >(true), "posit<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyAddition< posit<16, 2> >(false), "posit<16,2>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyAddition< posit<16, 2> >(false), "posit<16,2>", "addition");
 
 	//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(test_tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
 	

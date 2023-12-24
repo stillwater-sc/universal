@@ -48,12 +48,12 @@ try {
 #endif
 
 	std::string test_tag    = "arithmetic type tests";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	size_t RND_TEST_CASES = 10000;
+	unsigned RND_TEST_CASES = 1024 * 1024;
 
 	using Scalar = posit<nbits, es>;
 	Scalar p;
@@ -159,7 +159,7 @@ try {
 	// posit<16, 1> float assign(native)   FAIL 2 failed test cases
 	// nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(true), tag, "float assign   (native)  ");
 
-	RND_TEST_CASES = 1024 * 1024;
+	RND_TEST_CASES = 4 * 1024 * 1024;
 	// arithmetic tests
 	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
@@ -198,10 +198,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction               <nbits, es>(reportTestCases), tag, "pow                      ");
 #endif
 
-#endif // MANUAL_TESTING
-	std::cout << std::flush;
-
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

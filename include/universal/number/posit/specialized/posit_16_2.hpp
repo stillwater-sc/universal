@@ -438,11 +438,11 @@ public:
 		return tmp;
 	}
 
-	posit reciprocate() const {
+	posit reciprocate() const noexcept {
 		posit p = 1.0 / *this;
 		return p;
 	}
-	posit abs() const {
+	posit abs() const noexcept {
 		if (isneg()) {
 			return posit(-*this);
 		}
@@ -450,51 +450,51 @@ public:
 	}
 
 	// Selectors
-	bool sign() const { return (_bits & sign_mask); }
-	bool isnar() const { return (_bits == sign_mask); }
-	bool iszero() const { return (_bits == 0x0); }
-	bool isone() const { return (_bits == 0x4000); } // pattern 010000...
-	bool isminusone() const { return (_bits == 0xC000); } // pattern 110000...
-	bool isneg() const { return (_bits & sign_mask); }
-	bool ispos() const { return !isneg(); }
-	bool ispowerof2() const { return !(_bits & 0x1); }
+	bool sign() const noexcept       { return (_bits & sign_mask); }
+	bool isnar() const noexcept      { return (_bits == sign_mask); }
+	bool iszero() const noexcept     { return (_bits == 0x0); }
+	bool isone() const noexcept      { return (_bits == 0x4000); } // pattern 010000...
+	bool isminusone() const noexcept { return (_bits == 0xC000); } // pattern 110000...
+	bool isneg() const noexcept      { return (_bits & sign_mask); }
+	bool ispos() const noexcept      { return !isneg(); }
+	bool ispowerof2() const noexcept { return !(_bits & 0x1); }
 
-	int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
+	int sign_value() const noexcept  { return (_bits & 0x8 ? -1 : 1); }
 
-	bitblock<NBITS_IS_16> get() const { bitblock<NBITS_IS_16> bb; bb = int(_bits); return bb; }
+	bitblock<NBITS_IS_16> get() const noexcept { bitblock<NBITS_IS_16> bb; bb = int(_bits); return bb; }
 	uint16_t bits() const noexcept { return _bits; }
-	unsigned long long encoding() const { return (unsigned long long)(_bits); }
+	unsigned long long encoding() const noexcept { return (unsigned long long)(_bits); }
 
 	// Modifiers
-	void clear() { _bits = 0; }
-	void setzero() { clear(); }
-	void setnar() { _bits = sign_mask; }
-	posit& minpos() {
+	void clear() noexcept { _bits = 0; }
+	void setzero() noexcept { clear(); }
+	void setnar() noexcept { _bits = sign_mask; }
+	posit& minpos() noexcept {
 		clear();
 		return ++(*this);
 	}
-	posit& maxpos() {
+	posit& maxpos() noexcept {
 		setnar();
 		return --(*this);
 	}
-	posit& zero() {
+	posit& zero() noexcept {
 		clear();
 		return *this;
 	}
-	posit& minneg() {
+	posit& minneg() noexcept {
 		clear();
 		return --(*this);
 	}
-	posit& maxneg() {
+	posit& maxneg() noexcept {
 		setnar();
 		return ++(*this);
 	}
-	posit twosComplement() const {
+	posit twosComplement() const noexcept {
 		posit p;
 		return p.setbits(~_bits + 1ul);
 	}
 
-	internal::value<fbits> to_value() const {
+	internal::value<fbits> to_value() const noexcept {
 		bool		     	 _sign;
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
@@ -528,7 +528,7 @@ private:
 	long long   to_long_long() const {
 		if (iszero()) return 0;
 		if (isnar()) throw posit_nar{};
-		return long(to_long_double());
+		return (long long)(to_long_double());
 	}
 #else
 	int         to_int() const {
@@ -544,7 +544,7 @@ private:
 	long long   to_long_long() const {
 		if (iszero()) return 0;
 		if (isnar())  return (long long)(INFINITY);
-		return long(to_long_double());
+		return (long long)(to_long_double());
 	}
 #endif
 	float       to_float() const {
@@ -595,39 +595,44 @@ private:
 
 
 	// helper methods
-	constexpr posit& integer_assign(long rhs) {
+	constexpr posit& integer_assign(long long rhs) {
 		// special case for speed as this is a common initialization
 		if (rhs == 0) {
 			_bits = 0x0;
 			return *this;
 		}
 
+		// geometric range of the posit<16,2>
+		// maxpos        = 72,057,594,037,927,936   0x0100'0000'0000'0000
+		// maxpos / 2    = 36,028,797,018,963,968   0x0080'0000'0000'0000
+		// maxpos / 3/8  = 27,021,597,764,222,976   0x0060'0000'0000'0000
+		// maxpos / 4    = 18,014,398,509,481,984   0x0040'0000'0000'0000
 		bool sign = (rhs < 0);
-		uint32_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
+		uint64_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
 		uint16_t raw = 0;
-		if (v > 0x08000000) { // v > 134,217,728
+		if (v > 0x0080'0000'0000'0000) { // v > 36,028,797,018,963,968
 			raw = 0x7FFFu;  // +-maxpos
 		}
-		else if (v > 0x02FFFFFF) { // 50,331,647 < v < 134,217,728
-			raw = 0x7FFEu;  // 0.5 of maxpos
+		else if (v > 0x005F'FFFF'FFFF'FFFF) { // 27,021,597,764,222,976 < v < 36,028,797,018,963,968
+			raw = 0x7FFEu;  // 0.5 of maxpos is the final value
 		}
-		else if (v < 2) {  // v == 0 or v == 1
-			raw = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
+		else if (v == 1) {
+			raw = 0x4000u;
 		}
 		else {
-			uint32_t mask = 0x02000000;
-			int8_t scale = 25;
-			uint32_t fraction_bits = v;
+			uint64_t mask = 0x0040'0000'0000'0000;
+			int8_t scale = 55;
+			uint64_t fraction_bits = v;
 			while (!(fraction_bits & mask)) {
 				--scale;
 				fraction_bits <<= 1;
 			}
-			int8_t k = scale >> 1;
-			uint16_t exp = (scale & 0x01) << (12 - k); // extract exponent and shift to correct location
+			int8_t k = scale >> 2;
+			uint16_t exp = (scale & 0x3) << (12 - k); // extract exponent and shift to correct location
 			fraction_bits = (fraction_bits ^ mask);
-			raw = (0x7FFF ^ (0x3FFF >> k)) | exp | (fraction_bits >> (k + 13));
+			raw = (0x7FFF ^ (0x3FFF >> k)) | exp | (fraction_bits >> (k + 12));
 
-			mask = 0x1000 << k; // bitNPlusOne
+			mask = 0x1000u << k; // bitNPlusOne
 			if (mask & fraction_bits) {
 				if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++; // increment by 1
 			}
