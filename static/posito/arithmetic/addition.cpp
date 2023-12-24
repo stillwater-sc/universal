@@ -29,7 +29,7 @@ void GenerateTestCase(Ty a, Ty b) {
 	Ty ref = a + b;
 	pref = ref;
 	ReportBinaryOperation(pa, "+", pb, pc);
-	std::cout << (pref == pc ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << (pref == pc ? "PASS" : "FAIL") << "\n\n";
 }
 
 namespace sw {
