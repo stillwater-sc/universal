@@ -243,6 +243,8 @@ namespace sw { namespace universal {
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
+		bool firstNaRCall = true;
+		bool firstDivideByZeroCall = true;
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			posit<nbits, es> testa, testb, testc, testref;
@@ -260,8 +262,15 @@ namespace sw { namespace universal {
 				executeBinary(opcode, da, db, dc, testa, testb, testc, testref);
 			}
 			catch (const posit_arithmetic_exception& err) {
-				if (testa.isnar() || testb.isnar() || ((opcode == OPCODE_DIV || opcode == OPCODE_IPD) && testb.iszero())) {
-					if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+				if (testa.isnar() || testb.isnar()) {
+					if (reportTestCases && firstNaRCall) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+					firstNaRCall = false;
+					continue;
+				}
+				else if (((opcode == OPCODE_DIV || opcode == OPCODE_IPD) && testb.iszero())) {
+					if (reportTestCases && firstDivideByZeroCall) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+					firstDivideByZeroCall = false;
+					continue;
 				}
 				else {
 					throw; // rethrow
