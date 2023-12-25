@@ -1,0 +1,201 @@
+// multiplication.cpp: test suite runner for posit multiplication
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+// Configure the posit template environment
+// first: enable general or specialized specialized posit configurations
+//#define POSIT_FAST_SPECIALIZATION
+// second: enable/disable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+// third: enable tracing 
+// when you define ALGORITHM_VERBOSE_OUTPUT executing a MUL the code will print intermediate results
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_MUL
+#include <universal/number/posito/posito.hpp>
+#include <universal/verification/test_suite.hpp>
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_randoms.hpp>
+
+namespace sw {
+	namespace testing {
+		// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
+		template<typename PositType>
+		int VerifyMultiplication(bool reportTestCases) {
+			constexpr unsigned nbits = PositType::nbits;
+			const unsigned NR_POSITS = (unsigned(1) << nbits);
+			int nrOfFailedTests = 0;
+			for (unsigned i = 0; i < NR_POSITS; i++) {
+				PositType pa;
+				pa.setbits(i);
+				double da = double(pa);
+				for (unsigned j = 0; j < NR_POSITS; j++) {
+					PositType pb, pmul, pref;
+					pb.setbits(j);
+					double db = double(pb);
+					pref = da * db;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						pmul = pa * pb;
+					}
+					catch (const posit_operand_is_nar&) {
+						if (pa.isnar() || pb.isnar()) {
+							// correctly caught the exception
+							pmul.setnar();
+						}
+						else {
+							throw;  // rethrow
+						}
+					}
+#else
+					pmul = pa * pb;
+#endif
+					if (pmul != pref) {
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pmul, pref);
+						nrOfFailedTests++;
+					}
+					else {
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pmul, pref);
+					}
+				}
+			}
+			return nrOfFailedTests;
+		}
+	}
+}
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 1
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
+int main()
+try {
+	using namespace sw::universal;
+
+	std::string test_suite  = "posit multiplication verification";
+	std::string test_tag    = "multiplication";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+
+
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<16, 2>>(reportTestCases), "posit<4,0>", "multiplication");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
+#else
+
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(reportTestCases), "posit< 2,0>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(reportTestCases), "posit< 3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 1>(reportTestCases), "posit< 3,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 2>(reportTestCases), "posit< 3,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 3>(reportTestCases), "posit< 3,3>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(reportTestCases), "posit< 4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1>(reportTestCases), "posit< 4,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2>(reportTestCases), "posit< 4,2>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 0>(reportTestCases), "posit< 5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 1>(reportTestCases), "posit< 5,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 2>(reportTestCases), "posit< 5,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 3>(reportTestCases), "posit< 5,3>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 0>(reportTestCases), "posit< 6,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 1>(reportTestCases), "posit< 6,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 2>(reportTestCases), "posit< 6,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 3>(reportTestCases), "posit< 6,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 4>(reportTestCases), "posit< 6,4>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 0>(reportTestCases), "posit< 7,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 1>(reportTestCases), "posit< 7,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 2>(reportTestCases), "posit< 7,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 3>(reportTestCases), "posit< 7,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 4>(reportTestCases), "posit< 7,4>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(reportTestCases), "posit< 8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(reportTestCases), "posit< 8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 3>(reportTestCases), "posit< 8,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4>(reportTestCases), "posit< 8,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 5>(reportTestCases), "posit< 8,5>", "multiplication");
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 0>(reportTestCases), "posit<10,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 1>(reportTestCases), "posit<10,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 2>(reportTestCases), "posit<10,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 3>(reportTestCases), "posit<10,3>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<24,2>", "multiplication");
+#endif
+
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(reportTestCases, OPCODE_MUL, 1000), "posit<32,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<32,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(reportTestCases, OPCODE_MUL, 1000), "posit<32,3>", "multiplication");
+#endif
+
+#if REGRESSION_LEVEL_4
+	// nbits=48 is also showing failures
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<48,2>", "multiplication");
+
+	// nbits=64 requires long double compiler support
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(reportTestCases, OPCODE_MUL, 1000), "posit<64,3>", "multiplication");
+	// posit<64,4> is hitting subnormal numbers
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
+
+#ifdef HARDWARE_ACCELERATION
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 1>(reportTestCases), "posit<12,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, 1>(reportTestCases), "posit<14,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, 1>(reportTestCases), "posit<16,1>", "multiplication");
+#endif // HARDWARE_ACCELERATION
+
+#endif // REGRESSION_LEVEL_4
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
+}
+catch (char const* msg) {
+	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::posit_arithmetic_exception& err) {
+	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::posit_internal_exception& err) {
+	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
+}
+
