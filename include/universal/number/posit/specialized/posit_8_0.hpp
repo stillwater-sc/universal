@@ -204,10 +204,11 @@ public:
 	unsigned long long bits() const noexcept { return (unsigned long long)(_bits); }
 
 	// Modifiers
-	void clear() noexcept { _bits = 0; }
-	void setzero() noexcept { clear(); }
-	void setnar() noexcept { _bits = 0x80; }
-	void setnan(bool sign) noexcept { setnar(); }
+	void clear()                   noexcept { _bits = 0; }
+	void setzero()                 noexcept { clear(); }
+	void setnar()                  noexcept { _bits = 0x80; }
+	void setnan()                  noexcept { setnar(); }
+	//void setnan(bool sign = false) noexcept { setnar(); }
 	posit& minpos() noexcept {
 		clear();
 		return ++(*this);

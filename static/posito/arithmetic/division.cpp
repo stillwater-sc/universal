@@ -197,19 +197,34 @@ try {
 
 //	ToughDivisions2<posit<16,1>>();
 
-	posito<16, 2> pa(1), pb(1);
-	pa--; pb++;
+	/*
+	FAIL
+    8.5265128291212022305e-14 /                       128 != 2.2204460492503130808e-16 golden reference is 8.8817841970012523234e-16
+    0b0.000000000001.00.1 /     0b0.110.11.0000000000 !=     0b0.00000000000001.0. golden reference is     0b0.00000000000001.1.
+	*/
+	posit<16, 2> pa(1), pb(1), pc;
+	pa = 8.5265128291212022305e-14;
+	pb = 128.0;
+	ReportValue(pa, "pa");
+	ReportValue(pb, "pb");
+
+	pc = pa / pb;
+	ReportBinaryOperation(pa, "/", pb, pc);
 	double a, b;
 	a = double(pa);
 	b = double(pb);
+
 	GenerateTestCase<posit<16, 2>, double>(a, b);
 	GenerateTestCase<posito<16, 2>, double>(a, b);
+	return 0;
 
 	// Generate the worst fraction pressure for different posit configurations
 //	GenerateWorstCaseDivision<posit< 8, 1>>();
 //	GenerateWorstCaseDivision<posit<16, 2>>();
 
-	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<8, 0>>(true), "posit<8,0>", "division");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit< 8, 0>>(true), "posit<8,0>", "division");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 1>>(true), "posit<16,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 2>>(true), "posit<16,2>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

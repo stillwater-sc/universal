@@ -7,8 +7,8 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/number/posito/math/sqrt_tables.hpp>
 
-#ifndef POSIT_NATIVE_SQRT
-#define POSIT_NATIVE_SQRT 0
+#ifndef POSITO_NATIVE_SQRT
+#define POSITO_NATIVE_SQRT 0
 #endif
 
 namespace sw { namespace universal {

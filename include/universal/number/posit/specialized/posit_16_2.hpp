@@ -88,16 +88,16 @@ public:
 	explicit           posit(long double initial_value) : _bits(0) { *this = initial_value; }
 
 	// assignment operators for native types
-	constexpr posit& operator=(signed char rhs) { return integer_assign((long)rhs); }
-	constexpr posit& operator=(short rhs) { return integer_assign((long)rhs); }
-	constexpr posit& operator=(int rhs) { return integer_assign((long)rhs); }
+	constexpr posit& operator=(signed char rhs) { return integer_assign(rhs); }
+	constexpr posit& operator=(short rhs) { return integer_assign(rhs); }
+	constexpr posit& operator=(int rhs) { return integer_assign(rhs); }
 	constexpr posit& operator=(long rhs) { return integer_assign(rhs); }
-	constexpr posit& operator=(long long rhs) { return integer_assign((long)rhs); }
-	constexpr posit& operator=(char rhs) { return integer_assign((long)rhs); }
-	constexpr posit& operator=(unsigned short rhs) { return integer_assign((long)rhs); }
-	constexpr posit& operator=(unsigned int rhs) { return integer_assign((long)rhs); }
-	constexpr posit& operator=(unsigned long rhs) { return integer_assign((long)rhs); }
-	constexpr posit& operator=(unsigned long long rhs) { return integer_assign((long)rhs); }
+	constexpr posit& operator=(long long rhs) { return integer_assign(rhs); }
+	constexpr posit& operator=(char rhs) { return integer_assign(rhs); }
+	constexpr posit& operator=(unsigned short rhs) { return integer_assign(rhs); }
+	constexpr posit& operator=(unsigned int rhs) { return integer_assign(rhs); }
+	constexpr posit& operator=(unsigned long rhs) { return integer_assign(rhs); }
+	constexpr posit& operator=(unsigned long long rhs) { return integer_assign(rhs); }
 	posit& operator=(float rhs) { return float_assign(double(rhs)); }
 	posit& operator=(double rhs) { return float_assign(rhs); }
 	posit& operator=(long double rhs) { return float_assign(double(rhs)); }
@@ -620,17 +620,30 @@ private:
 			raw = 0x4000u;
 		}
 		else {
+			// the scale of 0.5 * maxpos = 2^55, so we can filter out all bits above that
 			uint64_t mask = 0x0040'0000'0000'0000;
-			int8_t scale = 55;
+			int8_t scale = 54;
 			uint64_t fraction_bits = v;
 			while (!(fraction_bits & mask)) {
 				--scale;
 				fraction_bits <<= 1;
 			}
 			int8_t k = scale >> 2;
-			uint16_t exp = (scale & 0x3) << (12 - k); // extract exponent and shift to correct location
-			fraction_bits = (fraction_bits ^ mask);
-			raw = (0x7FFF ^ (0x3FFF >> k)) | exp | (fraction_bits >> (k + 12));
+			uint16_t exp = (scale & 0x3) << (11 - k); // extract exponent and shift to correct location
+			fraction_bits = (fraction_bits ^ mask); // remove the leading 1
+			uint16_t reg = (0x7FFF ^ (0x3FFF >> k));
+			//std::cout << "fra    : " << to_binary(fraction_bits, 64, true) << '\n';
+			uint64_t fraa = (fraction_bits >> (k + 43));
+			//std::cout << "fraa   : " << to_binary(fraa, 64, true) << '\n';
+			uint16_t fra = uint16_t(fraction_bits >> (k + 43));
+
+			//std::cout << "scale  : " << int(scale) << '\n';
+			//std::cout << "k      : " << int(k) << '\n';
+			//std::cout << "reg    : " << to_binary(reg, 16, true) << '\n';
+			//std::cout << "exp    : " << to_binary(exp, 16, true) << '\n';
+			//std::cout << "fra    : " << to_binary(fra, 16, true) << '\n';
+
+			raw = (0x7FFF ^ (0x3FFF >> k)) | exp | (fraction_bits >> (k + 43));
 
 			mask = 0x1000u << k; // bitNPlusOne
 			if (mask & fraction_bits) {
