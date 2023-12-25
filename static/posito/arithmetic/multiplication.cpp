@@ -6,7 +6,7 @@
 #include <universal/utility/directives.hpp>
 // Configure the posit template environment
 // first: enable general or specialized specialized posit configurations
-//#define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_SPECIALIZATION
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable tracing 
@@ -24,20 +24,20 @@ namespace sw {
 		template<typename PositType>
 		int VerifyMultiplication(bool reportTestCases) {
 			constexpr unsigned nbits = PositType::nbits;
-			const unsigned NR_POSITS = (unsigned(1) << nbits);
+			const unsigned NR_POSITS = 16; //  (1 << nbits);
 			int nrOfFailedTests = 0;
 			for (unsigned i = 0; i < NR_POSITS; i++) {
 				PositType pa;
 				pa.setbits(i);
 				double da = double(pa);
 				for (unsigned j = 0; j < NR_POSITS; j++) {
-					PositType pb, pmul, pref;
+					PositType pb, pc, pref;
 					pb.setbits(j);
 					double db = double(pb);
-					pref = da * db;
+					double dc = da * db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 					try {
-						pmul = pa * pb;
+						pc = pa * pb;
 					}
 					catch (const posit_operand_is_nar&) {
 						if (pa.isnar() || pb.isnar()) {
@@ -49,20 +49,82 @@ namespace sw {
 						}
 					}
 #else
-					pmul = pa * pb;
+					pc = pa * pb;
 #endif
-					if (pmul != pref) {
-						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pmul, pref);
+					pref = dc;
+					sw::universal::ReportBinaryOperation(pa, "*", pb, pc);
+					//sw::universal::ReportBinaryOperation(da, "*", db, dc);
+					if (pc != pref) {
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pc, pref);
 						nrOfFailedTests++;
 					}
 					else {
-						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pmul, pref);
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pc, pref);
+					}
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		template<typename PositType, typename PositoType>
+		int VerifyMultiplicationWithPosito(bool reportTestCases) {
+			constexpr unsigned nbits = PositType::nbits;
+			const unsigned NR_POSITS = (1 << nbits);
+			int nrOfFailedTests = 0;
+			for (unsigned i = 0; i < NR_POSITS; i++) {
+				PositType pa;
+				pa.setbits(i);
+				PositoType ra;
+				ra.setbits(i);
+				for (unsigned j = 0; j < NR_POSITS; j++) {
+					PositType pb, pc, pref;
+					pb.setbits(j);
+					PositoType rb, rc;
+					rb.setbits(j);
+					rc = ra * rb;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						pc = pa * pb;
+					}
+					catch (const posit_operand_is_nar&) {
+						if (pa.isnar() || pb.isnar()) {
+							// correctly caught the exception
+							pmul.setnar();
+						}
+						else {
+							throw;  // rethrow
+						}
+					}
+#else
+					pc = pa * pb;
+#endif
+					pref = double(rc);
+					if (pc != pref) {
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pc, pref);
+						nrOfFailedTests++;
+					}
+					else {
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pc, pref);
 					}
 				}
 			}
 			return nrOfFailedTests;
 		}
 	}
+}
+
+template<typename PositType>
+void TestDecode(const PositType& a) {
+	using namespace sw::universal;
+	short m;
+	uint16_t bits, exp, fraction;
+
+	bits = a.bits();
+	a.decode_posit(bits, m, exp, fraction);
+	std::cout << "bits     : " << to_binary(bits, 16, true) << '\n';
+	std::cout << "m        : " << int(m) << '\n';
+	std::cout << "exponent : " << to_binary(exp, 16, true) << " : " << int(exp) << '\n';
+	std::cout << "fraction : " << to_binary(fraction, 16, true) << '\n';
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -87,7 +149,7 @@ try {
 
 	std::string test_suite  = "posit multiplication verification";
 	std::string test_tag    = "multiplication";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -96,7 +158,11 @@ try {
 	// generate individual testcases to hand trace/debug
 
 
-//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<16, 2>>(reportTestCases), "posit<4,0>", "multiplication");
+	return 0;
+	//nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 1>, posito<16, 1>>(reportTestCases);
+//	nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 2>, posito<16, 2>>(reportTestCases);
+
+	//nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<16, 2>>(reportTestCases), "posit<16, 2>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

@@ -304,21 +304,13 @@ public:
 		lhs = lhs & sign_mask ? -lhs : lhs;
 		rhs = rhs & sign_mask ? -rhs : rhs;
 
-		// decode the regime of lhs
-		int8_t m = 0;  // regime pattern length
-		uint16_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
-		decode_regime(lhs, m, remaining);
+		uint16_t lhs_exp{ 0 }, lhs_fraction, rhs_exp{ 0 }, rhs_fraction;
+		uint16_t lhs_m = decode_posit(lhs, lhs_exp, lhs_fraction);
+		uint16_t rhs_m = decode_posit(rhs, rhs_exp, rhs_fraction);
 
-		// extract the exponent
-		int32_t exp = remaining >> 13;  // 16 - 1(sign) - 2(exponent)
-
-		// extract remaining fraction bits
-		uint16_t lhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
-		// adjust shift and extract fraction bits of rhs
-		extractMultiplicand(rhs, m, remaining);
-		exp += (remaining >> 13);
-		uint16_t rhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
-		uint32_t result_fraction = (uint32_t) lhs_fraction * rhs_fraction;
+		uint16_t m = lhs_m + rhs_m;
+		uint16_t exp = lhs_exp + rhs_exp;
+		uint32_t result_fraction = lhs_fraction * rhs_fraction;
 
 		if (exp > 3) {
 			++m;
@@ -498,6 +490,32 @@ public:
 	posit twosComplement() const noexcept {
 		posit p;
 		return p.setbits(~_bits + 1ul);
+	}
+
+	uint16_t decode_posit(const uint16_t bits, uint16_t& exp, uint16_t& fraction) const noexcept {
+		int16_t m{ 0 };
+		// posit is s.rrrr.ee.fffff
+		fraction = (bits << 2u) & 0xFFFF;  // remove sign and first regime bit
+		if (bits & 0x4000) {  // positive regimes
+			m = 0;
+			while (fraction >> 15) {
+				++m;
+				fraction <<= 1u;
+			}
+		}
+		else {              // negative regimes
+			m = -1;
+			while (!(fraction >> 15)) {
+				--m;
+				fraction <<= 1u;
+			}
+			fraction &= 0x7FFF;
+		}	
+		exp = (fraction >> 13); // extract the exponent
+		// finalize the fraction bits as in 0b0hffff...ff00, so we have MSB = 0, hidden bit realized at 0x2000, and two extra bits at the bottom
+		fraction &= 0x9FFF; // null the exponent bits
+		fraction |= 0x2000; // set the hidden bit
+		return m;
 	}
 
 	internal::value<fbits> to_value() const noexcept {
@@ -691,25 +709,25 @@ private:
 	// The regime numerical meaning is as follows: If m is the number of
 	// identical bits in the regime, if the bits are 0s, then k = −m;
 	// if they are 1s, then k = m − 1.
-	inline void decode_regime(const uint16_t bits, int8_t& k, uint16_t& remaining) const noexcept {
+	void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFF;  // sign and first regime bit
 		if (bits & 0x4000) {  // positive regimes
-			k = 0;
+			m = 0;
 			while (remaining >> 15) {
-				++k;
+				++m;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 		}
 		else {              // negative regimes
-			k = -1;
+			m = -1;
 			while (!(remaining >> 15)) {
-				--k;
+				--m;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 			remaining &= 0x7FFF;
 		}
 	}
-	inline void extractAddand(const uint16_t bits, int8_t& shift, uint16_t& remaining) const noexcept {
+	void extractAddand(const uint16_t bits, int8_t& shift, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
@@ -726,73 +744,70 @@ private:
 			remaining &= 0x7FFF;
 		}
 	}
-	// TODO: This is the same as decode_regime except the initialization of k. Can we combine them?
-	inline void extractMultiplicand(const uint16_t bits, int8_t& k, uint16_t& remaining) const noexcept {
+	void extractMultiplicand(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
-				++k;
+				++m;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 		}
 		else {              // negative regimes
-			--k;
+			--m;
 			while (!(remaining >> 15)) {
-				--k;
+				--m;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 			remaining &= 0x7FFF;
 		}
 	}
-	// TODO: This is the same as extractAddand. Can we combine them?
-	inline void extractDividand(const uint16_t bits, int8_t& k, uint16_t& remaining) const noexcept {
+	void extractDividand(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
-				--k;
+				--m;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 		}
 		else {              // negative regimes
-			++k;
+			++m;
 			while (!(remaining >> 15)) {
-				++k;
+				++m;
 				remaining = (remaining << 1) & 0xFFFF;
 			}
 			remaining &= 0x7FFF;
 		}
 	}
-	inline uint16_t round(const int8_t k, uint16_t exp, uint32_t fraction) const noexcept {
-		int16_t scale;
-		uint16_t regime, bits;
-		if (k < 0) {
-			scale = (-k & 0xFFFF);
-			regime = 0x4000 >> scale;
+	uint16_t round(const int8_t m, uint16_t exp, uint32_t fraction) const noexcept {
+		uint16_t reglen, regime, bits;
+		if (m < 0) {
+			reglen = (-m & 0xFFFF);
+			regime = 0x4000 >> reglen;
 		}
 		else {
-			scale = int16_t(k) + 1;
-			regime = 0x7FFF - (0x7FFF >> scale);
+			reglen = int16_t(m) + 1;
+			regime = 0x7FFF - (0x7FFF >> reglen);
 		}
 
-		if (scale > 14) {
-			bits = k < 0 ? 0x0001 : 0x7FFF;  // minpos and maxpos. exp and frac do not matter
+		if (reglen > 14) {
+			bits = (m<0 ? 0x0001 : 0x7FFF);  // minpos and maxpos. exp and frac do not matter
 		}
 		else {
-			fraction = (fraction & 0x3FFFFFFF) >> (scale + 2); // remove both carry bits, 2 bits exp
+			fraction = (fraction & 0x3FFFFFFF) >> (reglen + 2); // remove both carry bits, 2 bits exp
 			uint16_t final_fbits = uint16_t(fraction >> 16);
 			bool bitNPlusOne = false;
 			uint16_t moreBits = 0;
-			if (scale <= 12) {
+			if (reglen <= 12) {
 				bitNPlusOne = bool(0x8000 & fraction);
-				exp <<= (12 - scale);
+				exp <<= (12 - reglen);
 			}
 			else {
-				if (scale == 14) {
+				if (reglen == 14) {
 					bitNPlusOne = bool(exp & 0x2);
 					moreBits = exp & 0x1;
 					exp = 0;
 				}
-				else if (scale == 13) {
+				else if (reglen == 13) {
 					bitNPlusOne = bool(exp & 0x1);
 					exp >>= 1;
 				}
@@ -811,7 +826,7 @@ private:
 		}
 		return bits;
 	}
-	inline uint16_t divRound(const int8_t m, uint16_t exp, uint32_t fraction, bool nonZeroRemainder) const noexcept {
+	uint16_t divRound(const int8_t m, uint16_t exp, uint32_t fraction, bool nonZeroRemainder) const noexcept {
 		uint16_t reglen, regime, bits;
 		if (m < 0) {
 			reglen = (-m & 0xFFFF);

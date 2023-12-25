@@ -299,7 +299,7 @@ public:
 		decode_regime(lhs, m, remaining);
 
 		// extract the exponent
-		int32_t exp = remaining >> 14;
+		int16_t exp = remaining >> 14;
 
 		// add the hidden bit
 		uint32_t lhs_fraction = (0x4000 | remaining);
@@ -639,7 +639,7 @@ private:
 	}
 public:
 	// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
-	inline void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
+	void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
@@ -656,7 +656,7 @@ public:
 			remaining &= 0x7FFF;
 		}
 	}
-	inline void extractAddand(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
+	void extractAddand(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
@@ -673,7 +673,7 @@ public:
 			remaining &= 0x7FFF;
 		}
 	}
-	inline void extractMultiplicand(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
+	void extractMultiplicand(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
@@ -690,7 +690,7 @@ public:
 			remaining &= 0x7FFF;
 		}
 	}
-	inline void extractDividand(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
+	void extractDividand(const uint16_t bits, int8_t& m, uint16_t& remaining) const noexcept {
 		remaining = (bits << 2) & 0xFFFF;
 		if (bits & 0x4000) {  // positive regimes
 			while (remaining >> 15) {
@@ -707,36 +707,36 @@ public:
 			remaining &= 0x7FFF;
 		}
 	}
-	inline uint16_t round(const int8_t m, uint16_t exp, uint32_t fraction) const noexcept {
-		uint16_t scale, regime, bits;
+	uint16_t round(const int8_t m, uint16_t exp, uint32_t fraction) const noexcept {
+		uint16_t reglen, regime, bits;
 		if (m < 0) {
-			scale = (-m & 0xFFFF);
-			regime = 0x4000 >> scale;
+			reglen = (-m & 0xFFFF);
+			regime = 0x4000 >> reglen;
 		}
 		else {
-			scale = m + 1;
-			regime = 0x7FFF - (0x7FFF >> scale);
+			reglen = m + 1;
+			regime = 0x7FFF - (0x7FFF >> reglen);
 		}
 
-		if (scale > 14) {
+		if (reglen > 14) {
 			bits = m<0 ? 0x0001 : 0x7FFF;  // minpos and maxpos
 		}
 		else {
-			fraction = (fraction & 0x3FFFFFFF) >> (scale + 1); // remove both carry bits
+			fraction = (fraction & 0x3FFFFFFF) >> (reglen + 1); // remove both carry bits
 			uint16_t final_fbits = uint16_t(fraction >> 16);
 			bool bitNPlusOne = false;
-			if (scale != 14) { 
+			if (reglen != 14) {
 				bitNPlusOne = bool(0x8000 & fraction);	
 			}
 			else if (final_fbits > 0) {
 				final_fbits = 0;
 			}
-			if (scale == 14 && exp != 0) {
+			if (reglen == 14 && exp != 0) {
 				bitNPlusOne = true;
 				exp = 0;
 			}
 			else {
-				exp <<= (13 - scale);
+				exp <<= (13 - reglen);
 			}
 			bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
 			// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
@@ -747,7 +747,7 @@ public:
 		}
 		return bits;
 	}
-	inline uint16_t divRound(const int8_t m, uint16_t exp, uint32_t fraction, bool nonZeroRemainder) const noexcept {
+	uint16_t divRound(const int8_t m, uint16_t exp, uint32_t fraction, bool nonZeroRemainder) const noexcept {
 		uint16_t reglen, regime, bits;
 		if (m < 0) {
 			reglen = (-m & 0xFFFF);
@@ -789,7 +789,7 @@ public:
 		}
 		return bits;
 	}
-	inline uint16_t adjustAndRound(const int8_t m, uint16_t exp, uint32_t fraction) const noexcept {
+	uint16_t adjustAndRound(const int8_t m, uint16_t exp, uint32_t fraction) const noexcept {
 		uint16_t scale, regime, bits;
 		if (m < 0) {
 			scale = (-m & 0xFFFF);
