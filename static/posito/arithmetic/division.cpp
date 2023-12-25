@@ -58,7 +58,8 @@ void GenerateWorstCaseDivision() {
 }
 
 /*
-As we discussed, I think the following cases are tricky for the divide function. I discovered them when trying to approximate x/y with x times (1/y). All are in the <16,1> environment, so you should be able to test them easily.
+As we discussed, I think the following cases are tricky for the divide function. I discovered them when trying to approximate x/y with x times (1/y). 
+All are in the <16,1> environment, so you should be able to test them easily.
 
 Let
 
@@ -76,9 +77,10 @@ D / C = posit represented by integer 16386 (value is 1.00048828125)
 
 Notice that multiplying the B/A and A/B results gives 1 exactly, but multiplying the C/D and D/C results gives 1.000121891498565673828125.
 */
-template<typename PositType>
 void ToughDivisions2() {
-	constexpr unsigned nbits = PositType::nbits;
+	constexpr unsigned nbits = 16;
+	constexpr unsigned es = 1;
+	using PositType = sw::universal::posito<nbits, es>;
 	PositType a, b, c, d;
 	a.setbits(20479);
 	b.setbits(2);
@@ -166,6 +168,17 @@ namespace sw {
 	}
 }
 
+template<typename PositType>
+void ScalesOfGeometricRegime() {
+	using namespace sw::universal;
+	std::cout << dynamic_range(PositType()) << '\n';
+	PositType p(SpecificValue::maxpos);
+	for (int i = 0; i < 5; ++i) {
+		std::cout << to_binary(p) << " : " << scale(p) << " : " << p << '\n';
+		--p;
+	}
+}
+
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -196,6 +209,47 @@ try {
 #if MANUAL_TESTING
 
 //	ToughDivisions2<posit<16,1>>();
+
+	{
+		posit<16, 2> a{1}, b(SpecificValue::minpos), c;
+		for (int i = 0; i < 16; ++i) {
+			c = a / b;
+			ReportBinaryOperation(a, "/", b, c);
+			b *= 2;
+		}
+	}
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 1>>(true), "posit<16,1>", "division");
+
+	return 0;
+	/*
+	FAIL
+	1.3877787807814456755e-17 / 8.8817841970012523234e-16 !=                    0.0625 golden reference is                  0.015625
+    0b0.000000000000001.. /     0b0.00000000000001.1. !=     0b0.01.00.00000000000 golden reference is     0b0.001.10.0000000000
+	*/
+	{
+		posit<16, 2> a, b, c;
+		a = 1.3877787807814456755e-17;
+		b = 8.8817841970012523234e-16;
+		c = a / b;
+		ReportBinaryOperation(a, "/", b, c);
+	}
+	return 0;
+	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 2>>(true), "posit<16,2>", "division");
+
+	return 0;
+	{
+		posit<16, 1> a{1}, b(SpecificValue::minpos), c{ 0 };
+		c = a / b; // maxpos
+		ReportBinaryOperation(a, "/", b, c);
+		b.maxpos();
+		c = a / b; // maxpos
+		ReportBinaryOperation(a, "/", b, c);
+
+		ScalesOfGeometricRegime<posito<16, 1>>();
+		
+		ScalesOfGeometricRegime<posito<16, 2>>();
+	}
+
 
 	/*
 	FAIL

@@ -1,6 +1,6 @@
 // complex_add.cpp: test suite runner for posit complex addition
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -104,7 +104,7 @@ try {
 	using namespace std;  // needed to get the imaginary literals
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit complex addition validation";
+	std::string test_suite  = "posit complex addition verification";
 	std::string test_tag    = "complex addition";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

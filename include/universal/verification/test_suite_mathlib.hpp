@@ -234,11 +234,11 @@ int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
 		for (unsigned j = 0; j < NR_TEST_CASES; ++j) {
 			b.setbits(j);
 			double db = double(b);
-#if LNS_THROW_ARITHMETIC_EXCEPTION
+#if THROW_ARITHMETIC_EXCEPTION
 			try {
 				result = pow(a, b);
 			}
-			catch (const lns_arithmetic_exception& err) {
+			catch (const universal_arithmetic_exception& err) {
 				if (a.isnan()) {
 					if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}

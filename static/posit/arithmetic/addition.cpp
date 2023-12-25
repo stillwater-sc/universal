@@ -1,6 +1,6 @@
 // addition.cpp: test suite runner for posit addition
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -57,7 +57,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit addition validation";
+	std::string test_suite  = "posit addition verification";
 	std::string test_tag    = "addition";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
