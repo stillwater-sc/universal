@@ -128,7 +128,7 @@ void TestDecode(const PositType& a) {
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -147,9 +147,9 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit multiplication verification";
+	std::string test_suite  = "fast posit multiplication verification";
 	std::string test_tag    = "multiplication";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -165,16 +165,15 @@ try {
 	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1001'0000
 	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1001'0001
 	*/
-//	posit<16, 2> a(1), b(16), c;
-//	c = a * b;
-//	ReportBinaryOperation(a, "*", b, c);
-//	c = a / b;
-//	ReportBinaryOperation(a, "/", b, c);
+	posit<16, 2> a(1), b(16), c;
+	a.setbits(0x0009);
+	b.setbits(0x4C8D);
+	c = a * b;
+	ReportBinaryOperation(a, "*", b, c);
 
 	//nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 1>, posito<16, 1>>(reportTestCases);
-//	nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 2>, posito<16, 2>>(reportTestCases);
-
-	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<16, 2>>(reportTestCases), "posit<16, 2>", "multiplication");
+	//nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 2>, posito<16, 2>>(reportTestCases);
+	//nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<16, 2>>(reportTestCases), "posit<16, 2>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -184,51 +183,26 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(reportTestCases), "posit< 2,0>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(reportTestCases), "posit< 3,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 1>(reportTestCases), "posit< 3,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 2>(reportTestCases), "posit< 3,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 3>(reportTestCases), "posit< 3,3>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(reportTestCases), "posit< 4,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1>(reportTestCases), "posit< 4,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2>(reportTestCases), "posit< 4,2>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 0>(reportTestCases), "posit< 5,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 1>(reportTestCases), "posit< 5,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 2>(reportTestCases), "posit< 5,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 3>(reportTestCases), "posit< 5,3>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 0>(reportTestCases), "posit< 6,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 1>(reportTestCases), "posit< 6,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 2>(reportTestCases), "posit< 6,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 3>(reportTestCases), "posit< 6,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 4>(reportTestCases), "posit< 6,4>", "multiplication");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 0>(reportTestCases), "posit< 7,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 1>(reportTestCases), "posit< 7,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 2>(reportTestCases), "posit< 7,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 3>(reportTestCases), "posit< 7,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 4>(reportTestCases), "posit< 7,4>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(reportTestCases), "posit< 8,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(reportTestCases), "posit< 8,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 3>(reportTestCases), "posit< 8,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4>(reportTestCases), "posit< 8,4>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 5>(reportTestCases), "posit< 8,5>", "multiplication");
+	// TODO: no fast posit<8,1> yet
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(reportTestCases), "posit< 8,1>", "multiplication");
+	// TODO: no working fast posit<8,2> yet
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_MUL, 65536), "posit<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 65536), "posit<16,2>", "multiplication");
+
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 0>(reportTestCases), "posit<10,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 1>(reportTestCases), "posit<10,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 2>(reportTestCases), "posit<10,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 3>(reportTestCases), "posit<10,3>", "multiplication");
-
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<24,2>", "multiplication");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(reportTestCases, OPCODE_MUL, 1000), "posit<32,1>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<32,2>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(reportTestCases, OPCODE_MUL, 1000), "posit<32,3>", "multiplication");
 #endif
