@@ -106,7 +106,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "fast posit addition validation";
+	std::string test_suite  = "fast posit addition verification";
 	std::string test_tag    = "addition";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
