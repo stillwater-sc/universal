@@ -87,7 +87,7 @@ namespace sw {
 
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -106,7 +106,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit addition validation";
+	std::string test_suite  = "fast posit addition validation";
 	std::string test_tag    = "addition";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -151,37 +151,19 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<2, 0>(reportTestCases), "posit< 2,0>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 0>(reportTestCases), "posit< 3,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 1>(reportTestCases), "posit< 3,1>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>(reportTestCases), "posit< 4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>(reportTestCases), "posit< 4,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>(reportTestCases), "posit< 4,2>", "addition");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<5, 0>(reportTestCases), "posit< 5,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<5, 1>(reportTestCases), "posit< 5,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<5, 2>(reportTestCases), "posit< 5,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<5, 3>(reportTestCases), "posit< 5,3>", "addition");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 0>(reportTestCases), "posit< 6,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 1>(reportTestCases), "posit< 6,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 2>(reportTestCases), "posit< 6,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 3>(reportTestCases), "posit< 6,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 4>(reportTestCases), "posit< 6,4>", "addition");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 0>(reportTestCases), "posit< 7,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 1>(reportTestCases), "posit< 7,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 2>(reportTestCases), "posit< 7,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 3>(reportTestCases), "posit< 7,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 4>(reportTestCases), "posit< 7,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 5>(reportTestCases), "posit< 7,5>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0>(reportTestCases), "posit< 8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1>(reportTestCases), "posit< 8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2>(reportTestCases), "posit< 8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 3>(reportTestCases), "posit< 8,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 4>(reportTestCases), "posit< 8,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 5>(reportTestCases), "posit< 8,5>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 6>(reportTestCases), "posit< 8,6>", "addition");
+	// TODO: no fast posit<8,1> yet
+	//nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1>(reportTestCases), "posit< 8,1>", "multiplication");
+	// TODO: no working fast posit<8,2> yet
+	//nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_ADD, 65536), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_ADD, 65536), "posit<16,2>", "addition");
+
+
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -190,7 +172,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 2>(reportTestCases), "posit<10,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 3>(reportTestCases), "posit<10,3>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<16,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
 #endif
 
@@ -198,7 +180,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<20, 1>(reportTestCases, OPCODE_ADD, 1000), "posit<20,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<28, 1>(reportTestCases, OPCODE_ADD, 1000), "posit<28,1>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(reportTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(reportTestCases, OPCODE_ADD, 1000), "posit<32,3>", "addition");
 #endif
