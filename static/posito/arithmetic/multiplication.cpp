@@ -24,7 +24,7 @@ namespace sw {
 		template<typename PositType>
 		int VerifyMultiplication(bool reportTestCases) {
 			constexpr unsigned nbits = PositType::nbits;
-			const unsigned NR_POSITS = 16; //  (1 << nbits);
+			const unsigned NR_POSITS = (1 << nbits);
 			int nrOfFailedTests = 0;
 			for (unsigned i = 0; i < NR_POSITS; i++) {
 				PositType pa;
@@ -52,7 +52,7 @@ namespace sw {
 					pc = pa * pb;
 #endif
 					pref = dc;
-					sw::universal::ReportBinaryOperation(pa, "*", pb, pc);
+					//sw::universal::ReportBinaryOperation(pa, "*", pb, pc);
 					//sw::universal::ReportBinaryOperation(da, "*", db, dc);
 					if (pc != pref) {
 						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pc, pref);
@@ -157,12 +157,24 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
+	/*
+	* 	fraction carry processing commensing
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1000'1101
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1000'1110
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1000'1111
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1001'0000
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1001'0001
+	*/
+//	posit<16, 2> a(1), b(16), c;
+//	c = a * b;
+//	ReportBinaryOperation(a, "*", b, c);
+//	c = a / b;
+//	ReportBinaryOperation(a, "/", b, c);
 
-	return 0;
 	//nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 1>, posito<16, 1>>(reportTestCases);
 //	nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 2>, posito<16, 2>>(reportTestCases);
 
-	//nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<16, 2>>(reportTestCases), "posit<16, 2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<16, 2>>(reportTestCases), "posit<16, 2>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

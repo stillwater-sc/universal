@@ -304,21 +304,53 @@ public:
 		lhs = lhs & sign_mask ? -lhs : lhs;
 		rhs = rhs & sign_mask ? -rhs : rhs;
 
-		uint16_t lhs_exp{ 0 }, lhs_fraction, rhs_exp{ 0 }, rhs_fraction;
-		uint16_t lhs_m = decode_posit(lhs, lhs_exp, lhs_fraction);
-		uint16_t rhs_m = decode_posit(rhs, rhs_exp, rhs_fraction);
+/* {
+			uint16_t lhs_exp{ 0 }, lhs_fraction, rhs_exp{ 0 }, rhs_fraction;
+			uint16_t lhs_m = decode_posit(lhs, lhs_exp, lhs_fraction);
+			uint16_t rhs_m = decode_posit(rhs, rhs_exp, rhs_fraction);
 
-		uint16_t m = lhs_m + rhs_m;
-		uint16_t exp = lhs_exp + rhs_exp;
-		uint32_t result_fraction = lhs_fraction * rhs_fraction;
+			uint16_t m = lhs_m + rhs_m;
+			uint16_t exp = lhs_exp + rhs_exp;
+			uint32_t result_fraction = lhs_fraction * rhs_fraction;
+
+			std::cout << "lhs    : " << to_binary(lhs_fraction, 32, true) << '\n';
+			std::cout << "rhs    : " << to_binary(rhs_fraction, 32, true) << '\n';
+			std::cout << "result : " << to_binary(result_fraction, 32, true) << '\n';
+			std::cout << "exp    : " << int(exp) << '\n';
+		}
+*/
+
+		// decode the regime of lhs
+		int8_t m = 0;  // regime pattern length
+		uint16_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
+		decode_regime(lhs, m, remaining);
+
+		// extract the exponent
+		int16_t exp = (remaining >> 13);  // 16 - 1(sign) - 2(exponent)
+
+		// extract remaining fraction bits
+		uint16_t lhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
+
+		// adjust shift and extract fraction bits of rhs
+		extractMultiplicand(rhs, m, remaining);
+		exp += (remaining >> 13);
+		uint16_t rhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
+		uint32_t result_fraction = (uint32_t)lhs_fraction * rhs_fraction;
+
+		//std::cout << "lhs    : " << to_binary(lhs_fraction, 32, true) << '\n';
+		//std::cout << "rhs    : " << to_binary(rhs_fraction, 32, true) << '\n';
+		//std::cout << "result : " << to_binary(result_fraction, 32, true) << '\n';
+		//std::cout << "exp    : " << int(exp) << '\n';
 
 		if (exp > 3) {
 			++m;
 			exp &= 0x3;
 		}
 	
-		bool rcarry = bool(result_fraction & 0x20000000);
+		bool rcarry = (result_fraction & 0x2000'0000) != 0;
 		if (rcarry) {
+			//std::cerr << "fraction carry processing commensing\n";
+			//std::cerr << to_binary(*this, true) << " * " << to_binary(b, true) << '\n';
 			exp++;
 			if (exp > 3) {
 				++m;
@@ -378,11 +410,11 @@ public:
 
 		// adjust shift and extract fraction bits of rhs
 		extractDividand(rhs, m, remaining);
-		uint16_t rhsExp = (remaining >> 14);
+		uint16_t rhsExp = (remaining >> 13);
 
 		std::cout << to_binary(*this, true) << " : exp " << exp << '\n';
 		std::cout << to_binary(b, true) << " : exp " << rhsExp << '\n';
-
+		std::cout << "m : " << int(m) << '\n';
 
 		exp -= (remaining >> 13);
 		uint16_t rhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
