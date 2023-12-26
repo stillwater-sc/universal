@@ -44,7 +44,7 @@ void GenerateWorstCaseDivision() {
 	p_plus_eps++;
 	p_minus_eps--;
 	p_result = p_plus_eps / p_minus_eps;
-	if (es < 2) {
+	if constexpr (es < 2) {
 		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << sw::universal::posit<nbits, es>(sw::universal::SpecificValue::minpos) << std::dec << std::endl;
 	}
 	else {

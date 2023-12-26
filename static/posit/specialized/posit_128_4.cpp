@@ -1,6 +1,6 @@
 // posit_128_4.cpp: test suite runner for specialized 128-bit posit<128,4>
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,7 +10,7 @@
 //#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations
 #define POSIT_FAST_POSIT_128_4 1// TODO: fast posit<128,4> not implemented yet
 // second: enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
@@ -53,7 +53,7 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	size_t RND_TEST_CASES = 1024;
+	unsigned RND_TEST_CASES = 1024;
 
 	using Scalar = posit<nbits, es>;
 	Scalar p;

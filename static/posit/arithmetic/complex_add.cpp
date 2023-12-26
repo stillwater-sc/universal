@@ -46,14 +46,14 @@ int VerifyComplexAddition(bool reportTestCases) {
 	const unsigned NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> ar, ai, br, bi;
-	std::complex<posit<nbits, es>> a, b, result, ref;
+	std::complex< posit<nbits, es> > a, b, result, ref;
 
 	std::complex<double> da, db, dc;
 	for (unsigned i = 0; i < NR_POSITS; ++i) {
 		ar.setbits(i);
 		for (unsigned j = 0; j < NR_POSITS; ++j) {
 			ai.setbits(j);
-			a = std::complex<posit<nbits, es>>(ar, ai);
+			a = std::complex< posit<nbits, es> >(ar, ai);
 			da = std::complex<double>(double(ar), double(ai));
 
 			// generate all the right sides
@@ -61,12 +61,12 @@ int VerifyComplexAddition(bool reportTestCases) {
 				br.setbits(k);
 				for (unsigned l = 0; l < NR_POSITS; ++l) {
 					bi.setbits(l);
-					b = std::complex<posit<nbits, es>>(br, bi);
+					b = std::complex< posit<nbits, es> >(br, bi);
 					db = std::complex<double>(double(br), double(bi));
 
 					result = a + b;
 					dc = da + db;
-					ref = std::complex<posit<nbits, es>>(dc.real(), dc.imag());
+					ref = std::complex< posit<nbits, es> >(dc.real(), dc.imag());
 
 					if (result.real() != ref.real() || result.imag() != ref.imag()) {
 						nrOfFailedTests++;

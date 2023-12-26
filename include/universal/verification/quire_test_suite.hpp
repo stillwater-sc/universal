@@ -261,10 +261,10 @@ int ValidateQuireAccumulation(bool bReportIndividualTestCases, const std::vector
 
 	if (!presult.iszero()) {
 		nrOfFailedTests++;
-		if (bReportIndividualTestCases)	ReportQuireNonZeroError("FAIL", "fdp", t.size(), t[0], presult);
+		if (bReportIndividualTestCases)	ReportQuireNonZeroError("FAIL", "fdp", unsigned(t.size()), t[0], presult);
 	}
 	else {
-		if (bReportIndividualTestCases) ReportQuireNonZeroSuccess("PASS", "fdp", t.size(), t[0], presult);
+		if (bReportIndividualTestCases) ReportQuireNonZeroSuccess("PASS", "fdp", unsigned(t.size()), t[0], presult);
 		//std::cout << to_hex(q0.get()) << " " << to_hex(pa.get()) << " " << to_hex(pb.get()) << " " << to_hex(q.get()) << " " << to_hex(presult.get()) << std::endl;
 	}
 

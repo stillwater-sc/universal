@@ -143,8 +143,6 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,2>", "subtraction");
-
-
 #endif
 
 #if REGRESSION_LEVEL_2

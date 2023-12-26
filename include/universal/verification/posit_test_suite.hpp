@@ -60,7 +60,7 @@ namespace sw { namespace universal {
 		unsigned NR_TEST_CASES = (unsigned(1) << (max + 1));
 		unsigned HALF = (unsigned(1) << max);
 
-		if (nbits > 20) {
+		if constexpr (nbits > 20) {
 			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
 		}
 

@@ -87,7 +87,7 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	size_t RND_TEST_CASES = 5000;
+	unsigned RND_TEST_CASES = 5000;
 
 	using Scalar = posit<nbits, es>;
 	Scalar p;

@@ -8,6 +8,7 @@
 #define HARDWARE_QA_OUTPUT 0
 
 // type definitions for the important types, posit<> and quire<>
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 //#include <universal/traits/posit_traits.hpp>
 //#include <universal/number/posit/quire.hpp>

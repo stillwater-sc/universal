@@ -158,9 +158,9 @@ namespace sw {
 						nrOfFailedTests++;
 					}
 					else {
-						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pdiv, pref);
+						if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pdiv, pref);
 					}
-
+					if (nrOfFailedTests > 0) return 1;
 				}
 			}
 			return nrOfFailedTests;
@@ -210,8 +210,27 @@ try {
 
 //	ToughDivisions2<posit<16,1>>();
 
-	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 1>>(true), "posit<16,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 2>>(true), "posit<16,2>", "division");
+	/*
+	PASS 1.3877787807814456755e-17 / 1.3877787807814456755e-17 ==                         1 
+	PASS 1.3877787807814456755e-17 / 2.2204460492503130808e-16 ==                    0.0625 
+	FAIL 1.3877787807814456755e-17 / 8.8817841970012523234e-16 !=                    0.0625 golden reference is 0.015625
+    0b0.000000000000001.. /     0b0.00000000000001.1. !=     0b0.01.00.00000000000 golden reference is     0b0.001.10.0000000000
+	 */
+	{
+		posit<16, 2> a, b, c;
+		a = 1.3877787807814456755e-17;
+		b = 8.8817841970012523234e-16;
+		c = a / b;
+		ReportBinaryOperation(a, "/", b, c);
+		double da = double(a);
+		double db = double(b);
+		double dc = da / db;
+		ReportBinaryOperation(da, "/", db, dc);
+		posit<16, 2> ref(dc);
+		ReportValue(ref, "reference");
+	}
+	// nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 1>>(true), "posit<16,1>", "division");
+	// nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 2>>(true), "posit<16,2>", "division");
 
 	return 0;
 	/*

@@ -304,22 +304,6 @@ public:
 		lhs = lhs & sign_mask ? -lhs : lhs;
 		rhs = rhs & sign_mask ? -rhs : rhs;
 
-/* {
-			uint16_t lhs_exp{ 0 }, lhs_fraction, rhs_exp{ 0 }, rhs_fraction;
-			uint16_t lhs_m = decode_posit(lhs, lhs_exp, lhs_fraction);
-			uint16_t rhs_m = decode_posit(rhs, rhs_exp, rhs_fraction);
-
-			uint16_t m = lhs_m + rhs_m;
-			uint16_t exp = lhs_exp + rhs_exp;
-			uint32_t result_fraction = lhs_fraction * rhs_fraction;
-
-			std::cout << "lhs    : " << to_binary(lhs_fraction, 32, true) << '\n';
-			std::cout << "rhs    : " << to_binary(rhs_fraction, 32, true) << '\n';
-			std::cout << "result : " << to_binary(result_fraction, 32, true) << '\n';
-			std::cout << "exp    : " << int(exp) << '\n';
-		}
-*/
-
 		// decode the regime of lhs
 		int8_t m = 0;  // regime pattern length
 		uint16_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
@@ -336,11 +320,6 @@ public:
 		exp += (remaining >> 13);
 		uint16_t rhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
 		uint32_t result_fraction = (uint32_t)lhs_fraction * rhs_fraction;
-
-		//std::cout << "lhs    : " << to_binary(lhs_fraction, 32, true) << '\n';
-		//std::cout << "rhs    : " << to_binary(rhs_fraction, 32, true) << '\n';
-		//std::cout << "result : " << to_binary(result_fraction, 32, true) << '\n';
-		//std::cout << "exp    : " << int(exp) << '\n';
 
 		if (exp > 3) {
 			++m;

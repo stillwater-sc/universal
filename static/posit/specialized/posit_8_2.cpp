@@ -104,7 +104,6 @@ try {
 	std::cout << std::setw(4) << 0x7C << " : " << color_print(p) << " : " << p << '\n';
 	p.setbits(0x7D);
 	std::cout << std::setw(4) << 0x7D << " : " << color_print(p) << " : " << p << '\n';
-	float f = float(p);
 
 //	goto epilog;
 
