@@ -156,15 +156,18 @@ public:
 		decode_regime(lhs, m, remaining);
 
 		// extract the exponent
-		uint32_t exp = remaining >> 29;
+		uint32_t exp = (remaining >> 29);
 
 		// extract the remaining fraction
-		uint64_t frac64A = ((0x40000000ull | uint64_t(remaining) << 1) & 0x7FFFFFFFull) << 32;  // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
+		uint64_t frac64A{ 0 }, frac64B{ 0 };
+		frac64A = ((0x4000'0000ull | uint64_t(remaining) << 1) & 0x7FFF'FFFFull) << 32;
+
 		int32_t shiftRight = m;
 
 		// adjust shift and extract fraction bits of rhs
-		extractAddand(rhs, m, remaining);
-		uint64_t frac64B = ((0x40000000ull | uint64_t(remaining) << 1) & 0x7FFFFFFFull) << 32; // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
+		extractAddand(rhs, shiftRight, remaining);
+		frac64B = ((0x4000'0000ull | uint64_t(remaining) << 1) & 0x7FFF'FFFFull) << 32;
+
 		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 29);
 
@@ -173,7 +176,7 @@ public:
 
 		frac64A += frac64B; // add the now aligned fractions
 
-		bool rcarry = bool(0x8000000000000000 & frac64A); // is MSB set   bool(0x8000'0000'0000'0000 & frac64A); 
+		bool rcarry = bool(0x8000'0000'0000'0000 & frac64A); // is MSB set   bool(0x8000'0000'0000'0000 & frac64A); 
 		if (rcarry) {
 			++exp;
 			if (exp > 3) {
@@ -184,7 +187,7 @@ public:
 		}
 
 		_bits = round(m, exp, frac64A);
-		if (sign) _bits = -int32_t(_bits) & 0xFFFFFFFF;
+		if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 		return *this;
 	}
 	posit& operator+=(double rhs) {
@@ -306,13 +309,13 @@ public:
 		uint32_t remaining = 0;
 		decode_regime(lhs, m, remaining);
 		uint32_t exp = remaining >> 29;  // lhs exponent
-		uint32_t lhs_fraction = ((remaining << 1) | 0x40000000) & 0x7FFFFFFF;;
+		uint32_t lhs_fraction = ((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF;;
 
 		// adjust shift and extract fraction bits of rhs
 		extractMultiplicand(rhs, m, remaining);
-		uint32_t rhs_fraction = (((remaining << 1) | 0x40000000) & 0x7FFFFFFF);
+		uint32_t rhs_fraction = (((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF);
 		uint64_t result_fraction = uint64_t(lhs_fraction) * uint64_t(rhs_fraction);
-		exp += remaining >> 29;  // product exp is the sum of lhs exp and rhs exp
+		exp += (remaining >> 29);  // product exp is the sum of lhs exp and rhs exp
 
 		// adjust exponent if it has overflown
 		if (exp > 3) {
@@ -332,7 +335,7 @@ public:
 
 		// round
 		_bits = round_mul(m, exp, result_fraction);
-		if (sign) _bits = -int32_t(_bits) & 0xFFFFFFFF;
+		if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 		return *this;
 	}
 	posit& operator*=(double rhs) {
@@ -377,14 +380,14 @@ public:
 		int32_t exp = remaining >> 29;
 
 		// extract the lhs fraction
-		uint32_t lhs_fraction = ((remaining << 1) | 0x40000000) & 0x7FFFFFFF;
+		uint32_t lhs_fraction = ((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF;
 		uint64_t lhs64 = uint64_t(lhs_fraction) << 30;
 
 		// adjust shift and extract fraction bits of rhs
 		extractDividand(rhs, m, remaining);
 		// calculate exponent, exp = lhs_exp - rhs_exp
-		exp -= remaining >> 29;
-		uint32_t rhs_fraction = ((remaining << 1) | 0x40000000) & 0x7FFFFFFF;
+		exp -= (remaining >> 29);
+		uint32_t rhs_fraction = ((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF;
 
 		// execute the integer division of fractions
 		lldiv_t result = lldiv(lhs64, uint64_t(rhs_fraction));

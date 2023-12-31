@@ -15,44 +15,44 @@
 #include <universal/number/posit/posit_parse.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
+#include <universal/verification/test_case.hpp>
 
 // Standard posit with nbits = 32 have es = 2 exponent bits.
 
-template<size_t nbits, size_t es>
-void CheckAddition() {
-	using namespace sw::universal;
+namespace sw {
+	namespace universal {
+		void TestWithValue(double fa, double fb) {
+			double fc;
+			sw::universal::posit<32, 2> a, b, c;
 
-	posit<nbits, es> pa, pb, pc;
-	int fails = 0;
-	for (int a = 0; a < 256; ++a) {
-		pa.setbits(a);
-		for (int b = 0; b < 256; ++b) {
-			pb.setbits(b);
-			pc = pa + pb;
-
-			double da, db, dref;
-			da = double(pa);
-			db = double(pb);
-			dref = da + db;
-
-			posit<nbits, es> pref = dref;
-			if (pref != pc) {
-				std::cout << "FAIL: " << posit_format(pa) << " + " << posit_format(pb) << " produced " << posit_format(pc) << " instead of " << posit_format(pref) << '\n';
-				++fails;
-				break;
-			}
+			fc = fa + fb;
+			a = fa;
+			b = fb;
+			c = a + b;
+			ReportBinaryOperation(a, "+", b, c);
+			std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
+			c = fc;
+			ReportBinaryOperation(a, "+", b, c);
+			std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
 		}
-	}
-	if (fails) {
-		printf("addition        FAIL\n");
-	}
-	else {
-		printf("addition        PASS\n");
-	}
-}
+
+		void TestWithPattern(posit<32, 2>& a, posit<32, 2>& b) {
+			posit<32, 2> c = a + b;
+			ReportBinaryOperation(a, "+", b, c);
+			std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
+			double fa = double(a);
+			double fb = double(b);
+			double fc = fa + fb;
+			ReportBinaryOperation(fa, "+", fb, fc);
+			posit<32, 2> cref = fc;
+			ReportBinaryOperation(a, "+", b, cref);
+			std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
+			if (c != cref) std::cout << "FAIL\n"; else std::cout << "PASS\n";
+		}
+} }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -81,13 +81,13 @@ try {
 	std::string test_suite = "Standard posit<32,2>";
 #endif
 
-	std::string test_tag    = "arithmetic type tests";
+	std::string test_tag    = "number system test";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	unsigned RND_TEST_CASES = 5000;
+	unsigned RND_TEST_CASES = 65536;
 
 	using Scalar = posit<nbits, es>;
 	Scalar p;
@@ -96,63 +96,41 @@ try {
 
 #if MANUAL_TESTING
 
-	posit<nbits, es> a, b, c;
-	a.setbits(0x0aa99eea);
-	b.setbits(0xf97fcf40);
-	std::cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << '\n';
-	c = a + b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
-	c = a;
-	c += b;
-	std::cout << a << " + " << b << " = " << c << '\n';
-	std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
+	/*
+	-413900.75                + -0.23673234228044748306   != -6622473                  golden reference is -413901
+	0b1.111110.10.10010100001100110011000 + 0b1.01.01.111001001101001111101101001 != 0b1.1111110.10.1001010000110100001001 golden reference is 0b1.111110.10.10010100001100110100000
+	FAIL
+	0.11507077468559145927    + 248.02450752258300781     != 3997.8502197265625        golden reference is 248.13957786560058594
+	0b0.01.00.110101110101010001110011111 + 0b0.110.11.11110000000011001000110001 != 0b0.1110.11.1111001110111011001101010 golden reference is 0b0.110.11.11110000010001110111011011
 
-#if 1
-	std::string testVector[] = {
-		"32.2x0a2f641dp",
-		"32.2x06e8eb35p",
-		"32.2xf97fcf40p",
-		"32.2x03812f3fp",
-		"32.2xf57e2aa8p",
-		"32.2xf88b7e2fp",
-		"32.2x04cd9168p",
-		"32.2xfa843f6bp",
-		"32.2x05a36e2ep",
-		"32.2xf4e89c21p",
-		"32.2x05080d4cp",
-		"32.2x05a36e2ep"
-	};
+	//double fa, fb;
+	//fa = -413900.75;
+	//fb = -0.23673234228044748306;
+	//TestWithValue(fa, fb);
 
-	std::string golden[] = {
-		"32.2x0a2f641dp",
-		"32.2x0aa99eeap",
-		"32.2x0a4992bap",
-		"32.2x0a51a5aep",
-		"32.2xfa7e82b0p",
-		"32.2xf82b1edbp",
-		"32.2xf864d108p",
-		"32.2xf805e0e3p",
-		"32.2xf86ebc6ep",
-		"32.2xf41ffa58p",
-		"32.2xf440fc02p",
-		"32.2xf47569c8p"
-	};
+	{
+		// FAIL
+		// 0b0.10.00.000000000000000000000000001 + 0b0.0000000000000001.00.0000000000000 = 0b0.11111111111111110.01.000000000000
+		// 1 + 8.67362e-19 = 2.30584e+18  should be 1+ULP
+		//0b0000'0000'0000'0000'1000'0000'0000'0000
+		posit<32, 2> a, b, c;
+		a.setbits(0x4000'0001); // 1 + ULP
+		b.setbits(0x00008000); // 8.67362e-19
+		c = a + b;
+		ReportBinaryOperation(a, "+", b, c);
+	}
 
-	posit<nbits, es> accu1(0), accu2(0);
-	int i = 0;
-	for (auto v : testVector) {
-		if (!parse(v, p)) {
-			std::cerr << "unable to parse -" << v << "- into a posit value\n";
-		}
-		else {
-			std::cout << hex_format(accu1) << " + " << hex_format(p) << '\n';
-			accu1 = accu1 + p;
-			accu2 += p;
-			std::cout << hex_format(accu1) << " vs " << golden[i++] << " " << accu2 << '\n';
+
+	{
+		posit<32, 2> a, b;
+		a.setbits(0x4000'0001); // 1 + ULP
+		double useed = 16;
+		for (int i = -15; i < 16; ++i) {
+			b = pow(useed, double(i));
+			TestWithPattern(a, b);
 		}
 	}
-#endif
+	 */
 
 	// special cases
 	std::cout << "Special case tests\n";
@@ -214,7 +192,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
-
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -238,20 +215,18 @@ try {
 
 #if REGRESSION_LEVEL_3
 	// arithmetic tests
-	RND_TEST_CASES = 1024 * 1024;
 	std::cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction     (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division        (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "+=              (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "-=              (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "*=              (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "/=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, RND_TEST_CASES), tag, "+=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPS, RND_TEST_CASES), tag, "-=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPM, RND_TEST_CASES), tag, "*=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=              (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_4
-
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
 	p.minpos();
