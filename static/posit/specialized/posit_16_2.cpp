@@ -21,6 +21,22 @@
 #include <universal/verification/posit_test_suite.hpp>
 #endif
 
+void TestWithValues(double av, double bv) {
+	using namespace sw::universal;
+	posit<16, 2> a, b, c;
+	a = av;
+	b = bv;
+	c = a / b;
+	ReportBinaryOperation(a, "/", b, c);
+	double da = double(a);
+	double db = double(b);
+	double dc = da / db;
+	//	ReportBinaryOperation(da, "/", db, dc);
+	posit<16, 2> ref(dc);
+	ReportBinaryOperation(a, "/", b, ref);
+	if (c != ref) std::cout << "FAIL\n";
+}
+
 // Standard posit with nbits = 16 have es = 2 exponent bit.
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -54,7 +70,7 @@ try {
 #endif
 
 	std::string test_tag    = "arithmetic type tests";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -67,98 +83,47 @@ try {
 	std::string tag = type_tag(p);
 
 #if MANUAL_TESTING
-	/*
-                   a : 0b0.10.01.00000000000 : 2
-                   b : 0b0.10.00.00000000000 : 1 +
-                   c : 0b0.10.01.10000000000 : 3
-                   a : 0b0.10.1.000000000000 : 2
-                   b : 0b0.10.0.000000000000 : 1 +
-                   c : 0b0.10.1.100000000000 : 3
-
-	*/
-
-	posit<16, 2> a, b, c, cref;
-	float fa, fb, fc;
-
-	{
-
-		a.maxpos();
-		uint64_t i64 = uint64_t(a);
-		std::cout << "posit<16,2> : " << i64 << " : " << a << " : " << to_binary(a) << '\n';
-		std::cout << std::setw(25) << "maxpos" << " : " << to_binary(i64, 64, true) << " : " << i64 << '\n';
-		i64 /= 2;
-		std::cout << std::setw(25) << "half maxpos" << " : " << to_binary(i64, 64, true) << " : " << i64 << '\n';
-
-	/*
-		FAIL
-		-1232                     / -1.5916157281026244164e-12 != 281474976710656           golden reference is 1125899906842624
-		0b1.1110.10.001101000     / 0b1.00000000001.00.11     != 0b0.11111111111110.0.     golden reference is 0b0.11111111111110.1.
-	 */
-		a.setbits(0x0001);
-		//b.setbits(0xCFFF);  // 0b1.10.0'1.111'1111'1111
-		b.setbits(0x809F);  // 0b1000'0000'1001'1111
-		a = -1232;
-		std::cout << a << '\n';
-		b = -1.5916157281026244164e-12;
-		c = a - b;
-		fa = float(a);
-		fb = float(b);
-		fc = fa - fb;
-		cref = fc;
-		std::cout 
-			<< std::setw(NUMBER_COLUMN_WIDTH) << a << " - "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << b << " = "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << c << '\n';
-		std::cout
-			<< std::setw(NUMBER_COLUMN_WIDTH) << fa << " - "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << fb << " = "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << fc << '\n';
-		std::cout
-			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fa) << " - "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fb) << " = "
-			<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(fc) << '\n';
-
-		Compare(c, cref, fc, true);
-		ReportBinaryOperation(a, "-", b, c);
-		ReportBinaryArithmeticError("bla", "-", a, b, c, cref);
-	}
-	return 0;
-	std::cout << "Manual exhaustive div" << std::endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<nbits, es>(reportTestCases), tag, "div            (native)  ");
-	std::cout << "Manual exhaustive mul" << std::endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<nbits, es>(reportTestCases), tag, "mul            (native)  ");
-	std::cout << "Manual exhaustive sub" << std::endl;
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<nbits, es>(reportTestCases), tag, "sub            (native)  ");
-	std::cout << "Manual exhaustive add" << std::endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<nbits, es>(reportTestCases), tag, "add            (native)  ");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPM, 100), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPD, 100), tag, "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(true, OPCODE_IPD, 100), tag, "/=             (native)  ");
 
-	a.setnar(); b.setnar();
-	testLogicOperators(a, b);
-	a = +1; b = +1; --b;
-	testLogicOperators(a, b);
-	a = +1; b = +1; ++b;
-	testLogicOperators(a, b);
-	a = -1; b = -1; --b;
-	testLogicOperators(a, b);
-	a = -1; b = -1; ++b;
-	testLogicOperators(a, b);
+	TestWithValues(1.1368683772161602974e-13, 8.5265128291212022305e-14);
+	goto epilog;
 
-	a.setbits(0xfffd); b.setbits(0xfffe);
-	testLogicOperators(a, b);
+	std::cout << "Exhaustive tests" << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision      <nbits, es>(reportTestCases), tag, "div            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<nbits, es>(reportTestCases), tag, "mul            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction   <nbits, es>(reportTestCases), tag, "sub            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition      <nbits, es>(reportTestCases), tag, "add            (native)  ");
 
-	uint16_t v1 = 0x7fff;
-	uint16_t v2 = 0x8001;
-	std::cout << v1 << " vs " << int16_t(v1) << '\n';
-	std::cout << v2 << " vs " << int16_t(v2) << '\n';
-	a.setbits(v1); b.setbits(v2);
-	testLogicOperators(a, b);
-	testLogicOperators(b, a);
+	{
+		posit<16, 2> a, b, c;
+		a.setnar(); b.setnar();
+		testLogicOperators(a, b);
+		a = +1; b = +1; --b;
+		testLogicOperators(a, b);
+		a = +1; b = +1; ++b;
+		testLogicOperators(a, b);
+		a = -1; b = -1; --b;
+		testLogicOperators(a, b);
+		a = -1; b = -1; ++b;
+		testLogicOperators(a, b);
 
+		a.setbits(0xfffd); b.setbits(0xfffe);
+		testLogicOperators(a, b);
+
+		uint16_t v1 = 0x7fff;
+		uint16_t v2 = 0x8001;
+		std::cout << v1 << " vs " << int16_t(v1) << '\n';
+		std::cout << v2 << " vs " << int16_t(v2) << '\n';
+		a.setbits(v1); b.setbits(v2);
+		testLogicOperators(a, b);
+		testLogicOperators(b, a);
+	}
+
+epilog:
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else

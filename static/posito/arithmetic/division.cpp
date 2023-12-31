@@ -57,42 +57,6 @@ void GenerateWorstCaseDivision() {
 	std::cout << std::endl;
 }
 
-/*
-As we discussed, I think the following cases are tricky for the divide function. I discovered them when trying to approximate x/y with x times (1/y). 
-All are in the <16,1> environment, so you should be able to test them easily.
-
-Let
-
-A = posit represented by integer 20479 (value is 8191/4096 = 1.999755859375)
-B = posit represented by integer 2 (value is 1/67108864 = 0.00000001490116119384765625)
-C = posit represented by integer 16383 (value is 8191/8192 = 0.9998779296875)
-D = posit represented by integer 16385 (value is 4097/4096 = 1.000244140625)
-
-Then the divide routine should return the following:
-
-B / A = posit represented by integer 2 (that is, the division leaves B unchanged)
-A / B = posit represented by integer 32766 (value is 67108864)
-C / D = posit represented by integer 16381 (value is 0.996337890625)
-D / C = posit represented by integer 16386 (value is 1.00048828125)
-
-Notice that multiplying the B/A and A/B results gives 1 exactly, but multiplying the C/D and D/C results gives 1.000121891498565673828125.
-*/
-void ToughDivisions2() {
-	constexpr unsigned nbits = 16;
-	constexpr unsigned es = 1;
-	using PositType = sw::universal::posito<nbits, es>;
-	PositType a, b, c, d;
-	a.setbits(20479);
-	b.setbits(2);
-	c.setbits(16383);
-	d.setbits(16385);
-
-	GenerateTestCase<PositType>(b, a);
-	GenerateTestCase<PositType>(a, b);
-	GenerateTestCase<PositType>(c, d);
-	GenerateTestCase<PositType>(d, c);
-}
-
 namespace sw {
 	namespace testing {
 		// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
@@ -158,9 +122,9 @@ namespace sw {
 						nrOfFailedTests++;
 					}
 					else {
-						if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pdiv, pref);
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pdiv, pref);
 					}
-					if (nrOfFailedTests > 0) return 1;
+					if (nrOfFailedTests > 10) return 10;
 				}
 			}
 			return nrOfFailedTests;
@@ -177,6 +141,22 @@ void ScalesOfGeometricRegime() {
 		std::cout << to_binary(p) << " : " << scale(p) << " : " << p << '\n';
 		--p;
 	}
+}
+
+void TestWithValues(double av, double bv) {
+	using namespace sw::universal;
+	posit<16, 2> a, b, c;
+	a = av;
+	b = bv;
+	c = a / b;
+	ReportBinaryOperation(a, "/", b, c);
+	double da = double(a);
+	double db = double(b);
+	double dc = da / db;
+//	ReportBinaryOperation(da, "/", db, dc);
+	posit<16, 2> ref(dc);
+	ReportBinaryOperation(a, "/", b, ref);
+	if (c != ref) std::cout << "FAIL\n";
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
@@ -210,86 +190,42 @@ try {
 
 //	ToughDivisions2<posit<16,1>>();
 
+
+	{
+		// previously failing test cases: bug was in calculation of exponent field
+//		TestWithValues(1.3877787807814456755e-17, 1.3877787807814456755e-17);
+//		TestWithValues(1.3877787807814456755e-17, 2.2204460492503130808e-16);
+//		TestWithValues(1.3877787807814456755e-17, 8.8817841970012523234e-16);
+
+//		TestWithValues(1.3877787807814456755e-17, 3.5527136788005009294e-15);
+//		TestWithValues(1.3877787807814456755e-17, 7.1054273576010018587e-15);
+//		TestWithValues(1.3877787807814456755e-17, 1.4210854715202003717e-14);
+
+//		TestWithValues(1.3877787807814456755e-17, 2.8421709430404007435e-14);
+//		TestWithValues(1.3877787807814456755e-17, 5.684341886080801487e-14);
+//		TestWithValues(1.3877787807814456755e-17, 8.5265128291212022305e-14);
+//		TestWithValues(2.2204460492503130808e-16, 1.7053025658242404461e-13);
+
 	/*
-	PASS 1.3877787807814456755e-17 / 1.3877787807814456755e-17 ==                         1 
-	PASS 1.3877787807814456755e-17 / 2.2204460492503130808e-16 ==                    0.0625 
-	FAIL 1.3877787807814456755e-17 / 8.8817841970012523234e-16 !=                    0.0625 golden reference is 0.015625
-    0b0.000000000000001.. /     0b0.00000000000001.1. !=     0b0.01.00.00000000000 golden reference is     0b0.001.10.0000000000
+	1.1368683772161602974e-13 / 8.5265128291212022305e-14 !=              1.3330078125 golden reference is             1.33349609375
+		0b0.000000000001.01.0 /     0b0.000000000001.00.1 !=     0b0.10.00.01010101010 golden reference is     0b0.10.00.01010101011
 	 */
-	{
-		posit<16, 2> a, b, c;
-		a = 1.3877787807814456755e-17;
-		b = 8.8817841970012523234e-16;
-		c = a / b;
-		ReportBinaryOperation(a, "/", b, c);
-		double da = double(a);
-		double db = double(b);
-		double dc = da / db;
-		ReportBinaryOperation(da, "/", db, dc);
-		posit<16, 2> ref(dc);
-		ReportValue(ref, "reference");
-	}
-	// nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 1>>(true), "posit<16,1>", "division");
-	// nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 2>>(true), "posit<16,2>", "division");
+		TestWithValues(1.1368683772161602974e-13, 8.5265128291212022305e-14);
+		{
+			posito<16, 2> a, b, c;
+			a = 1.1368683772161602974e-13;
+			b = 8.5265128291212022305e-14;
+			c = a / b;
+			ReportBinaryOperation(a, "/", b, c);
+		}
 
-	return 0;
-	/*
-	FAIL
-	1.3877787807814456755e-17 / 8.8817841970012523234e-16 !=                    0.0625 golden reference is                  0.015625
-    0b0.000000000000001.. /     0b0.00000000000001.1. !=     0b0.01.00.00000000000 golden reference is     0b0.001.10.0000000000
-	*/
-	{
-		posit<16, 2> a, b, c;
-		a = 1.3877787807814456755e-17;
-		b = 8.8817841970012523234e-16;
-		c = a / b;
-		ReportBinaryOperation(a, "/", b, c);
-	}
-	return 0;
-
-	return 0;
-	{
-		posit<16, 1> a{1}, b(SpecificValue::minpos), c{ 0 };
-		c = a / b; // maxpos
-		ReportBinaryOperation(a, "/", b, c);
-		b.maxpos();
-		c = a / b; // maxpos
-		ReportBinaryOperation(a, "/", b, c);
-
-		ScalesOfGeometricRegime<posito<16, 1>>();
-		
-		ScalesOfGeometricRegime<posito<16, 2>>();
 	}
 
-
-	/*
-	FAIL
-    8.5265128291212022305e-14 /                       128 != 2.2204460492503130808e-16 golden reference is 8.8817841970012523234e-16
-    0b0.000000000001.00.1 /     0b0.110.11.0000000000 !=     0b0.00000000000001.0. golden reference is     0b0.00000000000001.1.
-	*/
-	posit<16, 2> pa(1), pb(1), pc;
-	pa = 8.5265128291212022305e-14;
-	pb = 128.0;
-	ReportValue(pa, "pa");
-	ReportValue(pb, "pb");
-
-	pc = pa / pb;
-	ReportBinaryOperation(pa, "/", pb, pc);
-	double a, b;
-	a = double(pa);
-	b = double(pb);
-
-	GenerateTestCase<posit<16, 2>, double>(a, b);
-	GenerateTestCase<posito<16, 2>, double>(a, b);
-	return 0;
-
-	// Generate the worst fraction pressure for different posit configurations
-//	GenerateWorstCaseDivision<posit< 8, 1>>();
-//	GenerateWorstCaseDivision<posit<16, 2>>();
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 65536), "posit<16,2>", "division");
 
 //	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit< 8, 0>>(true), "posit<8,0>", "division");
 //	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 1>>(true), "posit<16,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 2>>(true), "posit<16,2>", "division");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 2>>(true), "posit<16,2>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

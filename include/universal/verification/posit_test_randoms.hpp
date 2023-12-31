@@ -334,9 +334,11 @@ namespace sw { namespace universal {
 		case OPCODE_ASINH:
 		case OPCODE_ACOSH:
 		case OPCODE_ATANH:
+			// valid unary function
+			break;
 			// two operand elementary functions
 		case OPCODE_POW:
-			std::cerr << "Unsupported binary operator, test cancelled\n";
+			std::cerr << "Unsupported binary function, test cancelled\n";
 			return 1;
 		}
 		// generate the full state space set of valid posit values

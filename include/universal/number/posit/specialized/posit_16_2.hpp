@@ -380,27 +380,34 @@ public:
 		uint16_t remaining{ 0 };  // Remaining bits after the regime: 0<remaining_bits>0..0
 		decode_regime(lhs, m, remaining);
 
+		//std::cout << "lhs m     : " << int(m) << '\n';
+
 		// extract the exponent
 		int16_t exp = (remaining >> 13); // 16 - 1(sign) - 2(exponent)
+		//std::cout << "lhs exp   : " << exp << '\n';
 
 		// extract remaining fraction bits
 		uint16_t lhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
 		uint32_t fraction = (uint32_t) lhs_fraction << 14;
+		//std::cout << "fraction  : " << to_binary(fraction, 32, true) << '\n';
 
 		// adjust shift and extract fraction bits of rhs
 		extractDividand(rhs, m, remaining);
-		uint16_t rhsExp = (remaining >> 13);
-
-		std::cout << to_binary(*this, true) << " : exp " << exp << '\n';
-		std::cout << to_binary(b, true) << " : exp " << rhsExp << '\n';
-		std::cout << "m : " << int(m) << '\n';
-
+		//uint16_t rhsExp = (remaining >> 13);
 		exp -= (remaining >> 13);
+		//std::cout << "result m  : " << int(m) << '\n';
+		//std::cout << "rhs exp   : " << rhsExp << '\n';
+		//std::cout << "final exp : " << exp << '\n';
+
 		uint16_t rhs_fraction = (0x4000 | remaining << 1) & 0x7FFF; // 0x4000 is the hidden bit
+		//std::cout << "lhs frac  : " << to_binary(lhs_fraction, 16, true) << '\n';
+		//std::cout << "rhs frac  : " << to_binary(rhs_fraction, 16, true) << '\n';
 
 		div_t result = div(fraction, rhs_fraction);
 		uint32_t result_fraction = result.quot;
 		uint32_t remainder = result.rem;
+
+		//std::cout << "result    : " << to_binary(result_fraction, 32, true) << '\n';
 
 		// adjust the exponent if needed
 		if (exp < 0) {
@@ -849,14 +856,16 @@ private:
 		}
 
 		if (reglen > 14) {
-			bits = (m < 0 ? 0x0001 : 0x7FFF);  // minpos and maxpos
+			bits = (m<0 ? 0x0001 : 0x7FFF);  // minpos and maxpos
 		}
 		else {
 			fraction &= 0x3FFF; // remove both carry bits
 			uint16_t final_fbits = uint16_t(fraction >> (reglen + 2));
 			bool bitNPlusOne = false;
 			if (reglen != 14) {
-				bitNPlusOne = bool((fraction >> reglen) & 0x1);
+				//std::cout << "fraction  : " << to_binary(fraction, 16, true) << '\n';
+				//std::cout << "nplusone  : " << to_binary((fraction >> (reglen - 1)), 16, true) << '\n';
+				bitNPlusOne = bool((fraction >> (reglen - 1)) & 0x1);
 			}
 			else if (final_fbits > 0) {
 				final_fbits = 0;
@@ -866,11 +875,19 @@ private:
 				exp = 0;
 			}
 			else {
-				exp <<= (13 - reglen);
+				exp <<= (12 - reglen);
 			}
-			bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
+			//std::cout << "regime    : " << to_binary(regime, 16, true) << '\n';
+			//std::cout << "exponent  : " << to_binary(exp, 16, true) << '\n';
+			//std::cout << "fraction  : " << to_binary(final_fbits, 16, true) << '\n';
+			bits = uint16_t(regime) | uint16_t(exp) | uint16_t(final_fbits);
+			//std::cout << "bits      : " << to_binary(bits, 16, true) << '\n';
 
 			if (bitNPlusOne) {
+				//uint16_t more = (fraction & ((1 << reglen) - 1));
+				//std::cout << "morebits  : " << to_binary(more, 16, true) << '\n';
+				//uint16_t mask = ((1 << reglen) - 1);
+				//std::cout << "mask      : " << to_binary(mask, 16, true) << '\n';
 				uint16_t moreBits = (fraction & ((1 << reglen) - 1)) ? 0x0001 : 0x0000;
 				if (nonZeroRemainder) moreBits = 0x0001;
 				// n+1 frac bit is 1. Need to check if another bit is 1 too, if not round to even
