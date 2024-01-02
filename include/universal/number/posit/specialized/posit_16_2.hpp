@@ -863,9 +863,7 @@ private:
 			uint16_t final_fbits = uint16_t(fraction >> (reglen + 2));
 			bool bitNPlusOne = false;
 			if (reglen != 14) {
-				//std::cout << "fraction  : " << to_binary(fraction, 16, true) << '\n';
-				//std::cout << "nplusone  : " << to_binary((fraction >> (reglen - 1)), 16, true) << '\n';
-				bitNPlusOne = bool((fraction >> (reglen - 1)) & 0x1);
+				bitNPlusOne = bool((fraction >> (reglen + 1)) & 0x1);
 			}
 			else if (final_fbits > 0) {
 				final_fbits = 0;

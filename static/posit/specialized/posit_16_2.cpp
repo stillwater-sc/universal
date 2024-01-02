@@ -84,12 +84,19 @@ try {
 
 #if MANUAL_TESTING
 
+	TestWithValues(-9.0390625, -0.0225372314453125);
+	TestWithValues(1.1368683772161602974e-13, 8.5265128291212022305e-14);
+	/*
+		-0.3614501953125          /= -281474976710656          != 2.2204460492503130808e-16 golden reference is 8.8817841970012523234e-16
+		0b1.01.10.01110010001     /= 0b1.11111111111110.0.     != 0b0.00000000000001.0.     golden reference is 0b0.00000000000001.1.
+	*/
+	TestWithValues(-0.3614501953125, -281474976710656);
+
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPM, 100), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(true, OPCODE_IPD, 100), tag, "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPD, 100), tag, "/=             (native)  ");
 
-	TestWithValues(1.1368683772161602974e-13, 8.5265128291212022305e-14);
 	goto epilog;
 
 	std::cout << "Exhaustive tests" << std::endl;
