@@ -19,38 +19,6 @@
 
 // Standard posit with nbits = 32 have es = 2 exponent bits.
 
-namespace sw {
-	namespace universal {
-		void TestWithValue(double fa, double fb) {
-			double fc;
-			sw::universal::posit<32, 2> a, b, c;
-
-			fc = fa + fb;
-			a = fa;
-			b = fb;
-			c = a + b;
-			ReportBinaryOperation(a, "+", b, c);
-			std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
-			c = fc;
-			ReportBinaryOperation(a, "+", b, c);
-			std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
-		}
-
-		void TestWithPattern(posit<32, 2>& a, posit<32, 2>& b) {
-			posit<32, 2> c = a + b;
-			ReportBinaryOperation(a, "+", b, c);
-			std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
-			double fa = double(a);
-			double fb = double(b);
-			double fc = fa + fb;
-			ReportBinaryOperation(fa, "+", fb, fc);
-			posit<32, 2> cref = fc;
-			ReportBinaryOperation(a, "+", b, cref);
-			std::cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << '\n';
-			if (c != cref) std::cout << "FAIL\n"; else std::cout << "PASS\n";
-		}
-} }
-
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
@@ -95,42 +63,6 @@ try {
 	std::cout << dynamic_range(p) << "\n\n";
 
 #if MANUAL_TESTING
-
-	/*
-	-413900.75                + -0.23673234228044748306   != -6622473                  golden reference is -413901
-	0b1.111110.10.10010100001100110011000 + 0b1.01.01.111001001101001111101101001 != 0b1.1111110.10.1001010000110100001001 golden reference is 0b1.111110.10.10010100001100110100000
-	FAIL
-	0.11507077468559145927    + 248.02450752258300781     != 3997.8502197265625        golden reference is 248.13957786560058594
-	0b0.01.00.110101110101010001110011111 + 0b0.110.11.11110000000011001000110001 != 0b0.1110.11.1111001110111011001101010 golden reference is 0b0.110.11.11110000010001110111011011
-
-	//double fa, fb;
-	//fa = -413900.75;
-	//fb = -0.23673234228044748306;
-	//TestWithValue(fa, fb);
-
-	{
-		// FAIL
-		// 0b0.10.00.000000000000000000000000001 + 0b0.0000000000000001.00.0000000000000 = 0b0.11111111111111110.01.000000000000
-		// 1 + 8.67362e-19 = 2.30584e+18  should be 1+ULP
-		//0b0000'0000'0000'0000'1000'0000'0000'0000
-		posit<32, 2> a, b, c;
-		a.setbits(0x4000'0001); // 1 + ULP
-		b.setbits(0x00008000); // 8.67362e-19
-		c = a + b;
-		ReportBinaryOperation(a, "+", b, c);
-	}
-
-
-	{
-		posit<32, 2> a, b;
-		a.setbits(0x4000'0001); // 1 + ULP
-		double useed = 16;
-		for (int i = -15; i < 16; ++i) {
-			b = pow(useed, double(i));
-			TestWithPattern(a, b);
-		}
-	}
-	 */
 
 	// special cases
 	std::cout << "Special case tests\n";
@@ -187,7 +119,6 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
-	RND_TEST_CASES = 5000;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");

@@ -405,7 +405,7 @@ public:
 			if (!rcarry) {
 				if (exp == 0) {
 					--m;
-					exp = 0x3;
+					exp = 0x3u;
 				}
 				else {
 					--exp;
@@ -416,7 +416,7 @@ public:
 
 		// round
 		_bits = adjustAndRound(m, exp, result_fraction, remainder != 0);
-		if (sign) _bits = -int32_t(_bits) & 0xFFFFFFFF;
+		if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 		return *this;
 	}
 	posit& operator/=(double rhs) {
@@ -848,38 +848,38 @@ private:
 		return bits;
 	}
 	inline uint32_t adjustAndRound(const int8_t k, uint32_t exp, uint64_t frac64, bool nonZeroRemainder) const {
-		uint32_t scale, regime, bits;
+		uint32_t reglen, regime, bits;
 		if (k < 0) {
-			scale = -k;
-			regime = 0x40000000 >> scale;
+			reglen = -k;
+			regime = 0x4000'0000 >> reglen;
 		}
 		else {
-			scale = k + 1;
-			regime = 0x7FFFFFFF - (0x7FFFFFFF >> scale);
+			reglen = k + 1;
+			regime = 0x7FFF'FFFF - (0x7FFF'FFFF >> reglen);
 		}
 
-		if (scale > 30) {
-			bits = k<0 ? 0x1 : 0x7FFFFFFF;  // minpos and maxpos
+		if (reglen > 30) {
+			bits = (k<0 ? 0x1 : 0x7FFF'FFFF);  // minpos and maxpos
 		}
 		else {
-			//remove carry and rcarry bits and shift to correct position
-			frac64 &= 0x3FFFFFFF;
-			uint32_t fraction = uint32_t((frac64) >> (scale + 2));
+			// remove carry and rcarry bits and shift to correct position
+			frac64 &= 0x3FFF'FFFF;
+			uint32_t fraction = uint32_t((frac64) >> (reglen + 2));
 
 			bool bitNPlusOne = false;
-			uint32_t moreBits = false;
-			if (scale <= 28) {
-				bitNPlusOne = bool (frac64 >> ((scale + 1)) & 0x1);
-				exp <<= (28 - scale);
-				if (bitNPlusOne) moreBits = (((1ull << (scale + 1)) - 1ull) & frac64) ? 0x1 : 0x0;
+			uint32_t moreBits{ 0 };
+			if (reglen <= 28) {
+				bitNPlusOne = bool ((frac64 >> (reglen + 1)) & 0x1);
+				exp <<= (28 - reglen);
+				if (bitNPlusOne) moreBits = (((1ull << (reglen + 1)) - 1ull) & frac64) ? 0x1 : 0x0;
 			}
 			else {
-				if (scale == 30) {
+				if (reglen == 30) {
 					bitNPlusOne = bool(exp & 0x2);
 					moreBits = exp & 0x1;
 					exp = 0;
 				}
-				else if (scale == 29) {
+				else if (reglen == 29) {
 					bitNPlusOne = bool(exp & 0x1);
 					exp >>= 1;
 				}
@@ -889,19 +889,16 @@ private:
 				}
 			}
 			if (nonZeroRemainder) moreBits = 0x1;
-			bits = uint32_t(regime) + uint32_t(exp) + uint32_t(fraction);
+			bits = uint32_t(regime) | uint32_t(exp) | uint32_t(fraction);
 			if (bitNPlusOne) bits += (bits & 0x1) | moreBits;
 #define TRACE_DIV_
 #ifdef TRACE_DIV
-			std::cout << "universal\n";
-			std::cout << "scale          = " << scale << std::endl;
-			std::cout << std::hex;
-			std::cout << "regime         = " << regime << std::endl;
+			std::cout << "reglen         = " << reglen << std::endl;
+			std::cout << "regime         = " << to_binary(regime) << std::endl;
 			std::cout << "exponent       = " << exp << std::endl;
-			std::cout << "fraction raw   = " << frac64 << std::endl;
-			std::cout << "fraction final = " << fraction << std::endl;
-			std::cout << "posit bits     = " << bits << std::endl;
-			std::cout << std::dec;
+			std::cout << "fraction raw   = " << to_binary(frac64, 64, true) << std::endl;
+			std::cout << "fraction final = " << to_binary(fraction, 32, true) << std::endl;
+			std::cout << "posit bits     = " << to_binary(bits, 32, true) << std::endl;
 #endif
 		}
 		return bits;
