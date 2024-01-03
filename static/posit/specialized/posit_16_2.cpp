@@ -9,7 +9,6 @@
 // Configure the posit template environment
 // first: enable fast specialized posit<16,2>
 //#define POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_16_2 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -21,26 +20,10 @@
 #include <universal/verification/posit_test_suite.hpp>
 #endif
 
-void TestWithValues(double av, double bv) {
-	using namespace sw::universal;
-	posit<16, 2> a, b, c;
-	a = av;
-	b = bv;
-	c = a / b;
-	ReportBinaryOperation(a, "/", b, c);
-	double da = double(a);
-	double db = double(b);
-	double dc = da / db;
-	//	ReportBinaryOperation(da, "/", db, dc);
-	posit<16, 2> ref(dc);
-	ReportBinaryOperation(a, "/", b, ref);
-	if (c != ref) std::cout << "FAIL\n";
-}
-
 // Standard posit with nbits = 16 have es = 2 exponent bit.
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -84,26 +67,19 @@ try {
 
 #if MANUAL_TESTING
 
-	TestWithValues(-9.0390625, -0.0225372314453125);
-	TestWithValues(1.1368683772161602974e-13, 8.5265128291212022305e-14);
+	using TestType = posit<16, 2>;
+	TestWithValues<TestType>(-9.0390625, -0.0225372314453125, TestCaseOperator::DIV);
+	TestWithValues<TestType>(1.1368683772161602974e-13, 8.5265128291212022305e-14, TestCaseOperator::DIV);
 	/*
 		-0.3614501953125          /= -281474976710656          != 2.2204460492503130808e-16 golden reference is 8.8817841970012523234e-16
 		0b1.01.10.01110010001     /= 0b1.11111111111110.0.     != 0b0.00000000000001.0.     golden reference is 0b0.00000000000001.1.
 	*/
-	TestWithValues(-0.3614501953125, -281474976710656);
-
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPM, 100), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPD, 100), tag, "/=             (native)  ");
-
-	goto epilog;
-
-	std::cout << "Exhaustive tests" << std::endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision      <nbits, es>(reportTestCases), tag, "div            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<nbits, es>(reportTestCases), tag, "mul            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction   <nbits, es>(reportTestCases), tag, "sub            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition      <nbits, es>(reportTestCases), tag, "add            (native)  ");
+	TestWithValues<TestType>(-0.3614501953125, -281474976710656, TestCaseOperator::DIV);
+	/*
+	1.3877787807814456755e-17 /= -0.004917144775390625     != -8.8817841970012523234e-16 golden reference is -3.5527136788005009294e-15
+	0b0.000000000000001..     /= 0b1.001.00.0100001001     != 0b1.00000000000001.1.     golden reference is 0b1.0000000000001.00.
+	*/
+	TestWithValues<TestType>(1.3877787807814456755e-17, -0.004917144775390625, TestCaseOperator::DIV);
 
 	{
 		posit<16, 2> a, b, c;
@@ -129,6 +105,19 @@ try {
 		testLogicOperators(a, b);
 		testLogicOperators(b, a);
 	}
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPM, 100), tag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_IPD, 100), tag, "/=             (native)  ");
+
+	goto epilog;  // skip the exhaustive tests
+
+	std::cout << "Exhaustive tests" << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision      <nbits, es>(reportTestCases), tag, "div            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<nbits, es>(reportTestCases), tag, "mul            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction   <nbits, es>(reportTestCases), tag, "sub            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition      <nbits, es>(reportTestCases), tag, "add            (native)  ");
 
 epilog:
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
@@ -158,7 +147,6 @@ epilog:
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
-	RND_TEST_CASES = 1024;
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(reportTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
@@ -181,9 +169,9 @@ epilog:
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
 	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(reportTestCases), tag, "integer assign (native)  ");
-	// FAIL =              0.25003 did not convert to             0.250061 instead it yielded                  0.25  raw 0b0.01.0.000000000000
-	// FAIL = 0.99994 did not convert to             0.999878 instead it yielded                     1  raw 0b0.10.0.000000000000
-	// posit<16, 1> float assign(native)   FAIL 2 failed test cases
+	// FAIL = 0.06251519627             did not convert to 0.06253051758             instead it yielded  0.0625                     raw 0b0.01.00.00000000000
+	// FAIL = 0.9998789296              did not convert to 0.9997558594              instead it yielded  1                          raw 0b0.10.00.00000000000
+	//	posit< 16, 2>                                                float assign(native)   FAIL 2 failed test cases
 	// nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(true), tag, "float assign   (native)  ");
 
 	RND_TEST_CASES = 1024 * 1024;

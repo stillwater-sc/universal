@@ -93,6 +93,44 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
+	void TestWithValues(double da, double db, TestCaseOperator _operator) {
+		std::string op;
+		TestType a, b, c;
+		double dc;
+		a = da;
+		b = db;
+		switch (_operator) {
+		case TestCaseOperator::ADD:
+			c = a + b;
+			dc = da + db;
+			op = " + ";
+			break;
+		case TestCaseOperator::SUB:
+			c = a - b;
+			dc = da - db;
+			op = " - ";
+			break;
+		case TestCaseOperator::MUL:
+			c = a * b;
+			dc = da * db;
+			op = " * ";
+			break;
+		case TestCaseOperator::DIV:
+			c = a / b;
+			dc = da / db;
+			op = " / ";
+			break;
+		default:
+			std::cout << "Unknown operator: exiting\n";
+			return;
+		}
+		ReportBinaryOperation(a, "/", b, c);
+		TestType ref(dc);
+		ReportBinaryOperation(a, "/", b, ref);
+		if (c != ref) std::cout << "FAIL\n";
+	}
+
+	template<typename TestType>
 	void ReportValue(const TestType& a, const std::string& label = "", unsigned labelWidth = 20) {
 		std::cout << std::setw(labelWidth) << label << " : " << to_binary(a, true) << " : " << a << '\n';
 	}

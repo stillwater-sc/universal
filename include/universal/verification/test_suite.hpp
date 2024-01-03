@@ -22,6 +22,10 @@
 // for number systems that do not have a math library.
 //#include <universal/verification/test_suite_random.hpp>
 
+namespace sw {
+	namespace universal {
+
+// test triviality of an arithmetic type, trivially constructible, copyable, copy assignable
 template<typename TestType>
 void ReportTrivialityOfType() {
 	std::string testType = sw::universal::type_tag(TestType());
@@ -43,10 +47,11 @@ void ReportTrivialityOfType() {
 	std::cout << (isTriviallyCopyAssignable ? testType + std::string("  is trivially copy-assignable") : testType + std::string("  failed trivially copy-assignable: FAIL")) << '\n';
 }
 
-template<typename Real>
-void ArithmeticOperators(Real a, Real b) {
+// test the arithmetic operators on a test type
+template<typename TestType>
+void ArithmeticOperators(TestType a, TestType b) {
 	using namespace sw::universal;
-	Real c;
+	TestType c;
 
 	c = a + b;
 	ReportBinaryOperation(a, "+", b, c);
@@ -79,3 +84,7 @@ void ArithmeticOperators(Real a, Real b) {
 	b = 1; ++b;
 	ReportUnaryOperation("()++", a, b);
 }
+
+
+	}
+} // namespace sw::universal

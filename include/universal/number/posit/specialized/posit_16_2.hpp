@@ -419,7 +419,7 @@ public:
 			if (!rcarry) {
 				if (exp == 0) {
 					--m;
-					exp = 3;
+					exp = 0x3u;
 				}
 				else {
 					--exp;
@@ -844,7 +844,7 @@ private:
 		}
 		return bits;
 	}
-	uint16_t divRound(const int8_t m, uint16_t exp, uint32_t fraction, bool nonZeroRemainder) const noexcept {
+	uint16_t divRound(const int8_t m, uint16_t exp, uint32_t frac32, bool nonZeroRemainder) const noexcept {
 		uint16_t reglen, regime, bits;
 		if (m < 0) {
 			reglen = (-m & 0xFFFF);
@@ -859,38 +859,34 @@ private:
 			bits = (m<0 ? 0x0001 : 0x7FFF);  // minpos and maxpos
 		}
 		else {
-			fraction &= 0x3FFF; // remove both carry bits
-			uint16_t final_fbits = uint16_t(fraction >> (reglen + 2));
+			frac32 &= 0x3FFF; // remove both carry bits
+			uint16_t fraction = uint16_t(frac32 >> (reglen + 2));
+
 			bool bitNPlusOne = false;
-			if (reglen != 14) {
-				bitNPlusOne = bool((fraction >> (reglen + 1)) & 0x1);
-			}
-			else if (final_fbits > 0) {
-				final_fbits = 0;
-			}
-			if (reglen == 14 && exp != 0) {
-				bitNPlusOne = true;
-				exp = 0;
+			uint16_t moreBits{ 0 };
+			if (reglen <= 12) {
+				bitNPlusOne = bool((frac32 >> (reglen + 1)) & 0x1);
+				exp <<= (12 - reglen);
+				if (bitNPlusOne) moreBits = (((1ull << (reglen + 1)) - 1ull) & frac32) ? 0x1 : 0x0;
 			}
 			else {
-				exp <<= (12 - reglen);
+				if (reglen == 14) {
+					bitNPlusOne = bool(exp & 0x2);
+					moreBits = exp & 0x1;
+					exp = 0;
+				}
+				else if (reglen == 13) {
+					bitNPlusOne = bool(exp & 0x1);
+					exp >>= 1;
+				}
+				if (frac32 > 0) {
+					fraction = 0;
+					moreBits = 0x1;
+				}
 			}
-			//std::cout << "regime    : " << to_binary(regime, 16, true) << '\n';
-			//std::cout << "exponent  : " << to_binary(exp, 16, true) << '\n';
-			//std::cout << "fraction  : " << to_binary(final_fbits, 16, true) << '\n';
-			bits = uint16_t(regime) | uint16_t(exp) | uint16_t(final_fbits);
-			//std::cout << "bits      : " << to_binary(bits, 16, true) << '\n';
-
-			if (bitNPlusOne) {
-				//uint16_t more = (fraction & ((1 << reglen) - 1));
-				//std::cout << "morebits  : " << to_binary(more, 16, true) << '\n';
-				//uint16_t mask = ((1 << reglen) - 1);
-				//std::cout << "mask      : " << to_binary(mask, 16, true) << '\n';
-				uint16_t moreBits = (fraction & ((1 << reglen) - 1)) ? 0x0001 : 0x0000;
-				if (nonZeroRemainder) moreBits = 0x0001;
-				// n+1 frac bit is 1. Need to check if another bit is 1 too, if not round to even
-				bits += (bits & 0x0001) | moreBits;
-			}
+			if (nonZeroRemainder) moreBits = 0x1;
+			bits = uint32_t(regime) | uint32_t(exp) | uint32_t(fraction);
+			if (bitNPlusOne) bits += (bits & 0x1) | moreBits;
 		}
 		return bits;
 	}
