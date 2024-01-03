@@ -62,14 +62,16 @@ try {
 	{
 		using Posit = posit<8, 0>;
 		Posit a;
-		a.setnar();  ReportValue(a, "NaR    : ");
-		a.maxpos();  ReportValue(a, "maxpos : ");
-		a = 1;       ReportValue(a, "  1    : ");
-		a.minpos();  ReportValue(a, "minpos : ");
-		a.setzero(); ReportValue(a, "zero   : ");
-		a.minneg();  ReportValue(a, "minneg : ");
-		a = -1;      ReportValue(a, " -1    : ");
-		a.maxneg();  ReportValue(a, "maxneg : ");
+		a.setnar();  ReportValue(a, "NaR     ");
+		a.maxpos();  ReportValue(a, "maxpos  ");
+		a = maxprecision_max<8, 0>(); ReportValue(a, "maxr0   ");
+		a = 1;       ReportValue(a, "  1     ");
+		a = maxprecision_min<8, 0>(); ReportValue(a, "minr-1  ");
+		a.minpos();  ReportValue(a, "minpos  ");
+		a.setzero(); ReportValue(a, "zero    ");
+		a.minneg();  ReportValue(a, "minneg  ");
+		a = -1;      ReportValue(a, " -1     ");
+		a.maxneg();  ReportValue(a, "maxneg  ");
 	}
 
 	std::cout << "*** binary, color, and value printing\n";

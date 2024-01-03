@@ -111,14 +111,6 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_32>& raw) {
-		_bits = uint32_t(raw.to_ulong());
-		return *this;
-	}
-	constexpr posit& setbits(uint64_t value) {
-		_bits = uint32_t(value & 0xFFFF'FFFFul);
-		return *this;
-	}
 	posit operator-() const {
 		posit p;
 		uint64_t raw = _bits;
@@ -454,41 +446,59 @@ public:
 	}
 
 	// Modifiers
-	inline constexpr void clear() { _bits = 0x0; }
-	inline constexpr void setzero() { clear(); }
-	inline constexpr void setnar() { _bits = 0x80000000; }
-	inline posit& minpos() {
+	constexpr void clear() noexcept { _bits = 0x0; }
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setnar() noexcept { _bits = 0x80000000; }
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_32>& raw) noexcept {
+		_bits = uint32_t(raw.to_ulong());
+		return *this;
+	}
+	constexpr posit& setbits(uint64_t value) noexcept {
+		_bits = uint32_t(value & 0xFFFF'FFFFul);
+		return *this;
+	}
+	constexpr posit& setbit(unsigned bitIndex, bool value = true) noexcept {
+		uint32_t bit_mask = (0x1u << bitIndex);
+		if (value) {
+			_bits |= bit_mask;
+		}
+		else {
+			_bits &= ~bit_mask;
+		}
+		return *this;
+	}
+	posit& minpos() {
 		clear();
 		return ++(*this);
 	}
-	inline posit& maxpos() {
+	posit& maxpos() {
 		setnar();
 		return --(*this);
 	}
-	inline posit& zero() {
+	posit& zero() {
 		clear();
 		return *this;
 	}
-	inline posit& minneg() {
+	posit& minneg() {
 		clear();
 		return --(*this);
 	}
-	inline posit& maxneg() {
+	posit& maxneg() {
 		setnar();
 		return ++(*this);
 	}
 
 	// Selectors
-	inline constexpr bool sign() const       { return (_bits & 0x80000000u); }
-	inline constexpr bool isnar() const      { return (_bits == 0x80000000u); }
-	inline constexpr bool iszero() const     { return (_bits == 0x0); }
-	inline constexpr bool isone() const      { return (_bits == 0x40000000u); } // pattern 010000...
-	inline constexpr bool isminusone() const { return (_bits == 0xC0000000u); } // pattern 110000...
-	inline constexpr bool isneg() const      { return (_bits & 0x80000000u); }
-	inline constexpr bool ispos() const      { return !isneg(); }
-	inline constexpr bool ispowerof2() const { return !(_bits & 0x1); }
+	constexpr bool sign() const       { return (_bits & 0x80000000u); }
+	constexpr bool isnar() const      { return (_bits == 0x80000000u); }
+	constexpr bool iszero() const     { return (_bits == 0x0); }
+	constexpr bool isone() const      { return (_bits == 0x40000000u); } // pattern 010000...
+	constexpr bool isminusone() const { return (_bits == 0xC0000000u); } // pattern 110000...
+	constexpr bool isneg() const      { return (_bits & 0x80000000u); }
+	constexpr bool ispos() const      { return !isneg(); }
+	constexpr bool ispowerof2() const { return !(_bits & 0x1); }
 
-	inline int sign_value() const { return (_bits & 0x8) ? -1 : 1; }
+	int sign_value() const { return (_bits & 0x8) ? -1 : 1; }
 
 	bitblock<NBITS_IS_32> get() const { bitblock<NBITS_IS_32> bb; bb = long(_bits); return bb; }
 	unsigned long long bits() const { return (unsigned long long)(_bits); }

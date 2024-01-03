@@ -112,15 +112,6 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& setBitblock(const bitblock<NBITS_IS_16>& raw) {
-		_bits = uint16_t(raw.to_ulong());
-		return *this;
-	}
-	constexpr posit& setbits(uint64_t value) {
-		_bits = uint16_t(value & 0xffffu);
-		return *this;
-	}
-
 	// arithmetic assignment operators
 	constexpr posit operator-() const {
 		posit p;
@@ -485,6 +476,24 @@ public:
 	void clear() noexcept { _bits = 0; }
 	void setzero() noexcept { clear(); }
 	void setnar() noexcept { _bits = sign_mask; }
+	posit& setBitblock(const bitblock<NBITS_IS_16>& raw) noexcept {
+		_bits = uint16_t(raw.to_ulong());
+		return *this;
+	}
+	constexpr posit& setbits(uint64_t value) noexcept {
+		_bits = uint16_t(value & 0xffffu);
+		return *this;
+	}
+	constexpr posit& setbit(unsigned bitIndex, bool value = true) noexcept {
+		uint16_t bit_mask = (0x1u << bitIndex);
+		if (value) {
+			_bits |= bit_mask;
+		}
+		else {
+			_bits &= ~bit_mask;
+		}
+		return *this;
+	}
 	posit& minpos() noexcept {
 		clear();
 		return ++(*this);

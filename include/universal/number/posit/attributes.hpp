@@ -82,20 +82,6 @@ constexpr double useed_value() {
 	return double(uint64_t(1) << useed_scale<nbits, es>());
 }
 
-#ifdef DEPRECATED
-// calculate the value of maxpos
-template<unsigned nbits, unsigned es>
-constexpr long double maxpos_value() {
-	return std::pow((long double)(useed_value<nbits, es>()), (long double)(nbits - 2));
-}
-
-// calculate the value of minpos
-template<unsigned nbits, unsigned es>
-constexpr long double minpos_value() {
-	return std::pow((long double)(useed_value<nbits, es>()), (long double)(static_cast<int>(2 - int(nbits))));
-}
-#endif
-
 // generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
 template<unsigned nbits, unsigned es>
 constexpr bitblock<nbits> minpos_pattern(bool sign = false) {
@@ -114,6 +100,35 @@ constexpr bitblock<nbits> maxpos_pattern(bool sign = false) {
 	_bits.set(nbits - 1, false);
 	return (sign ? twos_complement(_bits) : _bits);
 }
+
+// maximum value of regime 0
+template<unsigned nbits, unsigned es>
+posit<nbits, es> maxprecision_max() {
+	posit<nbits, es> a;
+	// set regime 0
+	a.clear();
+	a.setbit(nbits - 2, true);
+	// set all exponent and fraction bits to 1
+	for (int i = 0; i < nbits - 1 - 2; ++i) {
+		a.setbit(i, true);
+	}
+	return a;
+}
+
+// minimum value of regime -1
+template<unsigned nbits, unsigned es>
+posit<nbits, es> maxprecision_min() {
+	posit<nbits, es> a;
+	// set regime -1
+	a.clear();
+	a.setbit(nbits - 3, true);
+	// set all exponent and fraction bits are already set to 0 with the reset()
+	return a;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+///////////////               field value extractions               ///////////////
+///////////////////////////////////////////////////////////////////////////////////
 
 template<unsigned nbits, unsigned es>
 constexpr inline int sign_value(const posit<nbits, es>& p) {

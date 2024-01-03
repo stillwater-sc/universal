@@ -101,7 +101,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit assignment validation";
+	std::string test_suite  = "posit assignment verification";
 	std::string test_tag    = "assignment";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -110,9 +110,9 @@ try {
 
 #if MANUAL_TESTING
 
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<8, 2, float>(reportTestCases), test_tag, "posit<8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<16, 2, float>(reportTestCases), test_tag, "posit<16,2>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<32, 2, float>(reportTestCases), test_tag, "posit<32,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyAssignment<8, 2, float>(reportTestCases), test_tag, "posit<8,2>");
+	nrOfFailedTestCases += ReportTestResult(VerifyAssignment<16, 2, float>(reportTestCases), test_tag, "posit<16,2>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAssignment<32, 2, float>(reportTestCases), test_tag, "posit<32,2>");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

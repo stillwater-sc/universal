@@ -1041,13 +1041,13 @@ public:
 
 	bitblock<nbits>    get() const noexcept { return _bits; }
 	unsigned long long bits() const noexcept { return _bits.to_ullong(); }
-	constexpr bool test(unsigned bitIndex) const noexcept {
+	constexpr bool     test(unsigned bitIndex) const noexcept {
 		return (bitIndex < nbits ? _bits[bitIndex] : false);
 	}
-	constexpr bool at(unsigned bitIndex) const noexcept {
+	constexpr bool     at(unsigned bitIndex) const noexcept {
 		return (bitIndex < nbits ? _bits[bitIndex] : false);
 	}
-	constexpr uint8_t nibble(unsigned n) const noexcept {
+	constexpr uint8_t  nibble(unsigned n) const noexcept {
 		uint8_t nibbleBits{ 0 };
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			unsigned baseNibbleIndex = 4 * n;
@@ -1066,30 +1066,33 @@ public:
 		_bits.reset();
 		_bits.set(nbits - 1, true);
 	}
+	// set the posit bits explicitely
+	constexpr posit<nbits, es>& setBitblock(const bitblock<nbits>& raw_bits) noexcept {
+		_bits = raw_bits;
+		return *this;
+	}
+	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
+	constexpr posit<nbits, es>& setbits(uint64_t value) noexcept {
+		clear();
+		bitblock<nbits> raw_bits;
+		uint64_t mask = 1;
+		for (unsigned i = 0; i < nbits; i++) {
+			raw_bits.set(i, (value & mask));
+			mask <<= 1;
+		}
+		_bits = raw_bits;
+		return *this;
+	}
+	constexpr posit<nbits, es>& setbit(unsigned bitIndex, bool value = true) noexcept {
+		_bits.set(bitIndex, value);
+		return *this;
+	}
 
 	posit& minpos() noexcept { clear(); return ++(*this); }
 	posit& maxpos() noexcept { setnar(); return --(*this); }
 	posit& zero()   noexcept { clear(); return *this; }
 	posit& minneg() noexcept { clear(); return --(*this); }
 	posit& maxneg() noexcept { setnar(); return ++(*this); }
-
-	// set the posit bits explicitely
-	constexpr posit<nbits, es>& setBitblock(const bitblock<nbits>& raw_bits) {
-		_bits = raw_bits;
-		return *this;
-	}
-	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
-	constexpr posit<nbits, es>& setbits(uint64_t value) {
-		clear();
-		bitblock<nbits> raw_bits;
-		uint64_t mask = 1;
-		for ( unsigned i = 0; i < nbits; i++ ) {
-			raw_bits.set(i,(value & mask));
-			mask <<= 1;
-		}
-		_bits = raw_bits;
-		return *this;
-	}
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	internal::value<fbits> to_value() const {

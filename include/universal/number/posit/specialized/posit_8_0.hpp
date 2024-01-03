@@ -84,9 +84,9 @@ public:
 	constexpr explicit posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
 	constexpr explicit posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
 	constexpr explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-		        explicit posit(float initial_value) : _bits(0)              { *this = initial_value; }
-		                posit(double initial_value) : _bits(0)             { *this = initial_value; }
-		        explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
+		      explicit posit(float initial_value) : _bits(0)              { *this = initial_value; }
+		               posit(double initial_value) : _bits(0)             { *this = initial_value; }
+		      explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs)             { return operator=((int)(rhs)); }
@@ -113,14 +113,6 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
-		_bits = uint8_t(raw.to_ulong());
-		return *this;
-	}
-	constexpr posit& setbits(uint64_t value) {
-		_bits = uint8_t(value & 0xffu);
-		return *this;
-	}
 	constexpr posit operator-() const {
 		posit p;
 		return p.setbits((~_bits) + 1ul);
@@ -209,6 +201,25 @@ public:
 	void setnar()                  noexcept { _bits = 0x80; }
 	void setnan()                  noexcept { setnar(); }
 	//void setnan(bool sign = false) noexcept { setnar(); }
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
+		_bits = uint8_t(raw.to_ulong());
+		return *this;
+	}
+	constexpr posit& setbits(uint64_t value) {
+		_bits = uint8_t(value & 0xffu);
+		return *this;
+	}
+	constexpr posit& setbit(unsigned bitIndex, bool value = true) noexcept {
+		uint8_t bit_mask = (0x1u << bitIndex);
+		if (value) {
+			_bits |= bit_mask;
+		}
+		else {
+			_bits &= ~bit_mask;
+		}
+		return *this;
+	}
+
 	posit& minpos() noexcept {
 		clear();
 		return ++(*this);
