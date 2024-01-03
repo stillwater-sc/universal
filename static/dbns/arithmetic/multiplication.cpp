@@ -10,152 +10,158 @@
 #define DBNS_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/dbns/dbns.hpp>
 #include <universal/number/dbns/table.hpp>
-#include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_reporters.hpp>
+//#include <universal/verification/test_suite.hpp>   // the generic VerifyMultiplication doesn't deal with the LNS special cases
+//#include <universal/verification/dbns_test_suite.hpp>  // is that the right solution to specialize?
 
-namespace sw { namespace universal {
+namespace sw {
+	namespace universal {
+		namespace local {
 
-	//template<typename DbnsType,
-	//	std::enable_if_t<is_dbns<DbnsType>, DbnsType> = 0
-	//>
-	template<typename DbnsType>
-	int VerifyMultiplication(bool reportTestCases) {
-		using std::abs;
-		constexpr size_t nbits = DbnsType::nbits;
-		//constexpr size_t fbbits = DbnsType::fbbits;
-		//constexpr Behavior behavior = DbnsType::behavior;
-		//using bt = typename DbnsType::BlockType;
-		constexpr size_t NR_ENCODINGS = (1ull << nbits);
-		int nrOfFailedTestCases = 0;
+			//template<typename DbnsType,
+			//	std::enable_if_t<is_dbns<DbnsType>, DbnsType> = 0
+			//>
+			template<typename DbnsType>
+			int VerifyMultiplication(bool reportTestCases) {
+				using std::abs;
+				constexpr size_t nbits = DbnsType::nbits;
+				//constexpr size_t fbbits = DbnsType::fbbits;
+				//constexpr Behavior behavior = DbnsType::behavior;
+				//using bt = typename DbnsType::BlockType;
+				constexpr size_t NR_ENCODINGS = (1ull << nbits);
+				int nrOfFailedTestCases = 0;
 
-		if constexpr (bCollectDbnsEventStatistics) dbnsStats.reset();
+				if constexpr (bCollectDbnsEventStatistics) dbnsStats.reset();
 
-		DbnsType a{}, b{}, c{}, cref{}, maxvalue(SpecificValue::maxpos);
-		double maxpos = double(maxvalue);
-		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
-				double db = double(b);
+				DbnsType a{}, b{}, c{}, cref{}, maxvalue(SpecificValue::maxpos);
+				double maxpos = double(maxvalue);
+				for (size_t i = 0; i < NR_ENCODINGS; ++i) {
+					a.setbits(i);
+					double da = double(a);
+					for (size_t j = 0; j < NR_ENCODINGS; ++j) {
+						b.setbits(j);
+						double db = double(b);
 
-				double ref = da * db;
-//				if (reportTestCases && !isInRange<DbnsType>(ref)) {
-//					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
-//				}
-				c = a * b;
-				cref = ref;
-				if (c != cref) {
-					if (!isInRange<DbnsType>(ref)) {
-						if (abs(ref) > maxpos) {
-							if (cref == maxvalue) continue;
+						double ref = da * db;
+						//				if (reportTestCases && !isInRange<DbnsType>(ref)) {
+						//					std::cerr << da << " * " << db << " = " << ref << " which is not in range " << range(a) << '\n';
+						//				}
+						c = a * b;
+						cref = ref;
+						if (c != cref) {
+							if (!isInRange<DbnsType>(ref)) {
+								if (abs(ref) > maxpos) {
+									if (cref == maxvalue) continue;
+								}
+								else {
+									if (cref.iszero()) continue;
+								}
+							}
+							if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
+							++nrOfFailedTestCases;
+							if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
 						}
 						else {
-							if (cref.iszero()) continue;
+							//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
 						}
+						if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
 					}
-					if (c.isnan() && cref.isnan()) continue; // NaN non-equivalence
-					++nrOfFailedTestCases;
-					if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
 				}
-				else {
-					//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, ref);
+				if constexpr (bCollectDbnsEventStatistics) if (reportTestCases) std::cout << dbnsStats << '\n';
+				return nrOfFailedTestCases;
+			}
+
+			template<typename DbnsType>
+			struct DbnsSample {
+				DbnsSample(const DbnsType& a, const DbnsType& b, const DbnsType& c, const DbnsType& cref, double ref, int p, int v) : a{ a }, b{ b }, c{ c }, cref{ cref }, ref{ ref }, patternOrder{ p }, valueOrder{ v } {}
+				DbnsType a, b, c, cref;
+				double   ref;
+				int      patternOrder;
+				int      valueOrder;
+			};
+
+			template<typename DbnsType>
+			std::ostream& operator<<(std::ostream& ostr, const DbnsSample<DbnsType>& s) {
+				ostr << std::setw(10) << s.patternOrder << " : "
+					<< to_binary(s.a)
+					<< " * "
+					<< to_binary(s.b)
+					<< " = "
+					<< to_binary(s.c)
+					<< " : "
+					<< std::setw(10) << s.c
+					<< " : "
+					<< std::setw(10) << s.ref
+					<< " = "
+					<< std::setw(10) << s.a
+					<< " * "
+					<< std::setw(10) << s.b
+					<< " : "
+					<< to_binary(s.cref)
+					<< " : "
+					<< std::setw(10) << s.valueOrder;
+				if (s.c.isnan()) ostr << " : PASS"; else if (s.c == s.cref) ostr << " : PASS"; else ostr << " :     FAIL";
+				return ostr;
+			}
+
+			template<typename DbnsType,
+				std::enable_if_t< is_dbns<DbnsType>, bool> = true
+			>
+			int GenerateOrdered(bool reportTestCases) {
+				using std::abs;
+				constexpr size_t nbits = DbnsType::nbits;
+				//constexpr size_t fbbits = DbnsType::fbbits;
+				//constexpr Behavior behavior = DbnsType::behavior;
+				//using bt = typename DbnsType::BlockType;
+				constexpr size_t NR_ENCODINGS = (1ull << nbits);
+				int nrOfFailedTestCases = 0;
+
+				std::vector<DbnsSample<DbnsType>> v;
+				DbnsType a{}, b{}, c{}, cref{}, maxvalue(SpecificValue::maxpos);
+				double maxpos = double(maxvalue);
+				for (size_t i = 0; i < NR_ENCODINGS; ++i) {
+					a.setbits(i);
+					double da = double(a);
+					for (size_t j = 0; j < NR_ENCODINGS; ++j) {
+						b.setbits(j);
+						double db = double(b);
+
+						double ref = da * db;
+						c = a * b;
+						cref = ref;
+						DbnsSample<DbnsType> s(a, b, c, cref, ref, i * NR_ENCODINGS + j, 0);
+						v.push_back(s);
+					}
 				}
-				if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
+
+				std::sort(v.begin(), v.end(),
+					[](DbnsSample<DbnsType> a, DbnsSample<DbnsType> b) {
+						if (a.a.isnan() && !b.b.isnan()) {
+							return true;
+						}
+						else if (!a.a.isnan() && b.b.isnan()) {
+							return false;
+						}
+						else if (a.a.isnan() && b.b.isnan()) {
+							return false;
+						}
+						else {
+							return a.ref < b.ref;
+						}
+					});
+
+				// assigne the value order
+				for (unsigned valueOrder = 0; valueOrder < v.size(); ++valueOrder) {
+					v[valueOrder].valueOrder = valueOrder;
+				}
+				for (auto e : v) {
+					std::cout << e << '\n';
+				}
+				return nrOfFailedTestCases;
 			}
 		}
-		if constexpr (bCollectDbnsEventStatistics) if (reportTestCases) std::cout << dbnsStats << '\n';
-		return nrOfFailedTestCases;
 	}
-
-	template<typename DbnsType>
-	struct DbnsSample {
-		DbnsSample(const DbnsType& a, const DbnsType& b, const DbnsType& c, const DbnsType& cref, double ref, int p, int v) : a{ a }, b{ b }, c{ c }, cref{ cref }, ref { ref }, patternOrder{ p }, valueOrder{ v } {}
-		DbnsType a, b, c, cref;
-		double   ref;
-		int      patternOrder;
-		int      valueOrder;
-	};
-
-	template<typename DbnsType>
-	std::ostream& operator<<(std::ostream& ostr, const DbnsSample<DbnsType>& s) {
-		ostr << std::setw(10) << s.patternOrder << " : " 
-			<< to_binary(s.a) 
-			<< " * " 
-			<< to_binary(s.b) 
-			<< " = " 
-			<< to_binary(s.c) 
-			<< " : " 
-			<< std::setw(10) << s.c
-			<< " : "
-			<< std::setw(10) << s.ref
-			<< " = " 
-			<< std::setw(10) << s.a
-			<< " * "
-			<< std::setw(10) << s.b
-			<< " : "
-			<< to_binary(s.cref)
-			<< " : " 
-			<< std::setw(10) << s.valueOrder;
-		if (s.c.isnan()) ostr << " : PASS"; else if (s.c == s.cref) ostr << " : PASS"; else ostr << " :     FAIL";
-		return ostr;
-	}
-
-	template<typename DbnsType,
-		std::enable_if_t< is_dbns<DbnsType>, bool> = true
-	>
-	int GenerateOrdered(bool reportTestCases) {
-		using std::abs;
-		constexpr size_t nbits = DbnsType::nbits;
-		//constexpr size_t fbbits = DbnsType::fbbits;
-		//constexpr Behavior behavior = DbnsType::behavior;
-		//using bt = typename DbnsType::BlockType;
-		constexpr size_t NR_ENCODINGS = (1ull << nbits);
-		int nrOfFailedTestCases = 0;
-
-		std::vector<DbnsSample<DbnsType>> v;
-		DbnsType a{}, b{}, c{}, cref{}, maxvalue(SpecificValue::maxpos);
-		double maxpos = double(maxvalue);
-		for (size_t i = 0; i < NR_ENCODINGS; ++i) {
-			a.setbits(i);
-			double da = double(a);
-			for (size_t j = 0; j < NR_ENCODINGS; ++j) {
-				b.setbits(j);
-				double db = double(b);
-
-				double ref = da * db;
-				c = a * b;
-				cref = ref;
-				DbnsSample<DbnsType> s(a, b, c, cref, ref, i * NR_ENCODINGS + j, 0);
-				v.push_back(s);
-			}
-		}
-
-		std::sort(v.begin(), v.end(),
-			[](DbnsSample<DbnsType> a, DbnsSample<DbnsType> b) {
-				if (a.a.isnan() && !b.b.isnan()) {
-					return true;
-				} 
-				else if (!a.a.isnan() && b.b.isnan()) {
-					return false;
-				}
-				else if (a.a.isnan() && b.b.isnan()) {
-					return false;
-				}
-				else {
-					return a.ref < b.ref;
-				}
-			});
-
-		// assigne the value order
-		for (unsigned valueOrder = 0; valueOrder < v.size(); ++valueOrder) {
-			v[valueOrder].valueOrder = valueOrder;
-		}
-		for (auto e : v) {
-			std::cout << e << '\n';
-		}
-		return nrOfFailedTestCases;
-	}
-} }
+}
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -257,11 +263,11 @@ try {
 	TestCase<DBNS8_3, float>(TestCaseOperator::MUL, 0.5f, -0.5f);
 
 	reportTestCases = true;
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_1_mod>(false), "dbns<4,1,uint8_t,Behavior::Wrapping>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_1_sat>(reportTestCases), "dbns<4,1, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2>(reportTestCases), "dbns<4,2, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2>(reportTestCases), "dbns<5,2, uint8_t>", test_tag);
-//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_3>(reportTestCases), "dbns<8,3, uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS4_1_mod>(false), "dbns<4,1,uint8_t,Behavior::Wrapping>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS4_1_sat>(reportTestCases), "dbns<4,1, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS4_2>(reportTestCases), "dbns<4,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS5_2>(reportTestCases), "dbns<5,2, uint8_t>", test_tag);
+//	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS8_3>(reportTestCases), "dbns<8,3, uint8_t>", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -282,23 +288,23 @@ try {
 	using DBNS9_4_sat = dbns<9, 4, std::uint8_t>;
 	using DBNS9_7_sat = dbns<9, 7, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_1_sat>(reportTestCases), "dbns<4,1, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS4_2_sat>(reportTestCases), "dbns<4,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS4_1_sat>(reportTestCases), "dbns<4,1, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS4_2_sat>(reportTestCases), "dbns<4,2, uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS5_2_sat>(reportTestCases), "dbns<5,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS5_2_sat>(reportTestCases), "dbns<5,2, uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS6_2_sat>(reportTestCases), "dbns<6,2, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS6_3_sat>(reportTestCases), "dbns<6,3, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS6_2_sat>(reportTestCases), "dbns<6,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS6_3_sat>(reportTestCases), "dbns<6,3, uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_1_sat>(reportTestCases), "dbns<8,1, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_2_sat>(reportTestCases), "dbns<8,2, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_3_sat>(reportTestCases), "dbns<8,3, uint8_t>", test_tag);	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_5_sat>(reportTestCases), "dbns<8,5, uint8_t>", test_tag);	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS8_6_sat>(reportTestCases), "dbns<8,6, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS8_1_sat>(reportTestCases), "dbns<8,1, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS8_2_sat>(reportTestCases), "dbns<8,2, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS8_3_sat>(reportTestCases), "dbns<8,3, uint8_t>", test_tag);	
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS8_4_sat>(reportTestCases), "dbns<8,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS8_5_sat>(reportTestCases), "dbns<8,5, uint8_t>", test_tag);	
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS8_6_sat>(reportTestCases), "dbns<8,6, uint8_t>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS9_4_sat>(reportTestCases), "dbns<9,4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS9_7_sat>(reportTestCases), "dbns<9,7, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS9_4_sat>(reportTestCases), "dbns<9,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS9_7_sat>(reportTestCases), "dbns<9,7, uint8_t>", test_tag);
 
 #endif
 
@@ -307,9 +313,9 @@ try {
 	using DBNS10_4_sat = dbns<10, 4, std::uint8_t>;
 	using DBNS10_8_sat = dbns<10, 8, std::uint8_t>;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS10_0_sat>(reportTestCases), "dbns<10,0, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS10_4_sat>(reportTestCases), "dbns<10,4, uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<DBNS10_8_sat>(reportTestCases), "dbns<10,8, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS10_0_sat>(reportTestCases), "dbns<10,0, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS10_4_sat>(reportTestCases), "dbns<10,4, uint8_t>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(local::VerifyMultiplication<DBNS10_8_sat>(reportTestCases), "dbns<10,8, uint8_t>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_3

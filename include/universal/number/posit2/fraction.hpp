@@ -224,7 +224,7 @@ private:
 template<unsigned nfbits, typename bbt>
 inline std::ostream& operator<<(std::ostream& ostr, const fraction<nfbits, bbt>& f) {
 	unsigned nrOfFractionBitsProcessed = 0;
-	if (nfbits > 0) {
+	if constexpr (nfbits > 0) {
 		int upperbound = int(nfbits) - 1;
 		for (int i = upperbound; i >= 0; --i) {
 			if (f._nrBits > ++nrOfFractionBitsProcessed) {
@@ -249,7 +249,7 @@ template<unsigned nfbits, typename bbt>
 inline std::string to_string(const fraction<nfbits, bbt>& f, bool dashExtent = true, bool nibbleMarker = false) {
 	unsigned int nrOfFractionBitsProcessed = 0;
 	std::stringstream s;
-	if (nfbits > 0) {
+	if constexpr (nfbits > 0) {
 		blockbinary<nfbits, bbt, BinaryNumberType::Unsigned> bb = f.bits();
 		for (unsigned i = 0; i < nfbits; ++i) {
 			unsigned bitIndex = nfbits - 1ull - i;

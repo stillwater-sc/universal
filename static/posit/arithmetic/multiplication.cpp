@@ -1,6 +1,6 @@
-// arithmetic_multiply.cpp: test suite runner for posit multiplication
+// multiplication.cpp: test suite runner for posit multiplication
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -116,7 +116,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit multiplication validation";
+	std::string test_suite  = "posit multiplication verification";
 	std::string test_tag    = "multiplication";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -154,10 +154,10 @@ try {
 	DifficultRoundingCases();
 	
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>("Manual Testing: ", reportTestCases), "posit<2,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>("Manual Testing: ", reportTestCases), "posit<3,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 1>("Manual Testing: ", reportTestCases), "posit<3,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>("Manual Testing: ", reportTestCases), "posit<4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(reportTestCases), "posit<2,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(reportTestCases), "posit<3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 1>(reportTestCases), "posit<3,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(reportTestCases), "posit<4,0>", "multiplication");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

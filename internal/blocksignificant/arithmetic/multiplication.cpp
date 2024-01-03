@@ -1,6 +1,6 @@
 // multiplication.cpp: functional tests for blocksignificant multiplication
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,55 +12,8 @@
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_suite.hpp>
-
-// enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
-template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantMultiplication(bool reportTestCases) {
-	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
-	constexpr unsigned fhbits = (nbits >> 1);
-	constexpr unsigned fbits = fhbits - 1;
-	constexpr unsigned NR_VALUES = (size_t(1) << nbits);
-	using namespace sw::universal;
-
-	//	cout << endl;
-	//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
-
-	int nrOfFailedTests = 0;
-
-	blocksignificantConfiguration a, b, c;
-	a.setradix(fbits);
-	b.setradix(fbits);
-	a.setradix(2 * fbits);
-	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
-	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setbits(i);
-		aref.setbits(i);
-		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.setbits(j);
-			bref.setbits(j);
-			cref = aref * bref;
-			c.mul(a, b);
-			for (size_t k = 0; k < nrBlocks; ++k) {
-				refResult.setblock(k, c.block(k));
-			}
-
-			if (refResult != cref) {
-				nrOfFailedTests++;
-				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, c, refResult);
-			}
-			else {
-				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, c, cref);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-		//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
-	}
-	//	cout << endl;
-	return nrOfFailedTests;
-}
+#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/blocksignificant_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -81,6 +34,7 @@ int VerifyBlockSignificantMultiplication(bool reportTestCases) {
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	std::string test_suite  = "blocksignificant multiplication validation";
 	std::string test_tag    = "multiplication";

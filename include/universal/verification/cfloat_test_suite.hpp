@@ -1831,7 +1831,7 @@ namespace sw { namespace universal {
 	/// <param name="reportTestCases"></param>
 	/// <returns></returns>
 	template<typename TestType>
-	int VerifySqrt(bool reportTestCases) {
+	int VerifyCfloatSqrt(bool reportTestCases) {
 		constexpr size_t nbits         = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		constexpr size_t es            = TestType::es;
 		using BlockType                = typename TestType::BlockType;

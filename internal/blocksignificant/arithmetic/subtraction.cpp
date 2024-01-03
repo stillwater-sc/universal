@@ -11,49 +11,8 @@
 #include <universal/native/integers.hpp> // for to_binary(int)
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_suite.hpp>
-
-// enumerate all addition cases for an blocksignificant configuration
-template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantSubtraction(bool reportTestCases) {
-	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
-
-	constexpr unsigned NR_VALUES = (1u << nbits);
-	using namespace sw::universal;
-
-//	cout << endl;
-//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
-
-	int nrOfFailedTests = 0;
-
-	blocksignificant<nbits, BlockType> a, b, c;
-	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
-	for (unsigned i = 0; i < NR_VALUES; i++) {
-		a.setbits(i);
-		aref.setbits(i);
-		for (unsigned j = 0; j < NR_VALUES; j++) {
-			b.setbits(j);
-			bref.setbits(j);
-			cref = aref - bref;
-			c.sub(a, b);
-			for (unsigned k = 0; k < blockbinary<nbits, BlockType>::nrBlocks; ++k) {
-				refResult.setblock(k, c.block(k));
-			}
-			if (refResult != cref) {
-				nrOfFailedTests++;
-				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, c, cref);
-			}
-			else {
-				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, c, cref);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
-	}
-//	cout << endl;
-	return nrOfFailedTests;
-}
+#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/blocksignificant_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in blocksignificant
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -112,8 +71,8 @@ void GenerateMaxValues() {
 
 int main()
 try {
-
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 	
 	std::string test_suite  = "blocksignificant subtraction validation";
 	std::string test_tag    = "blocksignificant subtraction";

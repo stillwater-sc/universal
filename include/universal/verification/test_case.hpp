@@ -1,7 +1,7 @@
 #pragma once
 //  test_case.hpp : functions to generate specific test cases
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -93,8 +93,46 @@ namespace sw { namespace universal {
 	}
 
 	template<typename TestType>
+	void TestWithValues(double da, double db, TestCaseOperator _operator) {
+		std::string op;
+		TestType a, b, c;
+		double dc;
+		a = da;
+		b = db;
+		switch (_operator) {
+		case TestCaseOperator::ADD:
+			c = a + b;
+			dc = da + db;
+			op = " + ";
+			break;
+		case TestCaseOperator::SUB:
+			c = a - b;
+			dc = da - db;
+			op = " - ";
+			break;
+		case TestCaseOperator::MUL:
+			c = a * b;
+			dc = da * db;
+			op = " * ";
+			break;
+		case TestCaseOperator::DIV:
+			c = a / b;
+			dc = da / db;
+			op = " / ";
+			break;
+		default:
+			std::cout << "Unknown operator: exiting\n";
+			return;
+		}
+		ReportBinaryOperation(a, "/", b, c);
+		TestType ref(dc);
+		ReportBinaryOperation(a, "/", b, ref);
+		if (c != ref) std::cout << "FAIL\n";
+	}
+
+	template<typename TestType>
 	void ReportValue(const TestType& a, const std::string& label = "", unsigned labelWidth = 20) {
-		std::cout << std::setw(labelWidth) << label << " : " << to_binary(a) << " : " << a << '\n';
+		std::cout << std::setw(labelWidth) << label << " : " << to_binary(a, true) << " : " << a << '\n';
 	}
 
 	template<typename TestType>
@@ -107,6 +145,13 @@ namespace sw { namespace universal {
 	void ReportBinaryOperation(const TestType& a, const std::string& op, const TestType& b, const TestType& c) {
 		std::cout << to_binary(a) << ' ' << op << ' ' << to_binary(b) << " = " << to_binary(c) << '\n';
 		std::cout << a << ' ' << op << ' ' << b << " = " << c << '\n';
+	}
+
+	template<typename TestType>
+	void ReportBinaryOperationVertically(const TestType& a, const std::string& op, const TestType& b, const TestType& c, unsigned labelWidth = 20) {
+		std::cout << std::setw(labelWidth) << "a" << " : " << to_binary(a) << " : " << a << '\n';
+		std::cout << std::setw(labelWidth) << "b" << " : " << to_binary(b) << " : " << b << ' ' << op << '\n';
+		std::cout << std::setw(labelWidth) << "c" << " : " << to_binary(c) << " : " << c << '\n';
 	}
 
 }} // namespace sw::universal

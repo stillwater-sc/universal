@@ -1,6 +1,6 @@
-// arithmetic_reciprocate.cpp: test suite runner for posit arithmetic reciprocation
+// reciprocation.cpp: test suite runner for posit arithmetic reciprocation
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -51,7 +51,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit reciprocation validation";
+	std::string test_suite  = "posit reciprocation verification";
 	std::string test_tag    = "reciprocate";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;

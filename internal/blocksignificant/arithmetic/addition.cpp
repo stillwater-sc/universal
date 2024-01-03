@@ -10,55 +10,13 @@
 
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/blocksignificant_test_suite.hpp>
 
-// enumerate all addition cases for an blocksignificant<nbits,BlockType> configuration
-template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantAddition(bool reportTestCases) {
-	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
-
-	constexpr unsigned NR_VALUES = (1u << nbits);
-	using namespace sw::universal;
-	
-//	cout << endl;
-//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
-
-	int nrOfFailedTests = 0;
-
-	blocksignificant<nbits, BlockType> a, b, c;
-	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
-	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setbits(i);
-		aref.setbits(i);
-		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.setbits(j);
-			bref.setbits(j);
-			cref = aref + bref;
-			c.add(a, b);
-			for (size_t k = 0; k < nrBlocks; ++k) {
-				refResult.setblock(k, c.block(k));
-			}
-
-			if (refResult != cref) {
-				nrOfFailedTests++;
-				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
-			}
-			else {
-				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, cref);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-//		if (i % 1024 == 0) cout << '.'; /// if you enable this, also add the endl line back in
-	}
-//	cout << endl;
-	return nrOfFailedTests;
-}
 
 // generate specific test case that you can trace with the trace conditions in blocksignificant
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename BlockType>
+template<unsigned nbits, typename BlockType>
 void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType>& lhs, const sw::universal::blocksignificant <nbits, BlockType>& rhs) {
 	using namespace sw::universal;
 
@@ -87,7 +45,7 @@ void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType>& l
 }
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 // REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
 // It is the responsibility of the regression test to organize the tests in a quartile progression.
 //#undef REGRESSION_LEVEL_OVERRIDE
@@ -105,6 +63,7 @@ void GenerateTestCase(const sw::universal::blocksignificant<nbits, BlockType>& l
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 		
 	std::string test_suite  = "blocksignificant addition validation";
 	std::string test_tag    = "addition";
@@ -116,9 +75,15 @@ try {
 #if MANUAL_TESTING
 
 	{
+		blockbinary<8, uint8_t> refResult;
+		refResult = 0;
+		std::cout << to_binary(refResult) << '\n';
+	}
+
+	{
 		blocksignificant<8, uint32_t> a; // BitEncoding::Twos
 		a.setbits(0x41);
-		cout << a << " : " << to_binary(a) << " : " << float(a) << endl;
+		std::cout << a << " : " << to_binary(a) << " : " << float(a) << '\n';
 	}
 
 	blocksignificant<23, uint32_t> a, b;

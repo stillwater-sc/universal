@@ -1,6 +1,6 @@
 // subtraction.cpp: test suite runner for posit subtraction
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -56,7 +56,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit subtraction validation";
+	std::string test_suite  = "posit subtraction verification";
 	std::string test_tag    = "subtraction";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -76,7 +76,7 @@ try {
 
 	// manual exhaustive testing
 	std::string positCfg = "posit<4,0>";
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0>("Manual Testing", true), positCfg, "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0>(true), positCfg, "subtraction");
 
 	// FAIL 011001011010110100000110111110010111010011001010 - 000010111000000110100000001010011011111111110110 != 011001011010110011111111111101100011010001110110 instead it yielded 011001011010110011111111111101100011010001110111
 	unsigned long long a = 0b011001011010110100000110111110010111010011001010ull;

@@ -1,6 +1,6 @@
 // division.cpp: functional tests for blocksignificant division
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -12,58 +12,8 @@
 #include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_suite.hpp>
-
-// enumerate all division cases for an blocksignificant<nbits,BlockType> configuration
-// TODO: fix test failures in VerifyBlockSignificantDivision<blocksignificantConfiguration>
-template<typename blocksignificantConfiguration>
-int VerifyBlockSignificantDivision(bool reportTestCases) {
-	constexpr unsigned nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
-
-	constexpr unsigned NR_VALUES = (1u << nbits);
-	using namespace sw::universal;
-
-	//	cout << endl;
-	//	cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
-
-	int nrOfFailedTests = 0;
-
-	blocksignificant<nbits, BlockType> a, b, c;
-	// nbits = 2 * fhbits
-	constexpr unsigned fhbits = (nbits >> 1);
-	constexpr unsigned fbits = fhbits - 1;
-	a.setradix(2 * fbits);
-	b.setradix(2 * fbits);
-	a.setradix(2 * fbits);
-	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
-	constexpr unsigned nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
-	for (unsigned i = 0; i < NR_VALUES; i++) {
-		a.setbits(i);
-		aref.setbits(i);
-		for (unsigned j = 0; j < NR_VALUES; j++) {
-			b.setbits(j);
-			bref.setbits(j);
-			cref = aref / bref;
-			c.div(a, b);
-			for (unsigned k = 0; k < nrBlocks; ++k) {
-				refResult.setblock(k, c.block(k));
-			}
-
-			if (refResult != cref) {
-				nrOfFailedTests++;
-				if (reportTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
-			}
-			else {
-				// if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, cref);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-		//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
-	}
-	//	cout << endl;
-	return nrOfFailedTests;
-}
+#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/blocksignificant_test_suite.hpp>
 
 template<unsigned nbits, typename BlockType>
 void TestMostSignificantBit() {
@@ -98,6 +48,7 @@ void TestMostSignificantBit() {
 int main()
 try {
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 	
 	std::string test_suite  = "blocksignificant division validation";
 	std::string test_tag    = "division";

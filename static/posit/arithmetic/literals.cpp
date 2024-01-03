@@ -1,6 +1,6 @@
-// arithmetic_literals.cpp: test suite runner for the use of literals in posit equations
+// literals.cpp: test suite runner for the use of literals in posit equations
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -178,7 +178,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit arithmetic with literals validation";
+	std::string test_suite  = "posit arithmetic with literals verification";
 	std::string test_tag    = "literals";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -202,10 +202,10 @@ try {
 	cout << p << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>("Manual Testing", true), "posit<8,2>", "addition with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 2>("Manual Testing", true), "posit<8,2>", "subtraction with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>("Manual Testing", true), "posit<8,2>", "multiplication with literal");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>("Manual Testing", true), "posit<8,2>", "division with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateAdditionWithLiteral<8, 2>(true), "posit<8,2>", "addition with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtractionWithLiteral<8, 2>(true), "posit<8,2>", "subtraction with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplicationWithLiteral<8, 2>(true), "posit<8,2>", "multiplication with literal");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivisionWithLiteral<8, 2>(true), "posit<8,2>", "division with literal");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

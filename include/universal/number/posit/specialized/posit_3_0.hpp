@@ -1,6 +1,6 @@
 // posit_3_0.hpp: specialized 3-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -303,7 +303,7 @@ public:
 	inline int sign_value() const { return (_bits & 0x4 ? -1 : 1); }
 
 	bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
-	unsigned int encoding() const { return (unsigned int)(_bits & bit_mask); }
+	unsigned int bits() const { return (unsigned int)(_bits & bit_mask); }
 
 	inline void clear()   { _bits = 0x00; }
 	inline void setzero() { _bits = 0x00; }
@@ -367,13 +367,13 @@ private:
 	}
 #endif
 	float       to_float() const {
-		return posit_3_0_values_lookup[encoding()];
+		return posit_3_0_values_lookup[bits()];
 	}
 	double      to_double() const {
-		return (double)posit_3_0_values_lookup[encoding()];
+		return (double)posit_3_0_values_lookup[bits()];
 	}
 	long double to_long_double() const {
-		return (long double)posit_3_0_values_lookup[encoding()];
+		return (long double)posit_3_0_values_lookup[bits()];
 	}
 
 	template <typename T>
@@ -508,7 +508,7 @@ private:
 			return !operator==(lhs, rhs);
 		}
 		inline bool operator< (const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {
-			uint16_t index = (uint16_t(lhs.encoding()) << NBITS_IS_3) | uint16_t(rhs.encoding());
+			uint16_t index = (uint16_t(lhs.bits()) << NBITS_IS_3) | uint16_t(rhs.bits());
 			return posit_3_0_less_than_lookup[index];
 		}
 		inline bool operator< (int lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {

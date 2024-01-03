@@ -59,10 +59,10 @@ size_t cg_dot_dot(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, 
 		++itr;
 	}
 	if (residual < tolerance) {
-		std::cout << "solution in " << itr << " iterations\n";
+		std::cout << "successfully converged in : " << itr << " iterations\n";
 	}
 	else {
-		std::cout << "failed to converge in " << itr << " iterations\n";
+		std::cout << "failed to converge in     : " << itr << " iterations\n";
 	}
 
 	return itr;

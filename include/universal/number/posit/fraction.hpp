@@ -1,7 +1,7 @@
 #pragma once
 // fraction.hpp: definition of a posit fractions
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <algorithm>
@@ -265,7 +265,8 @@ template<unsigned nfbits>
 inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, bool nibbleMarker = false) {
 	unsigned int nrOfFractionBitsProcessed = 0;
 	std::stringstream sstr;
-	if (nfbits > 0) {
+	unsigned fbits = f.nrBits();
+	if constexpr (nfbits != 0) {
 		bitblock<nfbits> bb = f.get();
 		int upperbound = nfbits;
 		upperbound--;
@@ -277,7 +278,8 @@ inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true, 
 			else {
 				sstr << (dashExtent ? "-" : "");
 			}
-			if (nibbleMarker && ((i % 4) == 0) && i != 0) sstr << '\'';
+			--fbits;
+			if (nibbleMarker && fbits != 0 && (fbits % 4) == 0) sstr << '\'';
 		}
 	}
 	if (nrOfFractionBitsProcessed == 0) sstr << '~'; // for proper alignment in tables

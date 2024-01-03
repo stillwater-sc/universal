@@ -503,21 +503,21 @@ public:
 	template<unsigned tgt_size>
 	value<tgt_size> round_to() {
 		bitblock<tgt_size> rounded_fraction;
-		if (tgt_size == 0) {
+		if constexpr (tgt_size == 0) {
 			bool round_up = false;
-			if (fbits >= 2) {
+			if constexpr (fbits >= 2) {
 				bool blast = _fraction[fbits - 1ull];
 				bool sb = anyAfter(_fraction, static_cast<int>(fbits) - 2);
 				if (blast && sb) round_up = true;
 			}
-			else if (fbits == 1) {
+			else if constexpr (fbits == 1) {
 				round_up = _fraction[0];
 			}
 			return value<tgt_size>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
 		}
 		else {
 			if (!_zero || !_inf) {
-				if (tgt_size < fbits) {
+				if constexpr (tgt_size < fbits) {
 					int rb = int(tgt_size) - 1;
 					int lb = int(fbits) - int(tgt_size) - 1;
 					for (int i = int(fbits) - 1; i > lb; i--, rb--) {
@@ -855,7 +855,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 
 	scale_of_result -= shift;
 	const int hpos = int(abits) - 1 - shift;         // position of the hidden bit 
-	sum <<= (1ll + static_cast<int64_t>(abits) - hpos);
+	sum <<= static_cast<size_t>(1 + int(abits) - hpos);
 	if (_trace_value_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
 }
@@ -1033,7 +1033,7 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 	int new_scale = lhs.scale() - rhs.scale();
 	bitblock<divbits> result_fraction;
 
-	if (fbits > 0) {
+	if constexpr (fbits > 0) {
 		// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
 		bitblock<fhbits> r1 = lhs.get_fixed_point();
 		bitblock<fhbits> r2 = rhs.get_fixed_point();

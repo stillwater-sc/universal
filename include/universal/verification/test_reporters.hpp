@@ -1,7 +1,7 @@
 #pragma once
 // test_reporters.hpp : test result reporters to guide verification
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -173,7 +173,7 @@ void ReportBinaryArithmeticError(const std::string& label, const std::string& op
 		<< " != "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(result)
 		<< " golden reference is "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(ref)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << to_binary(ResultType(ref))
 		<< std::setprecision(old_precision)
 		<< '\n';
 }

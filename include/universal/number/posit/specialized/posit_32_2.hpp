@@ -1,7 +1,7 @@
 #pragma once
 // posit_32_2.hpp: specialized 32-bit posit using fast compute specialized for posit<32,2>
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -111,14 +111,6 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_32>& raw) {
-		_bits = uint32_t(raw.to_ulong());
-		return *this;
-	}
-	constexpr posit& setbits(uint64_t value) {
-		_bits = uint32_t(value & 0xFFFF'FFFFul);
-		return *this;
-	}
 	posit operator-() const {
 		posit p;
 		uint64_t raw = _bits;
@@ -156,15 +148,18 @@ public:
 		decode_regime(lhs, m, remaining);
 
 		// extract the exponent
-		uint32_t exp = remaining >> 29;
+		uint32_t exp = (remaining >> 29);
 
 		// extract the remaining fraction
-		uint64_t frac64A = ((0x40000000ull | uint64_t(remaining) << 1) & 0x7FFFFFFFull) << 32;  // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
+		uint64_t frac64A{ 0 }, frac64B{ 0 };
+		frac64A = ((0x4000'0000ull | uint64_t(remaining) << 1) & 0x7FFF'FFFFull) << 32;
+
 		int32_t shiftRight = m;
 
 		// adjust shift and extract fraction bits of rhs
 		extractAddand(rhs, shiftRight, remaining);
-		uint64_t frac64B = ((0x40000000ull | uint64_t(remaining) << 1) & 0x7FFFFFFFull) << 32; // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
+		frac64B = ((0x4000'0000ull | uint64_t(remaining) << 1) & 0x7FFF'FFFFull) << 32;
+
 		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 29);
 
@@ -173,7 +168,7 @@ public:
 
 		frac64A += frac64B; // add the now aligned fractions
 
-		bool rcarry = bool(0x8000000000000000 & frac64A); // is MSB set   bool(0x8000'0000'0000'0000 & frac64A); 
+		bool rcarry = bool(0x8000'0000'0000'0000 & frac64A); // is MSB set   bool(0x8000'0000'0000'0000 & frac64A); 
 		if (rcarry) {
 			++exp;
 			if (exp > 3) {
@@ -184,7 +179,7 @@ public:
 		}
 
 		_bits = round(m, exp, frac64A);
-		if (sign) _bits = -int32_t(_bits) & 0xFFFFFFFF;
+		if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 		return *this;
 	}
 	posit& operator+=(double rhs) {
@@ -306,13 +301,13 @@ public:
 		uint32_t remaining = 0;
 		decode_regime(lhs, m, remaining);
 		uint32_t exp = remaining >> 29;  // lhs exponent
-		uint32_t lhs_fraction = ((remaining << 1) | 0x40000000) & 0x7FFFFFFF;;
+		uint32_t lhs_fraction = ((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF;;
 
 		// adjust shift and extract fraction bits of rhs
 		extractMultiplicand(rhs, m, remaining);
-		uint32_t rhs_fraction = (((remaining << 1) | 0x40000000) & 0x7FFFFFFF);
+		uint32_t rhs_fraction = (((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF);
 		uint64_t result_fraction = uint64_t(lhs_fraction) * uint64_t(rhs_fraction);
-		exp += remaining >> 29;  // product exp is the sum of lhs exp and rhs exp
+		exp += (remaining >> 29);  // product exp is the sum of lhs exp and rhs exp
 
 		// adjust exponent if it has overflown
 		if (exp > 3) {
@@ -332,7 +327,7 @@ public:
 
 		// round
 		_bits = round_mul(m, exp, result_fraction);
-		if (sign) _bits = -int32_t(_bits) & 0xFFFFFFFF;
+		if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 		return *this;
 	}
 	posit& operator*=(double rhs) {
@@ -377,14 +372,14 @@ public:
 		int32_t exp = remaining >> 29;
 
 		// extract the lhs fraction
-		uint32_t lhs_fraction = ((remaining << 1) | 0x40000000) & 0x7FFFFFFF;
+		uint32_t lhs_fraction = ((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF;
 		uint64_t lhs64 = uint64_t(lhs_fraction) << 30;
 
 		// adjust shift and extract fraction bits of rhs
 		extractDividand(rhs, m, remaining);
 		// calculate exponent, exp = lhs_exp - rhs_exp
-		exp -= remaining >> 29;
-		uint32_t rhs_fraction = ((remaining << 1) | 0x40000000) & 0x7FFFFFFF;
+		exp -= (remaining >> 29);
+		uint32_t rhs_fraction = ((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF;
 
 		// execute the integer division of fractions
 		lldiv_t result = lldiv(lhs64, uint64_t(rhs_fraction));
@@ -402,7 +397,7 @@ public:
 			if (!rcarry) {
 				if (exp == 0) {
 					--m;
-					exp = 0x3;
+					exp = 0x3u;
 				}
 				else {
 					--exp;
@@ -413,7 +408,7 @@ public:
 
 		// round
 		_bits = adjustAndRound(m, exp, result_fraction, remainder != 0);
-		if (sign) _bits = -int32_t(_bits) & 0xFFFFFFFF;
+		if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 		return *this;
 	}
 	posit& operator/=(double rhs) {
@@ -451,44 +446,62 @@ public:
 	}
 
 	// Modifiers
-	inline constexpr void clear() { _bits = 0x0; }
-	inline constexpr void setzero() { clear(); }
-	inline constexpr void setnar() { _bits = 0x80000000; }
-	inline posit& minpos() {
+	constexpr void clear() noexcept { _bits = 0x0; }
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setnar() noexcept { _bits = 0x80000000; }
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_32>& raw) noexcept {
+		_bits = uint32_t(raw.to_ulong());
+		return *this;
+	}
+	constexpr posit& setbits(uint64_t value) noexcept {
+		_bits = uint32_t(value & 0xFFFF'FFFFul);
+		return *this;
+	}
+	constexpr posit& setbit(unsigned bitIndex, bool value = true) noexcept {
+		uint32_t bit_mask = (0x1u << bitIndex);
+		if (value) {
+			_bits |= bit_mask;
+		}
+		else {
+			_bits &= ~bit_mask;
+		}
+		return *this;
+	}
+	posit& minpos() {
 		clear();
 		return ++(*this);
 	}
-	inline posit& maxpos() {
+	posit& maxpos() {
 		setnar();
 		return --(*this);
 	}
-	inline posit& zero() {
+	posit& zero() {
 		clear();
 		return *this;
 	}
-	inline posit& minneg() {
+	posit& minneg() {
 		clear();
 		return --(*this);
 	}
-	inline posit& maxneg() {
+	posit& maxneg() {
 		setnar();
 		return ++(*this);
 	}
 
 	// Selectors
-	inline constexpr bool sign() const       { return (_bits & 0x80000000u); }
-	inline constexpr bool isnar() const      { return (_bits == 0x80000000u); }
-	inline constexpr bool iszero() const     { return (_bits == 0x0); }
-	inline constexpr bool isone() const      { return (_bits == 0x40000000u); } // pattern 010000...
-	inline constexpr bool isminusone() const { return (_bits == 0xC0000000u); } // pattern 110000...
-	inline constexpr bool isneg() const      { return (_bits & 0x80000000u); }
-	inline constexpr bool ispos() const      { return !isneg(); }
-	inline constexpr bool ispowerof2() const { return !(_bits & 0x1); }
+	constexpr bool sign() const       { return (_bits & 0x80000000u); }
+	constexpr bool isnar() const      { return (_bits == 0x80000000u); }
+	constexpr bool iszero() const     { return (_bits == 0x0); }
+	constexpr bool isone() const      { return (_bits == 0x40000000u); } // pattern 010000...
+	constexpr bool isminusone() const { return (_bits == 0xC0000000u); } // pattern 110000...
+	constexpr bool isneg() const      { return (_bits & 0x80000000u); }
+	constexpr bool ispos() const      { return !isneg(); }
+	constexpr bool ispowerof2() const { return !(_bits & 0x1); }
 
-	inline int sign_value() const { return (_bits & 0x8) ? -1 : 1; }
+	int sign_value() const { return (_bits & 0x8) ? -1 : 1; }
 
 	bitblock<NBITS_IS_32> get() const { bitblock<NBITS_IS_32> bb; bb = long(_bits); return bb; }
-	unsigned long long encoding() const { return (unsigned long long)(_bits); }
+	unsigned long long bits() const { return (unsigned long long)(_bits); }
 	inline posit twosComplement() const {
 		posit p;
 		uint64_t raw = _bits;
@@ -845,38 +858,38 @@ private:
 		return bits;
 	}
 	inline uint32_t adjustAndRound(const int8_t k, uint32_t exp, uint64_t frac64, bool nonZeroRemainder) const {
-		uint32_t scale, regime, bits;
+		uint32_t reglen, regime, bits;
 		if (k < 0) {
-			scale = -k;
-			regime = 0x40000000 >> scale;
+			reglen = -k;
+			regime = 0x4000'0000 >> reglen;
 		}
 		else {
-			scale = k + 1;
-			regime = 0x7FFFFFFF - (0x7FFFFFFF >> scale);
+			reglen = k + 1;
+			regime = 0x7FFF'FFFF - (0x7FFF'FFFF >> reglen);
 		}
 
-		if (scale > 30) {
-			bits = k<0 ? 0x1 : 0x7FFFFFFF;  // minpos and maxpos
+		if (reglen > 30) {
+			bits = (k<0 ? 0x1 : 0x7FFF'FFFF);  // minpos and maxpos
 		}
 		else {
-			//remove carry and rcarry bits and shift to correct position
-			frac64 &= 0x3FFFFFFF;
-			uint32_t fraction = uint32_t((frac64) >> (scale + 2));
+			// remove carry and rcarry bits and shift to correct position
+			frac64 &= 0x3FFF'FFFF;
+			uint32_t fraction = uint32_t((frac64) >> (reglen + 2));
 
 			bool bitNPlusOne = false;
-			uint32_t moreBits = false;
-			if (scale <= 28) {
-				bitNPlusOne = bool (frac64 >> ((scale + 1)) & 0x1);
-				exp <<= (28 - scale);
-				if (bitNPlusOne) moreBits = (((1ull << (scale + 1)) - 1ull) & frac64) ? 0x1 : 0x0;
+			uint32_t moreBits{ 0 };
+			if (reglen <= 28) {
+				bitNPlusOne = bool ((frac64 >> (reglen + 1)) & 0x1);
+				exp <<= (28 - reglen);
+				if (bitNPlusOne) moreBits = (((1ull << (reglen + 1)) - 1ull) & frac64) ? 0x1 : 0x0;
 			}
 			else {
-				if (scale == 30) {
+				if (reglen == 30) {
 					bitNPlusOne = bool(exp & 0x2);
 					moreBits = exp & 0x1;
 					exp = 0;
 				}
-				else if (scale == 29) {
+				else if (reglen == 29) {
 					bitNPlusOne = bool(exp & 0x1);
 					exp >>= 1;
 				}
@@ -886,19 +899,16 @@ private:
 				}
 			}
 			if (nonZeroRemainder) moreBits = 0x1;
-			bits = uint32_t(regime) + uint32_t(exp) + uint32_t(fraction);
+			bits = uint32_t(regime) | uint32_t(exp) | uint32_t(fraction);
 			if (bitNPlusOne) bits += (bits & 0x1) | moreBits;
 #define TRACE_DIV_
 #ifdef TRACE_DIV
-			std::cout << "universal\n";
-			std::cout << "scale          = " << scale << std::endl;
-			std::cout << std::hex;
-			std::cout << "regime         = " << regime << std::endl;
+			std::cout << "reglen         = " << reglen << std::endl;
+			std::cout << "regime         = " << to_binary(regime) << std::endl;
 			std::cout << "exponent       = " << exp << std::endl;
-			std::cout << "fraction raw   = " << frac64 << std::endl;
-			std::cout << "fraction final = " << fraction << std::endl;
-			std::cout << "posit bits     = " << bits << std::endl;
-			std::cout << std::dec;
+			std::cout << "fraction raw   = " << to_binary(frac64, 64, true) << std::endl;
+			std::cout << "fraction final = " << to_binary(fraction, 32, true) << std::endl;
+			std::cout << "posit bits     = " << to_binary(bits, 32, true) << std::endl;
 #endif
 		}
 		return bits;

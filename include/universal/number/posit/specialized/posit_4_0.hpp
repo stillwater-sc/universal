@@ -300,7 +300,7 @@ public:
 	inline int sign_value() const { return (_bits & 0x08u ? -1 : 1); }
 
 	bitblock<NBITS_IS_4> get() const { bitblock<NBITS_IS_4> bb; bb = int(_bits & bit_mask); return bb; }
-	unsigned int encoding() const { return (unsigned int)(_bits & bit_mask); }
+	unsigned int bits() const { return (unsigned int)(_bits & bit_mask); }
 
 	inline void clear() { _bits = 0; }
 	inline void setzero() { clear(); }

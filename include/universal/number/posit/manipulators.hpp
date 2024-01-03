@@ -1,7 +1,7 @@
 #pragma once
 // manipulators.hpp: definitions of helper functions for posit type manipulation
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -24,7 +24,7 @@ namespace sw { namespace universal {
 		return str.str();
 	}
 
-	// Generate a type field descriptor for this cfloat
+	// Generate a type field descriptor for this posit
 	template<typename PositType,
 		std::enable_if_t< is_posit<PositType>, bool> = true
 	>
@@ -118,7 +118,7 @@ std::string component_values_to_string(const posit<nbits, es>& p) {
 	return str.str();
 }
 
-// generate a binary string for cfloat
+// generate a binary string for posit
 template<unsigned nbits, unsigned es>
 inline std::string to_hex(const posit<nbits, es>& v, bool nibbleMarker = false, bool hexPrefix = true) {
 	char hexChar[16] = {

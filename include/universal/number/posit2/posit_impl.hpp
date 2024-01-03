@@ -346,9 +346,9 @@ inline posit<nbits, es, bt>& convert_(bool _sign, int _scale, const blocksignifi
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-		regime <<= es + nrFbits + 1;
-		exponent <<= nrFbits + 1;
-		fraction <<= 1;
+		regime <<= es + nrFbits + 1u;
+		exponent <<= nrFbits + 1u;
+		fraction <<= 1u;
 		sticky_bit.setbit(0, sb);
 
 		pt_bits |= regime;

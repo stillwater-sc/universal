@@ -1,6 +1,6 @@
 // <universal/posit/posit.hpp>: arbitrary configuration fixed-size posit standard header
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _POSIT_STANDARD_HEADER_
@@ -36,11 +36,17 @@
 #if !defined(POSIT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use NaR as a signalling error
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+#if !defined(VALUE_THROW_ARITHMETIC_EXCEPTION)
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 #else
 // for the composite value<> class assume the same behavior as requested for posits
+#if !defined(VALUE_THROW_ARITHMETIC_EXCEPTION)
 #define VALUE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
+#endif
 #if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
 #endif

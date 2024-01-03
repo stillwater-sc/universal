@@ -12,40 +12,8 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocksignificant/blocksignificant.hpp>
-#include <universal/verification/test_suite.hpp> 
-
-#ifdef TBD
-// enumerate all rounding cases for an blocksignificant<nbits,BlockType> configuration
-template<typename blocksignificantConfiguration>
-int VerifyRounding(bool reportTestCases) {
-	constexpr size_t nbits = blocksignificantConfiguration::nbits;
-	using BlockType = typename blocksignificantConfiguration::BlockType;
-
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace sw::universal;
-	
-//	std::cout << endl;
-//	std::cout << "blocksignificant<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
-
-	// two's complement blocksignificants will have the form: 0ii.fffff
-	// 
-	int nrOfFailedTests = 0;
-
-	blocksignificant<nbits, BlockType> a;
-	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setbits(i);
-		a.setradix(5); 
-		// the LSB that we need to round can be anywhere in the fraction
-		// let's pick one that has explicit bits to use for the rounding
-		size_t targetLsb = 4;
-		bool roundUp = a.roundingDirection(targetLsb);
-		std::cout << to_binary(a) << " : round " << (roundUp ? "up " : "dn ") << '\n';
-	}
-//	std::cout << endl;
-	return nrOfFailedTests;
-}
-#endif
+#include <universal/verification/test_reporters.hpp>
+#include <universal/verification/blocksignificant_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 1

@@ -1,7 +1,7 @@
 #pragma once
 // posit_impl.hpp: implementation of arbitrary configuration fixed-size posits
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -1006,28 +1006,30 @@ public:
 	explicit operator long double() const { return to_long_double(); }
 
 	// Selectors
-	bool sign() const { return _bits[nbits - 1]; }
-	bool isnar() const {
+	bool sign() const noexcept { return _bits[nbits - 1]; }
+	bool isnar() const noexcept {
 		if (_bits[nbits - 1] == false) return false;
 		bitblock<nbits> tmp(_bits);			
 		tmp.reset(nbits - 1);
 		return tmp.none() ? true : false;
 	}
-	bool iszero() const { return _bits.none() ? true : false; }
-	bool isone() const { // pattern 010000....
+	bool isnan() const noexcept { return isnar(); }
+	bool isinf() const noexcept { return false; }
+	bool iszero() const noexcept { return _bits.none() ? true : false; }
+	bool isone() const noexcept { // pattern 010000....
 		bitblock<nbits> tmp(_bits);
 		tmp.set(nbits - 2, false);
 		return _bits[nbits - 2] & tmp.none();
 	}
-	bool isminusone() const { // pattern 110000...
+	bool isminusone() const noexcept { // pattern 110000...
 		bitblock<nbits> tmp(_bits);
 		tmp.set(nbits - 1, false);
 		tmp.set(nbits - 2, false);
 		return _bits[nbits - 1] & _bits[nbits - 2] & tmp.none();
 	}
-	bool isneg() const { return _bits[nbits - 1]; }
-	bool ispos() const { return !_bits[nbits - 1]; }
-	bool ispowerof2() const {
+	bool isneg() const noexcept { return _bits[nbits - 1]; }
+	bool ispos() const noexcept { return !_bits[nbits - 1]; }
+	bool ispowerof2() const noexcept {
 		bool s{ false };
 		regime<nbits, es> r;
 		exponent<nbits, es> e;
@@ -1035,17 +1037,17 @@ public:
 		decode(_bits, s, r, e, f);
 		return f.none();
 	}
-	bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
+	bool isinteger() const noexcept { return true; } // return (floor(*this) == *this) ? true : false; }
 
-	bitblock<nbits>    get() const { return _bits; }
-	unsigned long long encoding() const { return _bits.to_ullong(); }
-	constexpr bool test(unsigned bitIndex) const noexcept {
+	bitblock<nbits>    get() const noexcept { return _bits; }
+	unsigned long long bits() const noexcept { return _bits.to_ullong(); }
+	constexpr bool     test(unsigned bitIndex) const noexcept {
 		return (bitIndex < nbits ? _bits[bitIndex] : false);
 	}
-	constexpr bool at(unsigned bitIndex) const noexcept {
+	constexpr bool     at(unsigned bitIndex) const noexcept {
 		return (bitIndex < nbits ? _bits[bitIndex] : false);
 	}
-	constexpr uint8_t nibble(unsigned n) const noexcept {
+	constexpr uint8_t  nibble(unsigned n) const noexcept {
 		uint8_t nibbleBits{ 0 };
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			unsigned baseNibbleIndex = 4 * n;
@@ -1058,11 +1060,32 @@ public:
 		return nibbleBits;
 	}
 	// Modifiers
-	constexpr void clear() { _bits.reset(); }
-	constexpr void setzero() { clear(); }
-	constexpr void setnar() {
+	constexpr void clear() noexcept { _bits.reset(); }
+	constexpr void setzero() noexcept { clear(); }
+	constexpr void setnar() noexcept {
 		_bits.reset();
 		_bits.set(nbits - 1, true);
+	}
+	// set the posit bits explicitely
+	constexpr posit<nbits, es>& setBitblock(const bitblock<nbits>& raw_bits) noexcept {
+		_bits = raw_bits;
+		return *this;
+	}
+	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
+	constexpr posit<nbits, es>& setbits(uint64_t value) noexcept {
+		clear();
+		bitblock<nbits> raw_bits;
+		uint64_t mask = 1;
+		for (unsigned i = 0; i < nbits; i++) {
+			raw_bits.set(i, (value & mask));
+			mask <<= 1;
+		}
+		_bits = raw_bits;
+		return *this;
+	}
+	constexpr posit<nbits, es>& setbit(unsigned bitIndex, bool value = true) noexcept {
+		_bits.set(bitIndex, value);
+		return *this;
 	}
 
 	posit& minpos() noexcept { clear(); return ++(*this); }
@@ -1070,24 +1093,6 @@ public:
 	posit& zero()   noexcept { clear(); return *this; }
 	posit& minneg() noexcept { clear(); return --(*this); }
 	posit& maxneg() noexcept { setnar(); return ++(*this); }
-
-	// set the posit bits explicitely
-	constexpr posit<nbits, es>& setBitblock(const bitblock<nbits>& raw_bits) {
-		_bits = raw_bits;
-		return *this;
-	}
-	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
-	constexpr posit<nbits, es>& setbits(uint64_t value) {
-		clear();
-		bitblock<nbits> raw_bits;
-		uint64_t mask = 1;
-		for ( unsigned i = 0; i < nbits; i++ ) {
-			raw_bits.set(i,(value & mask));
-			mask <<= 1;
-		}
-		_bits = raw_bits;
-		return *this;
-	}
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	internal::value<fbits> to_value() const {
@@ -2737,6 +2742,31 @@ internal::value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b
 	// todo: implement
 	internal::value<nbits> result;
 	return result;
+}
+
+
+
+
+/// free functions forms of member functions
+
+template<unsigned nbits, unsigned es>
+posit<nbits, es>& minpos(posit<nbits, es>& p) {
+	return p.minpos();
+}
+
+template<unsigned nbits, unsigned es>
+posit<nbits, es>& maxpos(posit<nbits, es>& p) {
+	return p.maxpos();
+}
+
+template<unsigned nbits, unsigned es>
+posit<nbits, es>& minneg(posit<nbits, es>& p) {
+	return p.minneg();
+}
+
+template<unsigned nbits, unsigned es>
+posit<nbits, es>& maxneg(posit<nbits, es>& p) {
+	return p.maxneg();
 }
 
 // Standard posit short-hand types

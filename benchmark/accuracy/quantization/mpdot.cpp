@@ -361,7 +361,7 @@ namespace sw {
 			if constexpr (bCSV) {
 				std::cout << stats.stddev << ", " << faEquivalency << ", " << stats.mean ;
 				for (int i = 0; i < 5; ++i) {
-					std::cout << ", " << stats.quartiles[i];
+					std::cout << ", " << stats.quantiles.q[i];
 				}
 				std::cout << '\n';
 			}

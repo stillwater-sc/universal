@@ -1,6 +1,6 @@
-// arithmetic_divide.cpp: test suite runner for posit division
+// division.cpp: test suite runner for posit division
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -44,7 +44,7 @@ void GenerateWorstCaseDivision() {
 	p_plus_eps++;
 	p_minus_eps--;
 	p_result = p_plus_eps / p_minus_eps;
-	if (es < 2) {
+	if constexpr (es < 2) {
 		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << sw::universal::posit<nbits, es>(sw::universal::SpecificValue::minpos) << std::dec << std::endl;
 	}
 	else {
@@ -175,7 +175,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit division validation";
+	std::string test_suite  = "posit division verification";
 	std::string test_tag    = "division";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -206,12 +206,12 @@ try {
 	// Generate the worst fraction pressure for different posit configurations
 	EnumerateToughDivisions();
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<2, 0>("Manual Testing", true), "posit<2,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");	
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 1>("Manual Testing", true), "posit<3,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>("Manual Testing", true), "posit<4,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0>("Manual Testing", true), "posit<5,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>("Manual Testing", true), "posit<8,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<2, 0>(true), "posit<2,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 0>(true), "posit<3,0>", "division");	
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 1>(true), "posit<3,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>(true), "posit<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0>(true), "posit<5,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(true), "posit<8,0>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

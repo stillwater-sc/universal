@@ -1,10 +1,11 @@
 // numeric_traits.cpp: test suite runner of the numeric_limits specialization for posits
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/native/ieee754.hpp>
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
@@ -20,16 +21,16 @@ try {
 	numberTraits<short>(std::cout);
 	numberTraits<unsigned>(std::cout);
 	numberTraits<float>(std::cout);
-	numberTraits<posit<32, 2>>(std::cout);
+	numberTraits<posit<32, 2> >(std::cout);
 
 	std::cout << minmax_range<float>() << '\n';
-	std::cout << minmax_range<posit<32, 2>>() << '\n';
+	std::cout << minmax_range< posit<32, 2> >() << '\n';
 
 	std::cout << dynamic_range<float>() << '\n';
-	std::cout << dynamic_range<posit<32, 2>>() << '\n';
+	std::cout << dynamic_range< posit<32, 2> >() << '\n';
 
 	std::cout << symmetry_range<float>() << '\n';
-	std::cout << symmetry_range<posit<32, 2>>() << '\n';
+	std::cout << symmetry_range< posit<32, 2> >() << '\n';
 
 	using Float = float;
 	using Posit = sw::universal::posit<32, 2>;

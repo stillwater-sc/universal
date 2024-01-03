@@ -1,6 +1,6 @@
-// arithmetic_negate.cpp: test suite runner for posit arithmetic negation
+// negation.cpp: test suite runner for posit arithmetic negation
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -48,7 +48,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit negation validation";
+	std::string test_suite  = "posit negation verification";
 	std::string test_tag    = "negation";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -60,7 +60,7 @@ try {
 	GenerateTestCase<5, 0, float>(-0.625f);
 	GenerateTestCase<5, 0, float>(-0.500f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 0>("Manual Testing: ", true), "posit<5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 0>(true), "posit<5,0>", "multiplication");
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else

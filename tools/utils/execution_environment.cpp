@@ -8,7 +8,7 @@
 #include <universal/utility/compiler.hpp>
 #include <universal/common/number_traits_reports.hpp>
 #include <universal/native/ieee754.hpp>
-#include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_reporters.hpp>
 
 void report_architecture() {
 #ifdef UNIVERSAL_ARCH_X86_64

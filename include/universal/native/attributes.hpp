@@ -1,7 +1,7 @@
 #pragma once
 // attributes.hpp: definition of attribute functions for native real and integer types
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
@@ -70,5 +70,19 @@ namespace sw { namespace universal {
 	inline std::string longdouble_range() {
 		return ieee754_range<long double, 15>();
 	}
+
+#if BIT_CAST_SUPPORT
+#include <bit>    // C++20 bit_cast
+	inline bool is_subnormal(float value) {
+		uint32_t bc = std::bit_cast<uint32_t, float>(value);
+		uint32_t exponent = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
+		return (exponent == 0);
+	}
+	inline bool is_subnormal(double value) {
+		uint64_t bc = std::bit_cast<uint64_t, double>(value);
+		uint64_t exponent = (ieee754_parameter<double>::emask & bc) >> ieee754_parameter<double>::fbits;
+		return (exponent == 0);
+	}
+#endif
 
 }} // namespace sw::universal

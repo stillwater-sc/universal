@@ -113,33 +113,25 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
-		_bits = uint8_t(raw.to_ulong());
-		return *this;
-	}
-	constexpr posit& setbits(uint64_t value) {
-		_bits = uint8_t(value & 0xffu);
-		return *this;
-	}
 	constexpr posit operator-() const {
 		posit p;
 		return p.setbits((~_bits) + 1ul);
 	}
 	// arithmetic assignment operators
 	posit& operator+=(const posit& b) {
-
+		if (b.iszero()) return *this;
 		return *this;
 	}
 	posit& operator-=(const posit& b) {
-
+		if (b.iszero()) return *this;
 		return *this;
 	}
 	posit& operator*=(const posit& b) {
-
+		if (b.iszero()) setzero();
 		return *this;
 	}
 	posit& operator/=(const posit& b) {
-
+		if (b.iszero()) setnar();
 		return *this;
 	}
 
@@ -190,9 +182,28 @@ public:
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }
 
 	// Modifiers
-	inline void clear() { _bits = 0; }
-	inline void setzero() { clear(); }
-	inline void setnar() { _bits = 0x80; }
+	inline void clear() noexcept { _bits = 0; }
+	inline void setzero() noexcept { clear(); }
+	inline void setnar() noexcept { _bits = 0x80; }
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) noexcept {
+		_bits = uint8_t(raw.to_ulong());
+		return *this;
+	}
+	constexpr posit& setbits(uint64_t value) noexcept {
+		_bits = uint8_t(value & 0xffu);
+		return *this;
+	}
+	constexpr posit& setbit(unsigned bitIndex, bool value = true) noexcept {
+		uint16_t bit_mask = (0x1u << bitIndex);
+		if (value) {
+			_bits |= bit_mask;
+		}
+		else {
+			_bits &= ~bit_mask;
+		}
+		return *this;
+	}
+
 	inline posit& minpos() {
 		clear();
 		return ++(*this);
@@ -264,21 +275,21 @@ private:
 		// 0.111110.0.   m =  4  1 ebit    #0.-------  >> 6
 		// 0.1111110..   m =  5  0 ebits   #.          >> 7 = 0
 		// 0.1111111..   m =  6  0 ebits   #.          >> 7 = 0
-		uint8_t ebits{ 0 };
+		uint8_t exp{ 0 };
 		switch (m) {
 		case -5: case 4:
-			ebits = (*remaining >> 5);
+			exp = (*remaining >> 5);
 			*remaining <<= 1;
 			break;
 		case -7: case -6: case 5: case 6:
-			ebits = 0;
+			exp = 0;
 			*remaining = 0;
 		default:
-			ebits = (*remaining >> 5);
+			exp = (*remaining >> 5);
 			*remaining <<= 2;
 			break;
 		}
-		return ebits;
+		return exp;
 	}
 
 	float fraction_value(uint8_t fraction) const {
@@ -394,9 +405,9 @@ private:
 		int regimeScale = (1 << es) * m;
 		float s = (float)(sign_value());
 		float r = (m > 0 ? (float)(1 << regimeScale) : (1.0f / (float)(1 << -regimeScale)));
-		uint8_t ebits = extract_exponent(m, &remaining);
-//		std::cout << to_binary(ebits, 2) << " : " << to_binary(remaining, 8) << '\n';
-		float e = float((uint32_t(1) << ebits));
+		uint8_t expbits = extract_exponent(m, &remaining);
+//		std::cout << to_binary(expbits, 2) << " : " << to_binary(remaining, 8) << '\n';
+		float e = float((uint32_t(1) << expbits));
 		remaining |= 0x80; // set hidden bit
 		float f = fraction_value(remaining);
 //		std::cout << "regime value   : " << r << '\n';

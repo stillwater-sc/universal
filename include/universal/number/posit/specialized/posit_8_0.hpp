@@ -84,9 +84,9 @@ public:
 	constexpr explicit posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
 	constexpr explicit posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
 	constexpr explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-		        explicit posit(float initial_value) : _bits(0)              { *this = initial_value; }
-		                posit(double initial_value) : _bits(0)             { *this = initial_value; }
-		        explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
+		      explicit posit(float initial_value) : _bits(0)              { *this = initial_value; }
+		               posit(double initial_value) : _bits(0)             { *this = initial_value; }
+		      explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs)             { return operator=((int)(rhs)); }
@@ -113,14 +113,6 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
-		_bits = uint8_t(raw.to_ulong());
-		return *this;
-	}
-	constexpr posit& setbits(uint64_t value) {
-		_bits = uint8_t(value & 0xffu);
-		return *this;
-	}
 	constexpr posit operator-() const {
 		posit p;
 		return p.setbits((~_bits) + 1ul);
@@ -187,45 +179,68 @@ public:
 	}
 		
 	// Selelctors
-	inline bool sign() const       { return (_bits & sign_mask); }
-	inline bool isnar() const      { return (_bits == sign_mask); }
-	inline bool iszero() const     { return (_bits == 0x00); }
-	inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
-	inline bool isminusone() const { return (_bits == 0xC0); } // pattern 110000...
-	inline bool isneg() const      { return (_bits & sign_mask); }
-	inline bool ispos() const      { return !isneg(); }
-	inline bool ispowerof2() const { return !(_bits & 0x1); }
+	bool sign() const noexcept       { return (_bits & sign_mask); }
+	bool isnar() const noexcept      { return (_bits == sign_mask); }
+	bool isnan() const noexcept      { return isnar(); }
+	bool isinf() const noexcept      { return false; }
+	bool iszero() const noexcept     { return (_bits == 0x00); }
+	bool isone() const noexcept      { return (_bits == 0x40); } // pattern 010000...
+	bool isminusone() const noexcept { return (_bits == 0xC0); } // pattern 110000...
+	bool isneg() const noexcept      { return (_bits & sign_mask); }
+	bool ispos() const noexcept      { return !isneg(); }
+	bool ispowerof2() const noexcept { return !(_bits & 0x1); }
 
-	inline int sign_value() const  { return (_bits & 0x80 ? -1 : 1); }
+	inline int sign_value() const noexcept { return (_bits & 0x80 ? -1 : 1); }
 
-	bitblock<NBITS_IS_8> get() const { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
-	unsigned long long encoding() const { return (unsigned long long)(_bits); }
+	bitblock<NBITS_IS_8> get() const noexcept { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
+	unsigned long long bits() const noexcept { return (unsigned long long)(_bits); }
 
 	// Modifiers
-	inline void clear() { _bits = 0; }
-	inline void setzero() { clear(); }
-	inline void setnar() { _bits = 0x80; }
-	inline posit& minpos() {
+	void clear()                   noexcept { _bits = 0; }
+	void setzero()                 noexcept { clear(); }
+	void setnar()                  noexcept { _bits = 0x80; }
+	void setnan()                  noexcept { setnar(); }
+	//void setnan(bool sign = false) noexcept { setnar(); }
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
+		_bits = uint8_t(raw.to_ulong());
+		return *this;
+	}
+	constexpr posit& setbits(uint64_t value) {
+		_bits = uint8_t(value & 0xffu);
+		return *this;
+	}
+	constexpr posit& setbit(unsigned bitIndex, bool value = true) noexcept {
+		uint8_t bit_mask = (0x1u << bitIndex);
+		if (value) {
+			_bits |= bit_mask;
+		}
+		else {
+			_bits &= ~bit_mask;
+		}
+		return *this;
+	}
+
+	posit& minpos() noexcept {
 		clear();
 		return ++(*this);
 	}
-	inline posit& maxpos() {
+	posit& maxpos() noexcept {
 		setnar();
 		return --(*this);
 	}
-	inline posit& zero() {
+	posit& zero() noexcept {
 		clear();
 		return *this;
 	}
-	inline posit& minneg() {
+	posit& minneg() noexcept {
 		clear();
 		return --(*this);
 	}
-	inline posit& maxneg() {
+	posit& maxneg() noexcept {
 		setnar();
 		return ++(*this);
 	}
-	inline posit twosComplement() const {
+	posit twosComplement() const {
 		posit<NBITS_IS_8, ES_IS_0> p;
 		int8_t v = -*(int8_t*)&_bits;
 		p.setbits(v);
@@ -558,6 +573,7 @@ inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, double rhs) {
 }
 
 #endif // POSIT_ENABLE_LITERALS
+
 
 #endif // POSIT_FAST_POSIT_8_0
 

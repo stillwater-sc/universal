@@ -1,0 +1,253 @@
+// multiplication.cpp: test suite runner for posit multiplication
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
+// Configure the posit template environment
+// first: enable general or specialized specialized posit configurations
+#define POSIT_FAST_SPECIALIZATION
+// second: enable/disable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+// third: enable tracing 
+// when you define ALGORITHM_VERBOSE_OUTPUT executing a MUL the code will print intermediate results
+//#define ALGORITHM_VERBOSE_OUTPUT
+#define ALGORITHM_TRACE_MUL
+#include <universal/number/posito/posito.hpp>
+#include <universal/verification/test_suite.hpp>
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_randoms.hpp>
+
+namespace sw {
+	namespace testing {
+		// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
+		template<typename PositType>
+		int VerifyMultiplication(bool reportTestCases) {
+			constexpr unsigned nbits = PositType::nbits;
+			const unsigned NR_POSITS = (1 << nbits);
+			int nrOfFailedTests = 0;
+			for (unsigned i = 0; i < NR_POSITS; i++) {
+				PositType pa;
+				pa.setbits(i);
+				double da = double(pa);
+				for (unsigned j = 0; j < NR_POSITS; j++) {
+					PositType pb, pc, pref;
+					pb.setbits(j);
+					double db = double(pb);
+					double dc = da * db;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						pc = pa * pb;
+					}
+					catch (const posit_operand_is_nar&) {
+						if (pa.isnar() || pb.isnar()) {
+							// correctly caught the exception
+							pmul.setnar();
+						}
+						else {
+							throw;  // rethrow
+						}
+					}
+#else
+					pc = pa * pb;
+#endif
+					pref = dc;
+					//sw::universal::ReportBinaryOperation(pa, "*", pb, pc);
+					//sw::universal::ReportBinaryOperation(da, "*", db, dc);
+					if (pc != pref) {
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pc, pref);
+						nrOfFailedTests++;
+					}
+					else {
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pc, pref);
+					}
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		template<typename PositType, typename PositoType>
+		int VerifyMultiplicationWithPosito(bool reportTestCases) {
+			constexpr unsigned nbits = PositType::nbits;
+			const unsigned NR_POSITS = (1 << nbits);
+			int nrOfFailedTests = 0;
+			for (unsigned i = 0; i < NR_POSITS; i++) {
+				PositType pa;
+				pa.setbits(i);
+				PositoType ra;
+				ra.setbits(i);
+				for (unsigned j = 0; j < NR_POSITS; j++) {
+					PositType pb, pc, pref;
+					pb.setbits(j);
+					PositoType rb, rc;
+					rb.setbits(j);
+					rc = ra * rb;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						pc = pa * pb;
+					}
+					catch (const posit_operand_is_nar&) {
+						if (pa.isnar() || pb.isnar()) {
+							// correctly caught the exception
+							pmul.setnar();
+						}
+						else {
+							throw;  // rethrow
+						}
+					}
+#else
+					pc = pa * pb;
+#endif
+					pref = double(rc);
+					if (pc != pref) {
+						if (reportTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pc, pref);
+						nrOfFailedTests++;
+					}
+					else {
+						//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pc, pref);
+					}
+				}
+			}
+			return nrOfFailedTests;
+		}
+	}
+}
+
+template<typename PositType>
+void TestDecode(const PositType& a) {
+	using namespace sw::universal;
+	short m;
+	uint16_t bits, exp, fraction;
+
+	bits = a.bits();
+	a.decode_posit(bits, m, exp, fraction);
+	std::cout << "bits     : " << to_binary(bits, 16, true) << '\n';
+	std::cout << "m        : " << int(m) << '\n';
+	std::cout << "exponent : " << to_binary(exp, 16, true) << " : " << int(exp) << '\n';
+	std::cout << "fraction : " << to_binary(fraction, 16, true) << '\n';
+}
+
+// Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
+#define MANUAL_TESTING 0
+// REGRESSION_LEVEL_OVERRIDE is set by the cmake file to drive a specific regression intensity
+// It is the responsibility of the regression test to organize the tests in a quartile progression.
+//#undef REGRESSION_LEVEL_OVERRIDE
+#ifndef REGRESSION_LEVEL_OVERRIDE
+#undef REGRESSION_LEVEL_1
+#undef REGRESSION_LEVEL_2
+#undef REGRESSION_LEVEL_3
+#undef REGRESSION_LEVEL_4
+#define REGRESSION_LEVEL_1 1
+#define REGRESSION_LEVEL_2 1
+#define REGRESSION_LEVEL_3 1
+#define REGRESSION_LEVEL_4 1
+#endif
+
+int main()
+try {
+	using namespace sw::universal;
+
+	std::string test_suite  = "fast posit multiplication verification";
+	std::string test_tag    = "multiplication";
+	bool reportTestCases    = false;
+	int nrOfFailedTestCases = 0;
+
+	ReportTestSuiteHeader(test_suite, reportTestCases);
+
+#if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+
+	/*
+	* 	fraction carry processing commensing
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1000'1101
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1000'1110
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1000'1111
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1001'0000
+	0b0.0000'0000'0001.00.1'' * 0b0.10.01.100'1001'0001
+	*/
+	posit<16, 2> a(1), b(16), c;
+	a.setbits(0x0009);
+	b.setbits(0x4C8D);
+	c = a * b;
+	ReportBinaryOperation(a, "*", b, c);
+
+	//nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 1>, posito<16, 1>>(reportTestCases);
+	//nrOfFailedTestCases += sw::testing::VerifyMultiplicationWithPosito<posit<16, 2>, posito<16, 2>>(reportTestCases);
+	//nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyMultiplication<posit<16, 2>>(reportTestCases), "posit<16, 2>", "multiplication");
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS;
+#else
+
+#if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(reportTestCases), "posit< 2,0>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(reportTestCases), "posit< 3,0>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(reportTestCases), "posit< 4,0>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(reportTestCases), "posit< 8,0>", "multiplication");
+	// TODO: no fast posit<8,1> yet
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(reportTestCases), "posit< 8,1>", "multiplication");
+	// TODO: no working fast posit<8,2> yet
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_MUL, 65536), "posit<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 65536), "posit<16,2>", "multiplication");
+
+#endif
+
+#if REGRESSION_LEVEL_2
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<16,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<24,2>", "multiplication");
+#endif
+
+#if REGRESSION_LEVEL_3
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<32,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 3>(reportTestCases, OPCODE_MUL, 1000), "posit<32,3>", "multiplication");
+#endif
+
+#if REGRESSION_LEVEL_4
+	// nbits=48 is also showing failures
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<48,2>", "multiplication");
+
+	// nbits=64 requires long double compiler support
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(reportTestCases, OPCODE_MUL, 1000), "posit<64,3>", "multiplication");
+	// posit<64,4> is hitting subnormal numbers
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
+
+#ifdef HARDWARE_ACCELERATION
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 1>(reportTestCases), "posit<12,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, 1>(reportTestCases), "posit<14,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, 1>(reportTestCases), "posit<16,1>", "multiplication");
+#endif // HARDWARE_ACCELERATION
+
+#endif // REGRESSION_LEVEL_4
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
+#endif  // MANUAL_TESTING
+}
+catch (char const* msg) {
+	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::posit_arithmetic_exception& err) {
+	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::universal::posit_internal_exception& err) {
+	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	std::cerr << "Caught unknown exception" << std::endl;
+	return EXIT_FAILURE;
+}
+

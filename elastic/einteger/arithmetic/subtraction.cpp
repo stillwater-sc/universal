@@ -1,4 +1,4 @@
-// subtraction.cpp: test suite runner for subtractionon adaptive precision binary integers
+// subtraction.cpp: test suite runner for subtractionon elastic precision binary integers
 //
 // Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
 //
@@ -18,7 +18,7 @@ namespace sw { namespace universal {
 
 	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyAdaptiveSubtraction(bool reportTestCases) {
+	int VerifyElasticSubtraction(bool reportTestCases) {
 		using Integer = einteger<BlockType>;
 		constexpr size_t NR_ENCODINGS = (size_t(1) << nbits);
 
@@ -92,7 +92,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "adaptive precision binary integer subtraction";
+	std::string test_suite  = "elastic precision binary integer subtraction";
 	std::string test_tag    = "einteger subtraction";
 	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
@@ -115,22 +115,22 @@ try {
 	GenerateTestCase<std::int32_t, std::uint8_t>(512, 260);
 	GenerateTestCase<std::int32_t, std::uint8_t>(512, 257);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<12, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<8, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<12, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<32, uint8_t>(reportTestCases), "einteger<uint8_t> 8bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<32, uint8_t>(reportTestCases), "einteger<uint8_t> 8bytes", test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<10, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<8, uint16_t>(reportTestCases), "einteger<uint16_t> 1word", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<16, uint16_t>(reportTestCases), "einteger<uint16_t> 2word", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<16, uint32_t>(reportTestCases), "einteger<uint32_t> 1word", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyAdaptiveSubtraction<32, uint32_t>(reportTestCases), "einteger<uint32_t> 2word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<8, uint8_t>(reportTestCases), "einteger<uint8_t> 1byte", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<10, uint8_t>(reportTestCases), "einteger<uint8_t> 2bytes", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<8, uint16_t>(reportTestCases), "einteger<uint16_t> 1word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<16, uint16_t>(reportTestCases), "einteger<uint16_t> 2word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<16, uint32_t>(reportTestCases), "einteger<uint32_t> 1word", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyElasticSubtraction<32, uint32_t>(reportTestCases), "einteger<uint32_t> 2word", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2

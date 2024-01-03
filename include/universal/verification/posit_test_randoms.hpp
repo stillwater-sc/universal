@@ -2,7 +2,7 @@
 //  posit_test_randoms.hpp : posit verification functions based on random operand generation testing
 // Needs to be included after posit type is declared.
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -61,142 +61,142 @@ namespace sw { namespace universal {
 
 	// Execute a binary operator
 	template<typename TestType>
-	void executeBinary(int opcode, double da, double db, const TestType& testa, const TestType& testb, TestType& testresult, TestType& testref) {
-		double reference = 0.0;
+	void executeBinary(int opcode, double da, double db, double& dc, const TestType& testa, const TestType& testb, TestType& testc, TestType& testref) {
+		dc = 0.0;
 		switch (opcode) {
 		case OPCODE_ADD:
-			testresult = testa + testb;
-			reference = da + db;
+			testc = testa + testb;
+			dc = da + db;
 			break;
 		case OPCODE_SUB:
-			testresult = testa - testb;
-			reference = da - db;
+			testc = testa - testb;
+			dc = da - db;
 			break;
 		case OPCODE_MUL:
-			testresult = testa * testb;
-			reference = da * db;
+			testc = testa * testb;
+			dc = da * db;
 			break;
 		case OPCODE_DIV:
-			testresult = testa / testb;
-			reference = da / db;
+			testc = testa / testb;
+			dc = da / db;
 			break;
 		case OPCODE_IPA:
-			testresult = testa;
-			testresult += testb;
-			reference = da + db;
+			testc = testa;
+			testc += testb;
+			dc = da + db;
 			break;
 		case OPCODE_IPS:
-			testresult = testa;
-			testresult -= testb;
-			reference = da - db;
+			testc = testa;
+			testc -= testb;
+			dc = da - db;
 			break;
 		case OPCODE_IPM:
-			testresult = testa;
-			testresult *= testb;
-			reference = da * db;
+			testc = testa;
+			testc *= testb;
+			dc = da * db;
 			break;
 		case OPCODE_IPD:
-			testresult = testa;
-			testresult /= testb;
-			reference = da / db;
+			testc = testa;
+			testc /= testb;
+			dc = da / db;
 			break;
 		case OPCODE_POW:
-			testresult = sw::universal::pow(testa, testb);
-			reference = std::pow(da, db);
+			testc = sw::universal::pow(testa, testb);
+			dc = std::pow(da, db);
 			break;
 		case OPCODE_NOP:
 		default:
-			std::cerr << "Unsupported unary operator: operation ignored\n";
+			std::cerr << "unary operators not supported in executeBinary: operation ignored\n";
 			break;
 		}
-		testref = reference;
+		testref = dc;
 	}
 
 	// Execute a unary operator
 	template<typename TestType>
-	void executeUnary(int opcode, double da, const TestType& testa, TestType& testref, TestType& testresult, double dminpos) {
-		double reference = 0.0;
+	void executeUnary(int opcode, double da, double& dc, const TestType& testa, TestType& testc, TestType& testref, double dminpos) {
+		dc = 0.0;
 		switch (opcode) {
 		case OPCODE_SQRT:
-			testresult = sw::universal::sqrt(testa);
-			reference = std::sqrt(da);
+			testc = sw::universal::sqrt(testa);
+			dc = std::sqrt(da);
 			break;
 		case OPCODE_EXP:
-			testresult = sw::universal::exp(testa);
-			reference = std::exp(da);
-			if (0.0 == reference) reference = dminpos;
+			testc = sw::universal::exp(testa);
+			dc = std::exp(da);
+			if (0.0 == dc) dc = dminpos;
 			break;
 		case OPCODE_EXP2:
-			testresult = sw::universal::exp2(testa);
-			reference = std::exp2(da);
-			if (0.0 == reference) reference = dminpos;
+			testc = sw::universal::exp2(testa);
+			dc = std::exp2(da);
+			if (0.0 == dc) dc = dminpos;
 			break;
 		case OPCODE_LOG:
-			testresult = sw::universal::log(testa);
-			reference = std::log(da);
+			testc = sw::universal::log(testa);
+			dc = std::log(da);
 			break;
 		case OPCODE_LOG2:
-			testresult = sw::universal::log2(testa);
-			reference = std::log2(da);
+			testc = sw::universal::log2(testa);
+			dc = std::log2(da);
 			break;
 		case OPCODE_LOG10:
-			testresult = sw::universal::log10(testa);
-			reference = std::log10(da);
+			testc = sw::universal::log10(testa);
+			dc = std::log10(da);
 			break;
 		case OPCODE_SIN:
-			testresult = sw::universal::sin(testa);
-			reference = std::sin(da);
+			testc = sw::universal::sin(testa);
+			dc = std::sin(da);
 			break;
 		case OPCODE_COS:
-			testresult = sw::universal::cos(testa);
-			reference = std::cos(da);
+			testc = sw::universal::cos(testa);
+			dc = std::cos(da);
 			break;
 		case OPCODE_TAN:
-			testresult = sw::universal::tan(testa);
-			reference = std::tan(da);
+			testc = sw::universal::tan(testa);
+			dc = std::tan(da);
 			break;
 		case OPCODE_ASIN:
-			testresult = sw::universal::asin(testa);
-			reference = std::asin(da);
+			testc = sw::universal::asin(testa);
+			dc = std::asin(da);
 			break;
 		case OPCODE_ACOS:
-			testresult = sw::universal::acos(testa);
-			reference = std::acos(da);
+			testc = sw::universal::acos(testa);
+			dc = std::acos(da);
 			break;
 		case OPCODE_ATAN:
-			testresult = sw::universal::atan(testa);
-			reference = std::atan(da);
+			testc = sw::universal::atan(testa);
+			dc = std::atan(da);
 			break;
 		case OPCODE_SINH:
-			testresult = sw::universal::sinh(testa);
-			reference = std::sinh(da);
+			testc = sw::universal::sinh(testa);
+			dc = std::sinh(da);
 			break;
 		case OPCODE_COSH:
-			testresult = sw::universal::cosh(testa);
-			reference = std::cosh(da);
+			testc = sw::universal::cosh(testa);
+			dc = std::cosh(da);
 			break;
 		case OPCODE_TANH:
-			testresult = sw::universal::tanh(testa);
-			reference = std::tanh(da);
+			testc = sw::universal::tanh(testa);
+			dc = std::tanh(da);
 			break;
 		case OPCODE_ASINH:
-			testresult = sw::universal::asinh(testa);
-			reference = std::asinh(da);
+			testc = sw::universal::asinh(testa);
+			dc = std::asinh(da);
 			break;
 		case OPCODE_ACOSH:
-			testresult = sw::universal::acosh(testa);
-			reference = std::acosh(da);
+			testc = sw::universal::acosh(testa);
+			dc = std::acosh(da);
 			break;
 		case OPCODE_ATANH:
-			testresult = sw::universal::atanh(testa);
-			reference = std::atanh(da);
+			testc = sw::universal::atanh(testa);
+			dc = std::atanh(da);
 			break;
 		case OPCODE_NOP:
 		default:
 			std::cerr << "Unsupported binary operator: operation ignored\n";
 			break;
 		}
-		testref = reference;
+		testref = dc;
 	}
 
 	// generate a random set of operands to test the binary operators for a posit configuration
@@ -243,40 +243,49 @@ namespace sw { namespace universal {
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
+		bool firstNaRCall = true;
+		bool firstDivideByZeroCall = true;
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			posit<nbits, es> testa, testb, testresult, testref;
+			posit<nbits, es> testa, testb, testc, testref;
 			testa.setbits(distr(eng));
 			testb.setbits(distr(eng));
 			double da = double(testa);
 			double db = double(testb);
+			double dc = 0.0;
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " testa " << testa << std::endl;
 			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " testa " << testb << std::endl;
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 			try {
-				executeBinary(opcode, da, db, testa, testb, testref, testresult);
+				executeBinary(opcode, da, db, dc, testa, testb, testc, testref);
 			}
 			catch (const posit_arithmetic_exception& err) {
-				if (testa.isnar() || testb.isnar() || ((opcode == OPCODE_DIV || opcode == OPCODE_IPD) && testb.iszero())) {
-					if (reportTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+				if (testa.isnar() || testb.isnar()) {
+					if (reportTestCases && firstNaRCall) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+					firstNaRCall = false;
+					continue;
+				}
+				else if (((opcode == OPCODE_DIV || opcode == OPCODE_IPD) && testb.iszero())) {
+					if (reportTestCases && firstDivideByZeroCall) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+					firstDivideByZeroCall = false;
+					continue;
 				}
 				else {
 					throw; // rethrow
 				}
 			}
 #else
-			executeBinary(opcode, da, db, testa, testb, testref, testresult);
+			executeBinary(opcode, da, db, dc, testa, testb, testc, testref);
 #endif
 
-			testresult = testref;
-			if (testresult != testref) {
+			if (testc != testref) {
 				nrOfFailedTests++;
-				if (reportTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testresult, testref);
+				if (reportTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testc, testref);
 			}
 			else {
-				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, testa, testb, testresult, testref);
+				//if (reportTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, testa, testb, testc, testref);
 			}
 		}
 		return nrOfFailedTests;
@@ -325,9 +334,11 @@ namespace sw { namespace universal {
 		case OPCODE_ASINH:
 		case OPCODE_ACOSH:
 		case OPCODE_ATANH:
+			// valid unary function
+			break;
 			// two operand elementary functions
 		case OPCODE_POW:
-			std::cerr << "Unsupported binary operator, test cancelled\n";
+			std::cerr << "Unsupported binary function, test cancelled\n";
 			return 1;
 		}
 		// generate the full state space set of valid posit values
@@ -337,15 +348,16 @@ namespace sw { namespace universal {
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			TestType testa, testresult, testref;
+			TestType testa, testc, testref;
 			testa.setbits(distr(eng));
 			if (sqrtOperator && testa < 0) testa = -testa;
 			double da = double(testa);
+			double dc = 0.0;
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " testa " << testa << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 			try {
-				executeUnary(opcode, da, testa, testref, testresult, dminpos);
+				executeUnary(opcode, da, dc, testa, testc, testref, dminpos);
 			}
 			catch (const posit_arithmetic_exception& err) {
 				if (testa.isnar()) {
@@ -356,14 +368,14 @@ namespace sw { namespace universal {
 				}
 			}
 #else
-			executeUnary(opcode, da, testa, testref, testresult, dminpos);
+			executeUnary(opcode, da, dc, testa, testc, testref, dminpos);
 #endif
-			if (testresult != testref) {
+			if (testc != testref) {
 				nrOfFailedTests++;
-				if (reportTestCases) ReportUnaryArithmeticError("FAIL", operation_string, testa, testresult, testref);
+				if (reportTestCases) ReportUnaryArithmeticError("FAIL", operation_string, testa, testc, testref);
 			}
 			else {
-				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", operation_string, testa, testresult, testref);
+				//if (reportTestCases) ReportUnaryArithmeticSuccess("PASS", operation_string, testa, testc, testref);
 			}
 		}
 

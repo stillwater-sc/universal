@@ -64,27 +64,32 @@ try {
 	// TODO: remove leading zeros
 	std::cout << "Bringing in large values through floating-point\n";
 	{
-		using Integer = einteger<std::uint8_t>;
+		using ElasticInteger = einteger<std::uint8_t>;
+		ElasticInteger a;
+		std::cout << type_tag(a) << '\n';
 		for (int i = 1; i < 40; ++i) {
 			float target = 2.0f * pow(10.0f, float(i));
-			Integer a = target;
+			a = target;
 			std::cout << a << " : " << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
 		}
 	}
 	{
-		using Integer = einteger<std::uint16_t>;
+		using ElasticInteger = einteger<std::uint16_t>;
+		ElasticInteger a;
+		std::cout << type_tag(a) << '\n';
 		for (int i = 1; i < 40; ++i) {
 			float target = -2.0f * pow(10.0f, float(i));
-			Integer a = target;
+			a = target;
 			std::cout << a << " : " << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
 		}
 	}
-	// TODO: conversions using 4 byte blocks fails
 	{
-		using Integer = einteger<std::uint32_t>;
+		using ElasticInteger = einteger<std::uint32_t>;
+		ElasticInteger a;
+		std::cout << type_tag(a) << '\n';
 		for (int i = 1; i < 40; ++i) {
 			float target = 2.0f * pow(10.0f, float(i));
-			Integer a = target;
+			a = target;
 			std::cout << a << " : " << to_binary(a) << " : " << std::setw(15) << float(a) << " : reference " << target << '\n';
 		}
 	}
@@ -92,22 +97,21 @@ try {
 	// set bit patterns
 	std::cout << "set bit patterns API\n";
 	{
-		using Integer = einteger<std::uint32_t>;
+		using ElasticInteger = einteger<std::uint16_t>;
 
-		Integer a;
+		ElasticInteger a;
 		std::cout << type_tag(a) << '\n';
 
 		a.setbits(0x0000);
-		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(a) << " : " << a << " : " << to_hex(a) << '\n';
 
 		a.setbits(0xAAAA);
-		std::cout << to_binary(a) << " : " << a << '\n';
+		std::cout << to_binary(a) << " : " << a << " : " << to_hex(a) << '\n';
 
 		a.assign(std::string("0b1'0101'1010'1010'1010"));
 		std::cout << to_binary(a) << " : " << a << " : " << to_hex(a) << '\n';
 
 		a.assign("1234567890123456789012345");
-		std::cout << a << '\n';
 		std::cout << to_binary(a) << " : " << a << " : " << to_hex(a) << '\n';
 	}
 

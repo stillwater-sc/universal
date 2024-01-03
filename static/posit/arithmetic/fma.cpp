@@ -1,6 +1,6 @@
 // arithmetic_fma.cpp: test suite runner for fused-multiply-add
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -60,7 +60,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite  = "posit fma validation";
+	std::string test_suite  = "posit fma verification";
 	std::string test_tag    = "fma";
 	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
@@ -107,7 +107,7 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(ValidateFMA<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "fused multiply-accumulate");
+	nrOfFailedTestCases += ReportTestResult(ValidateFMA<2, 0>(tag, reportTestCases), "posit<2,0>", "fused multiply-accumulate");
 #endif
 
 #if REGRESSION_LEVEL_2
