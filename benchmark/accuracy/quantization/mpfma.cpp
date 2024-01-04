@@ -15,7 +15,7 @@ void QuantizationExperiment(unsigned nrSamples, unsigned vectorSize, double mean
 	using namespace sw::universal;
 
 	std::cout << "Experiment: nrSamples(" << nrSamples << ") vectorSize(" << vectorSize << ") mean(" << mean << ") stddev(" << stddev << ")\n";
-	int64_t L{ vectorSize }, N{ nrSamples };
+	long long L{ vectorSize }, N{ nrSamples };
 	blas::vector<double> reference_data(L);
 	blas::vector<double> y_data(L);
 	gaussian_random(y_data, mean, stddev);
@@ -144,6 +144,8 @@ try {
 	unsigned nrSamples{ 100 };
 	double mean{ 0.0 }, stddev{ 1.0 };
 	QuantizationExperiment<RepresentationType, AccumulationType>(nrSamples, 50, mean, stddev);
+
+	std::cout << std::setprecision(prec);
 
 	return EXIT_SUCCESS;
 #else
