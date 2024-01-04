@@ -69,5 +69,5 @@ WORKDIR /home/stillwater/universal/build
 
 # the command 'make test' is run as part of the CI test pipeline of this release container
 
-ENV CONTAINER_ID "Universal Numbers Library Container"
+ENV CONTAINER_ID "Universal Number Systems Container"
 CMD ["/usr/bin/env", "bash"]
