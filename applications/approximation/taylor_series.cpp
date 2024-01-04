@@ -1,8 +1,9 @@
 ﻿//  taylor_series.cpp: experiments with number systems approximating the Reals approximating functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 
@@ -37,14 +38,22 @@ int main()
 try {
 	using namespace sw::universal;
 
-	std::string test_suite = "Experiments with Taylor Series Expansion";
-	std::string test_tag = "operator";
+	std::string test_suite  = "Experiments with Taylor Series Expansion";
+	std::string test_tag    = "operator";
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
 
+	fp32 ca(SpecificValue::minpos), cb(SpecificValue::minpos);
+	float fa, fb;
+
+	fa = float(ca);
+	fb = float(cb);
+
+	nrOfFailedTestCases += ReportTestResult(TestCase<fp32, float>(TestCaseOperator::DIV, fa, fb), test_tag, "div");
+
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
-	return EXIT_SUCCESS;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
