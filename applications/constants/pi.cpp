@@ -1,9 +1,9 @@
 // pi.cpp: generating a 'perfect' approximation of pi for a given number system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -104,58 +104,57 @@ static std::string pi1000 = "3.\
 template<typename Real>
 Real MethodOfViete(size_t N) {
 	using namespace sw::universal;
-	Real pi = Real(1);
+	Real pi_approx = Real(1);
 	for (size_t i = N; i > 1; --i) {
 		Real repeatingFactor = Real(2);
 		for (size_t j = 1; j < i; ++j) {
 			repeatingFactor = Real(2) + sqrt(repeatingFactor);
 		}
 		repeatingFactor = sqrt(repeatingFactor);
-		pi = pi * repeatingFactor / Real(2);
+		pi_approx = pi_approx * repeatingFactor / Real(2);
 	}
-	pi *= sqrt(Real(2)) / Real(2);
-	pi = Real(2) / pi;
-	return pi;
+	pi_approx *= sqrt(Real(2)) / Real(2);
+	pi_approx = Real(2) / pi_approx;
+	return pi_approx;
 }
+
  template<typename Real>
  Real MethodOfWallis(size_t N) {
 	 using namespace sw::universal;
-	 Real pi = Real(4);
+	 Real pi_approx = Real(4);
 	 for (size_t i = 3; i <= (N + 2); i += 2) {
-		 pi = pi * (Real(i - 1) / Real(i)) * (Real(i + 1) / Real(i));
+		 pi_approx = pi_approx * (Real(i - 1) / Real(i)) * (Real(i + 1) / Real(i));
 	 }
-	 return pi;
+	 return pi_approx;
  }
 
  template<typename Real>
  Real MethodOfMadhavaOfSangamagrama(size_t N) {
 	 using namespace sw::universal;
-	 Real pi = Real(0);
+	 Real pi_approx = Real(0);
 	 Real s = Real(1); // sign for the next iteration
 	 for (size_t i = 1; i <= (2 * N); i += 2) {
-		 pi = pi + s * (Real(4) / Real(i));
+		 pi_approx = pi_approx + s * (Real(4) / Real(i));
 		 s = -s;
 	 }
-	 return pi;
+	 return pi_approx;
  }
 
  template<typename Real>
  Real MethodOfNilakantha(size_t N) {
 	 using namespace sw::universal;
-	 Real pi = Real(3);
+	 Real pi_approx = Real(3);
 	 Real s = Real(1); // sign for the next iteration
 	 for (size_t i = 2; i <= (2 * N); i += 2) {
-		 pi = pi + s * (Real(4) / Real(i * (i + 1) * (i + 2)) );
+		 pi_approx = pi_approx + s * (Real(4) / Real(i * (i + 1) * (i + 2)) );
 		 s = -s;
 	 }
-	 return pi;
+	 return pi_approx;
  }
 
 int main()
 try {
 	using namespace sw::universal;
-
-	int nrOfFailedTestCases = 0;
 
 	std::cout << "Perfect approximations of PI for different number systems\n";
 
@@ -197,7 +196,7 @@ try {
 
 	// TODO: we need to implement parse(string) on the Universal number systems to calculate error
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

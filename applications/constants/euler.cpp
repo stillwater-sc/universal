@@ -1,8 +1,9 @@
 // euler.cpp: generating a 'perfect' approximation of Euler's constant e for a given number system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
@@ -12,7 +13,7 @@
 // best practice for C++ is to assign a literal
 // but even this literal gets rounded in an assignment to an IEEE double
 constexpr 
-double e = 2.71828182845904523536;
+double e = 2.718281828459045235360287471;
 //    e  = 2.718281828459045235360287471    value of above literal
 //   ref = 2.71828182845904523536028747135266249775724709369995
 
@@ -42,23 +43,21 @@ static std::string e1000 = "2.\
 76839642437814059271456354906130310720851038375051\
 01157477041718986106873969655212671546889570350354";
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	int nrOfFailedTestCases = 0;
 
 	std::cout << "Perfect approximations of Euler's constant E for different number systems\n";
 
 	std::cout << e1000 << '\n';
-	std::cout << "e   = " << std::setprecision(25) << e << '\n';
+	std::cout << "e   = " << std::setprecision(27) << e << '\n';
 	std::cout << "ref = " << e50 << '\n';
 
 	// 1000 digits -> 1.e1000 -> 2^3322 -> 1.051103774764883380737596422798e+1000 -> you will need 3322 bits to represent 1000 digits of phi
 	// 
 	// TODO: we need to implement parse(string) on the Universal number systems to calculate error
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

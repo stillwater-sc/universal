@@ -1,6 +1,6 @@
 // phi.cpp: generating a 'perfect' approximation of the Golden Ratio constant phi for a given number system
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -52,9 +52,7 @@ int main()
 try {
 	using namespace sw::universal;
 
-	int nrOfFailedTestCases = 0;
-
-	std::cout << "Perfect approximations of the Golden Ratio constant PHI for different number systems\n";
+	std::cout << "Perfect approximations of the Golden Ratio constant phi for different number systems\n";
 
 	std::cout << phi1000 << '\n';
 	std::cout << "phi  = " << std::setprecision(25) << phi_ << '\n';
@@ -83,7 +81,7 @@ try {
 	std::cout << goldenRatio<231>() << '\n';
 
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
