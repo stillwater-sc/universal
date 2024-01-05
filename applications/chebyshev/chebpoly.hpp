@@ -1,26 +1,20 @@
-// CHEBPOLY(n,kind) - returns the coefficients of Chebyshev poly of the kind.
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+#pragma once
+// CHEBPOLY(n,kind) - returns the coefficients of Chebyshev polynomial
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
 // Author: James Quinlan
 
-#pragma once
-
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 
 namespace chebyshev {
     using namespace sw::universal;
+
 	template<typename Scalar>
 	blas::vector<Scalar> chebpoly(size_t n)
-	{
-		if(n<0){
-			std::cerr << "Parameter must be a nonnegative integer. Provided n == " << n << '\n';
-			return blas::vector<Scalar>(1);
-		}
-        
+	{     
 		blas::vector<Scalar>Tn(n+1);
 		if (n==0) Tn(0) = 1;
         if (n==1) { Tn(0) = 0; Tn(1) = 1; }
