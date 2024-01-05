@@ -284,6 +284,7 @@ private:
 		case -7: case -6: case 5: case 6:
 			exp = 0;
 			*remaining = 0;
+			break;
 		default:
 			exp = (*remaining >> 5);
 			*remaining <<= 2;
