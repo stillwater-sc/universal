@@ -1,8 +1,9 @@
 ﻿// catastrophic_cancellation.cpp: examples of catastrophic cancellation
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
@@ -30,15 +31,10 @@ Scalar GenerateTestCase(Scalar e, Scalar x, Scalar origin) {
 	return result;
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
-	// print detailed bit-level computational intermediate results
-	// bool verbose = false;
-
-	int nrOfFailedTestCases = 0;
-	// bool bReportIndividualTestCases = true;
 	std::string tag = "Catastrophic Cancellation: ";
 
 	// preserve the existing ostream precision
@@ -48,8 +44,8 @@ try {
 	std::cout << "Catastrophic Cancellation Experiment" << '\n';
 
 	std::cout << "IEEE Float single precision  :\n" << GenerateTestCase(0.00000006f, 0.5f, 1.0f) << '\n';
-	std::cout << "IEEE Float double precision  :\n" << GenerateTestCase<double>(0.00000006f, 0.5, 1.0) << '\n';
-	if (sizeof(long double) == 16) {
+	std::cout << "IEEE Float double precision  :\n" << GenerateTestCase<double>(0.00000006, 0.5, 1.0) << '\n';
+	if constexpr (sizeof(long double) == 16) {
 		std::cout << "IEEE Float quad precision  :\n" << GenerateTestCase(0.00000006l, 0.5l, 1.0l) << '\n';
 	}
 
@@ -116,7 +112,7 @@ try {
 	// restore the previous ostream precision
 	std::cout << std::setprecision(precision);
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;
