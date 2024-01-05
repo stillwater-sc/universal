@@ -660,32 +660,36 @@ std::string to_bit_string(bitblock<nbits> bits, bool separator = true) {
 
 template<unsigned nbits>
 std::string to_hex(bitblock<nbits> bits, bool nibbleMarker = false, bool hexPrefix = true) {
-	char str[(nbits >> 2) + 2]{ 0 };
-	for (unsigned i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
+	std::string hexStr;
+
 	//const char* hexits = "0123456789ABCDEF";
 	const char* hexits = "0123456789abcdef";
-	unsigned int maxHexDigits = (nbits >> 2) + ((nbits % 4) ? 1 : 0);
-	for (unsigned int i = 0; i < maxHexDigits; i++) {
-		unsigned int hexit;
-		switch (nbits) {
-		case 1:
-			hexit = bits[0];
-			break;
-		case 2:
-			hexit = static_cast<unsigned int>((bits[1] << 1u) + bits[0]);
-			break;
-		case 3:
-			hexit = static_cast<unsigned int>((bits[2] << 2u) + (bits[1] << 1u) + bits[0]);
-			break;
-		default:
-			hexit = static_cast<unsigned int>((bits[3] << 3u) + (bits[2] << 2u) + (bits[1] << 1u) + bits[0]);
-			break;
+	unsigned hexit;
+	switch (nbits) {
+	case 1:
+		hexit = bits[0];
+		hexStr = hexits[hexit];
+		break;
+	case 2:
+		hexit = static_cast<unsigned int>((bits[1] << 1u) + bits[0]);
+		hexStr = hexits[hexit];
+		break;
+	case 3:
+		hexit = static_cast<unsigned int>((bits[2] << 2u) + (bits[1] << 1u) + bits[0]);
+		hexStr = hexits[hexit];
+		break;
+	default:
+		{
+			unsigned nrHexits = (nbits >> 2) + (nbits % 4 ? 0 : 1);
+			for (unsigned i = 0; i < nrHexits; i++) {
+				hexit = static_cast<unsigned>((bits[3] << 3u) + (bits[2] << 2u) + (bits[1] << 1u) + bits[0]);
+				hexStr = hexits[hexit] + hexStr;
+				if (nibbleMarker && (i % 4) == 0 && i != 0) hexStr = '\'' + hexStr;
+				bits >>= 4;
+			}
 		}
-		str[maxHexDigits - 1 - i] = hexits[hexit];
-		bits >>= 4;
 	}
-	str[maxHexDigits] = 0;  // null terminated string
-	return (hexPrefix ? std::string("0x") : std::string("")) + std::string(str);
+	return (hexPrefix ? std::string("0x") : std::string("")) + hexStr;
 }
 
 // convert a sign/magnitude number to a string

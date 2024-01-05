@@ -1,7 +1,7 @@
 #pragma once
 // operators.hpp: matrix operators
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/blas/vector.hpp>
@@ -11,7 +11,7 @@ namespace sw { namespace universal { namespace blas {
 
 // generate identity matrix
 template<typename Scalar>
-matrix<Scalar> eye(unsigned N) {
+matrix<Scalar> eye(typename matrix<Scalar>::size_type N) {
 	matrix<Scalar> I(N, N);
 	I = Scalar(1.0f);
 	return I;
@@ -51,26 +51,9 @@ matrix<Scalar> diag(const vector<Scalar>& d) {
 	return A;
 }
 
-/*
-//compute minor in-place
-template<typename Scalar>
-matrix<Scalar> minor(const matrix<Scalar>& A, size_t x=1){
-    using size_type = typename matrix<Scalar>::size_type;
-    for (size_t i = 0; i < x; i++){ 
-        (*this)(i,i) = size_type(1.0);
-    }
-    for (size_t i = x; i < num_rows(A); ++i){
-        for (size_t j = x; j < num_cols(A); ++j){
-            (*this)(i,j) = A[i][j];
-        }
-    }
-    return tmp;
-}
-*/
-
 //get mth row
 template<typename Scalar>
-void row(const matrix<Scalar>& A, vector<Scalar>& v, size_t n){
+void row(const matrix<Scalar>& A, vector<Scalar>& v, unsigned n){
 	auto nrCols = num_cols(A);
 	if (nrCols != size(v)) {
 		v.clear();
@@ -82,7 +65,7 @@ void row(const matrix<Scalar>& A, vector<Scalar>& v, size_t n){
 
 //get nth column
 template<typename Scalar>
-void column(const matrix<Scalar>& A, vector<Scalar>& v, size_t n){
+void column(const matrix<Scalar>& A, vector<Scalar>& v, unsigned n){
 	auto nrRows = num_rows(A);
 	if (nrRows != size(v)) {
 		v.clear();
