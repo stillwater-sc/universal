@@ -351,7 +351,6 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		int nbits_plus_one = static_cast<int>(nbits) + 1;
 		int sign_regime_es = 2 + int(run) + static_cast<int>(es);
 		unsigned nf = (unsigned)std::max<int>(0, (nbits_plus_one - sign_regime_es));
-		//unsigned nf = (unsigned)std::max<int>(0, (static_cast<int>(nbits + 1) - (2 + run + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction

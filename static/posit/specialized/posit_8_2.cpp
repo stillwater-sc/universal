@@ -34,17 +34,6 @@ specialized small standard 8-bit posit with es = 2
 #define REGRESSION_LEVEL_4 1
 #endif
 
-void GenerateValues() {
-	using namespace sw::universal;
-	constexpr unsigned int NR_POSITS = 256;
-
-	posit<8, 1> a;
-	for (unsigned int i = 0; i < NR_POSITS; ++i) {
-		a.setbits(i);
-		std::cout << std::hex << i << " " << std::dec << a << '\n';
-	}
-}
-
 int main()
 try {
 	using namespace sw::universal;
@@ -66,9 +55,37 @@ try {
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
-	posit<nbits, es> p;
+	using Scalar = posit<nbits, es>;
+	Scalar p;
 	std::cout << dynamic_range(p) << "\n\n";
+	std::string tag = type_tag(p);
 
+#if MANUAL_TESTING
+
+	p.setbits(0x64);
+	std::cout << std::setw(4) << 0x64 << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x65);
+	std::cout << std::setw(4) << 0x65 << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x66);
+	std::cout << std::setw(4) << 0x66 << " : " << color_print(p) << " : " << p << '\n';
+
+	p.setbits(0x7C);
+	std::cout << std::setw(4) << 0x7C << " : " << color_print(p) << " : " << p << '\n';
+	p.setbits(0x7D);
+	std::cout << std::setw(4) << 0x7D << " : " << color_print(p) << " : " << p << '\n';
+
+	std::cout << "\n\n\n";
+
+	for (unsigned i = 0; i < 128; ++i) {
+		p.setbits(i);
+		std::cout << std::setw(4) << i << " : " << color_print(p) << " : " << p << '\n';
+	}
+
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
+	return EXIT_SUCCESS; // ignore failures
+#else
+
+#if REGRESSION_LEVEL_1
 	// special cases
 	std::cout << "Special case tests\n";
 	std::string test = "Initialize to zero: ";
@@ -91,28 +108,10 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(test_tag, test, p.ispos());
 
-	p.setbits(0x64);
-	std::cout << std::setw(4) << 0x64 << " : " << color_print(p) << " : " << p << '\n';
-	p.setbits(0x65);
-	std::cout << std::setw(4) << 0x65 << " : " << color_print(p) << " : " << p << '\n';
-	p.setbits(0x66);
-	std::cout << std::setw(4) << 0x66 << " : " << color_print(p) << " : " << p << '\n';
-
-	//  124:         01111100        01111100       4       0      16         111110-              0-             ---                         65536          8.2x7Cp
-    //	125:         01111101        01111101       4       0      18         111110 - 1 - -- - 262144
-	p.setbits(0x7C);
-	std::cout << std::setw(4) << 0x7C << " : " << color_print(p) << " : " << p << '\n';
-	p.setbits(0x7D);
-	std::cout << std::setw(4) << 0x7D << " : " << color_print(p) << " : " << p << '\n';
-
-//	goto epilog;
-
-	for (unsigned i = 0; i < 128; ++i) {
-		p.setbits(i);
-		std::cout << std::setw(4) << i << " : " << color_print(p) << " : " << p << '\n';
-	}
-
-	goto epilog;
+	// conversion tests
+	std::cout << "Assignment/conversion tests\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(reportTestCases), test_tag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(reportTestCases), test_tag, "float assign   (native)  ");
 
 	// logic tests
 	std::cout << "Logic operator tests\n";
@@ -122,11 +121,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessOrEqualThan   <nbits, es>(), test_tag, "    <=         (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterThan       <nbits, es>(), test_tag, "    >          (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), test_tag, "    >=         (native)  ");
-
-	// conversion tests
-	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion<nbits, es>(reportTestCases), test_tag, "integer assign (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyConversion       <nbits, es>(reportTestCases), test_tag, "float assign   (native)  ");
 
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
@@ -160,8 +154,22 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <nbits, es>(reportTestCases), test_tag, "pow                      ");
 
-epilog:
+#endif
+
+#if REGRESSION_LEVEL_2
+
+#endif
+
+#if REGRESSION_LEVEL_3
+
+#endif
+
+#if REGRESSION_LEVEL_4
+
+#endif
+	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+#endif // MANUAL_TESTING
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

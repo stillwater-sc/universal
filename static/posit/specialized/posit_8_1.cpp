@@ -52,7 +52,7 @@ try {
 	// no randoms, 8-bit posits can be done exhaustively
 
 	constexpr size_t nbits = 8;
-	constexpr size_t es = 1;
+	constexpr size_t es    = 1;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
