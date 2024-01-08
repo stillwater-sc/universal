@@ -62,24 +62,30 @@ try {
 
 #if MANUAL_TESTING
 
-	p.setbits(0x64);
-	std::cout << std::setw(4) << 0x64 << " : " << color_print(p) << " : " << p << '\n';
-	p.setbits(0x65);
-	std::cout << std::setw(4) << 0x65 << " : " << color_print(p) << " : " << p << '\n';
-	p.setbits(0x66);
-	std::cout << std::setw(4) << 0x66 << " : " << color_print(p) << " : " << p << '\n';
+	// conversion tests
+	std::cout << "Assignment/conversion tests\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(reportTestCases), test_tag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(reportTestCases), test_tag, "float assign   (native)  ");
 
-	p.setbits(0x7C);
-	std::cout << std::setw(4) << 0x7C << " : " << color_print(p) << " : " << p << '\n';
-	p.setbits(0x7D);
-	std::cout << std::setw(4) << 0x7D << " : " << color_print(p) << " : " << p << '\n';
+	// logic tests
+	std::cout << "Logic operator tests\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual             <nbits, es>(), test_tag, "    ==         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual          <nbits, es>(), test_tag, "    !=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan          <nbits, es>(), test_tag, "    <          (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan   <nbits, es>(), test_tag, "    <=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan       <nbits, es>(), test_tag, "    >          (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<nbits, es>(), test_tag, "    >=         (native)  ");
 
-	std::cout << "\n\n\n";
+	// arithmetic tests
+	std::cout << "Arithmetic tests\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(reportTestCases), test_tag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(reportTestCases), test_tag, "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(reportTestCases), test_tag, "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(reportTestCases), test_tag, "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(reportTestCases), test_tag, "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(reportTestCases), test_tag, "reciprocate    (native)  ");
 
-	for (unsigned i = 0; i < 128; ++i) {
-		p.setbits(i);
-		std::cout << std::setw(4) << i << " : " << color_print(p) << " : " << p << '\n';
-	}
+
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures

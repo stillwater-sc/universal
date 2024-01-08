@@ -108,23 +108,13 @@ try {
 
 	std::string test_suite  = "posit assignment verification";
 	std::string test_tag    = "assignment";
-	bool reportTestCases    = true;
+	bool reportTestCases    = false;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
 
 #if MANUAL_TESTING
 
-	{
-		posit<8, 2> a;
-		a.setnar();
-		float fa = float(a);
-		ReportValue(a);
-		ReportValue(fa);
-		a = fa;
-		ReportValue(a);
-	}
-	return 0;
 	nrOfFailedTestCases += ReportTestResult(VerifyAssignment<8, 2, float>(reportTestCases), test_tag, "posit<8,2>");
 	nrOfFailedTestCases += ReportTestResult(VerifyAssignment<16, 2, float>(reportTestCases), test_tag, "posit<16,2>");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAssignment<32, 2, float>(reportTestCases), test_tag, "posit<32,2>");
