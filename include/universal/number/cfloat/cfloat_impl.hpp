@@ -477,7 +477,7 @@ public:
 		return tmp;
 	}
 
-	cfloat& operator+=(const cfloat& rhs) {
+	cfloat& operator+=(const cfloat& rhs) noexcept {
 		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
@@ -538,20 +538,20 @@ public:
 
 		return *this;
 	}
-	cfloat& operator+=(double rhs) {
+	cfloat& operator+=(double rhs) noexcept {
 		return *this += cfloat(rhs);
 	}
-	cfloat& operator-=(const cfloat& rhs) {
+	cfloat& operator-=(const cfloat& rhs) noexcept {
 		if constexpr (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 		if (rhs.isnan()) 
 			return *this += rhs;
 		else 
 			return *this += -rhs;
 	}
-	cfloat& operator-=(double rhs) {
+	cfloat& operator-=(double rhs) noexcept {
 		return *this -= cfloat(rhs);
 	}
-	cfloat& operator*=(const cfloat& rhs) {
+	cfloat& operator*=(const cfloat& rhs) noexcept {
 		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------\n";
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
@@ -614,7 +614,7 @@ public:
 
 		return *this;
 	}
-	cfloat& operator*=(double rhs) {
+	cfloat& operator*=(double rhs) noexcept {
 		return *this *= cfloat(rhs);
 	}
 	cfloat& operator/=(const cfloat& rhs) {
@@ -701,6 +701,10 @@ public:
 	}
 	cfloat& operator/=(double rhs) {
 		return *this /= cfloat(rhs);
+	}
+	cfloat& reciprocal() {
+		cfloat c = 1.0 / *this;
+		return *this = c;
 	}
 	/// <summary>
 	/// move to the next bit encoding modulo 2^nbits
@@ -3942,6 +3946,27 @@ fma(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating> x,
 //	ReportValue(product, "extended precision p");
 	fused = product + preciseZ;
 	return fused;
+}
+
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&
+minpos(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+	return c.minpos();
+}
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&
+maxpos(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+	return c.maxpos();
+}
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&
+minneg(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+	return c.minneg();
+}
+template<unsigned nbits, unsigned es, typename bt, bool hasSubnormals, bool hasSupernormals, bool isSaturating>
+cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>&
+maxneg(cfloat<nbits, es, bt, hasSubnormals, hasSupernormals, isSaturating>& c) {
+	return c.maxneg();
 }
 
 }} // namespace sw::universal
