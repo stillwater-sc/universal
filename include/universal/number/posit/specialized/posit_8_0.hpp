@@ -167,7 +167,7 @@ public:
 		return tmp;
 	}
 		
-	posit reciprocate() const {
+	posit reciprocal() const {
 		posit p = 1.0 / *this;
 		return p;
 	}
@@ -199,13 +199,13 @@ public:
 	void clear()                   noexcept { _bits = 0; }
 	void setzero()                 noexcept { clear(); }
 	void setnar()                  noexcept { _bits = 0x80; }
-	void setnan()                  noexcept { setnar(); }
+	void setnan(bool sign = true)  noexcept { setnar(); }
 	//void setnan(bool sign = false) noexcept { setnar(); }
-	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) noexcept {
 		_bits = uint8_t(raw.to_ulong());
 		return *this;
 	}
-	constexpr posit& setbits(uint64_t value) {
+	constexpr posit& setbits(uint64_t value) noexcept {
 		_bits = uint8_t(value & 0xffu);
 		return *this;
 	}

@@ -447,7 +447,7 @@ public:
 		return tmp;
 	}
 
-	posit reciprocate() const noexcept {
+	posit reciprocal() const noexcept {
 		posit p = 1.0 / *this;
 		return p;
 	}

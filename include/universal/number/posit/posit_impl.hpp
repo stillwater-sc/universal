@@ -913,7 +913,7 @@ public:
 		return *this /= posit<nbits, es>(rhs);
 	}
 	
-	posit reciprocate() const {
+	posit reciprocal() const {
 		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 		posit<nbits, es> p;
 		// special case of NaR (Not a Real)

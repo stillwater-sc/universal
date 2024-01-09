@@ -549,7 +549,7 @@ int VerifyReciprocation(bool reportTestCases) {
 		double da = double(a);
 #if THROW_ARITHMETIC_EXCEPTION
 		try {
-			reciprocal = a.reciprocate();
+			reciprocal = a.reciprocal();
 			ref = 1.0 / da;
 		}
 		catch (...) {

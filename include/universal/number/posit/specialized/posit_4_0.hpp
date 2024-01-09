@@ -278,7 +278,7 @@ public:
 		operator--();
 		return tmp;
 	}
-	posit reciprocate() const {
+	posit reciprocal() const {
 		posit p;
 		p.setbits(posit_4_0_reciprocal_lookup[_bits]);
 		return p;

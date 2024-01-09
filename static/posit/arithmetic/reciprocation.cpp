@@ -12,7 +12,7 @@
 // third: enable tracing 
 // when you define ALGORITHM_VERBOSE_OUTPUT executing an reciprocate the code will print intermediate results
 //#define ALGORITHM_VERBOSE_OUTPUT
-#define ALGORITHM_TRACE_RECIPROCATE
+#define ALGORITHM_TRACE_RECIPROCAL
 #define ALGORITHM_TRACE_CONVERSION
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_suite.hpp>

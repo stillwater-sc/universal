@@ -34,7 +34,7 @@ constexpr bool _trace_btriple_quire_add   = false;
 #define BLOCKTRIPLE_TRACE_SUB
 #define BLOCKTRIPLE_TRACE_MUL
 #define BLOCKTRIPLE_TRACE_DIV
-#define BLOCKTRIPLE_TRACE_RECIPROCATE
+#define BLOCKTRIPLE_TRACE_RECIPROCAL
 #define BLOCKTRIPLE_TRACE_SQRT
 #endif
 
@@ -87,10 +87,10 @@ constexpr bool _trace_btriple_div = false;
 constexpr bool _trace_btriple_div = true;
 #endif
 
-#ifndef BLOCKTRIPLE_TRACE_RECIPROCATE
-constexpr bool _trace_btriple_reciprocate = false;
+#ifndef BLOCKTRIPLE_TRACE_RECIPROCAL
+constexpr bool _trace_btriple_reciprocal = false;
 #else
-constexpr bool _trace_btriple_reciprocate = true;
+constexpr bool _trace_btriple_reciprocal = true;
 #endif
 
 #ifndef BLOCKTRIPLE_TRACE_SQRT

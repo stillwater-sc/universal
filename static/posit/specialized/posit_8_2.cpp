@@ -85,8 +85,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(reportTestCases), test_tag, "negate         (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(reportTestCases), test_tag, "reciprocate    (native)  ");
 
-
-
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
 #else
