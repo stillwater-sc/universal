@@ -1,6 +1,6 @@
 ﻿//  taylor_series.cpp: experiments with number systems approximating the Reals approximating functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/number/cfloat/cfloat.hpp>
@@ -38,7 +38,6 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite = "Experiments with Taylor Series Expansion";
-	std::string test_tag = "operator";
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
