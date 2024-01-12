@@ -1,8 +1,9 @@
 // nodes.cpp: Does a posit configuration exist to produce chebyshev nodes
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
@@ -31,16 +32,14 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	int nrOfFailedTestCases = 0;
 
 	// TBD
 	std::cout << "PI = " << pi << '\n';
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

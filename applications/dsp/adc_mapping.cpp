@@ -1,9 +1,9 @@
 // adc_mapping.cpp: example program showing how to map ADC values to posit values 
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -44,11 +44,9 @@ void GenerateSample() {
 	std::cout << a << " / " << b << " = " << a / b << '\n';
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	int nrOfFailedTestCases = 0;
 
 	GenerateSample<16, 1>();
 	GenerateSample<32, 2>();
@@ -65,7 +63,7 @@ try {
 	std::cout << "   0 / 8192 =  0.00000000 " << color_print(zero) << '\n';
 	std::cout << "  -1 / 8192 = " << -a << " " << color_print(-a) << '\n';
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

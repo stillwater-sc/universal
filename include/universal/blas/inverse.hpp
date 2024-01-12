@@ -1,7 +1,7 @@
 #pragma once
 // inverse.hpp: Gauss-Jordan algorithm to generate matrix inverse
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -28,27 +28,26 @@ namespace sw { namespace universal { namespace blas {
 	// this would make the pivoting dependent on scaling
 	// implicit pivoting: pre-scale all equations so that their largest coefficient is unity
 
-// full pivoting Gauss-Jordan inverse without implicit pivoting
+// full pivoting Gauss-Jordan inverse without implicit pivoting, returns a null matrix when A is singular
 template<typename Scalar>
 matrix<Scalar> inv(const matrix<Scalar>& A) {
-	using namespace std;
-	using namespace sw::universal;
 	using std::fabs;
-	const size_t N = num_rows(A);
+	using size_type = typename matrix<Scalar>::size_type;
+	size_type N = num_rows(A);
 	if (N != num_cols(A)) {
 		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return matrix<Scalar>{};
 	}
 	matrix<Scalar> B(A);
 	vector<size_t> indxc(N), indxr(N), indxp(N);
-	size_t irow = 0, icol = 0;
-	for (size_t i = 0; i < N; ++i) {
+	size_type irow = 0, icol = 0;
+	for (size_type i = 0; i < N; ++i) {
 		// find largest absolute value to select as pivot
 		// scan across all NxN indices but skip the row/column that we have already processed (indxp == 1)
 		Scalar pivot = 0; 
-		for (size_t j = 0; j < N; ++j) {
+		for (size_type j = 0; j < N; ++j) {
 			if (indxp[j] != 1) {  // skip the row/column if already processed
-				for (size_t k = 0; k < N; ++k) {
+				for (size_type k = 0; k < N; ++k) {
 //					std::cout << "iteration (" << j << "," << k << ")\n";
 					if (indxp[k] == 0) {
 						Scalar e = fabs(B(j,k));
@@ -78,7 +77,7 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 
 		// put the pivot on the diagonal 
 		if (irow != icol) {
-			for (size_t l = 0; l < N; ++l) std::swap(B(irow, l), B(icol, l));
+			for (size_type l = 0; l < N; ++l) std::swap(B(irow, l), B(icol, l));
 		}
 //		std::cout << "matrix B\n" << B << std::endl;
 		indxr[i] = irow;
@@ -89,21 +88,21 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 		}
 		auto normalizer = Scalar(1.0) / B(icol, icol);
 		B(icol, icol) = Scalar(1.0);
-		for (size_t l = 0; l < N; ++l) B(icol, l) *= normalizer;
+		for (size_type l = 0; l < N; ++l) B(icol, l) *= normalizer;
 //		std::cout << "matrix B\n" << B << std::endl;
-		for (size_t ll = 0; ll < N; ++ll) { // reduce the rows
+		for (size_type ll = 0; ll < N; ++ll) { // reduce the rows
 			if (ll != icol) {  // skip the row with the pivot
 				auto dum = B(ll, icol);
 				B(ll, icol) = Scalar(0);
-				for (size_t l = 0; l < N; ++l) B(ll, l) -= B(icol, l) * dum;
+				for (size_type l = 0; l < N; ++l) B(ll, l) -= B(icol, l) * dum;
 			}
 		}
 //		std::cout << "matrix B\n" << B << std::endl;
 	}
 	// unscramble the solution by interchanging pairs of columns in the reverse order that the permutation was constructed
-	for (size_t l = N; l > 0; --l) {
+	for (size_type l = N; l > 0; --l) {
 		if (indxr[l-1] != indxc[l-1]) {
-			for (size_t k = 0; k < N; ++k) std::swap(B(k, indxr[l-1]), B(k, indxc[l-1]));
+			for (size_type k = 0; k < N; ++k) std::swap(B(k, indxr[l-1]), B(k, indxc[l-1]));
 		}
 	}
 	return B;
@@ -112,22 +111,23 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 // non-pivoting Gauss-Jordan inverse
 template<typename Scalar>
 matrix<Scalar> invfast(const matrix<Scalar>& A) {
-	const size_t N = num_rows(A);
+	using size_type = typename matrix<Scalar>::size_type;
+	size_type N = num_rows(A);
 	matrix<Scalar> B(A);
 	matrix<Scalar> Ainv(num_rows(A), num_cols(A));
 	Ainv = 1;
-	for (size_t j = 0; j < N; ++j) {  // for each column
-		for (size_t i = 0; i < N; ++i) { // normalize each row
+	for (size_type j = 0; j < N; ++j) {  // for each column
+		for (size_type i = 0; i < N; ++i) { // normalize each row
 			if (i == j) {
 				auto normalizer = Scalar(1.0) / B[j][j];
-				for (size_t k = 0; k < N; ++k) {
+				for (size_type k = 0; k < N; ++k) {
 					B[i][k] = normalizer * B[i][k];
 					Ainv[i][k] = normalizer * Ainv[i][k];
 				}
 			}
 			else {
 				auto normalizer = B(i, j) / B(j, j);
-				for (size_t k = 0; k < N; ++k) {
+				for (size_type k = 0; k < N; ++k) {
 					B[i][k] -= normalizer * B[j][k];
 					Ainv[i][k] -= normalizer * Ainv[j][k];
 				}

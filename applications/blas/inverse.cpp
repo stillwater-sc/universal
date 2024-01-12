@@ -1,17 +1,12 @@
 // inverse.cpp: example program comparing float vs posit using Gauss-Jordan algorithm
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
-#ifdef _MSC_VER
-#pragma warning(disable : 4514)   // unreferenced inline function has been removed
-#pragma warning(disable : 4710)   // 'int sprintf_s(char *const ,const size_t,const char *const ,...)': function not inlined
-#pragma warning(disable : 4820)   // 'sw::universal::value<23>': '3' bytes padding added after data member 'sw::universal::value<23>::_sign'
-#pragma warning(disable : 5045)   // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
+#include <universal/utility/directives.hpp>
 
 #include <chrono>
-//
+
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 // enable fast posits
@@ -111,7 +106,7 @@ void FiniteDifferenceTest(size_t N) {
 }
 
 template<typename Scalar>
-void TestSingularMatrix() {
+int TestSingularMatrix() {
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	std::cout << "Test Singular matrix\n";
@@ -124,8 +119,14 @@ void TestSingularMatrix() {
 	};
 	std::cout << A << '\n';
 	Matrix B = inv(A);
-	// should report an error
+	// should report an error and return a null matrix
+	int nrOfFailedTests{ 0 };
+	if (B.cols() != 0 && B.rows() != 0) ++nrOfFailedTests;
+	std::cout << "inv(A) will return a null matrix when singular\n";
+	std::cout << "B.rows() : " << B.rows() << "\nB.cols() : " << B.cols() << '\n';
 	std::cout << "--------------------------------\n\n";
+
+	return nrOfFailedTests;
 }
 
 template<typename Scalar>
@@ -163,7 +164,7 @@ void TestNearSingular() {
 	std::cout << "--------------------------------\n\n";
 }
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 	using namespace sw::universal::blas;
@@ -171,10 +172,9 @@ try {
 	using Scalar = float;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
 
-	if (argc == 1) std::cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
-	TestSingularMatrix<float>();
+	nrOfFailedTestCases += TestSingularMatrix<float>();
 
 	TestNearSingular<float>();
 	TestNearSingular<posit<8, 0> >();

@@ -36,8 +36,18 @@
 #if !defined(POSITO_THROW_ARITHMETIC_EXCEPTION)
 // default is to use NaR as a signalling error
 #define POSITO_THROW_ARITHMETIC_EXCEPTION 0
+
+// this is problematic: both posit and posito rely on value<> and bitblock<>
+// so when both arithmetic types are used in the same program
+// the first configuration of VALUE and BITBLOCK will stick.
+// TODO: the limb-based posit implementation will resolve this
+// as it removes the dependency on value and bitblock
+#if !defined(VALUE_THROW_ARITHMETIC_EXCEPTION)
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#if !defined(BITBLOCK_THROW_ARITHMETIC_EXCEPTION)
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 #else
 // for the composite value<> class assume the same behavior as requested for posits
 #define VALUE_THROW_ARITHMETIC_EXCEPTION POSITO_THROW_ARITHMETIC_EXCEPTION

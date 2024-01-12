@@ -1,9 +1,9 @@
 // fir_filter.cpp example program showing a FIR filter using error-free custom posit configurations
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -31,14 +31,13 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
 	const size_t nbits = 16;
 	const size_t es = 1;
 	const size_t vecSize = 32;
-	int nrOfFailedTestCases = 0;
 
 	posit<nbits, es> two_pi = 2.0 * pi;
 	std::vector< posit<nbits, es> > sinusoid(vecSize), weights(vecSize);
@@ -57,7 +56,7 @@ try {
 	}
 	std::cout << "Value is " << fir << '\n';
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught ad-hoc exception: " << msg << std::endl;

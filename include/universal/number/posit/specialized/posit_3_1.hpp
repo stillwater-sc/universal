@@ -171,7 +171,7 @@ namespace sw { namespace universal {
 					operator--();
 					return tmp;
 				}
-				posit reciprocate() const {
+				posit reciprocal() const {
 					posit p;
 					p.setbits(posit_3_1_reciprocal_lookup[_bits & 0x07]);
 					return p;

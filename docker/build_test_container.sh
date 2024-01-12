@@ -3,7 +3,7 @@
 # script to create a test container with a specific compiler and build target
 # Usage: ./build_test_container.sh COMPILER TARGET
 # Examples:
-#        ./build_test_compiler.sh gcc10                         will create a gcc10 dev environment with BUILD_ALL=ON
+#        ./build_test_container.sh gcc10                         will create a gcc10 dev environment with BUILD_ALL=ON
 #	 ./build_test_container.sh clang13 BUILD_NUMBER_LNS     will create a clang13 dev environment with BUILD_NUMBER_LNS=ON
 
 # To turn off security features use:
@@ -11,7 +11,7 @@
 # example would be to strace an executable to find its dependencies
 
 MAJOR=v3
-MINOR=74
+MINOR=75
 VERSION="$MAJOR.$MINOR"
 
 if [[ $# == 0 ]]; then

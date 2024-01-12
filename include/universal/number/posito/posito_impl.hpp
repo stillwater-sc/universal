@@ -624,8 +624,8 @@ public:
 		return *this /= posito<nbits, es>(rhs);
 	}
 	
-	posito reciprocate() const {
-		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
+	posito reciprocal() const {
+		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCAl ----------------" << std::endl;
 		posito<nbits, es> p;
 		// special case of NaR (Not a Real)
 		if (isnar()) {

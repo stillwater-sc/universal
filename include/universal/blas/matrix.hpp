@@ -1,7 +1,7 @@
 #pragma once
 // matrix.hpp: super-simple dense matrix class implementation
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -56,8 +56,9 @@ template<typename Scalar> class matrix;
 template<typename Scalar>
 class ConstRowProxy {
 public:
+	typedef typename std::vector<Scalar>::size_type              size_type;
 	ConstRowProxy(typename std::vector<Scalar>::const_iterator iter) : _iter(iter) {}
-	Scalar operator[](unsigned col) const { return *(_iter + int64_t(col)); }
+	Scalar operator[](size_type col) const { return *(_iter + static_cast<int64_t>(col)); }
 
 private:
 	typename std::vector<Scalar>::const_iterator _iter;
@@ -65,8 +66,9 @@ private:
 template<typename Scalar>
 class RowProxy {
 public:
+	typedef typename std::vector<Scalar>::size_type              size_type;
 	RowProxy(typename std::vector<Scalar>::iterator iter) : _iter(iter) {}
-	Scalar& operator[](unsigned col) { return *(_iter + int64_t(col)); }
+	Scalar& operator[](size_type col) { return *(_iter + static_cast<int64_t>(col)); }
 
 private:
 	typename std::vector<Scalar>::iterator _iter;
@@ -75,22 +77,22 @@ private:
 template<typename Scalar>
 class matrix {
 public:
-	typedef Scalar									value_type;
-	typedef const value_type&						const_reference;
-	typedef value_type&								reference;
-	typedef const value_type*						const_pointer_type;
-	typedef typename std::vector<Scalar>::size_type size_type;
-	typedef typename std::vector<Scalar>::iterator     iterator;
-	typedef typename std::vector<Scalar>::const_iterator const_iterator;
-	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
+	typedef Scalar									             value_type;
+	typedef const value_type&						             const_reference;
+	typedef value_type&								             reference;
+	typedef const value_type*						             const_pointer_type;
+	typedef typename std::vector<Scalar>::size_type              size_type;
+	typedef typename std::vector<Scalar>::iterator               iterator;
+	typedef typename std::vector<Scalar>::const_iterator         const_iterator;
+	typedef typename std::vector<Scalar>::reverse_iterator       reverse_iterator;
 	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
 	static constexpr unsigned AggregationType = UNIVERSAL_AGGREGATE_MATRIX;
 
 	matrix() : _m{ 0 }, _n{ 0 }, data(0) {}
-	matrix(unsigned m, unsigned n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
+	matrix(size_type m, size_type n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
 	matrix(std::initializer_list< std::initializer_list<Scalar> > values) {
-		unsigned nrows = static_cast<unsigned>(values.size());
-		unsigned ncols = static_cast<unsigned>(values.begin()->size());
+		auto nrows = values.size();
+		auto ncols = values.begin()->size();
 		data.resize(nrows * ncols);
 		unsigned r = 0;
 		for (auto l : values) {
@@ -112,8 +114,8 @@ public:
 	template<typename SourceType>
 	matrix(const matrix<SourceType>& A) : _m{ A.rows() }, _n{A.cols() }{
 		data.resize(_m*_n);
-		for (unsigned i = 0; i < _m; ++i){
-			for (unsigned j = 0; j < _n; ++j){
+		for (size_type i = 0; i < _m; ++i){
+			for (size_type j = 0; j < _n; ++j){
 				data[i*_n + j] = Scalar(A(i,j));
 			}
 		}
@@ -129,19 +131,19 @@ public:
 	// Identity matrix operator
 	matrix& operator=(const Scalar& one) {
 		setzero();
-		unsigned smallestDimension = (_m < _n ? _m : _n);
-		for (unsigned i = 0; i < smallestDimension; ++i) data[i*_n + i] = one;
+		size_type smallestDimension = (_m < _n ? _m : _n);
+		for (size_type i = 0; i < smallestDimension; ++i) data[i*_n + i] = one;
 		return *this;
 	}
 
-	Scalar operator()(unsigned i, unsigned j) const { return data[i*_n + j]; }
-	Scalar& operator()(unsigned i, unsigned j) { return data[i*_n + j]; }
-	RowProxy<Scalar> operator[](unsigned i) {
-		typename std::vector<Scalar>::iterator it = data.begin() + int64_t(i) * int64_t(_n);
+	Scalar operator()(size_type i, size_type j) const { return data[i*_n + j]; }
+	Scalar& operator()(size_type i, size_type j) { return data[i*_n + j]; }
+	RowProxy<Scalar> operator[](size_type i) {
+		typename std::vector<Scalar>::iterator it = data.begin() + static_cast<int64_t>(i * _n);
 		RowProxy<Scalar> proxy(it);
 		return proxy;
 	}
-	ConstRowProxy<Scalar> operator[](unsigned i) const {
+	ConstRowProxy<Scalar> operator[](size_type i) const {
 		typename std::vector<Scalar>::const_iterator it = data.begin() + static_cast<int64_t>(i * _n);
 		ConstRowProxy<Scalar> proxy(it);
 		return proxy;
@@ -176,7 +178,6 @@ public:
 
 	// multiply all matrix elements
 	matrix& operator*=(const Scalar& a) {
-		using size_type = typename matrix<Scalar>::size_type;
 		for (size_type e = 0; e < _m*_n; ++e) {
 			data[e] *= a;
 		}
@@ -184,7 +185,6 @@ public:
 	}
 	// divide all matrix elements
 	matrix& operator/=(const Scalar& a) {
-		using size_type = typename matrix<Scalar>::size_type;
 		for (size_type e = 0; e < _m * _n; ++e) {
 			data[e] /= a;
 		}
@@ -194,25 +194,25 @@ public:
 	// modifiers
 	void push_back(const Scalar& v) { data.push_back(v); }
 	void setzero() { for (auto& elem : data) elem = Scalar(0); }
-	void resize(unsigned m, unsigned n) { _m = m; _n = n; data.resize(m * n); }
+	void resize(size_type m, size_type n) { _m = m; _n = n; data.resize(m * n); }
 	// selectors
-	unsigned rows() const { return _m; }
-	unsigned cols() const { return _n; }
+	size_type rows() const { return _m; }
+	size_type cols() const { return _n; }
 //	std::pair<unsigned, unsigned> size() const { return std::make_pair(_m, _n); }
 	unsigned size() const { return data.size(); }
 
 	// in-place transpose
 	matrix& transpose() {
-		unsigned size = _m * _n - 1;
-		std::map<unsigned, bool> b; // mark visits
+		size_type size = _m * _n - 1;
+		std::map<size_type, bool> b; // mark visits
 		b[0] = true; // A(0,0) is stationary
 		b[size] = true; // A(m-1,n-1) is stationary
-		unsigned index = 1;
+		size_type index = 1;
 		while (index < size) {
-			unsigned cycleStart = index; // holds start of cycle
+			size_type cycleStart = index; // holds start of cycle
 			Scalar e = data[index]; // holds value of the element to be swapped
 			do {
-				unsigned next = (index * _m) % size; // index of e
+				size_type next = (index * _m) % size; // index of e
 				std::swap(data[next], e);
 				b[index] = true;
 				index = next;
@@ -225,7 +225,7 @@ public:
 	}
 
 	// Eigen operators I need to reverse engineer
-	matrix Zero(unsigned m, unsigned n) {
+	matrix Zero(size_type m, size_type n) {
 		matrix z(m, n);
 		return z;
 	}
@@ -264,26 +264,27 @@ public:
 	}
 
 private:
-	unsigned _m, _n; // m rows and n columns
+	size_type _m, _n; // m rows and n columns
 	std::vector<Scalar> data;
 
 };
 
 template<typename Scalar>
-inline unsigned num_rows(const matrix<Scalar>& A) { return A.rows(); }
+inline typename matrix<Scalar>::size_type num_rows(const matrix<Scalar>& A) { return A.rows(); }
 template<typename Scalar>
-inline unsigned num_cols(const matrix<Scalar>& A) { return A.cols(); }
+inline typename matrix<Scalar>::size_type num_cols(const matrix<Scalar>& A) { return A.cols(); }
 template<typename Scalar>
-inline std::pair<unsigned, unsigned> size(const matrix<Scalar>& A) { return std::make_pair(A.rows(), A.cols()); }
+inline std::pair<typename matrix<Scalar>::size_type, typename matrix<Scalar>::size_type> size(const matrix<Scalar>& A) { return std::make_pair(A.rows(), A.cols()); }
 
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
+	using size_type = typename matrix<Scalar>::size_type;
 	auto width = ostr.width();
-	unsigned m = A.rows();
-	unsigned n = A.cols();
-	for (unsigned i = 0; i < m; ++i) {
-		for (unsigned j = 0; j < n; ++j) {
+	size_type m = A.rows();
+	size_type n = A.cols();
+	for (size_type i = 0; i < m; ++i) {
+		for (size_type j = 0; j < n; ++j) {
 			ostr << std::setw(width) << A(i, j) << " ";
 		}
 		ostr << '\n';
@@ -294,12 +295,13 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 // generate a posit format ASCII format nbits.esxNN...NNp
 template<unsigned nbits, unsigned es>
 inline std::string hex_format(const matrix< sw::universal::posit<nbits, es> >& A) {
-	// we need to transform the posit into a string
+	using Scalar = sw::universal::posit<nbits, es>;
+	using size_type = typename matrix<Scalar>::size_type;
 	std::stringstream ostr;
-	unsigned m = A.rows();
-	unsigned n = A.cols();
-	for (unsigned i = 0; i < m; ++i) {
-		for (unsigned j = 0; j < n; ++j) {
+	size_type m = A.rows();
+	size_type n = A.cols();
+	for (size_type i = 0; i < m; ++i) {
+		for (size_type j = 0; j < n; ++j) {
 			ostr << hex_format(A(i,j)) << " ";
 		}
 		ostr << '\n';
@@ -346,10 +348,11 @@ matrix<Scalar> operator/(const matrix<Scalar>& A, const Scalar& b) {
 // matrix-vector multiply
 template<typename Scalar>
 vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
+	using size_type = typename matrix<Scalar>::size_type;
 	vector<Scalar> b(A.rows());
-	for (unsigned i = 0; i < A.rows(); ++i) {
+	for (size_type i = 0; i < A.rows(); ++i) {
 		b[i] = Scalar(0);
-		for (unsigned j = 0; j < A.cols(); ++j) {
+		for (size_type j = 0; j < A.cols(); ++j) {
 			b[i] += A(i, j) * x[j];
 		}
 	}
@@ -359,15 +362,16 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 
 template<typename Scalar>
 matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
+	using size_type = typename matrix<Scalar>::size_type;
 	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	unsigned rows = A.rows();
-	unsigned cols = B.cols();
-	unsigned dots = A.cols();
+	size_type rows = A.rows();
+	size_type cols = B.cols();
+	size_type dots = A.cols();
 	matrix<Scalar> C(rows, cols);
-	for (unsigned i = 0; i < rows; ++i) {
-		for (unsigned j = 0; j < cols; ++j) {
+	for (size_type i = 0; i < rows; ++i) {
+		for (size_type j = 0; j < cols; ++j) {
 			Scalar e = Scalar(0);
-			for (unsigned k = 0; k < dots; ++k) {
+			for (size_type k = 0; k < dots; ++k) {
 				e += A(i, k) * B(k, j);
 			}
 			C(i, j) = e;
@@ -381,14 +385,14 @@ matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 
 template<typename Scalar>
 matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
+	using size_type = typename matrix<Scalar>::size_type;
 	// Hadamard Product A.*B.  Element-wise multiplication.
 	if (A.size() != B.size()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "%").what());
-	unsigned rows = A.rows();
-	unsigned cols = A.cols();
-	 
+	size_type rows = A.rows();
+	size_type cols = A.cols();
 	matrix<Scalar> C(rows, cols);
-	for (unsigned i = 0; i < rows; ++i) {
-		for (unsigned j = 0; j < cols; ++j) {
+	for (size_type i = 0; i < rows; ++i) {
+		for (size_type j = 0; j < cols; ++j) {
 			C(i, j) = A(i, j) * B(i, j);
 		}
 	}
@@ -398,11 +402,12 @@ matrix<Scalar> operator%(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 // matrix equivalence tests
 template<typename Scalar>
 bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
+	using size_type = typename matrix<Scalar>::size_type;
 	if (num_rows(A) != num_rows(B) ||
 		num_cols(A) != num_cols(B)) return false;
 	bool equal = true;
-	for (unsigned i = 0; i < num_rows(A); ++i) {
-		for (unsigned j = 0; j < num_cols(A); ++j) {
+	for (size_type i = 0; i < num_rows(A); ++i) {
+		for (size_type j = 0; j < num_cols(A); ++j) {
 			if (A(i, j) != B(i, j)) {
 				equal = false;
 				break;
@@ -423,10 +428,10 @@ bool operator!=(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 // Matrix > x ==> Matrix with 1/0 representing True/False
 template<typename Scalar>
 matrix<Scalar> operator>(const matrix<Scalar>& A, const Scalar& x) {
+	using size_type = typename matrix<Scalar>::size_type;
 	matrix<Scalar> B(A.cols(), A.rows());
-	
-	for (unsigned i = 0; i < num_rows(A); ++i) {
-		for (unsigned j = 0; j < num_cols(A); ++j) {
+	for (size_type i = 0; i < num_rows(A); ++i) {
+		for (size_type j = 0; j < num_cols(A); ++j) {
 			B(i,j) = (A(i, j) > x) ? 1 : 0;
 		}
 	}
@@ -437,9 +442,10 @@ matrix<Scalar> operator>(const matrix<Scalar>& A, const Scalar& x) {
 // maxelement (jq 2022-10-15)
 template<typename Scalar>
 Scalar maxelement(const matrix<Scalar>&A) {
+	using size_type = typename matrix<Scalar>::size_type;
 	auto x = abs(A(0,0));
-	for (size_t i = 0; i < num_rows(A); ++i) {
-		for (size_t j = 0; j < num_cols(A); ++j) {
+	for (size_type i = 0; i < num_rows(A); ++i) {
+		for (size_type j = 0; j < num_cols(A); ++j) {
 			x = (abs(A(i, j)) > x) ? abs(A(i, j)) : x;
 		}
 	}
@@ -449,9 +455,10 @@ Scalar maxelement(const matrix<Scalar>&A) {
 // minelement (jq 2022-10-15)
 template<typename Scalar>
 Scalar minelement(const matrix<Scalar>&A) {
+	using size_type = typename matrix<Scalar>::size_type;
 	auto x = maxelement(A);
-	for (size_t i = 0; i < num_rows(A); ++i) {
-		for (size_t j = 0; j < num_cols(A); ++j) {
+	for (size_type i = 0; i < num_rows(A); ++i) {
+		for (size_type j = 0; j < num_cols(A); ++j) {
 			x = ((abs(A(i, j)) < x) && (A(i,j)!=0)) ? abs(A(i, j)) : x;
 		}
 	}
@@ -462,8 +469,9 @@ Scalar minelement(const matrix<Scalar>&A) {
 // Gets the ith row of matrix A
 template<typename Scalar>
 vector<Scalar> getRow(unsigned i, const matrix<Scalar>&A) {
+	using size_type = typename matrix<Scalar>::size_type;
 	vector<Scalar> x(num_cols(A));
-	for (size_t j = 0; j < num_cols(A); ++j) {
+	for (size_type j = 0; j < num_cols(A); ++j) {
 		x(j) = A(i,j);
 		}
 	return x;
@@ -472,8 +480,9 @@ vector<Scalar> getRow(unsigned i, const matrix<Scalar>&A) {
 // Gets the jth column of matrix A
 template<typename Scalar>
 vector<Scalar> getCol(unsigned j, const matrix<Scalar>&A) {
+	using size_type = typename matrix<Scalar>::size_type;
 	vector<Scalar> x(num_rows(A));
-	for (size_t i = 0; i < num_rows(A); ++i) {
+	for (size_type i = 0; i < num_rows(A); ++i) {
 		x(i) = A(i,j);
 		}
 	return x;
@@ -482,9 +491,10 @@ vector<Scalar> getCol(unsigned j, const matrix<Scalar>&A) {
 
 // Display Matrix
 template<typename Scalar>
-void disp(const matrix<Scalar>& A, const size_t COLWIDTH = 10){
-    for (size_t i = 0;i<num_rows(A);++i){
-        for (size_t j = 0; j<num_cols(A);++j){
+void disp(const matrix<Scalar>& A, const size_t COLWIDTH = 10) {
+	using size_type = typename matrix<Scalar>::size_type;
+    for (size_type i = 0; i < num_rows(A); ++i){
+        for (size_type j = 0; j < num_cols(A); ++j){
             // std::cout <<std::setw(COLWIDTH) << A(i,j) << std::setw(COLWIDTH) << "\t" << std::fixed;
 			std::cout << "\t" << A(i,j) << "\t"; // << std::fixed;
         }

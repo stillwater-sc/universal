@@ -10,17 +10,7 @@ include(tools/cmake/banners.cmake)
 print_header()
 
 ####
-# Set minimum version of CMake. Since we are using the VERSION option of the
-# project command, we need at least 3.0. To honor the amazing work that
-# the folks at KitWare have done for the open-source community, we are
-# going to specify a recent version. 
-# As of UNIVERSAL v3.0 December 2019
-# Ubuntu 16.04 LTS runs cmake 3.5
-# Ubuntu 18.04 LTS runs cmake 3.10
-# Ubuntu 20.04 LTS runs cmake 3.16
-# Ubuntu 22.04 LTS runs cmake 3.22
-# container runs cmake 3.7.1
-# gcc5 container runs cmake 3.0.2
+# Set minimum version of CMake. 
 cmake_minimum_required(VERSION 3.22)
 
 ####
@@ -35,7 +25,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 74)
+  set(UNIVERSAL_VERSION_MINOR 75)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)

@@ -20,16 +20,17 @@ vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 // overload for posits uses fused dot products
 template<unsigned nbits, unsigned es>
 matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const matrix< posit<nbits, es> >& B) {
+	using size_type = typename matrix< posit<nbits, es> >::size_type;
 	constexpr unsigned capacity = 20; // FDP for vectors < 1,048,576 elements
 	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
-	unsigned rows = A.rows();
-	unsigned cols = B.cols();
-	unsigned dots = A.cols();
+	auto rows = A.rows();
+	auto cols = B.cols();
+	auto dots = A.cols();
 	matrix< posit<nbits, es> > C(rows, cols);
-	for (unsigned i = 0; i < rows; ++i) {
-		for (unsigned j = 0; j < cols; ++j) {
+	for (size_type i = 0; i < rows; ++i) {
+		for (size_type j = 0; j < cols; ++j) {
 			quire<nbits, es, capacity> q;
-			for (unsigned k = 0; k < dots; ++k) {
+			for (size_type k = 0; k < dots; ++k) {
 				q += quire_mul(A(i, k), B(k, j));
 			}
 			convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product

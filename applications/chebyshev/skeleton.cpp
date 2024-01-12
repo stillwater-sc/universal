@@ -1,8 +1,9 @@
 // nodes.cpp: Does a posit configuration exist to produce chebyshev nodes
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <cmath>
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
@@ -12,11 +13,9 @@
 #include <universal/blas/blas.hpp>
 
 // skeleton environment to experiment with Chebyshev polynomials and approximations
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal::blas;
-
-	int nrOfFailedTestCases = 0;
 
 	std::cout << "Chebyshev polynomial test skeleton\n";
 
@@ -29,7 +28,7 @@ try {
 	auto cosines = -cos(k * PI / N);
 	std::cout << "cosines = " << cosines << '\n';
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;

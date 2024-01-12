@@ -834,8 +834,8 @@ public:
 		return *this /= posit<nbits, es, bt>(rhs);
 	}
 	
-	posit reciprocate() const noexcept {
-		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
+	posit reciprocal() const noexcept {
+		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCAL ----------------" << std::endl;
 		posit<nbits, es, bt> p;
 		// special case of NaR (Not a Real)
 		if (isnar()) {
