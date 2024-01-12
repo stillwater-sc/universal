@@ -46,12 +46,12 @@ int ExhaustiveNumberSystemTest(const std::string& test_tag, bool reportTestCases
 	}
 
 	// logic tests
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(), test_tag, "    ==         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <TestType>(), test_tag, "    !=         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan          <TestType>(), test_tag, "    <          ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan   <TestType>(), test_tag, "    <=         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan       <TestType>(), test_tag, "    >          ");
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<TestType>(), test_tag, "    >=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(reportTestCases), test_tag, "    ==         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <TestType>(reportTestCases), test_tag, "    !=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan          <TestType>(reportTestCases), test_tag, "    <          ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan   <TestType>(reportTestCases), test_tag, "    <=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan       <TestType>(reportTestCases), test_tag, "    >          ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<TestType>(reportTestCases), test_tag, "    >=         ");
 
 	// conversion tests
 	cout << "Assignment/conversion tests " << endl;

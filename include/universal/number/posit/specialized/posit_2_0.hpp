@@ -1,7 +1,7 @@
 #pragma once
 // posit_2_0.hpp: specialized 2-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 // First implementation: 2018
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.

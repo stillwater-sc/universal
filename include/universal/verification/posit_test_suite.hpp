@@ -758,7 +758,7 @@ namespace sw { namespace universal {
 				da = double(pa);
 				preference = 1.0 / da;
 			}
-			preciprocal = pa.reciprocate();
+			preciprocal = pa.reciprocal();
 
 			if (preciprocal != preference) {
 				nrOfFailedTests++;

@@ -12,7 +12,7 @@
 // 80bit IEEE-754 extended precision floats
 // true 128bit quad precision floats
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -477,7 +477,7 @@ public:
 		return tmp;
 	}
 
-	cfloat& operator+=(const cfloat& rhs) noexcept {
+	cfloat& operator+=(const cfloat& rhs) CFLOAT_EXCEPT {
 		if constexpr (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
@@ -538,20 +538,20 @@ public:
 
 		return *this;
 	}
-	cfloat& operator+=(double rhs) noexcept {
+	cfloat& operator+=(double rhs) CFLOAT_EXCEPT {
 		return *this += cfloat(rhs);
 	}
-	cfloat& operator-=(const cfloat& rhs) noexcept {
+	cfloat& operator-=(const cfloat& rhs) CFLOAT_EXCEPT {
 		if constexpr (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 		if (rhs.isnan()) 
 			return *this += rhs;
 		else 
 			return *this += -rhs;
 	}
-	cfloat& operator-=(double rhs) noexcept {
+	cfloat& operator-=(double rhs) CFLOAT_EXCEPT {
 		return *this -= cfloat(rhs);
 	}
-	cfloat& operator*=(const cfloat& rhs) noexcept {
+	cfloat& operator*=(const cfloat& rhs) CFLOAT_EXCEPT {
 		if constexpr (_trace_mul) std::cout << "---------------------- MUL -------------------\n";
 		// special case handling of the inputs
 #if CFLOAT_THROW_ARITHMETIC_EXCEPTION
@@ -614,10 +614,10 @@ public:
 
 		return *this;
 	}
-	cfloat& operator*=(double rhs) noexcept {
+	cfloat& operator*=(double rhs) CFLOAT_EXCEPT {
 		return *this *= cfloat(rhs);
 	}
-	cfloat& operator/=(const cfloat& rhs) {
+	cfloat& operator/=(const cfloat& rhs) CFLOAT_EXCEPT {
 		if constexpr (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 
 		// special case handling of the inputs
@@ -699,10 +699,10 @@ public:
 
 		return *this;
 	}
-	cfloat& operator/=(double rhs) {
+	cfloat& operator/=(double rhs) CFLOAT_EXCEPT {
 		return *this /= cfloat(rhs);
 	}
-	cfloat& reciprocal() {
+	cfloat& reciprocal() CFLOAT_EXCEPT {
 		cfloat c = 1.0 / *this;
 		return *this = c;
 	}

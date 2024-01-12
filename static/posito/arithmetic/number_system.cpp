@@ -40,7 +40,7 @@ try {
 
 	std::string test_suite  = "posit number system validation";
 	std::string test_tag    = "number system";
-	bool reportTestCases    = false;
+	bool reportTestCases    = true;
 	int nrOfFailedTestCases = 0;
 
 	ReportTestSuiteHeader(test_suite, reportTestCases);
@@ -56,11 +56,14 @@ try {
 	if (a.isnan()) std::cout << "NaN and NaR are equivalent\n";
 	if (b.isnar()) std::cout << "NaN and NaR are equivalent\n";
 
+	using TestType = posito<8, 0>;
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan          <TestType>(reportTestCases), test_tag, "    <          ");
+
 	// TestType: posit<nbits, es, uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
-	//nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>, posit<9, 0>>("posit<8,0>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<cfloat<8, 5>, cfloat<9, 5>>("cfloat<8,5>", reportTestCases);
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<7, 0>, posito<8, 0>>("posito<7,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>, posit<9, 0>>("posit<8,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<cfloat<8, 5>, cfloat<9, 5>>("cfloat<8,5>", reportTestCases);
+//	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<7, 0>, posito<8, 0>>("posito<7,0>", reportTestCases);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;

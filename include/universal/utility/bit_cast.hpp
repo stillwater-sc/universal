@@ -1,7 +1,7 @@
 #pragma once
 // bit_cast.hpp provides sw::bit_cast, a backport of C++20 std::bit_cast
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

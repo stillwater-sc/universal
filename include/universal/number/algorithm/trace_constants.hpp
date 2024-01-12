@@ -1,7 +1,7 @@
 #pragma once
 // trace_constants.hpp: definition of constants that direct intermediate result reporting
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -18,7 +18,7 @@ constexpr bool _trace_add         = false;
 constexpr bool _trace_sub         = false;
 constexpr bool _trace_mul         = false;
 constexpr bool _trace_div         = false;
-constexpr bool _trace_reciprocate = false;
+constexpr bool _trace_reciprocal  = false;
 constexpr bool _trace_sqrt        = false;
 
 // quire update tracing
