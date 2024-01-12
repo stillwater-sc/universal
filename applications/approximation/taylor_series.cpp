@@ -39,7 +39,6 @@ try {
 	using namespace sw::universal;
 
 	std::string test_suite  = "Experiments with Taylor Series Expansion";
-	std::string test_tag    = "operator";
 	int nrOfFailedTestCases = 0;
 
 	std::cout << test_suite << '\n';
