@@ -64,7 +64,7 @@ try {
 
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(reportTestCases), test_tag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(true), test_tag, "integer assign (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(reportTestCases), test_tag, "float assign   (native)  ");
 
 	// logic tests

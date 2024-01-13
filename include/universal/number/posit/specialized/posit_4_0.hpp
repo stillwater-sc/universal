@@ -182,13 +182,13 @@ public:
 		if (rhs <= -4) {
 			_bits = 0x9;   // value is -4, or -maxpos
 		}
-		else if (-4 > rhs && rhs <= -2) {
+		else if (-4 < rhs && rhs <= -2) {
 			_bits = 0xA;   // value is -2
 		}
-		else if (-2 > rhs && rhs <= -1) {
+		else if (-2 < rhs && rhs <= -1) {
 			_bits = 0xC;   // value is -1
 		}
-		else if (-1 > rhs && rhs < 1) {
+		else if (-1 < rhs && rhs < 1) {
 			_bits = 0x0;   // value is 0
 		}
 		else if (1 <= rhs && rhs < 2) {

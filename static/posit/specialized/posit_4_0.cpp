@@ -61,6 +61,32 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
+	/*
+	Posit Lookup table for a POSIT<4, 0> in TXT format
+		#   Binary  Decoded     k    sign   scale     value
+		 0 : 0000    0000      -3       0      -2      0 
+		 1 : 0001    0001      -2       0      -2      0.25
+		 2 : 0010    0010      -1       0      -1      0.5
+		 3 : 0011    0011      -1       0      -1      0.75
+		 4 : 0100    0100       0       0       0      1
+		 5 : 0101    0101       0       0       0      1.5
+		 6 : 0110    0110       1       0       1      2
+		 7 : 0111    0111       2       0       2      4
+		 8 : 1000    1000       3       1      -2     nar
+		 9 : 1001    1111       2       1       2     -4
+		10 : 1010    1110       1       1       1     -2
+		11 : 1011    1101       0       1       0     -1.5
+		12 : 1100    1100       0       1       0     -1
+		13 : 1101    1011      -1       1      -1     -0.75
+		14 : 1110    1010      -1       1      -1     -0.5
+		15 : 1111    1001      -2       1      -2     -0.25
+	*/
+
+	// conversion tests
+	std::cout << "Assignment/conversion tests\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   ");
+
 	// logic tests
 	std::cout << "Logic operator tests\n";
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         ");
@@ -69,11 +95,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
-	
-	// conversion tests
-	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   ");
 	
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";

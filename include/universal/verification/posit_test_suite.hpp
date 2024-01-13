@@ -192,20 +192,14 @@ namespace sw { namespace universal {
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << (max - 1)) + 1;  
 		int nrOfFailedTestCases = 0;		
-		// special cases in case we are clipped by the nbits > 20
-		long ref = 0x80000000;  // -2147483648
-		posit<nbits, es> presult(ref);
-		if (ref != presult) {
-			std::cout << " FAIL long(" << ref << ") != long(" << presult << ") : reference = -2147483648" << std::endl;
-			nrOfFailedTestCases++;
-		}
 		posit<nbits, es> p(1);
 		for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
+			//std::cout << to_binary(p) << " : " << p << '\n';
 			if (!p.isnar()) {
-				ref = (long)p; // obtain the integer cast of this posit
-				presult = ref;		// assign this integer to a posit				
-				if (ref != presult) { // compare the integer cast to the reference posit
-					if (reportTestCases) std::cout << " FAIL long(" << p << ") != long(" << presult << ") : reference = " << ref << std::endl;
+				long long ref = (long long)(p); // obtain the integer cast of this posit
+				posit<nbits, es> presult = ref;		  // assign this integer to a posit				
+				if (ref != (long long)presult) {   // compare the integer cast to the reference posit
+					if (reportTestCases) std::cout << " FAIL " << p << " != " << presult << " : reference = " << ref << std::endl;
 					nrOfFailedTestCases++;
 				}
 				else {

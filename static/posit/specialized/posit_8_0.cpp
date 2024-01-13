@@ -94,6 +94,11 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
+	// conversion tests
+	std::cout << "Assignment/conversion tests\n";
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   (native)  ");
+
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition           <nbits, es>(bReportIndividualTestCases), tag, "add            (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication     <nbits, es>(bReportIndividualTestCases), tag, "multiply       (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision           <nbits, es>(bReportIndividualTestCases), tag, "divide         (native)  ");
@@ -110,11 +115,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >          (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         (native)  ");
-
-	// conversion tests
-	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   (native)  ");
 #endif
 
 #if REGRESSION_LEVEL_3

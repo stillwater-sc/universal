@@ -74,31 +74,31 @@ public:
 	}
 
 	// initializers for native types
-	constexpr explicit posit(signed char initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(short initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(int initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(long initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(long long initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(char initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(unsigned short initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(unsigned int initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(unsigned long initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(signed char initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(short initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(int initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(long initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(long long initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(char initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(unsigned short initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(unsigned int initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(unsigned long initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(float initial_value) : _bits(0) { *this = initial_value; }
 	                   posit(double initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(long double initial_value) : _bits(0) { *this = initial_value; }
 
 	// assignment operators for native types
-	constexpr posit& operator=(signed char rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(short rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(int rhs) { return integer_assign(rhs); }
-	constexpr posit& operator=(long rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(long long rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(char rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned short rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned int rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned long rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned long long rhs) { return operator=((int)(rhs)); }
+	posit& operator=(signed char rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(short rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(int rhs) { return operator=((long long)rhs); }
+	posit& operator=(long rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(long long rhs) { return integer_assign(rhs); }
+	posit& operator=(char rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(unsigned short rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(unsigned int rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(unsigned long rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(unsigned long long rhs) { return operator=((long long)(rhs)); }
 	posit& operator=(float rhs) { return float_assign(rhs); }
 	posit& operator=(double rhs) { return float_assign(float(rhs)); }
 	posit& operator=(long double rhs) { return float_assign(float(rhs)); }
@@ -722,16 +722,16 @@ private:
 	}
 
 	// helper methods			
-	constexpr posit& integer_assign(int rhs) {
+	 posit& integer_assign(long long rhs) noexcept {
 		// special case for speed as this is a common initialization
 		if (rhs == 0) {
 			_bits = 0x0;
 			return *this;
 		}
 		bool sign = (rhs < 0) ? true : false;
-		int v = sign ? -rhs : rhs; // project to positive side of the projective reals
+		long long v = sign ? -rhs : rhs; // project to positive side of the projective reals
 		uint8_t raw = 0;
-		if (v > 48) { // +-maxpos
+		if (v > 48 || v == rhs) { // +-maxpos
 			raw = 0x7F;
 		}
 		else if (v < 2) {
@@ -757,7 +757,7 @@ private:
 		_bits = sign ? -raw : raw;
 		return *this;
 	}
-	posit& float_assign(float rhs) {
+	posit& float_assign(float rhs) noexcept {
 		// special case for speed as this is a common initialization
 		if (std::fpclassify(rhs) == FP_NAN) {
 			_bits = 0x80u;
