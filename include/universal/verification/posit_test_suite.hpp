@@ -751,15 +751,39 @@ namespace sw { namespace universal {
 			pa.setbits(i);
 			// generate reference
 			double da;
-			if (pa.isnar()) {
-				preference.setnar();
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+			try {
+				preciprocal = pa.reciprocal();
+				if (pa.isnar()) {
+					preference.setnar();
+				}
+				else {
+					da = double(pa);
+					preference = 1.0 / da;
+				}
 			}
-			else {
-				da = double(pa);
-				preference = 1.0 / da;
+			catch (const posit_divide_by_zero& err) {
+				if (pa.iszero()) {
+					// correctly caught the exception
+				}
+				else {
+					throw err;
+				}
 			}
-			preciprocal = pa.reciprocal();
-
+			catch (const posit_divide_by_nar& err) {
+				if (pa.isnar()) {
+					// correctly caught the exception
+					preference.setnar();
+				}
+				else {
+					throw err;
+				}
+			}
+#else
+			preciprocal = pa.reciprocal();  // this will err when pa == 0
+			da = double(pa);
+			preference = 1.0 / da;
+#endif
 			if (preciprocal != preference) {
 				nrOfFailedTests++;
 				if (reportTestCases)	ReportUnaryArithmeticError("FAIL", "reciprocate", pa, preciprocal, preference);

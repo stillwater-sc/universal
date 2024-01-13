@@ -97,6 +97,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition           <nbits, es>(bReportIndividualTestCases), tag, "add            (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication     <nbits, es>(bReportIndividualTestCases), tag, "multiply       (native)  ");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision           <nbits, es>(bReportIndividualTestCases), tag, "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation      <nbits, es>(bReportIndividualTestCases), tag, "reciprocate    (native)  ");
 
 #endif
 
