@@ -1,11 +1,11 @@
-﻿// integer_cover.cpp: covering the integers with a posit
+﻿// integer_cover.cpp: measuring the covering of the integers with a posit
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/posit_test_suite.hpp>
 
 /*
 When interacting with integer algebras, for example, prime factorization
@@ -71,29 +71,20 @@ posit<34,2>: 2^24 integer cover is : float cover = 100%  double cover = 100%  po
 // Thus mathematically the 2^(nbits-2) samples need to cover the 2^ibits values of the integer.
 template<size_t nbits, size_t es, size_t ibits>
 std::string CalculateIntegerCover() {
-	float fInt;
-	double dInt;
 	sw::universal::posit<nbits, es> pInt;
 
-	constexpr uint64_t nrSamples = (uint64_t)1 << ibits;
-	uint64_t fcover = 0, dcover = 0, pcover = 0, rounded;
-	for (uint64_t integer = 0; integer < nrSamples; ++integer) {
+	constexpr unsigned long long nrSamples = (uint64_t)1 << ibits;
+	unsigned long long fcover = 0, dcover = 0, pcover = 0;
+	for (unsigned long long integer = 0; integer < nrSamples; ++integer) {
 		// float cover
-		fInt = float(integer);
-		rounded = uint64_t(fInt);
-		if (rounded == integer) {
-			++fcover;
-		}
+		unsigned long long rounded = (unsigned long long)(float(integer));
+		if (rounded == integer) ++fcover;
 		// double cover
-		// float cover
-		dInt = double(integer);
-		rounded = uint64_t(dInt);
-		if (rounded == integer) {
-			++dcover;
-		}
+		rounded = (unsigned long long)(double(integer));
+		if (rounded == integer) ++dcover;
 		// posit cover
 		pInt = integer;
-		rounded = uint64_t(pInt);
+		rounded = (unsigned long long)(pInt);
 		if (rounded == integer) {
 			++pcover;
 		}
@@ -109,7 +100,7 @@ std::string CalculateIntegerCover() {
 // set by the build process to modulate the number of test cases
 #define _FULL_REGRESSION
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
 
