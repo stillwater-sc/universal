@@ -1,5 +1,5 @@
 #pragma once
-// power.hpp: vectorized power function, takes a base and a vector of exponents, and returns vector of exponentiations
+// sqrt.hpp: vectorized square root function, takes a base and a vector of exponents, and returns vector of square roots
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -10,15 +10,14 @@
 namespace sw { namespace universal { namespace blas {
 
 // vector power function
-template<typename Scalar1, typename Scalar2>
-vector<Scalar1> power(const Scalar1& x, const vector<Scalar2>& y) {
-	using std::pow;
+template<typename Scalar>
+vector<Scalar> sqrt(const vector<Scalar>& y) {
 	using namespace sw::universal;
-	vector<Scalar1> v(y.size());
+	vector<Scalar> x(y.size());
 	for (size_t i = 0; i < y.size(); ++i) {
-		v[i] = pow(x, Scalar1(y[i]));
+		x[i] = sqrt(y[i]);
 	}
-	return v;
+	return x;
 }
 
 } } }  // namespace sw::universal::blas

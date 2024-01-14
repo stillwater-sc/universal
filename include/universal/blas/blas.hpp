@@ -83,6 +83,8 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 #include <universal/blas/serialization/datafile.hpp>
 
 // MATLAB-style elementary vector functions
+#include <universal/blas/vmath/square.hpp>
+#include <universal/blas/vmath/sqrt.hpp>
 #include <universal/blas/vmath/power.hpp>
 #include <universal/blas/vmath/trigonometry.hpp>
 

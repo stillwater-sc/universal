@@ -1,20 +1,18 @@
 // mnist.cpp: example program showing a mixed-precision LeNet-5 DNN
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <universal/utility/cmdline.hpp>
+
 // Configure the cfloat and lns environment
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/lns/lns.hpp>
 #include <universal/dnn/dnn.hpp>
 
-int main(int argc, char** argv)
+int main()
 try {
 	using namespace sw::universal;
-
-	print_cmd_line(argc, argv);
 
 	constexpr bool hasSubnormals = true;
 	constexpr bool hasSupernormals = true;
