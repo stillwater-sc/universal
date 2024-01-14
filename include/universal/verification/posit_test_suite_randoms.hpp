@@ -1,5 +1,5 @@
 #pragma once
-//  posit_test_randoms.hpp : posit verification functions based on random operand generation testing
+// posit_test_suite_randoms.hpp : posit verification functions based on random operand generation testing
 // Needs to be included after posit type is declared.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.

@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override
 #define MANUAL_TESTING 0
@@ -45,7 +45,7 @@ try {
 		std::cout << s.get() << " " << s << std::endl;
 	});
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<nbits, es>(reportTestCases), positConfig, test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<nbits, es>>(reportTestCases), positConfig, test_tag);
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -55,32 +55,32 @@ try {
 	// Otherwise stated, an enumeration of tests for different posit configurations is a bit superfluous.
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<3, 0>(reportTestCases), "posit<3,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<3, 0>>(reportTestCases), "posit<3,0>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<4, 0>(reportTestCases), "posit<4,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<4, 1>(reportTestCases), "posit<4,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<4, 0>>(reportTestCases), "posit<4,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<4, 1>>(reportTestCases), "posit<4,1>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 0>(reportTestCases), "posit<5,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 1>(reportTestCases), "posit<5,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<5, 2>(reportTestCases), "posit<5,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<5, 0>>(reportTestCases), "posit<5,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<5, 1>>(reportTestCases), "posit<5,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<5, 2>>(reportTestCases), "posit<5,2>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 0>(reportTestCases), "posit<6,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 1>(reportTestCases), "posit<6,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 2>(reportTestCases), "posit<6,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<6, 3>(reportTestCases), "posit<6,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<6, 0>>(reportTestCases), "posit<6,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<6, 1>>(reportTestCases), "posit<6,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<6, 2>>(reportTestCases), "posit<6,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<6, 3>>(reportTestCases), "posit<6,3>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 0>(reportTestCases), "posit<7,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 1>(reportTestCases), "posit<7,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 2>(reportTestCases), "posit<7,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 3>(reportTestCases), "posit<7,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<7, 4>(reportTestCases), "posit<7,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<7, 0>>(reportTestCases), "posit<7,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<7, 1>>(reportTestCases), "posit<7,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<7, 2>>(reportTestCases), "posit<7,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<7, 3>>(reportTestCases), "posit<7,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<7, 4>>(reportTestCases), "posit<7,4>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 0>(reportTestCases), "posit<8,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 1>(reportTestCases), "posit<8,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 2>(reportTestCases), "posit<8,2>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 3>(reportTestCases), "posit<8,3>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 4>(reportTestCases), "posit<8,4>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<8, 5>(reportTestCases), "posit<8,5>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<8, 0>>(reportTestCases), "posit<8,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<8, 1>>(reportTestCases), "posit<8,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<8, 2>>(reportTestCases), "posit<8,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<8, 3>>(reportTestCases), "posit<8,3>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<8, 4>>(reportTestCases), "posit<8,4>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<8, 5>>(reportTestCases), "posit<8,5>", test_tag);
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -91,34 +91,34 @@ try {
 
 #if REGRESSION_LEVEL_4
 	// AD/DA adapted data path configurations
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<10, 0>(reportTestCases), "posit<10,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<10, 1>(reportTestCases), "posit<10,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<10, 0>>(reportTestCases), "posit<10,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<10, 1>>(reportTestCases), "posit<10,1>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<12, 0>(reportTestCases), "posit<12,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<12, 1>(reportTestCases), "posit<12,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<12, 0>>(reportTestCases), "posit<12,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<12, 1>>(reportTestCases), "posit<12,1>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<14, 0>(reportTestCases), "posit<14,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<14, 1>(reportTestCases), "posit<14,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<14, 0>>(reportTestCases), "posit<14,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<14, 1>>(reportTestCases), "posit<14,1>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<15, 0>(reportTestCases), "posit<15,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<15, 1>(reportTestCases), "posit<15,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<15, 0>>(reportTestCases), "posit<15,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<15, 1>>(reportTestCases), "posit<15,1>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 0>(reportTestCases), "posit<16,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 1>(reportTestCases), "posit<16,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<16, 2>(reportTestCases), "posit<16,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<16, 0>>(reportTestCases), "posit<16,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<16, 1>>(reportTestCases), "posit<16,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<16, 2>>(reportTestCases), "posit<16,2>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 0>(reportTestCases), "posit<18,0>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 1>(reportTestCases), "posit<18,1>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<18, 2>(reportTestCases), "posit<18,2>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<18, 0>>(reportTestCases), "posit<18,0>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<18, 1>>(reportTestCases), "posit<18,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<18, 2>>(reportTestCases), "posit<18,2>", test_tag);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<20, 1>(reportTestCases), "posit<20,1>", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<20, 1>>(reportTestCases), "posit<20,1>", test_tag);
 		
 	// legit float replacement
-	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<24, 1>(reportTestCases), "posit<24,1>", test_tag);
-	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<28, 2>(reportTestCases), "posit<28,2>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<24, 1>>(reportTestCases), "posit<24,1>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<28, 2>>(reportTestCases), "posit<28,2>", test_tag);
 
 	// legit double replacement
-	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<32, 2>(reportTestCases), "posit<32,2>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyIncrement<posit<32, 2>>(reportTestCases), "posit<32,2>", test_tag);
 #endif // REGRESSION_LEVEL_4
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

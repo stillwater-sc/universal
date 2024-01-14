@@ -1,6 +1,6 @@
 // function_pow.cpp: test suite runner for pow function
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,7 +11,7 @@
 
 // use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 #include <universal/native/integers.hpp> // for ipow
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp
@@ -113,63 +113,63 @@ try {
 	std::cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << '\n';
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(reportTestCases), "posit<2,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<2, 0>>(reportTestCases), "posit<2,0>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(reportTestCases), "posit<3,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(reportTestCases), "posit<3,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<3, 0>>(reportTestCases), "posit<3,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<3, 1>>(reportTestCases), "posit<3,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(reportTestCases), "posit<4,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(reportTestCases), "posit<4,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<4, 0>>(reportTestCases), "posit<4,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<4, 1>>(reportTestCases), "posit<4,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(reportTestCases), "posit<5,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(reportTestCases), "posit<5,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(reportTestCases), "posit<5,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<5, 0>>(reportTestCases), "posit<5,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<5, 1>>(reportTestCases), "posit<5,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<5, 2>>(reportTestCases), "posit<5,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 0>(reportTestCases), "posit<6,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 1>(reportTestCases), "posit<6,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 2>(reportTestCases), "posit<6,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 3>(reportTestCases), "posit<6,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<6, 0>>(reportTestCases), "posit<6,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<6, 1>>(reportTestCases), "posit<6,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<6, 2>>(reportTestCases), "posit<6,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<6, 3>>(reportTestCases), "posit<6,3>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 0>(reportTestCases), "posit<7,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 1>(reportTestCases), "posit<7,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 2>(reportTestCases), "posit<7,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 3>(reportTestCases), "posit<7,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 4>(reportTestCases), "posit<7,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<7, 0>>(reportTestCases), "posit<7,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<7, 1>>(reportTestCases), "posit<7,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<7, 2>>(reportTestCases), "posit<7,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<7, 3>>(reportTestCases), "posit<7,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<7, 4>>(reportTestCases), "posit<7,4>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(reportTestCases), "posit<8,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(reportTestCases), "posit<8,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 2>(reportTestCases), "posit<8,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 3>(reportTestCases), "posit<8,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(reportTestCases), "posit<8,4>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 5>(reportTestCases), "posit<8,5>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<8, 0>>(reportTestCases), "posit<8,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<8, 1>>(reportTestCases), "posit<8,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<8, 2>>(reportTestCases), "posit<8,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<8, 3>>(reportTestCases), "posit<8,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<8, 4>>(reportTestCases), "posit<8,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<8, 5>>(reportTestCases), "posit<8,5>", "pow");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 0>(reportTestCases), "posit<9,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 1>(reportTestCases), "posit<9,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 2>(reportTestCases), "posit<9,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 3>(reportTestCases), "posit<9,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 4>(reportTestCases), "posit<9,4>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 5>(reportTestCases), "posit<9,5>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 6>(reportTestCases), "posit<9,6>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<9, 0>>(reportTestCases), "posit<9,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<9, 1>>(reportTestCases), "posit<9,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<9, 2>>(reportTestCases), "posit<9,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<9, 3>>(reportTestCases), "posit<9,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<9, 4>>(reportTestCases), "posit<9,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<9, 5>>(reportTestCases), "posit<9,5>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<9, 6>>(reportTestCases), "posit<9,6>", "pow");
 	
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 0>(reportTestCases), "posit<10,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 1>(reportTestCases), "posit<10,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 2>(reportTestCases), "posit<10,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<10, 0>>(reportTestCases), "posit<10,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<10, 1>>(reportTestCases), "posit<10,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<10, 2>>(reportTestCases), "posit<10,2>", "pow");
 	// fails due to regime representation not being able to be represented by double
-	// nrOfFailedTestCases += ReportTestResult(VerifyPowMethod<10, 7>(reportTestCases), "posit<10,7>", "pow");
+	// nrOfFailedTestCases += ReportTestResult(VerifyPowMethod<posit<10, 7>>(reportTestCases), "posit<10,7>", "pow");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 0>(reportTestCases), "posit<12,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 1>(reportTestCases), "posit<12,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 2>(reportTestCases), "posit<12,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<12, 0>>(reportTestCases), "posit<12,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<12, 1>>(reportTestCases), "posit<12,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<12, 2>>(reportTestCases), "posit<12,2>", "pow");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 0>(reportTestCases), "posit<16,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(reportTestCases), "posit<16,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 2>(reportTestCases), "posit<16,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<16, 0>>(reportTestCases), "posit<16,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<16, 1>>(reportTestCases), "posit<16,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<posit<16, 2>>(reportTestCases), "posit<16,2>", "pow");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

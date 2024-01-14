@@ -1,12 +1,12 @@
 // classify.cpp: test suite runner for classification functions specialized for logarithmic floats
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <cmath>
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/lns_math_test_suite.hpp>
+#include <universal/verification/lns_test_suite_mathlib.hpp>
 
 bool isdenorm(float f) {
 	return (std::fpclassify(f) == FP_SUBNORMAL);

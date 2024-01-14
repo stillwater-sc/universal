@@ -1,12 +1,12 @@
 // fractional.cpp: test suite runner for mod/frac/reminder functions specialized for classic floats
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // #define TRACE_CONVERSION 1
 #include <universal/number/cfloat/cfloat.hpp>
-#include <universal/verification/cfloat_math_test_suite.hpp>
+#include <universal/verification/cfloat_test_suite_mathlib.hpp>
 
 namespace sw { namespace universal {
 

@@ -1,7 +1,7 @@
 #pragma once
-//  cfloat_math_test_suite.hpp : test suite runners for math library functions
+// cfloat_test_suite_mathlib.hpp : test suite runners for math library functions
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is art of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>

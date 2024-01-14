@@ -186,8 +186,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all conversion cases for integers
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyIntegerConversion(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << (max - 1)) + 1;  
@@ -256,8 +258,10 @@ namespace sw { namespace universal {
 */
 
 // enumerate all conversion cases for integers
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyUintConversion(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << (max - 1)) + 1;
@@ -307,8 +311,10 @@ namespace sw { namespace universal {
 	}
 
 	// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular posit config <nbits, es>
-	template<unsigned nbits, unsigned es>
-	void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
+	template<typename TestType>
+	void GenerateOrderedPositSet(std::vector<TestType>& set) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
 		std::vector< posit<nbits, es> > s(NR_OF_REALS);
 		posit<nbits, es> p;
@@ -323,8 +329,10 @@ namespace sw { namespace universal {
 	}
 
 	// Verify the increment operator++
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyIncrement(bool reportTestCases)	{
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -346,9 +354,10 @@ namespace sw { namespace universal {
 	}
 
 	// Verify the decrement operator--
-	template<unsigned nbits, unsigned es>
-	int VerifyDecrement(bool reportTestCases)
-	{
+	template<typename TestType>
+	int VerifyDecrement(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -370,9 +379,10 @@ namespace sw { namespace universal {
 	}
 
 	// Verify the postfix operator++
-	template<unsigned nbits, unsigned es>
-	int VerifyPostfix(bool reportTestCases)
-	{
+	template<typename TestType>
+	int VerifyPostfix(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -394,9 +404,10 @@ namespace sw { namespace universal {
 	}
 
 	// Verify the prefix operator++
-	template<unsigned nbits, unsigned es>
-	int VerifyPrefix(bool reportTestCases)
-	{
+	template<typename TestType>
+	int VerifyPrefix(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -418,8 +429,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyNegation(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		posit<nbits, es> pa(0), pneg(0), pref(0);
@@ -443,8 +456,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all SQRT cases for a posit configuration: executes within 10 sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifySqrt(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 
@@ -469,8 +484,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all addition cases for a posit configuration
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyAddition(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		posit<nbits, es> pa, pb, psum, pref;
@@ -515,8 +532,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all addition cases for a posit configuration
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyInPlaceAddition(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (unsigned i = 0; i < NR_POSITS; i++) {
@@ -561,8 +580,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifySubtraction(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (unsigned i = 0; i < NR_POSITS; i++) {
@@ -605,8 +626,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyInPlaceSubtraction(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (unsigned i = 0; i < NR_POSITS; i++) {
@@ -650,8 +673,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyMultiplication(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		int nrOfFailedTests = 0;
 		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		for (unsigned i = 0; i < NR_POSITS; i++) {
@@ -692,8 +717,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyInPlaceMultiplication(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		int nrOfFailedTests = 0;
 		const unsigned NR_POSITS = (unsigned(1) << nbits);
 		for (unsigned i = 0; i < NR_POSITS; i++) {
@@ -736,8 +763,10 @@ namespace sw { namespace universal {
 	}
 
 	// enerate all reciprocation cases for a posit configuration: executes within 10 sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyReciprocation(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		const unsigned NR_TEST_CASES = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -790,8 +819,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyDivision(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (unsigned i = 0; i < NR_POSITS; i++) {
@@ -863,8 +894,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
-	template<unsigned nbits, unsigned es>
+	template<typename TestType>
 	int VerifyInPlaceDivision(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned NR_POSITS = (unsigned(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (unsigned i = 0; i < NR_POSITS; i++) {
@@ -939,8 +972,10 @@ namespace sw { namespace universal {
 
 	// Posit equal diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR can be checked for equality/inequality
-	template<unsigned nbits, unsigned es>
-	int VerifyPositLogicEqual() {
+	template<typename TestType>
+	int VerifyPositLogicEqual(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -975,7 +1010,7 @@ namespace sw { namespace universal {
 				bool presult = (a == b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}
@@ -984,8 +1019,10 @@ namespace sw { namespace universal {
 
 	// Posit not-equal diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR can be checked for equality/inequality
-	template<unsigned nbits, unsigned es>
-	int VerifyPositLogicNotEqual() {
+	template<typename TestType>
+	int VerifyPositLogicNotEqual(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1021,7 +1058,7 @@ namespace sw { namespace universal {
 				bool presult = (a != b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " != " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " != " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}
@@ -1030,8 +1067,10 @@ namespace sw { namespace universal {
 
 	// Posit less-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR is smaller than any other value
-	template<unsigned nbits, unsigned es>
-	int VerifyPositLogicLessThan() {
+	template<typename TestType>
+	int VerifyPositLogicLessThan(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1058,7 +1097,7 @@ namespace sw { namespace universal {
 				bool presult = (a < b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}
@@ -1067,8 +1106,10 @@ namespace sw { namespace universal {
 
 	// Posit greater-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Any number is greater-than posit NaR
-	template<unsigned nbits, unsigned es>
-	int VerifyPositLogicGreaterThan() {
+	template<typename TestType>
+	int VerifyPositLogicGreaterThan(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1087,7 +1128,7 @@ namespace sw { namespace universal {
 				bool presult = (a > b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " > " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " > " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}
@@ -1096,8 +1137,10 @@ namespace sw { namespace universal {
 
 	// Posit less-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR is smaller or equal than any other value
-	template<unsigned nbits, unsigned es>
-	int VerifyPositLogicLessOrEqualThan() {
+	template<typename TestType>
+	int VerifyPositLogicLessOrEqualThan(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1117,7 +1160,7 @@ namespace sw { namespace universal {
 				bool presult = (a <= b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " <= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " <= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}
@@ -1126,8 +1169,10 @@ namespace sw { namespace universal {
 
 	// Posit greater-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Any number is greater-or-equal-than posit NaR
-	template<unsigned nbits, unsigned es>
-	int VerifyPositLogicGreaterOrEqualThan() {
+	template<typename TestType>
+	int VerifyPositLogicGreaterOrEqualThan(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
 		unsigned NR_TEST_CASES = (unsigned(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1147,7 +1192,7 @@ namespace sw { namespace universal {
 				bool presult = (a >= b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
-					std::cout << a << " >= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					if (reportTestCases) std::cout << a << " >= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 				}
 			}
 		}

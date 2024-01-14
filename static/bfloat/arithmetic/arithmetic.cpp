@@ -1,6 +1,6 @@
 // arithmetic.cpp: test suite runner for arithmetic on bfloat16s
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -8,7 +8,7 @@
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-#include <universal/verification/test_suite_random.hpp>
+#include <universal/verification/test_suite_randoms.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 // Regression testing guards: typically set by the cmake configuration, but MANUAL_TESTING is an override

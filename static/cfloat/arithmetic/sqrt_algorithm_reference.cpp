@@ -1,6 +1,6 @@
 // sqrt_algorithm_reference.cpp: test suite runner for native floating-point square root algorithm
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -10,7 +10,7 @@
 // #define CFLOAT_NATIVE_SQRT 1
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/verification/test_suite_random.hpp>
+#include <universal/verification/test_suite_randoms.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 template<typename Real = float>

@@ -14,7 +14,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/posit/posit_parse.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
 #include <universal/verification/test_case.hpp>
 
 // Standard posit with nbits = 32 have es = 2 exponent bits.

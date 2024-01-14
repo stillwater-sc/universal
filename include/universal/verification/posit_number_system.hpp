@@ -1,5 +1,5 @@
 #pragma once
-// test_number_system.hpp: reusable test suite for small number systems
+// posit_number_system.hpp: reusable test suite for posit number systems
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -7,9 +7,10 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
-#include <universal/verification/test_suite.hpp>
-#include <universal/verification/test_suite_mathlib.hpp>
-//#include <universal/verification/test_suite_random.hpp>
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
+//#include <universal/verification/posit_test_suite_randoms.hpp>
+
 
 namespace sw { namespace universal {
 
@@ -47,6 +48,12 @@ namespace sw { namespace universal {
 			++nrOfFailedTestCases;
 		}
 
+		// conversion tests
+		cout << "Assignment/conversion tests " << endl;
+		nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion <TestType>(reportTestCases), test_tag, "integer assign (native)  ");
+		nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType, RefType, float>(reportTestCases), test_tag, "float assign   (native)  ");
+		nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType, RefType, double>(reportTestCases), test_tag, "double assign  (native)  ");
+
 		// logic tests
 		nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(reportTestCases), test_tag, "    ==         ");
 		nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <TestType>(reportTestCases), test_tag, "    !=         ");
@@ -54,12 +61,6 @@ namespace sw { namespace universal {
 		nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan   <TestType>(reportTestCases), test_tag, "    <=         ");
 		nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan       <TestType>(reportTestCases), test_tag, "    >          ");
 		nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<TestType>(reportTestCases), test_tag, "    >=         ");
-
-		// conversion tests
-		cout << "Assignment/conversion tests " << endl;
-		nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion <TestType>(reportTestCases), test_tag, "integer assign (native)  ");
-		nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType, RefType, float>(reportTestCases), test_tag, "float assign   (native)  ");
-		nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType, RefType, double>(reportTestCases), test_tag, "double assign  (native)  ");
 
 		// arithmetic tests
 		cout << "Arithmetic tests " << endl;

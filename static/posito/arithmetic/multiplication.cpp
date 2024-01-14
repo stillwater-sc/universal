@@ -16,7 +16,7 @@
 #include <universal/number/posito/posito.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
 
 namespace sw {
 	namespace testing {

@@ -10,7 +10,7 @@
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/posito/posito.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 namespace sw {
 	namespace universal {

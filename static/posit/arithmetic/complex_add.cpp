@@ -14,9 +14,8 @@
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_ADD
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 #define FLOAT_TABLE_WIDTH 10
 
@@ -40,9 +39,11 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 }
 
 // enumerate all addition cases for a posit configuration
-template<unsigned nbits, unsigned es>
+template<typename TestType>
 int VerifyComplexAddition(bool reportTestCases) {
 	using namespace sw::universal;
+	constexpr unsigned nbits = TestType::nbits;
+	constexpr unsigned es = TestType::es;
 	const unsigned NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> ar, ai, br, bi;
@@ -144,29 +145,29 @@ try {
 		cout << z1 << endl;
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<2, 0>(reportTestCases), "posit<2,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<2, 0>>(reportTestCases), "posit<2,0>", "addition");
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 0>(true), "complex<posit<5,0>>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 1>(true), "complex<posit<5,1>>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 2>(true), "complex<posit<5,2>>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 3>(true), "complex<posit<5,3>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<5, 0>>(reportTestCases), "complex<posit<5,0>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<5, 1>>(reportTestCases), "complex<posit<5,1>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<5, 2>>(reportTestCases), "complex<posit<5,2>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<5, 3>>(reportTestCases), "complex<posit<5,3>>", "addition");
 
-//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>>(reportTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<2, 0>(reportTestCases), "posit<2,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<2, 0>>(reportTestCases), "posit<2,0>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<3, 0>(reportTestCases), "posit<3,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<3, 1>(reportTestCases), "posit<3,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<3, 0>>(reportTestCases), "posit<3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<3, 1>>(reportTestCases), "posit<3,1>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0>(reportTestCases), "posit<4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1>(reportTestCases), "posit<4,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 2>(reportTestCases), "posit<4,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<4, 0>>(reportTestCases), "posit<4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<4, 1>>(reportTestCases), "posit<4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<4, 2>>(reportTestCases), "posit<4,2>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -174,55 +175,55 @@ try {
 
 #if REGRESSION_LEVEL_3
 	/* TODO
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(reportTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(reportTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>(reportTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>>(reportTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>>(reportTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>>(reportTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
 	*/
 
 #endif
 
 #if REGRESSION_LEVEL_4
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 0>(reportTestCases), "posit<5,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 1>(reportTestCases), "posit<5,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 2>(reportTestCases), "posit<5,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 3>(reportTestCases), "posit<5,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<5, 0>>(reportTestCases), "posit<5,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<5, 1>>(reportTestCases), "posit<5,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<5, 2>>(reportTestCases), "posit<5,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<5, 3>>(reportTestCases), "posit<5,3>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 0>(reportTestCases), "posit<6,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 1>(reportTestCases), "posit<6,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 2>(reportTestCases), "posit<6,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 3>(reportTestCases), "posit<6,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 4>(reportTestCases), "posit<6,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<6, 0>>(reportTestCases), "posit<6,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<6, 1>>(reportTestCases), "posit<6,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<6, 2>>(reportTestCases), "posit<6,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<6, 3>>(reportTestCases), "posit<6,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<6, 4>>(reportTestCases), "posit<6,4>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<7, 0>(reportTestCases), "posit<7,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<7, 1>(reportTestCases), "posit<7,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<7, 2>(reportTestCases), "posit<7,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<7, 3>(reportTestCases), "posit<7,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<7, 4>(reportTestCases), "posit<7,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<7, 5>(reportTestCases), "posit<7,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<7, 0>>(reportTestCases), "posit<7,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<7, 1>>(reportTestCases), "posit<7,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<7, 2>>(reportTestCases), "posit<7,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<7, 3>>(reportTestCases), "posit<7,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<7, 4>>(reportTestCases), "posit<7,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<7, 5>>(reportTestCases), "posit<7,5>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 0>(reportTestCases), "posit<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 1>(reportTestCases), "posit<8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 2>(reportTestCases), "posit<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 3>(reportTestCases), "posit<8,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 4>(reportTestCases), "posit<8,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 5>(reportTestCases), "posit<8,5>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 6>(reportTestCases), "posit<8,6>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<8, 0>>(reportTestCases), "posit<8,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<8, 1>>(reportTestCases), "posit<8,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<8, 2>>(reportTestCases), "posit<8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<8, 3>>(reportTestCases), "posit<8,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<8, 4>>(reportTestCases), "posit<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<8, 5>>(reportTestCases), "posit<8,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<8, 6>>(reportTestCases), "posit<8,6>", "addition");
 
 	// nbits=48 also shows failures
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<48,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<48,2>", "addition");
 
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(reportTestCases, OPCODE_ADD, 1000), "posit<64,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_ADD, 1000), "posit<64,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,4>", "addition");
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 1>(reportTestCases), "posit<10,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 1>(reportTestCases), "posit<12,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<14, 1>(reportTestCases), "posit<14,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<16, 1>(reportTestCases), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<10, 1>>(reportTestCases), "posit<10,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<12, 1>>(reportTestCases), "posit<12,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<14, 1>>(reportTestCases), "posit<14,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<16, 1>>(reportTestCases), "posit<16,1>", "addition");
 #endif // REGRESSION_LEVEL_4
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -1,8 +1,8 @@
 #pragma once
-// posit_math_test_suite.hpp : functions to aid in testing and test reporting of function evaluation on posit types.
+// posit_test_suite_mathlib.hpp : functions to aid in testing and test reporting of function evaluation on posit types.
 // Needs to be included after posit type is declared.
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -13,7 +13,6 @@
 
 // mathematical function definitions and implementations
 #include <universal/number/posit/mathlib.hpp>
-#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 namespace sw { namespace universal {
@@ -23,11 +22,12 @@ namespace sw { namespace universal {
 ////////////////////////////////////  MATHEMATICAL FUNCTIONS  //////////////////////////////////////////
 
 // enumerate all NATURAL LOGARITHM cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyLog(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, plog, pref;
+	TestType pa, plog, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -48,11 +48,12 @@ int VerifyLog(bool reportTestCases) {
 
 
 // enumerate all BINARY LOGARITHM cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyLog2(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, plog2, pref;
+	TestType pa, plog2, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -73,11 +74,12 @@ int VerifyLog2(bool reportTestCases) {
 
 
 // enumerate all DECIMAL LOGARITHM cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyLog10(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, plog10, pref;
+	TestType pa, plog10, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -98,11 +100,12 @@ int VerifyLog10(bool reportTestCases) {
 
 
 // enumerate all base-e exponent cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyExp(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pexp, pref;
+	TestType pa, pexp, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -125,11 +128,12 @@ int VerifyExp(bool reportTestCases) {
 
 
 // enumerate all base-2 exponent cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyExp2(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pexp2, pref;
+	TestType pa, pexp2, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -152,11 +156,12 @@ int VerifyExp2(bool reportTestCases) {
 
 
 // enumerate all power method cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pb, ppow, pref;
+	TestType pa, pb, ppow, pref;
 
 	uint32_t testNr = 0;
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
@@ -201,11 +206,12 @@ int VerifyPowerFunction(bool reportTestCases, unsigned int maxSamples = 10000) {
 
 
 // enumerate all trigonometric sine cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifySine(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, psin, pref;
+	TestType pa, psin, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -226,11 +232,12 @@ int VerifySine(bool reportTestCases) {
 
 
 // enumerate all trigonometric cosine cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyCosine(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pcos, pref;
+	TestType pa, pcos, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -251,11 +258,12 @@ int VerifyCosine(bool reportTestCases) {
 
 
 // enumerate all trigonometric tangent cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyTangent(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, ptan, pref;
+	TestType pa, ptan, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -276,11 +284,12 @@ int VerifyTangent(bool reportTestCases) {
 
 
 // enumerate all trigonometric cotangent cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyAtan(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, patan, pref;
+	TestType pa, patan, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -301,11 +310,12 @@ int VerifyAtan(bool reportTestCases) {
 
 
 // enumerate all trigonometric sec cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyAsin(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pasin, pref;
+	TestType pa, pasin, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -326,11 +336,12 @@ int VerifyAsin(bool reportTestCases) {
 
 
 // enumerate all trigonometric cosec cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyAcos(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pacos, pref;
+	TestType pa, pacos, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -351,11 +362,12 @@ int VerifyAcos(bool reportTestCases) {
 
 
 // enumerate all hyperbolic sine cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifySinh(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, psinh, pref;
+	TestType pa, psinh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -376,11 +388,12 @@ int VerifySinh(bool reportTestCases) {
 
 
 // enumerate all hyperbolic cosine cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyCosh(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pcosh, pref;
+	TestType pa, pcosh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -401,11 +414,12 @@ int VerifyCosh(bool reportTestCases) {
 
 
 // enumerate all hyperbolic tangent cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyTanh(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, ptanh, pref;
+	TestType pa, ptanh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -426,11 +440,12 @@ int VerifyTanh(bool reportTestCases) {
 
 
 // enumerate all hyperbolic cotangent cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyAtanh(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, patanh, pref;
+	TestType pa, patanh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -451,11 +466,12 @@ int VerifyAtanh(bool reportTestCases) {
 
 
 // enumerate all hyperbolic sec cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyAsinh(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pasinh, pref;
+	TestType pa, pasinh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -476,11 +492,12 @@ int VerifyAsinh(bool reportTestCases) {
 
 
 // enumerate all hyperbolic cosec cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyAcosh(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pacosh, pref;
+	TestType pa, pacosh, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
@@ -501,11 +518,12 @@ int VerifyAcosh(bool reportTestCases) {
 
 
 // enumerate all hypotenuse cases for a posit configuration
-template<size_t nbits, size_t es>
+template<typename TestType>
 int VerifyHypot(bool reportTestCases) {
+	constexpr unsigned nbits = TestType::nbits;
 	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pb, phypot, pref;
+	TestType pa, pb, phypot, pref;
 
 	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.setbits(i);
