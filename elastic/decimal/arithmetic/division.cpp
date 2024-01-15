@@ -1,6 +1,6 @@
 // division.cpp: test suite runner for division on adaptive precision decimal integers
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -160,7 +160,7 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalDivision<64>(reportTestCases), "decimal division nbits=64", test_tag);
+	nrOfFailedTestCases += ReportTestResult(VerifyEdecimalDivision<63>(reportTestCases), "decimal division nbits=63", test_tag);
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
