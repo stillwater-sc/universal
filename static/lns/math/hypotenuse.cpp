@@ -86,7 +86,7 @@ try {
 
 #if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< lns<64, 2, std::uint32_t> >(reportTestCases, RandomsOp::OPCODE_HYPOT, 1000, 0.0), "lns<64,2>", "hypot");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< lns<64, 2, std::uint32_t> >(reportTestCases, RandomsOp::OPCODE_HYPOT, 1000), "lns<64,2>", "hypot");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

@@ -14,8 +14,8 @@
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_ADD
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
 #include <universal/verification/posit_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -71,62 +71,62 @@ try {
 	GenerateTestCase<3, 0>(0.5f, 1.0f);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 0>(true), "posit<3,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 1>(true), "posit<3,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 2>(true), "posit<3,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 3>(true), "posit<3,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<3, 0>>(reportTestCases), "posit<3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<3, 1>>(reportTestCases), "posit<3,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<3, 2>>(reportTestCases), "posit<3,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<3, 3>>(reportTestCases), "posit<3,3>", "addition");
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<16, 1>(tag, reportTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
 	
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<2, 0>(reportTestCases), "posit< 2,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<2, 0>>(reportTestCases), "posit< 2,0>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 0>(reportTestCases), "posit< 3,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 1>(reportTestCases), "posit< 3,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<3, 0>>(reportTestCases), "posit< 3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<3, 1>>(reportTestCases), "posit< 3,1>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>(reportTestCases), "posit< 4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>(reportTestCases), "posit< 4,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>(reportTestCases), "posit< 4,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<4, 0>>(reportTestCases), "posit< 4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<4, 1>>(reportTestCases), "posit< 4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<4, 2>>(reportTestCases), "posit< 4,2>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<5, 0>(reportTestCases), "posit< 5,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<5, 1>(reportTestCases), "posit< 5,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<5, 2>(reportTestCases), "posit< 5,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<5, 3>(reportTestCases), "posit< 5,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<5, 0>>(reportTestCases), "posit< 5,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<5, 1>>(reportTestCases), "posit< 5,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<5, 2>>(reportTestCases), "posit< 5,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<5, 3>>(reportTestCases), "posit< 5,3>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 0>(reportTestCases), "posit< 6,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 1>(reportTestCases), "posit< 6,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 2>(reportTestCases), "posit< 6,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 3>(reportTestCases), "posit< 6,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 4>(reportTestCases), "posit< 6,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<6, 0>>(reportTestCases), "posit< 6,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<6, 1>>(reportTestCases), "posit< 6,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<6, 2>>(reportTestCases), "posit< 6,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<6, 3>>(reportTestCases), "posit< 6,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<6, 4>>(reportTestCases), "posit< 6,4>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 0>(reportTestCases), "posit< 7,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 1>(reportTestCases), "posit< 7,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 2>(reportTestCases), "posit< 7,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 3>(reportTestCases), "posit< 7,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 4>(reportTestCases), "posit< 7,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<7, 5>(reportTestCases), "posit< 7,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<7, 0>>(reportTestCases), "posit< 7,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<7, 1>>(reportTestCases), "posit< 7,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<7, 2>>(reportTestCases), "posit< 7,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<7, 3>>(reportTestCases), "posit< 7,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<7, 4>>(reportTestCases), "posit< 7,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<7, 5>>(reportTestCases), "posit< 7,5>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0>(reportTestCases), "posit< 8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1>(reportTestCases), "posit< 8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2>(reportTestCases), "posit< 8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 3>(reportTestCases), "posit< 8,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 4>(reportTestCases), "posit< 8,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 5>(reportTestCases), "posit< 8,5>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 6>(reportTestCases), "posit< 8,6>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<8, 0>>(reportTestCases), "posit< 8,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<8, 1>>(reportTestCases), "posit< 8,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<8, 2>>(reportTestCases), "posit< 8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<8, 3>>(reportTestCases), "posit< 8,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<8, 4>>(reportTestCases), "posit< 8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<8, 5>>(reportTestCases), "posit< 8,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<8, 6>>(reportTestCases), "posit< 8,6>", "addition");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 0>(reportTestCases), "posit<10,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 1>(reportTestCases), "posit<10,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 2>(reportTestCases), "posit<10,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 3>(reportTestCases), "posit<10,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<10, 0>>(reportTestCases), "posit<10,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<10, 1>>(reportTestCases), "posit<10,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<10, 2>>(reportTestCases), "posit<10,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<10, 3>>(reportTestCases), "posit<10,3>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<16,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
 #endif
 
@@ -149,9 +149,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_ADD, 1000), "posit<64,4>", "addition");
 
 #ifdef HARDWARE_ACCELERATION
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, 1>(reportTestCases), "posit<12,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<14, 1>(reportTestCases), "posit<14,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16, 1>(reportTestCases), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<12, 1>>(reportTestCases), "posit<12,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<14, 1>>(reportTestCases), "posit<14,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<posit<16, 1>>(reportTestCases), "posit<16,1>", "addition");
 #endif // HARDWARE_ACCELERATION
 
 #endif // REGRESSION_LEVEL_4

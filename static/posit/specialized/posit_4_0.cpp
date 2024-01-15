@@ -27,7 +27,7 @@ try {
 	constexpr size_t es = 0;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = true;
+	bool reportTestCases = true;
 	std::string tag = " posit<4,0>";
 
 #if defined(POSIT_FAST_POSIT_4_0)
@@ -84,30 +84,30 @@ try {
 
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<nbits,es>>(reportTestCases), tag, "integer assign ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <posit<nbits,es>, float>(reportTestCases), tag, "float assign   ");
 
 	// logic tests
 	std::cout << "Logic operator tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan          <nbits, es>(), tag, "    <          ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <posit<nbits,es>>(reportTestCases), tag, "    ==         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <posit<nbits,es>>(reportTestCases), tag, "    !=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan          <posit<nbits,es>>(reportTestCases), tag, "    <          ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan   <posit<nbits,es>>(reportTestCases), tag, "    <=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan       <posit<nbits,es>>(reportTestCases), tag, "    >          ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<nbits,es>>(reportTestCases), tag, "    >=         ");
 	
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(bReportIndividualTestCases), tag, "add            ");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(bReportIndividualTestCases), tag, "subtract       ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(bReportIndividualTestCases), tag, "multiply       ");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(bReportIndividualTestCases), tag, "divide         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(bReportIndividualTestCases), tag, "negate         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(bReportIndividualTestCases), tag, "reciprocate    ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <posit<nbits,es>>(reportTestCases), tag, "add            ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <posit<nbits,es>>(reportTestCases), tag, "subtract       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <posit<nbits,es>>(reportTestCases), tag, "multiply       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <posit<nbits,es>>(reportTestCases), tag, "divide         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <posit<nbits,es>>(reportTestCases), tag, "negate         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <posit<nbits,es>>(reportTestCases), tag, "reciprocate    ");
 
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt             <nbits, es>(bReportIndividualTestCases), tag, "sqrt           ");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt             <posit<nbits,es>>(reportTestCases), tag, "sqrt           ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

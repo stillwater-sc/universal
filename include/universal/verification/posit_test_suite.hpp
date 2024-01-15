@@ -49,8 +49,10 @@ namespace sw { namespace universal {
 	}
 
 	// enumerate all conversion cases for a posit configuration
-	template<unsigned nbits, unsigned es>
+	template<typename TestType, typename SrcType>
 	int VerifyConversion(bool reportTestCases) {
+		constexpr unsigned nbits = TestType::nbits;
+		constexpr unsigned es = TestType::es;
 		// we are going to generate a test set that consists of all posit configs and their midpoints
 		// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 		// These larger posits will be at the mid-point between the smaller posit sample values
@@ -64,16 +66,16 @@ namespace sw { namespace universal {
 			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
 		}
 
-		double halfMinpos = double(posit<nbits + 1, es>(SpecificValue::minpos)) / 2.0;
+		SrcType halfMinpos = SrcType(posit<nbits + 1, es>(SpecificValue::minpos)) / 2.0;
 		// execute the test
 		int nrOfFailedTests = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits + 1, es> pref, pprev, pnext;
 
 			pref.setbits(i);
-			double da = double(pref);
-			double eps = double(i == 0 ? halfMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
-			double input;
+			SrcType da = SrcType(pref);
+			SrcType eps = double(i == 0 ? halfMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
+			SrcType input;
 			posit<nbits, es> pa;
 			if (i % 2) {
 				if (i == 1) {
@@ -162,19 +164,44 @@ namespace sw { namespace universal {
 	}
 
 	template<>
-	int VerifyConversion<NBITS_IS_2, ES_IS_0>(bool reportTestCases) {
+	int VerifyConversion<posit<NBITS_IS_2, ES_IS_0>, float>(bool reportTestCases) {
+		using SrcType = float;
 		int nrOfFailedTestCases = 0;
 		// special case
 		posit<NBITS_IS_2, ES_IS_0> p = -INFINITY;
 		if (!isnar(p)) nrOfFailedTestCases++;
 		// test vector
-		std::vector<double> in  = { -4.0, -2.0, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 2.0, 4.0 };
-		std::vector<double> ref = { -1.0, -1.0, -1.0, -1.0, -1.00, 0.0, 1.00, 1.0, 1.0, 1.0, 1.0 };
+		std::vector<SrcType> in  = { -4.0, -2.0, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 2.0, 4.0 };
+		std::vector<SrcType> ref = { -1.0, -1.0, -1.0, -1.0, -1.00, 0.0, 1.00, 1.0, 1.0, 1.0, 1.0 };
 		unsigned ref_index = 0;
 		for (auto v : in) {
 			p = v;
-			double refv = ref[ref_index++];
-			if (double(p) != refv) {
+			SrcType refv = ref[ref_index++];
+			if (SrcType(p) != refv) {
+				if (reportTestCases) std::cout << " FAIL " << p << " != " << refv << std::endl;
+				nrOfFailedTestCases++;
+			}
+			else {
+				//if (reportTestCases) std::cout << " PASS " << p << " == " << refv << std::endl;
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+	template<>
+	int VerifyConversion<posit<NBITS_IS_2, ES_IS_0>, double>(bool reportTestCases) {
+		using SrcType = double;
+		int nrOfFailedTestCases = 0;
+		// special case
+		posit<NBITS_IS_2, ES_IS_0> p = -INFINITY;
+		if (!isnar(p)) nrOfFailedTestCases++;
+		// test vector
+		std::vector<SrcType> in = { -4.0, -2.0, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 2.0, 4.0 };
+		std::vector<SrcType> ref = { -1.0, -1.0, -1.0, -1.0, -1.00, 0.0, 1.00, 1.0, 1.0, 1.0, 1.0 };
+		unsigned ref_index = 0;
+		for (auto v : in) {
+			p = v;
+			SrcType refv = ref[ref_index++];
+			if (SrcType(p) != refv) {
 				if (reportTestCases) std::cout << " FAIL " << p << " != " << refv << std::endl;
 				nrOfFailedTestCases++;
 			}
@@ -973,7 +1000,7 @@ namespace sw { namespace universal {
 	// Posit equal diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR can be checked for equality/inequality
 	template<typename TestType>
-	int VerifyPositLogicEqual(bool reportTestCases) {
+	int VerifyLogicEqual(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
 		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
@@ -1020,7 +1047,7 @@ namespace sw { namespace universal {
 	// Posit not-equal diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR can be checked for equality/inequality
 	template<typename TestType>
-	int VerifyPositLogicNotEqual(bool reportTestCases) {
+	int VerifyLogicNotEqual(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
 		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
@@ -1068,7 +1095,7 @@ namespace sw { namespace universal {
 	// Posit less-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR is smaller than any other value
 	template<typename TestType>
-	int VerifyPositLogicLessThan(bool reportTestCases) {
+	int VerifyLogicLessThan(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
 		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
@@ -1107,7 +1134,7 @@ namespace sw { namespace universal {
 	// Posit greater-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Any number is greater-than posit NaR
 	template<typename TestType>
-	int VerifyPositLogicGreaterThan(bool reportTestCases) {
+	int VerifyLogicGreaterThan(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
 		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
@@ -1138,7 +1165,7 @@ namespace sw { namespace universal {
 	// Posit less-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR is smaller or equal than any other value
 	template<typename TestType>
-	int VerifyPositLogicLessOrEqualThan(bool reportTestCases) {
+	int VerifyLogicLessOrEqualThan(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
 		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;
@@ -1170,7 +1197,7 @@ namespace sw { namespace universal {
 	// Posit greater-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Any number is greater-or-equal-than posit NaR
 	template<typename TestType>
-	int VerifyPositLogicGreaterOrEqualThan(bool reportTestCases) {
+	int VerifyLogicGreaterOrEqualThan(bool reportTestCases) {
 		constexpr unsigned nbits = TestType::nbits;
 		constexpr unsigned es = TestType::es;
 		constexpr unsigned max = nbits > 10 ? 10 : nbits;

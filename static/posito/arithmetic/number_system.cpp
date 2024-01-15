@@ -56,9 +56,6 @@ try {
 	if (a.isnan()) std::cout << "NaN and NaR are equivalent\n";
 	if (b.isnar()) std::cout << "NaN and NaR are equivalent\n";
 
-	using TestType = posito<8, 0>;
-	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan          <TestType>(reportTestCases), test_tag + type_tag(TestType()), "    <          ");
-
 	// TestType: posit<nbits, es, uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
 	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>, posit<9, 0>>("posit<8,0>", reportTestCases);
 //	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);

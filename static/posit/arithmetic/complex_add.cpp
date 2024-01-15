@@ -15,6 +15,7 @@
 #define ALGORITHM_TRACE_ADD
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
 #include <universal/verification/posit_test_suite_mathlib.hpp>
 
 #define FLOAT_TABLE_WIDTH 10
@@ -212,12 +213,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<8, 6>>(reportTestCases), "posit<8,6>", "addition");
 
 	// nbits=48 also shows failures
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<48,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<48,2>", "addition");
 
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>>(reportTestCases, OPCODE_ADD, 1000), "posit<64,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_ADD, 1000), "posit<64,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 3>(reportTestCases, OPCODE_ADD, 1000), "posit<64,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_ADD, 1000), "posit<64,4>", "addition");
 
 
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<posit<10, 1>>(reportTestCases), "posit<10,1>", "addition");

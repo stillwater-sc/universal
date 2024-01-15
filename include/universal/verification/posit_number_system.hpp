@@ -50,9 +50,9 @@ namespace sw { namespace universal {
 
 		// conversion tests
 		cout << "Assignment/conversion tests " << endl;
-		nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion <TestType>(reportTestCases), test_tag, "integer assign (native)  ");
-		nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType, RefType, float>(reportTestCases), test_tag, "float assign   (native)  ");
-		nrOfFailedTestCases += ReportTestResult(VerifyConversion        <TestType, RefType, double>(reportTestCases), test_tag, "double assign  (native)  ");
+		nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion      <TestType>(reportTestCases), test_tag, "integer assign (native)  ");
+		nrOfFailedTestCases += ReportTestResult(VerifyConversion             <TestType, float>(reportTestCases), test_tag, "float assign   (native)  ");
+		nrOfFailedTestCases += ReportTestResult(VerifyConversion             <TestType, double>(reportTestCases), test_tag, "double assign  (native)  ");
 
 		// logic tests
 		nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(reportTestCases), test_tag, "    ==         ");

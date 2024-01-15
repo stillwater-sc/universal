@@ -221,33 +221,33 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<16, 2>>(reportTestCases), "posit<16,2>", "sqrt");
 
 	using Posit20_2 = posit<20, 2>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit20_2 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit20_2(SpecificValue::minpos))), type_tag(Posit20_2()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit20_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit20_2(SpecificValue::minpos))), type_tag(Posit20_2()), "sqrt");
 	using Posit24_2 = posit<24, 2>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit24_2 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit24_2(SpecificValue::minpos))), type_tag(Posit24_2()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit24_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit24_2(SpecificValue::minpos))), type_tag(Posit24_2()), "sqrt");
 	using Posit28_2 = posit<28, 2>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit28_2 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit28_2(SpecificValue::minpos))), type_tag(Posit28_2()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit28_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit28_2(SpecificValue::minpos))), type_tag(Posit28_2()), "sqrt");
 
 #endif
 
 #if REGRESSION_LEVEL_3
 	// TBD: currently, these tests will fail as the native posit sqrt algorithm needs one more iteration to match std::sqrt(double)
 	using Posit32_1 = posit<32, 1>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_1 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_1(SpecificValue::minpos))), type_tag(Posit32_1()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_1 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_1(SpecificValue::minpos))), type_tag(Posit32_1()), "sqrt");
 	using Posit32_2 = posit<32, 2>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_2 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_2(SpecificValue::minpos))), type_tag(Posit32_2()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_2(SpecificValue::minpos))), type_tag(Posit32_2()), "sqrt");
 	using Posit32_3 = posit<32, 3>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_3 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_3(SpecificValue::minpos))), type_tag(Posit32_3()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit32_3 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit32_3(SpecificValue::minpos))), type_tag(Posit32_3()), "sqrt");
 
 #endif
 
 #if REGRESSION_LEVEL_4
 	// TBD: currently, these tests will fail as the native posit sqrt algorithm needs 2-3 more iterations to match std::sqrt(long double)
 	using Posit64_2 = posit<64, 2>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_2 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_2(SpecificValue::minpos))), type_tag(Posit64_2()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_2(SpecificValue::minpos))), type_tag(Posit64_2()), "sqrt");
 	using Posit64_3 = posit<64, 3>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_3 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_3(SpecificValue::minpos))), type_tag(Posit64_3()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_3 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_3(SpecificValue::minpos))), type_tag(Posit64_3()), "sqrt");
 	using Posit64_4 = posit<64, 4>;
-	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_4 >>(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_4(SpecificValue::minpos))), type_tag(Posit64_4()), "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit64_4 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit64_4(SpecificValue::minpos))), type_tag(Posit64_4()), "sqrt");
 
 #endif // REGRESSION_LEVEL_4
 

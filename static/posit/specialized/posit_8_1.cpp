@@ -55,7 +55,7 @@ try {
 	constexpr size_t es    = 1;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool reportTestCases = false;
 	std::string tag = " posit<8,1>";
 
 #if POSIT_FAST_POSIT_8_1
@@ -89,51 +89,51 @@ try {
 	test = "is positive";
 	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
-	// logic tests
-	std::cout << "Logic operator tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessThan          <nbits, es>(), tag, "    <          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         (native)  ");
-
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<nbits, es>>(reportTestCases), tag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <posit<nbits, es>, float>(reportTestCases), tag, "float assign   (native)  ");
+
+	// logic tests
+	std::cout << "Logic operator tests\n";
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicEqual             <posit<nbits,es>>(reportTestCases), tag, "    ==         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicNotEqual          <posit<nbits,es>>(reportTestCases), tag, "    !=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessThan          <posit<nbits,es>>(reportTestCases), tag, "    <          (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessOrEqualThan   <posit<nbits,es>>(reportTestCases), tag, "    <=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterThan       <posit<nbits,es>>(reportTestCases), tag, "    >          (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterOrEqualThan<posit<nbits,es>>(reportTestCases), tag, "    >=         (native)  ");
 
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyAddition         <nbits, es>(bReportIndividualTestCases), tag, "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifySubtraction      <nbits, es>(bReportIndividualTestCases), tag, "subtract       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyMultiplication   <nbits, es>(bReportIndividualTestCases), tag, "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyDivision         <nbits, es>(bReportIndividualTestCases), tag, "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyNegation         <nbits, es>(bReportIndividualTestCases), tag, "negate         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyReciprocation    <nbits, es>(bReportIndividualTestCases), tag, "reciprocate    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAddition         <posit<nbits,es>>(reportTestCases), tag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifySubtraction      <posit<nbits,es>>(reportTestCases), tag, "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyMultiplication   <posit<nbits,es>>(reportTestCases), tag, "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyDivision         <posit<nbits,es>>(reportTestCases), tag, "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyNegation         <posit<nbits,es>>(reportTestCases), tag, "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyReciprocation    <posit<nbits,es>>(reportTestCases), tag, "reciprocate    (native)  ");
 
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
-//	nrOfFailedTestCases += ReportTestResult( VerifySqrt             <nbits, es>(bReportIndividualTestCases), tag, "sqrt           (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp              <nbits, es>(bReportIndividualTestCases), tag, "exp                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp2             <nbits, es>(bReportIndividualTestCases), tag, "exp2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog              <nbits, es>(bReportIndividualTestCases), tag, "log                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog2             <nbits, es>(bReportIndividualTestCases), tag, "log2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog10            <nbits, es>(bReportIndividualTestCases), tag, "log10                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifySine             <nbits, es>(bReportIndividualTestCases), tag, "sin                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosine           <nbits, es>(bReportIndividualTestCases), tag, "cos                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTangent          <nbits, es>(bReportIndividualTestCases), tag, "tan                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtan             <nbits, es>(bReportIndividualTestCases), tag, "atan                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsin             <nbits, es>(bReportIndividualTestCases), tag, "asin                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcos             <nbits, es>(bReportIndividualTestCases), tag, "acos                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifySinh             <nbits, es>(bReportIndividualTestCases), tag, "sinh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosh             <nbits, es>(bReportIndividualTestCases), tag, "cosh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTanh             <nbits, es>(bReportIndividualTestCases), tag, "tanh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtanh            <nbits, es>(bReportIndividualTestCases), tag, "atanh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcosh            <nbits, es>(bReportIndividualTestCases), tag, "acosh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsinh            <nbits, es>(bReportIndividualTestCases), tag, "asinh                    ");
+//	nrOfFailedTestCases += ReportTestResult( VerifySqrt             <posit<nbits,es>>(reportTestCases), tag, "sqrt           (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp              <posit<nbits,es>>(reportTestCases), tag, "exp                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp2             <posit<nbits,es>>(reportTestCases), tag, "exp2                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog              <posit<nbits,es>>(reportTestCases), tag, "log                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog2             <posit<nbits,es>>(reportTestCases), tag, "log2                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog10            <posit<nbits,es>>(reportTestCases), tag, "log10                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifySine             <posit<nbits,es>>(reportTestCases), tag, "sin                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosine           <posit<nbits,es>>(reportTestCases), tag, "cos                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTangent          <posit<nbits,es>>(reportTestCases), tag, "tan                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtan             <posit<nbits,es>>(reportTestCases), tag, "atan                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsin             <posit<nbits,es>>(reportTestCases), tag, "asin                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcos             <posit<nbits,es>>(reportTestCases), tag, "acos                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifySinh             <posit<nbits,es>>(reportTestCases), tag, "sinh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosh             <posit<nbits,es>>(reportTestCases), tag, "cosh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTanh             <posit<nbits,es>>(reportTestCases), tag, "tanh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtanh            <posit<nbits,es>>(reportTestCases), tag, "atanh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcosh            <posit<nbits,es>>(reportTestCases), tag, "acosh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsinh            <posit<nbits,es>>(reportTestCases), tag, "asinh                    ");
 
-	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <nbits, es>(bReportIndividualTestCases), tag, "pow                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <posit<nbits,es>>(reportTestCases), tag, "pow                      ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

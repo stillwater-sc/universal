@@ -14,7 +14,6 @@
 //#define ALGORITHM_VERBOSE_OUTPUT
 //#define ALGORITHM_TRACE_ADD
 #include <universal/number/posito/posito.hpp>
-#include <universal/verification/test_suite.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_suite_randoms.hpp>
 
@@ -118,38 +117,38 @@ try {
 	// generate individual testcases to hand trace/debug
 
 	// manual exhaustive test
-//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifySubtraction< posito<3, 0> >(true), "posito<3,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifySubtraction< posit<8, 0> >(true), "posit<8,0>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifySubtraction< posit<16, 2> >(false), "posit<16,2>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifySubtraction< posito<3, 0> >(reportTestCases), "posito<3,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifySubtraction< posit<8, 0> >(reportTestCases), "posit<8,0>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifySubtraction< posit<16, 2> >(reportTestCases), "posit<16,2>", "subtraction");
 
-	//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(test_tag, true, OPCODE_SUB, 1000), "posit<64,2>", "subtraction");
+	//	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(test_tag, reportTestCases, OPCODE_SUB, 1000), "posit<64,2>", "subtraction");
 	
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<2, 0>(reportTestCases), "posit< 2,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<2, 0>>(reportTestCases), "posit< 2,0>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<3, 0>(reportTestCases), "posit< 3,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<3, 0>>(reportTestCases), "posit< 3,0>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0>(reportTestCases), "posit< 4,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<4, 0>>(reportTestCases), "posit< 4,0>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 0>(reportTestCases), "posit< 8,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 0>>(reportTestCases), "posit< 8,0>", "subtraction");
 	// TODO: no fast posit<8,1> yet
-	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 1>(reportTestCases), "posit< 8,1>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 1>>(reportTestCases), "posit< 8,1>", "multiplication");
 	// TODO: no working fast posit<8,2> yet
-	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 2>(reportTestCases), "posit< 8,2>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<8, 2>>(reportTestCases), "posit< 8,2>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,2>", "subtraction");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, 0>(reportTestCases), "posit<10,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, 1>(reportTestCases), "posit<10,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, 2>(reportTestCases), "posit<10,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, 3>(reportTestCases), "posit<10,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 0>>(reportTestCases), "posit<10,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 1>>(reportTestCases), "posit<10,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 2>>(reportTestCases), "posit<10,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<10, 3>>(reportTestCases), "posit<10,3>", "subtraction");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<16,2>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<24,1>", "subtraction");
@@ -165,7 +164,7 @@ try {
 
 #if REGRESSION_LEVEL_4
 	// nbits=48 also shows failures
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_SUB, 1nrOfRandoms000), "posit<48,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<48, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<48,2>", "subtraction");
 
 	// nbits=64 requires long double compiler support
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 2>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<64,2>", "subtraction");
@@ -173,9 +172,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_SUB, nrOfRandoms), "posit<64,4>", "subtraction");
 
 #ifdef HARDWARE_ACCELERATION
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, 1>(reportTestCases), "posit<12,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<14, 1>(reportTestCases), "posit<14,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<16, 1>(reportTestCases), "posit<16,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<12, 1>(reportTestCases), "posit<12,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<14, 1>(reportTestCases), "posit<14,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<posit<16, 1>(reportTestCases), "posit<16,1>", "subtraction");
 #endif // HARDWARE_ACCELERATION
 
 #endif // REGRESSION_LEVEL_4

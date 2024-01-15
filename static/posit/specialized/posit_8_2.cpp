@@ -64,26 +64,26 @@ try {
 
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(true), test_tag, "integer assign (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(reportTestCases), test_tag, "float assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<nbits,es>>(reportTestCases), test_tag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <posit<nbits,es>, float>(reportTestCases), test_tag, "float assign   (native)  ");
 
 	// logic tests
 	std::cout << "Logic operator tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual             <nbits, es>(), test_tag, "    ==         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual          <nbits, es>(), test_tag, "    !=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan          <nbits, es>(), test_tag, "    <          (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan   <nbits, es>(), test_tag, "    <=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan       <nbits, es>(), test_tag, "    >          (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<nbits, es>(), test_tag, "    >=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <posit<nbits,es>>(reportTestCases), test_tag, "    ==         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <posit<nbits,es>>(reportTestCases), test_tag, "    !=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessThan          <posit<nbits,es>>(reportTestCases), test_tag, "    <          (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicLessOrEqualThan   <posit<nbits,es>>(reportTestCases), test_tag, "    <=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterThan       <posit<nbits,es>>(reportTestCases), test_tag, "    >          (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyLogicGreaterOrEqualThan<posit<nbits,es>>(reportTestCases), test_tag, "    >=         (native)  ");
 
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(reportTestCases), test_tag, "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(reportTestCases), test_tag, "subtract       (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(reportTestCases), test_tag, "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(reportTestCases), test_tag, "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(reportTestCases), test_tag, "negate         (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(reportTestCases), test_tag, "reciprocate    (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <posit<nbits,es>>(reportTestCases), test_tag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <posit<nbits,es>>(reportTestCases), test_tag, "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <posit<nbits,es>>(reportTestCases), test_tag, "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <posit<nbits,es>>(reportTestCases), test_tag, "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <posit<nbits,es>>(reportTestCases), test_tag, "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <posit<nbits,es>>(reportTestCases), test_tag, "reciprocate    (native)  ");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS; // ignore failures
@@ -114,49 +114,49 @@ try {
 
 	// conversion tests
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(reportTestCases), test_tag, "integer assign (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(reportTestCases), test_tag, "float assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<posit<nbits,es>>(reportTestCases), test_tag, "integer assign (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <posit<nbits,es>>(reportTestCases), test_tag, "float assign   (native)  ");
 
 	// logic tests
 	std::cout << "Logic operator tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), test_tag, "    ==         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicNotEqual          <nbits, es>(), test_tag, "    !=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessThan          <nbits, es>(), test_tag, "    <          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessOrEqualThan   <nbits, es>(), test_tag, "    <=         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterThan       <nbits, es>(), test_tag, "    >          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), test_tag, "    >=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicEqual             <posit<nbits,es>>(reportTestCases), test_tag, "    ==         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicNotEqual          <posit<nbits,es>>(reportTestCases), test_tag, "    !=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessThan          <posit<nbits,es>>(reportTestCases), test_tag, "    <          (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessOrEqualThan   <posit<nbits,es>>(reportTestCases), test_tag, "    <=         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterThan       <posit<nbits,es>>(reportTestCases), test_tag, "    >          (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterOrEqualThan<posit<nbits,es>>(reportTestCases), test_tag, "    >=         (native)  ");
 
 	// arithmetic tests
 	std::cout << "Arithmetic tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyAddition         <nbits, es>(reportTestCases), test_tag, "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifySubtraction      <nbits, es>(reportTestCases), test_tag, "subtract       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyMultiplication   <nbits, es>(reportTestCases), test_tag, "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyDivision         <nbits, es>(reportTestCases), test_tag, "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyNegation         <nbits, es>(reportTestCases), test_tag, "negate         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyReciprocation    <nbits, es>(reportTestCases), test_tag, "reciprocate    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAddition         <posit<nbits,es>>(reportTestCases), test_tag, "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifySubtraction      <posit<nbits,es>>(reportTestCases), test_tag, "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyMultiplication   <posit<nbits,es>>(reportTestCases), test_tag, "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyDivision         <posit<nbits,es>>(reportTestCases), test_tag, "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyNegation         <posit<nbits,es>>(reportTestCases), test_tag, "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyReciprocation    <posit<nbits,es>>(reportTestCases), test_tag, "reciprocate    (native)  ");
 
 	// elementary function tests
 	std::cout << "Elementary function tests\n";
-//	nrOfFailedTestCases += ReportTestResult( VerifySqrt             <nbits, es>(reportTestCases), test_tag, "sqrt           (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp              <nbits, es>(reportTestCases), test_tag, "exp                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyExp2             <nbits, es>(reportTestCases), test_tag, "exp2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog              <nbits, es>(reportTestCases), test_tag, "log                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog2             <nbits, es>(reportTestCases), test_tag, "log2                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyLog10            <nbits, es>(reportTestCases), test_tag, "log10                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifySine             <nbits, es>(reportTestCases), test_tag, "sin                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosine           <nbits, es>(reportTestCases), test_tag, "cos                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTangent          <nbits, es>(reportTestCases), test_tag, "tan                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtan             <nbits, es>(reportTestCases), test_tag, "atan                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsin             <nbits, es>(reportTestCases), test_tag, "asin                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcos             <nbits, es>(reportTestCases), test_tag, "acos                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifySinh             <nbits, es>(reportTestCases), test_tag, "sinh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyCosh             <nbits, es>(reportTestCases), test_tag, "cosh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyTanh             <nbits, es>(reportTestCases), test_tag, "tanh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAtanh            <nbits, es>(reportTestCases), test_tag, "atanh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAcosh            <nbits, es>(reportTestCases), test_tag, "acosh                    ");
-	nrOfFailedTestCases += ReportTestResult( VerifyAsinh            <nbits, es>(reportTestCases), test_tag, "asinh                    ");
+//	nrOfFailedTestCases += ReportTestResult( VerifySqrt             <posit<nbits,es>>(reportTestCases), test_tag, "sqrt           (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp              <posit<nbits,es>>(reportTestCases), test_tag, "exp                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyExp2             <posit<nbits,es>>(reportTestCases), test_tag, "exp2                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog              <posit<nbits,es>>(reportTestCases), test_tag, "log                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog2             <posit<nbits,es>>(reportTestCases), test_tag, "log2                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLog10            <posit<nbits,es>>(reportTestCases), test_tag, "log10                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifySine             <posit<nbits,es>>(reportTestCases), test_tag, "sin                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosine           <posit<nbits,es>>(reportTestCases), test_tag, "cos                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTangent          <posit<nbits,es>>(reportTestCases), test_tag, "tan                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtan             <posit<nbits,es>>(reportTestCases), test_tag, "atan                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsin             <posit<nbits,es>>(reportTestCases), test_tag, "asin                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcos             <posit<nbits,es>>(reportTestCases), test_tag, "acos                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifySinh             <posit<nbits,es>>(reportTestCases), test_tag, "sinh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyCosh             <posit<nbits,es>>(reportTestCases), test_tag, "cosh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyTanh             <posit<nbits,es>>(reportTestCases), test_tag, "tanh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAtanh            <posit<nbits,es>>(reportTestCases), test_tag, "atanh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAcosh            <posit<nbits,es>>(reportTestCases), test_tag, "acosh                    ");
+	nrOfFailedTestCases += ReportTestResult( VerifyAsinh            <posit<nbits,es>>(reportTestCases), test_tag, "asinh                    ");
 
-	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <nbits, es>(reportTestCases), test_tag, "pow                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPowerFunction    <posit<nbits,es>>(reportTestCases), test_tag, "pow                      ");
 
 #endif
 

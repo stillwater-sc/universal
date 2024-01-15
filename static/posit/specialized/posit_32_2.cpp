@@ -128,19 +128,19 @@ try {
 #if REGRESSION_LEVEL_2
 	// logic tests
 	std::cout << "Logic operator tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==          (native) ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=          (native) ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessThan          <nbits, es>(), tag, "    <           (native) ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=          (native) ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >           (native) ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=          (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicEqual             <posit<nbits,es>>(reportTestCases), tag, "    ==          (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicNotEqual          <posit<nbits,es>>(reportTestCases), tag, "    !=          (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessThan          <posit<nbits,es>>(reportTestCases), tag, "    <           (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicLessOrEqualThan   <posit<nbits,es>>(reportTestCases), tag, "    <=          (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterThan       <posit<nbits,es>>(reportTestCases), tag, "    >           (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyLogicGreaterOrEqualThan<posit<nbits,es>>(reportTestCases), tag, "    >=          (native) ");
 
 	// conversion tests
 	// internally this generators are clamped as the state space 2^33 is too big
 	std::cout << "Assignment/conversion tests\n";
-	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(reportTestCases), tag, "sint32 assign   (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUintConversion              <nbits, es>(reportTestCases), tag, "uint32 assign   (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(reportTestCases), tag, "float assign    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <posit<nbits,es>>(reportTestCases), tag, "sint32 assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUintConversion              <posit<nbits,es>>(reportTestCases), tag, "uint32 assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <posit<nbits,es>, float>(reportTestCases), tag, "float assign    (native)  ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
 #endif
 
