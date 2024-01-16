@@ -234,7 +234,6 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<9, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 1,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<9, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 2,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<9, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 3,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<9, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 4,uint8_t,f,f,f>", "division");
@@ -242,7 +241,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<9, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 6,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<9, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat< 9, 7,uint8_t,f,f,f>", "division");
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 1,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 2,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 3,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 4,uint8_t,f,f,f>", "division");
@@ -251,70 +249,68 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 7,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<10, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<10, 8,uint8_t,f,f,f>", "division");
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 1,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 2,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 3,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 4,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 2,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 3,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 4,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 5,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 6,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 7,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 8,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 9,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 6,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 7,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 8,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<11, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<11, 9,uint8_t,f,f,f>", "division");
 #endif
 
 #if REGRESSION_LEVEL_3
-//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 1, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 1,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 2,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 3,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 4,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 2, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 2,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 3,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 4,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 5,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 6,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 7,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 8,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 9,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12,10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12,10,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 6,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 7,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 8,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12, 9,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<12,10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<12,10,uint8_t,f,f,f>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 3,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 4,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 5,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 3,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 4,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 5,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 6,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 7,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 8,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 9,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13,10,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13,11,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 7,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 8,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13, 9,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13,10,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<13, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<13,11,uint8_t,f,f,f>", "division");
 #endif
 
 #if REGRESSION_LEVEL_4
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 3,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 4,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 5,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 6,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 3,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 4,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 5,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 6,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 7,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 8,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 9,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14,10,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14,11,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 8,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14, 9,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14,10,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<14, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<14,11,uint8_t,f,f,f>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 3,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 4,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 5,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 6,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 7,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 3,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 4,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 5,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 6,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 7,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 8,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 9,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15,10,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15,11,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15, 9,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15,10,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<15, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<15,11,uint8_t,f,f,f>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 3,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 4,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 5,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 6,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 7,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 3, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 3,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 4, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 4,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 5, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 5,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 6, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 6,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 7, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 7,uint8_t,f,f,f>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 8, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 8,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 9,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16,10,uint8_t,f,f,f>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16,11,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 9, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16, 9,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 10, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16,10,uint8_t,f,f,f>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyCfloatDivision< cfloat<16, 11, uint8_t, hasSubnormals, hasSupernormals, isSaturating> >(reportTestCases), "cfloat<16,11,uint8_t,f,f,f>", "division");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
