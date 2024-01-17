@@ -84,7 +84,7 @@ public:
 	explicit constexpr posit(unsigned long initial_value) : _bits(0) { *this = initial_value; }
 	explicit constexpr posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(float initial_value) : _bits(0) { *this = initial_value; }
-	posit(double initial_value) : _bits(0) { *this = initial_value; }
+	                   posit(double initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(long double initial_value) : _bits(0) { *this = initial_value; }
 
 	// assignment operators for native types
@@ -98,9 +98,9 @@ public:
 	constexpr posit& operator=(unsigned int rhs) { return integer_assign(rhs); }
 	constexpr posit& operator=(unsigned long rhs) { return integer_assign(rhs); }
 	constexpr posit& operator=(unsigned long long rhs) { return integer_assign(rhs); }
-	posit& operator=(float rhs) { return float_assign(double(rhs)); }
-	posit& operator=(double rhs) { return float_assign(rhs); }
-	posit& operator=(long double rhs) { return float_assign(double(rhs)); }
+	          posit& operator=(float rhs) { return float_assign(double(rhs)); }
+	          posit& operator=(double rhs) { return float_assign(rhs); }
+	          posit& operator=(long double rhs) { return float_assign(double(rhs)); }
 
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
@@ -461,6 +461,7 @@ public:
 	// Selectors
 	bool sign() const noexcept       { return (_bits & sign_mask); }
 	bool isnar() const noexcept      { return (_bits == sign_mask); }
+	bool isnan() const noexcept      { return isnar(); }
 	bool iszero() const noexcept     { return (_bits == 0x0); }
 	bool isone() const noexcept      { return (_bits == 0x4000u); } // pattern 010000...
 	bool isminusone() const noexcept { return (_bits == 0xC000u); } // pattern 110000...

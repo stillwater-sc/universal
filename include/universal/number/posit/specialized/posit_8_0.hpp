@@ -182,7 +182,6 @@ public:
 	bool sign() const noexcept       { return (_bits & sign_mask); }
 	bool isnar() const noexcept      { return (_bits == sign_mask); }
 	bool isnan() const noexcept      { return isnar(); }
-	bool isinf() const noexcept      { return false; }
 	bool iszero() const noexcept     { return (_bits == 0x00); }
 	bool isone() const noexcept      { return (_bits == 0x40); } // pattern 010000...
 	bool isminusone() const noexcept { return (_bits == 0xC0); } // pattern 110000...

@@ -47,18 +47,20 @@ try {
 
 #if MANUAL_TESTING
 	
-	posit<8, 0> a, b;
-	float fa;
-	a.setnar();
-	fa = float(a);
-	b = fa;
-	if (a == b) std::cout << "FAIL\n";
-	if (a.isnan()) std::cout << "NaN and NaR are equivalent\n";
-	if (b.isnar()) std::cout << "NaN and NaR are equivalent\n";
+	// TestType: posit<nbits, es, uint8_t>
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<2, 0>>("posit<2,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 0>>("posit<3,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<3, 1>>("posit<3,1>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<4, 0>>("posit<4,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<5, 2>>("posit<5,2>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>>("posit<8,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 2>>("posit<8,2>", reportTestCases);
 
-	// TestType: posit<nbits, es, uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>, posit<9, 0>>("posit<8,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 1>>("posit<16,1>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 2>>("posit<16,2>", reportTestCases);
+
 //	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
+
 //	nrOfFailedTestCases += ExhaustiveNumberSystemTest<cfloat<8, 5>, cfloat<9, 5>>("cfloat<8,5>", reportTestCases);
 //	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<7, 0>, posito<8, 0>>("posito<7,0>", reportTestCases);
 
@@ -67,6 +69,8 @@ try {
 #else
 
 #if REGRESSION_LEVEL_1
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<8, 0>, posit<9, 0>>("posit<8,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<8, 0>, posito<9, 0>>("posito<8,0>", reportTestCases);
 #endif
 
 #if REGRESSION_LEVEL_2
@@ -76,6 +80,8 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_4
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posit<16, 2>, posit<9, 0>>("posit<8,0>", reportTestCases);
+	nrOfFailedTestCases += ExhaustiveNumberSystemTest<posito<16, 2>, posito<9, 0>>("posito<8,0>", reportTestCases);
 #endif // REGRESSION_LEVEL_4
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

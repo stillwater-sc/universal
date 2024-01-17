@@ -225,9 +225,9 @@ namespace sw { namespace universal {
 		for (unsigned i = 0; i < NR_TEST_CASES; ++i) {
 			//std::cout << to_binary(p) << " : " << p << '\n';
 			if (!p.isnar()) {
-				long long ref = (long long)(p); // obtain the integer cast of this posit
-				posit<nbits, es> presult = ref;		  // assign this integer to a posit				
-				if (ref != (long long)presult) {   // compare the integer cast to the reference posit
+				long long ref = (long long)(p);  // obtain the integer cast of this posit
+				posit<nbits, es> presult = ref;  // assign this integer to a posit				
+				if (ref != (long long)presult) { // compare the integer cast to the reference posit
 					if (reportTestCases) std::cout << " FAIL " << p << " != " << presult << " : reference = " << ref << std::endl;
 					nrOfFailedTestCases++;
 				}
