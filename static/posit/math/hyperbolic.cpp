@@ -1,6 +1,6 @@
 // function_hyperbolic.cpp: test suite runner for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh)
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,7 +11,7 @@
 
 // use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -143,101 +143,101 @@ try {
 	GenerateTestCaseAtanh<16, 1, double>(pi / 4.0);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>(reportTestCases), "posit<2,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<2, 0>>(reportTestCases), "posit<2,0>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 0>(true), "posit<3,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 1>(true), "posit<3,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<3, 0>>(reportTestCases), "posit<3,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<3, 1>>(reportTestCases), "posit<3,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 0>(true), "posit<4,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 1>(true), "posit<4,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<4, 0>>(reportTestCases), "posit<4,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<4, 1>>(reportTestCases), "posit<4,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 0>(true), "posit<5,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 1>(true), "posit<5,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 2>(true), "posit<5,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<5, 0>>(reportTestCases), "posit<5,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<5, 1>>(reportTestCases), "posit<5,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<5, 2>>(reportTestCases), "posit<5,2>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 0>(true), "posit<8,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh<8, 0>(true), "posit<8,0>", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh<8, 0>(true), "posit<8,0>", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<8, 0>(true), "posit<8,0>", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<8, 0>(true), "posit<8,0>", "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<8, 0>(true), "posit<8,0>", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<8, 0>>(reportTestCases), "posit<8,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh< posit<8, 0>>(reportTestCases), "posit<8,0>", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh< posit<8, 0>>(reportTestCases), "posit<8,0>", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh< posit<8, 0>>(reportTestCases), "posit<8,0>", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh< posit<8, 0>>(reportTestCases), "posit<8,0>", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh< posit<8, 0>>(reportTestCases), "posit<8,0>", "asinh");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>(reportTestCases), "posit<2,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<2, 0>>(reportTestCases), "posit<2,0>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 0>(reportTestCases), "posit<3,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 1>(reportTestCases), "posit<3,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<3, 0>>(reportTestCases), "posit<3,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<3, 1>>(reportTestCases), "posit<3,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 0>(reportTestCases), "posit<4,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 1>(reportTestCases), "posit<4,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<4, 0>>(reportTestCases), "posit<4,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<4, 1>>(reportTestCases), "posit<4,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 0>(reportTestCases), "posit<5,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 1>(reportTestCases), "posit<5,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 2>(reportTestCases), "posit<5,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<5, 0>>(reportTestCases), "posit<5,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<5, 1>>(reportTestCases), "posit<5,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<5, 2>>(reportTestCases), "posit<5,2>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<6, 0>(reportTestCases), "posit<6,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<6, 1>(reportTestCases), "posit<6,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<6, 2>(reportTestCases), "posit<6,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<6, 3>(reportTestCases), "posit<6,3>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<6, 0>>(reportTestCases), "posit<6,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<6, 1>>(reportTestCases), "posit<6,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<6, 2>>(reportTestCases), "posit<6,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<6, 3>>(reportTestCases), "posit<6,3>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 0>(reportTestCases), "posit<7,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 1>(reportTestCases), "posit<7,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 2>(reportTestCases), "posit<7,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 3>(reportTestCases), "posit<7,3>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 4>(reportTestCases), "posit<7,4>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<7, 0>>(reportTestCases), "posit<7,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<7, 1>>(reportTestCases), "posit<7,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<7, 2>>(reportTestCases), "posit<7,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<7, 3>>(reportTestCases), "posit<7,3>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<7, 4>>(reportTestCases), "posit<7,4>", "sinh");
 
-//	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 0>(reportTestCases), "posit<8,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 1>(reportTestCases), "posit<8,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 2>(reportTestCases), "posit<8,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 3>(reportTestCases), "posit<8,3>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 4>(reportTestCases), "posit<8,4>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 5>(reportTestCases), "posit<8,5>", "sinh");
+//	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<8, 0>>(reportTestCases), "posit<8,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<8, 1>>(reportTestCases), "posit<8,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<8, 2>>(reportTestCases), "posit<8,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<8, 3>>(reportTestCases), "posit<8,3>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<8, 4>>(reportTestCases), "posit<8,4>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<8, 5>>(reportTestCases), "posit<8,5>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 0>(reportTestCases), "posit<8,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh<8, 0>(reportTestCases), "posit<8,0>", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh<8, 0>(reportTestCases), "posit<8,0>", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<8, 0>(reportTestCases), "posit<8,0>", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<8, 0>(reportTestCases), "posit<8,0>", "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<8, 0>(reportTestCases), "posit<8,0>", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<8, 0>>(reportTestCases), "posit<8,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<posit<8, 0>>(reportTestCases), "posit<8,0>", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<posit<8, 0>>(reportTestCases), "posit<8,0>", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<posit<8, 0>>(reportTestCases), "posit<8,0>", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<posit<8, 0>>(reportTestCases), "posit<8,0>", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<posit<8, 0>>(reportTestCases), "posit<8,0>", "asinh");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 0>(reportTestCases), "posit<9,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 1>(reportTestCases), "posit<9,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 2>(reportTestCases), "posit<9,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 3>(reportTestCases), "posit<9,3>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 4>(reportTestCases), "posit<9,4>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 5>(reportTestCases), "posit<9,5>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 6>(reportTestCases), "posit<9,6>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<9, 0>>(reportTestCases), "posit<9,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<9, 1>>(reportTestCases), "posit<9,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<9, 2>>(reportTestCases), "posit<9,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<9, 3>>(reportTestCases), "posit<9,3>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<9, 4>>(reportTestCases), "posit<9,4>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<9, 5>>(reportTestCases), "posit<9,5>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<9, 6>>(reportTestCases), "posit<9,6>", "sinh");
 	
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 0>(reportTestCases), "posit<10,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 1>(reportTestCases), "posit<10,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 2>(reportTestCases), "posit<10,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 7>(reportTestCases), "posit<10,7>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<10, 0>>(reportTestCases), "posit<10,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<10, 1>>(reportTestCases), "posit<10,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<10, 2>>(reportTestCases), "posit<10,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<10, 7>>(reportTestCases), "posit<10,7>", "sinh");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 0>(reportTestCases), "posit<12,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 1>(reportTestCases), "posit<12,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 2>(reportTestCases), "posit<12,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<12, 0>>(reportTestCases), "posit<12,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<12, 1>>(reportTestCases), "posit<12,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<12, 2>>(reportTestCases), "posit<12,2>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 0>(reportTestCases), "posit<16,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 1>(reportTestCases), "posit<16,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 2>(reportTestCases), "posit<16,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<16, 0>>(reportTestCases), "posit<16,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<16, 1>>(reportTestCases), "posit<16,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<16, 2>>(reportTestCases), "posit<16,2>", "sinh");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
-	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sinh");
+	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 1>(reportTestCases), "posit<10,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 1>(reportTestCases), "posit<12,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<14, 1>(reportTestCases), "posit<14,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 1>(reportTestCases), "posit<16,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<10, 1>>(reportTestCases), "posit<10,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<12, 1>>(reportTestCases), "posit<12,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<14, 1>>(reportTestCases), "posit<14,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<posit<16, 1>>(reportTestCases), "posit<16,1>", "sinh");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

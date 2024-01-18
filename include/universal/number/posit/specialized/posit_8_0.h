@@ -539,7 +539,7 @@ posit8_t posit8_divp8(posit8_t lhs, posit8_t rhs) {
 	p.v = (sign ? -raw : raw);
 	return p;
 }
-posit8_t posit8_reciprocate(posit8_t rhs) {
+posit8_t posit8_reciprocal(posit8_t rhs) {
 	posit8_t one = { { 0x40 } };
 	return posit8_divp8(one, rhs);
 }

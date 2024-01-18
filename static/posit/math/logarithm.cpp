@@ -1,6 +1,6 @@
 // logarithm.cpp: test suite runner for the logarithm functions (log2, log10, ln)
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
@@ -11,7 +11,7 @@
 
 // use default number system library configuration
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -78,94 +78,94 @@ try {
 #endif
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<2, 0>(reportTestCases), "posit<2,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<2, 0>>(reportTestCases), "posit<2,0>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 0>(true), "posit<3,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 1>(true), "posit<3,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<3, 0>>(reportTestCases), "posit<3,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<3, 1>>(reportTestCases), "posit<3,1>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<4, 0>(true), "posit<4,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<4, 1>(true), "posit<4,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<4, 0>>(reportTestCases), "posit<4,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<4, 1>>(reportTestCases), "posit<4,1>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 0>(true), "posit<5,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 1>(true), "posit<5,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 2>(true), "posit<5,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<5, 0>>(reportTestCases), "posit<5,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<5, 1>>(reportTestCases), "posit<5,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<5, 2>>(reportTestCases), "posit<5,2>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 4>(true), "posit<8,4>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog2<8, 4>(true), "posit<8,4>", "log2");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog10<8, 4>(true), "posit<8,4>", "log10");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<8, 4>>(reportTestCases), "posit<8,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2<posit<8, 4>>(reportTestCases), "posit<8,4>", "log2");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10<posit<8, 4>>(reportTestCases), "posit<8,4>", "log10");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;   // ignore errors
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<2, 0>(reportTestCases), "posit<2,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<2, 0>>(reportTestCases), "posit<2,0>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 0>(reportTestCases), "posit<3,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 1>(reportTestCases), "posit<3,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<3, 0>>(reportTestCases), "posit<3,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<3, 1>>(reportTestCases), "posit<3,1>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<4, 0>(reportTestCases), "posit<4,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<4, 1>(reportTestCases), "posit<4,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<4, 0>>(reportTestCases), "posit<4,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<4, 1>>(reportTestCases), "posit<4,1>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 0>(reportTestCases), "posit<5,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 1>(reportTestCases), "posit<5,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 2>(reportTestCases), "posit<5,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<5, 0>>(reportTestCases), "posit<5,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<5, 1>>(reportTestCases), "posit<5,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<5, 2>>(reportTestCases), "posit<5,2>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<6, 0>(reportTestCases), "posit<6,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<6, 1>(reportTestCases), "posit<6,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<6, 2>(reportTestCases), "posit<6,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<6, 3>(reportTestCases), "posit<6,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<6, 0>>(reportTestCases), "posit<6,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<6, 1>>(reportTestCases), "posit<6,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<6, 2>>(reportTestCases), "posit<6,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<6, 3>>(reportTestCases), "posit<6,3>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 0>(reportTestCases), "posit<7,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 1>(reportTestCases), "posit<7,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 2>(reportTestCases), "posit<7,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 3>(reportTestCases), "posit<7,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 4>(reportTestCases), "posit<7,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<7, 0>>(reportTestCases), "posit<7,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<7, 1>>(reportTestCases), "posit<7,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<7, 2>>(reportTestCases), "posit<7,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<7, 3>>(reportTestCases), "posit<7,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<7, 4>>(reportTestCases), "posit<7,4>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 0>(reportTestCases), "posit<8,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 1>(reportTestCases), "posit<8,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 2>(reportTestCases), "posit<8,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 3>(reportTestCases), "posit<8,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 4>(reportTestCases), "posit<8,4>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 5>(reportTestCases), "posit<8,5>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<8, 0>>(reportTestCases), "posit<8,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<8, 1>>(reportTestCases), "posit<8,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<8, 2>>(reportTestCases), "posit<8,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<8, 3>>(reportTestCases), "posit<8,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<8, 4>>(reportTestCases), "posit<8,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<8, 5>>(reportTestCases), "posit<8,5>", "log");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 0>(reportTestCases), "posit<9,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 1>(reportTestCases), "posit<9,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 2>(reportTestCases), "posit<9,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 3>(reportTestCases), "posit<9,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 4>(reportTestCases), "posit<9,4>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 5>(reportTestCases), "posit<9,5>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 6>(reportTestCases), "posit<9,6>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<9, 0>>(reportTestCases), "posit<9,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<9, 1>>(reportTestCases), "posit<9,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<9, 2>>(reportTestCases), "posit<9,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<9, 3>>(reportTestCases), "posit<9,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<9, 4>>(reportTestCases), "posit<9,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<9, 5>>(reportTestCases), "posit<9,5>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<9, 6>>(reportTestCases), "posit<9,6>", "log");
 	
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 0>(reportTestCases), "posit<10,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 1>(reportTestCases), "posit<10,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 2>(reportTestCases), "posit<10,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 7>(reportTestCases), "posit<10,7>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<10, 0>>(reportTestCases), "posit<10,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<10, 1>>(reportTestCases), "posit<10,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<10, 2>>(reportTestCases), "posit<10,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<10, 7>>(reportTestCases), "posit<10,7>", "log");
 #endif
 
 #if REGRESSION_LEVEL_3
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 0>(reportTestCases), "posit<12,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 1>(reportTestCases), "posit<12,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 2>(reportTestCases), "posit<12,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<12, 0>>(reportTestCases), "posit<12,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<12, 1>>(reportTestCases), "posit<12,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<12, 2>>(reportTestCases), "posit<12,2>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 0>(reportTestCases), "posit<16,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 1>(reportTestCases), "posit<16,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 2>(reportTestCases), "posit<16,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<16, 0>>(reportTestCases), "posit<16,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<16, 1>>(reportTestCases), "posit<16,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<16, 2>>(reportTestCases), "posit<16,2>", "log");
 #endif
 
 #if REGRESSION_LEVEL_4
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>>(reportTestCases, OPCODE_SQRT, 1000), "posit<64,4>", "log");
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 1>(reportTestCases), "posit<10,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 1>(reportTestCases), "posit<12,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<14, 1>(reportTestCases), "posit<14,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 1>(reportTestCases), "posit<16,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<10, 1>>(reportTestCases), "posit<10,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<12, 1>>(reportTestCases), "posit<12,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<14, 1>>(reportTestCases), "posit<14,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<posit<16, 1>>(reportTestCases), "posit<16,1>", "log");
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

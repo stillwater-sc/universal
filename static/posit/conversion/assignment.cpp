@@ -1,12 +1,12 @@
 // assignment.cpp : test suite runner for native type literal assignments for posits
 //
-// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 namespace sw { namespace universal {
 

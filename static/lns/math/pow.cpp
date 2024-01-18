@@ -1,11 +1,11 @@
 // pow.cpp: test suite runner for power function
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/lns_math_test_suite.hpp>
+#include <universal/verification/lns_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add

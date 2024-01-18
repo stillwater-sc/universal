@@ -35,11 +35,9 @@
 //
 // #define POSIT_NATIVE_SQRT 1
 #include <universal/number/posit/posit.hpp>
-#include <universal/verification/test_suite.hpp>
-#include <universal/verification/test_suite_random.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -144,83 +142,83 @@ try {
 #endif
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<2, 0>(true), "posit<2,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<2, 0>>(reportTestCases), "posit<2,0>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 0>(true), "posit<3,0>", "sqrt");
-//	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 1>(true), "posit<3,1>", "sqrt");   // TODO: these configs where nbits < es+sign+regime don't work
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<3, 0>>(reportTestCases), "posit<3,0>", "sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<3, 1>>(reportTestCases), "posit<3,1>", "sqrt");   // TODO: these configs where nbits < es+sign+regime don't work
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 0>(true), "posit<4,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 1>(true), "posit<4,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<4, 0>>(reportTestCases), "posit<4,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<4, 1>>(reportTestCases), "posit<4,1>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 0>(true), "posit<5,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 1>(true), "posit<5,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 2>(true), "posit<5,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<5, 0>>(reportTestCases), "posit<5,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<5, 1>>(reportTestCases), "posit<5,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<5, 2>>(reportTestCases), "posit<5,2>", "sqrt");
 
-	//nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 4>("Manual Testing", true), "posit<8,4>", "sqrt");
+	//nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<8, 4>("Manual Testing", true), "posit<8,4>", "sqrt");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
 #else
 
 #if REGRESSION_LEVEL_1
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<2, 0>(reportTestCases), "posit<2,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<2, 0>>(reportTestCases), "posit<2,0>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 0>(reportTestCases), "posit<3,0>", "sqrt");
-//	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 1>(reportTestCases), "posit<3,1>", "sqrt");	// TODO: these configs where nbits < es+sign+regime don't work
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<3, 0>>(reportTestCases), "posit<3,0>", "sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<3, 1>>(reportTestCases), "posit<3,1>", "sqrt");	// TODO: these configs where nbits < es+sign+regime don't work
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 0>(reportTestCases), "posit<4,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 1>(reportTestCases), "posit<4,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<4, 0>>(reportTestCases), "posit<4,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<4, 1>>(reportTestCases), "posit<4,1>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 0>(reportTestCases), "posit<5,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 1>(reportTestCases), "posit<5,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 2>(reportTestCases), "posit<5,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<5, 0>>(reportTestCases), "posit<5,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<5, 1>>(reportTestCases), "posit<5,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<5, 2>>(reportTestCases), "posit<5,2>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<6, 0>(reportTestCases), "posit<6,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<6, 1>(reportTestCases), "posit<6,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<6, 2>(reportTestCases), "posit<6,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<6, 3>(reportTestCases), "posit<6,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<6, 0>>(reportTestCases), "posit<6,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<6, 1>>(reportTestCases), "posit<6,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<6, 2>>(reportTestCases), "posit<6,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<6, 3>>(reportTestCases), "posit<6,3>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 0>(reportTestCases), "posit<7,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 1>(reportTestCases), "posit<7,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 2>(reportTestCases), "posit<7,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 3>(reportTestCases), "posit<7,3>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 4>(reportTestCases), "posit<7,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<7, 0>>(reportTestCases), "posit<7,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<7, 1>>(reportTestCases), "posit<7,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<7, 2>>(reportTestCases), "posit<7,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<7, 3>>(reportTestCases), "posit<7,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<7, 4>>(reportTestCases), "posit<7,4>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 0>(reportTestCases), "posit<8,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 1>(reportTestCases), "posit<8,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 2>(reportTestCases), "posit<8,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 3>(reportTestCases), "posit<8,3>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 4>(reportTestCases), "posit<8,4>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 5>(reportTestCases), "posit<8,5>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<8, 0>>(reportTestCases), "posit<8,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<8, 1>>(reportTestCases), "posit<8,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<8, 2>>(reportTestCases), "posit<8,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<8, 3>>(reportTestCases), "posit<8,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<8, 4>>(reportTestCases), "posit<8,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<8, 5>>(reportTestCases), "posit<8,5>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 0>(reportTestCases), "posit<9,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 1>(reportTestCases), "posit<9,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 2>(reportTestCases), "posit<9,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 3>(reportTestCases), "posit<9,3>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 4>(reportTestCases), "posit<9,4>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 5>(reportTestCases), "posit<9,5>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 6>(reportTestCases), "posit<9,6>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<9, 0>>(reportTestCases), "posit<9,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<9, 1>>(reportTestCases), "posit<9,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<9, 2>>(reportTestCases), "posit<9,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<9, 3>>(reportTestCases), "posit<9,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<9, 4>>(reportTestCases), "posit<9,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<9, 5>>(reportTestCases), "posit<9,5>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<9, 6>>(reportTestCases), "posit<9,6>", "sqrt");
 	
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 0>(reportTestCases), "posit<10,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 1>(reportTestCases), "posit<10,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 2>(reportTestCases), "posit<10,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<10, 0>>(reportTestCases), "posit<10,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<10, 1>>(reportTestCases), "posit<10,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<10, 2>>(reportTestCases), "posit<10,2>", "sqrt");
 	// fails due to regime representation not being able to be represented by double
-	// nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 7>(reportTestCases), "posit<10,7>", "sqrt");
+	// nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<10, 7>>(reportTestCases), "posit<10,7>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 0>(reportTestCases), "posit<12,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 1>(reportTestCases), "posit<12,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 2>(reportTestCases), "posit<12,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<12, 0>>(reportTestCases), "posit<12,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<12, 1>>(reportTestCases), "posit<12,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<12, 2>>(reportTestCases), "posit<12,2>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 0>(reportTestCases), "posit<16,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 1>(reportTestCases), "posit<16,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 2>(reportTestCases), "posit<16,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<16, 0>>(reportTestCases), "posit<16,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<16, 1>>(reportTestCases), "posit<16,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<16, 2>>(reportTestCases), "posit<16,2>", "sqrt");
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 2>(reportTestCases), "posit<10,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 2>(reportTestCases), "posit<12,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<14, 2>(reportTestCases), "posit<14,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 2>(reportTestCases), "posit<16,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<10, 2>>(reportTestCases), "posit<10,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<12, 2>>(reportTestCases), "posit<12,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<14, 2>>(reportTestCases), "posit<14,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<posit<16, 2>>(reportTestCases), "posit<16,2>", "sqrt");
 
 	using Posit20_2 = posit<20, 2>;
 	nrOfFailedTestCases += ReportTestResult(VerifyUnaryOperatorThroughRandoms< Posit20_2 >(reportTestCases, OPCODE_SQRT, 1000, double(Posit20_2(SpecificValue::minpos))), type_tag(Posit20_2()), "sqrt");

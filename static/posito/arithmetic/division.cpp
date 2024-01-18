@@ -16,9 +16,9 @@
 //#define ALGORITHM_VERBOSE_OUTPUT
 #define ALGORITHM_TRACE_DIV
 #include <universal/number/posito/posito.hpp>
-#include <universal/verification/test_suite.hpp>
+#include <universal/verification/test_case.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_test_randoms.hpp>
+#include <universal/verification/posit_test_suite_randoms.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -223,9 +223,9 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 65536), "posit<16,2>", "division");
 
-//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit< 8, 0>>(true), "posit<8,0>", "division");
-//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 1>>(true), "posit<16,1>", "division");
-//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<16, 2>>(true), "posit<16,2>", "division");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<posit< 8, 0>>(true), "posit<8,0>", "division");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<posit<16, 1>>(true), "posit<16,1>", "division");
+//	nrOfFailedTestCases += ReportTestResult(sw::testing::VerifyDivision<posit<posit<16, 2>>(true), "posit<16,2>", "division");
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);
 	return EXIT_SUCCESS;
@@ -233,17 +233,17 @@ try {
 
 #if REGRESSION_LEVEL_1
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(reportTestCases), "posit< 2,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit>2, 0>>(reportTestCases), "posit< 2,0>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(reportTestCases), "posit< 3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit>3, 0>>(reportTestCases), "posit< 3,0>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(reportTestCases), "posit< 4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit>4, 0>>(reportTestCases), "posit< 4,0>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(reportTestCases), "posit< 8,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit>8, 0>>(reportTestCases), "posit< 8,0>", "division");
 	// TODO: no fast posit<8,1> yet
-	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(reportTestCases), "posit< 8,1>", "division");
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit>8, 1>>(reportTestCases), "posit< 8,1>", "division");
 	// TODO: no working fast posit<8,2> yet
-	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(reportTestCases), "posit< 8,2>", "division");
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<posit>8, 2>>(reportTestCases), "posit< 8,2>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(reportTestCases, OPCODE_DIV, 65536), "posit<16,1>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 65536), "posit<16,2>", "division");
@@ -251,10 +251,10 @@ try {
 #endif
 
 #if REGRESSION_LEVEL_2
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 0>(reportTestCases), "posit<10,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 1>(reportTestCases), "posit<10,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 2>(reportTestCases), "posit<10,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 3>(reportTestCases), "posit<10,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<10, 0>>(reportTestCases), "posit<10,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<10, 1>>(reportTestCases), "posit<10,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<10, 2>>(reportTestCases), "posit<10,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<10, 3>>(reportTestCases), "posit<10,3>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<16,2>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 2>(reportTestCases, OPCODE_DIV, 1000), "posit<24,2>", "division");
@@ -280,9 +280,9 @@ try {
     nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<64, 4>(reportTestCases, OPCODE_DIV, 1000), "posit<64,4>", "division");
 
 #ifdef HARDWARE_ACCELERATION
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, 1>(reportTestCases), "posit<12,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, 1>(reportTestCases), "posit<14,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, 1>(reportTestCases), "posit<16,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<12, 1>>(reportTestCases), "posit<12,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<14, 1>>(reportTestCases), "posit<14,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<posit<16, 1>>(reportTestCases), "posit<16,1>", "division");
 #endif // HARDWARE_ACCELERATION
 
 #endif // REGRESSION_LEVEL_4

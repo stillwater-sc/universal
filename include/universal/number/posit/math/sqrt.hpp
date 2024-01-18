@@ -131,7 +131,7 @@ namespace sw { namespace universal {
 	template<unsigned nbits, unsigned es>
 	inline posit<nbits, es> rsqrt(const posit<nbits, es>& a) {
 		posit<nbits, es> v = sqrt(a);
-		return v.reciprocate();
+		return v.reciprocal();
 	}
 
 	///////////////////////////////////////////////////////////////////

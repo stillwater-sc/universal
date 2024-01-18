@@ -109,7 +109,7 @@ posit<nbits, es> maxprecision_max() {
 	a.clear();
 	a.setbit(nbits - 2, true);
 	// set all exponent and fraction bits to 1
-	for (int i = 0; i < nbits - 1 - 2; ++i) {
+	for (unsigned i = 0; i < nbits - 1 - 2; ++i) {
 		a.setbit(i, true);
 	}
 	return a;

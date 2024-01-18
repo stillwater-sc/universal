@@ -1,7 +1,7 @@
 #pragma once
 // posit_8_0.hpp: specialized 8-bit posit using fast compute specialized for posit<8,0>
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -30,7 +30,7 @@ template<>
 class posit<NBITS_IS_8, ES_IS_0> {
 public:
 	static constexpr unsigned nbits = NBITS_IS_8;
-	static constexpr unsigned es = ES_IS_0;
+	static constexpr unsigned es    = ES_IS_0;
 	static constexpr unsigned sbits = 1;
 	static constexpr unsigned rbits = nbits - sbits;
 	static constexpr unsigned ebits = es;
@@ -89,19 +89,19 @@ public:
 		      explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 	// assignment operators for native types
-	constexpr posit& operator=(signed char rhs)             { return operator=((int)(rhs)); }
-	constexpr posit& operator=(short rhs)                   { return operator=((int)(rhs)); }
-	constexpr posit& operator=(int rhs)                     { return integer_assign(rhs); }
-	constexpr posit& operator=(long rhs)                    { return operator=((int)(rhs)); }
-	constexpr posit& operator=(long long rhs)               { return operator=((int)(rhs)); }
-	constexpr posit& operator=(char rhs)                    { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned short rhs)          { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned int rhs)            { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned long rhs)           { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned long long rhs)      { return operator=((int)(rhs)); }
-		        posit& operator=(float rhs)                   { return float_assign(rhs); }
-				posit& operator=(double rhs)                  { return float_assign(float(rhs)); }
-				posit& operator=(long double rhs)             { return float_assign(float(rhs)); }
+	constexpr posit& operator=(signed char rhs)             { return operator=((long long)(rhs)); }
+	constexpr posit& operator=(short rhs)                   { return operator=((long long)(rhs)); }
+	constexpr posit& operator=(int rhs)                     { return operator=((long long)(rhs)); }
+	constexpr posit& operator=(long rhs)                    { return operator=((long long)(rhs)); }
+	constexpr posit& operator=(long long rhs)               { return integer_assign(rhs); }
+	constexpr posit& operator=(char rhs)                    { return operator=((long long)(rhs)); }
+	constexpr posit& operator=(unsigned short rhs)          { return operator=((long long)(rhs)); }
+	constexpr posit& operator=(unsigned int rhs)            { return operator=((long long)(rhs)); }
+	constexpr posit& operator=(unsigned long rhs)           { return operator=((long long)(rhs)); }
+	constexpr posit& operator=(unsigned long long rhs)      { return operator=((long long)(rhs)); }
+		      posit& operator=(float rhs)                   { return float_assign(rhs); }
+			  posit& operator=(double rhs)                  { return float_assign(float(rhs)); }
+			  posit& operator=(long double rhs)             { return float_assign(float(rhs)); }
 
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
@@ -167,7 +167,7 @@ public:
 		return tmp;
 	}
 		
-	posit reciprocate() const {
+	posit reciprocal() const {
 		posit p = 1.0 / *this;
 		return p;
 	}
@@ -182,7 +182,6 @@ public:
 	bool sign() const noexcept       { return (_bits & sign_mask); }
 	bool isnar() const noexcept      { return (_bits == sign_mask); }
 	bool isnan() const noexcept      { return isnar(); }
-	bool isinf() const noexcept      { return false; }
 	bool iszero() const noexcept     { return (_bits == 0x00); }
 	bool isone() const noexcept      { return (_bits == 0x40); } // pattern 010000...
 	bool isminusone() const noexcept { return (_bits == 0xC0); } // pattern 110000...
@@ -199,13 +198,13 @@ public:
 	void clear()                   noexcept { _bits = 0; }
 	void setzero()                 noexcept { clear(); }
 	void setnar()                  noexcept { _bits = 0x80; }
-	void setnan()                  noexcept { setnar(); }
+	void setnan(bool sign = true)  noexcept { setnar(); }
 	//void setnan(bool sign = false) noexcept { setnar(); }
-	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) noexcept {
 		_bits = uint8_t(raw.to_ulong());
 		return *this;
 	}
-	constexpr posit& setbits(uint64_t value) {
+	constexpr posit& setbits(uint64_t value) noexcept {
 		_bits = uint8_t(value & 0xffu);
 		return *this;
 	}
@@ -296,16 +295,16 @@ private:
 	}
 
 	// helper methods			
-	constexpr posit& integer_assign(int rhs) {
+	constexpr posit& integer_assign(long long rhs) {
 		// special case for speed as this is a common initialization
 		if (rhs == 0) {
 			_bits = 0x0;
 			return *this;
 		}
 		bool sign = (rhs < 0) ? true : false;
-		int v = sign ? -rhs : rhs; // project to positive side of the projective reals
+		long long v = sign ? -rhs : rhs; // project to positive side of the projective reals
 		uint8_t raw = 0;
-		if (v > 48) { // +-maxpos
+		if (v > 48 || v == rhs) { // +-maxpos
 			raw = 0x7F;
 		}
 		else if (v < 2) {

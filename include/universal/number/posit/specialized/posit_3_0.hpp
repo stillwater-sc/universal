@@ -33,7 +33,7 @@ namespace sw { namespace universal {
 111 -0.5
 */
 constexpr float posit_3_0_values_lookup[8] = {
-	0.0f, 0.5f, 1.0f, 2.0f, -INFINITY, -2.0f, -1.0f, -0.5f,
+	0.0f, 0.5f, 1.0f, 2.0f, -(INFINITY), -2.0f, -1.0f, -0.5f,
 };
 
 constexpr uint8_t posit_3_0_addition_lookup[64] = {
@@ -144,26 +144,14 @@ public:
 		}
 	}
 
-	posit(int initial_value) { *this = (long long)initial_value; }
-	posit(long int initial_value) { *this = (long long)initial_value; }
-	posit(long long initial_value) { *this = initial_value; }
-	posit(float initial_value) {
-		*this = float_assign(initial_value);
-	}
-	posit(double initial_value) {
-		*this = float_assign(initial_value);
-	}
-	posit(long double initial_value) {
-		*this = float_assign(initial_value);
-	}
+	posit(int initial_value)         { *this = initial_value; }
+	posit(long long initial_value)   { *this = (int)initial_value; }
+	posit(float initial_value)       { *this = float_assign(initial_value); }
+	posit(double initial_value)      { *this = float_assign(initial_value); }
+	posit(long double initial_value) { *this = float_assign(initial_value); }
+
 	// assignment operators for native types
-	posit& operator=(int rhs) {
-		return operator=((long long)(rhs));
-	}
-	posit& operator=(long int rhs) {
-		return operator=((long long)(rhs));
-	}
-	posit& operator=(long long rhs) {
+	posit& operator=(int rhs) noexcept {
 		// only valid integers are -2, -1, 0, 1, 2
 		_bits = 0x00;
 		if (rhs <= -2) {
@@ -183,25 +171,20 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const float rhs) {
-		return float_assign(rhs);
-	}
-	posit& operator=(const double rhs) {
-		return float_assign(rhs);
-	}
-	posit& operator=(const long double rhs) {
-		return float_assign(rhs);
-	}
+	posit& operator=(long long rhs) noexcept     { return operator=((int)rhs); }
+	posit& operator=(float rhs) noexcept         { return float_assign(rhs); }
+	posit& operator=(double rhs) noexcept        { return float_assign(rhs); }
+	posit& operator=(long double rhs) noexcept   { return float_assign(rhs);  }
 
-	explicit operator long double() const { return to_long_double(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator float() const { return to_float(); }
-	explicit operator long long() const { return to_long_long(); }
-	explicit operator long() const { return to_long(); }
-	explicit operator int() const { return to_int(); }
+	explicit operator long double() const        { return to_long_double(); }
+	explicit operator double() const             { return to_double(); }
+	explicit operator float() const              { return to_float(); }
+	explicit operator long long() const          { return to_long_long(); }
+	explicit operator long() const               { return to_long(); }
+	explicit operator int() const                { return to_int(); }
 	explicit operator unsigned long long() const { return to_long_long(); }
-	explicit operator unsigned long() const { return to_long(); }
-	explicit operator unsigned int() const { return to_int(); }
+	explicit operator unsigned long() const      { return to_long(); }
+	explicit operator unsigned int() const       { return to_int(); }
 
 	posit& setBitblock(sw::universal::bitblock<NBITS_IS_3>& raw) {
 		_bits = uint8_t(raw.to_ulong() & bit_mask);
@@ -281,50 +264,51 @@ public:
 		operator--();
 		return tmp;
 	}
-	posit reciprocate() const {
+	posit reciprocal() const {
 		posit p;
 		p.setbits(posit_3_0_reciprocal_lookup[_bits]);
 		return p;
 	}
+	
 	// SELECTORS
-	inline bool sign()   const { return (_bits & 0x4u); }
-	inline bool isnar()  const { return (_bits == nar_encoding); }
-	inline bool iszero() const { return (_bits == 0x0u); }
-	inline bool isone() const { // pattern 010....
+	bool sign()   const { return (_bits & 0x4u); }
+	bool isnar()  const { return (_bits == nar_encoding); }
+	bool iszero() const { return (_bits == 0x0u); }
+	bool isone() const { // pattern 010....
 		return (_bits == one_encoding);
 	}
-	inline bool isminusone() const { // pattern 110...
+	bool isminusone() const { // pattern 110...
 		return (_bits == minus_one_encoding);
 	}
-	inline bool isneg()      const { return (_bits & 0x4u); }
-	inline bool ispos()      const { return !isneg(); }
-	inline bool ispowerof2() const { return !(_bits & 0x1u); }
+	bool isneg()      const { return (_bits & 0x4u); }
+	bool ispos()      const { return !isneg(); }
+	bool ispowerof2() const { return !(_bits & 0x1u); }
 
-	inline int sign_value() const { return (_bits & 0x4 ? -1 : 1); }
+	int sign_value() const { return (_bits & 0x4 ? -1 : 1); }
 
 	bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
 	unsigned int bits() const { return (unsigned int)(_bits & bit_mask); }
 
-	inline void clear()   { _bits = 0x00; }
-	inline void setzero() { _bits = 0x00; }
-	inline void setnar()  { _bits = nar_encoding; }
-	inline posit& minpos() {
+	void clear()   { _bits = 0x00; }
+	void setzero() { _bits = 0x00; }
+	void setnar()  { _bits = nar_encoding; }
+	posit& minpos() {
 		clear();
 		return ++(*this);
 	}
-	inline posit& maxpos() {
+	posit& maxpos() {
 		setnar();
 		return --(*this);
 	}
-	inline posit& zero() {
+	posit& zero() {
 		clear();
 		return *this;
 	}
-	inline posit& minneg() {
+	posit& minneg() {
 		clear();
 		return --(*this);
 	}
-	inline posit& maxneg() {
+	posit& maxneg() {
 		setnar();
 		return ++(*this);
 	}

@@ -8,61 +8,66 @@
 #define POSIT_FAST_POSIT_8_2 1
 #define POSIT_FAST_POSIT_16_2 1
 #include <universal/number/posit/posit.hpp>
+#include <universal/number/posito/posito.hpp>
 #include <universal/verification/posit_test_suite.hpp>
-#include <universal/verification/posit_math_test_suite.hpp>
+#include <universal/verification/posit_test_suite_mathlib.hpp>
 
-namespace sw { namespace universal {
+namespace sw {
+	namespace universal {
 
-	template<unsigned nbits, unsigned es, typename Ty>
-	int VerifyAssignment(bool reportTestCases) {
-		const size_t NR_POSITS = (size_t(1) << nbits);
-		int nrOfFailedTestCases = 0;
+		template<unsigned nbits, unsigned es, typename Ty>
+		int VerifyAssignment(bool reportTestCases) {
+			const size_t NR_POSITS = (size_t(1) << nbits);
+			int nrOfFailedTestCases = 0;
 
-		// use only valid posit values
-		// posit_raw -> to value in Ty -> assign to posit -> compare posits
-		posit<nbits, es> p, assigned;
-		for (size_t i = 0; i < NR_POSITS; i++) {
-			p.setbits(i); // std::cout << p.get() << endl;
-			if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
-			Ty value = (Ty)(p);
-			assigned = value;
-			if (p != assigned) {
-				nrOfFailedTestCases++;
-				if (reportTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
+			// use only valid posit values
+			// posit_raw -> to value in Ty -> assign to posit -> compare posits
+			posit<nbits, es> p, assigned;
+			for (size_t i = 0; i < NR_POSITS; i++) {
+				p.setbits(i); // std::cout << p.get() << endl;
+				if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
+				Ty value = (Ty)(p);
+				assigned = value;
+				if (p != assigned) {
+					nrOfFailedTestCases++;
+					if (reportTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
+					std::cout << to_binary(p) << " : " << std::setw(10) << p << " <-> " << to_binary(assigned) << " : " << value << '\n';
+				}
+				else {
+					//if (reportTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
+				}
+				if (nrOfFailedTestCases > 9) return 10;
 			}
-			else {
-				//if (reportTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
-			}
+			return nrOfFailedTestCases;
 		}
-		return nrOfFailedTestCases;
-	}
 
-	template<typename PositType, typename Ty>
-	int VerifyAssignment(bool reportTestCases) {
-		constexpr unsigned nbits = PositType::nbits;
-		const size_t NR_POSITS = (size_t(1) << nbits);
-		int nrOfFailedTestCases = 0;
+		template<typename PositType, typename Ty>
+		int VerifyAssignment(bool reportTestCases) {
+			constexpr unsigned nbits = PositType::nbits;
+			const size_t NR_POSITS = (size_t(1) << nbits);
+			int nrOfFailedTestCases = 0;
 
-		// use only valid posit values
-		// posit_raw -> to value in Ty -> assign to posit -> compare posits
-		PositType p, assigned;
-		for (size_t i = 0; i < NR_POSITS; i++) {
-			p.setbits(i); // std::cout << p.get() << endl;
-			if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
-			Ty value = (Ty)(p);
-			assigned = value;
-			if (p != assigned) {
-				nrOfFailedTestCases++;
-				if (reportTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
+			// use only valid posit values
+			// posit_raw -> to value in Ty -> assign to posit -> compare posits
+			PositType p, assigned;
+			for (size_t i = 0; i < NR_POSITS; i++) {
+				p.setbits(i); // std::cout << p.get() << endl;
+				if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
+				Ty value = (Ty)(p);
+				assigned = value;
+				if (p != assigned) {
+					nrOfFailedTestCases++;
+					if (reportTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
+				}
+				else {
+					//if (reportTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
+				}
 			}
-			else {
-				//if (reportTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
-			}
+			return nrOfFailedTestCases;
 		}
-		return nrOfFailedTestCases;
-	}
 
-} } // namespace sw::universal
+	}
+} // namespace sw::universal
 
 template<size_t nbits, size_t es, typename Ty>
 Ty GenerateValue(const sw::universal::posit<nbits, es>& p) {

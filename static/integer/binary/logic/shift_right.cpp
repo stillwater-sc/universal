@@ -128,8 +128,21 @@ try {
 
 #if	REGRESSION_LEVEL_4
 	// verification suite does not support integers and shifts bigger than 64
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 71, uint8_t>(reportTestCases), "integer< 71,uint8_t>", test_tag);
-	nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<123, uint8_t>(reportTestCases), "integer<123,uint8_t>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift< 71, uint8_t>(reportTestCases), "integer< 71,uint8_t>", test_tag);
+	//nrOfFailedTestCases += ReportTestResult(VerifyArithmeticRightShift<123, uint8_t>(reportTestCases), "integer<123,uint8_t>", test_tag);
+	integer<71, uint8_t, IntegerNumberType::IntegerNumber> a{ -1 };
+	a >>= 7;
+	if (a != -1) {
+		std::cerr << "integer<71> arithmetic right shift failed: " << to_hex(a) << " : " << a << " != -1\n";
+		++nrOfFailedTestCases;
+	}
+
+	// arithmetic right shift of a native int32_t as reference
+	int32_t b{ -1 };
+	std::cout << to_hex(b, true) << " : " << b << '\n';
+	b >>= 7;
+	std::cout << to_hex(b, true) << " : " << b << '\n';
+
 #endif
 
 	ReportTestSuiteResults(test_suite, nrOfFailedTestCases);

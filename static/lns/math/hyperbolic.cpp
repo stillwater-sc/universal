@@ -1,12 +1,12 @@
 // hyperbolic.cpp: test suite runner for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh) using logarithmic floats
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
 // use default library configuration
 #include <universal/number/lns/lns.hpp>
-#include <universal/verification/lns_math_test_suite.hpp>
+#include <universal/verification/lns_test_suite_mathlib.hpp>
 
 // generate specific test case that you can trace with the trace conditions in lns.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add

@@ -1,7 +1,7 @@
 #pragma once
 // posit_3_1.hpp: specialized 3-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2022 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -73,15 +73,42 @@ namespace sw { namespace universal {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(int initial_value) { _bits = uint8_t(initial_value & 0x07); }
+				// specific value constructor
+				constexpr posit(const SpecificValue code) : _bits(0) {
+					switch (code) {
+					case SpecificValue::infpos:
+					case SpecificValue::maxpos:
+						maxpos();
+						break;
+					case SpecificValue::minpos:
+						minpos();
+						break;
+					case SpecificValue::zero:
+					default:
+						zero();
+						break;
+					case SpecificValue::minneg:
+						minneg();
+						break;
+					case SpecificValue::infneg:
+					case SpecificValue::maxneg:
+						maxneg();
+						break;
+					case SpecificValue::qnan:
+					case SpecificValue::snan:
+					case SpecificValue::nar:
+						setnar();
+						break;
+					}
+				}
+
+				posit(int initial_value)         { *this = initial_value; }
+				posit(float initial_value)       { *this = float_assign(initial_value); }
+				posit(double initial_value)      { *this = float_assign(initial_value); }
+				posit(long double initial_value) { *this = float_assign(initial_value); }
+
 				// assignment operators for native types
-				posit& operator=(int rhs) {
-					return operator=((long long)(rhs));
-				}
-				posit& operator=(long int rhs) {
-					return operator=((long long)(rhs));
-				}
-				posit& operator=(long long rhs) {
+				posit& operator=(int rhs) noexcept {
 					// only valid integers are -1, 0, 1
 					_bits = 0x0;
 					if (rhs <= -1) {
@@ -95,25 +122,19 @@ namespace sw { namespace universal {
 					}
 					return *this;
 				}
-				posit& operator=(const float rhs) {
-					return float_assign(rhs);
-				}
-				posit& operator=(const double rhs) {
-					return float_assign(rhs);
-				}
-				posit& operator=(const long double rhs) {
-					return float_assign(rhs);
-				}
+				posit& operator=(float rhs) noexcept         { return float_assign(rhs); }
+				posit& operator=(double rhs) noexcept        { return float_assign(rhs); }
+				posit& operator=(long double rhs) noexcept   { return float_assign(rhs); }
 
-				explicit operator long double() const { return to_long_double(); }
-				explicit operator double() const { return to_double(); }
-				explicit operator float() const { return to_float(); }
-				explicit operator long long() const { return to_long_long(); }
-				explicit operator long() const { return to_long(); }
-				explicit operator int() const { return to_int(); }
+				explicit operator long double() const        { return to_long_double(); }
+				explicit operator double() const             { return to_double(); }
+				explicit operator float() const              { return to_float(); }
+				explicit operator long long() const          { return to_long_long(); }
+				explicit operator long() const               { return to_long(); }
+				explicit operator int() const                { return to_int(); }
 				explicit operator unsigned long long() const { return to_long_long(); }
-				explicit operator unsigned long() const { return to_long(); }
-				explicit operator unsigned int() const { return to_int(); }
+				explicit operator unsigned long() const      { return to_long(); }
+				explicit operator unsigned int() const       { return to_int(); }
 
 				posit& setBitblock(sw::universal::bitblock<NBITS_IS_3>& raw) {
 					_bits = uint8_t(raw.to_ulong());
@@ -171,33 +192,54 @@ namespace sw { namespace universal {
 					operator--();
 					return tmp;
 				}
-				posit reciprocate() const {
+				posit reciprocal() const {
 					posit p;
 					p.setbits(posit_3_1_reciprocal_lookup[_bits & 0x07]);
 					return p;
 				}
+				
 				// SELECTORS
-				inline bool sign() const { return (_bits & 0x4u); }
-				inline bool isnar() const { return (_bits == 0x4u); }
-				inline bool iszero() const { return (_bits == 0); }
-				inline bool isone() const { // pattern 010....
+				bool sign() const { return (_bits & 0x4u); }
+				bool isnar() const { return (_bits == 0x4u); }
+				bool iszero() const { return (_bits == 0); }
+				bool isone() const { // pattern 010....
 					return (_bits == 0x2u);
 				}
-				inline bool isminusone() const { // pattern 110...
+				bool isminusone() const { // pattern 110...
 					return (_bits == 0x6u);
 				}
-				inline bool isneg() const { return (_bits & 0x4u); }
-				inline bool ispos() const { return !isneg(); }
-				inline bool ispowerof2() const { return !(_bits & 0x1u); }
+				bool isneg() const { return (_bits & 0x4u); }
+				bool ispos() const { return !isneg(); }
+				bool ispowerof2() const { return !(_bits & 0x1u); }
 
-				inline int sign_value() const { return (_bits & 0x4u ? -1 : 1); }
+				int sign_value() const { return (_bits & 0x4u ? -1 : 1); }
 
 				bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
 				unsigned int bits() const { return (unsigned int)(_bits & 0x7u); }
 
-				inline void clear() { _bits = 0; }
-				inline void setzero() { clear(); }
-				inline void setnar() { _bits = 0x4u; }
+				void clear()    { _bits = 0; }
+				void setzero()  { clear(); }
+				void setnar()   { _bits = 0x4u; }
+				posit& minpos() {
+					clear();
+					return ++(*this);
+				}
+				posit& maxpos() {
+					setnar();
+					return --(*this);
+				}
+				posit& zero() {
+					clear();
+					return *this;
+				}
+				posit& minneg() {
+					clear();
+					return --(*this);
+				}
+				posit& maxneg() {
+					setnar();
+					return ++(*this);
+				}
 
 			private:
 				uint8_t _bits;
@@ -288,23 +330,35 @@ namespace sw { namespace universal {
 					internal::value<dfbits> v((T)rhs);
 
 					// special case processing
-					if (v.iszero()) {
-						setzero();
-						return *this;
-					}
 					if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
 						setnar();
 						return *this;
 					}
-
-					if (rhs <= -0.5) {
-						_bits = 0x2;   // value is -1, or -maxpos
+					if (v.iszero()) {
+						setzero();
+						return *this;
 					}
-					else if (-0.5 < rhs && rhs < 0.5) {
-						_bits = 0x0;   // value is 0
+					bool _sign = v.sign();
+					int  _scale = v.scale();
+					// value range of a posit<3,1> is
+					// -4 -1 -0.25 0 0.25 1 4
+					if (rhs <= -2) {
+						_bits = 0b101; // -4
 					}
-					else if (rhs >= 0.5) {
-						_bits = 0x1;   // value is 1, or maxpos
+					else if (rhs < -0.5) {
+						_bits = 0b110; // -1
+					}
+					else if (rhs < 0) {
+						_bits = 0b111; // -0.25
+					}
+					else if (rhs < 0.5) {
+						_bits = 0b001; //  0.25
+					}
+					else if (rhs <= 2) {
+						_bits = 0b010; //  1
+					}
+					else {
+						_bits = 4;
 					}
 					return *this;
 				}

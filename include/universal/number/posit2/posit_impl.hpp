@@ -834,8 +834,8 @@ public:
 		return *this /= posit<nbits, es, bt>(rhs);
 	}
 	
-	posit reciprocate() const noexcept {
-		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
+	posit reciprocal() const noexcept {
+		if (_trace_reciprocal) std::cout << "-------------------- RECIPROCAL ----------------" << std::endl;
 		posit<nbits, es, bt> p;
 		// special case of NaR (Not a Real)
 		if (isnar()) {
@@ -870,7 +870,7 @@ public:
 			constexpr unsigned reciprocal_size = 3 * fbits + 4;
 			blockbinary<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
-			if (_trace_reciprocate) {
+			if (_trace_reciprocal) {
 				std::cout << "one    " << one << std::endl;
 				std::cout << "frac   " << frac << std::endl;
 				std::cout << "recip  " << reciprocal << std::endl;
@@ -878,14 +878,14 @@ public:
 
 			// radix point falls at operand size == reciprocal_size - operand_size - 1
 			reciprocal <<= operand_size - 1;
-			if (_trace_reciprocate) std::cout << "frac   " << reciprocal << std::endl;
+			if (_trace_reciprocal) std::cout << "frac   " << reciprocal << std::endl;
 			int new_scale = -scale(*this);
 			int msb = findMostSignificantBit(reciprocal);
 			if (msb > 0) {
 				int shift = static_cast<int>(reciprocal_size - static_cast<unsigned>(msb));
 				reciprocal <<= static_cast<unsigned>(shift);
 				new_scale -= (shift-1);
-				if (_trace_reciprocate) std::cout << "result " << reciprocal << std::endl;
+				if (_trace_reciprocal) std::cout << "result " << reciprocal << std::endl;
 			}
 			//std::bitset<operand_size> tr;
 			//truncate(reciprocal, tr);

@@ -10,7 +10,7 @@
 // #define CFLOAT_NATIVE_SQRT 1
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/verification/test_suite.hpp>
-#include <universal/verification/test_suite_random.hpp>
+#include <universal/verification/test_suite_randoms.hpp>
 #include <universal/verification/cfloat_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp

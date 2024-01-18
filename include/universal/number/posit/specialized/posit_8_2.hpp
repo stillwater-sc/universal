@@ -1,15 +1,15 @@
-#pragma once
+﻿#pragma once
 // posit_8_2.hpp: specialized 8-bit posit using fast implementation specialized for posit<8,2>
 //
-// Copyright (C) 2017-2023 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // DO NOT USE DIRECTLY!
 // the compile guards in this file are only valid in the context of the specialization logic
 // configured in the main <universal/number/posit/posit.hpp>
-
 #include <universal/native/integers.hpp>
+#include <universal/native/ieee754_float.hpp>
 
 #ifndef POSIT_FAST_POSIT_8_2
 #define POSIT_FAST_POSIT_8_2 0
@@ -30,13 +30,13 @@ template<>
 class posit<NBITS_IS_8, ES_IS_2> {
 public:
 	static constexpr unsigned nbits = NBITS_IS_8;
-	static constexpr unsigned es = ES_IS_2;
+	static constexpr unsigned es    = ES_IS_2;
 	static constexpr unsigned sbits = 1;
 	static constexpr unsigned rbits = nbits - sbits;
 	static constexpr unsigned ebits = es;
 	static constexpr unsigned fbits = nbits - 3 - es;
 	static constexpr unsigned fhbits = fbits + 1;
-	static constexpr uint8_t sign_mask = 0x80;
+	static constexpr uint8_t sign_mask = 0x80u;
 
 	constexpr posit() : _bits(0) {}
 	posit(const posit&) = default;
@@ -74,31 +74,31 @@ public:
 	}
 
 	// initializers for native types
-	constexpr explicit posit(signed char initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(short initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(int initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(long initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(long long initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(char initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(unsigned short initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(unsigned int initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(unsigned long initial_value) : _bits(0) { *this = initial_value; }
-	constexpr explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-	explicit posit(float initial_value) : _bits(0) { *this = initial_value; }
-	posit(double initial_value) : _bits(0) { *this = initial_value; }
-	explicit posit(long double initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(signed char initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(short initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(int initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(long initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(long long initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(char initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(unsigned short initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(unsigned int initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(unsigned long initial_value) : _bits(0) { *this = initial_value; }
+	explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
+	explicit           posit(float initial_value) : _bits(0) { *this = initial_value; }
+	                   posit(double initial_value) : _bits(0) { *this = initial_value; }
+	explicit           posit(long double initial_value) : _bits(0) { *this = initial_value; }
 
 	// assignment operators for native types
-	constexpr posit& operator=(signed char rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(short rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(int rhs) { return integer_assign(rhs); }
-	constexpr posit& operator=(long rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(long long rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(char rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned short rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned int rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned long rhs) { return operator=((int)(rhs)); }
-	constexpr posit& operator=(unsigned long long rhs) { return operator=((int)(rhs)); }
+	posit& operator=(signed char rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(short rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(int rhs) { return operator=((long long)rhs); }
+	posit& operator=(long rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(long long rhs) { return integer_assign(rhs); }
+	posit& operator=(char rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(unsigned short rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(unsigned int rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(unsigned long rhs) { return operator=((long long)(rhs)); }
+	posit& operator=(unsigned long long rhs) { return operator=((long long)(rhs)); }
 	posit& operator=(float rhs) { return float_assign(rhs); }
 	posit& operator=(double rhs) { return float_assign(float(rhs)); }
 	posit& operator=(long double rhs) { return float_assign(float(rhs)); }
@@ -117,21 +117,314 @@ public:
 		posit p;
 		return p.setbits((~_bits) + 1ul);
 	}
+
+	////////////////////////////////////////////////////////////////
 	// arithmetic assignment operators
 	posit& operator+=(const posit& b) {
+		// process special cases
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+		if (isnar() || b.isnar()) {
+			throw posit_operand_is_nar{};
+		}
+#else
+		if (isnar() || b.isnar()) {
+			setnar();
+			return *this;
+		}
+#endif
 		if (b.iszero()) return *this;
+		if (iszero()) { _bits = b._bits; return *this; }
+		if (isneg() != b.isneg()) return *this -= b.twosComplement();
+
+		uint8_t lhs = _bits;
+		uint8_t rhs = b._bits;
+		bool sign = (_bits & sign_mask) != 0;
+		if (sign) {
+			lhs = -lhs & 0xFFu;
+			rhs = -rhs & 0xFFu;
+		}
+		if (lhs < rhs) std::swap(lhs, rhs);
+
+		// decode the regime of lhs
+		int8_t k; // regime numerical value
+		uint8_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
+		decode_regime(lhs, k, remaining);
+
+		// extract the exponent
+		uint8_t exp = remaining >> 5; // 8 - 1(sign) - 2(exponent)
+
+		// extract remaining fraction bits
+		uint16_t lhs_fraction = ((0x40u | remaining << 1) & 0x7Fu) << 8; // 0x40 is the hidden bit
+		int8_t shiftRight = k;
+
+		// adjust shift and extract fraction bits of rhs
+		extractAddand(rhs, shiftRight, remaining);
+		uint16_t rhs_fraction = ((0x40u | remaining << 1) & 0x7Fu) << 8; // 0x40 is the hidden bit
+
+		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
+		shiftRight = (shiftRight << 2) + exp - (remaining >> 5);
+
+		if (shiftRight == 0) { // we can simplify the computation
+			lhs_fraction += rhs_fraction;  // this will always produce a carry
+			++exp;
+			if (exp > 3) {
+				++k;
+				exp &= 3;
+			}
+			lhs_fraction >>= 1;
+		}
+		else {
+			(shiftRight > 7) ? (rhs_fraction = 0) : (rhs_fraction >>= shiftRight); // frac16B >>= shiftRight
+			lhs_fraction += rhs_fraction;
+
+			bool rcarry = (0x8000 & lhs_fraction) != 0; // first left bit
+			if (rcarry) {
+				++exp;
+				if (exp > 3) {
+					++k;
+					exp &= 3;
+				}
+				lhs_fraction >>= 1;
+			}
+		}
+
+		_bits = round(k, exp, lhs_fraction);
+		if (sign) _bits = -_bits & 0xFFu;
 		return *this;
 	}
 	posit& operator-=(const posit& b) {
+		// process special cases
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+		if (isnar() || b.isnar()) {
+			throw posit_operand_is_nar{};
+		}
+#else
+		if (isnar() || b.isnar()) {
+			setnar();
+			return *this;
+		}
+#endif
 		if (b.iszero()) return *this;
+		if (iszero()) { _bits = -(b._bits) & 0xFFu; return *this; }
+		posit bComplement = b.twosComplement();
+		if (isneg() != b.isneg()) return *this += bComplement;
+
+		uint8_t lhs = _bits;
+		uint8_t rhs = bComplement._bits;
+		// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
+		bool sign = (lhs & sign_mask) != 0;
+		(sign) ? (lhs = (-lhs & 0xFFu)) : (rhs = (-rhs & 0xFFu));
+
+		if (lhs == rhs) {
+			_bits = 0;
+			return *this;
+		}
+		if (lhs < rhs) {
+			std::swap(lhs, rhs);
+			sign = !sign;
+		}
+
+		// decode the regime of lhs
+		int8_t k;  // regime numerical value
+		uint8_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
+		decode_regime(lhs, k, remaining);
+
+		// extract the exponent
+		uint8_t exp = remaining >> 5;  // 8 - 1(sign) - 2(exponent)
+
+		uint16_t lhs_fraction = ((0x40u | remaining << 1) & 0x7Fu) << 8; // 0x40 is the hidden bit
+		int8_t shiftRight = k;
+
+		// adjust shift and extract fraction bits of rhs
+		extractAddand(rhs, shiftRight, remaining);
+		uint16_t rhs_fraction = ((0x40u | remaining << 1) & 0x7Fu) << 8; // 0x40 is the hidden bit
+
+		// align the fractions for subtraction
+		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
+		shiftRight = (shiftRight << 2) + exp - (remaining >> 5);
+		if (shiftRight > 15) {
+			_bits = lhs;
+			if (sign) _bits = -_bits & 0xFFu;
+			return *this;
+		}
+		else {
+			rhs_fraction >>= shiftRight;
+		}
+
+		lhs_fraction -= rhs_fraction;
+
+		while ((lhs_fraction >> 11) == 0) {
+			--k;
+			lhs_fraction <<= 4;
+		}
+
+		bool ecarry = (0x4000u & lhs_fraction) != 0;
+		while (!ecarry) {
+			if (exp == 0) {
+				--k;
+				exp = 3;
+			}
+			else {
+				--exp;
+			}
+			lhs_fraction <<= 1;
+			ecarry = (0x4000u & lhs_fraction) != 0;
+		}
+
+		_bits = round(k, exp, lhs_fraction);
+		if (sign) _bits = -_bits & 0xFFu;
 		return *this;
 	}
 	posit& operator*=(const posit& b) {
-		if (b.iszero()) setzero();
+		// process special cases
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+		if (isnar() || b.isnar()) {
+			throw posit_operand_is_nar{};
+		}
+#else
+		if (isnar() || b.isnar()) {
+			setnar();
+			return *this;
+		}
+#endif
+		if (iszero() || b.iszero()) {
+			_bits = 0;
+			return *this;
+		}
+		uint8_t lhs = _bits;
+		uint8_t rhs = b._bits;
+		// calculate the sign of the result
+		bool sign = bool(lhs & sign_mask) ^ bool(rhs & sign_mask);
+		lhs = lhs & sign_mask ? -lhs : lhs;
+		rhs = rhs & sign_mask ? -rhs : rhs;
+
+		// decode the regime of lhs
+		int8_t m = 0;  // regime pattern length
+		uint8_t remaining;  // Remaining bits after the regime: 0<remaining_bits>0..0
+		decode_regime(lhs, m, remaining);
+
+		// extract the exponent
+		int8_t exp = (remaining >> 5);  // 8 - 1(sign) - 2(exponent)
+
+		// extract remaining fraction bits
+		uint8_t lhs_fraction = (0x40u | remaining << 1) & 0x7Fu; // 0x40 is the hidden bit
+
+		// adjust shift and extract fraction bits of rhs
+		extractMultiplicand(rhs, m, remaining);
+		exp += (remaining >> 5);
+		uint8_t rhs_fraction = (0x40u | remaining << 1) & 0x7Fu; // 0x40 is the hidden bit
+		uint16_t result_fraction = (uint16_t)lhs_fraction * rhs_fraction;
+
+		if (exp > 3) {
+			++m;
+			exp &= 3;
+		}
+
+		bool rcarry = (result_fraction & 0x2000u) != 0;
+		if (rcarry) {
+			//std::cerr << "fraction carry processing commensing\n";
+			//std::cerr << to_binary(*this, true) << " * " << to_binary(b, true) << '\n';
+			exp++;
+			if (exp > 3) {
+				++m;
+				exp &= 3;
+			}
+			result_fraction >>= 1;
+		}
+
+		// round
+		_bits = adjustAndRound(m, exp, result_fraction);
+		if (sign) _bits = -_bits & 0xFFu;
 		return *this;
 	}
 	posit& operator/=(const posit& b) {
-		if (b.iszero()) setnar();
+		// process special cases
+	// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+		if (b.iszero()) {
+			throw posit_divide_by_zero{};    // not throwing is a quiet signalling NaR
+		}
+		if (b.isnar()) {
+			throw posit_divide_by_nar{};
+		}
+		if (isnar()) {
+			throw posit_numerator_is_nar{};
+		}
+#else
+		if (isnar() || b.isnar() || b.iszero()) {
+			setnar();
+			return *this;
+		}
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
+
+		uint8_t lhs = _bits;
+		uint8_t rhs = b._bits;
+		if (iszero()) {
+			_bits = 0;
+			return *this;
+		}
+
+		// calculate the sign of the result
+		bool sign = bool(lhs & sign_mask) ^ bool(rhs & sign_mask);
+		lhs = lhs & sign_mask ? -lhs : lhs;
+		rhs = rhs & sign_mask ? -rhs : rhs;
+
+		// decode the regime of lhs
+		int8_t m{ 0 }; // regime pattern length
+		uint8_t remaining{ 0 };  // Remaining bits after the regime: 0<remaining_bits>0..0
+		decode_regime(lhs, m, remaining);
+
+		//std::cout << "lhs m     : " << int(m) << '\n';
+
+		// extract the exponent
+		int8_t exp = (remaining >> 5); // 8 - 1(sign) - 2(exponent)
+		//std::cout << "lhs exp   : " << exp << '\n';
+
+		// extract remaining fraction bits
+		uint8_t lhs_fraction = (0x40u | remaining << 1) & 0x7Fu; // 0x40 is the hidden bit
+		uint16_t fraction = (uint16_t)lhs_fraction << 6;
+		//std::cout << "fraction  : " << to_binary(fraction, 32, true) << '\n';
+
+		// adjust shift and extract fraction bits of rhs
+		extractDividand(rhs, m, remaining);
+		//uint16_t rhsExp = (remaining >> 5);
+		exp -= (remaining >> 5);
+		//std::cout << "result m  : " << int(m) << '\n';
+		//std::cout << "rhs exp   : " << rhsExp << '\n';
+		//std::cout << "final exp : " << exp << '\n';
+
+		uint8_t rhs_fraction = (0x40u | remaining << 1) & 0x7Fu; // 0x40 is the hidden bit
+		//std::cout << "lhs frac  : " << to_binary(lhs_fraction, 16, true) << '\n';
+		//std::cout << "rhs frac  : " << to_binary(rhs_fraction, 16, true) << '\n';
+
+		div_t result = div(fraction, rhs_fraction);
+		uint16_t result_fraction = result.quot;
+		uint16_t remainder = result.rem;
+
+		//std::cout << "result    : " << to_binary(result_fraction, 32, true) << '\n';
+
+		// adjust the exponent if needed
+		if (exp < 0) {
+			exp += 4;
+			--m;
+		}
+		if (result_fraction != 0) {
+			bool rcarry = result_fraction >> 6; // this is the hidden bit (6th bit), extreme right bit is bit 0
+			if (!rcarry) {
+				if (exp == 0) {
+					--m;
+					exp = 3;
+				}
+				else {
+					--exp;
+				}
+				result_fraction <<= 1;
+			}
+		}
+
+		// round
+		_bits = divRound(m, exp, result_fraction, remainder != 0);
+		if (sign) _bits = -_bits & 0xFFu;
 		return *this;
 	}
 
@@ -155,7 +448,7 @@ public:
 		return tmp;
 	}
 
-	posit reciprocate() const {
+	posit reciprocal() const {
 		posit p = 1.0 / *this;
 		return p;
 	}
@@ -166,35 +459,36 @@ public:
 		return *this;
 	}
 
-	// Selelctors
-	inline bool sign() const { return (_bits & sign_mask); }
-	inline bool isnar() const { return (_bits == sign_mask); }
-	inline bool iszero() const { return (_bits == 0x00); }
-	inline bool isone() const { return (_bits == 0x40); } // pattern 010000...
-	inline bool isminusone() const { return (_bits == 0xC0); } // pattern 110000...
-	inline bool isneg() const { return (_bits & sign_mask); }
-	inline bool ispos() const { return !isneg(); }
-	inline bool ispowerof2() const { return !(_bits & 0x1); }
+	// Selectors
+	inline bool sign() const noexcept       { return (_bits & sign_mask); }
+	inline bool isnar() const noexcept      { return (_bits == sign_mask); }
+	inline bool iszero() const noexcept     { return (_bits == 0x00u); }
+	inline bool isone() const noexcept      { return (_bits == 0x40u); } // pattern 010000...
+	inline bool isminusone() const noexcept { return (_bits == 0xC0u); } // pattern 110000...
+	inline bool isneg() const noexcept      { return (_bits & sign_mask); }
+	inline bool ispos() const noexcept      { return !isneg(); }
+	inline bool ispowerof2() const noexcept { return !(_bits & 0x1u); }
 
-	inline int sign_value() const { return (_bits & sign_mask ? -1 : 1); }
+	inline int sign_value() const noexcept  { return (_bits & sign_mask ? -1 : 1); }
 
-	bitblock<NBITS_IS_8> get() const { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
-	unsigned long long encoding() const { return (unsigned long long)(_bits); }
+	bitblock<NBITS_IS_8> get() const noexcept { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
+	uint8_t bits() const noexcept { return _bits; }
+	unsigned long long encoding() const noexcept { return (unsigned long long)(_bits); }
 
 	// Modifiers
 	inline void clear() noexcept { _bits = 0; }
 	inline void setzero() noexcept { clear(); }
-	inline void setnar() noexcept { _bits = 0x80; }
-	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) noexcept {
+	inline void setnar() noexcept { _bits = sign_mask; }
+	posit& setBitblock(const bitblock<NBITS_IS_8>& raw) noexcept {
 		_bits = uint8_t(raw.to_ulong());
 		return *this;
 	}
 	constexpr posit& setbits(uint64_t value) noexcept {
-		_bits = uint8_t(value & 0xffu);
+		_bits = uint8_t(value & 0xFFu);
 		return *this;
 	}
 	constexpr posit& setbit(unsigned bitIndex, bool value = true) noexcept {
-		uint16_t bit_mask = (0x1u << bitIndex);
+		uint8_t bit_mask = (0x1u << bitIndex);
 		if (value) {
 			_bits |= bit_mask;
 		}
@@ -204,57 +498,59 @@ public:
 		return *this;
 	}
 
-	inline posit& minpos() {
+	posit& minpos() noexcept {
 		clear();
 		return ++(*this);
 	}
-	inline posit& maxpos() {
+	posit& maxpos() noexcept {
 		setnar();
 		return --(*this);
 	}
-	inline posit& zero() {
+	posit& zero() noexcept {
 		clear();
 		return *this;
 	}
-	inline posit& minneg() {
+	posit& minneg() noexcept {
 		clear();
 		return --(*this);
 	}
-	inline posit& maxneg() {
+	posit& maxneg() noexcept {
 		setnar();
 		return ++(*this);
 	}
-	inline posit twosComplement() const {
-		posit<NBITS_IS_8, ES_IS_2> p;
-		int8_t v = -*(int8_t*)&_bits;
-		p.setbits(v);
-		return p;
+	posit twosComplement() const noexcept {
+		posit p;
+		return p.setbits(~_bits + 1ul);
 	}
 
-private:
-	uint8_t _bits;
-
-	// decode takes the raw bits of the posit, 
-	// returns the regime, m, and leaves the remaining bits in 'remainder'
-	int8_t decode_regime(uint8_t bits, uint8_t* remaining) const {
-		int8_t m = 0;
-		*remaining = (bits << 2) & 0xFF;
-		if (bits & 0x40) {  // positive regimes
-			while (*remaining >> 7) {
+	uint16_t decode_posit(const uint8_t bits, uint8_t& exp, uint8_t& fraction) const noexcept {
+		int16_t m{ 0 };
+		// posit is s.rrrr.ee.fffff
+		fraction = (bits << 2u) & 0xFFu;  // remove sign and first regime bit
+		if (bits & 0x40u) {  // positive regimes
+			m = 0;
+			while (fraction >> 7) {
 				++m;
-				*remaining = (*remaining << 1) & 0xFF;
+				fraction <<= 1;
 			}
 		}
 		else {              // negative regimes
 			m = -1;
-			while (!(*remaining >> 7)) {
+			while (!(fraction >> 7)) {
 				--m;
-				*remaining = (*remaining << 1) & 0xFF;
+				fraction <<= 1;
 			}
-			*remaining &= 0x7F;
+			fraction &= 0x7Fu;
 		}
+		exp = (fraction >> 5); // extract the exponent
+		// finalize the fraction bits as in 0b0hffff...ff00, so we have MSB = 0, hidden bit realized at 0x20, and two extra bits at the bottom
+		fraction &= 0x9Fu; // null the exponent bits
+		fraction |= 0x20u; // set the hidden bit
 		return m;
 	}
+
+private:
+	uint8_t _bits;
 
 	// extract_exponent takes the regime, and the remaining bits
 	// returns the exponent value, and updates remaining to hold just the fraction bits
@@ -284,6 +580,7 @@ private:
 		case -7: case -6: case 5: case 6:
 			exp = 0;
 			*remaining = 0;
+			break;
 		default:
 			exp = (*remaining >> 5);
 			*remaining <<= 2;
@@ -396,11 +693,12 @@ private:
 
 	float       to_float() const {
 		if (iszero()) return 0.0f;
-		if (isnar()) return NAN;   //  INFINITY is not semantically correct. NaR is Not a Real and thus is more closely related to a NAN, or Not a Number
+		if (isnar()) return NAN;
 
-		uint8_t bits = ((_bits & 0x80) ? -_bits : _bits);	
+		uint8_t bits = ((_bits & 0x80u) ? -_bits : _bits);	
 		uint8_t remaining = 0;
-		int8_t m = decode_regime(bits, &remaining);
+		int8_t m;
+		decode_regime(bits,m, remaining);
 //		std::cout << to_binary(bits, 8) << " : " << to_binary(remaining, 8) << " : ";
 		int regimeScale = (1 << es) * m;
 		float s = (float)(sign_value());
@@ -424,16 +722,16 @@ private:
 	}
 
 	// helper methods			
-	constexpr posit& integer_assign(int rhs) {
+	 posit& integer_assign(long long rhs) noexcept {
 		// special case for speed as this is a common initialization
 		if (rhs == 0) {
 			_bits = 0x0;
 			return *this;
 		}
 		bool sign = (rhs < 0) ? true : false;
-		int v = sign ? -rhs : rhs; // project to positive side of the projective reals
+		long long v = sign ? -rhs : rhs; // project to positive side of the projective reals
 		uint8_t raw = 0;
-		if (v > 48) { // +-maxpos
+		if (v > 48 || v == rhs) { // +-maxpos
 			raw = 0x7F;
 		}
 		else if (v < 2) {
@@ -459,95 +757,348 @@ private:
 		_bits = sign ? -raw : raw;
 		return *this;
 	}
-	posit& float_assign(float rhs) {
-		bool sign = false;
-		bool bitNPlusOne = 0, bitsMore = 0;
-		constexpr float _minpos = 5.9604644775390625e-08f;
-		constexpr float _maxpos = 16777216.0f;
-
-		sign = (rhs < 0.0) ? true : false;
-
-		constexpr int spfbits = std::numeric_limits<float>::digits - 1;
-		internal::value<spfbits> v(rhs);
-		if (v.isinf() || v.isnan()) {
-			_bits = 0x80;
+	posit& float_assign(float rhs) noexcept {
+		// special case for speed as this is a common initialization
+		if (std::fpclassify(rhs) == FP_NAN || std::fpclassify(rhs) == FP_INFINITE) {
+			_bits = 0x80u;
+			return *this;
 		}
-		else if (rhs == 0) {
+		else if (rhs == 0.0f) {
 			_bits = 0;
+			return *this;
 		}
-		else if (rhs == 1.0f) {
-			_bits = 0x40;
-		}
-		else if (rhs == -1.0f) {
-			_bits = 0xC0;
-		}
-		else if (rhs >= _maxpos) {
-			_bits = 0x7F;
-		}
-		else if (rhs <= -_maxpos) {
-			_bits = 0x81;
-		}
-		else if (rhs <= _minpos && !sign) {
-			_bits = 0x01;
-		}
-		else if (rhs >= -_minpos && sign) {
-			_bits = 0xFF;
-		}
-		else if (rhs < -1 || rhs > 1) {
-			if (sign) {
-				rhs = -rhs; // project to positive reals to simplify computation
-			}
 
-			if (rhs <= _minpos) {
-				_bits = 0x01;
-			}
-			else { // determine the regime	
-				unsigned k = 1; //because k = m-1, we need to add back 1
-				while (rhs >= 2) {
-					rhs *= 0.5;
-					k++;
-				}
-
-				// rounding off regime bits
-				if (k > 6) {
-					_bits = 0x7F;
-				}
-				else {
-					int8_t fracLength = 6 - k;
-					uint8_t frac = (uint8_t)convertFraction(rhs, fracLength, &bitNPlusOne, &bitsMore);
-					uint_fast8_t regime = 0x7F - (0x7F >> k);
-					_bits = (regime + frac);
-					if (bitNPlusOne) _bits += ((_bits & 0x01) | bitsMore);
-				}
-				_bits = sign ? -_bits : _bits;
-			}
+		bool sign = (rhs < 0.0);
+		float v = (sign ? -rhs : rhs);
+		float_decoder fd{ v };
+		uint8_t raw{ 0 };
+		if (v == 1.0f) {
+			raw = 0x40u;
 		}
-		else if (rhs > -1 && rhs < 1) {
-			if (sign) {
-				rhs = -rhs;
+		else if (v > 1) {
+			// geometric mean = sqrt(a*b)
+			// geometric range of the posit<8,2>
+			// maxpos          = 16,777,216   0x0111'1111  2^(6*2^2) * 2^0
+			// geo mean        =  4,194,304                2^(5*2^2) * 2^2
+			// maxpos / 2^4    =  1,048,576   0x0111'1110  2^(5*2^2) * 2^0
+			// geo mean        =    524,288                2^(5*2^2) * 2^1
+			// maxpos / 2^6    =    262,144   0x0111'1101  2^(4*2^2) * 2^2
+			// geo mean        =    131,072                2^(4*2^2) * 2^1
+			// maxpos / 2^8    =     65,536   0x0111'1100  2^(4*2^2) * 2^0
+			// maxpos / 2^9    =     32,768   0x0111'1011  2^(3*2^2) * 2^3
+			// maxpos / 2^10   =     16,384   0x0111'1010  2^(3*2^2) * 2^2
+			if (v > 4194304) {
+				raw = 0x7Fu; // maxpos
 			}
-			unsigned k = 0;
-			while (rhs < 1) {
-				rhs *= 2;
-				k++;
+			else if (v > 524288) { 
+				raw = 0x7Eu; // maxpos / 2^4
 			}
-			// rounding off regime bits
-			if (k > 6)
-				_bits = 0x1;
+			else if (v > 131072) { 
+				raw = 0x7Du; // maxpos / 2^6
+			}
 			else {
-				int8_t fracLength = 6 - k;
-				uint8_t frac = (uint8_t)convertFraction(rhs, fracLength, &bitNPlusOne, &bitsMore);
-				uint8_t regime = 0x40 >> k;
-				_bits = (regime + frac);
-				if (bitNPlusOne) _bits += ((_bits & 0x01) | bitsMore);
+				//std::cout << "value    : " << v << '\n';
+				int scale = fd.parts.exponent - 127;
+				//std::cout << "scale    : " << scale << '\n';
+				unsigned reglen = 1u + (scale >> 2);
+				//std::cout << "reglen   : " << reglen << '\n';
+				uint8_t regime = 0x7Fu - (0x7Fu >> reglen);
+				//std::cout << "regime   : " << to_binary(regime, 8, true) << '\n';
+				uint8_t esval = (scale % 0x04u);
+
+				int sign_regime_es = 1 + reglen + 1 + 2; // 1 sign, reglen+1 regime, 2 exponent bits
+				int nf = std::max<int>(0, nbits - sign_regime_es);
+				uint8_t exponent = (esval << nf);
+				//std::cout << "exponent : " << to_binary(exponent, 8, true) << '\n';
+
+				// copy most significant nf fraction bits into fraction
+				//std::cout << "fracin   : " << to_binary(fd.parts.fraction, 23, true) << '\n';
+				uint8_t fraction = fd.parts.fraction >> (23 - nf);
+				//std::cout << "fraction : " << to_binary(fraction, 8, true) << '\n';
+
+				// construct the untruncated posit
+				raw = regime | exponent | fraction;
+
+				// round
 			}
-			_bits = sign ? -_bits : _bits;
+		}
+		else if (v < 1) {
+			// geometric range of the posit<8,2>
+			// minpos        = 1/16,777,216   0x0000'0001  2^(-6*2^2) * 2^0   5.9604644775390625e-08f
+			// geo mean      = 1/ 4,194,304                                   2.384185791015625e-07f
+			// minpos * 2^4  = 1/ 1,048,576   0x0000'0010  2^(-5*2^2) * 2^0   9.5367431640625e-07f
+			// geo mean      = 1/   524,288                                   1.9073486328125e-06f
+			// minpos * 2^6  = 1/   262,144   0x0000'0011  2^(-4*2^2) * 2^2   3.814697265625e-06f
+			// geo mean      = 1/   131,072                                   7.62939453125e-06f
+			// minpos * 2^8  = 1/    65,536   0x0000'0100  2^(-4*2^2) * 2^0   1.52587890625e-05f
+
+			if (v < 2.384185791015625e-07f) {
+				raw = 0x01u;
+			}
+			else if (v < 1.9073486328125e-06f) {
+				raw = 0x02u;
+			}
+			else if (v < 7.62939453125e-06f) {
+				raw = 0x03u;
+			}
+			else {
+				//std::cout << "value    : " << v << '\n';
+				
+				int scale = fd.parts.exponent - 127;
+				//std::cout << "scale    : " << scale << '\n';
+				unsigned reglen = -(scale >> 2);
+				//std::cout << "reglen   : " << reglen << '\n';
+				uint8_t regime = 0x40u >> reglen;
+				//std::cout << "regime   : " << to_binary(regime, 8, true) << '\n';
+				uint8_t esval = (scale % 0x04u);
+
+				int sign_regime_es = 1 + reglen + 1 + 2; // 1 sign, reglen+1 regime, 2 exponent bits
+				int nf = std::max<int>(0, nbits - sign_regime_es);
+				uint8_t exponent = (esval << nf);
+				//std::cout << "exponent : " << to_binary(exponent, 8, true) << '\n';
+
+				// copy most significant nf fraction bits into fraction
+				//std::cout << "fracin   : " << to_binary(fd.parts.fraction, 23, true) << '\n';
+				uint8_t fraction = fd.parts.fraction >> (23 - nf);
+				//std::cout << "fraction : " << to_binary(fraction, 8, true) << '\n';
+
+				// construct the untruncated posit
+				raw = regime | exponent | fraction;
+
+				// round
+			}
+			 
 		}
 		else {
-			//NaR - for NaN, INF and all other combinations
-			_bits = 0x80;
+			// std::cout << "NaN maps to NaR\n";
+			_bits = 0x80u; // NaR
+			return *this;
 		}
+
+		_bits = sign ? -raw : raw;
 		return *this;
+	}
+
+
+	// decode_regime takes the raw bits of the posit, and returns the 
+	// regime numerical meaning, k, and the remaining bits shifted to
+	// the left in remaining, with a 0 appended to the left. I.e.,
+	// remaining = 0<remaining_bits>0..0
+	//
+	// The regime numerical meaning is as follows: If m is the number of
+	// identical bits in the regime, if the bits are 0s, then k = −m;
+	// if they are 1s, then k = m − 1.
+	void decode_regime(uint8_t bits, int8_t& m, uint8_t& remaining) const noexcept {
+		remaining = (bits << 2) & 0xFFu; // remove sign and first regime bit
+		if (bits & 0x40u) {  // positive regimes
+			m = 0;
+			while (remaining >> 7) {
+				++m;
+				remaining = (remaining << 1) & 0xFFu;
+			}
+		}
+		else {              // negative regimes
+			m = -1;
+			while (!(remaining >> 7)) {
+				--m;
+				remaining = (remaining << 1) & 0xFFu;
+			}
+			remaining &= 0x7Fu;
+		}
+	}
+	void extractAddand(const uint8_t bits, int8_t& m, uint8_t& remaining) const noexcept {
+		remaining = (bits << 2) & 0xFFu;
+		if (bits & 0x40u) {  // positive regimes
+			while (remaining >> 7) {
+				--m;
+				remaining = (remaining << 1) & 0xFFu;
+			}
+		}
+		else {              // negative regimes
+			++m;
+			while (!(remaining >> 7)) {
+				++m;
+				remaining = (remaining << 1) & 0xFFu;
+			}
+			remaining &= 0x7Fu;
+		}
+	}
+	void extractMultiplicand(const uint8_t bits, int8_t& m, uint8_t& remaining) const noexcept {
+		remaining = (bits << 2) & 0xFFu;
+		if (bits & 0x40u) {  // positive regimes
+			while (remaining >> 7) {
+				++m;
+				remaining = (remaining << 1) & 0xFFu;
+			}
+		}
+		else {              // negative regimes
+			--m;
+			while (!(remaining >> 7)) {
+				--m;
+				remaining = (remaining << 1) & 0xFFu;
+			}
+			remaining &= 0x7Fu;
+		}
+	}
+	void extractDividand(const uint8_t bits, int8_t& m, uint8_t& remaining) const noexcept {
+		remaining = (bits << 2) & 0xFFu;
+		if (bits & 0x40u) {  // positive regimes
+			while (remaining >> 7) {
+				--m;
+				remaining = (remaining << 1) & 0xFFu;
+			}
+		}
+		else {              // negative regimes
+			++m;
+			while (!(remaining >> 7)) {
+				++m;
+				remaining = (remaining << 1) & 0xFFu;
+			}
+			remaining &= 0x7Fu;
+		}
+	}
+	uint16_t round(const int8_t m, uint8_t exp, uint16_t frac16) const noexcept {
+		uint8_t reglen, regime, bits;
+		if (m < 0) {
+			reglen = (-m & 0xFFu);
+			regime = 0x40u >> reglen;
+		}
+		else {
+			reglen = m + 1;
+			regime = 0x7Fu - (0x7Fu >> reglen);
+		}
+
+		if (reglen > 6) {
+			bits = (m < 0 ? 0x01u : 0x7Fu);  // minpos and maxpos. exp and frac do not matter
+		}
+		else {
+			frac16 = (frac16 & 0x3FFF) >> (reglen + 2); // remove both carry bits, 2 bits exp
+			uint8_t fraction = uint8_t(frac16 >> 8);
+			bool bitNPlusOne = false;
+			uint8_t moreBits = 0;
+			if (reglen <= 4) {
+				bitNPlusOne = (0x80u & frac16) != 0;
+				exp <<= (4 - reglen);
+			}
+			else {
+				if (reglen == 6) {
+					bitNPlusOne = bool(exp & 0x2);
+					moreBits = exp & 0x1;
+					exp = 0;
+				}
+				else if (reglen == 5) {
+					bitNPlusOne = bool(exp & 0x1);
+					exp >>= 1;
+				}
+				if (fraction > 0) {
+					fraction = 0;
+					moreBits = 1;
+				}
+			}
+
+			bits = regime | exp | fraction;
+			// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+			if (bitNPlusOne) {
+				if (0x7Fu & frac16) moreBits = 1;
+				bits += (bits & 0x01u) | moreBits;
+			}
+		}
+		return bits;
+	}
+	uint8_t divRound(const int8_t m, uint8_t exp, uint16_t frac16, bool nonZeroRemainder) const noexcept {
+		uint8_t reglen, regime, bits;
+		if (m < 0) {
+			reglen = (-m & 0xFFu);
+			regime = 0x40u >> reglen;
+		}
+		else {
+			reglen = m + 1;
+			regime = 0x7Fu - (0x7Fu >> reglen);
+		}
+
+		if (reglen > 6) {
+			bits = (m < 0 ? 0x01u : 0x7Fu);  // minpos and maxpos
+		}
+		else {
+			frac16 &= 0x3Fu; // remove both carry bits
+			uint8_t fraction = uint8_t(frac16 >> (reglen + 2));
+
+			bool bitNPlusOne = false;
+			uint16_t moreBits{ 0 };
+			if (reglen <= 4) {
+				bitNPlusOne = bool((frac16 >> (reglen + 1)) & 0x1);
+				exp <<= (4 - reglen);
+				if (bitNPlusOne) moreBits = (((1ull << (reglen + 1)) - 1ull) & frac16) ? 0x1 : 0x0;
+			}
+			else {
+				if (reglen == 6) {
+					bitNPlusOne = bool(exp & 0x2);
+					moreBits = exp & 0x1;
+					exp = 0;
+				}
+				else if (reglen == 5) {
+					bitNPlusOne = bool(exp & 0x1);
+					exp >>= 1;
+				}
+				if (frac16 > 0) {
+					fraction = 0;
+					moreBits = 0x1;
+				}
+			}
+			if (nonZeroRemainder) moreBits = 0x1;
+			bits = regime | exp | uint8_t(fraction);
+			if (bitNPlusOne) bits += (bits & 0x1) | moreBits;
+		}
+		return bits;
+	}
+	inline uint8_t adjustAndRound(const int8_t m, uint8_t exp, uint16_t frac16) const noexcept {
+		uint8_t reglen, regime, bits;
+		if (m < 0) {
+			reglen = (-m & 0xFFu);
+			regime = 0x40u >> reglen;
+		}
+		else {
+			reglen = m + 1u;
+			regime = 0x7Fu - (0x7Fu >> reglen);
+		}
+
+		if (reglen > 6) {
+			bits = m < 0 ? 0x01u : 0x7Fu;  // minpos and maxpos. exp and frac do not matter 
+		}
+		else {
+			// remove carry and rcarry bits and shift to correct position
+			frac16 = (frac16 & 0x0FFFu) >> reglen;
+			uint8_t fraction = uint8_t(frac16 >> 8);
+			bool bitNPlusOne = false;
+			uint8_t moreBits = 0;
+			if (reglen <= 4) {
+				bitNPlusOne = bool(0x80u & frac16);
+				exp <<= (4 - reglen);
+			}
+			else {
+				if (reglen == 6) {
+					bitNPlusOne = bool(exp & 0x2);
+					moreBits = exp & 0x1;
+					exp = 0;
+				}
+				else if (reglen == 5) {
+					bitNPlusOne = bool(exp & 0x1);
+					exp >>= 1;
+				}
+				if (fraction > 0) {
+					fraction = 0;
+					moreBits = 1;
+				}
+			}
+
+			bits = regime | exp | fraction;
+			// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+			if (bitNPlusOne) {
+				if (0x7Fu & frac16) moreBits = 1;
+				bits += (bits & 0x01u) | moreBits;
+			}
+		}
+		return bits;
 	}
 
 	// I/O operators
